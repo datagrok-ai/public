@@ -2,6 +2,20 @@
 
 ## v.next
 
+* Runner: A suite run leaves out the films — guides in demo or tutorial mode (`@guide` with `@demo` or `@tutorial`) — in both lanes; `grok-bdd guide` films them as before, and `BDD_FILMS=1` runs them as tests. U2Demo's features, whose `@demo` names the app they test, still run
+* Guides: The title card of a `@tutorial` is its scenario's own description, never the feature's paragraph (the maintainer's note), and a scenario is matched to the feature that holds it: features sharing a name ("How-to · Data") filmed in one run gave a clip another feature's paragraph
+* Guides: Added the `@tutorial` tag (renderer `--tutorial`): a demo clip that teaches — what each stop presses is outlined over a lightly dimmed page (an icon gets a box of at least 44 px) from early in the pointer's way until half a second after the press, the pointer moves at a guide's pace and rests on the target before pressing, menus are walked slowly enough to read, each result and each page a set-up changed dissolves in rather than cutting, notes rise into place, and a new note waits until the last one is read
+* Guides: An element below the fold (a property category low in the context panel) is scrolled into view before its box is read, so its outline and the pointer go where the press lands; a box outside the frame is no longer drawn (the renderer crashed on it), and a key cap names Ctrl for a Ctrl gesture filmed on a Mac (it read Cmd)
+* Guides: A column picker's step-aside point keeps off the sidebar: a selector at the view's left edge (a tree map's Color) rested the pointer on the sidebar, and the Toolbox slid out over the clip
+* Gestures: An on-viewer column selector that aggregates (a bar chart's Value, a line chart's Y) is opened by a press on its column name: the press landed on its aggregation's select, and the picker never opened
+* Guides: A context menu opened on a viewer's hit area (`… from the context menu of the "header AGE" area of grid`) lights that area, not the whole viewer, on its way there
+* Guides: `user drags the "…" area of … onto the "…" area of …` lights the area it presses (the source), not the drop target: a guide's audit found every such press off the lit element
+* Gestures: `user replaces the text of {element} with {string}` checks an input's value: it read the input's textContent, always empty, and failed after typing correctly
+* Guides: `user adds "…" to the "…" row of pivot table viewer` steps the pointer just off the + while the picker is open (`besidePicker`, now exported); it flew to the page's corner and slid the sidebar's panel out on film
+* Guides: `user switches on|off {element}` lights the switch it presses, which a fitting or sensitivity form puts outside the input the step names; a guide lit the input and its audit found the press off it
+* Guides: `user picks the sharing user in …` (and the running account) pictures the typeahead with its row lit before the press: the popup never showed on film and the audit found the press on nothing
+* Runtime: Exported `guideHop` and `guideWaypoint`, so a package's step can light the stops of a gesture it makes itself and keep the corners of a pointer's way (a nested menu entered along its group's row)
+* Viewers: `user picks "…" from the filter panel menu`, when the cards fill the panel, lights the title bar's menu icon before pressing it; a guide lit the panel and its audit found the press off the lit element
 * core#456: Gestures: `user closes "<name>" view tab` clicks the tab's close button; it pressed Escape, which left the tab open
 * Runner: The shell reset reopens the Home view when a scenario closed it (Close others closes Home too): the next feature waited for Home and timed out at login
 * Runner: Added `BDD_EXCLUDE_PACKAGES=<names>` — those packages stay out of every shell of the run (the platform's `excludePackages` startup parameter); features gated on one skip, the others run without its autostart and handlers

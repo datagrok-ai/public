@@ -948,7 +948,7 @@ export interface IDartApi {
   grok_UI_Wait(jsugetElement: any): any;
   grok_UI_WaitBox(jsugetElement: any): any;
   grok_UI_ShowPopup(element: any, anchor: any, vertical: Bool, dx: Num, dy: Num, smart: Bool): any;
-  grok_UI_Markdown(x: String): any;
+  grok_UI_Markdown(x: String, sanitize?: Bool): any;
   grok_UI_Tags(x: any): any;
   grok_UI_Context_Actions(x: any): any;
   grok_UI_Star(id: String): any;

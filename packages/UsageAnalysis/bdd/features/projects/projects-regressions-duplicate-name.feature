@@ -1,10 +1,8 @@
 @realizes:views.projects
 Feature: Projects regressions: two projects saved under one name
   core#546: demog-1000.csv from Browse > Files > Demo is saved as a project through the ribbon's Save dialog,
-  and then cars.csv is saved under the same name. The dialog takes the second name without a word, both
-  projects get one nqName, and so one address. The address the page shows for the second project opens
-  neither of them. The scenario is a known failure until the second save is refused or gets its own
-  address.
+  and then cars.csv is saved under the same name. Both projects used to get one nqName, and so one address,
+  which opened neither of them; the address the page shows for the second project now opens it.
 
   The project name carries the run's time; every project of that name is removed with its tables and
   views when the scenario starts and when the feature ends.
@@ -15,8 +13,8 @@ Feature: Projects regressions: two projects saved under one name
     And Files tree node inside browse tree is expanded
     And Files---Demo tree node inside browse tree is expanded
 
-  # core#546: both saves get the nqName <namespace>:<Name>, and its /p/ address opens no project
-  @known-failure:49 @realizes:core#546
+  # core#546: both saves got the nqName <namespace>:<Name>, and its /p/ address opened no project
+  @realizes:core#546
   Scenario: The second project saved under a taken name opens from its own address
     Given no project named "BDDRegDupName{time}" is on the server
     When user double-clicks Files---Demo---demog-1000.csv tree node inside browse tree

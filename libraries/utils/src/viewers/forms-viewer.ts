@@ -453,9 +453,9 @@ export class FormsViewer extends DG.JsViewer {
                   const color = this.dataFrame.col(name)?.meta.colors.getColor(row);
                   if (color && color != 4294967295) {
                     if (gc?.isTextColorCoded)
-                      input.input.style.color = `${DG.Color.toHtml(color)}!important;`;
+                      input.input.style.setProperty('color', DG.Color.toHtml(color), 'important');
                     else {
-                      input.input.style.color = `${DG.Color.toHtml(DG.Color.getContrastColor(color))}!important;`;
+                      input.input.style.setProperty('color', DG.Color.toHtml(DG.Color.getContrastColor(color)), 'important');
                       input.input.style.backgroundColor = DG.Color.toHtml(color);
                     }
                   } else {

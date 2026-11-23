@@ -170,7 +170,7 @@ grok claude <project> --in-place           # Use current directory (no worktree)
 grok claude <project> --keep               # Leave containers running on exit
 grok claude <project> --version 1.22.0     # Pin Datagrok version
 grok claude <project> --profile full       # Include spawner, JKG, demo DBs
-grok claude <project> --profile scripting  # Include JKG for Python/R/Julia
+grok claude <project> --profile scripting  # Include the Python and R kernel gateways
 grok claude <project> --port 8080          # Fix Datagrok port (default: random free port)
 grok claude <project> --prompt "fix bug"   # Pass prompt to Claude Code (-p flag)
 grok claude destroy <project>              # Tear down containers + worktree + temp files
@@ -192,7 +192,7 @@ grok claude destroy-all                    # Destroy all known projects
 **Compose services (embedded template):**
 - Always started: `postgres` (pgvector:pg17), `rabbitmq`, `grok_pipe`, `datagrok`, `grok_connect`, `tools-dev`
 - Profile `full`: adds `grok_spawner`
-- Profile `scripting`/`full`: adds `jupyter_kernel_gateway`
+- Profile `scripting`/`full`: adds the `jkg_python` and `jkg_r` kernel gateways
 - Profile `demo`/`full`: adds `world`, `test_db`, `northwind` demo databases
 
 **Note:** The embedded template in `claude.ts` differs from `.devcontainer/docker-compose.yaml`:
@@ -229,7 +229,7 @@ Based on `node:22-bookworm-slim`. Pre-installed:
 | Profile | Additional services |
 |---------|-------------------|
 | (none) | postgres, rabbitmq, grok_pipe, datagrok, grok_connect, tools-dev |
-| `scripting` | + jupyter_kernel_gateway |
+| `scripting` | + jkg_python, jkg_r |
 | `demo` | + world, test_db, northwind |
 | `full` | + grok_spawner, JKG, demo DBs |
 

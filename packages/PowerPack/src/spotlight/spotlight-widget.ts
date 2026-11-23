@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import dayjs from 'dayjs';
 import {queries} from '../package-api';
+import {_package} from '../package';
 import {LearningWidget} from '../widgets/learning-widget';
 import {WorkspaceTab} from './workspace-tab';
 import {isSpotlightEntity} from './entity-kinds';
@@ -130,11 +131,12 @@ export class SpotlightWidget extends DG.Widget {
       });
     }
 
-    this.tabControl.root.style.height = '90%';
+    this.tabControl.root.style.height = 'auto';
     this.tabControl.root.style.width = '100%';
 
     this.root.appendChild(this.tabControl.root);
-    this.root.appendChild(await this.createRandomizedTipOfTheDay());
+    if (_package.settings['showTipOfTheDay'] !== false)
+      this.root.appendChild(await this.createRandomizedTipOfTheDay());
     // TODO: uncomment when JS API 1.27/1.26.5 is released
     // this.subs.push((grok.events.onCurrentObjectChanged.subscribe((args) => {
     //   const trigger = args.args.trigger;
@@ -211,11 +213,11 @@ export class SpotlightWidget extends DG.Widget {
         const path = newRandomTip.options[DG.FUNC_OPTIONS.DEMO_PATH] as string;
         const pathArray = path.split('|').map((s) => s.trim());
         const actualPath = pathArray.map((s) => s.replaceAll(' ', '-')).join('/');
-        link = ui.link(pathArray[pathArray.length - 1], async () => await demoApp.apply({path: `/${actualPath}`}), newRandomTip.description);
+        link = SpotlightWidget.viewLink(pathArray[pathArray.length - 1], async () => await demoApp.apply({path: `/${actualPath}`}), newRandomTip.description);
         tip.appendChild(link);
       }
       else if (!(newRandomTip instanceof DG.Func) && this.tutorialsOfTheDay.includes(newRandomTip) && tutorialsApp) {
-        link = ui.link(newRandomTip, async () => await tutorialsApp.apply());
+        link = SpotlightWidget.viewLink(newRandomTip, () => this.openTutorials());
         tip.appendChild(link);
       }
       const updateTip = () => {
@@ -526,8 +528,8 @@ export class SpotlightWidget extends DG.Widget {
       return root;
     const appHandler = DG.ObjectHandler.forEntity(demoApp);
 
-    const createLinkWithIcon = (text: string, target: Function, appFunc: DG.Func) => {
-      const link = ui.link('', target);
+    const createLinkWithIcon = (text: string, target: () => void, appFunc: DG.Func) => {
+      const link = SpotlightWidget.viewLink('', target);
       const appElement = appHandler?.renderTooltip(DG.toDart(appFunc)).firstChild as HTMLElement;
       if (appElement) {
         const appElementLabel = appElement.querySelector('label');
@@ -561,11 +563,11 @@ export class SpotlightWidget extends DG.Widget {
     };
 
     const gettingStartedList = ui.list([
-      createLinkWithIcon('Data Access', async () => await tutorialsApp.apply(), tutorialsApp),
-      createLinkWithIcon('Data Transformation', async () => await tutorialsApp.apply(), tutorialsApp),
-      createLinkWithIcon('Exploratory Data Analysis', async () => await tutorialsApp.apply(), tutorialsApp),
-      createLinkWithIcon('Cheminformatics', async () => await tutorialsApp.apply(), tutorialsApp),
-      createLinkWithIcon('Explore more Tutorials', async () => await tutorialsApp.apply(), tutorialsApp),
+      createLinkWithIcon('Data Access', () => this.openTutorials('access'), tutorialsApp),
+      createLinkWithIcon('Data Transformation', () => this.openTutorials('Datatransformation'), tutorialsApp),
+      createLinkWithIcon('Exploratory Data Analysis', () => this.openTutorials('eda'), tutorialsApp),
+      createLinkWithIcon('Cheminformatics', () => this.openTutorials('chem'), tutorialsApp),
+      createLinkWithIcon('Explore more Tutorials', () => this.openTutorials(), tutorialsApp),
     ]);
     gettingStartedList.classList.add('power-pack-activity-widget-subwidget-list-content', 'power-pack-activity-widget-getting-started-subwidget-list-content');
     const gettingStartedRoot = ui.divV([ui.h3(ui.span([ui.iconFA('rocket'), ui.span([' Interactive Tutorials'])]), 'power-pack-activity-widget-spotlight-column-header'),
@@ -614,6 +616,23 @@ export class SpotlightWidget extends DG.Widget {
     return root;
   }
 
+  /** A link that opens a view. A view's root makes its view current on click, and the browser runs the opening's
+   * promise callbacks before the click bubbles up there, so the click must not reach Home's root. */
+  static viewLink(text: string, open: () => void, tooltip?: string): HTMLAnchorElement {
+    const link = ui.link(text, open, tooltip);
+    link.addEventListener('click', (e) => e.stopPropagation());
+    return link;
+  }
+
+  /** Tutorials on master returns its view without opening it, released versions dock their panel and return nothing;
+   * `track` is the track's name in the app's URL. */
+  async openTutorials(track?: string): Promise<void> {
+    const app = DG.Func.find({meta: {role: DG.FUNC_TYPES.APP}, package: 'Tutorials', name: 'trackOverview'})[0];
+    const view = await app.apply(track ? {path: track} : {});
+    if (view)
+      grok.shell.addView(view);
+  }
+
   replaceMarkupSpans(container: HTMLElement, replacements: HTMLElement[], names: string[], time: dayjs.Dayjs): HTMLElement {
     const result = ui.span([], 'd4-markup');
     let replacementIndex = 0;
@@ -640,10 +659,8 @@ export class SpotlightWidget extends DG.Widget {
     console.time('ActivityDashboardWidget.buildFavoritesTab');
     const root = ui.div([], 'power-pack-activity-widget-favorites-tab');
     const favorites = grok.shell.favorites;
-    if (favorites.length === 0) {
-      root.appendChild(ui.divText('No favorites found.'));
-      return root;
-    }
+    if (favorites.length === 0)
+      return ui.divText('No favorites found.', 'pp-empty-message');
 
     const eventFetches = await Promise.all(favorites.map((entity) =>
       grok.dapi.log.where({entityId: entity.id,
@@ -652,10 +669,8 @@ export class SpotlightWidget extends DG.Widget {
     this.favoritesEvents = (this.removeUnnecessaryEntities(eventFetches.flat()) as DG.LogEvent[])
       .sort((a, b) => b.eventTime?.diff(a.eventTime) ?? 0);
 
-    if (this.favoritesEvents.length === 0) {
-      root.appendChild(ui.divText('No recent activity on your favorites.'));
-      return root;
-    }
+    if (this.favoritesEvents.length === 0)
+      return ui.divText('No recent activity on your favorites.', 'pp-empty-message');
     this.favoritesListRoot = ui.list(this.favoritesEvents);
     root.appendChild(this.favoritesListRoot);
     this.cleanLists();
@@ -716,10 +731,8 @@ export class SpotlightWidget extends DG.Widget {
     if (this.recentNotifications.length === 0)
       await this.initNotificationData();
     const root = ui.div([], 'power-pack-activity-widget-notifications-tab');
-    if (this.recentNotifications.length === 0) {
-      root.appendChild(ui.divText('No recent notifications.'));
-      return root;
-    }
+    if (this.recentNotifications.length === 0)
+      return ui.divText('No recent notifications.', 'pp-empty-message');
 
     this.notificationsListRoot = ui.list(this.recentNotifications);
     for (let i = 0; i < this.notificationsListRoot.children.length; i++) {
@@ -771,10 +784,8 @@ export class SpotlightWidget extends DG.Widget {
       .sort((a, b) => b.eventTime?.diff(a.eventTime) ?? 0);
 
     const root = ui.div([], 'power-pack-activity-widget-activity-tab');
-    if (this.recentUserActivity.length === 0) {
-      root.appendChild(ui.divText('No recent user activity.'));
-      return root;
-    }
+    if (this.recentUserActivity.length === 0)
+      return ui.divText('No recent user activity.', 'pp-empty-message');
     this.activityListRoot = ui.list(this.recentUserActivity);
     root.appendChild(this.activityListRoot);
     this.cleanLists();

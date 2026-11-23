@@ -69,3 +69,9 @@
   overflow: auto;
 }
 
+.notebooks-error {
+  padding: 24px;
+  gap: 12px;
+  align-items: flex-start;
+  color: var(--failure);
+}

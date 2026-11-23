@@ -8,7 +8,7 @@
 #          column       -> applies when the current table has a column with match.semType
 #
 # Slots: {name.filter} picks a live column where `filter` is truthy — isNumerical,
-#   isCategorical, semType, isDateTime — and biases the pick with `prefer` regexes.
+#   isCategorical, semType (the block's match.semType), isDateTime — and biases the pick with `prefer` regexes.
 #   Extra path segments read column props, e.g. {x.stats.med}. A suggestion whose slot
 #   finds no matching column is dropped (and its block hides if all its suggestions drop),
 #   so type-specific blocks appear only when the data supports them.

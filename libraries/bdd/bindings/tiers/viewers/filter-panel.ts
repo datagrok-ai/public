@@ -6,6 +6,7 @@ import {atFeatureEnd} from '../../../src/runtime/harness.js';
 import {serverRequests} from '../../../src/runtime/server.js';
 import {exactText} from '../../../src/runtime/locate.js';
 import * as g from '../../../src/runtime/gestures.js';
+import * as guide from '../../../src/runtime/guide.js';
 import * as v from '../../../src/runtime/viewers.js';
 
 /** The filter panel of the view on screen (a cloned view leaves a second, hidden one behind). */
@@ -269,6 +270,8 @@ export const pickPanelMenu = When('user picks {string} from the filter panel men
     if (await icon.count() === 0)
       throw new Error('the cards fill the filter panel and its title bar shows no menu icon (not docked, or the dockShowMenuLink setting off): nowhere to open the panel\'s own menu from');
     await g.hover(page, el('filter panel'));
+    // the icon sits on the dock's title bar, outside the panel the hover lit: a guide lights it before the press
+    await guide.hop(page, icon);
     await icon.click();
   }
   await v.pickMenuPath(page, path);

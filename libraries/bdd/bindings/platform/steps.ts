@@ -9,7 +9,7 @@ import {el, type ElementRef} from '../../src/runtime/args.js';
 import {expectState, type State} from '../../src/runtime/assertions.js';
 import {click, dblclick, drag, editorOf, setExpanded} from '../../src/runtime/gestures.js';
 import {atFeatureEnd, atScenarioStop} from '../../src/runtime/harness.js';
-import {shellSimpleMode, silent} from '../../src/runtime/guide.js';
+import {hop, shellSimpleMode, silent} from '../../src/runtime/guide.js';
 import {cssString, escapeRegExp, exactText, locate, locateActionable} from '../../src/runtime/locate.js';
 import {armEvent, openContextMenuOf} from '../../src/runtime/viewer-menus.js';
 import {pickMenuPath, settleAll} from '../../src/runtime/viewers.js';
@@ -1071,6 +1071,8 @@ async function pickUser(page: Page, target: ElementRef, login: string, shown: Re
   await typeLogin(page, target, login);
   const row = page.locator(SUGGESTION_ROWS).filter({has: page.locator('.d4-user-selector-user-name', {hasText: shown})}).first();
   await expect(row, `the "${login}" row of the user typeahead`).toBeVisible({timeout: pollMs(15000)});
+  // the typeahead is a popup the step's first picture never shows: a guide pictures it with the row lit before the press
+  await hop(page, row);
   await row.click();
 }
 

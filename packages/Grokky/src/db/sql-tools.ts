@@ -193,7 +193,7 @@ export class SQLGenerationContext {
         const p = new Promise<boolean>((resolve) => {
           ui.dialog('Confirm SQL Execution')
             .add(ui.divText('Our AI is trying to execute a potentially destructive SQL command. For your safety, please confirm if you want to proceed.'))
-            .add(ui.markdown(`\`\`\`sql\n${sql}\n\`\`\``))
+            .add(ui.markdown(`\`\`\`sql\n${sql}\n\`\`\``, {sanitize: true}))
             .onOK(() => resolve(true))
             .onCancel(() => resolve(false))
             .show();

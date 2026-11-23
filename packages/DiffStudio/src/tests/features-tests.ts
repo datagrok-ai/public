@@ -13,6 +13,7 @@ import {LOOP_OUTPUT_EXPRESSIONS, UPDATE_OUTPUT_EXPRESSIONS} from './output-expr-
 import {testTemplate} from './test-utils';
 import {getIVP} from '../scripting-tools';
 import {MAX_LINE_CHART} from '../constants';
+import {getArgIssue, ArgSpec} from '../utils';
 
 // ---------------------------------------------------------------------------
 // Full solve-pipeline tests (parse → generate script → execute → verify output)
@@ -195,4 +196,55 @@ category('Features: Structure', () => {
     expect(ivp.tolerance, '1e-7', 'Robertson model tolerance must be 1e-7');
   });
 }); // Features: Structure
+
+// ---------------------------------------------------------------------------
+// Argument range checks behind the Start/Finish/Step inputs and the link parameters
+// (public#4637): an invalid range must be reported, not solved silently.
+// ---------------------------------------------------------------------------
+category('Features: Argument range', () => {
+  const captions: ArgSpec<string> = {initial: 'Start', final: 'Finish', step: 'Step'};
+
+  test('Valid range has no issue', async () => {
+    expect(getArgIssue({initial: 0, final: 50, step: 0.1}, captions), null);
+  });
+
+  test('Built-in models have valid ranges', async () => {
+    // Not Object.values(USE_CASES): its members are non-literal, so the enum also holds a reverse (value -> name) mapping
+    const models = [
+      TEMPLATES.BASIC, TEMPLATES.ADVANCED, TEMPLATES.EXTENDED,
+      USE_CASES.CHEM_REACT, USE_CASES.ROBERTSON, USE_CASES.FERMENTATION, USE_CASES.PK, USE_CASES.PK_PD,
+      USE_CASES.ACID_PROD, USE_CASES.NIMOTUZUMAB, USE_CASES.BIOREACTOR, USE_CASES.POLLUTION, USE_CASES.LOTKA_VOLT,
+    ];
+    for (const model of models) {
+      const arg = getIVP(model).arg;
+      const values = {initial: arg.initial.value, final: arg.final.value, step: arg.step.value};
+      expect(getArgIssue(values, captions), null);
+    }
+  });
+
+  test('Zero step', async () => {
+    const issue = getArgIssue({initial: 0, final: 50, step: 0}, captions);
+    expect(issue?.rule, 'Step must be positive');
+    expect(issue?.keys.join(), 'step');
+  });
+
+  test('Negative step', async () => {
+    expect(getArgIssue({initial: 0, final: 50, step: -1}, captions)?.rule, 'Step must be positive');
+  });
+
+  test('Step exceeds the interval', async () => {
+    expect(getArgIssue({initial: 0, final: 1, step: 2}, captions)?.rule, 'Step exceeds the interval length');
+  });
+
+  test('Finish not greater than Start', async () => {
+    const issue = getArgIssue({initial: 10, final: 10, step: 0.1}, captions);
+    expect(issue?.rule, 'Finish must be greater than Start');
+    expect(issue?.culprit, 'Start/Finish');
+    expect(issue?.keys.join(), 'initial,final');
+  });
+
+  test('Malformed link value', async () => {
+    expect(getArgIssue({initial: 0, final: 50, step: NaN}, captions)?.shortRule, 'must be positive');
+  });
+}); // Features: Argument range
 

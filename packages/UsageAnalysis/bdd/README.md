@@ -190,7 +190,8 @@ oldest records past the 15 newest, so the folder stays small: every
 test with its outcome, time, worker and start, a journey's scenarios with theirs, the failed step
 and error of a failure, and where the run ran — the machine (host, CPU, threads, memory, OS), the
 stand and the branch and commit. A project whose last report is more than 12 hours older than the
-newest, or that covered only some of its specs, is left out and named (`--partial` keeps a partial
+newest, or that covered only some of its specs (the films — `@guide` with `@demo` or `@tutorial`, which a suite run
+leaves out — are not counted), is left out and named (`--partial` keeps a partial
 one; a run narrowed with `--grep-invert`, such as `@full-stand` on a stand without that capability,
 counts as full and the record says what it excluded). Reports saved elsewhere are recorded by naming
 the files or their directory: `record <dir-or-report.json>...`.

@@ -140,6 +140,7 @@ export class WorkspaceTab {
         getAdminGroups(),
         getMyPersonalFavorites(),
       ]);
+      this.listPane.style.display = '';
       personalContainer.innerHTML = '';
       groupContainer.innerHTML = '';
       this.renderPersonalSection(personalContainer, freshPersonal);
@@ -184,6 +185,8 @@ export class WorkspaceTab {
         const onboarding = await this.spotlight.getNewUserInfoColumns();
         this.editorPane.innerHTML = '';
         this.editorPane.appendChild(onboarding);
+        if (this.spotlight.recentEntities.length === 0)
+          this.listPane.style.display = 'none';
       }
       else {
         this.renderEmptyEditor(

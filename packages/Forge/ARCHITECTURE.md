@@ -55,9 +55,14 @@ package.ts ──> ui/forge-app.ts ───> storage/, generated/db.ts    (cata
            │                    ├─> ui/runs-panel.ts ──> metrics/, ui/data-grid.ts, ui/results-viewers.ts (resultsTitle),
            │                    │                       engines/, preparation/, training/, generated/db.ts (types),
            │                    │                       ui/tune-settings.ts (TuneStatus)
-           │                    ├─> ui/model-cards.ts ──> ui/metrics-table.ts (the exported pieces), ui/runs-panel.ts,
-           │                    │                        ui/tune-settings.ts (STATUS_TOOLTIPS), ui/model-handler.ts
-           │                    │                        (featureCount), metrics/, engines/, training/k-fold.ts (types)
+           │                    ├─> ui/model-cards.ts ──> ui/metrics-table.ts (metricIdsOf, valueColumns), ui/runs-panel.ts,
+           │                    │                        ui/tune-settings.ts (TuneSettings, TuneStatus), ui/collapsible-group.ts,
+           │                    │                        training/search.ts (defaultMetric, directionOf), metrics/, engines/,
+           │                    │                        training/k-fold.ts (types)
+           │                    ├─> ui/preparation-inputs.ts ──> preparation/, ui/missing-values-inputs.ts,
+           │                    │                               ui/collapsible-group.ts
+           │                    ├─> ui/output-inputs.ts ──> metrics/, preparation/pipeline.ts, ui/collapsible-group.ts,
+           │                    │                          ui/tune-settings.ts (TuneSettings, CUSTOMIZED)
            │                    ├─> ui/tune-settings.ts ──> training/search.ts (searchSpaceOf, rangeProblem), engines/, metrics/
            │                    ├─> ui/search-panel.ts ──> training/search.ts, metrics/, ui/data-grid.ts,
            │                    │                         ui/results-viewers.ts (resultsTitle)
@@ -125,8 +130,8 @@ package.ts ──> ui/forge-app.ts ───> storage/, generated/db.ts    (cata
   (`DG.ObjectHandler.list()`) and every `registerOnce` call skips a handler already there, so a second `_initForge` (or
   the test bundle) registers nothing twice; the model commands and the follower are set up only with a newly
   registered handler.
-- Every table of data in the UI but the model cards' (plain `ui.table` by the user's decision of
-  2026-11-05, see "Model cards") is `readOnlyGrid` (`ui/data-grid.ts`): `DG.Viewer.grid` without editing, row header,
+- Every table of data in the UI but the model cards' tooltips and their settings table (plain `ui.table` by the
+  user's decisions of 2026-11-05 and 2026-11-23, see "Model cards") is `readOnlyGrid` (`ui/data-grid.ts`): `DG.Viewer.grid` without editing, row header,
   current-row indicator and new-row icon, as wide as its host and as tall as its rows (up to 15 by default,
   then it scrolls: an inline height of the header plus `rows * rowHeight + 2` px, the header one row high until the
   grid draws, then `colHeaderHeight` after each `onAfterDrawContent` (a header whose names wrap, as the Runs metric
@@ -187,10 +192,12 @@ package.ts ──> ui/forge-app.ts ───> storage/, generated/db.ts    (cata
   Manual or **Search options** and the Tune bar with `tuneButton` in Auto-tune; under Auto the form's `FindSettings`,
   `form.find`, instead: the status `Not searched`, **Search options** with Metric, Strategy, Limit, Max time or
   Max trials and Candidates, and the bar
-  with `findButton`) and the group **Validation** (`ValidationInputs`, below; collapsed
-  at the start), the others expanded at the start, and last the row `trainRow` (`forge-train-row`, a
+  with `findButton`), the group **Output** (`OutputInputs`, below; hidden for a target with fewer than two classes)
+  and the group **Validation** (`ValidationInputs`, below; collapsed
+  at the start), the others expanded at the start, then the row `trainRow` (`forge-train-row`, a
   `ui.buttonsInput` with `trainButton` at its right; `position: sticky; bottom: 0` on the `--white` background, so it
-  sits right under Validation on a short form and stays at the bottom edge while a taller form scrolls). The view is a
+  sits right under Validation on a short form and stays at the bottom edge while a taller form scrolls), and last the
+  **Trained models** group (`ModelCards.group`, see "Model cards"). The view is a
   resizable split (`ui.splitH(..., true)`): the left box starts 400 px wide (`FORM_WIDTH`) and holds the form's panel
   (`forge-train-form`), which scrolls by itself; the results take the rest (`forge-train-results`, scrolling), with the
   training loader (`resultsStatus`) in the header of the pane's **Performance** panel.
@@ -252,6 +259,9 @@ package.ts ──> ui/forge-app.ts ───> storage/, generated/db.ts    (cata
   fixed-width box (`forge-group-chevron`), so captions line up whether a group is open or folded.
   `expandOnError(inputs)` opens the group when one of its inputs is validated with an error; the state is not
   remembered. The header carries `aria-expanded` and the summary `aria-invalid` (see "Automation surface").
+  `CollapsibleGroup.showInput(input, isShown, default)` sets the platform's `input.visible` and gives an input that
+  hides its default back (Preparation and Output; both groups hide their inputs once before the first update, so that
+  update resets nothing).
 - Table, Target, Features and Method carry short Forge tooltips (`tooltipText`, the caption's tooltip). Hyperparameter
   inputs come from `ui.input.forProperty`, whose caption tooltip is the `train` input's own `description`. For an
   invalid input the platform shows the tooltip text with the validator messages in red below it.
@@ -271,7 +281,13 @@ package.ts ──> ui/forge-app.ts ───> storage/, generated/db.ts    (cata
   and hiding resets it), **Skip unique categories** (checked; shown while a checked feature has `hasUniqueCategories`;
   both leave out the semantic-type features of the constructor's last argument `semTypes`, which the view passes as
   its `semTypes` (`featureSemTypes(engines)`, computed once when it opens and passed to `checkSelection` too), so a
-  molecule feature alone hides the group),
+  molecule feature alone hides the group). `update(features)` runs on every Features change; a hidden input gets its
+  default back (`CollapsibleGroup.showInput`), so it reappears as it first appeared, and the group is hidden while
+  nothing in it is shown (no missing values and no text feature). `steps()` gives `oneHot` and `skipUniqueCategories`
+  (Skip unique categories, checked while hidden, is sent only while it is shown); `restore(steps, missingValues)` sets
+  Missing values with the impute settings, then Skip unique categories, then One-hot encoding.
+- **Output** (`ui/output-inputs.ts`, `OutputInputs`, Train view only) owns its `CollapsibleGroup`, between Method and
+  Validation, shown while the target has two or more classes:
   **Predict probability** (unchecked; shown while the target is categorical with two or more `classesOf` classes;
   `setProbabilityReason(reason)` from the view's `probabilityReason(form)` (`<Method> gives no class probabilities`
   when the method gives none; under Auto the Find block's reason, `No checked method gives class
@@ -289,12 +305,12 @@ package.ts ──> ui/forge-app.ts ───> storage/, generated/db.ts    (cata
   bindings win over one on the root, which therefore never showed while hovering them; a
   validator and `thresholdProblem` refuse an empty value or one outside 0..1; its own callback `onThresholdChanged`),
   and under that **Best threshold by** (`thresholdMetric`, a `ui.input.choice` of the `BEST_THRESHOLD_METRICS` labels,
-  `DEFAULT_THRESHOLD_METRIC` F1; its `tooltipText` is `The metric the classification threshold maximizes on the
-  validation rows.`, each `option`'s `title` the metric's description, Balanced accuracy's naming Youden's J; `metric`
-  maps the label back to the id) with the button **Set** (`setThresholdButton`, a `ui.button` as Tune is, appended to the
+  `DEFAULT_THRESHOLD_METRIC` `f1`, labelled `F1 score`; its `tooltipText` is `The metric the classification threshold maximizes on the
+  validation rows.`, each `option`'s `title` the metric's description (`TuneSettings.describeMetricOptions`), Balanced
+  accuracy's naming Youden's J; `metric` maps the label back to the id with `metricOfLabel`) with the button **Set** (`setThresholdButton`, a `ui.button` as Tune is, appended to the
   input's root after the select, not to its options, whose box would underline it and shrink its font; the root has
   `forge-threshold-metric`, and the Tune bar's rule drops the button's right margin and padding, so its letters end at
-  the row's right edge where Tune's do). The order is `stepInputs`'. Both are shown
+  the row's right edge where Tune's do). The order is `inputs`'. Both are shown
   while Predict probability is checked and the target has exactly two classes, and hide together. The show conditions
   count the classes `update` takes from a categorical target with `classesOf` (`metrics/metrics.ts`): Predict
   probability two or more, the threshold and its metric exactly two. The threshold's hand-edit state `isThresholdEdited`: a value change not made
@@ -316,10 +332,9 @@ package.ts ──> ui/forge-app.ts ───> storage/, generated/db.ts    (cata
   `setThreshold` last set the best of. A click
   (ignored while the form is locked) calls `setThreshold(best, metric)` and `onThresholdChanged`, which re-cuts.
   `restoreThreshold(steps)` sets a shown threshold from a run's steps (with their metric, else as a hand edit).
-  `update(features, target)` runs on every Features and Target change; a hidden input but the threshold pair gets its
-  default back, so it reappears as it first appeared, and the group is hidden while nothing in it is shown. `steps()` is the
-  `PreparationSteps` of the selection; a hidden input's step is off (Skip unique categories, checked while hidden, is
-  sent only while it is shown), and Predict probability only while enabled.
+  `update(target)` runs on every Target change; a hidden Predict probability gets its default back. `steps()` gives
+  `predictProbability`, `threshold` and `thresholdMetric`; `restore(steps)` sets a shown Predict probability, then
+  `restoreThreshold`. The view merges both groups' `steps()` into the selection's `PreparationSteps`.
 - **Validation** (`ui/validation-inputs.ts`, `ValidationInputs`, Train view only) owns its `CollapsibleGroup`
   (collapsed): **Scheme** (`K-fold, stratified` | `K-fold` | `Hold-out`; `update(target)` on every Target change lists
   the stratified one only for a classification target, turns it into `K-fold` for a regression and gives it back on
@@ -358,7 +373,7 @@ themselves (a list, no frame), the target column, the hyperparameters, the split
 (`validation`, a `ValidationSettings` of `training/k-fold.ts`: `scheme` `kfold` | `holdout`, `folds`, `testFraction`,
 `stratified`, `shuffle`; the view's **Validation** group, `DEFAULT_VALIDATION` for the API), the
 missing-value handling and the preparation steps (`steps`, a `PreparationSteps`, see "Preparation"; the Train view
-takes them from `PreparationInputs.steps()`). `prepareTraining(selection)`
+merges `PreparationInputs.steps()` and `OutputInputs.steps()`). `prepareTraining(selection)`
 handles the missing values (see "Missing values"), then applies the steps (`prepareFeatures`), and returns the
 `TrainingRequest`: `features` and `target`, the selection's columns with the missing values handled (the user's own
 columns where nothing changed; the model's feature list, target schema and data summary describe them), `keptRows`
@@ -443,8 +458,7 @@ throws or does not answer in time makes the whole check throw.
 
 The view adds a validator to **Target**, **Features**, **Method** (the `method` messages) and **Missing values** that
 returns the view's current problems for that input. Every change of Table, Target, Features, a **Preparation** input
-but Predict probability (of a method without a probability input, see "The threshold in the view") and the
-threshold, Method or a hyperparameter (`requestCheck`) numbers a new check, clears the problems, drops
+but Predict probability (see "The threshold in the view") and the threshold, Method or a hyperparameter (`requestCheck`) numbers a new check, clears the problems, drops
 `lastTraining`, supersedes the running training (`TrainingQueue.supersede()`), disables **Train** (a tooltip
 already shown on it then reads "Checking the selection...") and schedules the check `CHECK_DELAY_MS` (200 ms, the
 built-in tool's delay) after the last change; one timer serves the check and the live training. A check that finishes
@@ -579,7 +593,7 @@ replaced grid goes with `ui.empty`, the platform's widget disposal): **#**, **Me
 **Features** (the count), **Preparation** (`impute (<n> neighbors, <distance>)`, `one-hot`, `skip unique
 categories`, `probability (threshold <t>, best <metric>)` for two classes (`SessionRun.twoClasses`, from
 `twoClasses(target)` in `runInputsOf`) of a completed run whose steps carry `thresholdMetric`, `probability (threshold
-<t>)` without it, `probability` for more, joined by commas; the model cards show the same items), **Rows**, **Status**, **Split seed** (null when the run
+<t>)` without it, `probability` for more, joined by commas), **Rows**, **Status**, **Split seed** (null when the run
 was not shuffled), then `<metric>
 (validation)` for every metric of `METRIC_IDS` any run's validation has, with header tooltips (the metrics'
 `METRIC_DESCRIPTIONS`) and cell tooltips (the hyperparameters without the method's `probabilityInput`, the feature
@@ -591,7 +605,7 @@ row restores nothing (the read-only grid moves nothing with the arrow keys): a r
 table no longer has warns `The table no longer has the columns of this run: <names>.` and sets nothing; a run whose
 inputs equal the form's (`isSameInputs` of `ui/runs-panel.ts` over `runInputsOf` of the current selection: method, target, features,
 hyperparameters, missing values, preparation steps but Predict probability, the threshold and its metric, the
-validation and the split seed, the same values a run keeps; SVM's runs differ by their `probability` hyperparameter)
+validation and the split seed, the same values a run keeps)
 while the view shows the completed result of those inputs (`lastTraining`, which any change but those drops) trains
 nothing: it sets the run's Predict probability when it differs and its threshold with `restoreThreshold` (with the
 run's metric, else as a hand edit), then re-cuts the shown result; after a
@@ -599,58 +613,82 @@ cancelled or failed
 training there is no such result, so the click sets the same inputs and trains; otherwise it stores the run's hyperparameters for its
 method, makes that method the user's choice and the current method (its inputs rebuilt with those values), sets
 **Target** and **Features**, then `PreparationInputs.restore`
-(Missing values with the impute settings, then Skip unique categories, One-hot encoding, Predict probability and the
-threshold with its metric, each only while shown; a hidden input keeps its default), then `ValidationInputs.restore` (the run's
+(Missing values with the impute settings, then Skip unique categories, One-hot encoding), then `OutputInputs.restore`
+(Predict probability and the threshold with its metric), each only while shown (a hidden input keeps its default),
+then `ValidationInputs.restore` (the run's
 validation and split seed) and requests a check: the view retrains as after any change, and the new training is a new
 first row. While the form is locked (`locked`: a **Train** training or a search, see "Search") `restoreRun` and `restoreLeader`
 set nothing.
 
-**Model cards.** `ModelCards` (`ui/model-cards.ts`, `TrainView.modelCards`) is a column of cards at the end of the
-`ui.form`, after the **Train** row (`formRoot.append(...groups, trainRow, modelCards.root)`): the cards take the
-form's width (`ui.css` caps a `.ui-form` at 700 px), so their right edge is the inputs', **Tune**'s and the Settings
-reset's in any pane width. The sticky **Train** row is still held at the pane's bottom edge only while its place is
-below it, then scrolls away above the cards. The colors are the core's (`predictive_modeling.css`) in tokens: a pinned
-card `color-mix` of `--grey-1` and `--white` (#f9f9f9), the current one `--blue-1` at 8% over transparent
-(#b8d3ed3b), the border `--grey-2` (#ccc). A card is a plain `div` (`ui.element`), not a `ui.div`: a tab control in
-a `ui-div` gets the platform's 400 x 300 px box (`ui.css div.ui-div > div.ui-box`), so a card is as tall as its shown
-pane.
-`addRun` of a completed run calls `setCurrent(run)`: the current card (`forge-card-current`) is
-built from the same `SessionRun` as the Runs row, and the previous current card is disposed; a failed or cancelled run
-leaves it. A card is a header (the method in a bold `forge-card-title`, then its icon: the current card's "+", a
-pinned card's trash), for a run with a `search` its caption (`CARD_CAPTIONS` by `search.mode`: `Auto-tuned model`
-after Find best model, `Auto-tuned settings` after Tune, in `forge-card-caption`, the italic look of
-`forge-tune-status-text`; nothing for a run without a search; the user's decision of 2026-11-10 dropped the line of
-the features and the preparation, which Runs shows) and a `ui.tabControl` with two panes:
-**Performance** (`performance`, built once with the card), a `ui.table` of the
-run's metrics: the first row the run's `search.metric`, else `defaultMetric` of the task (Balanced accuracy, R2), then
-the rest of `metricIdsOf` in its order, the rows after the first `SHOWN_METRICS` (3) hidden until **Show more**
-(`forge-card-more`, a `ui.link` with the tooltip `Show all metrics`; `Show less`, `Show fewer metrics`, while expanded;
-none with 3 metrics or fewer) shows them; the state is the card's own (the user's decision: unlike the tab, not
-shared), collapsed on a new card, and a click only shows or hides those rows and relabels the link; a pinned card's
-click on it restores nothing. The value columns (`valueColumns`),
-the findings (`findingsOf` over `metricFindings`) and the tooltips (`METRIC_HEADERS`, `metricTooltip`;
-`METRIC_DESCRIPTIONS` of `metrics/`) that `ui/metrics-table.ts` shares with `MetricsTable`, values `toFixed(3)`, uncolored (the
-user's decision: no failure color on a card; a value's findings stay in its tooltip); **Settings** (lazy), a
-`ui.table` (**Setting**, **Value**; `No settings` without one) of every setting of `visibleHyperparametersOf(run.engine)` (captioned as
-`ui.input.forProperty` captions it: `camelCaseToSentence` of the caption or name; the description as the row
-tooltip). Both tables are `forge-card-table`: one row height and padding, the names in `--text-color-light`, the
-values in `--grey-5` (as the platform's key-value tables) and right-aligned with their headers, the header row in
-`--text-color` at weight 500 (darker than both, lighter than the bold title). The plain tables are the one exception to "tables of data are grids" (the
-user's decision: the core's look, no Dart grid per card). The current card's "+" (`forge-card-pin`) calls `pin(run)`:
-a pinned card of the same run goes right under the current card, newest first, with a trash (`forge-card-unpin`)
+**Model cards.** `ModelCards` (`ui/model-cards.ts`, `TrainView.modelCards`) owns the `CollapsibleGroup` **Trained
+models** (`group`, expanded, hidden while no card is shown) at the end of the `ui.form`, after the **Train** row
+(`formRoot.append(...groups, trainRow, modelCards.group.root)`): **Compare by** (`compareBy`, a `ui.input.choice`)
+and the column of cards (`root`, `forge-cards`). The cards take the form's width (`ui.css` caps a `.ui-form` at
+700 px), so their right edge is the inputs', **Tune**'s and the Settings reset's in any pane width. The sticky
+**Train** row is held at the pane's bottom edge only while its place is below it, then scrolls away above the group.
+The look follows the user's mockup (2026-11-23) in tokens: a pinned card `color-mix` of `--grey-1` and `--white`, the
+current one `--blue-1` at 8% over `--white` with a `--blue-1` 25% border, **Best** `--green-1` on `--green-3`, the
+status `--green-3` (ok) / `--orange-3` (warn). A card is a plain `div` (`ui.element`).
+`addRun` of a completed run calls `setCurrent(run)`: the current card (`forge-card-current`) is built from the same
+`SessionRun` as the Runs row, and the previous current card is removed; a failed or cancelled run leaves it. A card
+is a header (`forge-card-header`): a column (`forge-card-body`) of the title row (`forge-card-title-row`: the method in
+a bold `forge-card-title`, the `forge-card-best` badge) and `settingsBlock(run)`, then its icon (the current card's
+"+", a pinned card's trash) in a column of its own, so neither the title nor the settings run under it. The settings
+(`settingsOf(run)`: each visible setting as a `CardSetting` — the `camelCaseToSentence` caption `ui.input.forProperty`
+gives, the value, defaults included, and the property's `description`, which its Manual input shows as the tooltip;
+nothing for a method without visible settings) follow
+`kindLine(run)` (`run.settingsStatus` as `Default settings`, `Customized settings` or `Auto-tuned settings`, except
+`Auto-tuned model` when `run.search` is a Find best model (`mode` `best`) whose `methods` lists two or more — the
+rule of the earlier cards' `CARD_CAPTIONS`, narrowed to the methods count; an `Auto-tuned` retrain without a search
+record reads `Auto-tuned settings`) alone on its line (`forge-card-settings`, an italic span
+`forge-card-kind`, no colon), then, for one setting or more, `forge-card-settings-table`: one headerless `ui.table`
+(`d4-item-table`, the look of `ui.tableFromMap`) filled row by row with at most two name-value pairs a row
+(settings 1 and 2 in row 1, 3 and 4 in row 2, ...; the last row one pair for an odd count, one setting one row), so
+the pairs share the rows. Names `--text-color-light`, values `--text-color`, 8 px between a name and its value,
+24 px between the pairs; the kind and the table both start 10 px in from the title (the kind 4 px below the title,
+2 px above the table: they read as one block) and never reflows: a narrower card scrolls it (`overflow-x: auto`). Hovering
+a name or a value shows the setting's description; the kind has no tooltip — and the main row (`forge-card-main`, 10 px below,
+a flex row `space-between` / `align-items: center` with no left indent; every card text is 14 px but the **Best** badge, 11 px): at the left
+edge, flush with the title, `forge-card-score` with the metric's label (`forge-card-metric`, `METRIC_LABELS[metric]`, set by `fill` on every Compare by change) and its validation value (`forge-card-value`,
+`fixed`: 3 decimals, `-` without one), both semibold; at the right edge the status
+(`forge-card-status`, hidden without both values; `overfittingOf` of the metric: `forge-card-ok` with
+`ui.iconFA('check')` and `No overfitting`, or `forge-card-warn` with a plain-text `!` span (`forge-card-mark`, the
+status's colour, size and weight; the FA exclamation glyph looked like an outlined emoji) and `Overfitting`).
+The value's tooltip is `metricsTooltip(run, metric)` (a **Metric** / **Train** / **Validation** table of
+`metricIdsOf` over `valueColumns` without its `Test` column, the metric's row `forge-card-tip-selected`), bound on the
+value; the label's is `METRIC_DESCRIPTIONS[metric]`, the Performance grid's Metric tooltip; the status's
+`statusTooltip(run, metric)` (`<Metric label>:`, a table with no colouring of Train, Validation and, from
+`overfittingOf` (one source for the numbers and the decision), **Gap** for a score (the difference of the shown
+values, 3 decimals) or **Ratio** for an error (`ratio`, 2 decimals, `-` for a train value of 0), then `Should perform
+about as well on new data.` or `May perform worse on new data.`; null without both values); all bound with
+`ui.tooltip.bind`, hover only. The tooltips' plain `ui.table`s (`forge-card-tip-table`, `align-self: flex-start` and
+`width: auto`, not stretched; the values right-aligned, but left-aligned in the status tooltip's,
+`forge-card-status-tip-table`) and the settings table are the exceptions to "tables of data are grids" (the user's
+decisions of 2026-11-05 and 2026-11-23).
+Every mutator (`setCurrent`, `pin`, `unpin`, `update`, `clear`) ends with `render()`: the cards of the form's key are
+shown, the others hidden; **Compare by** lists the `METRIC_IDS` a shown card has by their `METRIC_LABELS` (no
+direction mark; `directionOf` still orders the cards and **Best**; each `option`'s `title` its
+`METRIC_DESCRIPTIONS` through `TuneSettings.describeMetricOptions`, a pick read back with `metricOfLabel`); unless the user picked a metric that is still
+listed (`isMetricChosen`), the metric is `defaultMetricOf` the current card when it is shown, else the first shown
+card (its `search.metric`, else Balanced accuracy, else R2, else the first listed); `metricId` is undefined while no
+card is shown (a pick survives that). `showCompareBy` sets the items and the value with `notify = false`, so
+a programmatic set is never the user's pick, and sets the value only when it differs (a set while the input fires its
+own change throws on the platform). Each shown card is filled for the metric (skipped when it already shows it), the
+pinned cards are sorted after the current one by one key, `directionOf(metric)` times the validation value as shown
+(`roundTo3`, as for **Best**), a card without it last (the sort is stable, so ties keep the pin order, newest first),
+and re-appended only when the order changed; `update` with the same key does nothing. **Best** follows
+`bestMarks(values, direction)`: the values
+rounded to 3 decimals, every card at the best one (all of them on a full tie, the user's decision of 2026-11-23),
+none for fewer than two shown cards or when no shown card has the value.
+The current card's "+" (`forge-card-pin`) calls `pin(run)`, with a trash (`forge-card-unpin`) on the pinned card
 calling `unpin(run)` (the pinned card of that `SessionRun`); a pin whose inputs a pinned card has (`isSameInputs`)
-adds nothing. `refreshPin` hides the
-current card's "+" (`visibility: hidden`, so the header keeps its height) while a pinned card has its inputs, as the
-core did; the current card has no trash, and `unpin` of that pinned card shows "+" again. A click on a pinned
-card outside its tab headers (`TabControl.header`) and its icon calls `restoreRun` (its guards apply). Each card has a
-key (`ModelCards.keyOf`: the target, the scheme, the folds or the test fraction, stratified, shuffle and the seed when
-shuffled); `updateControls` calls `update(key)` with the form's key (undefined while there is no form or target) and
-`show` displays only the cards of that key, the current one too, at once on any change. Tabs switch together:
-`onTabChanged` of a card calls `syncTabs`, which keeps the shared tab and sets `currentPane` of every card on another
-tab (the echo of that set finds every card on the shared tab and sets nothing); a new card opens on the shared tab.
-`dispose` unsubscribes the card's `onTabChanged` and `ui.remove`s the card (the TabControl's widget disposal);
-`clear()` runs in `createForm`
-before `ui.empty(formPane)` and in `detach`. Nothing is written: the cards and the pins live with the view.
+adds nothing. `refreshPin` hides the current card's "+" (`visibility: hidden`, so the header keeps its height) while a
+pinned card has its inputs, as the core did; the current card has no trash, and `unpin` of that pinned card shows "+"
+again. A click on a pinned card outside its icon calls `restoreRun` (its guards apply). Each card has a key
+(`ModelCards.keyOf`: the target, the scheme, the folds or the test fraction, stratified, shuffle and the seed when
+shuffled); `updateControls` calls `update(key)` with the form's key (undefined while there is no form or target).
+`clear()` runs in `createForm` before `ui.empty(formPane)` and in `detach`. Nothing is written: the cards, the pins
+and the Compare by pick live with the view.
 
 The result (`TrainingResult`) carries the blob, the task, the metrics, the target and feature schemas, the
 preparation options, the splitting, the seed, the hyperparameters, the row count (the prepared rows the model
@@ -691,12 +729,12 @@ becomes `TrainingResult.curves` (two classes with a positive class), both splits
 
 **The threshold in the view.** A **Classification threshold** change requests no check: it fires the same
 `CHECK_DELAY_MS` timer (`isCheckRequested` tells the two apart; a check wins), and `recut()` replaces
-`lastTraining.result` with `recutResult(result, preparation.steps())` and shows it, without a training or a run row;
+`lastTraining.result` with `recutResult(result, steps())` (the merged steps of both groups) and shows it, without a training or a run row;
 **Save** then writes the re-cut `options` and metrics. A **Predict probability** toggle (`onProbabilityToggled`)
-does the same for a method without a probability input; for one with it (`probabilityInput(engine)`, SVM) it
-requests a check, so the method retrains with the input set (`selection()` sets it through `withProbabilityInput`
-from `steps().predictProbability`, so runs, searches, cards and the API carry it in `hyperparameters`; the form never
-shows the input: `fillMethod` and `TuneSettings` read `visibleHyperparametersOf`). A completed training is re-cut at
+does the same for every method: a method with a probability input (`probabilityInput(engine)`, SVM) always trains
+with it on (`withProbabilityInput` in `selection()`, `bestCandidates` and the API), so runs, searches, cards and the
+API carry `probability: true` in `hyperparameters`; the form never shows the input: `fillMethod` and `TuneSettings`
+read `visibleHyperparametersOf`. A completed training is re-cut at
 the current steps before it is shown (they may have changed while it trained); its run row keeps the steps it trained
 with, the threshold and its metric as the training resolved them (below). An invalid threshold (`thresholdProblem`) computes nothing: `recut()` keeps the old result out of sight and
 shows `Fix the settings.`, **Save** is disabled, and `problem()` blocks **Train** and the live training (`Classification
@@ -704,12 +742,12 @@ threshold: <problem>`), as for any invalid setting. When the timer fires with no
 and no finished training of the selection (another input changed while the threshold was invalid), it runs the check
 instead, so a valid threshold then trains as any fixed setting does.
 
-**The optimized threshold.** While the threshold is not edited by hand, `preparation.steps()` carries the
+**The optimized threshold.** While the threshold is not edited by hand, `output.steps()` carries the
 **Best threshold by** metric as `thresholdMetric`, so every `recut()` (Predict probability checked, a completed
 training, **Set**, a restored run) and every training (its prepared options) resolve the threshold to that metric's best on
 the result; `recut()` then writes the resolved value back into the input with `setThreshold(value, metric)` (no
 `onThresholdChanged`, no hand edit). A hand edit drops the metric from the steps, so re-cuts and trainings keep the
-typed value until **Set**; the state lives in `PreparationInputs` and survives `requestCheck` and the hiding of the
+typed value until **Set**; the state lives in `OutputInputs` and survives `requestCheck` and the hiding of the
 inputs (unchecking Predict probability), and goes only when the target's classes change. The input shows the value
 with 3 significant digits (its `format`), while `value`, the steps, the options, the texts and **Set**'s comparison
 use the full value. A metric change only
@@ -780,7 +818,7 @@ rows the request is returned as it is.
 **Plan and executor.** `searchPlanOf(mode, request, candidates, choice, seed)` checks the metric against the task
 (`SEARCH_METRICS`: regression `r2`, `rmse`, `mae`; classification `balancedAccuracy`, `accuracy`, `f1`, `mcc`, `auc`, `logLoss`, `brier`;
 the first is the default; `The search metric '<id>' does not apply to a <task>. Choose one of: ...`), sets the
-direction (`METRIC_DIRECTIONS`: -1 for errors), the ONE limit (`budgetMs` from `budgetSeconds`, or `maxTrials`;
+direction (`directionOf`: -1 for `MINIMIZED_METRICS`, the errors), the ONE limit (`budgetMs` from `budgetSeconds`, or `maxTrials`;
 both throw `COMBINED_LIMITS`, `The search options 'budgetSeconds' and 'maxTrials' cannot be combined: choose one
 limit.`; neither gives `DEFAULT_BUDGET_SECONDS`, 60), for `best` the `strategy` (`equal` by default, `halving`; an
 equal split by fewer trials than candidates throws `At least one trial per method: <N>.`) and the split (`validationSplit` of the
@@ -883,16 +921,18 @@ of runs of both kinds holds both), `trials`, `completed`, `pruned`, `failed` and
 
 **Find best model.** The candidates: `searchableEngines(applicable, discovery)` keeps the browser methods of a check
 (`!isServerEngine`) sorted by `costRankOf` (the place in `COST_RANK`, from Linear Regression to RealMLP, the cost order
-of fitting; an unknown method after it in discovery order); `quickEngines(engines, columns, target,
-predictProbability)` asks each `retrainsLive` at once and drops a method whose probabilities are a train input
-(`probabilityInput`: SVM) while Predict probability is on, as its fits are several times slower; at a time limit of
-`QUICK_BUDGET_SECONDS` (60) or less, or with a trial limit, the default methods are the quick ones, above it every
-searchable one.
-`hasProbabilities(engine, on)` (`engines/engine.ts`) tells whether a method's trials carry class probabilities with
-Predict probability `on` (always for `mlprobabilities: 'true'`, only when on for a probability input).
-`bestCandidates(engines, discovery, predictProbability)` gives each method its full space (`searchSpaceOf`; a
+of fitting; an unknown method after it in discovery order); `quickEngines(engines, columns, target)` asks each
+`retrainsLive` at once and, for a classifier, drops a method whose probabilities are a train input (`probabilityInput`:
+SVM; `isQuickMethod(isLive, probabilities, isClassification)`), as its fits with them are several times slower; at a
+time limit of `QUICK_BUDGET_SECONDS` (60) or less, or with a trial limit, the default methods are the quick ones, above
+it every searchable one. Independent of the limit, `defaultUncheckReason(name, rowCount)` leaves SVM out of the
+defaults on a table of more than `SVM_DEFAULT_MAX_ROWS` (1000) rows, any task, and gives the Candidates tooltip's line: the table's own row count (known before any
+check, the same in the view and the API), in `FindSettings.defaultCheck` (the view's `createForm` passes
+`table.rowCount` through `FindSettings.setRowCount`) and in `autoEngines` (without `methods`); a user's check or a
+named method still searches it.
+`bestCandidates(engines, discovery)` gives each method its full space (`searchSpaceOf`; a
 malformed one becomes `note` and the method is tried with its defaults only), `start` = its defaults with the
-probability input set from Predict probability (`withProbabilityInput`; the input is outside the visible space, so every
+probability input on (`withProbabilityInput`; the input is outside the visible space, so every
 drawn point keeps it) and `costRank`, cheapest first; no method throws `No method can take part in the search. Check
 the features and the target.` `bestSearch(request, candidates, choice, seed, progress, executor)` is `tuneSearch`'s
 sibling with `searchPlanOf('best', ...)` (`topK` = `choice.topK ?? TOP_K`, 3). With `strategy: 'equal'` the
@@ -1138,7 +1178,7 @@ refills the Method group on entering Auto and requests a check with `requestChec
 insights, and nothing trains; a method name leaves it. `fillMethod` appends `form.method`, `form.tune` and
 `form.find` and shows the tune root or, under Auto, the find root; under Auto **Missing values** never hides
 (`setKeepsMissingValues(false)`), Predict probability follows `probabilityReason(form)` (`form.find.probabilityReason`
-under Auto, else whether the method gives probabilities, through `PreparationInputs.setProbabilityReason`) and the Method tooltip is `AUTO_TOOLTIP`. `form.find` is one `FindSettings` per form
+under Auto, else whether the method gives probabilities, through `OutputInputs.setProbabilityReason`) and the Method tooltip is `AUTO_TOOLTIP`. `form.find` is one `FindSettings` per form
 (`ui/find-settings.ts`), laid out as Auto-tune's block from the same builders (requirement: switching between a method
 and Auto changes nothing visible but the rows): `TuneSettings.statusLine()` reading `Not searched` (`NOT_SEARCHED`,
 tooltip from `STATUS_TOOLTIPS`) right under **Method**, then `forge-tune-auto` with the `optionsToggle` (collapsed at
@@ -1159,12 +1199,14 @@ or `FindSettings.problem()`: `Check at least one method`, else the limit's (`Max
 `searchTooltip('best')`: `Find the best model`, or `Continue the search: <N> trials so far`).
 `setMethods(entries)` takes `MethodEntry {name, isLive, isServer, probabilities: always | input | none}`; `rebuild`
 lists only the entries without a reason (`reasonOf`: a server method, `<Method>: Runs on the server; not searched in
-the browser`; one with `none` while Predict probability is on, `<Method> gives no class probabilities`; one without
-probabilities now under a score metric, `<Method> gives no class probabilities, which <Metric> needs`: `exclusionOf`,
+the browser`; one with `none` while Predict probability is on, `<Method> gives no class probabilities`; one with
+`none` under a score metric, `<Method> gives no class probabilities, which <Metric> needs`: `exclusionOf`,
 shared with `Forge:trainModel`), the
-reasons going to the Candidates caption's tooltip as `Not listed: <reason>` lines after `METHODS_TOOLTIP`, and checks
-them by the user's toggle (`overrides`, kept only against the default) or the default (not a quick limit,
-`isQuickLimit`, or a quick method, `isQuickMethod`: live and not a probability input while Predict probability is on);
+reasons going to the Candidates caption's tooltip as `Not listed: <reason>` lines after `METHODS_TOOLTIP` (then
+`SVM: unchecked by default on more than 1000 rows` while that rule applies to a listed SVM), and checks
+them by the user's toggle (`overrides`, kept only against the default) or the default (`defaultCheck`: never a method
+`defaultUncheckReason` names on the table's `rowCount`, set by `setRowCount`; else not a quick limit, `isQuickLimit`, or
+a quick method, `isQuickMethod`: live and, for a classifier, not a probability input);
 it clears the value first (the platform keeps a checked item it no longer lists) and ignores its own value changes
 (`isRebuilding`). A change of the metric rebuilds, validates, saves and tells the view; one of the limit rebuilds only
 when the limit becomes quick or stops being quick (`isQuick`), one of the strategy only validates, saves and tells it.
@@ -1175,7 +1217,7 @@ minutes, trials, methods}`, each item checked by `FindSettings.load` over `TuneS
 `LimitInputs.load`, an old `seconds` migrated as Tune's). The Candidates caption's `METHODS_TOOLTIP`: `The methods to try, each with its
 defaults first`. `inputs` (Strategy, Limit, Max time, Max trials, Candidates) join `formInputs()` (the lock) and
 `expandOnError`; `setLocked` disables them and Metric. `revalidate` under Auto clears `problems.method` while
-a method can learn, asks the browser methods `quickEngines(..., false)` at once (into `interactivity`), lists them
+a method can learn, asks each browser method `retrainsLive` at once (into `interactivity`), lists them
 (cost order) then the server ones, sets Predict probability's reason, validates the find inputs and, instead of
 training, shows `AUTO_HINT` only without a `lastTraining` (`idleHint` under Auto shows the kept training again after a
 search that trained nothing); `showTrainRow` hides **Train**, `problem()` skips the hidden settings, `updateControls` gates
@@ -1408,11 +1450,31 @@ for a missing value):
 
 - `threshold`: the splits whose value is below `METRIC_THRESHOLDS` (`r2` 0.3, `auc` 0.5, the built-in tool's):
   `R2 is below 0.3.` The built-in tool tested the train value only; Forge tests both splits.
-- `mismatch`: a validation value far from the train one (`areValuesSimilar` false), marking the validation value:
-  `The validation <label> is far from the training one: the model may be overfitting.`
+- `mismatch`: a validation value worse than the train one by `overfittingOf(id, train, validation)` (on the shown, rounded values),
+  marking the validation value: `The validation <label> is far from the training one: the model may be overfitting.`
+
+`overfittingOf` gives `{kind, gap, ratio, isOverfitting}`: an error (`MINIMIZED_METRICS`, which also gives
+`directionOf` -1) is judged by its `ratio` (no `gap`), any other metric by its `gap` (no `ratio`), positive when
+validation is worse:
+
+| Metrics | Kind | Value | Overfitting when |
+|---|---|---|---|
+| `balancedAccuracy`, `accuracy`, `f1`, `sensitivity`, `specificity`, `precision`, `npv`, `auc`, `averagePrecision` | `gap` | train − validation | gap > 0.05 |
+| `mcc`, `r2` | `gap` | train − validation | gap > 0.1 |
+| `mse`, `rmse`, `mae`, `logLoss`, `brier` | `ratio` | validation / train | ratio > 1.5 (train 0: validation > 0) |
+
+Both values are rounded to 3 decimals first (the exported `roundTo3`, as every value is shown; `bestMarks`, the cards'
+sort and `tinyValueText` use it too) and the gap is the rounded difference, so a shown gap of exactly the limit is not
+flagged and the tooltips' Gap is the difference of the shown values; an error's `ratio` is validation / train of the
+rounded values to the 2 decimals the card tooltip shows (undefined for a train value of 0), and the rule compares
+that shown ratio, so a shown 1.50 is not flagged. The rule is directional: a
+validation value better than the train one is never flagged. The Performance grid's red
+value, the insight `The model may be overfitting.`, `getModel`'s `findings` and the model cards' status all use it.
 
 `areValuesSimilar(a, b)` is the built-in tool's closeness: within 0.1 when the mean magnitude of the two is below 1,
-otherwise a relative difference (to that mean) of at most 0.9, so only values several times apart differ.
+otherwise a relative difference (to that mean) of at most 0.9, so only values several times apart differ. It is used
+by the statistics insight only; the findings' two-way use of it was replaced by the user's directional rule
+(2026-11-23).
 
 **Statistics** (`metrics/statistics.ts`). `statisticsOf(actual, predicted)` gives a `StatisticRow` per id of
 `STATISTIC_IDS` (`min, max, med, avg, stdev, variance, skew, kurt, q1, q2, q3`, the built-in tool's order; `q2` is the
@@ -1574,7 +1636,7 @@ saw them (no row skipped, no preparation step) and Forge's own columns: the pred
 | | **Statistics** | `readOnlyGrid` of **Statistic / Actual / Predicted** (`statisticsOf`, `0.000`), header tooltips, the statistic's description on **Statistic** |
 | text or yes/no | **ROC Curve** (two classes: with Predict probability, or a method that returns class probabilities; `ResultsData.curves` present) | `scatterPlot` over Forge's own frame of `Threshold`, `FPR (1 − Specificity)`, `Recall (Sensitivity)`, `Mark` (`curveFrame` of the `rocCurve` entry of `CURVES`, from Crux's exact `ml.roc_curve`: one row per distinct probability or score plus the first `(0, 0)` at threshold Infinity, thresholds decreasing), as EDA's probabilistic MPO: a line (`linesOrderColumnName` `Threshold`, `linesWidth` 3) with the markers column `Mark` (`markersColumnName`; `meta.markers` `point` -> `dot`, one pixel whatever the size, `cutoff` -> `circle`; `markerDefaultSize` 8, explicit so a new frame does not resize them; `showCurrentPoint` draws the circle's outline; `legendVisibility: 'Never'`), automatic axis ranges (no `xMin` / `xMax` / `yMin` / `yMax`, so no range sliders; `autoLayout: false`), the dashed formula line `${Recall (Sensitivity)} = ${FPR (1 − Specificity)}` `Non-informative baseline`, the X and Y column selectors, no size or color selector; the frame's current row is the cutoff's point and its only `cutoff` mark (the last row whose threshold is at least the cutoff, as `replayPostprocessing` cuts `score >= cutoff`; set when the frame is built, `markCurves` then moves it: the previous row back to `point`, the new one to `cutoff`, `CurvePanel.marked`), none (-1, every mark `point`) without a cutoff (probabilities only); more classes: no panel; the panel title `ROC Curve (AUC = 0.912)`, the AUC-ROC of **Performance** (`summary.evaluation?.values.auc ?? summary.metrics.train.auc`), the area under the drawn curve |
 | | **PR Curve** (the same cases) | the same scatter plot over `Threshold`, `Recall (Sensitivity)`, `Precision`, `Mark` (`curveFrame` of the `prCurve` entry, from `ml.precision_recall_curve`: thresholds increasing, the last point `(recall 0, precision 1)` at Infinity), automatic axis ranges, with the dashed horizontal `Non-informative baseline` `${Precision} = <pr.precision[0]>` (the lowest threshold predicts every row positive: its precision is the positive class's share of the rows); the current row and the circle the first whose threshold is at least the cutoff; the title `PR Curve (AP = 0.812)` from `averagePrecision` the same way |
-| | **Per-class** (more than two classes, with `metrics.classes` or an evaluation's `classes`) | `perClassPanel(shown, summary)` in `buildShown`: `DG.Viewer.pcPlot` over Forge's own frame (`Shown.perClass`) of **Class** and a column per `PER_CLASS_AXES` id with a value (`precision`, `sensitivity`, `f1`, `auc`, named by `PER_CLASS_NAMES`: `Precision`, `Recall`, `F1`, `AUC-ROC`; an all-missing axis left out, so SVM gets three) of the shown split (`perClassValues`: the evaluation's when there is one, else the validation's; labels: the union, the evaluation's first); **Class** colored with the target's row colors (`classColors`: `DG.Color.getRowColor` of each class's first row, a user color coding kept, `setCategorical`; a class the rows lack gets `getCategoricalColor`), `colorColumnName` **Class**, the plot's own per-axis ranges (`normalizeEachColumn` default), `showCurrentLine: false` (a click on a line draws nothing extra), `showFilters: false`, `showColorSelector: false`, `legendPosition: 'Top'`, `legendVisibility` `Always` when the class names plus `LEGEND_ITEM_CHARS` (3) per class come to at most `MAX_TOP_LEGEND_CHARS` (40) characters - one line in a third of the pane - else `Never`; in `viewers` like **Features** |
+| | **Per-class** (more than two classes, with `metrics.classes` or an evaluation's `classes`) | `perClassPanel(shown, summary)` in `buildShown`: `DG.Viewer.pcPlot` over Forge's own frame (`Shown.perClass`) of **Class** and a column per `PER_CLASS_AXES` id with a value (`precision`, `sensitivity`, `f1`, `auc`, named by `PER_CLASS_NAMES`: `Precision`, `Recall`, `F1 score`, `AUC-ROC`; an all-missing axis left out, so a method without class probabilities gets three) of the shown split (`perClassValues`: the evaluation's when there is one, else the validation's; labels: the union, the evaluation's first); **Class** colored with the target's row colors (`classColors`: `DG.Color.getRowColor` of each class's first row, a user color coding kept, `setCategorical`; a class the rows lack gets `getCategoricalColor`), `colorColumnName` **Class**, the plot's own per-axis ranges (`normalizeEachColumn` default), `showCurrentLine: false` (a click on a line draws nothing extra), `showFilters: false`, `showColorSelector: false`, `legendPosition: 'Top'`, `legendVisibility` `Always` when the class names plus `LEGEND_ITEM_CHARS` (3) per class come to at most `MAX_TOP_LEGEND_CHARS` (40) characters - one line in a third of the pane - else `Never`; in `viewers` like **Features** |
 | | **Predicted <target> vs Actual** | `scatterPlot` of the first two numerical columns, colored by the target, markers by `correctness` (two or more numerical columns) |
 | | **Confusions** | `confusionMatrix`: target by prediction (fewer than 10 classes) |
 | | **Wrong predictions** | when a row is wrong: a `readOnlyGrid` of a second shared frame, every column of the table and the prediction spread over its rows (`scatteredColumn`; the same column when no row was skipped), filtered to the wrong rows, with the row header (the table's row numbers); header tooltip `The model's prediction for the row.` |
@@ -1916,13 +1978,14 @@ without the view (`runTrainModel` in `training/train-api.ts`; the view and the f
    learn from this selection.`), and pass `exclusionOf` (`search.ts`, the rule the Find block's Candidates use, each
    caller with its own words): give probabilities while `predictProbability` is on (the sentence above) and have
    them under a score metric (`isScoreMetric`: `<Method> cannot take part in the search: it gives no class
-   probabilities, which <Metric> needs.`); without `methods`, the pool minus those two kinds, and under a quick limit
-   (`isQuickLimit`: a trial limit or `QUICK_BUDGET_SECONDS` or less) `quickEngines` of it (`isQuickMethod`);
-   `bestCandidates` of the result. The hyperparameters: `defaultHyperparameters`
+   probabilities, which <Metric> needs.`; a method with a probability input always has them); without `methods`, the
+   pool minus those two kinds and minus what `defaultUncheckReason` names on the table's row count (SVM above 1000
+   rows), and under a quick limit (`isQuickLimit`: a trial limit or `QUICK_BUDGET_SECONDS` or less) `quickEngines` of
+   it (`isQuickMethod`); `bestCandidates` of the result. The hyperparameters: `defaultHyperparameters`
    overlaid with the given ones, each checked against its `train` input of `visibleHyperparametersOf` (an unknown
    name with the list of settings, so SVM's `probability` is refused; the kind, a whole number for an int,
-   `min`/`max`, `choices`), then `withProbabilityInput(engine, ..., predictProbability)`, so the training, `searched`
-   and the run record carry the method's probability input.
+   `min`/`max`, `choices`), then `withProbabilityInput(engine, ...)`, so the training, `searched`
+   and the run record carry the method's probability input, always on.
 7. With `showProgress`, the task-bar indicator `Training <Method> model` (cancellable) is the `LoopProgress` of
    `trainModel`; `prepareTraining`, then `trainModel`. With `search`, `searched` first runs the search on the prepared
    request (see "Search": the indicator `Tuning <Method>` or, with candidates, `Finding best model`, then a new
@@ -2448,8 +2511,9 @@ click on a row whose inputs differ from the form's sets them again and trains (a
 matches and shows the completed result of only makes it current; a difference of only Predict probability and the
 threshold re-cuts). The model cards
 are the built-in tool's compare cards (the current model, "+" to pin, hidden while the current model is pinned, a
-trash to remove, a click on a pinned card setting its inputs again, and their colors), extended with the **Performance** and **Settings** tabs switched together, the
-settings status as trained, and the
+trash to remove, a click on a pinned card setting its inputs again), redesigned after the user's mockup (2026-11-23):
+the **Trained models** group with **Compare by**, one metric per card with its validation value and overfitting status,
+**Best**, how the settings were chosen over a settings table, the pinned cards sorted by the metric, and the
 same-data rule: a card is shown only on the target and validation it was trained with (the core cleared every card on
 a data change).
 
@@ -2486,7 +2550,7 @@ The views publish their state in the DOM, so a test waits on what a view says in
   `aria-busy="false"` without `aria-invalid="true"`; a slow method waiting for **Train** is ready.
 - On the same element, `data-forge-run-id` (`SHOWN_RUN`) is the id of the `training_run` row whose result the results
   show. `showResults` sets it when a completed training of the current selection is shown, and a re-cut (a threshold
-  change or a Predict probability toggle of a method without a probability input) sets the same id again. `showHint` removes it: before the first training, for a selection problem or an invalid
+  change or a Predict probability toggle) sets the same id again. `showHint` removes it: before the first training, for a selection problem or an invalid
   setting, for a method waiting for **Train**, after a failed or a cancelled training, when a **Train** click starts
   one, and on a Table change. A training that runs while a result is shown (a live retrain) leaves the old id until
   its own result is shown, and a superseded training leaves it as it is: it records no run and shows nothing. A new
@@ -2510,25 +2574,30 @@ The views publish their state in the DOM, so a test waits on what a view says in
   `data-forge-catalog-load` to it and `aria-busy="false"`; a failed load sets only `aria-busy="false"`, and only while
   its number is the newest. Each change or click advances the number by one. A reload is thus a load number above the
   one remembered with `aria-busy` not true; every open catalog, hidden ones too, reloads on `modelsChanged`.
-- The model cards (`.forge-cards` at the end of the form): each card is a `.forge-card` with `data-forge-run="<number>"` (the
+- The model cards: the group's header label is `Trained models` (`ModelCards.group`, `style.display` `none` while no
+  card is shown); Compare by is the input captioned `Compare by` (`ModelCards.compareBy`; `metricId` the chosen id).
+  The cards are in `.forge-cards`: each card is a `.forge-card` with `data-forge-run="<number>"` (the
   run's number in the view; a pinned card has its run's number), the current one also `forge-card-current`; a card
-  of other data has `style.display` `none`. The current card has `.forge-card-pin` ("+") only, with `style.visibility`
-  `hidden` while a pinned card has its inputs; a pinned card has `.forge-card-unpin` (its trash) only; each icon carries its tooltip as
-  `aria-label`. A search's winner has `.forge-card-caption` under the header (`Auto-tuned model` / `Auto-tuned
-  settings`). The tabs' headers are the platform's `.d4-tab-header[data-source="tab-pane-<name>"]` (`Performance`,
-  `Settings`); both panes' tables are `.forge-card-table` (`tr.header` the header row), the Settings pane's root
-  `.forge-card-settings` (built on its first show).
+  of other data has `style.display` `none`. `.forge-card-title` is the method, `.forge-card-best` the badge
+  (`style.display` `none` when not best). The current card has `.forge-card-pin` ("+") only, with `style.visibility`
+  `hidden` while a pinned card has its inputs; a pinned card has `.forge-card-unpin` (its trash) only; each icon
+  carries its tooltip as `aria-label`. Then `.forge-card-settings` (the italic `.forge-card-kind` inside,
+  `<kind>` alone) and `.forge-card-settings-table` (one `.d4-item-table`, two or four cells a row); both absent for a method without settings. Then
+  `.forge-card-score` with `.forge-card-metric` (the Compare by label) and `.forge-card-value`, and `.forge-card-status` with
+  `forge-card-ok` or `forge-card-warn` (then a `.forge-card-mark` `!`). No `.forge-card-train`, no tabs, no
+  `.forge-card-more`.
 - **Search** (`.forge-search`): `SearchPanel.grid` (the leaderboard) and `SearchPanel.chart` (the bar chart, null
   without a leader), each in a `.forge-panel-fill` box of one `.ui-split-h`; the chart's frame is the grid's
   (`chart.dataFrame === grid.dataFrame`), its widget status has a hit area `bar <Method>` per bar. Search and Runs
   sit with the result rows in the results pane's `.ui-split-v`.
-- Preparation's probability inputs: the captions **Predict probability** (disabled, `enabled` false, for a method
+- Output's probability inputs (`TrainView.outputInputs`, the group captioned `Output`): the captions **Predict
+  probability** (disabled, `enabled` false, for a method
   without class probabilities), **Classification threshold** (its editor's text has 3 significant digits, its `value`
-  the full threshold), its status (`PreparationInputs.thresholdStatus`, a `.forge-tune-status-text` span with
+  the full threshold), its status (`OutputInputs.thresholdStatus`, a `.forge-tune-status-text` span with
   `aria-live="polite"` in the `.forge-tune-status` row right after the threshold's root: `Best for <metric>` or
   `Customized`; the row has `style.display` `none` while no best exists), then **Best threshold by**
-  (`PreparationInputs.thresholdMetric`, its root the next sibling of the status row; a choice of `F1`, `Balanced
-  accuracy`, `MCC`, `Accuracy`) with the button `Set` (`PreparationInputs.setThresholdButton`, a child of that input's root
+  (`OutputInputs.thresholdMetric`, its root the next sibling of the status row; a choice of `F1 score`, `Balanced
+  accuracy`, `MCC`, `Accuracy`) with the button `Set` (`OutputInputs.setThresholdButton`, a child of that input's root
   `.forge-threshold-metric`, after the select and outside `.ui-input-options`; `style.display` `none` while the
   threshold is the chosen metric's best or no best exists); the inputs hide together (`style.display` `none` on their
   roots), the status with them.
@@ -2541,11 +2610,11 @@ The views publish their state in the DOM, so a test waits on what a view says in
   `strategy` and `limit.kind`, the int inputs `limit.minutes` and `limit.trials` (an invalid one has a `validity` and
   its editor the platform's `d4-invalid`) and the platform multi-choice `candidates`
   (`.forge-find-candidates`, one `.ui-input-multi-choice-checks > div` with its checkbox per listed method), then the
-  `.forge-tune-bar` with **Find**. A card's Performance has `.forge-card-more` (Show more / Show less) when the run has
-  more than three metrics.
+  `.forge-tune-bar` with **Find**.
 - `CollapsibleGroup`: `aria-expanded` on `.forge-group-header` follows `setExpanded`; `aria-invalid` on
   `.forge-group-summary` follows `setSummary` (the Apply dialog's red `N of M matched`).
-- Every table of data but the model cards' is the platform's grid, whose widget status publishes the hit areas `cell <row> of <column>`,
+- Every table of data but the model cards' tooltips and their settings table (the user's decisions of 2026-11-05 and
+  2026-11-23) is the platform's grid, whose widget status publishes the hit areas `cell <row> of <column>`,
   `header <column>` and `row header <row>` (table rows counted from 1) and the readings `rows`, `rows shown`, `columns
   shown`, `current row`, `current column` and `text of cell <row> of <column>`.
 
@@ -2736,11 +2805,11 @@ default (see "Search"). EDA declares it for SVM (gamma, degree, coef0 by kernel,
 The optional `mlprobabilities` says the method returns class probabilities (`proba_<class>` from `apply`): `'true'`,
 or the name of a bool `train` input that turns them on (EDA: `'true'` on every classifier but SVM, whose `probability`
 input it names; none on Linear and PLS Regression). In `engines/engine.ts`: `givesProbabilities(engine)` (the meta is
-`'true'` or names such an input), `hasProbabilities(engine, on)` (whether its trials carry them with Predict
-probability `on`: Find best model's metric and probability rules), `probabilityInput(engine)` (that input's name when the meta names a `train` input of
-type `DG.TYPE.BOOL`, else undefined), `withProbabilityInput(engine, hyperparameters, on)` (the hyperparameters with
-the input set to `on`; unchanged without one) and `visibleHyperparametersOf(engine)` (`hyperparametersOf` without the
-input: the form, `TuneSettings`, the cards' Settings tab, the API's `hyperparametersFor`, `methodColumns`,
+`'true'` or names such an input), `probabilityInput(engine)` (that input's name when the meta names a `train` input of
+type `DG.TYPE.BOOL`, else undefined), `withProbabilityInput(engine, hyperparameters)` (the hyperparameters with
+the input on: Forge always trains such a method with its class probabilities, and the method must ignore the input for
+a regression, as EDA's SVM does; unchanged without one) and `visibleHyperparametersOf(engine)` (`hyperparametersOf` without the
+input: the form, `TuneSettings`, the cards' settings table (`ModelCards.settingsOf`), the API's `hyperparametersFor`, `methodColumns`,
 `Forge:listMethods` and `searchSpaceOf`'s default, so a space naming the input is refused
 by the view and the API alike) and `visibleValuesOf(engine, values)` (the values without the input: the **Runs** Method
 tooltip). `hyperparametersOf` and `defaultHyperparameters` keep the input (the contract).

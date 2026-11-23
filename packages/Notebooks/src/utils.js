@@ -46,7 +46,7 @@ async function createFile(containerId, path, name, content = '') {
   return filePath;
 }
 
-function getApiRoot() {
+export function getApiRoot() {
   const parsedUrl = new URL(window.location.href);
   return `${parsedUrl.protocol}//${parsedUrl.host}/api`;
 }

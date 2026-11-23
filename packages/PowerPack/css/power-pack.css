@@ -1,8 +1,9 @@
-.power-pack-welcome-view {
+.ui-panel.power-pack-welcome-view {
     display: flex;
     flex-direction: column;
     height: 100%;
     overflow: hidden;
+    padding-top: 4px;
 }
 
 .power-pack-view-host {
@@ -70,16 +71,10 @@
     grid-column: span 1;
     box-shadow: 0px 0px 2px var(--grey-3);
     transition: box-shadow 200ms ease-in-out;
-    /*border: 1px solid #f2f2f5;*/
 }
 
 .power-pack-widget-host:hover {
-    flex-direction: column;
-    width: initial!important;
-    height: 300px!important;
-    grid-column: span 1;
     box-shadow: 0px 0px 2px var(--grey-2), 0px 5px 9px -4px var(--grey-3);
-    /*border: 1px solid #f2f2f5;*/
 }
 
 .power-pack-widgets-host .d4-dialog-header:hover {
@@ -107,11 +102,16 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
 
 .power-pack-widget-host:has(.power-pack-activity-widget-content) {
     grid-column: 1 / -1;
+    height: auto!important;
 }
 
 .power-pack-activity-widget-content .d4-tab-host.d4-tab-vertical .d4-tab-content {
     overflow: auto;
     margin-bottom: 5px;
+}
+
+.power-pack-activity-widget-content .d4-tab-host.d4-tab-vertical > .d4-tab-content {
+    contain: size;
 }
 
 /* starts the scrollbar below the widget's remove icon */
@@ -177,7 +177,9 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
     margin-top: 7px;
 }
 
-.power-pack-activity-widget-spotlight-column {
+.power-pack-activity-widget-spotlight-column,
+.power-pack-activity-widget-spotlight-getting-started-column,
+.power-pack-activity-widget-spotlight-column-action-required {
     margin-right: 13px;
     flex: 1 1 0;
 }
@@ -187,29 +189,16 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
     min-width: auto;
 }
 
-.power-pack-activity-widget-spotlight-getting-started-column {
-    margin-right: 13px;
-    flex: 1 1 0;
-}
-
 .power-pack-activity-widget-spotlight-getting-started-column .d4-entity-markup-row {
-    margin-bottom: 7px;
-}
-
-.power-pack-activity-widget-spotlight-getting-started-column .grok-context-arrow-down {
-    margin-left: 0;
-}
-
-.power-pack-activity-widget-spotlight-column-action-required {
-    margin-right: 13px;
-    flex: 1 1 0;
+    margin-bottom: 4px;
 }
 
 .power-pack-activity-widget-spotlight-column .d4-entity-markup-row {
     margin-bottom: 7px;
 }
 
-.power-pack-activity-widget-spotlight-column .grok-context-arrow-down {
+.power-pack-activity-widget-spotlight-column .grok-context-arrow-down,
+.power-pack-activity-widget-spotlight-getting-started-column .grok-context-arrow-down {
     margin-left: 0;
 }
 
@@ -227,38 +216,26 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
 }
 
 .power-pack-activity-widget-spotlight-column-header {
-    margin-top: 0;
-    margin-left: 18px;
+    margin: 0 0 8px 18px;
+}
+
+.pp-empty-message {
+    color: var(--text-color-light);
+    font-style: italic;
+    padding: 8px 18px;
 }
 
 .power-pack-activity-widget-spotlight-tip {
-    flex-basis: 100%;
-    position: absolute;
-    bottom: 8px;
-    left: 8px;
-}
-
-.power-pack-activity-widget-spotlight-tip .tip-prev {
-    margin-right: 4px;
-}
-
-.power-pack-activity-widget-spotlight-tip .tip-prev.tip-prev-hidden {
-    display: none;
-    visibility: hidden;
+    margin: 4px 0 0 8px;
 }
 
 .power-pack-activity-widget-spotlight-tip .tip-next {
     margin-left: 4px;
-}
-
-.power-pack-activity-widget-spotlight-tip .tip-prev,
-.power-pack-activity-widget-spotlight-tip .tip-next {
     opacity: 0;
     cursor: pointer;
     transition: opacity 0.2s;
 }
 
-.power-pack-activity-widget-spotlight-tip:hover .tip-prev,
 .power-pack-activity-widget-spotlight-tip:hover .tip-next {
     opacity: 1;
 }
@@ -365,20 +342,44 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
     display: grid;
     grid-gap: 16px;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    grid-template-rows: repeat(auto-fill, 300px);
+    grid-auto-rows: max-content;
     margin-bottom: 10px;
 }
 
-.power-pack-welcome-view .d4-search-bar {
-    margin-bottom: 10px;
-
+.power-search-help-text-container {
+    margin-left: 12px;
+    white-space: nowrap;
+    font-size: 10px;
+    font-style: italic;
+    color: var(--text-color-light);
 }
 
-.power-pack-welcome-view .d4-search-bar .ui-input-root {
+.power-pack-welcome-search .ui-input-root,
+:is(.d4-ribbon, .d4-ribbon-panel, .d4-ribbon-item):has(.power-pack-welcome-search) {
     flex-grow: 1;
 }
 
-.power-pack-welcome-view .d4-search-bar .ui-input-editor {
+.d4-ribbon .d4-ribbon-item > .power-pack-welcome-search.d4-search-bar {
+    flex-grow: 1;
+    background: none;
+}
+
+.tab-handle-list-container > .power-pack-welcome-search {
+    flex: 1 1 0;
+    min-width: 0;
+    order: 1;
+    margin-left: 16px;
+}
+
+.d4-ribbon:has(.power-pack-welcome-search) > .d4-ribbon-spacer {
+    flex-grow: 0;
+}
+
+.d4-ribbon-item .power-pack-welcome-search .fal {
+    font-size: 13px;
+}
+
+.power-pack-welcome-search .ui-input-editor {
     font-size: 16px;
 }
 
@@ -1458,8 +1459,7 @@ body.dartium .power-pack-widgets-host.ui-div {
     color: var(--text-color-light);
     font-style: italic;
     font-size: 13px;
-    padding: 20px 0;
-    text-align: center;
+    padding: 4px 0;
 }
 
 .pp-workspace-editor-error {

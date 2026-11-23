@@ -2,10 +2,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {readDataframe} from './utils';
 import {_testSequenceSpaceOnNotation, _testSequenceSpaceReturnsResult} from './sequence-space-utils';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
+import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import {BYPASS_LARGE_DATA_WARNING} from '@datagrok-libraries/ml/src/functionEditors/consts';
+import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 category('sequenceSpace', async () => {
@@ -40,4 +43,28 @@ category('sequenceSpace', async () => {
   test('sequenceSpaceMsa', async () => {
     await _testSequenceSpaceOnNotation('samples/MSA.csv', 'MSA', NOTATION.SEPARATOR);
   });
+
+  test('sequenceSpace: same seed, same coordinates, on the GPU and on the CPU', async () => {
+    const df = await readDataframe('tests/100_3_clustests.csv');
+    await grok.data.detectSemanticTypes(df);
+    const tv = grok.shell.addTableView(df);
+    try {
+      const embed = async (randomSeed: string, useWebGPU: boolean) => {
+        const before = df.columns.names();
+        await grok.functions.call('Bio:sequenceSpaceTopMenu', {
+          table: df, molecules: df.getCol('sequence'), methodName: DimReductionMethods.UMAP,
+          similarityMetric: MmDistanceFunctionsNames.LEVENSHTEIN, plotEmbeddings: false, clusterEmbeddings: false,
+          options: {randomSeed, useWebGPU, [BYPASS_LARGE_DATA_WARNING]: true},
+        });
+        return JSON.stringify(df.columns.names().filter((name) => !before.includes(name))
+          .map((name) => df.col(name)!.toList()));
+      };
+      for (const useWebGPU of await getGPUDevice() ? [true, false] : [false]) {
+        const device = useWebGPU ? 'GPU' : 'CPU';
+        const first = await embed('42', useWebGPU);
+        expect(await embed('42', useWebGPU), first, `${device}: seed 42 gave other coordinates on the second run`);
+        expect(await embed('43', useWebGPU) !== first, true, `${device}: seeds 42 and 43 gave the same coordinates`);
+      }
+    } finally {tv.close();}
+  }, {timeout: 120000});
 });

@@ -186,7 +186,8 @@ function helpRoot(from: string): string | undefined {
  * scenario's GIF and thumb into `<help root>/<page dir>/img/<scenario slug>.gif` — beside the one there, as
  * `<slug>.new.gif`, for the reviewer to swap in. `--demo`, or a feature's `@demo` tag, films a demo clip: a
  * 1080p video without captions or set-up, opened by a title card, of a 1600x900 window at twice its density (the
- * page a little larger than on a 1080p screen). A feature's `@viewport:<w>x<h>` films it in that window instead,
+ * page a little larger than on a 1080p screen); `@tutorial` films it so too, rendered as a how-to (what each step
+ * presses outlined, the notes rising into place). A feature's `@viewport:<w>x<h>` films it in that window instead,
  * at twice its density below 1920 px. `--fps`, `--colors`,
  * `--size` and `--hold` set the GIF's rate, palette, width and the hold of its last frame. */
 async function guide(project: Project, flags: string[]): Promise<number> {
@@ -233,7 +234,7 @@ async function guide(project: Project, flags: string[]): Promise<number> {
   // one run per way of filming: a demo and the window a feature asks for are the browser's settings
   const runs = new Map<string, {demo: boolean; view?: string; specs: string[]}>();
   for (const model of models) {
-    const demo = demoAll || model.tags.includes('@demo');
+    const demo = demoAll || model.tags.includes('@demo') || model.tags.includes('@tutorial');
     const view = model.tags.find((t) => t.startsWith('@viewport:'))?.slice('@viewport:'.length);
     const key = `${demo} ${view ?? ''}`;
     if (!runs.has(key))
@@ -275,16 +276,22 @@ async function guide(project: Project, flags: string[]): Promise<number> {
   for (const manifest of manifests) {
     const dir = dirname(manifest);
     const filmed = JSON.parse(readFileSync(manifest, 'utf8'));
-    // what the title card says under the title: the scenario's own description, else the feature's first paragraph
-    const model = models.find((m) => slugOf(m.name) === slugOf(filmed.feature));
+    // what the title card says under the title: the scenario's own description, else the feature's first paragraph —
+    // never for a tutorial, whose feature paragraph is the maintainer's note. Features can share a name (every clip of a
+    // how-to section is "How-to · Data"): the one filmed is the one holding the scenario
+    const tutorial = (filmed.tags ?? []).includes('@tutorial');
+    const model = models.find((m) => slugOf(m.name) === slugOf(filmed.feature) &&
+      m.scenarios.some((s) => slugOf(s.name) === slugOf(filmed.scenario))) ??
+      models.find((m) => slugOf(m.name) === slugOf(filmed.feature));
     const scenario = model?.scenarios.find((s) => slugOf(s.name) === slugOf(filmed.scenario));
-    const description = (scenario?.description || model?.description.split(/\n\s*\n/)[0] || '').replace(/\s*\n\s*/g, ' ');
+    const description = (scenario?.description || (tutorial ? '' : model?.description.split(/\n\s*\n/)[0]) || '')
+      .replace(/\s*\n\s*/g, ' ');
     if (description !== filmed.description)
       writeFileSync(manifest, JSON.stringify({...filmed, description}, null, 2));
-    const demo = demoAll || (filmed.tags ?? []).includes('@demo');
+    const demo = demoAll || tutorial || (filmed.tags ?? []).includes('@demo');
     console.log(`guide: ${relative(project.root, dir)}`);
     const exit = await exec(python, [script, dir, ...(gif ? ['--gif'] : []), ...(help ? ['--help'] : []),
-      ...(demo ? ['--demo'] : []), ...render], project.root);
+      ...(tutorial ? ['--tutorial'] : demo ? ['--demo'] : []), ...render], project.root);
     if (exit !== 0) {
       console.error(`guide: rendering failed (${exit}) — ${python} ${script}`);
       failed++;

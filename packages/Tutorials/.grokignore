@@ -1,0 +1,4 @@
+# Not needed on the server: the BDD suite, its filmed guides and its run artifacts
+bdd/
+# The how-to videos (for the YouTube playlists), hundreds of megabytes the app does not use
+videos/

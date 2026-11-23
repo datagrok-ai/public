@@ -269,7 +269,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 The Crux sketcher (`src/crux/crux-sketcher.ts`) bundles a build of Crux Sketch, vendored in `vendor/crux-sketch/`
 (its `VERSION` names the crux-sketch and crux-core revisions), into `dist/`: `crux-sketch.js` and its lazily loaded
-chunks (`shared-*.js`, `structure-library-*.js`, `cdxml-*.js`, `inchi-*.js`), with Lit bundled in; and the Crux
+chunks (`shared-*.js`, `structure-library-*.js`, `cdxml-*.js`, `inchi.js`), with Lit bundled in; and the Crux
 chemistry engine, crux-core's `sketch-wasm`, `cdxml-wasm` and `inchi-wasm` crates compiled to WebAssembly
 (`sketch_wasm_bg-*.wasm`, `cdxml_wasm_bg-*.wasm`, `inchi_wasm_bg-*.wasm`), which ports parts of RDKit, the InChI
 library, FreeType 2.9.1 and one file of Eigen 3.3.9 (Mozilla Public License 2.0), and embeds the Roboto font.

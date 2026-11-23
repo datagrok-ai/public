@@ -133,6 +133,7 @@ class UMAPReducer extends MultiColumnReducer {
     protected distanceFnArgs: {[_: string]: any}[];
     protected useWebGPU: boolean = false;
     protected webGPUReducer: WebGPUUMAP | undefined;
+    protected randomSeed: string;
     /**
      * Creates an instance of UMAPReducer.
      * @param {Options} options Options to pass to the constructor.
@@ -142,6 +143,7 @@ class UMAPReducer extends MultiColumnReducer {
       const randomSeed: string = options.randomSeed ?? Date();
       const randomFn = seedRandom(randomSeed);
       super(options);
+      this.randomSeed = randomSeed;
       assert('distanceFnames' in options);
       assert('distanceFns' in options);
       this.distanceFnArgs = options.distanceFnArgs;
@@ -213,6 +215,8 @@ class UMAPReducer extends MultiColumnReducer {
           negativeSampleRate: this.reducer.negativeSampleRate,
           localConnectivity: this.reducer.localConnectivity,
           setOpMixRatio: this.reducer.setOpMixRatio,
+          // a generator of its own: should the GPU fail, the CPU fit gives what a CPU run with this seed gives
+          random: seedRandom(this.randomSeed),
         });
         this.webGPUReducer.setPrecomputedKNN(knnGraph.knnIndexes, knnGraph.knnDistances);
       } else {

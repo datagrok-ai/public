@@ -11,14 +11,16 @@ import {exactMapping} from '../apply/column-matching';
 import {updateModelInfo} from '../catalog/model-edit';
 import {MODEL_TYPE, PANEL_TABLE_MODELS} from '../constants';
 import {CHECK_METHOD} from '../engines/check-method';
-import {enabledRules, Engine, hyperparametersOf, isEnabled, isServerEngine} from '../engines/engine';
+import {defaultHyperparameters, enabledRules, Engine, hyperparametersOf, isEnabled, isServerEngine,
+  visibleHyperparametersOf} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
 import {errorMessage, ForgeError} from '../forge-error';
 import {forgeDb, ModelStorageMode} from '../generated/db';
-import {METRIC_DESCRIPTIONS, METRIC_LABELS, MetricFinding} from '../metrics/metrics';
+import {METRIC_DESCRIPTIONS, METRIC_LABELS, MetricFinding, MetricId, overfittingOf, roundTo3}
+  from '../metrics/metrics';
 import {datasetRefOf, storedDatasetRef} from '../storage/dataset-ref';
 import {deleteModel, modelsChanged} from '../storage/model-store';
-import {COST_RANK, Leader, SearchRecord} from '../training/search';
+import {CandidateRecord, COST_RANK, directionOf, Leader, SearchRecord} from '../training/search';
 import {bestThresholdOf, trainingEngines, trainPredictionOf} from '../training/train-model';
 import {applyModelDialog, ApplyDialogOptions, isOpen, modelLabels} from '../ui/apply-model-dialog';
 import {ButtonGate} from '../ui/button-gate';
@@ -30,11 +32,13 @@ import {EvaluationView, runEvaluation} from '../ui/evaluation-view';
 import {ForgeApp} from '../ui/forge-app';
 import {Gallery, MAX_ITEMS} from '../ui/gallery';
 import {CATALOG_ACTIONS, MODEL_ACTIONS, openShareDialog} from '../ui/model-actions';
+import {ModelCards} from '../ui/model-cards';
 import {hasFormsViewer, ModelComparison} from '../ui/model-comparison';
 import {ForgeModelHandler} from '../ui/model-handler';
 import {metricIdsOf, MetricsTable, metricTooltip, storedSummary, tinyValueText} from '../ui/metrics-table';
 import {modelAccordion, refreshSharing} from '../ui/model-panes';
 import {PanelKey, resultsLayout} from '../ui/results-layout';
+import {SessionRun} from '../ui/runs-panel';
 import {saveModelDialog} from '../ui/save-model-dialog';
 import {tableModelsPane} from '../ui/table-models-panel';
 import {tagsOfInput} from '../ui/tags-input';
@@ -45,8 +49,8 @@ import {balloonWith, cancelOnceShown, cancelTaskBarEntry, catalogState, clearTes
   columnsOf, deleteRunsOf, demoDemog, expectReleased, expectGridsFillPanes, framesSharing,
   insertModelRow, IRIS, MEASUREMENTS, openDemoTable, openIris, openIrisFromFile, openSolubility, PREDICT_PROBABILITY,
   readUntil, refreshThenChange, REGRESSORS, runsOf, savedFixture, saveIrisModel, saveKeptGapsModel,
-  saveSkipUniqueModel, saveTestModel, stuckEngine, taskBarEntry, twoSpeciesIris, unbalancedIris, useTestGalleryStorage,
-  valuesOf, WINE, XGBOOST_FIELDS} from './test-data';
+  saveSkipUniqueModel, saveTestModel, slowEngine, spreadRows, stuckEngine, svm, taskBarEntry, twoClassTable,
+  twoSpeciesIris, unbalancedIris, useTestGalleryStorage, valuesOf, WINE, xgboost, XGBOOST_FIELDS} from './test-data';
 
 const WAIT_MS = 5000;
 const TIMEOUT = 60000;
@@ -66,9 +70,14 @@ function deferred(): {promise: Promise<boolean>; resolve: (value: boolean) => vo
   return {promise, resolve: (value) => holder.resolve(value)};
 }
 
-/** Opens the Train view on [table] and waits for the training it starts by itself. */
-async function openTrainView(table: DG.DataFrame): Promise<TrainView> {
-  const view = await TrainView.create(table);
+/** The installed methods with SVM as {@link slowEngine} (its train calls waiting for [gate] when given). */
+const withSlowSvm = (gate?: Promise<void>) =>
+  [...EngineRegistry.discover().filter((e) => e.name !== 'SVM'), slowEngine(svm(), gate)];
+
+/** Opens the Train view on [table] (with the [discovered] methods instead of the installed ones when given) and waits
+ * for the training it starts by itself. */
+async function openTrainView(table: DG.DataFrame, discovered?: Engine[]): Promise<TrainView> {
+  const view = await TrainView.create(table, null, discovered);
   grok.shell.addView(view);
   await awaitTrained(view);
   return view;
@@ -92,25 +101,17 @@ async function closeTrainView(view: TrainView, tables: DG.DataFrame[]): Promise<
 
 const isDisabled = (button: HTMLElement) => button.classList.contains('d4-disabled');
 const isShown = (element: HTMLElement) => element.style.display !== 'none';
-/** Every input of [view]'s form: the data, the method, the preparation, the validation and the method's settings. */
+/** Every input of [view]'s form: the data, the method, the preparation, the output, the validation and the method's
+ * settings. */
 const formInputsOf = (view: TrainView) => [view.tableInput, view.targetInput, view.featuresInput, view.methodInput,
-  ...view.preparationInputs.inputs, ...view.validationInputs.inputs, ...view.hyperparameterInputs.values()];
+  ...view.preparationInputs.inputs, ...view.outputInputs.inputs, ...view.validationInputs.inputs,
+  ...view.hyperparameterInputs.values()];
 const formStates = (view: TrainView) => formInputsOf(view).map((input) => `${input.caption} ${input.enabled}`);
 /** The enabled inputs of [view]'s form and Settings, then the enabled controls of Search options. */
 const enabledInputs = (view: TrainView) => [...[...formInputsOf(view), ...view.tuneSettings.inputs]
   .filter((input) => input.enabled).map((input) => input.caption),
 ...view.tuneSettings.controls.filter((c) => !c.disabled).map((c) => c.getAttribute('aria-label') ?? c.className)];
 
-/** 10001 rows of two classes: SVM says it is too slow to retrain on every change. */
-function slowTable(): DG.DataFrame {
-  const rows = 10001;
-  const a = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'a', valuesOf(rows, (i) => i % 2 + (i % 7) / 100));
-  const b = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'b', valuesOf(rows, (i) => (i % 11) / 10));
-  const label = DG.Column.fromStrings('label', Array.from({length: rows}, (_, i) => i % 2 === 0 ? 'even' : 'odd'));
-  const table = DG.DataFrame.fromColumns([a, b, label]);
-  table.name = `forge-test-slow-${Date.now()}`;
-  return table;
-}
 /** The title of [view]'s ROC Curve panel (`ROC Curve (AUC = ...)`); '' when there is none. */
 const rocTitleOf = (view: TrainView | EvaluationView) =>
   rowTitles(view).flat().find((t) => t.startsWith('ROC Curve')) ?? '';
@@ -351,7 +352,7 @@ category('UI', () => {
       const forms = view.root.querySelectorAll('.ui-form');
       expect(forms.length, 1, 'Data and Method are not one form');
       const trainRow = view.trainButton.closest('.forge-train-row');
-      expect(trainRow?.parentElement === forms[0] && trainRow.previousElementSibling === view.groups[3].root, true,
+      expect(trainRow?.parentElement === forms[0] && trainRow.previousElementSibling === view.groups[4].root, true,
         'Train is not right after Validation in the form');
       expect(view.root.querySelectorAll('.ui-split-h-divider').length, 1, 'No splitter between the form and Results');
       expect(isDisabled(view.saveButton), true, 'Save is enabled before training');
@@ -389,7 +390,7 @@ category('UI', () => {
       const text = view.root.textContent ?? '';
       const results = gridWith(view.root, 'Metric');
       const metrics = results.dataFrame.getCol('Metric').toList();
-      for (const caption of ['Accuracy', 'F1'])
+      for (const caption of ['Accuracy', 'F1 score'])
         expect(metrics.includes(caption), true, `${caption} is missing: ${metrics}`);
       expect(metrics.includes('Recall (Sensitivity)'), false, 'Recall (Sensitivity) on three classes');
       expect(text.includes('Split seed: 42'), true, 'No split seed line');
@@ -575,14 +576,19 @@ category('UI', () => {
       const data = groupOf(view.root, 'Data');
       const preparation = groupOf(view.root, 'Preparation');
       const method = groupOf(view.root, 'Method');
-      expect(isShown(data.body) && isShown(preparation.body) && isShown(method.body), true, 'A group starts collapsed');
+      const output = groupOf(view.root, 'Output');
+      expect(isShown(data.body) && isShown(preparation.body) && isShown(method.body) && isShown(output.body), true,
+        'A group starts collapsed');
       expect(data.body.contains(view.featuresInput.root), true, 'Features is not under Data');
       expect(preparation.body.contains(view.missingValuesInputs.choice.root), true,
         'Missing values is not under Preparation');
-      const shown = view.preparationInputs.inputs.filter((i) => isShown(i.root)).map((i) => i.caption).join();
-      expect(isShown(view.preparationInputs.group.root) && shown === 'Predict probability', true, `Shown: ${shown}`);
+      expect(isShown(view.preparationInputs.group.root), false, 'Preparation is shown for iris');
+      const shown = view.outputInputs.inputs.filter((i) => isShown(i.root)).map((i) => i.caption).join();
+      expect(isShown(view.outputInputs.group.root) && shown === 'Predict probability', true, `Shown: ${shown}`);
+      expect(output.body.contains(view.outputInputs.predictProbability.root), true,
+        'Predict probability is not under Output');
       expectArray(view.groups.map((g) => Array.from(g.root.parentElement?.children ?? []).indexOf(g.root)),
-        [0, 1, 2, 3]);
+        [0, 1, 2, 3, 4]);
       const iterations = view.hyperparameterInputs.get('iterations');
       expect(iterations !== undefined && method.body.contains(iterations.root), true, 'Iterations is not under Method');
       expect(method.body.contains(view.methodInput.root), true, 'Method is not under Method');
@@ -746,7 +752,7 @@ category('UI: Train', () => {
       const choice = view.missingValuesInputs.choice;
       expect(view.methodInput.value, 'XGBoost');
       expect(isShown(choice.root), false, 'Missing values is shown for XGBoost');
-      expect(isShown(view.preparationInputs.predictProbability.root), true, 'No Predict probability for Species');
+      expect(isShown(view.outputInputs.predictProbability.root), true, 'No Predict probability for Species');
       await awaitCheck(() => listItems().includes('Missing values: kept (the method handles them)'),
         `No kept line: ${listItems().join(' | ')}`, WAIT_MS);
       expect(view.lastTraining?.result.rowCount, 150);
@@ -773,6 +779,7 @@ category('UI: Train', () => {
         r.status === 'completed'), `No completed run of ${CHECK_METHOD}`, TIMEOUT / 2);
       expect(view.methodInput.items.includes('XGBoost'), false, view.methodInput.items.join(', '));
       expect(isShown(view.preparationInputs.group.root), false, 'Preparation is shown');
+      expect(isShown(view.outputInputs.group.root), false, 'Output is shown');
       expect(balloonWith('cannot learn') === null, true, 'A balloon named a refused method');
     } finally {
       await closeTrainView(view, [table]);
@@ -861,8 +868,8 @@ category('UI: Train', () => {
   }, {timeout: TIMEOUT});
 
   test('Train is shown for a slow method, disabled after a training and enabled by a change', async () => {
-    const table = slowTable();
-    const view = await openTrainView(table);
+    const table = twoClassTable();
+    const view = await openTrainView(table, withSlowSvm());
     const first = view.lastTraining?.engine.name;
     try {
       expect(isTrainShown(view), false, `Train is shown for ${first}`);
@@ -895,8 +902,8 @@ category('UI: Train', () => {
   }, {timeout: 120000});
 
   test('Train disables the form and ignores Runs rows; each input\'s state comes back after the training', async () => {
-    const table = slowTable();
-    const view = await openTrainView(table);
+    const table = twoClassTable();
+    const view = await openTrainView(table, withSlowSvm());
     try {
       view.methodInput.value = 'SVM';
       await awaitCheck(() => isTrainShown(view) && !isDisabled(view.trainButton), 'Train is not offered for SVM',
@@ -922,8 +929,10 @@ category('UI: Train', () => {
   }, {timeout: 120000});
 
   test('a cancel unlocks the form; a training completed after a cancelled one clears the invalid mark', async () => {
-    const demog = demoDemog(50000);
-    const view = await TrainView.create(demog);
+    const demog = demoDemog(1000);
+    let open: () => void = () => {};
+    const gate = new Promise<void>((resolve) => open = resolve);
+    const view = await TrainView.create(demog, null, withSlowSvm(gate));
     view.targetInput.value = demog.getCol('sex');
     view.methodInput.value = 'SVM';
     grok.shell.addView(view);
@@ -934,6 +943,7 @@ category('UI: Train', () => {
       const cancelled = view.train();
       expectArray(enabledInputs(view), []);
       await cancelOnceShown('Training SVM model', WAIT_MS);
+      open();
       await cancelled;
       expect(`${view.runs[0]?.status} ${resultsState(view)}`, 'cancelled false/true',
         'The cancel came after the training ended');
@@ -943,6 +953,7 @@ category('UI: Train', () => {
       expect(`${view.runs[0]?.status} ${resultsState(view)}`, 'completed false/false');
       expect(shownRun(view), view.lastTraining?.runId ?? null, 'The results show another run than the last training');
     } finally {
+      open();
       await closeTrainView(view, [demog]);
     }
   }, {timeout: TIMEOUT});
@@ -954,12 +965,13 @@ category('UI: Train', () => {
       const v = view.validationInputs;
       try {
         expectArray(view.groups.map((g) => g.root.querySelector('.forge-group-header label')?.textContent),
-          ['Data', 'Preparation', 'Method', 'Validation']);
-        expect(view.groups[2].root.nextElementSibling === v.group.root &&
+          ['Data', 'Preparation', 'Method', 'Output', 'Validation']);
+        expect(view.groups[2].root.nextElementSibling === view.outputInputs.group.root &&
+          view.groups[3].root.nextElementSibling === v.group.root &&
           view.groups[2].root.contains(view.tuneSettings.root), true,
-        'Validation is not right after Method and its Settings');
+        'Output and Validation are not right after Method and its Settings');
         expect(v.group.isExpanded, false, 'Validation starts expanded');
-        expectAlignedCaptions(view.root, ['Data', 'Method', 'Validation']);
+        expectAlignedCaptions(view.root, ['Data', 'Method', 'Output', 'Validation']);
         v.group.setExpanded(true);
         expect(v.seed.root.querySelector('.ui-input-options i, .ui-input-plus, .ui-input-minus') === null, true,
           'Split seed has icons');
@@ -1145,11 +1157,15 @@ category('UI: Train', () => {
 
 category('UI: Preparation', () => {
   test('Preparation follows demog: Missing values, One-hot encoding, Skip unique categories', async () => {
-    const demog = await openDemog();
+    const full = await openDemog();
+    const demog = spreadRows(full, 1000, (i) => full.getCol('HEIGHT').isNone(i) || full.getCol('WEIGHT').isNone(i));
+    expect(demog.rowCount <= 1000 && demog.getCol('HEIGHT').stats.missingValueCount +
+      demog.getCol('WEIGHT').stats.missingValueCount > 0, true, 'The subset lost the gaps');
     const view = await TrainView.create(demog);
     grok.shell.addView(view);
     const preparation = view.preparationInputs;
-    const {oneHot, skipUniqueCategories, predictProbability, threshold} = preparation;
+    const {oneHot, skipUniqueCategories} = preparation;
+    const {predictProbability, threshold} = view.outputInputs;
     try {
       view.methodInput.value = 'SVM';
       await awaitTrained(view);
@@ -1157,7 +1173,8 @@ category('UI: Preparation', () => {
         'Preparation does not show Missing values for HEIGHT and WEIGHT');
       expect([oneHot, skipUniqueCategories, threshold].some((input) => isShown(input.root)), false,
         'A step is shown for numerical features and a many-class target');
-      expect(isShown(predictProbability.root), true, 'Predict probability is not offered for a many-class target');
+      expect(isShown(view.outputInputs.group.root) && isShown(predictProbability.root), true,
+        'Predict probability is not offered for a many-class target');
       const forms = view.root.querySelectorAll('.ui-form');
       expect(forms.length === 1 && forms[0].contains(preparation.group.root), true, 'Preparation is not in the form');
 
@@ -1171,6 +1188,7 @@ category('UI: Preparation', () => {
       expectArray(Object.keys(encoded?.oneHotCategories ?? {}), ['SEX', 'RACE']);
       expect(isShown(skipUniqueCategories.root) || isShown(predictProbability.root), false,
         'A step that does not apply is shown');
+      expect(isShown(view.outputInputs.group.root), false, 'Output is shown for a numerical target');
 
       oneHot.value = false;
       await awaitCheck(() => view.featuresInput.validity !== null, 'Text features are not marked', TIMEOUT);
@@ -1242,16 +1260,18 @@ category('UI: Preparation', () => {
   test('Train keeps Predict probability while the form is locked', async () => {
     const iris = await twoSpeciesIris();
     const view = await openTrainView(iris);
-    const {predictProbability} = view.preparationInputs;
+    const {predictProbability} = view.outputInputs;
     try {
       view.methodInput.value = 'SVM';
       await awaitCheck(() => view.lastTraining?.engine.name === 'SVM' && !view.isTraining, 'No SVM training', TIMEOUT);
-      predictProbability.value = true;
-      await awaitCheck(() => view.lastTraining?.request.hyperparameters.probability === true && !view.isTraining,
-        'Predict probability does not retrain SVM', TIMEOUT);
-      await delay(CHECK_DELAY_MS * 3);
-      const live = view.lastTraining;
+      expect(view.lastTraining?.request.hyperparameters.probability, true, 'SVM trained without probabilities');
       const count = view.runs.length;
+      predictProbability.value = true;
+      await waitUntil(() => view.lastTraining?.result.options.postprocessingInfo.includes('class-probabilities') ===
+        true, 'Predict probability does not re-cut SVM', WAIT_MS);
+      await delay(CHECK_DELAY_MS * 3);
+      expect(view.runs.length, count, 'Predict probability retrained SVM');
+      const live = view.lastTraining;
 
       await view.train();
       const training = view.lastTraining!;
@@ -1377,7 +1397,7 @@ const curveValues = (frame: DG.DataFrame) => JSON.stringify(frame.columns.toList
 async function expectRocCurve(): Promise<void> {
   const iris = await twoSpeciesIris();
   const view = await openTrainView(iris);
-  const {predictProbability, threshold} = view.preparationInputs;
+  const {predictProbability, threshold} = view.outputInputs;
   try {
     predictProbability.value = true;
     const rocTitle = () => rocTitleOf(view);
@@ -1461,8 +1481,8 @@ async function expectRocCurve(): Promise<void> {
 }
 
 /** XGBoost on two iris species: ROC Curve and PR Curve from the class probabilities, no mark, new frames on a
- * retrain; none for SVM (no class probabilities, MCC still), a regression or three classes, which get the AUC-ROC and
- * Average precision rows and the Per-class parallel coordinates plot, refilled by a retrain. */
+ * retrain; SVM has them too (always trained with class probabilities); none for a regression or three classes, which
+ * get the AUC-ROC and Average precision rows and the Per-class parallel coordinates plot, refilled by a retrain. */
 async function expectProbabilityRocCurve(): Promise<void> {
   const iris = await twoSpeciesIris();
   const view = await openTrainView(iris);
@@ -1497,11 +1517,12 @@ async function expectProbabilityRocCurve(): Promise<void> {
 
     view.methodInput.value = 'SVM';
     await awaitCheck(() => view.lastTraining?.engine.name === 'SVM' && !view.isTraining, 'No SVM training', TIMEOUT);
-    await delay(CHECK_DELAY_MS * 3);
-    expect(rocTitle(), '', 'SVM has a ROC Curve');
-    expect(prTitle(), '', 'SVM has a PR Curve');
-    expect(hasMetric(view.root, 'AUC-ROC'), false, 'SVM has an AUC-ROC row');
-    expect(hasMetric(view.root, 'Average precision'), false, 'SVM has an Average precision row');
+    const svmAuc = `ROC Curve (AUC = ${view.lastTraining?.result.metrics.train.auc?.toFixed(3)})`;
+    await waitUntil(() => rocTitle() === svmAuc && !view.isTraining, () => `SVM's ROC Curve: '${rocTitle()}', ` +
+      `expected '${svmAuc}'`, WAIT_MS);
+    expect(prTitle().startsWith('PR Curve (AP = '), true, prTitle());
+    expect(hasMetric(view.root, 'AUC-ROC'), true, 'SVM has no AUC-ROC row');
+    expect(hasMetric(view.root, 'Average precision'), true, 'SVM has no Average precision row');
     expect(hasMetric(view.root, 'MCC'), true, 'SVM has no MCC row');
 
     view.methodInput.value = 'XGBoost';
@@ -1524,8 +1545,8 @@ async function expectProbabilityRocCurve(): Promise<void> {
     expect(pcPlot.type, DG.VIEWER.PC_PLOT);
     const perClass = pcPlot.dataFrame;
     expect(perClass.rowCount, 3);
-    expectArray(perClass.columns.names(), ['Class', 'Precision', 'Recall', 'F1', 'AUC-ROC']);
-    expectArray(pcPlot.props.columnNames, ['Precision', 'Recall', 'F1', 'AUC-ROC']);
+    expectArray(perClass.columns.names(), ['Class', 'Precision', 'Recall', 'F1 score', 'AUC-ROC']);
+    expectArray(pcPlot.props.columnNames, ['Precision', 'Recall', 'F1 score', 'AUC-ROC']);
     expect(pcPlot.props.colorColumnName, 'Class');
     expect(pcPlot.props.legendVisibility, 'Always', 'The three species have no legend');
     expect(pcPlot.props.legendPosition, 'Top', 'The three species\' legend is not on top');
@@ -1552,7 +1573,7 @@ async function expectProbabilityRocCurve(): Promise<void> {
       TIMEOUT);
     await delay(CHECK_DELAY_MS * 3);
     expectArray(panelViewer(other, 'Per-class').dataFrame.columns.names(),
-      ['Class', 'Precision', 'Recall', 'F1']);
+      ['Class', 'Precision', 'Recall', 'F1 score', 'AUC-ROC']);
   } finally {
     if (other !== undefined && threeSpecies !== undefined)
       await closeTrainView(other, [threeSpecies]);
@@ -1566,7 +1587,7 @@ async function expectProbabilityToggle(): Promise<void> {
   const demog = await openDemog();
   const view = await TrainView.create(demog);
   grok.shell.addView(view);
-  const {predictProbability} = view.preparationInputs;
+  const {predictProbability} = view.outputInputs;
   const rocTitle = () => rocTitleOf(view);
   const rocFrame = () => panelViewer(view, rocTitle()).dataFrame;
   try {
@@ -2086,7 +2107,7 @@ category('UI: Results', () => {
     const demog = await openDemog();
     const view = await TrainView.create(demog);
     grok.shell.addView(view);
-    const {predictProbability, threshold, setThresholdButton} = view.preparationInputs;
+    const {predictProbability, threshold, setThresholdButton} = view.outputInputs;
     const options = () => view.lastTraining?.result.options;
     let iris: DG.DataFrame | undefined;
     let irisView: TrainView | undefined;
@@ -3399,7 +3420,7 @@ category('UI: Runs', () => {
   test('a click on the current run after a threshold move restores the threshold without training', async () => {
     const iris = await twoSpeciesIris();
     const view = await openTrainView(iris);
-    const {predictProbability, threshold} = view.preparationInputs;
+    const {predictProbability, threshold} = view.outputInputs;
     try {
       predictProbability.value = true;
       await delay(CHECK_DELAY_MS * 3);
@@ -3628,68 +3649,37 @@ function currentCard(view: TrainView): HTMLElement {
 const pinnedCards = (view: TrainView) =>
   Array.from(view.modelCards.root.querySelectorAll<HTMLElement>('.forge-card:not(.forge-card-current)'));
 const cardNumbers = (cards: HTMLElement[]) => cards.map((card) => card.dataset.forgeRun ?? '');
-/** The classes of [card]'s children: the header, the caption after a search, the tabs. */
-const cardParts = (card: HTMLElement) => Array.from(card.children,
-  (e) => Array.from(e.classList).find((c) => c.startsWith('forge-card-')) ?? '');
-/** The italic line under [card]'s title after a search; null without one. */
-const cardCaption = (card: HTMLElement) => card.querySelector('.forge-card-caption')?.textContent ?? null;
+/** The text of [card]'s element of the class [cls]; '' without one. */
+const cardText = (card: HTMLElement, cls: string) => card.querySelector(`.${cls}`)?.textContent ?? '';
+const isBest = (card: HTMLElement) => isShown(card.querySelector<HTMLElement>('.forge-card-best')!);
 const pinIcon = (card: HTMLElement) => card.querySelector<HTMLElement>('.forge-card-pin')!;
 const unpinIcon = (card: HTMLElement) => card.querySelector<HTMLElement>('.forge-card-unpin')!;
 /** The icons [card] shows, as "+" and "trash". */
 const visibleIcons = (card: HTMLElement) => Array.from(card.querySelectorAll<HTMLElement>('.forge-card-icon'))
   .filter((icon) => isShown(icon) && icon.style.visibility !== 'hidden')
   .map((icon) => icon.classList.contains('forge-card-pin') ? '+' : 'trash');
-const tabHeader = (card: HTMLElement, name: string) =>
-  card.querySelector<HTMLElement>(`.d4-tab-header[data-source="tab-pane-${name}"]`)!;
-
-/** The tabs of [card] in [view]; fails without them. */
-function cardTabs(view: TrainView, card: HTMLElement): DG.TabControl {
-  const tabs = view.modelCards.tabsOf(card);
-  if (tabs === undefined)
-    throw new Error(`No tabs of the card of run ${card.dataset.forgeRun}`);
-  return tabs;
-}
-
-/** The table of the pane [name] of [card]'s tabs. */
-function paneTable(view: TrainView, card: HTMLElement, name: string): HTMLTableElement {
-  const content = cardTabs(view, card).getPane(name).content;
-  const table = content instanceof HTMLTableElement ? content : content.querySelector('table');
-  if (table === null)
-    throw new Error(`No table in ${name}`);
-  return table;
-}
-
-/** The room between [last], the shown pane's last line, and [card]'s padding: 0 when the card is as tall as its
- * content. */
-function spaceUnder(card: HTMLElement, last: Element): number {
-  const style = getComputedStyle(card);
-  return card.getBoundingClientRect().bottom - parseFloat(style.paddingBottom) -
-    parseFloat(style.borderBottomWidth) - last.getBoundingClientRect().bottom;
-}
-
-/** The cells of [table] but the first column's, the header row's included. */
-const valueCells = (table: HTMLTableElement) =>
-  Array.from(table.rows).flatMap((row) => Array.from(row.cells).slice(1));
-const notRightAligned = (table: HTMLTableElement) =>
-  valueCells(table).filter((cell) => getComputedStyle(cell).textAlign !== 'right').length;
-
 /** Each row of [table] as its cells' texts. */
-/** The text of [table]'s shown rows. */
-const tableText = (table: HTMLTableElement) => Array.from(table.rows).filter((row) => row.style.display !== 'none')
-  .map((row) => Array.from(row.cells, (cell) => cell.textContent ?? ''));
+const tableRows = (table: HTMLElement) =>
+  Array.from(table.querySelectorAll('tr'), (row) => Array.from(row.cells, (cell) => cell.textContent ?? ''));
+/** The validation value of [metric] of [run]. */
+const validationOf = (run: SessionRun, metric: MetricId) => run.metrics?.validation[metric];
 
-/** The metric names of [card]'s Performance table. */
-const cardMetrics = (view: TrainView, card: HTMLElement) =>
-  tableText(paneTable(view, card, 'Performance')).slice(1).map((row) => row[0]);
-/** Show more / Show less of [card]'s Performance; null without one. */
-const moreLink = (card: HTMLElement) => card.querySelector<HTMLElement>('.forge-card-more');
+/** The numbers of [runs] (newest first) in the order of their pinned cards by [metric]: the best validation value as
+ * shown (3 decimals) first, a run without one last, ties newest first. */
+function sortedNumbers(runs: SessionRun[], metric: MetricId): string[] {
+  const rank = (run: SessionRun) => {
+    const value = validationOf(run, metric);
+    return value === undefined ? -Number.MAX_VALUE : directionOf(metric) * roundTo3(value);
+  };
+  return [...runs].sort((a, b) => rank(b) - rank(a)).map((run) => `${run.number}`);
+}
 
 category('UI: Search', () => {
   test('Tune keeps Predict probability; the Metric lists Log loss and Brier score last', async () => {
     const iris = await twoSpeciesIris();
     const view = await openTrainView(iris);
     try {
-      view.preparationInputs.predictProbability.value = true;
+      view.outputInputs.predictProbability.value = true;
       autoTune(view);
       await awaitCheck(() => !isDisabled(view.tuneButton), 'Tune stays disabled', WAIT_MS);
       expect(await enterTooltip(view.tuneButton), 'Find the best settings');
@@ -3704,7 +3694,7 @@ category('UI: Search', () => {
   test('Tune optimizes the winner\'s threshold for the chosen metric, unless it was edited by hand', async () => {
     const iris = await twoSpeciesIris();
     const view = await openTrainView(iris);
-    const {predictProbability, threshold, thresholdMetric} = view.preparationInputs;
+    const {predictProbability, threshold, thresholdMetric} = view.outputInputs;
     const options = () => view.lastTraining?.result.options;
     try {
       predictProbability.value = true;
@@ -3921,11 +3911,9 @@ category('UI: Search', () => {
       expect(`${view.tuneSettings.isAuto} ${statusOf(view)}`, 'false Auto-tuned');
       expect(view.runs[0].settingsStatus, 'Auto-tuned');
       const card = currentCard(view);
-      expect(cardCaption(card), 'Auto-tuned settings');
-      expectArray(cardParts(card).slice(0, 2), ['forge-card-header', 'forge-card-caption']);
-      expect(cardParts(card).length, 3);
-      tabHeader(card, 'Settings').click();
-      expect(card.querySelector('.forge-tune-status-text'), null, 'The Settings tab shows a status');
+      expect(cardText(card, 'forge-card-kind'), 'Auto-tuned settings');
+      expect(card.querySelector('.d4-tab-host'), null, 'The card has tabs');
+      expect(card.querySelector('.forge-tune-status-text'), null, 'The card shows a status');
       expectArray(search?.space?.pinned ?? [], ['maxDepth']);
       expect(search?.space?.searched.some((d) => d.name === 'maxDepth'), false, 'A pinned setting was searched');
       expect(isShown(view.searchPanel.root) || view.searchPanel.grid !== null, false, 'Search shows one method');
@@ -4000,7 +3988,7 @@ category('UI: Search', () => {
     async () => {
       const iris = await twoSpeciesIris();
       const view = await openTrainView(iris);
-      const {predictProbability, threshold} = view.preparationInputs;
+      const {predictProbability, threshold} = view.outputInputs;
       const texts = new Set<string>();
       const observer = new MutationObserver(() => {
         for (const entry of Array.from(document.querySelectorAll('.d4-task-bar-entry')))
@@ -4077,6 +4065,10 @@ category('UI: Search', () => {
         gridTooltip(grid, grid.cell('Accuracy (hold-out)', 0)));
       expectArray([headerTooltip(grid, 'SE').startsWith('The standard error'), headerTooltip(grid, 'Trials')],
         [true, 'Every trial of the method, pruned and failed ones included.']);
+      const run = view.runs[0];
+      expect(ModelCards.kindLine(run), 'Auto-tuned model');
+      if (visibleHyperparametersOf(run.engine).length > 0)
+        expect(cardText(currentCard(view), 'forge-card-kind'), 'Auto-tuned model');
     } finally {
       await closeTrainView(view, [iris]);
     }
@@ -4166,59 +4158,152 @@ category('UI: Search', () => {
 });
 
 category('UI: Cards', () => {
-  test('the current card is the newest completed training: title, nothing under it, Performance as the grid, ' +
-    'Settings without a status; a Table change empties it', async () => {
+  test('bestMarks: 3 decimals, ties, all when all tie, not one card; kindLine, settingsOf, settingsBlock', async () => {
+    expectArray(ModelCards.bestMarks([0.9801, 0.9804, 0.97], 1), [true, true, false]);
+    expectArray(ModelCards.bestMarks([0.03, 0.02, 0.0204], -1), [false, true, true]);
+    expectArray(ModelCards.bestMarks([0.5], 1), [false]);
+    expectArray(ModelCards.bestMarks([0.5, 0.5], 1), [true, true]);
+    expectArray(ModelCards.bestMarks([0.5001, 0.4999], 1), [true, true]);
+    expectArray(ModelCards.bestMarks([undefined, undefined], 1), [false, false]);
+    expectArray(ModelCards.bestMarks([0.5, undefined], 1), [true, false]);
+
+    const engine = xgboost();
+    const defaults = defaultHyperparameters(engine);
+    const candidate = (method: string): CandidateRecord => ({method, trials: 4, outcome: 'complete'});
+    const find = (methods: string[]): SearchRecord =>
+      ({...searchRecord(), mode: 'best', methods: methods.map(candidate)});
+    expectArray([ModelCards.kindLine({settingsStatus: 'Default'}), ModelCards.kindLine({settingsStatus: 'Customized'}),
+      ModelCards.kindLine({settingsStatus: 'Auto-tuned', search: searchRecord()}),
+      ModelCards.kindLine({settingsStatus: 'Auto-tuned', search: find(['XGBoost'])}),
+      ModelCards.kindLine({settingsStatus: 'Auto-tuned', search: find(['XGBoost', 'SVM'])})],
+    ['Default settings', 'Customized settings', 'Auto-tuned settings', 'Auto-tuned settings', 'Auto-tuned model']);
+
+    const properties = visibleHyperparametersOf(engine);
+    const entries = (values: Record<string, unknown>) => properties
+      .map((p) => `${DG.StringUtils.camelCaseToSentence(p.caption || p.name)} ${String(values[p.name])}`);
+    expect(properties.some((p) => p.name === 'iterations'), true, 'XGBoost has no iterations');
+    const shown = (values: typeof defaults) => ModelCards.settingsOf({engine, hyperparameters: values})
+      .map((s) => `${s.caption} ${s.value}`);
+    expectArray(shown(defaults), entries(defaults));
+    expectArray(shown({...defaults, iterations: 30}), entries({...defaults, iterations: 30}));
+    expectArray(ModelCards.settingsOf({engine, hyperparameters: defaults}).map((s) => s.description),
+      properties.map((p) => p.description ?? ''));
+
+    expectArray(ModelCards.settingsBlock('Default settings', []), []);
+    const settings = (n: number) => Array.from({length: n}, (_, i) =>
+      ({caption: `Setting ${i}`, value: `${i}`, description: i === 0 ? '' : `What ${i} does`}));
+    /** The text of [block]'s kind line, then its one table's rows, each row's cells joined by spaces. */
+    const blockOf = (block: HTMLElement[]) => [block[0].textContent ?? '',
+      ...tableRows(block[1].querySelector('table')!).map((r) => r.join(' '))];
+    expect(ModelCards.settingsBlock('Auto-tuned settings', settings(5))[1].querySelectorAll('table').length, 1);
+    expectArray(blockOf(ModelCards.settingsBlock('Auto-tuned model', settings(1))),
+      ['Auto-tuned model', 'Setting 0 0']);
+    expectArray(blockOf(ModelCards.settingsBlock('Customized settings', settings(3))),
+      ['Customized settings', 'Setting 0 0 Setting 1 1', 'Setting 2 2']);
+    expectArray(blockOf(ModelCards.settingsBlock('Auto-tuned model', settings(4))),
+      ['Auto-tuned model', 'Setting 0 0 Setting 1 1', 'Setting 2 2 Setting 3 3']);
+    expectArray(blockOf(ModelCards.settingsBlock('Auto-tuned settings', settings(5))),
+      ['Auto-tuned settings', 'Setting 0 0 Setting 1 1', 'Setting 2 2 Setting 3 3', 'Setting 4 4']);
+
+    const block = ModelCards.settingsBlock('Default settings', settings(2));
+    const host = ui.divV(block);
+    document.body.append(host);
+    try {
+      const cell = (k: number) => host.querySelectorAll('td')[k].firstElementChild as HTMLElement;
+      expectArray([await enterTooltip(cell(2)), await enterTooltip(cell(3)), await enterTooltip(cell(0)),
+        await enterTooltip(block[0])], ['What 1 does', 'What 1 does', '', '']);
+    } finally {
+      host.remove();
+    }
+  });
+
+  test('the current card in Trained models: the method, the settings status and line, Compare by\'s validation ' +
+    'value and the status; a Table change empties it', async () => {
     const iris = await openIris();
     const demog = grok.shell.addTable(await openDemog());
     const view = await openTrainView(iris);
     const cards = view.modelCards;
     try {
+      const group = cards.group.root;
+      expect(group.previousElementSibling === view.trainButton.closest('.forge-train-row'), true,
+        'Trained models is not right after the Train row');
+      expect(group.querySelector('.forge-group-header label')?.textContent, 'Trained models');
       expect(cards.current === view.runs[0], true, 'The current card is not the newest run');
       const first = currentCard(view);
-      expect(isShown(cards.root) && isShown(first), true, 'The current card is hidden');
-      expectArray([first.dataset.forgeRun ?? '', first.querySelector('.forge-card-title')?.textContent ?? ''],
-        ['1', 'XGBoost']);
-      expect(`${cardCaption(first)} ${cardParts(first).length} ${cardParts(first)[0]}`, 'null 2 forge-card-header',
-        'Something between the header and the tabs');
+      expect(isShown(group) && isShown(first), true, 'The current card is hidden');
+      const run = view.runs[0];
+      const metrics = run.metrics!;
+      const ids = metricIdsOf({metrics});
+      expect(cards.compareBy.value, 'Balanced accuracy');
+      expectArray(cards.compareBy.items, ids.map((id) => METRIC_LABELS[id]));
+      expectArray([first.dataset.forgeRun ?? '', cardText(first, 'forge-card-title')], ['1', 'XGBoost']);
+      expect(run.settingsStatus, 'Default');
+      /** [card]'s kind line, then its settings as `<name> <value>`, row by row. */
+      const shownSettings = (card: HTMLElement) => [cardText(card, 'forge-card-settings'),
+        ...tableRows(card.querySelector<HTMLElement>('.forge-card-settings-table')!)
+          .flatMap((c) => c.length > 2 ? [`${c[0]} ${c[1]}`, `${c[2]} ${c[3]}`] : [`${c[0]} ${c[1]}`])];
+      expectArray(shownSettings(first),
+        ['Default settings', ...ModelCards.settingsOf(run).map((s) => `${s.caption} ${s.value}`)]);
+      const [train, validation] = [metrics.train.balancedAccuracy!, metrics.validation.balancedAccuracy!];
+      expectArray([cardText(first, 'forge-card-metric'), cardText(first, 'forge-card-value')],
+        ['Balanced accuracy', validation.toFixed(3)]);
+      const {isOverfitting} = overfittingOf('balancedAccuracy', train, validation);
+      const statusPhrase = isOverfitting ? 'Overfitting' : 'No overfitting';
+      const status = first.querySelector<HTMLElement>('.forge-card-status')!;
+      expect(`${status.textContent} ${status.classList.contains(isOverfitting ? 'forge-card-warn' : 'forge-card-ok')}`,
+        `${isOverfitting ? '!' : ''}${statusPhrase} true`);
+      expect(status.querySelector('.forge-card-mark') !== null, isOverfitting, 'The Overfitting mark is not a "!"');
+      const rect = (cls: string) => first.querySelector(`.${cls}`)!.getBoundingClientRect();
+      const [title, label, icon, statusRect] = ['forge-card-title', 'forge-card-metric', 'forge-card-pin',
+        'forge-card-status'].map(rect);
+      expect(Math.abs(label.left - title.left) <= 1 && Math.abs(statusRect.right - icon.right) <= 1, true,
+        `metric ${label.left} vs title ${title.left}, status ${statusRect.right} vs icon ${icon.right}`);
+      const settingsRight = Math.max(...Array.from(first.querySelectorAll('.forge-card-settings, ' +
+        '.forge-card-settings-table table'), (e) => e.getBoundingClientRect().right));
+      expect(settingsRight <= icon.left + 1, true, `The settings end at ${settingsRight}, the icon at ${icon.left}`);
+      const [kindLeft, tableLeft] = ['forge-card-kind', 'forge-card-settings-table'].map((c) => rect(c).left);
+      expect(Math.abs(kindLeft - tableLeft) <= 1 && kindLeft > title.left + 5, true,
+        `The kind starts at ${kindLeft}, the table at ${tableLeft}, the title at ${title.left}`);
+      const labelTip = await enterTooltip(first.querySelector<HTMLElement>('.forge-card-metric')!);
+      const valueTip = await enterTooltip(first.querySelector<HTMLElement>('.forge-card-value')!);
+      expect(`${labelTip === METRIC_DESCRIPTIONS.balancedAccuracy} ${valueTip.startsWith('MetricTrainValidation')}`,
+        'true true', `${labelTip} | ${valueTip}`);
+      expect(isBest(first), false, 'Best on the only card');
       expectArray(visibleIcons(first), ['+']);
       expect(pinIcon(first).getAttribute('aria-label'), 'Pin to compare with other models');
-      expect(cardTabs(view, first).currentPane.name, 'Performance');
 
-      const grid = gridWith(view.resultsPane.root, 'Metric').dataFrame;
-      const gridMetrics: string[] = grid.getCol('Metric').toList();
-      const ordered = ['Balanced accuracy', ...gridMetrics.filter((m) => m !== 'Balanced accuracy')];
-      const performance = paneTable(view, first, 'Performance');
-      const rows = tableText(performance);
+      const rows = tableRows(ModelCards.metricsTooltip(run, 'balancedAccuracy'));
       expectArray(rows[0], ['Metric', 'Train', 'Validation']);
-      expectArray(rows.slice(1).map((row) => row[0]), ordered.slice(0, 3));
-      for (const row of rows.slice(1)) {
-        expectArray(row.slice(1), ['Train', 'Validation'].map((column) => {
-          const value: number | null = grid.get(column, gridMetrics.indexOf(row[0]));
-          return value === null ? '' : value.toFixed(3);
-        }));
-      }
-      expect(notRightAligned(performance), 0, 'A value of Performance is not right-aligned');
-      const valueColors = new Set(valueCells(performance).slice(performance.rows[0].cells.length - 1)
-        .map((cell) => getComputedStyle(cell.firstElementChild ?? cell).color));
-      expect(valueColors.size, 1, `The values of Performance have the colors ${[...valueColors].join(', ')}`);
-      const more = moreLink(first)!;
-      expect(more.textContent, 'Show more');
-      expect(Math.abs(spaceUnder(first, more)) <= 1, true, `${spaceUnder(first, more)} px under Show more`);
-
-      expect(view.runs[0].settingsStatus, 'Default');
-      expect(cardCaption(first), null, 'A card of the default settings has a caption');
-      tabHeader(first, 'Settings').click();
-      const settingsTable = paneTable(view, first, 'Settings');
-      const settings = tableText(settingsTable);
-      expectArray(settings[0], ['Setting', 'Value']);
-      expectArray(settings.slice(1).map((row) => row[0]),
-        [...view.hyperparameterInputs.values()].map((input) => input.caption));
-      const iterations = view.hyperparameterInputs.get('iterations')!.caption;
-      expect(settings.find((row) => row[0] === iterations)?.[1], '20');
-      expect(first.querySelector('.forge-tune-status-text'), null, 'The Settings tab shows a status');
-      expect(notRightAligned(settingsTable), 0, 'A value of Settings is not right-aligned');
-      expect(Math.abs(spaceUnder(first, settingsTable)) <= 1, true,
-        `${spaceUnder(first, settingsTable)} px under Settings`);
+      expectArray(rows.slice(1).map((row) => row[0]), ids.map((id) => METRIC_LABELS[id]));
+      const selected =
+        ModelCards.metricsTooltip(run, 'balancedAccuracy').querySelectorAll('tr.forge-card-tip-selected');
+      expectArray(Array.from(selected, (row) => row.firstElementChild?.textContent ?? ''), ['Balanced accuracy']);
+      const withTest = {...run, metrics: {...metrics, test: metrics.validation}};
+      expectArray(tableRows(ModelCards.metricsTooltip(withTest, 'balancedAccuracy'))[0],
+        ['Metric', 'Train', 'Validation']);
+      const statusTip = ModelCards.statusTooltip(run, 'balancedAccuracy')!;
+      const tipLines = Array.from(statusTip.children, (child) => child.textContent ?? '');
+      expectArray([tipLines.length, tipLines[0], tipLines[2]], [3, 'Balanced accuracy:',
+        isOverfitting ? 'May perform worse on new data.' : 'Should perform about as well on new data.']);
+      const tipRows = tableRows(statusTip.querySelector('table')!);
+      expectArray(tipRows.map((row) => row[0]), ['Train', 'Validation', 'Gap']);
+      const [shownTrain, shownValidation, shownGap] = tipRows.map((row) => Number(row[1]));
+      expect(shownGap.toFixed(3), (shownTrain - shownValidation).toFixed(3), 'The Gap is not the shown difference');
+      expect(`${shownTrain.toFixed(3)} ${shownValidation.toFixed(3)}`,
+        `${train.toFixed(3)} ${validation.toFixed(3)}`);
+      /** The status tooltip of [run] with [id]'s train and validation values replaced: its table rows and sentence. */
+      const tipOf = (id: MetricId, t: number, v: number) => {
+        const tip = ModelCards.statusTooltip({...run, metrics: {...metrics, train: {...metrics.train, [id]: t},
+          validation: {...metrics.validation, [id]: v}}}, id)!;
+        return [...tableRows(tip.querySelector('table')!).map((row) => row.join(' ')),
+          tip.lastElementChild?.textContent];
+      };
+      expectArray(tipOf('balancedAccuracy', 0.9734, 0.9466),
+        ['Train 0.973', 'Validation 0.947', 'Gap 0.026', 'Should perform about as well on new data.']);
+      expectArray(tipOf('logLoss', 0.1, 0.151),
+        ['Train 0.100', 'Validation 0.151', 'Ratio 1.51', 'May perform worse on new data.']);
+      expectArray(tipOf('logLoss', 0, 0.2),
+        ['Train 0.000', 'Validation 0.200', 'Ratio -', 'May perform worse on new data.']);
       const form = view.root.querySelector<HTMLElement>('.forge-train-form')!;
       expect(form.scrollWidth <= form.clientWidth, true, `${form.scrollWidth} > ${form.clientWidth}`);
 
@@ -4229,14 +4314,15 @@ category('UI: Cards', () => {
       const second = currentCard(view);
       expect(second.dataset.forgeRun, '2');
       expect(cards.root.querySelectorAll('.forge-card').length, 1);
-      expect(cards.root.querySelectorAll('.d4-tab-host').length, 1);
-      expect(cardTabs(view, second).currentPane.name, 'Settings', 'The new card is not on the shared tab');
-      expect(`${cardCaption(second)} ${second.querySelector('.forge-card-settings') !== null}`, 'null true',
-        'A card of customized settings has a caption, or no Settings tab');
+      const iterations30 = `${view.hyperparameterInputs.get('iterations')!.caption} 30`;
+      const secondSettings = shownSettings(second);
+      expectArray(secondSettings,
+        ['Customized settings', ...ModelCards.settingsOf(view.runs[0]).map((s) => `${s.caption} ${s.value}`)]);
+      expect(secondSettings.some((s) => s.endsWith(iterations30)), true, secondSettings.join(' | '));
 
       view.tableInput.value = demog;
       expect(cards.current === undefined && cards.pinned.length === 0, true, 'A Table change keeps the cards');
-      expect(isShown(cards.root), false, 'The cards stay shown after a Table change');
+      expect(isShown(cards.group.root), false, 'Trained models stays shown after a Table change');
     } finally {
       await closeTrainView(view, [iris, demog]);
       grok.shell.closeTable(demog);
@@ -4244,7 +4330,7 @@ category('UI: Cards', () => {
   }, {timeout: TIMEOUT});
 
   /** A click while the form is locked is restoreRun's own guard (UI: Train, UI: Search): not repeated here. */
-  test('pin: under the current card, newest first; the trash unpins; a click on a pinned card restores it',
+  test('pin and unpin: a pinned card follows Compare by; the trash unpins; a click on a pinned card restores it',
     async () => {
       const iris = await openIris();
       const view = await openTrainView(iris);
@@ -4271,10 +4357,11 @@ category('UI: Cards', () => {
         const second = currentCard(view);
         expectArray(visibleIcons(second), ['+']);
         pinIcon(second).click();
-        expectArray(cardNumbers(pinnedCards(view)), ['2', '1']);
-        expect(second.nextElementSibling === pinnedCards(view)[0], true, 'The newest pinned card is not first');
+        expectArray(cardNumbers(pinnedCards(view)), sortedNumbers(cards.pinned, 'balancedAccuracy'));
+        expect(second.nextElementSibling === pinnedCards(view)[0], true, 'A pinned card is above the current one');
+        const pinnedOf = (number: string) => pinnedCards(view).find((card) => card.dataset.forgeRun === number)!;
 
-        pinnedCards(view)[1].querySelector<HTMLElement>('.forge-card-header')!.click();
+        pinnedOf('1').querySelector<HTMLElement>('.forge-card-header')!.click();
         await awaitCheck(() => view.hyperparameterInputs.get('iterations')?.value === 20,
           'A click on a pinned card does not set its inputs', WAIT_MS);
         await awaitTrained(view);
@@ -4282,16 +4369,8 @@ category('UI: Cards', () => {
         const third = currentCard(view);
         expect(third.dataset.forgeRun, '3');
         expectArray(visibleIcons(third), []);
-        expect(third.querySelector('.forge-card-settings') === null, true, 'Settings built before a switch');
 
-        tabHeader(pinnedCards(view)[0], 'Settings').click();
-        await delay(CHECK_DELAY_MS * 3);
-        expect(!view.isTraining && view.runs.length === 3, true, 'A tab header click trained');
-        expectArray([third, ...pinnedCards(view)].map((card) => cardTabs(view, card).currentPane.name),
-          ['Settings', 'Settings', 'Settings']);
-        expect(third.querySelector('.forge-card-settings') !== null, true, 'The Settings tab is not built on a switch');
-
-        const other = pinnedCards(view)[0];
+        const other = pinnedOf('2');
         unpinIcon(other).click();
         await delay(CHECK_DELAY_MS * 3);
         expectArray(cardNumbers(pinnedCards(view)), ['1']);
@@ -4308,44 +4387,44 @@ category('UI: Cards', () => {
       }
     }, {timeout: TIMEOUT});
 
-  test('Performance shows three metrics, the default one first; Show more / Show less applies to its own card',
-    async () => {
-      const iris = await openIris();
-      const view = await openTrainView(iris);
-      try {
-        pinIcon(currentCard(view)).click();
-        setHyperparameter(view, 'iterations', 30);
-        await awaitTrained(view);
-        const cards = [currentCard(view), ...pinnedCards(view)];
-        const all = metricIdsOf({metrics: view.runs[0].metrics!}).map((id) => METRIC_LABELS[id]);
-        const ordered = ['Balanced accuracy', ...all.filter((m) => m !== 'Balanced accuracy')];
-        expect(ordered.length > 3, true, `Only ${ordered.join(', ')}`);
-        expectArray(cards.map((card) => cardMetrics(view, card).join(', ')),
-          cards.map(() => ordered.slice(0, 3).join(', ')));
-        const shown = () => cards.map((card) => `${cardMetrics(view, card).length} ${moreLink(card)?.textContent}`);
-        expect(await enterTooltip(moreLink(cards[0])!), 'Show all metrics');
-        moreLink(cards[0])!.click();
-        expect(cardMetrics(view, cards[0]).join(', '), ordered.join(', '));
-        expectArray(shown(), [`${ordered.length} Show less`, '3 Show more']);
-        expect(await enterTooltip(moreLink(cards[0])!), 'Show fewer metrics');
-        const runs = view.runs.length;
-        moreLink(cards[1])!.click();
-        await delay(CHECK_DELAY_MS * 3);
-        expect(`${view.runs.length} ${view.isTraining}`, `${runs} false`, 'Show more on a pinned card trained');
-        expectArray(shown(), [`${ordered.length} Show less`, `${ordered.length} Show less`]);
-        moreLink(cards[0])!.click();
-        expectArray(shown(), ['3 Show more', `${ordered.length} Show less`]);
-        moreLink(cards[0])!.click();
-        setHyperparameter(view, 'iterations', 40);
-        await awaitTrained(view);
-        const current = currentCard(view);
-        expect(`${cardMetrics(view, current).length} ${moreLink(current)?.textContent}`, '3 Show more',
-          'A new current card is expanded');
-        expect(cardMetrics(view, cards[1]).length, ordered.length, 'The pinned card collapsed');
-      } finally {
-        await closeTrainView(view, [iris]);
-      }
-    }, {timeout: TIMEOUT});
+  test('Compare by sorts the pinned cards and moves Best; the pick stays after a training', async () => {
+    const iris = await openIris();
+    const view = await openTrainView(iris);
+    const cards = view.modelCards;
+    /** The pinned cards are in [metric]'s order, every shown card has its value and Best is where bestMarks puts it. */
+    const expectCompared = (metric: MetricId) => {
+      expectArray(cardNumbers(pinnedCards(view)), sortedNumbers(cards.pinned, metric));
+      const shown = [currentCard(view), ...pinnedCards(view)];
+      const runs = shown.map((card) => view.runs.find((run) => `${run.number}` === card.dataset.forgeRun)!);
+      expectArray(shown.map((card) => `${cardText(card, 'forge-card-metric')} ${cardText(card, 'forge-card-value')}`),
+        runs.map((run) => `${METRIC_LABELS[metric]} ${validationOf(run, metric)?.toFixed(3) ?? '-'}`));
+      expectArray(shown.map(isBest), ModelCards.bestMarks(runs.map((run) => validationOf(run, metric)),
+        directionOf(metric)));
+    };
+    try {
+      pinIcon(currentCard(view)).click();
+      setHyperparameter(view, 'iterations', 1);
+      await awaitTrained(view);
+      pinIcon(currentCard(view)).click();
+      setHyperparameter(view, 'iterations', 30);
+      await awaitTrained(view);
+      expect(`${view.runs.length} ${cards.pinned.length}`, '3 2');
+      expect(cards.metricId, 'balancedAccuracy');
+      expectCompared('balancedAccuracy');
+
+      cards.compareBy.value = 'Log loss';
+      await waitUntil(() => cards.metricId === 'logLoss', `Compare by is ${cards.metricId}`, WAIT_MS);
+      expectCompared('logLoss');
+
+      setHyperparameter(view, 'iterations', 40);
+      await awaitTrained(view);
+      expect(`${view.runs.length} ${cards.compareBy.value} ${cards.metricId}`, '4 Log loss logLoss',
+        'The pick did not stay after a training');
+      expectCompared('logLoss');
+    } finally {
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: TIMEOUT});
 
   test('cards hide while the target, the validation or the seed differ and come back at once', async () => {
     const iris = await openIris();
@@ -4360,10 +4439,12 @@ category('UI: Cards', () => {
       expect(isShown(first) && isShown(pinned), true, 'A Features change hides a card');
       view.targetInput.value = iris.getCol('Petal.Length');
       expect(isShown(first) || isShown(pinned), false, 'A card of another target is shown');
+      expect(isShown(view.modelCards.group.root), false, 'Trained models is shown without a card of this data');
       await awaitTrained(view);
       const regression = currentCard(view);
       expect(isShown(regression) && !isShown(pinned), true, 'The regression card is hidden or the pinned one shown');
-      expectArray(cardMetrics(view, regression), ['R2', 'MSE', 'RMSE']);
+      expect(view.modelCards.metricId, 'r2');
+      expectArray(view.modelCards.compareBy.items.slice(0, 4), ['MSE', 'RMSE', 'MAE', 'R2']);
 
       view.targetInput.value = species;
       expect(isShown(pinned) && !isShown(regression), true, 'The pinned card is not back at once');
@@ -4442,7 +4523,7 @@ category('UI: Find best', () => {
         expect(await enterTooltip(find.statusText), 'Click Find to search');
         const classifiers = COST_RANK.filter((name) => CLASSIFIERS.includes(name));
         expectArray(listedMethods(find), classifiers);
-        expectArray(find.checkedMethods, classifiers.filter((name) => name !== 'RealMLP'));
+        expectArray(find.checkedMethods, classifiers.filter((name) => !['RealMLP', 'SVM'].includes(name)));
         find.limit.kind.value = TIME;
         find.limit.minutes.value = 5;
         expect(findItem(find, 'RealMLP').check.checked, true, 'RealMLP unchecked at 5 minutes');
@@ -4642,33 +4723,62 @@ category('UI: Find best', () => {
     }
   }, {timeout: TIMEOUT});
 
-  test('Predict probability under Auto follows the checked methods; SVM is unchecked by default while it is on',
+  test('Predict probability under Auto follows the checked methods; SVM is unchecked by default at a quick limit on ' +
+    'a classifier',
+  async () => {
+    const iris = await twoSpeciesIris();
+    const view = await openTrainView(iris);
+    const {predictProbability} = view.outputInputs;
+    try {
+      const find = await chooseAuto(view);
+      expect(`${findItem(find, 'SVM').check.checked} ${findItem(find, 'XGBoost').check.checked}`, 'false true',
+        'SVM, XGBoost checked');
+      expect(predictProbability.enabled, true, 'Predict probability is disabled under Auto');
+      predictProbability.value = true;
+      find.limit.kind.value = TIME;
+      find.limit.minutes.value = 5;
+      expect(findItem(find, 'SVM').check.checked, true, 'SVM unchecked at 5 minutes');
+      find.limit.minutes.value = 1;
+      expect(findItem(find, 'SVM').check.checked, false, 'SVM checked at 1 minute');
+      pick(find.metric, 'auc');
+      predictProbability.value = false;
+      expect(listedMethods(find).includes('SVM'), true, 'SVM is not listed under AUC-ROC without Predict probability');
+      const tooltip = await enterTooltip(find.candidatesLabel);
+      expect(tooltip.includes('Not listed: SVM'), false, tooltip);
+      for (const name of find.checkedMethods)
+        clickMethod(find, name);
+      expect(predictProbability.enabled, true, 'Unchecking every method disabled Predict probability');
+      expect(await hoverText(view.findButton), 'Check at least one method');
+    } finally {
+      await closeTrainView(view, [iris]);
+      clearTestTuneStorage();
+    }
+  }, {timeout: TIMEOUT});
+
+  test('Find leaves SVM unchecked by default above 1000 rows, at any limit and task; the Candidates tooltip says why',
     async () => {
-      const iris = await twoSpeciesIris();
-      const view = await openTrainView(iris);
-      const {predictProbability} = view.preparationInputs;
+      const table = twoClassTable(1001);
+      const view = await openTrainView(table);
       try {
         const find = await chooseAuto(view);
-        expect(predictProbability.enabled, true, 'Predict probability is disabled under Auto');
-        predictProbability.value = true;
-        expect(`${findItem(find, 'SVM').check.checked} ${findItem(find, 'XGBoost').check.checked}`, 'false true',
-          'SVM, XGBoost checked');
         find.limit.kind.value = TIME;
         find.limit.minutes.value = 5;
-        expect(findItem(find, 'SVM').check.checked, true, 'SVM unchecked at 5 minutes');
-        find.limit.minutes.value = 1;
-        expect(findItem(find, 'SVM').check.checked, false, 'SVM checked at 1 minute');
-        pick(find.metric, 'auc');
-        predictProbability.value = false;
-        expect(listedMethods(find).includes('SVM'), false, 'SVM is listed under AUC-ROC without probabilities');
+        expect(findItem(find, 'SVM').check.checked, false, 'SVM checked on 1001 rows');
+        find.setRowCount(1000);
+        expect(findItem(find, 'SVM').check.checked, true, 'SVM unchecked on 1000 rows');
+        find.setRowCount(1001);
+        expect(findItem(find, 'SVM').check.checked, false, 'SVM checked on 1001 rows after 1000');
         const tooltip = await enterTooltip(find.candidatesLabel);
-        expect(tooltip.includes('Not listed: SVM gives no class probabilities, which AUC-ROC needs'), true, tooltip);
-        for (const name of find.checkedMethods)
-          clickMethod(find, name);
-        expect(predictProbability.enabled, true, 'Unchecking every method disabled Predict probability');
-        expect(await hoverText(view.findButton), 'Check at least one method');
+        expect(tooltip.includes('SVM: unchecked by default on more than 1000 rows'), true, tooltip);
+        view.targetInput.value = table.getCol('a');
+        view.featuresInput.value = [table.getCol('b')];
+        await waitUntil(() => listedMethods(find).includes('Linear Regression'),
+          () => `Candidates not rebuilt for a regression: ${listedMethods(find).join(', ')}`, TIMEOUT);
+        expect(findItem(find, 'SVM').check.checked, false, 'SVM checked on a regression of 1001 rows');
+        clickMethod(find, 'SVM');
+        expect(findItem(find, 'SVM').check.checked, true, 'A click does not check SVM');
       } finally {
-        await closeTrainView(view, [iris]);
+        await closeTrainView(view, [table]);
         clearTestTuneStorage();
       }
     }, {timeout: TIMEOUT});

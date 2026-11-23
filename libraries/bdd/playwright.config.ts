@@ -18,6 +18,10 @@ function viewportOf(spec = ''): {width: number; height: number} | undefined {
 const guideView = viewportOf(process.env.BDD_GUIDE_VIEWPORT) ?? {width: 1920, height: 1080};
 const runView = viewportOf(process.env.BDD_VIEWPORT);
 
+const films = !!(process.env.BDD_GUIDE || process.env.BDD_FILMS);
+// a film is a guide (@guide) in demo or tutorial mode; U2Demo's features carry @demo alone, naming the app they test
+const FILM = /^(?=.*@guide(\s|$))(?=.*@(demo|tutorial)(\s|$))/;
+
 const globalSetup =['global-setup.js', 'global-setup.ts'].map((f) => join(here, 'src', 'runtime', f)).find(existsSync)!;
 
 export default defineConfig({
@@ -64,5 +68,9 @@ export default defineConfig({
   // search over fixtures the others create and delete): they take turns, beside everything else.
   // Listed first so their lane starts with the run: a free worker takes the first runnable job in
   // project order, and a serial lane queued last ran alone after the other workers were done
-  projects: [{name: 'bdd-serial', grep: /@serial(\s|$)/, workers: 1}, {name: 'bdd', grepInvert: /@serial(\s|$)/}],
+  // Demo clips (@guide @demo) and how-to tutorials (@guide @tutorial) are films: a suite run leaves them out of both lanes (they take
+  // minutes each and test what the platform's own features already test); `grok-bdd guide` films them, and
+  // BDD_FILMS=1 runs them as tests
+  projects: [{name: 'bdd-serial', grep: /@serial(\s|$)/, workers: 1, ...(films ? {} : {grepInvert: FILM})},
+    {name: 'bdd', grepInvert: films ? /@serial(\s|$)/ : new RegExp(`@serial(\\s|$)|${FILM.source}`)}],
 });

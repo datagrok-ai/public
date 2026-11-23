@@ -60,7 +60,7 @@ export type RunInputs = Pick<SessionRun, 'engine' | 'targetName' | 'featureNames
   'missingValues' | 'steps' | 'twoClasses' | 'validation' | 'seed'>;
 
 /** Whether [a] and [b] train the same model: every input but Predict probability, the threshold and its metric, which
- * only re-cut a result (a method whose probabilities are a setting differs by that setting). */
+ * only re-cut a result. */
 export function isSameInputs(a: RunInputs, b: RunInputs): boolean {
   const text = (x: RunInputs) => JSON.stringify([x.engine.name, x.targetName, x.featureNames, x.hyperparameters,
     x.missingValues, {...x.steps, predictProbability: undefined, threshold: undefined, thresholdMetric: undefined},

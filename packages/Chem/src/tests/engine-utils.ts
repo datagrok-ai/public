@@ -87,3 +87,20 @@ export async function withCruxUnreadable<T>(molecules: string[], run: () => Prom
 
 /** How many times the RDKit worker pool was asked for (each `getRdKitService()` counts). */
 export const rdkitPoolAsks = (): number => chemCommonRdKit._rdKitService?.timesInitialized ?? 0;
+
+/** The owner's query of 2026-11-20, as the substructure filter keeps it (FILTER_SCAFFOLD_TAG: the Crux sketcher's
+ * molfile, aliases translated): propane drawn aromatic / aliphatic / aromatic, a plain C grown on its third atom. The
+ * filter in Crux mode reads it by run20's drawn-query meanings (a plain bond at an aromatic-marked atom also matches an
+ * aromatic bond: 149 mol1K rows); read literally it matches none of them. */
+export const OWNER_PROPANE_QUERY = [
+  '', '     RDKit          2D', '', '  0  0  0  0  0  0  0  0  0  0999 V3000', 'M  V30 BEGIN CTAB',
+  'M  V30 COUNTS 4 3 3 0 0', 'M  V30 BEGIN ATOM', 'M  V30 1 C -1.299038 -0.250000 0.000000 0',
+  'M  V30 2 C 0.000000 0.500000 0.000000 0', 'M  V30 3 C 1.299038 -0.250000 0.000000 0',
+  'M  V30 4 C 2.598076 0.500000 0.000000 0', 'M  V30 END ATOM',
+  'M  V30 BEGIN BOND', 'M  V30 1 1 1 2', 'M  V30 2 1 2 3', 'M  V30 3 1 3 4', 'M  V30 END BOND', 'M  V30 BEGIN SGROUP',
+  'M  V30 1 DAT 0 ATOMS=(1 1) QUERYTYPE=SMARTSQ QUERYOP== FIELDDATA="[#6&a]"',
+  'M  V30 2 DAT 0 ATOMS=(1 2) QUERYTYPE=SMARTSQ QUERYOP== FIELDDATA="[#6&A]"',
+  'M  V30 3 DAT 0 ATOMS=(1 3) QUERYTYPE=SMARTSQ QUERYOP== FIELDDATA="[#6&a]"',
+  'M  V30 END SGROUP', 'M  V30 END CTAB', 'M  END', ''].join('\n');
+/** mol1K's row 444, one of the 149 rows {@link OWNER_PROPANE_QUERY} finds in the filter. */
+export const MOL1K_ROW_444 = 'O=C(O)C(=O)CC(=O)c1ccsc1Cc1ccccc1';

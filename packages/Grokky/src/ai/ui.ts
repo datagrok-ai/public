@@ -127,7 +127,7 @@ export async function smartExecution(prompt: string, sessionId?: string): Promis
         return;
       }
 
-      host.appendChild(ui.markdown(result.plan.map((s, i) => `${i + 1}. ${s}`).join('\n')));
+      host.appendChild(ui.markdown(result.plan.map((s, i) => `${i + 1}. ${s}`).join('\n'), {sanitize: true}));
       if (!result.code)
         return;
 
@@ -175,10 +175,7 @@ export function setupSearchUI() {
 
   const maxRetries = 10;
   function searchForSearchBox() {
-    const searchBoxContainer = document.getElementsByClassName('power-pack-welcome-view')[0];
-    if (!searchBoxContainer)
-      return null;
-    return Array.from(searchBoxContainer.getElementsByClassName('power-search-search-everywhere-input'))[0] as HTMLInputElement;
+    return document.querySelector<HTMLInputElement>('.power-search-search-everywhere-input');
   }
 
   function initInput(searchInput: HTMLInputElement) {
@@ -304,8 +301,17 @@ export async function runPromptWithLifecycle(
 }
 
 function buildConfirmCard(input: any, resolve: (confirmed: boolean) => void): HTMLElement {
+  const answer = (confirmed: boolean) => {
+    const [style, icon, text] = confirmed ? ['success', 'check', 'Confirmed'] : ['muted', 'times', 'Cancelled'];
+    buttons.remove();
+    strip.classList.replace('grokky-strip-danger', `grokky-strip-${style}`);
+    strip.append(ui.divH([ui.iconFA(icon), ui.divText(text)], 'grokky-strip-answer'));
+    resolve(confirmed);
+  };
+  const strip = ui.divH([ui.divText(input.action ?? 'Confirm action')], 'grokky-strip grokky-strip-danger');
+  const buttons = ui.divH([ui.bigButton('OK', () => answer(true)), ui.button('CANCEL', () => answer(false))]);
   return ui.divV([
-    ui.divText(input.action ?? 'Confirm action', 'grokky-strip grokky-strip-danger'),
+    strip,
     ui.divV([
       ui.tableFromMap({
         ...(input.name ? {Name: input.name} : {}),
@@ -313,10 +319,7 @@ function buildConfirmCard(input: any, resolve: (confirmed: boolean) => void): HT
         ...(input.created ? {Created: input.created} : {}),
         ...(input.details ? {Details: input.details} : {}),
       }),
-      ui.divH([
-        ui.bigButton('OK', () => resolve(true)),
-        ui.button('CANCEL', () => resolve(false)),
-      ]),
+      buttons,
     ], 'grokky-confirm-body'),
   ], 'grokky-confirm-card');
 }
@@ -461,7 +464,7 @@ async function streamOnce(
 
       forSession(client.onAborted, async () => {
         panel.clearStreaming();
-        chatSession.session.addUiMessage('**Processing aborted by user**', false, {system: true});
+        chatSession.session.addUiMessage('Processing aborted by user', false, {system: true});
         cleanup();
         resolve();
       });

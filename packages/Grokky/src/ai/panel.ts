@@ -42,6 +42,9 @@ const actionButtionValues = {
   stop: 'Stop AI Generation',
 } as const;
 
+/** Silence after which a spoken phrase is sent as the prompt. */
+const VOICE_SUBMIT_DELAY_MS = 1500;
+
 const micTooltips = {
   default: 'Voice Input',
   accessDenied: 'Microphone access denied. Please enable microphone permissions.',
@@ -140,6 +143,9 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private _pendingNativeContext: string[] = [];
   private recognition: SpeechRecognition | null = null;
   private isRecognizing: boolean = false;
+  /** The final results of the phrase being spoken, not yet submitted. */
+  private voiceTranscript: string = '';
+  private voiceSubmitTimer?: number;
   /** `Say "cancel" to stop` caption shown next to the loader while the AI is working in voice mode. */
   private _voiceCancelHint: HTMLElement | null = null;
   private micAccessDenied: boolean = false;
@@ -181,12 +187,11 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private statusRepeats = 0;
   private followOutput = true;
   private _sessionId: string;
-  private _skillMenu: DG.Menu | null = null;
   private _inline: boolean = false;
   private _feature: AiFeature;
   /** Guards async {@link renderEmptyState} against out-of-order completion on rapid view switches. */
   private _emptyStateSeq = 0;
-  /** Index into {@link promptHistory} while cycling with Ctrl+[ / Ctrl+]; `null` means the live draft is shown. */
+  /** Index into {@link promptHistory} while recalling prompts with the arrow keys; `null` means the live draft is shown. */
   private _promptHistoryIndex: number | null = null;
   /** The unsubmitted draft saved when the user starts cycling, restored when they cycle back past the newest entry. */
   private _promptDraft: string = '';
@@ -214,29 +219,25 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       this.handleRun();
     }, 'Send');
     this.textArea.addEventListener('keydown', (event: KeyboardEvent) => {
-      if ((event.key === 'Escape' || event.keyCode === 27) && this._skillMenu) {
-        this._skillMenu.hide();
-        this._skillMenu = null;
+      if (event.isComposing)
+        return;
+      if (event.key === 'Escape' && this._promptHistoryIndex !== null) {
+        this.textArea.value = this._promptDraft;
+        this._promptHistoryIndex = null;
         return;
       }
-      // Ctrl+[ / Ctrl+] cycle through this session's prompt history (keyCode fallback for Chrome ≤ 50).
-      if (event.ctrlKey && (event.key === '[' || event.keyCode === 219)) {
+      const up = event.key === 'ArrowUp';
+      if ((up || event.key === 'ArrowDown') && !event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey &&
+        (this._promptHistoryIndex !== null || (up && this.textArea.selectionEnd === 0)) &&
+        this.navigatePromptHistory(up ? -1 : 1))
         event.preventDefault();
-        this.navigatePromptHistory(-1);
-        return;
-      }
-      if (event.ctrlKey && (event.key === ']' || event.keyCode === 221)) {
-        event.preventDefault();
-        this.navigatePromptHistory(1);
-        return;
-      }
       if (isEnterKey(event) && (!event.ctrlKey && !event.metaKey)) {
         event.preventDefault();
         event.stopImmediatePropagation();
         this.handleRun();
       }
     });
-    this.textArea.addEventListener('input', () => { this._promptHistoryIndex = null; this._updateSkillMenu(); });
+    this.textArea.addEventListener('input', () => this._promptHistoryIndex = null);
     this.textArea.addEventListener('blur', (e) => {
       if (this.isBusy && (e as any).sourceCapabilities === null)
         Promise.resolve().then(() => this.textArea.focus());
@@ -886,10 +887,12 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private tryAgain() {
     if (this._messages.length === 0)
       return; // should never happen, but just in case
-    if (this.isBusy)
+    // The prompt itself is resent: a request stopped before the agent picked it up is not in its history.
+    const last = this.promptHistory.pop();
+    if (!last || this.isBusy)
       return;
     const inputs = this.getCurrentInputs();
-    inputs.prompt = 'Please try again. ';
+    inputs.prompt = last;
     this._onRunRequest.next({
       prevMessages: [...this._messages],
       currentPrompt: inputs,
@@ -905,29 +908,19 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     return this._uiMessages.filter((m) => m.fromUser).map((m) => m.text);
   }
 
-  /** Replaces the input with the previous (-1) or next (+1) prompt from this session's history. */
-  private navigatePromptHistory(direction: -1 | 1): void {
+  /** Replaces the input with the previous (-1) or next (+1) prompt from this session's history; false if there is none. */
+  private navigatePromptHistory(direction: -1 | 1): boolean {
     const hist = this.promptHistory;
-    if (hist.length === 0)
-      return;
-    if (this._promptHistoryIndex === null) {
-      if (direction === 1)
-        return; // already at the live draft — nothing newer
+    const current = this._promptHistoryIndex ?? hist.length;
+    const next = current + direction;
+    if (next < 0 || next > hist.length)
+      return false;
+    if (this._promptHistoryIndex === null)
       this._promptDraft = this.textArea.value;
-      this._promptHistoryIndex = hist.length;
-    }
-    const next = this._promptHistoryIndex + direction;
-    if (next < 0)
-      return; // already at the oldest entry
-    if (next >= hist.length) {
-      this._promptHistoryIndex = null;
-      this.textArea.value = this._promptDraft;
-    } else {
-      this._promptHistoryIndex = next;
-      this.textArea.value = hist[next];
-    }
+    this._promptHistoryIndex = next === hist.length ? null : next;
+    this.textArea.value = next === hist.length ? this._promptDraft : hist[next];
     this.textArea.selectionStart = this.textArea.selectionEnd = this.textArea.value.length;
-    this._updateSkillMenu();
+    return true;
   }
 
   protected handleRun() {
@@ -948,40 +941,6 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       prevMessages: this._messages,
       currentPrompt: inputs,
     });
-  }
-
-  private _hideSkillMenu(): void {
-    if (this._skillMenu) {
-      this._skillMenu.hide();
-      this._skillMenu = null;
-    }
-  }
-
-  private _updateSkillMenu(): void {
-    const text = this.textArea.value;
-    if (!text.startsWith('/'))
-      return this._hideSkillMenu();
-
-    const query = text.slice(1).toLowerCase();
-    const allNames = ClaudeRuntimeClient.getInstance().getSkillNames();
-    if (!allNames.length)
-      return this._hideSkillMenu();
-
-    const filtered = allNames.filter((name) => name.toLowerCase().includes(query));
-    if (!filtered.length)
-      return this._hideSkillMenu();
-
-    this._hideSkillMenu();
-    this._skillMenu = DG.Menu.popup();
-    this._skillMenu.header('Skills');
-    for (const name of filtered) {
-      this._skillMenu.item(name, () => {
-        this.textArea.value = `/${name} `;
-        this.textArea.focus();
-        this._skillMenu = null;
-      });
-    }
-    this._skillMenu.show({element: this.textAreaDiv, y: 0});
   }
 
   protected showContentIcons() {
@@ -1088,15 +1047,42 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       }
 
       const menu = DG.Menu.popup();
+      const deleting = new Map<string, number>();
+      const finish = (id: string, remove: boolean) => {
+        clearTimeout(deleting.get(id));
+        deleting.delete(id);
+        if (remove)
+          ConversationStorage.deleteConversation(id).catch(() => grok.shell.error('Failed to delete chat'));
+      };
       for (const conv of conversations) {
         if (this.currentConversationId && conv.id === this.currentConversationId)
           continue;
         const date = new Date(conv.timestamp).toLocaleString();
-        const preview = conv.initialPrompt.substring(0, 40);
+        const preview = conv.initialPrompt.substring(0, 40).replace(/\|/g, '/'); // '|' would make a submenu
         const displayText = `${preview}${conv.initialPrompt.length > 40 ? '...' : ''} (${date})`;
 
-        menu.item(displayText, () => this.loadConversation(conv.id));
+        menu.item(displayText, () => {
+          finish(conv.id, false);
+          this.loadConversation(conv.id);
+        });
+        const row = menu.root.querySelector('.d4-menu-item:last-child')!;
+        const toggle = (e: MouseEvent) => {
+          e.stopPropagation();
+          finish(conv.id, false);
+          if (row.classList.toggle('grokky-history-deleted')) {
+            deleting.set(conv.id, window.setTimeout(() => {
+              row.remove();
+              finish(conv.id, true);
+            }, 5000));
+          }
+        };
+        const trash = ui.icons.delete(toggle, 'Delete chat');
+        const undo = ui.icons.undo(toggle, 'Undo');
+        trash.classList.add('grokky-history-icon', 'grokky-history-delete');
+        undo.classList.add('grokky-history-icon', 'grokky-history-undo', 'grok-icon-blue');
+        row.append(trash, undo);
       }
+      menu.onClose.subscribe(() => Array.from(deleting.keys()).forEach((id) => finish(id, true)));
 
       menu.separator();
       menu.item('Clear All History', async () => {
@@ -1215,50 +1201,64 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   private startRecognition() {
-    try {
-      this.recognition = new SpeechRecognition();
-      this.recognition.continuous = false;
-      this.recognition.interimResults = false;
-      this.recognition.lang = 'en-US';
+    this.isRecognizing = true;
+    this.voiceTranscript = '';
+    this.micButton.classList.remove('fa-microphone');
+    this.micButton.classList.add('fa-stop');
+    this.micButton.style.color = 'orangered';
+    this.syncVoiceCancelHint();
+    this.listen();
+  }
 
-      // Update UI to show recording state
-      this.isRecognizing = true;
-      this.micButton.classList.remove('fa-microphone');
-      this.micButton.classList.add('fa-stop');
-      this.micButton.style.color = 'orangered';
-      ui.setUpdateIndicator(this.textAreaDiv, true, 'Listening...');
-      this.syncVoiceCancelHint();
+  /** Starts a recognition session. Chrome ends a continuous session on its own after a while or on
+   * a network hiccup; `onend` then calls this again, keeping the phrase heard so far. */
+  private listen() {
+    try {
+      // Continuous mode, so a pause between words does not end the phrase: Chrome's own end-of-speech
+      // detection cut it after the first word for mics that gate the signal to silence between words.
+      // The phrase is submitted after VOICE_SUBMIT_DELAY_MS without new speech instead.
+      this.recognition = new SpeechRecognition();
+      this.recognition.continuous = true;
+      this.recognition.interimResults = true;
+      this.recognition.lang = 'en-US';
+      if (!this.voiceTranscript)
+        ui.setUpdateIndicator(this.textAreaDiv, true, 'Listening...');
 
       this.recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
         ui.setUpdateIndicator(this.textAreaDiv, false);
+        let interim = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const text = event.results[i][0].transcript;
+          if (!event.results[i].isFinal) {
+            interim += text;
+            continue;
+          }
+          const command = text.trim().replace(/[.,;:!?]+$/, '').toLowerCase();
+          if (command === 'stop' || command === 'cancel') {
+            this.onVoiceCancel();
+            return;
+          }
+          this.voiceTranscript += text;
+        }
 
-        const command = transcript.trim().replace(/[.,;:!?]+$/, '').toLowerCase();
-        const isCancelWord = command === 'stop' || command === 'cancel';
-
-        // While a prompt is being processed, "stop"/"cancel" aborts the AI run instead of being sent
-        // as a new prompt — speech is easy to mishear, so keep this escape hatch reliable. Anything
-        // else said while busy is ignored (a new prompt can't be submitted yet anyway).
-        if (this.runButtonTooltip === actionButtionValues.stop) {
-          if (isCancelWord)
-            this.terminate();
+        // Speech while the AI works is not a prompt (one can't be submitted yet); only "stop"/"cancel"
+        // counts then, to abort the run.
+        if (this.isBusy) {
+          this.voiceTranscript = '';
           return;
         }
 
-        if (isCancelWord) {
-          this.stopRecognition();
-          this.textArea.focus();
-          return;
-        }
-
-        this.textArea.value = transcript;
-        this.handleRun();
+        this._promptHistoryIndex = null;
+        this.textArea.value = (this.voiceTranscript + interim).trim();
+        window.clearTimeout(this.voiceSubmitTimer);
+        this.voiceSubmitTimer = window.setTimeout(() => this.submitVoicePrompt(), VOICE_SUBMIT_DELAY_MS);
       };
 
       this.recognition.onerror = (event) => {
         if (event.error === 'no-speech')
           return; // silence timeout — onend restarts the mic, no user action needed
-        console.error('Speech recognition error:', event.error);
+        if (event.error !== 'aborted')
+          console.error('Speech recognition error:', event.error);
         ui.setUpdateIndicator(this.textAreaDiv, false);
 
         let errorMessage = 'Speech recognition error';
@@ -1275,7 +1275,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
           errorMessage = 'Network error during speech recognition';
           break;
         case 'aborted':
-          // User stopped intentionally, no error message needed
+          // Something else took the microphone, e.g. voice input in another tab: no error message needed
           break;
         default:
           errorMessage = `Speech recognition error: ${event.error}`;
@@ -1289,14 +1289,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       };
 
       this.recognition.onend = () => {
-        if (this.isRecognizing) {
-          this.startRecognition();
-          return;
-        }
-        this.micButton.classList.remove('fa-stop');
-        this.micButton.classList.add('fa-microphone');
-        this.micButton.style.color = '';
-        ui.setUpdateIndicator(this.textAreaDiv, false);
+        if (this.isRecognizing)
+          this.listen();
       };
 
       this.recognition.start();
@@ -1307,11 +1301,35 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     }
   }
 
+  /** "stop"/"cancel" aborts the AI run while it works, and otherwise drops the phrase and the mic. */
+  private onVoiceCancel() {
+    window.clearTimeout(this.voiceSubmitTimer);
+    this.voiceTranscript = '';
+    if (this.isBusy) {
+      this.terminate();
+      return;
+    }
+    this._promptHistoryIndex = null;
+    this.textArea.value = '';
+    this.stopRecognition();
+    this.textArea.focus();
+  }
+
+  private submitVoicePrompt() {
+    this.voiceTranscript = '';
+    this.handleRun();
+  }
+
+  /** Stops listening; a phrase heard so far stays in the prompt box, unsent, to edit or send by hand. */
   private stopRecognition() {
     this.isRecognizing = false;
+    this.voiceTranscript = '';
+    window.clearTimeout(this.voiceSubmitTimer);
     this.syncVoiceCancelHint();
 
     if (this.recognition) {
+      // A stopped session can still report late; it must not log or switch off a newer one.
+      this.recognition.onresult = this.recognition.onerror = this.recognition.onend = null;
       try {
         this.recognition.stop();
       } catch (error) {

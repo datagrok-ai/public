@@ -540,6 +540,18 @@ export async function located(page: Page, loc: Locator): Promise<void> {
     return;
   r.located = loc;
   r.target = await loc.first().boundingBox({timeout: 200}).catch(() => null);
+  // an element below the fold (a property category low in the context panel) is scrolled into view by the gesture
+  // that follows, so the box read here is not where the press lands: filmed, the element is scrolled first and the
+  // step's first picture taken again. Only a small element off the window, before the step has any stop: a scope
+  // (a whole panel) is never scrolled
+  const view = page.viewportSize();
+  const box = r.target;
+  if (box && view && r.legs.length === 0 && box.height < view.height / 2 &&
+    (box.y < 0 || box.y + box.height > view.height)) {
+    await loc.first().scrollIntoViewIfNeeded({timeout: 1000}).catch(() => undefined);
+    r.target = await loc.first().boundingBox({timeout: 200}).catch(() => null);
+    await shot(page, r.dir, r.open.before);
+  }
 }
 
 /** The step acts on a place inside the element it located — a hit area of a viewer or a widget (an

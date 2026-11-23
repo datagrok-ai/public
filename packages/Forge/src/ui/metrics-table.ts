@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {textColumn} from '../columns';
 import {ModelRow} from '../generated/db';
 import {ClassValues, METRIC_DESCRIPTIONS, METRIC_IDS, METRIC_LABELS, MetricFinding, metricFindings, MetricId,
-  MetricValues, Split} from '../metrics/metrics';
+  MetricValues, roundTo3, Split} from '../metrics/metrics';
 import {CLASS_PROBABILITIES, preparationOptionsOf} from '../preparation/preparation-options';
 import {featuresHadGaps} from '../storage/dataset-fingerprint';
 import {heldOutCount} from '../training/k-fold';
@@ -92,7 +92,7 @@ export function metricTooltip(value: number | undefined, findings: MetricFinding
 /** [value] in exponent form with one decimal and a two-digit exponent (`3.2e-05`) when it shows as `0.000` or
  * `-0.000` but is not 0; null otherwise. */
 export function tinyValueText(value: number): string | null {
-  if (value === 0 || Number(value.toFixed(3)) !== 0)
+  if (value === 0 || roundTo3(value) !== 0)
     return null;
   const [mantissa, exponent] = value.toExponential(1).split('e-');
   return `${mantissa}e-${exponent.padStart(2, '0')}`;

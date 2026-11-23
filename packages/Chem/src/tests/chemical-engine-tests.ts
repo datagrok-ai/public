@@ -39,9 +39,10 @@ import {CONTAINER_TIMEOUT, loadFileAsText, readDataframe} from './utils';
 import {compareValidation, CRUX_DEPARTURES} from './validation-parity';
 import {validationTextsByEngine} from '../engine/molecule-jobs';
 import {getMolSafe, validationText} from '../utils/mol-creation_rdkit';
-import {expectNoFallback, inBothEngines, inEngine, withCruxUnreadable} from './engine-utils';
+import {MOL1K_ROW_444, OWNER_PROPANE_QUERY, expectNoFallback, inBothEngines, inEngine, withCruxUnreadable}
+  from './engine-utils';
 import {isNoneValue} from '../crux/crux-api';
-import {ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG, SubstructureSearchType} from '../constants';
+import {ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG, FILTER_SCAFFOLD_TAG, SubstructureSearchType} from '../constants';
 import {calculatorMethodInfo} from '../widgets/biochem-properties-widget';
 import {convertNotationForColumn} from '../utils/convert-notation-utils';
 import {cruxInchi} from '../crux/crux-inchi';
@@ -57,7 +58,7 @@ import {TOXICITY_ALERTS_CRUX_FAILED, getToxicityAlertsColumns} from '../widgets/
 interface RendererInternals {
   _fetchMol(molString: string, scaffolds: {molecule: string, color?: string}[], molRegenerateCoords: boolean,
     scaffoldRegenerateCoords: boolean, details: object, alignByFirstSubstructure: boolean): {engine: ChemicalEngine,
-    molCtx: {mol: any}};
+    molCtx: {mol: any}, substruct: {atoms?: number[], bonds?: number[]}};
   _fetchRender(width: number, height: number, molString: string, scaffolds: {molecule: string, color?: string}[],
     molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean, alignByFirstSubstructure: boolean,
     details?: object, substructureObj?: object, renderOptions?: {[key: string]: any}): ImageData;
@@ -683,6 +684,42 @@ category('chemical engine', () => {
       delete col.tags[ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG];
       const cleared = rows.map(picture);
       expect(rows.filter((_, i) => !sameImage(cleared[i], before[i])).join(','), '', 'rows not back without the scaffold');
+    }));
+  });
+
+  test('the filter\'s drawn query highlights and aligns the rows the filter passes, in Crux mode', async () => {
+    // the owner's report of 2026-11-20: the filter found 149 mol1K rows for this query by run20's drawn-query meanings
+    // and the renderer, reading the filter's molblock literally, highlighted none and aligned none; the owner's
+    // decision 1 (2026-11-20): in Crux mode the renderer highlights and aligns by the filter's query (getQueryMolSafe)
+    await inEngine(ChemicalEngine.Crux, () => expectNoFallback(['rendering', 'drawing'], async () => {
+      const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('smiles', [MOL1K_ROW_444])]);
+      const col = df.col('smiles')!;
+      col.semType = DG.SEMTYPE.MOLECULE;
+      const cell = DG.Viewer.grid(df).cell('smiles', 0);
+      const renderer = new RDKitCellRenderer(chemCommonRdKit.getRdKitModule());
+      const internals = renderer as unknown as RendererInternals;
+      /** The row as the grid draws it under the filter's tag: its engine and the atoms highlighted. */
+      const drawn = (align: boolean) => {
+        col.temp[FILTER_SCAFFOLD_TAG] = JSON.stringify([{molecule: OWNER_PROPANE_QUERY, isSuperstructure: false, align}]);
+        const info = renderer.getHighlightTagInfo(col.temp, cell);
+        expect(info.alignByFirstSubstructure, align, 'aligned by the filter\'s query');
+        const fetched = internals._fetchMol(MOL1K_ROW_444, info.scaffolds!, false, false, {},
+          info.alignByFirstSubstructure);
+        return {engine: fetched.engine, atoms: fetched.substruct.atoms?.length ?? 0};
+      };
+      try {
+        // aromatic C, CH2, aromatic C and a C beside it: every match highlighted (three, six atoms in all), by Crux;
+        // aligned, the match the row is laid out by (four atoms)
+        expect(JSON.stringify(drawn(false)), JSON.stringify({engine: ChemicalEngine.Crux, atoms: 6}), 'highlighted');
+        expect(JSON.stringify(drawn(true)), JSON.stringify({engine: ChemicalEngine.Crux, atoms: 4}),
+          'aligned and highlighted');
+        // the same molblock as a highlight scaffold of the column keeps its literal reading, the renderer's reading of
+        // the filter's query before: nothing matched
+        const literal = internals._fetchMol(MOL1K_ROW_444, [{molecule: OWNER_PROPANE_QUERY}], false, false, {}, false);
+        expect(literal.substruct.atoms?.length ?? 0, 0, 'a highlight scaffold, read literally');
+      } finally {
+        delete col.temp[FILTER_SCAFFOLD_TAG];
+      }
     }));
   });
 

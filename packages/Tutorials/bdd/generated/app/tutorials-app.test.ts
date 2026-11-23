@@ -12,6 +12,7 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
+import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {cardDone, closeTutorial, startTutorial, stepCurrent, stepNotDone, tutorialCompleted, tutorialNotCompleted, tutorialProgress, tutorialsClosed, tutorialsOpen} from '../../bindings/steps.js';
 import {above} from '@datagrok-libraries/bdd/bindings/common/geometry';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';

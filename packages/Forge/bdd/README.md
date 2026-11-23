@@ -55,6 +55,25 @@ only in table mode); left unedited for the BDD resume:
 - `bindings/catalog-grid.ts`, `bindings/catalog.ts`: read the Methods grid, the catalog grid outside table mode and the
   removed toolbar icons.
 
+Stale since stage U2: Predict probability, Classification threshold and Best threshold by are in the **Output** group,
+the model cards in **Trained models** without tabs, and SVM always trains with class probabilities; left unedited for
+the BDD resume:
+
+- `train-demog`: 5.10 claims Predict probability in the **Preparation** group (`:262`) and **Positive class cutoff**
+  there (`:278`).
+- `train-iris` (`"Preparation" group should be hidden`, `:79`) and `train-iris-gaps` (the **Preparation** group showing
+  exactly Missing values): hold again, since Predict probability left that group; the note above on them no longer
+  applies.
+- `train-winequality`, `train-iris`, `train-iris-gaps`: their SVM trainings now fit class probabilities (slower; the
+  stored `hyperparameters.probability` is `true`).
+- No feature claims the model cards (their tabs, Show more / Show less or captions).
+
+Train SVM on more than 1000 rows, against the rule that tests keep SVM at 1000 rows or fewer (on resume: a smaller
+table, or a slow stub method as the UI tests use):
+
+- `train/train-demog.feature:405-430` (`demog(50000)`: cancel, then a full training).
+- `train/train-winequality.feature:126-146` (6497 rows).
+
 ## Running
 
 From `packages/Forge` (Git Bash; in PowerShell set the variables with `$env:NAME = 'value'` first):
@@ -110,7 +129,7 @@ minutes there).
 | Applications of a feature's model | deleted with the model (`Forge:deleteModel`); a scenario counts them for its own model only |
 | Training runs of the tables `forge-test-iris-{time}`, `forge-test-irisgaps-{time}`, `forge-test-wine-{time}`, `forge-test-demog-{time}`, `forge-test-demog50k-{time}` (the tables a feature only applies to have no runs) | `Given no Forge training runs of the table(s) "…" are on the server` (comma-separated): `grok s domains delete forge.training_run --filter dataset_name = …` for each table and each stale table of their families, at most 20 deletes of 1000 each (more fails); the count of every one of them read back 0 |
 | The share of `catalog.feature` (4.12) with the second account | taken back in the same scenario through the Share dialog and read back gone with `grok s shares list`; if the scenario fails in between, taken back first at feature end with `grok.dapi.permissions.revoke` in the page and read back gone with `grok.dapi.permissions.get`, both of which go to the model's wrapper project, where the grant lives (the entity itself refuses a direct grant); once the model is deleted the page no longer gets its entity (below), so the feature end reads `grok s shares list` instead and fails when the grant is still there; only such a failure or a killed run (no feature end) leaves that grant on the model's entity, which outlives the model (below), granted to the second account only |
-| The opened tables | the shell reset closes them; nothing is saved. The 50000-row demo table of `train-demog` (5.4; 50000 rather than the manual's 20000, so the cancel lands while SVM runs: about 1.5 s against 0.5 s) is closed by its scenario (`the table "…" is closed`), so it does not stay for the next feature on the page |
+| The opened tables | the shell reset closes them; nothing is saved. The 50000-row demo table of `train-demog` (5.4; 50000 rather than the manual's 20000, so the cancel lands while SVM runs: about 1.5 s against 0.5 s, measured before SVM always fitted class probabilities and not re-measured since stage U2, as BDD is paused) is closed by its scenario (`the table "…" is closed`), so it does not stay for the next feature on the page |
 
 Deletes are soft and a saved model is an eager entity, so each saved model leaves an entity behind (an EMS issue).
 Since the stand's 2026-10-20 build (1.28.0) the entities API (`entities/{id}`, `entities/get`, the listing) no longer

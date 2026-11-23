@@ -22,8 +22,11 @@ Feature: The widgets of the Home page
   claimed, not its content.
 
   What a Spotlight tab lists is the account's own history (pins, favorites, activity): each tab is
-  claimed to show its own page, not particular items: the Spotlight page shows the account's recent
-  items, or, for an account with none, interactive tutorials and demo apps to start with. The
+  claimed to show its own page, not particular items: the Spotlight page shows what asks for the
+  account's action, what was shared with it and its recent items, or, for an account with none of
+  these, interactive tutorials and demo apps to start with. The account is a member of Administrators
+  while the feature runs, so what anyone shared with Administrators is listed (a saved filter preset
+  too, a shareable entity since public#3481). The
   Workspace hint of the md ("Select a pinned item...") shows only when something is pinned. The
   System block of Usage lists the services the stand reports (Jupyter, Grok Spawner and Grok Connect
   on dev, none on a local stand), so the block is claimed, not its services.
@@ -138,7 +141,7 @@ Feature: The widgets of the Home page
       | Learn tab in Spotlight home widget         |
     When user clicks on Spotlight tab in Spotlight home widget
     Then the "Spotlight" tab of Spotlight home widget should be showing
-    And spotlight page of Spotlight home widget should contain one of the texts "Recent | Interactive Tutorials"
+    And spotlight page of Spotlight home widget should contain one of the texts "Action required | Shared with me | Recent | Interactive Tutorials"
     When user clicks on Favorites tab in Spotlight home widget
     Then the "Favorites" tab of Spotlight home widget should be showing
     When user clicks on Notifications tab in Spotlight home widget

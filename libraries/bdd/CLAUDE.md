@@ -36,7 +36,8 @@ src/runtime/            args, locate (R9 order, item reveal, BDD_RESOLVE_TRACE),
 tool/guide-render.py    steps.json → guide.mp4 / step-NN.png / steps.md / audit.png (+ --gif: guide.gif from the lossless frames,
                         guide-thumb.png of the result, guide-sheet.png; --help: no title, strip, dimming, zoom or Given steps;
                         --demo: 1080p, a wrapped title card, notes over the page, no Given or uncaptioned check, review-sheet.png,
-                        timeline.json; --reel: demo clips cut into one video, with its index)
+                        timeline.json; --tutorial (`@tutorial`): a demo with the pressed element outlined and notes that wait
+                        to be read; --reel: demo clips cut into one video, with its index)
 tool/gen-u2-kinds.mjs   the u2 and EMS manifests → bindings/common/u2-kinds.g.ts (npm run vocab; vocab:check compares)
 tool/snapshot-kinds.mjs the built kind table → tests/fixtures/kinds-before.json (the compat test's reference)
 tool/audit-summary.mjs  a run's report.json (+ BDD_MEMORY_LOG files) → audit findings by rule, feature, scenario; heap per worker
@@ -56,7 +57,8 @@ bindings/tiers/molecules/ opt-in: crux (Chem's Crux sketcher wherever a host ope
                         types detected) — for the suites whose features draw or read molecules, Chem's and the hosts'
 tests/                  node:test via tsx: nouns, compile, project, init, failure, vocabulary (drift, coverage, compat), audit;
                         locate, addressing, u2-state, layout (Chromium over a static page)
-playwright.config.ts    the one config every project runs with (BDD_ROOT → testDir/outputDir/storageState; 4 workers)
+playwright.config.ts    the one config every project runs with (BDD_ROOT → testDir/outputDir/storageState; 4 workers);
+                        a suite run leaves out the films (@guide with @demo or @tutorial) unless BDD_GUIDE or BDD_FILMS=1
 ```
 
 ## The principle
@@ -347,7 +349,8 @@ ruling, 2026-10-06). A feature spends its time on the gestures it tests:
 - **The context panel renders the current object (`grok.shell.o`) and nothing else**
   (`property_panel.dart` on `onCurrentObjectChanged`; `grok.shell.windows.showContextPanel`
   shows it). The setter drops a change to the object already current, one within 2 s of a
-  property edit and one while the object is frozen. An explicit click in a top-level grid or on a
+  property edit and one while the object is frozen (`grok.shell.o` freezes it for a second, or until the next pointer
+  press: a sketcher's drawing no longer swallows a header clicked right after it). An explicit click in a top-level grid or on a
   gallery card (`ui.setUpSelection`) releases the property-edit guard, so a cell or a card clicked
   just after expanding a pane still becomes current:
   `the context panel is open` is the Given, `the context panel should show "X"` names the object

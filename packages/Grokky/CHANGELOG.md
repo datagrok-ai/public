@@ -2,6 +2,17 @@
 
 ## v.next
 
+* Search: The AI wand finds the home page's search box when PowerPack places it in the top row (no tabs)
+* [public#4650](https://github.com/datagrok-ai/public/issues/4650): Fixed the AI panel rendering replies as trusted HTML, so scripts in a reply ran
+* Grokky: The chat keeps a reading width in a wide panel: replies on white, your prompt in a bubble that fits its text
+* Grokky: Fixed "Speech recognition error: aborted" in the console when voice input stops
+* Grokky: Added bringing back earlier prompts with the Up and Down arrow keys in the prompt box
+* Grokky: Fixed Try again forgetting the request after a quick Stop
+* Grokky: Added deleting a single chat from the history menu, with undo
+* Grokky: Fixed suggestions naming the wrong column, such as an ID column in the Molecules prompts or a date in the numeric ones
+* Grokky: Confirmation card shows its answer in the header
+* [public#4648](https://github.com/datagrok-ai/public/issues/4648): Fixed asterisks in the Stop notice
+* Grokky: Fixed voice input sending only the first word: the whole phrase is captured, shown as it is spoken, and sent after a pause
 * Grokky: A prompt that fails or loses its connection says why above the prompt box, and the next prompt reconnects
 * Grokky: Fixed SAVE staying active after the AI saved the project
 * Grokky: Properties (F4) open on top of the AI panel instead of beside it, and the AI panel keeps its width when they close

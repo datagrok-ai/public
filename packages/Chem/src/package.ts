@@ -1138,11 +1138,12 @@ export class PackageFunctions {
     if (plotEmbeddings) {
       checkCurrentView(table);
       tv = grok.shell.tv;
-      res = tv.scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chemical space'});
+      res = tv.scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chemical space',
+        markerType: DG.MARKER_TYPE.CIRCLE});
       const description = `Molecules column: ${molecules.name}, method: ${methodName}, ${options ? `options: ${JSON.stringify(options)},` : ``} similarity: ${similarityMetric}`;
       res.setOptions({description: description, descriptionVisibilityMode: 'Never'});
       //temporary fix (to save backward compatibility) since labels option type has been changed from string to array in 1.23 platform version
-      if (Object.keys(res.props).includes('labelColumnNames')) { //@ts-ignore
+      if (table.rowCount < 20000 && Object.keys(res.props).includes('labelColumnNames')) { //@ts-ignore
         if (res.props['labelColumnNames'].constructor.name == 'Array')
           res.setOptions({labelColumnNames: [molecules.name]});
       }

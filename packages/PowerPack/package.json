@@ -60,6 +60,13 @@
       "propertyType": "bool",
       "defaultValue": true,
       "nullable": false
+    },
+    {
+      "name": "showTipOfTheDay",
+      "propertyType": "bool",
+      "defaultValue": true,
+      "nullable": false,
+      "description": "Show the tip of the day on the home page"
     }
   ],
   "canEdit": [

@@ -14,7 +14,7 @@ keywords:
   - cross-validation
   - metrics
   - accuracy
-  - F1
+  - F1 score
   - AUC-ROC
   - balanced accuracy
   - MCC

@@ -145,7 +145,8 @@ export class Shell {
   get o(): any { return toJs(api.grok_Get_CurrentObject(), false); }
   set o(x: any) { this.setCurrentObject(x, true); }
 
-  /** Sets the current object; [freeze] keeps the context panel from following further changes, [force] re-sets the same object. */
+  /** Sets the current object; [freeze] keeps the context panel from following further changes for a second, or until
+   * the user's next pointer press; [force] re-sets the same object. */
   setCurrentObject(x: any, freeze: boolean, force?: boolean) {
     api.grok_Set_CurrentObject(toDart(x), freeze, force ?? false);
   }

@@ -357,6 +357,18 @@ function withHCountHs(molBlock: string): string {
   return changed ? lines.join('\n') : molBlock;
 }
 
+/** A query drawn in a sketcher (a molblock's), as a chemist means it, where the module reads it so (Crux's
+ * `adjust_drawn_query`, crux-core spike drawn-query; RDKit has no such call and reads the molblock literally): a plain single
+ * bond at an atom whose query asks for an aromatic atom, its ring not drawn, also matches an aromatic bond (propane made
+ * aromatic / aliphatic / aromatic and a C drawn on its third atom matched nothing, its aromatic C's bonds being aromatic);
+ * an atom list holding H (`[H,Cl,F]`) or a generic with H (AH, QH, XH, MH), on one atom by a single bond, is that atom's
+ * implicit H or its other atoms (RDKit's mergeQueryHs leaves each an atom, which matched an H atom alone); `*` and A stay
+ * "an atom must be there". The run20 owner's report and decisions, 2026-11-20. */
+function asDrawn(queryMol: RDMol | null): RDMol | null {
+  (queryMol as (RDMol & {adjust_drawn_query?: () => boolean}) | null)?.adjust_drawn_query?.();
+  return queryMol;
+}
+
 export function getQueryMolSafe(queryMolString: string, queryMolBlockFailover: string,
   module: RDModule): RDMol | null {
   if (queryMolString && !hasNewLines(queryMolString) && queryMolString.length > MAX_SMILES_LENGTH)
@@ -384,7 +396,7 @@ export function getQueryMolSafe(queryMolString: string, queryMolBlockFailover: s
             queryMol = null;
           }
           if (queryMol !== null)
-            return queryMol;
+            return asDrawn(queryMol);
         }
       }
       try {
@@ -401,6 +413,7 @@ export function getQueryMolSafe(queryMolString: string, queryMolBlockFailover: s
         } catch (e) {/* non-fatal */}
       }
     }
+    return asDrawn(queryMol);
   } else { // not a molblock
     const treatAsSmarts = _isSmarts(queryMolString);
     try {

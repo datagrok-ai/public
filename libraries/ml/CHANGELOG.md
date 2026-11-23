@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Multi-column dimensionality reduction: The UMAP random seed applies on the GPU too: the same seed gives the same coordinates (on the same GPU). If the GPU fit fails, the CPU fit that replaces it gives what a CPU run with that seed gives
+
 * [public#4473](https://github.com/datagrok-ai/public/issues/4473): MCL editor: number columns get their per-column parameters; it skipped them for the vector path of Reduce Dimensionality, so MCL clustered no column and never finished
 * core#1146: Multi-column dimensionality reduction no longer waits 300 ms before fitting (a timer cannot make the garbage collector run)
 * Activity cliffs: The Activities input defaults to a column named like an activity or potency (Activity, IC50, Ki, ...), else the first float column, instead of the first numeric one (an ID on most tables)

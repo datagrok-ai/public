@@ -42,7 +42,7 @@ export const METRIC_LABELS: Record<MetricId, string> = {
   mae: 'MAE',
   r2: 'R2',
   accuracy: 'Accuracy',
-  f1: 'F1',
+  f1: 'F1 score',
   sensitivity: 'Recall (Sensitivity)',
   specificity: 'Specificity',
   precision: 'Precision',
@@ -103,7 +103,45 @@ const SPLITS: Split[] = ['train', 'validation'];
 /** The values below which a metric is marked (the built-in tool's thresholds). */
 const METRIC_THRESHOLDS: Partial<Record<MetricId, number>> = {r2: 0.3, auc: 0.5};
 
-/** A metric value worth a word: below its threshold, or a validation value far from the train one. */
+/** The metrics for which lower is better: the errors. */
+export const MINIMIZED_METRICS: ReadonlySet<MetricId> = new Set<MetricId>(['mse', 'rmse', 'mae', 'logLoss', 'brier']);
+
+const SCORE_GAP_LIMIT = 0.05;
+const CORRELATION_GAP_LIMITS: Partial<Record<MetricId, number>> = {mcc: 0.1, r2: 0.1};
+const ERROR_RATIO_LIMIT = 1.5;
+
+export interface Overfitting {
+  /** `gap` for a score, `ratio` for an error. */
+  kind: 'gap' | 'ratio';
+  /** A score's train − validation: positive is worse; undefined for an error. */
+  gap?: number;
+  /** An error's validation / train, 2 decimals; undefined for a score and for a train value of 0. */
+  ratio?: number;
+  isOverfitting: boolean;
+}
+
+/** The user's overfitting rule, on the values rounded as shown; it replaces the built-in tool's areValuesSimilar. */
+export function overfittingOf(id: MetricId, train: number, validation: number): Overfitting {
+  const [t, v] = [roundTo3(train), roundTo3(validation)];
+  if (!MINIMIZED_METRICS.has(id)) {
+    const gap = roundTo3(t - v);
+    return {kind: 'gap', gap, isOverfitting: gap > (CORRELATION_GAP_LIMITS[id] ?? SCORE_GAP_LIMIT)};
+  }
+  const ratio = t === 0 ? undefined : Number((v / t).toFixed(2));
+  return {kind: 'ratio', ratio, isOverfitting: ratio === undefined ? v > 0 : ratio > ERROR_RATIO_LIMIT};
+}
+
+/** [x] rounded to the 3 decimals the values are shown with. */
+export function roundTo3(x: number): number {
+  return Number(x.toFixed(3));
+}
+
+export function metricOfLabel(label: string | null): MetricId | undefined {
+  return METRIC_IDS.find((id) => METRIC_LABELS[id] === label);
+}
+
+/** A metric value worth a word: below its threshold, or a validation value worse than the train one by the
+ * overfitting rule ({@link overfittingOf}). */
 export interface MetricFinding {
   id: MetricId;
   kind: 'threshold' | 'mismatch';
@@ -391,13 +429,15 @@ export function aucOfProbabilities(actual: DG.Column, probabilities: ClassProbab
 }
 
 /** The built-in tool's closeness of two values: within 0.1 when both are small (their mean magnitude below 1),
- * otherwise within 90% of that mean, so that only values several times apart differ. */
+ * otherwise within 90% of that mean, so that only values several times apart differ (the statistics insight; the
+ * metric findings use overfittingOf). */
 export function areValuesSimilar(a: number, b: number): boolean {
   const mean = (Math.abs(a) + Math.abs(b)) / 2;
   return mean < 1 ? Math.abs(a - b) <= 0.1 : Math.abs(a - b) / mean <= 0.9;
 }
 
-/** For each metric: the splits whose value is below its threshold, then a validation value far from the train one. */
+/** For each metric: the splits whose value is below its threshold, then a validation value worse than the train one
+ * by the overfitting rule ({@link overfittingOf}). */
 export function metricFindings(metrics: Record<Split, MetricValues>): MetricFinding[] {
   const findings: MetricFinding[] = [];
   for (const id of METRIC_IDS) {
@@ -410,7 +450,7 @@ export function metricFindings(metrics: Record<Split, MetricValues>): MetricFind
       SPLITS.filter((split) => (metrics[split][id] ?? threshold) < threshold);
     if (below.length > 0)
       findings.push({id, kind: 'threshold', splits: below, text: `${label} is below ${threshold}.`, detail});
-    if (train !== undefined && validation !== undefined && !areValuesSimilar(train, validation)) {
+    if (train !== undefined && validation !== undefined && overfittingOf(id, train, validation).isOverfitting) {
       findings.push({id, kind: 'mismatch', splits: ['validation'], detail,
         text: `The validation ${label} is far from the training one: the model may be overfitting.`});
     }
@@ -419,7 +459,7 @@ export function metricFindings(metrics: Record<Split, MetricValues>): MetricFind
 }
 
 /** [value] with 3 decimals, `-` when there is none. */
-function fixed(value: number | undefined): string {
+export function fixed(value: number | undefined): string {
   return value === undefined ? '-' : value.toFixed(3);
 }
 

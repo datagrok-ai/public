@@ -152,6 +152,8 @@ class Engine(object):
         params = []
         for param in parameter_values.keys():
             value = parameter_values[param]
+            if value is None:
+                continue
             if value != self.parameters[param]['default_value'] or \
                 ('required' in self.parameters[param] and self.parameters[param]['required']):
                 if self.parameters[param]['type'] == Types.LIST:

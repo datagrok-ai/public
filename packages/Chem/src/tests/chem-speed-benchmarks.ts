@@ -33,7 +33,8 @@ import {MmpFragments, MmpRules, MolecularPair} from '../analysis/molecular-match
 import {chemSimilarityBitset} from '../analysis/chem-similarity-viewer';
 import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {Fingerprint} from '../utils/chem-common';
-import {FILTER_SCAFFOLD_TAG} from '../constants';
+import {ALIGN_BY_SCAFFOLD_TAG, FILTER_SCAFFOLD_TAG, HIGHLIGHT_BY_SCAFFOLD_COL, HIGHLIGHT_BY_SCAFFOLD_TAG}
+  from '../constants';
 import {getPropertiesAsColumns} from '../widgets/properties';
 import {convertNotationForColumn} from '../utils/convert-notation-utils';
 import {getStructuralAlertsByRules, RuleSet} from '../panels/structural-alerts';
@@ -41,12 +42,12 @@ import {getInchiKeysImpl, getInchisImpl} from '../panels/inchi';
 import {convertMolNotationByEngine, fingerprintsByEngine, inchisByEngine} from '../engine/worker-jobs';
 import {beautifyMolsByEngine, coordGenCoordsByEngine, flattenMoleculesByEngine, validationTextsByEngine}
   from '../engine/molecule-jobs';
-import {validationText} from '../utils/mol-creation_rdkit';
+import {getMolSafe, getQueryMolSafe, validationText} from '../utils/mol-creation_rdkit';
 import {rGroupsByEngine} from '../engine/analysis-jobs';
 import {cruxInchi} from '../crux/crux-inchi';
 import {loadCruxSketch} from '../crux/crux-sketcher';
 import {inchiToInchiKey, inchiToSmiles, smilesToInchi, smilesToInchiKey} from '../python-free';
-import {inEngine} from './engine-utils';
+import {OWNER_PROPANE_QUERY, inEngine} from './engine-utils';
 import {readDataframe} from './utils';
 
 const ENGINES = [ChemicalEngine.Crux, ChemicalEngine.RDKit];
@@ -137,6 +138,69 @@ async function molTable(csv: string): Promise<DG.DataFrame> {
   return df;
 }
 
+/**
+ * The owner's decision 1 of 2026-11-20: in Crux mode the renderer reads the filter's query as the filter does
+ * (getQueryMolSafe). smi10K's rows the owner's propane query passes in the filter (150 at most), drawn fresh, Crux
+ * mode: with nothing on the column; under the filter's tag (highlighted; aligned and highlighted); and with the same
+ * molblock as a highlight scaffold and as a highlighted align scaffold of the column, read literally, as the renderer
+ * read the filter's query before (it matches none of these rows). The medians (ms) as JSON.
+ */
+async function filterQueryDrawing(smi10k: string): Promise<string> {
+  const df = await molTable(smi10k);
+  const col = df.col('smiles')!;
+  const grid = df.plot.grid();
+  const renderer = getMoleculeRenderer();
+  const g = ui.canvas(200, 100).getContext('2d')!;
+  const rows = await inEngine(ChemicalEngine.Crux, async () => {
+    const crux = cruxModuleSync()!;
+    const query = getQueryMolSafe(OWNER_PROPANE_QUERY, OWNER_PROPANE_QUERY, crux)!;
+    const out: number[] = [];
+    try {
+      for (let i = 0; i < col.length && out.length < 150; i++) {
+        const mol = getMolSafe(col.get(i), {}, crux).mol;
+        try {
+          if (mol && mol.get_substruct_match(query) !== '{}')
+            out.push(i);
+        } finally {
+          mol?.delete();
+        }
+      }
+    } finally {
+      query.delete();
+    }
+    return out;
+  });
+  expect(rows.length > 0, true, 'smi10K rows the query passes');
+  const setTags = (label: string) => {
+    delete col.temp[FILTER_SCAFFOLD_TAG];
+    for (const tag of [HIGHLIGHT_BY_SCAFFOLD_TAG, ALIGN_BY_SCAFFOLD_TAG, HIGHLIGHT_BY_SCAFFOLD_COL])
+      delete col.tags[tag];
+    if (label.startsWith('filter')) {
+      col.temp[FILTER_SCAFFOLD_TAG] = JSON.stringify([{molecule: OWNER_PROPANE_QUERY, isSuperstructure: false,
+        align: label.startsWith('filter align')}]);
+    } else if (label.startsWith('literal highlight'))
+      col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify([{molecule: OWNER_PROPANE_QUERY}]));
+    else if (label.startsWith('literal align')) {
+      col.setTag(ALIGN_BY_SCAFFOLD_TAG, OWNER_PROPANE_QUERY);
+      col.setTag(HIGHLIGHT_BY_SCAFFOLD_COL, 'true');
+    }
+    (renderer as any).cacheGeneration = -1;
+    renderer._syncEngine();
+  };
+  const draw = () => {
+    for (const i of rows) {
+      const cell = grid.cell('smiles', i);
+      renderer.render(g, 0, 0, 200, 100, cell, cell.style);
+    }
+  };
+  const legs: {[label: string]: () => unknown} = {};
+  for (const label of ['nothing', 'literal highlight', 'filter highlight', 'literal align', 'filter align'])
+    legs[`${label}, ${rows.length} rows`] = () => inEngine(ChemicalEngine.Crux, async () => draw());
+  const times = await interleaved(legs, REPS, setTags);
+  setTags('nothing');
+  return JSON.stringify({rows: rows.length, ...times});
+}
+
 category('chem speed', () => {
   let smi10k: string;
 
@@ -197,6 +261,12 @@ category('chem speed', () => {
       () => empty());
     delete col.temp[FILTER_SCAFFOLD_TAG];
     return JSON.stringify({...fresh, ...hits, ...highlighted});
+  }, {benchmark: true, timeout: 600000});
+
+  test('grid drawing: the filter\'s drawn query, read as the filter reads it and literally', async () => {
+    if (!DG.Test.isInBenchmark)
+      return;
+    return await filterQueryDrawing(smi10k);
   }, {benchmark: true, timeout: 600000});
 
   test('column detection on open', async () => {
