@@ -1792,8 +1792,8 @@ scoped('EQ-053: a View-only required column turns New off, on the ribbon, the em
     'the empty list offers no New button');
   assert.equal(await a.create(), true);
   await flush();
-  assert.equal(a.root.querySelector('.u2-domain-form-empty .u2-domain-form-hint')?.textContent, reason,
-    'the /new page shows the reason');
+  // the entity page's form host: the form and, beside it, why it is hidden
+  assert.equal(a.form.value.root.parentElement.lastElementChild.textContent, reason, 'the /new page shows the reason');
   assert.equal(a.form.value.root.hidden, true, 'instead of a form that can never save');
   a.dispose();
 });
