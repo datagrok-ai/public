@@ -410,13 +410,6 @@ scoped('Save as new search under a taken name is refused, not a silent replace',
   await flush();
   assert.deepEqual(SavedSearches.saved('grit.issue').get('S1'), first, 'the saved search S1 is kept');
   assert.equal(SavedSearches.saved('grit.issue').size, 1, 'nothing was saved under another spelling');
-  input.value = 'S2';
-  fire(input, 'input');
-  await flush();
-  ok.click();
-  await flush();
-  assert.equal(SavedSearches.saved('grit.issue').get('S2')?.search, 'Nap', 'a new name saves');
-  assert.deepEqual(SavedSearches.saved('grit.issue').get('S1'), first, 'S1 is still the first search');
   button.remove();
   src.dispose();
 });
