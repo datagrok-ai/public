@@ -2,6 +2,7 @@
 
 ## v.next
 
+* `grok claude`: The `scripting` and `full` profiles start the `jkg_python` and `jkg_r` kernel gateways instead of the retired `jupyter_kernel_gateway` image
 * `grok s push --creds`: Fixed a pushed connection getting the login and password as ordinary parameters instead of its credentials
 
 ## 6.7.12 (2026-11-18)

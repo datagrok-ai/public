@@ -64,7 +64,7 @@ Options:
 --in-place              Use current directory instead of creating a git worktree
 --grok-connect-version  grok_connect image version (default: latest)
 --grok-spawner-version  grok_spawner image version (default: latest)
---jkg-version           jupyter_kernel_gateway image version (default: latest)
+--jkg-version           jkg_python and jkg_r image version (default: latest)
 --tools-dev-version     tools-dev image version (default: latest)
 
 Examples:
