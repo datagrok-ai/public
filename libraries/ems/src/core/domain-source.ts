@@ -100,8 +100,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   /** The search text, re-queried on change like {@link query}. */
   readonly search: Signal<string>;
   /** False once the table is loaded and has no searchable column (`info.searchableColumns` is empty): a backend
-   * refuses `search` on it, so the source never sends one and the controls offer none. True until then, and
-   * for a backend that does not say. */
+   * refuses `search` on it, so the source clears {@link search}, never sends one, and the controls offer none.
+   * True until then, and for a backend that does not say. */
   readonly searchable: ReadonlySignal<boolean>;
   /** The row order — see {@link DomainSourceOptions.sort}; a signal, so a mode that wants its
    * own order (the trash, newest first) is a write and the collection re-reads. */
@@ -281,6 +281,12 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
         return;
       }
       this.currentRow.value = items[Math.min(currentAt, items.length - 1)] ?? null;
+    });
+    // a table with no searchable column refuses a search: one from the route, a saved or a recent search is
+    // dropped rather than kept unsent, so the route, saved searches, bulk targets and the empty state agree
+    this.effect(() => {
+      if (!this._searchable.value && this.search.value !== '')
+        this.search.value = '';
     });
     // the frame's current row and `currentRow` are one thing, written in either direction
     this.effect(() => {
@@ -808,7 +814,13 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this._table = table;
     this._writable.value = table.support.transaction;
     const searchable = table.info?.searchableColumns;
-    this._searchable.value = !Array.isArray(searchable) || searchable.length > 0;
+    // the effect that clears the search runs here; the load under way sends none, so it starts no second one
+    this._rebinding = true;
+    try {
+      this._searchable.value = !Array.isArray(searchable) || searchable.length > 0;
+    } finally {
+      this._rebinding = false;
+    }
     this._schema = {
       properties: table.properties.map((p): FilterProperty => {
         const prop: FilterProperty = {...p, name: p.name!};
@@ -968,7 +980,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private _scope(): DomainReadScope {
     const query = this.query.peek();
     const q = this._served?.query === query ? this._served.as : query;
-    // a table with no searchable column refuses a search: the text stays in the box and the route, unsent
+    // a table with no searchable column refuses a search: not sent, even before the effect above clears it
     const search = this._searchable.peek() ? this.search.peek() : '';
     const deleted = this.deleted.peek();
     return {filter: typeof q === 'string' ? (q === '' ? undefined : q) : Filters.toDomainTree(q),
