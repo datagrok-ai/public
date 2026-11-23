@@ -332,6 +332,22 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       if (!this._searchable.value && this.search.value !== '')
         this.search.value = '';
     });
+    // a 403 holds Save until the changes it refused are gone, discarded (`revert`) or undone by hand: then the
+    // refusal goes, and the writer it left built under the old access is rebuilt. The session's changes too:
+    // a clean source the batch referenced (a pristine parent) holds the copy until they go
+    this.effect(() => {
+      this.session.isDirty.value;
+      if (this.isDirty.value)
+        return;
+      if (DomainSource.isForbidden(this._error.peek()) && this._state.peek() !== 'error') {
+        batch(() => {
+          this._error.value = undefined;
+          this._problemRow.value = null;
+        });
+      }
+      if (this._regate)
+        void this._rebuildWriter();
+    });
     // the frame's current row and `currentRow` are one thing, written in either direction
     this.effect(() => {
       const row = this.currentRow.value;
@@ -552,6 +568,15 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       this._ready = undefined;
       if (gen !== this._gen)
         return;
+      // a failure lands as a success does: one for a scope the source no longer asks for is not its answer
+      if (readFor !== this._readFor()) {
+        await this.refresh();
+        return;
+      }
+      // the rows kept were read for another scope than the one refused: they answer neither now, so going
+      // back to theirs reads it again
+      if (readFor !== this._shownFor)
+        this._shownFor = undefined;
       batch(() => {
         this._error.value = e;
         this._state.value = 'error';
@@ -593,12 +618,16 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       else if (moved) {
         // the re-base takes a fresh baseline with the window it re-reads
         this._probed = undefined;
+        const rebased = await this._rebase();
+        // a load started meanwhile (a new query, or the re-base's own) owns the window and the status
+        if (gen !== this._gen)
+          return;
         // an edit typed while the window was re-read keeps the old one: behind the server, as above
-        if (!await this._rebase() && this.isDirty.peek())
+        if (!rebased && this.isDirty.peek())
           this._isStale.value = true;
       }
       // the total too: a write after the boundary is not a shift, but it moves "N of M"
-      if ((moved || this._done) && this._table !== undefined && gen === this._gen) {
+      if ((moved || this._done) && this._table !== undefined) {
         const total = await this._count(this._table);
         if (gen !== this._gen)
           return;
