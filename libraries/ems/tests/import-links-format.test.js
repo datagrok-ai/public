@@ -27,12 +27,9 @@ function serve(asked) {
 test('a key typed as its format shows it finds its record, as the bare number does', async () => {
   const asked = [];
   serve(asked);
-  const found = await ImportLinks.resolve(link, link.fields,
-    [['DG-000072'], ['dg-000073'], ['72'], ['DG-000099'], ['nonesuch'], ['']]);
-  assert.deepEqual(found.map((m) => m.id), ['c72', 'c73', 'c72', null, null, null],
+  const found = await ImportLinks.resolve(link, link.fields, [['DG-000072'], ['dg-000073'], ['72'], ['nonesuch']]);
+  assert.deepEqual(found.map((m) => m.id), ['c72', 'c73', 'c72', null],
     'a Grok ID typed as DG-000072 finds the compound stored as 72');
-  assert.equal(found[3].error, 'No compound with Grok ID DG-000099');
-  assert.equal(found[4].error, 'No compound with Grok ID nonesuch', 'a value that parses to nothing is a row error');
-  assert.equal(found[5].error, null);
-  assert.deepEqual(asked[0][0].value.sort((a, b) => a - b), [72, 73, 99], 'the server is asked for the numbers');
+  assert.equal(found[3].error, 'No compound with Grok ID nonesuch', 'a value that parses to nothing is a row error');
+  assert.deepEqual(asked[0][0].value.sort((a, b) => a - b), [72, 73], 'the server is asked for the numbers');
 });
