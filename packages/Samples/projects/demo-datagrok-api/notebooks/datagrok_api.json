@@ -13,9 +13,9 @@
           "from io import StringIO\n",
           "\n",
           "base_url = 'http://host.docker.internal:8888/api'\n",
-          "api = DatagrokClient(@USER_API_KEY, base_url)\n",
+          "api = DatagrokClient(base_url=base_url, api_key=@USER_API_KEY)\n",
           "# Call query that will return information about customers from France in Northwind database\n",
-          "csv_data = api.call_function('Samples.CustomersInCountry', {'country': 'France'})\n",
+          "csv_data = api.functions.call('Samples.CustomersInCountry', {'country': 'France'})\n",
           "# Query returns single result that is CSV string\n",
           "df = pd.read_csv(StringIO(csv_data))\n",
           "print(df.head())"
@@ -28,13 +28,13 @@
         "outputs": [],
         "source": [
           "# Upoload table\n",
-          "table_id = api.upload_table('сustomersInFrance', df)['ID']\n",
+          "table_id = api.tables.upload('сustomersInFrance', df)['ID']\n",
           "\n",
           "# Create dashboard from the table. You can also provide optional third parameter with the name of layout\n",
-          "dashboard_id = api.create_dashboard('Customers', table_id)['ID']\n",
+          "dashboard_id = api.tables.create_dashboard('Customers', table_id)['ID']\n",
           "\n",
           "# Share dashboard with all users\n",
-          "api.share_dashboard(dashboard_id, 'All users')"
+          "api.shares.share(dashboard_id, 'All users')"
         ]
       }
     ],

@@ -26,8 +26,8 @@
         "source": [
           "from datagrok_api import DatagrokClient\n",
           "base_url = 'http://host.docker.internal:8888/api'\n",
-          "api = DatagrokClient(@USER_API_KEY, base_url)\n",
-          "df = api.download_table('e6641860-3260-11e9-b889-2bfe7b437dbf')"
+          "api = DatagrokClient(base_url=base_url, api_key=@USER_API_KEY)\n",
+          "df = api.tables.download('e6641860-3260-11e9-b889-2bfe7b437dbf')"
         ]
       },
       {
