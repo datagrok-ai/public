@@ -580,9 +580,10 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       // session's insert, delete or update before the boundary moved the offsets, and the page repeated or
       // skipped a row. The window is then re-read from offset 0, as after a save; over pending changes,
       // which a re-read would drop, the source says the data changed and the next clean page re-bases
-      this._moved ||= await this._shifted(offset, boundary);
+      const shifted = this._moved || await this._shifted(offset, boundary);
       if (gen !== this._gen)
         return;
+      this._moved = shifted;
       const moved = this._moved;
       if (moved && this.isDirty.peek())
         this._isStale.value = true;
