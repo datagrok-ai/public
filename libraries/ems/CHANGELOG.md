@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Import: Fixed a file whose rows all exist stopping at the preview with "Nothing would be imported" and writing no key column: the button reads "Write back N keys", the report lists each row as found, and their keys are written back
 * Lists: Fixed scrolling a list whose filter was changed over unsaved edits appending rows of the new filter behind the old ones
 * Lists: Fixed the current row and the selection snapping back to where they were when a save started (or a Load more that found the list shifted) if you moved them while the rows were re-read: your newer choice stands
 * Lists: Fixed a Load more after a save whose re-read failed, and a reload that failed too, appending at the lost window's offset (skipping or repeating rows): the next page starts over from the first one until a load lands

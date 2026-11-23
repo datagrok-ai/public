@@ -464,10 +464,18 @@ class ImportFlow {
     if (owner.scope.isDisposed)
       return;
     const sent = ImportFlow._sent(plan);
+    // a row found as it is lands nothing, yet has its key written back: that alone is worth the commit
+    const keys = this._writeBack?.peek() !== true ? 0 :
+      plan.filter((p) => p.payload === null && p.verdict.existing !== undefined).length +
+      (report?.rows.filter((r) => r.predicted === 'skip' && r.existingId !== undefined).length ?? 0);
+    const writeKeys = `Write back ${plural(keys, 'key', 'keys')}`;
     // no row to send: nothing could land, whatever the storage says about a dry run
     if (report === null) {
+      if (sent.length === 0 && keys > 0)
+        this._importText.value = writeKeys;
       this._previewBlock.value = plan.length === 0 ? 'Nothing would be imported — the file has no rows.' :
-        sent.length === 0 ? ImportFlow._nothing(plan.filter((p) => p.verdict.error !== undefined).length) : null;
+        sent.length === 0 && keys === 0 ?
+          ImportFlow._nothing(plan.filter((p) => p.verdict.error !== undefined).length) : null;
     }
     const judged = report !== null || this._table.importer?.prepare !== undefined;
     const rows = this._previewRows(plan, sent, report).slice(0, PREVIEW_SHOWN);
@@ -502,13 +510,13 @@ class ImportFlow {
     }
     const valid = sent.length > PREVIEW_ROWS ? null : report.willInsert + report.willUpdate;
     const noun = (n: number) => plural(n, nounOf(this._table.info, true), nounOf(this._table.info));
-    this._importText.value = `Import ${noun(valid ?? sent.length)}`;
+    this._importText.value = valid === 0 && keys > 0 ? writeKeys : `Import ${noun(valid ?? sent.length)}`;
     // the counts are what the batch WOULD do row by row; all-or-nothing makes one bad row the
     // verdict on all of them
     this._previewBlock.value = options.allOrNothing !== false && errors > 0 ? this._abortReason(errors, valid) :
       // rows past the preview cap are unjudged and still count; within it, nothing to add or update lands nothing
       // (a dry run counts updates as `willUpdate`, merges included: a storage that merges answers no dry run)
-      sent.length <= PREVIEW_ROWS && valid === 0 ? ImportFlow._nothing(errors) : null;
+      sent.length <= PREVIEW_ROWS && valid === 0 && keys === 0 ? ImportFlow._nothing(errors) : null;
   }
 
   private static _nothing(errors: number): string {
@@ -1075,9 +1083,9 @@ class ImportFlow {
     if (!this._wizard.scope.isDisposed)
       this._report.append(this._rowsTable(this._wizard, 'report', outcomes, this._reportColumns(saved)));
     const column = this._keyColumn();
-    // a column of keys no row has is no write-back: only a commit that landed rows adds it
-    const landed = (report.inserted ?? 0) + (report.updated ?? 0) + (report.merged ?? 0) > 0;
-    if (!failed && landed && column !== null && this._writeBack?.peek()) {
+    // a column of keys no row has is no write-back: rows found as they are carry theirs, as landed ones do
+    const keyed = outcomes.some((o) => o.key !== '');
+    if (!failed && keyed && column !== null && this._writeBack?.peek()) {
       if (frame.columns.names().includes(column))
         frame.columns.remove(column);
       // column names ignore case: a source's own "sku" keeps its values beside the "Sku" written back
