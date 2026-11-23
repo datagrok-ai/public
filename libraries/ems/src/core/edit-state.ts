@@ -81,13 +81,9 @@ export class MemoryEditState implements EditState {
   private readonly _version = signal(0);
   private readonly _saving = signal(false);
 
-  // the writers not disposed: a value of any batch that is one of their draft ids is a reference
-  private static readonly _live = new Set<MemoryEditState>();
-
   /** `access` is what a row is written under (`Access.row`): a draft under `insert`, an existing
    * row under `edit` as its own columns narrow it — the columns a save may send. */
   constructor(private readonly _table: DomainTableLike, readonly df: MemoryFrame, private readonly _access: Access) {
-    MemoryEditState._live.add(this);
     this.changeCount = computed(() => {
       this._version.value;
       return this.df.rows.reduce((n, row) => n + this._contribution(row), 0);
@@ -259,10 +255,11 @@ export class MemoryEditState implements EditState {
   }
 
   /** The batch in row order, as the js-api editor builds it: an insert names itself with its
-   * draft id, a value that is the id of a draft row of a live writer (this one's or another's)
-   * becomes the `$` reference the server resolves, a literal leading `$` is escaped, and any
-   * other text, `~new:…` included, is sent as typed; `id` is never sent. */
-  buildOps(): MemoryPendingOp[] {
+   * draft id, a value that is a draft id of the batch — of `drafts`, by default this writer's own
+   * (`draftIds`); `saveAll` passes every writer's — becomes the `$` reference the server resolves,
+   * a literal leading `$` is escaped, and any other text, `~new:…` included, is sent as typed;
+   * `id` is never sent. */
+  buildOps(drafts: ReadonlySet<string> = this.draftIds()): MemoryPendingOp[] {
     const table = this._table.address;
     const pending: MemoryPendingOp[] = [];
     for (const row of this.df.rows) {
@@ -276,13 +273,13 @@ export class MemoryEditState implements EditState {
       else if (state === 'new') {
         for (const name of writable) {
           if (row[name] != null)
-            values[name] = MemoryEditState._reference(row[name]);
+            values[name] = MemoryEditState._reference(row[name], drafts);
         }
         pending.push({row, op: {op: 'insert', table, ref: String(row.id), values}});
       } else if (state === 'modified') {
         for (const name of this._originals.get(row)?.keys() ?? []) {
           if (writable.includes(name))
-            values[name] = MemoryEditState._reference(row[name]);
+            values[name] = MemoryEditState._reference(row[name], drafts);
         }
         if (Object.keys(values).length > 0) {
           const version = row.version;
@@ -292,6 +289,12 @@ export class MemoryEditState implements EditState {
       }
     }
     return pending;
+  }
+
+  /** The id of every draft row of the frame — the drafts its batch may reference. */
+  draftIds(): Set<string> {
+    return new Set(this.df.rows.map((row) => row.id)
+      .filter((id): id is string => typeof id === 'string' && Rows.isDraft(id)));
   }
 
   /** The landed batch written back: deleted rows leave, every other row takes its result (a
@@ -335,7 +338,6 @@ export class MemoryEditState implements EditState {
   }
 
   dispose(): void {
-    MemoryEditState._live.delete(this);
     this.onChanged.clear();
     this.onSaved.clear();
   }
@@ -357,14 +359,10 @@ export class MemoryEditState implements EditState {
     return null;
   }
 
-  private static _reference(v: unknown): unknown {
+  private static _reference(v: unknown, drafts: ReadonlySet<string>): unknown {
     if (Array.isArray(v))
-      return v.map((x) => MemoryEditState._reference(x));
-    if (typeof v !== 'string')
-      return v;
-    const draft = Rows.isDraft(v) &&
-      [...MemoryEditState._live].some((edit) => edit.df.rows.some((row) => row.id === v));
-    return draft || v.startsWith('$') ? `$${v}` : v;
+      return v.map((x) => MemoryEditState._reference(x, drafts));
+    return typeof v === 'string' && (drafts.has(v) || v.startsWith('$')) ? `$${v}` : v;
   }
 
   private static _resolve(v: unknown, ids: Record<string, string>): unknown {
