@@ -192,6 +192,21 @@ source('edit → save updates with the expected version; a conflict is an error,
   src.dispose();
 });
 
+source('a delete of a row another session changed is refused with a version conflict and stays pending', async () => {
+  emsBackends.domain = backend();
+  const src = await issues();
+  src.edit.value.markDeleted('i2');
+  emsBackends.domain.tableSync('grit.issue').rows[1].version = 2;
+  assert.equal(await src.save(), false, 'a stale delete is refused like a stale update');
+  assert.equal(src.error.value.code, 'version-conflict');
+  assert.equal(src.rows.byKey('i2')['~state'], 'deleted', 'the delete stays pending');
+  assert.notEqual(emsBackends.domain.tableSync('grit.issue').rows[1].is_deleted, true, 'nothing was deleted');
+
+  emsBackends.domain.tableSync('grit.issue').rows[1].version = 1;
+  assert.equal(await src.save(), true, 'a delete of the version it read lands');
+  src.dispose();
+});
+
 source('discard: modified values come back, drafts go, deletes are undone', async () => {
   emsBackends.domain = backend();
   const src = await issues();

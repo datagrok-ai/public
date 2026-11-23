@@ -275,6 +275,7 @@ category('Dapi: domain frame editor', () => {
 
       const del = ops.find((o) => o.op === 'delete')!;
       expect(del.id, df.get('id', 2), 'the delete addresses the wrong row');
+      expect(del.expectedVersion, df.get('version', 2), 'the delete lost its optimistic-concurrency guard');
 
       // A row that was added and then deleted never reached the server: no op.
       const ghost = editor.addRow({sku: `${prefix}-ghost`, name: 'Ghost', quantity: 0});
@@ -379,8 +380,8 @@ category('Dapi: domain frame editor', () => {
       expect(ops.length, 1, `a staged restore built ${ops.length} ops`);
       expect(ops[0].op.op, 'restore', `the op is not a restore: ${JSON.stringify(ops[0].op)}`);
       expect(`${ops[0].op.id}`, ids[0], 'the restore op does not name the row');
-      expect(ops[0].op.values === undefined && ops[0].op.expectedVersion === undefined, true,
-        `a restore op carries its id alone: ${JSON.stringify(ops[0].op)}`);
+      expect(ops[0].op.values === undefined && ops[0].op.expectedVersion === versionBefore, true,
+        `a restore op carries its id and the version it read: ${JSON.stringify(ops[0].op)}`);
 
       expect(await editor.save(), true, 'save() failed');
       expect(editor.isDirty, false, 'the editor stayed dirty after the restore landed');
@@ -597,6 +598,36 @@ category('Dapi: domain frame editor', () => {
       expect(editor.errorOf(0, 'name')?.kind, 'conflict', 'the dismissed conflict left no marker');
       expect(editor.isDirty, true, 'the dismissed conflict dropped the edit');
       expect((await items().get(id)).name, 'Server again', 'a dismissed conflict wrote anyway');
+      editor.detach();
+    } finally {
+      (DG.DomainObjectHandler as any).showConflictDialog = original;
+      await cleanup(prefix);
+    }
+  });
+
+  // EQ-060: the delete and restore RELOAD/OVERWRITE paths are covered headless on the built bundle
+  // (js-api scripts/unit/domain-conflict.test.cjs); this is the one only a server answers: a restore's
+  // RELOAD reads the trashed row (deleted: include), never "no longer exists"
+  test('EQ-060: a stale restore, RELOAD: the trashed row is re-read and the restore dropped', async () => {
+    const prefix = `fe-409-del-${stamp()}`;
+    const id = (await seed(prefix, 1))[0];
+    const original = (DG.DomainObjectHandler as any).showConflictDialog;
+    (DG.DomainObjectHandler as any).showConflictDialog = async () => 'reload';
+    try {
+      await items().delete(id);
+      const editor = await DomainFrameEditor.create(items() as any, {query: {...specFor(prefix), deleted: 'only'} as any});
+      editor.markRestored(0);
+      await items().restore(id);
+      await items().delete(id);
+      const trashed = (await items().get(id, {deleted: 'include'})).version;
+      const failing = editor.buildOps()[0];
+      // the refusal a server honouring the restore version answers (core), built so it runs on any server
+      const conflict = new DG.DomainVersionConflictError(`Version conflict: expected ${failing.op.expectedVersion}`,
+        409, {error: 'version-conflict', id, currentVersion: trashed, expectedVersion: failing.op.expectedVersion, opIndex: 0});
+      expect(await editor.resolveConflict(conflict, failing), true, 'reload did not resolve the restore conflict');
+      expect(editor.stateOf(0), '', 'reload kept the restore staged');
+      expect(editor.dataFrame.get('version', 0), trashed, 'reload did not read the trashed row');
+      expect(editor.dataFrame.get(DG.DOMAIN_DELETED_COLUMN, 0), true, 'the reloaded row left the trash');
       editor.detach();
     } finally {
       (DG.DomainObjectHandler as any).showConflictDialog = original;

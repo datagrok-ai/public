@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Tests: `DomainFrameEditor` 'EQ-060': a stale restore's RELOAD re-reads the row from the trash (`deleted: 'include'`) and drops the restore; the other delete/restore RELOAD and OVERWRITE paths are covered headless in js-api
+* Tests: `DomainFrameEditor` 'transaction ops' and 'staged restore' expect `expectedVersion` on delete and restore ops
 * Tests: `Dapi` 'admin.getMetrics' checks the queue as the server sends it (RabbitMQ message totals, or null), and `ui: spaceSaveRow` tells an installed PowerPack by its functions: `grok.dapi.packages` lists the registry's packages too, so the test failed on a stand without PowerPack
 * [public#4627](https://github.com/datagrok-ai/public/issues/4627): Fixed `JS: domain handlers` 'row permissions and ribbon actions follow a real grant': it grants `Delete` to a probe user instead of revoking the caller's own
 * Node runner: The concurrent runs of a stress level are spread over several processes (`--workers`, by default one per 16 runs, at most a quarter of the cores) instead of sharing one thread, so that the tests wait for the server and not for the runner

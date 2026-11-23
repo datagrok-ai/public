@@ -7,6 +7,10 @@ export type RowState = '' | 'new' | 'modified' | 'deleted' | 'restored';
 /** What a landed batch answers: every draft id the writer stamped → the id the server gave. */
 export interface EditSaved {
   assigned: Record<string, string>;
+  /** Rows this writer's transaction wrote (inserts, updates, deletes). A backend that can drop
+   * pending changes inside a save (the platform session's RELOAD in the conflict dialog) says so
+   * here; absent, every pending row is taken as written. */
+  written?: number;
 }
 
 export interface EditState {
@@ -16,10 +20,19 @@ export interface EditState {
   readonly changeCount: ReadonlySignal<number>;
   /** The first blocking problem, null when the batch may be saved. */
   readonly validity: ReadonlySignal<string | null>;
+  /** What keeps the batch from being sent: {@link validity} without the cells the server's last
+   * refusal marked — those stay shown, and a retry goes to the server, which decides again.
+   * Absent: {@link validity}. */
+  readonly blocking?: ReadonlySignal<string | null>;
+  /** Whether the cell's error is the server's last refusal rather than the client's verdict. */
+  refused?(key: string, column: string): boolean;
   readonly isSaving: ReadonlySignal<boolean>;
   /** Why the last save was refused, where the refusal named no column and so reached no cell — a
    * delete a child's reference vetoes, say. Null until a save is refused that way. */
   problem?: string | null;
+  /** The server's error code of the last refusal, where the backend knows one — `'forbidden'` says
+   * the access the affordances were built from is stale. */
+  problemCode?: string | null;
   /** The key of the row that changed, null for a change touching several. */
   readonly onChanged: ObservableLike<string | null>;
   /** A batch landed: the rows are settled and every draft is re-keyed by its real id. */
@@ -264,10 +277,11 @@ export class MemoryEditState implements EditState {
       const state = row[Rows.STATE] as RowState | undefined;
       const values: Row = {};
       const writable = this._writable(row);
+      const guard = typeof row.version === 'number' ? {expectedVersion: row.version} : {};
       if (state === 'deleted')
-        pending.push({row, op: {op: 'delete', table, id: String(row.id)}});
+        pending.push({row, op: {op: 'delete', table, id: String(row.id), ...guard}});
       else if (state === 'restored')
-        pending.push({row, op: {op: 'restore', table, id: String(row.id)}});
+        pending.push({row, op: {op: 'restore', table, id: String(row.id), ...guard}});
       else if (state === 'new') {
         for (const name of writable) {
           if (row[name] != null)
@@ -279,11 +293,8 @@ export class MemoryEditState implements EditState {
           if (writable.includes(name))
             values[name] = MemoryEditState._reference(row[name]);
         }
-        if (Object.keys(values).length > 0) {
-          const version = row.version;
-          pending.push({row, op: {op: 'update', table, id: String(row.id), values,
-            ...(typeof version === 'number' ? {expectedVersion: version} : {})}});
-        }
+        if (Object.keys(values).length > 0)
+          pending.push({row, op: {op: 'update', table, id: String(row.id), values, ...guard}});
       }
     }
     return pending;
@@ -315,7 +326,7 @@ export class MemoryEditState implements EditState {
       }
     }
     this._settle();
-    this.onSaved.fire({assigned});
+    this.onSaved.fire({assigned, written: pending.length});
   }
 
   /** The draft id of every insert of the batch → the id the backend gave it. */

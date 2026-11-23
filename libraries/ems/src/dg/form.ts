@@ -88,7 +88,8 @@ export class DomainForm extends Control {
     this.problem = computed(() => {
       for (const input of this._form.value?.inputs ?? []) {
         const message = input.validity.value;
-        if (message !== null) {
+        // the server's mark on the field stays shown in it, and is not the form's to hold Save on
+        if (message !== null && !this._refused(input.name, message)) {
           const caption = capital(input.label);
           return message === EMPTY ? `${caption} is required` : `${caption}: ${message}`;
         }
@@ -202,6 +203,14 @@ export class DomainForm extends Control {
   /** The input editing a column of the current row; none for a text field or without a row. */
   input(name: string): ReturnType<ObjectForm['input']> {
     return this._form.peek()?.input(name);
+  }
+
+  // the field's verdict is the cell error the server's last refusal put there
+  private _refused(name: string | undefined, message: string): boolean {
+    const target = this._form.peek()?.target as RowView | undefined;
+    const edit = this.source.edit.value;
+    return name !== undefined && target !== undefined && edit?.refused?.(target.id, name) === true &&
+      edit.errorOf(target.id, name) === message;
   }
 
   /** Every field's verdict shown, the first failing one focused — the explicit check a Save runs. */

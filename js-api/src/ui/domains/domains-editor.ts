@@ -882,8 +882,9 @@ export class DomainFrameEditor implements IFrameEditor {
    * the row's `expectedVersion`, `'expected'` the ORIGINAL values of the changed columns
    * ({@link _guardOf} — a partial guard: only the columns whose declared type the warehouse can
    * compare, so an edit touching floats, datetimes, refs or empty originals alone carries none),
-   * `'none'` nothing. `'deleted'` rows delete, `'restored'` rows carry their id alone and undo a
-   * landed soft delete. Exposed so a caller can inspect or extend the
+   * `'none'` nothing. `'deleted'` rows delete, `'restored'` rows undo a landed soft delete; both
+   * carry the row's `expectedVersion` under `'version'`, so a row changed since it was read is
+   * refused as a version conflict. Exposed so a caller can inspect or extend the
    * payload; a {@link DomainSession} concatenates several editors' into one
    * transaction.
    *
@@ -910,12 +911,12 @@ export class DomainFrameEditor implements IFrameEditor {
       if (state === 'deleted') {
         // A row that was added and then deleted never reached the server.
         if (this._isPersisted(row))
-          pending.push({row: row, op: {op: 'delete', table: table, id: `${id}`}});
+          pending.push({row: row, op: {op: 'delete', table: table, id: `${id}`, ...this._versionGuard(row)}});
       }
       else if (state === 'restored') {
         // A draft cannot have been deleted on the server.
         if (this._isPersisted(row))
-          pending.push({row: row, op: {op: 'restore', table: table, id: `${id}`}});
+          pending.push({row: row, op: {op: 'restore', table: table, id: `${id}`, ...this._versionGuard(row)}});
       }
       else if (state === 'new') {
         const values: {[column: string]: any} = {};
@@ -937,21 +938,24 @@ export class DomainFrameEditor implements IFrameEditor {
         if (Object.keys(values).length === 0)
           continue;
         const op: DomainTransactionOp = {op: 'update', table: table, id: `${id}`, values: values};
-        const concurrency = this.access.support.concurrency;
-        if (concurrency === 'expected') {
+        if (this.access.support.concurrency === 'expected') {
           const expected = this._guardOf(row, values);
           if (Object.keys(expected).length > 0 && !this._unguarded.has(`${id}`))
             op.expected = expected;
         }
-        else if (concurrency === 'version') {
-          const version = this._wire(row, 'version');
-          if (typeof version === 'number')
-            op.expectedVersion = version;
-        }
+        else
+          Object.assign(op, this._versionGuard(row));
         pending.push({row: row, op: op});
       }
     }
     return pending;
+  }
+
+  /** `{expectedVersion}` of [row] on a version-guarded table whose frame carries the row's version;
+   * empty otherwise. */
+  private _versionGuard(row: number): {expectedVersion?: number} {
+    const version = this.access.support.concurrency === 'version' ? this._wire(row, 'version') : null;
+    return typeof version === 'number' ? {expectedVersion: version} : {};
   }
 
   /** A uuid-shaped string original does not guard: the connector binds such a literal as a uuid,
@@ -1211,14 +1215,16 @@ export class DomainFrameEditor implements IFrameEditor {
     // The op's guard decides the shape, not the body: a 409 without `current` must still not
     // reach the version dialog, whose Overwrite would retry the same stale guard.
     const guarded = failing.op.expected != null;
+    const kind = failing.op.op === 'delete' || failing.op.op === 'restore' ? failing.op.op : undefined;
     const decision = guarded ? await this._expectedConflictDialog(e, row, subject)
-      : await DomainObjectHandler.showConflictDialog(subject);
+      : await DomainObjectHandler.showConflictDialog(subject, kind);
     if (decision === 'reload') {
       // a gone row resolves null and is reported; a read that FAILED keeps the edit, as Cancel does
       let fresh: any = null;
       let read = true;
       try {
-        fresh = await this.client.get(id);
+        // a staged restore's row is in the trash
+        fresh = await this.client.get(id, kind === 'restore' ? {deleted: 'include'} : undefined);
       } catch (x: any) {
         balloon.error(`${subject} could not be reloaded: ${x?.message ?? x}`);
         read = false;

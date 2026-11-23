@@ -88,6 +88,21 @@ source('a landed delete is soft: the trash shows the row, a staged restore bring
   trash.dispose();
 });
 
+source('a restore of a deleted row another session changed is refused with a version conflict', async () => {
+  emsBackends.domain = backend();
+  const live = await issues();
+  await drop(live, 'i2');
+  live.dispose();
+  const trash = await issues({deleted: 'only'});
+  trash.stageRestore(['i2']);
+  await flush();
+  emsBackends.domain.tableSync('grit.issue').rows[1].version = 5;
+  assert.equal(await trash.save(), false, 'a stale restore is refused like a stale update');
+  assert.equal(trash.error.value.code, 'version-conflict');
+  assert.equal(emsBackends.domain.tableSync('grit.issue').rows[1].is_deleted, true, 'still in the trash');
+  trash.dispose();
+});
+
 source('Discard drops a staged restore and the row is still deleted', async () => {
   emsBackends.domain = backend();
   const live = await issues();

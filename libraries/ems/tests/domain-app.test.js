@@ -564,6 +564,69 @@ scoped('DomainTable.app(): the shell rewrites the view path only AFTER onViewAdd
   }
 });
 
+// EQ-021: Edit revoked mid-edit. Today's served js-api refusal has no code, only the bare
+// "forbidden"; it must still drop the platform caches, re-read the access and the rows' own
+// `~can_edit` (which replaces the table's answer per row), and re-gate the form after Discard.
+scoped('EQ-021: a save refused as bare "forbidden" re-reads the access and re-gates the form', async () => {
+  const DG = await import('datagrok-api/dg');
+  const {DgDomainBackend} = await import('../src/dg/backend.js');
+  const {app: a} = await app();
+  const memory = emsBackends.domain;
+  const table = memory.tableSync('grit.issue');
+  const i1 = table.rows.find((r) => r.id === 'i1');
+  i1['~can_edit'] = true; // the server's per-row answer, as a platform frame carries it
+  await a.goTo('entity', 'i1');
+  await flush();
+  a.form.value.input('title').value = 'Revoked meanwhile';
+  await flush();
+  const dg = new DgDomainBackend();
+  memory.saveAll = (edits) => dg.saveAll(edits);
+  memory.dropAccess = () => dg.dropAccess();
+  const cached = table.access.bind(table);
+  const before = grok.dapi.domains.invalidated;
+  // the revoke, read after the caches go: the table and the row say no; the column grant stays
+  table.access = async () => grok.dapi.domains.invalidated > before ?
+    {can: {view: true, insert: false, edit: false, delete: false, share: false}, fields: {title: 'editable'}} : cached();
+  i1['~can_edit'] = false;
+  DG.DomainSession.next = {message: 'forbidden', editor: null};
+  try {
+    assert.equal(await a.session.save(), false);
+    await flush();
+  } finally {
+    DG.DomainSession.next = true;
+  }
+  assert.equal(grok.dapi.domains.invalidated > before, true, 'a forbidden save drops the platform access caches');
+  assert.equal(a.entitySource.value.access.value.can('edit'), false, 'the entity source re-read its access');
+  assert.equal(a.session.isDirty.value, true, 'the edit is kept until Discard');
+  a.session.discard();
+  await flush();
+  assert.equal(a.form.value.input('title') === undefined, true, 'after Discard the form is read-only');
+  a.dispose();
+});
+
+// EQ-055: the served js-api's refusal has no code, and the insert 403 carries a sentence: only its
+// stable prefixes tell a refusal as forbidden (access re-read) from any other
+scoped('EQ-055: a refused new record is a refusal as forbidden on today\'s servers; other refusals are not', async () => {
+  const DG = await import('datagrok-api/dg');
+  const {DgDomainBackend} = await import('../src/dg/backend.js');
+  const cases = [
+    ['Insufficient privileges to insert into "grit.issue"', 'forbidden'],
+    ['You don\'t have Edit permission on schema "grit"', 'forbidden'],
+    ['Ethanol still has 3 containers', null],
+    ['Too many version conflicts in a row', null],
+  ];
+  for (const [message, code] of cases) {
+    const state = {problem: null, problemCode: null, editor: null, errorCells: () => [], retry: () => {}};
+    DG.DomainSession.next = {message, editor: null};
+    try {
+      await new DgDomainBackend().saveAll([state]);
+    } finally {
+      DG.DomainSession.next = true;
+    }
+    assert.equal(state.problemCode, code, `"${message}" ${code ? 'is a refusal as forbidden: access is re-read' : 'is not forbidden'}`);
+  }
+});
+
 scoped('the ambient session is the app\'s; New is hidden without insert', async () => {
   emsBackends.domain = backend({access: {can: {view: true, insert: false, edit: true, delete: true, share: true},
     fields: {title: 'editable'}}});

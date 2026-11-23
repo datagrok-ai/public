@@ -135,7 +135,8 @@ export interface DomainProbeLike {
  * schema or `'<schema>.<table>'`; an insert may name itself with `ref`, and any op's value
  * `'$<ref>'` — earlier or later in the batch — is replaced by that row's id. */
 export interface DomainTransactionOpLike {
-  /** A `restore` carries `id` alone and undoes a landed soft delete — the Delete grant, not a new one. */
+  /** A `restore` carries `id` (and `expectedVersion`) and undoes a landed soft delete — the Delete
+   * grant, not a new one. */
   op: 'insert' | 'update' | 'delete' | 'restore';
   table: string;
   ref?: string;
@@ -293,6 +294,9 @@ export interface DomainBackend {
    * backend throws its `DomainBackendError`; the platform answers false after its own dialogs
    * (the js-api `DomainSession` owns the conflict and validation loop). */
   saveAll(edits: EditState[]): Promise<boolean>;
+  /** Drops every cached access snapshot the backend keeps — the session calls it after a 403,
+   * before its sources re-read their access. A backend without caches has none. */
+  dropAccess?(): void;
 }
 
 /** Filled by `DgDomainBackend` at dg import, by `MemoryDomainBackend` in tests. */

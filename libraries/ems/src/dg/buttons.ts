@@ -42,7 +42,7 @@ export function saveButton(target: SessionTarget, options: SessionButtonOptions 
   const control = new SessionButton(target, options.text ?? 'Save', {primary: true, tooltip: 'Save (Ctrl+S)',
     run: (session) => session.save(),
     disabled: (session) => session.isSaving.value ? SessionButton.WAITING :
-      session.validity.value ?? (session.isDirty.value ? null : 'No changes to save')});
+      (session.blocking ?? session.validity).value ?? (session.isDirty.value ? null : 'No changes to save')});
   control.root.dataset.u2 = 'save-button';
   const session = control.session;
   session.primaryButton = control.button;

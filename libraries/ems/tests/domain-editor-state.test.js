@@ -3,7 +3,12 @@ import assert from 'node:assert/strict';
 import {flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {Scope, FrameRows, Rows} from '@datagrok-libraries/u2';
 import {DataFrame, Stream} from '@datagrok-libraries/u2/tests/platform-doubles.mjs';
+import {register} from 'node:module';
 import {EditorEditState} from '../src/dg/editor-state.js';
+
+register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
+const DG = await import('datagrok-api/dg');
+const {DgDomainBackend} = await import('../src/dg/backend.js');
 
 function scoped(name, body) {
   test(name, async () => {
@@ -182,5 +187,70 @@ scoped('validity is the first blocking error on a row that is not deleted; a con
   editor.fail(0, 'title', 'Someone else changed it', 'conflict');
   assert.equal(state.validity.value, null, 'a dismissed conflict only marks the cell');
   assert.equal(state.errorOf('i1', 'title'), 'Someone else changed it');
+  state.dispose();
+});
+
+// EQ-033: the platform editor marks the server's field error on the cell as kind 'error', like its
+// own checks; saveAll keeps that mark apart, so it stays shown, holds nothing, and the next save is sent
+scoped('EQ-033: a cell the server refused stays shown, does not hold Save, and the next save is sent', async () => {
+  const {editor} = fakeEditor(ROWS);
+  let validated = 0;
+  editor.validate = function() { // the editor re-runs its own checks: the server's mark goes
+    validated++;
+    delete this.errorsOf(0).title;
+    this.onChanged.fire(this);
+    return 0;
+  };
+  const state = new EditorEditState(editor);
+  const real = DG.DomainSession.prototype.save;
+  let sent = 0;
+  DG.DomainSession.prototype.save = async function() {
+    this.lastRefusal = ++sent > 1 ? null : {message: 'Title Aspirin already belongs to i7', editor: this.editors[0]};
+    if (this.lastRefusal) // the platform maps the server's field error onto the cell it names
+      this.editors[0].fail(0, 'title', this.lastRefusal.message);
+    return this.lastRefusal === null;
+  };
+  try {
+    const dg = new DgDomainBackend();
+    assert.equal(await dg.saveAll([state]), false);
+    assert.equal(state.validity.value, 'Title Aspirin already belongs to i7', 'the refusal stays shown');
+    assert.equal((state.blocking ?? state.validity).value, null, 'a server refusal does not hold Save');
+    assert.equal(await dg.saveAll([state]), true);
+    assert.equal(validated, 1, 'the next save took the server\'s mark back before the editor built its batch');
+    assert.equal(sent, 2);
+  } finally {
+    DG.DomainSession.prototype.save = real;
+  }
+  state.dispose();
+});
+
+scoped('EQ-033: a client error the retry finds is the client\'s, and holds', async () => {
+  const {editor} = fakeEditor(ROWS);
+  editor.validate = function() { // the server's mark goes; the client finds the second title empty
+    delete this.errorsOf(0).title;
+    this.errorsOf(1).title = {message: 'Title is required', kind: 'error'};
+    this.onChanged.fire(this);
+    return 1;
+  };
+  const state = new EditorEditState(editor);
+  const real = DG.DomainSession.prototype.save;
+  let sent = 0;
+  DG.DomainSession.prototype.save = async function() {
+    if (++sent === 1)
+      this.editors[0].fail(0, 'title', 'Taken');
+    // then the editor refuses its own cells and sends nothing
+    this.lastRefusal = sent === 1 ? {message: 'Taken', editor: this.editors[0]} :
+      {message: 'Fix the cell errors first', editor: null};
+    return false;
+  };
+  try {
+    const dg = new DgDomainBackend();
+    assert.equal(await dg.saveAll([state]), false);
+    assert.equal(await dg.saveAll([state]), false);
+    assert.equal(state.refused('i2', 'title'), false, 'never taken for the server\'s');
+    assert.equal(state.blocking.value, 'Title is required', 'the client\'s error holds the batch');
+  } finally {
+    DG.DomainSession.prototype.save = real;
+  }
   state.dispose();
 });

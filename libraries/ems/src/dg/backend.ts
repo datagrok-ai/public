@@ -50,13 +50,42 @@ export class DgDomainBackend implements DomainBackend {
     this._tables.clear();
   }
 
+  /** As `DomainErrors.report` does after a 403: the platform's access caches and every handle. */
+  dropAccess(): void {
+    grok.dapi.domains.invalidateUiCaches();
+    this.invalidate();
+  }
+
+  /** A refusal the server answered with 403. A js-api that carries the code says so. The one today's
+   * servers ship (`/js/api/js-api.js`, not bundled) records no code in `lastRefusal`, only the message,
+   * and the 403 body's `error: 'forbidden'` is not reachable from it: the bare `forbidden` of an update
+   * or delete refusal (`repository.dart` `_mapWriteOutcome`), and the sentences of the insert refusal
+   * ("Insufficient privileges to insert into "<table>"", `repository.dart`) and of a schema-level one
+   * ("You don't have Edit permission on schema "<schema>"", `domains_service.dart`) are recognised by
+   * their stable prefix. */
+  static isForbidden(refusal: {message?: string, code?: string} | null): boolean {
+    if (refusal == null)
+      return false;
+    if (refusal.code !== undefined)
+      return refusal.code === 'forbidden';
+    const message = refusal.message ?? '';
+    return message === 'forbidden' || message.startsWith('Insufficient privileges to ') ||
+      message.startsWith('You don\'t have ');
+  }
+
   /** Every writer's batch as ONE `/transaction` through the js-api `DomainSession`, which owns
    * the conflict dialog, the validation mapping and the retry cap; quiet — the u2 session says
    * what was saved. */
   async saveAll(edits: EditState[]): Promise<boolean> {
     const states = edits as EditorEditState[];
-    for (const state of states)
+    for (const state of states) {
       state.problem = null;
+      state.problemCode = null;
+      // optional: a test drives this backend over writers of its own
+      state.retry?.();
+    }
+    // what the client finds before anything is sent: an error standing now is never the server's
+    const before = states.map((state) => state.errorCells?.());
     const session = new DG.DomainSession(states.map((e) => e.editor), {quiet: true});
     try {
       if (await session.save())
@@ -65,9 +94,13 @@ export class DgDomainBackend implements DomainBackend {
       // containers") and balloons it; the u2 status line says it on the state whose editor it
       // names, and on every one for a refusal the batch as a whole answers for
       const refusal = session.lastRefusal;
+      // the editor's own refusal of its cells (a client error `retry` found) sent nothing
+      const sent = refusal !== null && refusal.message !== DG.DomainSession.CELL_ERRORS;
+      states.forEach((state, i) => state.markRefused?.(sent ? before[i]! : state.errorCells()));
       for (const state of states) {
         if (refusal !== null && (refusal.editor === null || refusal.editor === state.editor))
           state.problem = refusal.message;
+        state.problemCode = DgDomainBackend.isForbidden(refusal) ? 'forbidden' : refusal?.code ?? null;
       }
       return false;
     } finally {

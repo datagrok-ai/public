@@ -1,6 +1,6 @@
 import {signal, computed, batch, Signal, ReadonlySignal, Component, Access, plural, Filters, requireBackend, subBind,
   Rows, FrameRows} from '@datagrok-libraries/u2';
-import type {FilterCondition, FilterGroup, FilterNode, FilterProperty, FilterScalar, FilterSchema, DomainRowLike,
+import type {AccessData, FilterCondition, FilterGroup, FilterNode, FilterProperty, FilterScalar, FilterSchema, DomainRowLike,
   RowsLike, RowValues, RowView, DataFrameLike, BindProp, BindSource, ComponentEnv,
   ComponentStart} from '@datagrok-libraries/u2';
 import type {EditState} from './edit-state.js';
@@ -83,6 +83,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   static readonly live = new Set<DomainSource>();
   /** The `code` of a refusal the backend already reported ({@link refuse}). */
   static readonly REFUSED = 'refused';
+  private static readonly _forbidden = new WeakSet<object>();
   /** How often a `live` source probes the server by default. */
   static readonly liveMs = 30000;
   /** How many probes may fail in a row before the poll gives up ({@link DomainSource.live}). */
@@ -141,8 +142,14 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   readonly isDirty: ReadonlySignal<boolean>;
   readonly changeCount: ReadonlySignal<number>;
   readonly validity: ReadonlySignal<string | null>;
-  /** Why Save stays off: an unanswered refusal, then {@link validity}. */
+  /** What a refused save left standing, then {@link validity}: what the page says is wrong. */
   readonly blocked: ReadonlySignal<string | null>;
+  /** Why Save stays off: {@link validity} without the server's refusals — the copy a refused save
+   * left here, the cells it marked — save a 403, which holds. What the client refused before sending
+   * holds too. A refusal is the server's verdict on the batch as it was, and
+   * its cause may go where the client cannot see (the clashing row deleted in another tab): it
+   * stays shown, and Save sends again for the server to decide. */
+  readonly blocking: ReadonlySignal<string | null>;
   readonly isSaving: ReadonlySignal<boolean>;
   /** "50 of 2,077", "12 issues", "3 unsaved changes" — what a status bar shows. */
   readonly summary: ReadonlySignal<string>;
@@ -196,6 +203,10 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private _restart = false;
   // the caller of `rebind` re-reads; a refresh here would drop the frame the batch just landed in
   private _rebinding = false;
+  // the writer was built under an access a 403 contradicted, and pending changes kept it: the
+  // next revert rebuilds it, then publishes this re-read access again
+  private _regate = false;
+  private _regated: AccessData | undefined;
   private readonly _liveMs: number;
   private _timer: ReturnType<typeof setInterval> | undefined;
   // what the server looked like when the rows landed — read just before them by a live load; undefined
@@ -262,6 +273,20 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       if ((code === 'validation' || code === DomainSource.REFUSED) && this._state.value !== 'error')
         return DomainSource._message(error);
       return this.validity.value;
+    });
+    this.blocking = computed(() => {
+      // what the client refused before sending (a guard, two edits of one row) and a 403 hold
+      // Save; the server's verdict on a value does not
+      const error = this._error.value;
+      const code = (error as {code?: unknown} | undefined)?.code;
+      if ((code === 'validation' || DomainSource.isForbidden(error)) && this._state.value !== 'error')
+        return DomainSource._message(error);
+      for (const problem of this._problems.value) {
+        if (problem.value !== null)
+          return problem.value;
+      }
+      const edit = this._edit.value;
+      return (edit?.blocking ?? edit?.validity)?.value ?? null;
     });
     this.isSaving = computed(() => this._edit.value?.isSaving.value ?? false);
     this.summary = computed(() => this._summary());
@@ -557,6 +582,43 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     }
   }
 
+  /** Re-reads the table-level access — the session calls it after a 403, which says the one the
+   * affordances were built from is stale. A failed read keeps the access the source has. The
+   * writer a grid edits through was built under the old one too: rebuilt over the same window
+   * now, or — while it holds pending changes, which a new writer would drop — on the revert. */
+  async reloadAccess(): Promise<void> {
+    if (this.scope.isDisposed || this._ready === undefined)
+      return;
+    let data: AccessData;
+    try {
+      data = await (await this._ready).access();
+    } catch {
+      return;
+    }
+    if (this.scope.isDisposed)
+      return;
+    this._access.value = Access.from(data);
+    this._regate = true;
+    this._regated = data;
+    if (!this.isDirty.peek())
+      await this._rebuildWriter();
+  }
+
+  private async _rebuildWriter(): Promise<void> {
+    this._regate = false;
+    try {
+      await this._rebase();
+    } catch {
+      // the rows and the writer stay as they were; the next revert tries again
+      this._regate = true;
+      return;
+    }
+    // the re-read rows carry the server's `~can_*` now, which replace the table's answer per row
+    // (`Access.row`): what was built from the old rows' (the form) is built again
+    if (this._regated !== undefined && !this.scope.isDisposed)
+      this._access.value = Access.from(this._regated);
+  }
+
   /** Stages the restore of soft-deleted rows into the session's unit of work — they are pending
    * changes until Save, shown as such, dropped by Discard, and guarded by the unsaved gate. The
    * write itself rides `save()`; `DomainTable.restore(id)` is still the way to restore a row with
@@ -669,6 +731,11 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     const edit = this._edit.peek();
     if (edit === undefined)
       return null;
+    // a 403 is about access, not the values: resending only meets it again, until the user lets
+    // go of the changes
+    const error = this._error.peek();
+    if (DomainSource.isForbidden(error) && this._state.peek() !== 'error')
+      return DomainSource._message(error);
     batch(() => {
       this._error.value = undefined;
       this._problemRow.value = null;
@@ -678,7 +745,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       if (problem !== null)
         return this._refuse(problem);
     }
-    const problem = edit.validity.peek();
+    const problem = (edit.blocking ?? edit.validity).peek();
     return problem === null ? null : this._refuse(this._locate(edit, problem) ?? problem);
   }
 
@@ -896,8 +963,18 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   /** A refusal the backend answered with `false` instead of an exception ("Cannot save: …"):
    * carried by the summary like every other, but marked as already reported — the platform
    * editor balloons its own, and nothing says it twice. */
-  refuse(problem: string): void {
-    this._error.value = new DomainBackendError(DomainSource.REFUSED, `Cannot save: ${problem}`);
+  refuse(problem: string, forbidden = false): void {
+    const error = new DomainBackendError(DomainSource.REFUSED, `Cannot save: ${problem}`);
+    if (forbidden)
+      DomainSource._forbidden.add(error);
+    this._error.value = error;
+  }
+
+  /** Whether the error is a save the server refused as forbidden — thrown with its code, or the
+   * copy {@link refuse} carries of one. */
+  static isForbidden(error: unknown): boolean {
+    return (error as {code?: unknown} | undefined)?.code === 'forbidden' ||
+      (typeof error === 'object' && error !== null && DomainSource._forbidden.has(error));
   }
 
   /** A refusal raised over one row before anything was sent — the session's preflight. Shown the
@@ -915,6 +992,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   /** Drops this source's pending changes — what its session calls. */
   revert(): void {
     this._edit.peek()?.discard();
+    if (this._regate && !this.isDirty.peek())
+      void this._rebuildWriter();
   }
 
   bindStep(name: string): Signal<unknown> | BindSource | null {
@@ -1006,6 +1085,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
           this._error.value = undefined;
           this._problemRow.value = null;
         });
+        // and a refusal the session copied onto the other sources of the batch with it, once its
+        // cause is gone
+        this.session.changed?.(this);
         this._rows.rebuild();
         bump();
       }),
