@@ -1258,6 +1258,7 @@ export class DomainFrameEditor implements IFrameEditor {
         // The pre-reload values are gone: a snapshot of them would make the next
         // in-grid edit record an "original" the cell never held.
         this._snapshots.delete(row);
+        this._df.rows.requestFilter();
         this._fire();
         return true;
       }

@@ -15,12 +15,18 @@ function frame(cols) {
     isNone: (r) => cols[name][r] == null || cols[name][r] === '',
     set: (r, v) => { cols[name][r] = v; },
   });
-  return {
+  // requestFilter recomputes the filter at once, letting [onRowsFiltering] AND in its exclusions
+  const bits = cols.id.map(() => true);
+  const df = {
     get rowCount() { return cols.id.length; },
     columns: {byName: (n) => n in cols ? column(n) : null, contains: (n) => n in cols},
     set: (n, r, v) => { cols[n][r] = v; },
+    filter: {get: (r) => bits[r], set: (r, v) => { bits[r] = v; }},
+    rows: {requestFilter: () => { bits.fill(true); df.onRowsFiltering?.(); }},
+    onRowsFiltering: null,
     cols,
   };
+  return df;
 }
 
 /** An editor over one persisted row in [state], its client answering get() with [fresh] and recording the options. */
@@ -38,6 +44,7 @@ function editor(state, fresh, {concurrency = 'version'} = {}) {
     _changeCount: 1, _dirty: true,
   });
   ed._recount = () => {};
+  ed._df.onRowsFiltering = () => ed._maskDeleted();
   return {ed, reads};
 }
 
@@ -92,4 +99,13 @@ test('a server without the delete wording shows the edit dialog', async () => {
   assert.equal(await ed.resolveConflict(conflict(2), ed.buildOps()[0]), true);
   assert.deepEqual(plain(asked), [{subject: 'Mine'}]);
   assert.equal(ed.stateOf(0), '');
+});
+
+test('a stale delete, RELOAD: the row is shown again before the retry', async () => {
+  dialog('reload');
+  const {ed} = editor('deleted', {id: 'r1', name: 'Theirs', version: 2});
+  ed._df.rows.requestFilter();
+  assert.equal(ed._df.filter.get(0), false, 'the staged delete hides the row');
+  assert.equal(await ed.resolveConflict(conflict(2), ed.buildOps()[0]), true);
+  assert.equal(ed._df.filter.get(0), true, 'the dropped delete no longer hides the row, whatever the retry does');
 });
