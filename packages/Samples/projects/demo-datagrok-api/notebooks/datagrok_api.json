@@ -12,10 +12,10 @@
           "import pandas as pd\n",
           "from io import StringIO\n",
           "\n",
-          "base_url = 'http://host.docker.internal:8888/api'\n",
+          "base_url = @DATAGROK_API_URL\n",
           "api = DatagrokClient(base_url=base_url, api_key=@USER_API_KEY)\n",
           "# Call query that will return information about customers from France in Northwind database\n",
-          "csv_data = api.functions.call('Samples.CustomersInCountry', {'country': 'France'})\n",
+          "csv_data = api.functions.call('Samples.PostgresCustomersInCountry', {'country': 'France'})\n",
           "# Query returns single result that is CSV string\n",
           "df = pd.read_csv(StringIO(csv_data))\n",
           "print(df.head())"

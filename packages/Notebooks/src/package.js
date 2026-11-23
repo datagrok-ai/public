@@ -20,7 +20,7 @@ import {DocumentManager} from '@jupyterlab/docmanager';
 import {DocumentRegistry} from '@jupyterlab/docregistry';
 import {RenderMimeRegistry, standardRendererFactories as initialFactories} from '@jupyterlab/rendermime';
 import {SetupCommands} from './commands';
-import {editNotebook, setupEnvironment, getAuthToken} from './utils';
+import {editNotebook, setupEnvironment, getAuthToken, getApiRoot} from './utils';
 
 export const _package = new DG.Package();
 
@@ -503,6 +503,8 @@ const DockerWebSocket = new Proxy(createDockerWebSocket, {
               }
               return;
             }
+            if (typeof event.data === 'string')
+              event = new MessageEvent(event.type, {data: scrubToken(event.data)});
             value(event);
           };
         } else
@@ -516,7 +518,7 @@ const DockerWebSocket = new Proxy(createDockerWebSocket, {
           return new Proxy(target[prop], {
             apply: (sendMethod, thisArg, argumentsList) => {
               if (typeof argumentsList[0] === 'string')
-                argumentsList[0] = argumentsList[0].replace(/@USER_API_KEY/g, `'${SESSION_TOKEN}'`);
+                argumentsList[0] = fillPlaceholders(argumentsList[0]);
               if (!connected)
                 buffer.push(argumentsList[0]);
               else
@@ -538,6 +540,7 @@ const DockerWebSocket = new Proxy(createDockerWebSocket, {
 
 let CONTAINER_ID;
 let SESSION_TOKEN;
+let API_URL;
 let containerStart = null;
 
 // The container is on demand and stops when idle, so only an in-flight start is shared.
@@ -557,6 +560,15 @@ async function startContainer() {
   throw new Error('Jupyter Notebook did not respond after the container start');
 }
 
+function fillPlaceholders(code) {
+  return code.replace(/@USER_API_KEY/g, `'${SESSION_TOKEN}'`).replace(/@DATAGROK_API_URL/g, `'${API_URL}'`);
+}
+
+function scrubToken(text) {
+  return text.replaceAll(`'${SESSION_TOKEN}'`, '@USER_API_KEY')
+    .replaceAll(SESSION_TOKEN.replace('Bearer ', ''), '@USER_API_KEY');
+}
+
 async function toHtml(notebook) {
   const arrayBuffer = await convertNotebook(JSON.stringify(notebook.notebook));
   return new TextDecoder('utf-8').decode(arrayBuffer);
@@ -567,6 +579,7 @@ export async function initContainer() {
   const container = await grok.dapi.docker.dockerContainers.filter('Notebooks-jupyter-notebook').first();
   CONTAINER_ID = container.id;
   SESSION_TOKEN = getAuthToken();
+  API_URL = getApiRoot();
 }
 
 //name: Notebook
@@ -587,10 +600,13 @@ export function notebookView(params = null, path = '') {
 //output: blob result
 export async function convertNotebook(notebook, format = 'html', execute = false) {
   await ensureContainer();
-  notebook = notebook.replace(/@USER_API_KEY/g, `'${SESSION_TOKEN}'`);
+  if (execute)
+    notebook = fillPlaceholders(notebook);
   const response = await grok.dapi.docker.dockerContainers.fetchProxy(CONTAINER_ID, `/notebook/helper/notebooks/convert?format=${format}&execute=${execute}`,
     {method: 'POST', body: new TextEncoder().encode(notebook)});
   if (response.status > 201)
     throw response.statusText;
+  if (execute && format === 'html')
+    return new TextEncoder().encode(scrubToken(await response.text())).buffer;
   return response.arrayBuffer();
 }

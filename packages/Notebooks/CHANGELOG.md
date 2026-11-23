@@ -1,5 +1,10 @@
 # Notebooks changelog
 
+## v.next
+
+* Added the `@DATAGROK_API_URL` placeholder for the server API URL
+* [public#4660](https://github.com/datagrok-ai/public/issues/4660): Fixed the session token being shown when a notebook is opened and in cell outputs
+
 ## 1.6.5 (2026-11-23)
 
 * Notebooks: A notebook view now opens at once and shows a loader with a message while the Jupyter container starts, then renders in place; a failed start is reported in the view with a Retry button instead of an empty view
