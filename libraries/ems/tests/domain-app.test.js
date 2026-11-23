@@ -1406,6 +1406,28 @@ scoped('the table counts every row picked in it, after the collection is read ag
   a.dispose();
 });
 
+scoped('a selection Escape cleared in the table is not brought back by a view switch (EQ-041)', async () => {
+  const {app: a} = await app();
+  const listRow = (id) => [...a.list.root.getElementsByTagName('*')].find((el) => el.getAttribute('data-u2-row') === id);
+  fire(listRow('i1'), 'click');
+  fire(listRow('i3'), 'click', {ctrlKey: true});
+  a.view.value = 'table';
+  await flush();
+  const table = a.list.root.nextElementSibling.firstElementChild;
+  layout(table, {clientHeight: 300});
+  fire(table, 'scroll');
+  await flush();
+  assert.equal(a.status.value.selected, 2, 'the table takes over the rows the list picked');
+  fire(table, 'keydown', {key: 'Escape'});
+  await flush();
+  a.view.value = 'list';
+  await flush();
+  a.view.value = 'table';
+  await flush();
+  assert.equal(a.status.value.selected, 0, 'a view switch does not bring them back');
+  a.dispose();
+});
+
 scoped('mode: ONE signal behind the deleted rows, the sort, the breadcrumb and the ?trash=1', async () => {
   const {app: a} = await app();
   assert.equal(a.mode.value, 'live');
