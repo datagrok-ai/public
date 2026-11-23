@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Import: Fixed the preview saying "the file has no rows" on a storage with no dry run when the file had rows but every one was refused or skipped before sending: it says how many rows have errors and that no row is valid, as the dry-run preview does
 * Import: Fixed a key typed as its column's format shows it (`C10-0042` under `C10-0000`) reporting "No … with …" when the format's text before the digits holds a 0, `#`, `.` or `,`: the prefix is now everything before the trailing zero run, as MolTrack's key display reads it
 * Tree: Fixed a location a peer deleted while you had pending changes (kept selected, with a notice) turning unselected and back on every later refresh, which emptied and restored the containers list's query each time
 * Properties: Fixed the save confirmation listing only what you changed: it lists everything destructive in the server's plan that your changes do not already say (dropped tables and columns with the values they hold, type, unique, auto-numbering and business-key changes, dropped constraints), and a destructive plan waits for a checkbox that names all of it ("Delete 3 stored values", "Change the type of 1 column") before SAVE
