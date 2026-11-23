@@ -330,7 +330,8 @@ scoped('a validation is bound to the exact payload: a change since is not valida
   assert.equal(result.name, 'nw');
   assert.deepEqual(result.access, {applied: [], failed: []});
   assert.equal(document.querySelector('.u2-dialog'), null);
-  assert.equal(grok.dapi.domains.invalidated, invalidated + 1, 'the completion boundary, once');
+  // the completion boundary, then the opened app reading the caller's access afresh (EQ-054)
+  assert.equal(grok.dapi.domains.invalidated, invalidated + 2, 'the completion boundary once, the open once');
 });
 
 scoped('a refused create keeps the dialog open with the refusal named; cancel resolves null', async () => {

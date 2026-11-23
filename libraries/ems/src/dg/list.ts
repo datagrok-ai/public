@@ -179,18 +179,20 @@ export class DomainList extends Control {
 
   private _empty(filtered: boolean, clearFilter: () => HTMLElement): HTMLElement {
     const source = this.source;
+    const denied = DomainErrors.noView(source);
     const search = source.search.value;
     const info = source.schema.info;
     const what = nounOf(info);
     const trash = source.deleted.value === 'only';
     const create = this._options.create;
-    const actions = search !== '' ? [button('Clear search', () => source.search.value = '')] :
+    const actions = denied !== null ? [] : search !== '' ? [button('Clear search', () => source.search.value = '')] :
       filtered ? [clearFilter()] :
         create !== undefined && !trash && source.access.value.can('insert') ?
           [button(`New ${nounOf(info, true)}`, () => create(), {primary: true})] : [];
-    const said = this._options.empty ?? (search !== '' ? `No ${what} match "${search}"` :
+    const said = denied ?? this._options.empty ?? (search !== '' ? `No ${what} match "${search}"` :
       filtered ? `No ${what} match the filter` : trash ? 'Trash is empty' : `No ${what} yet`);
-    const state = emptyState(said, {icon: search !== '' ? 'search' : trash ? 'trash-alt' : 'inbox', actions});
+    const state = emptyState(said,
+      {icon: denied !== null ? 'lock' : search !== '' ? 'search' : trash ? 'trash-alt' : 'inbox', actions});
     state.classList.add('u2-domain-list-nothing');
     return state;
   }

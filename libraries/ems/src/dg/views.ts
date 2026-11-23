@@ -1,5 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
+import {emsBackends} from '../core/domain-backend.js';
 import {domains, DomainTable} from './facade.js';
 import type {DomainAppViewOptions} from './facade.js';
 import {DomainApp} from './app.js';
@@ -77,6 +78,8 @@ export class DomainViews {
   /** A new view of a table's list, not docked. */
   async view(table: string): Promise<DG.ViewBase> {
     const entry = this._entry(table);
+    // opening is when the caller's access is read afresh: a grant made elsewhere meanwhile is not behind the cache
+    emsBackends.domain?.dropAccess?.();
     const handle = await (this._options.handle ?? domains.table)(table);
     const view = handle.app({...entry.options, name: entry.name, path: this.baseOf(table)});
     this._options.ready?.(DomainApp.of(view)!, table);

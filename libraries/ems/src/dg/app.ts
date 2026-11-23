@@ -5,7 +5,7 @@ import {Control, signal, computed, batch, ReadonlySignal, Signal, button, div, d
   text} from '@datagrok-libraries/u2';
 import type {FilterGroup, IWidgetStatus, Action, RowView, Scope} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
-import {capital, nounOf} from '../core/domain-backend.js';
+import {capital, nounOf, emsBackends} from '../core/domain-backend.js';
 import type {DomainTableInfoLike} from '../core/domain-backend.js';
 import {SharedSession, confirmDiscard} from '../core/session.js';
 import {domains, DomainTable} from './facade.js';
@@ -493,14 +493,21 @@ export class DomainApp extends Control {
     const pristine = () => !this.session.isDirty.value && this._page.value === 'entity' &&
       DomainApp._isDraft(this._entitySource.value, this._entitySource.value?.currentRow.value ?? null);
     const discard = domains.discardButton(this.session, {leave: {when: pristine, run: () => void this.goTo('list')}});
-    // nothing on a read-only page is saved — the trash until a restore is staged
-    save.effect(() => save.root.hidden = discard.root.hidden = !this.session.isDirty.value &&
-      ((this._page.value === 'entity' ? this._entitySource.value : this.listSource)?.readOnly.value ?? false));
+    // nothing on a read-only page is saved — the trash until a restore is staged — nor on one the caller may not view
+    save.effect(() => {
+      const source = this._page.value === 'entity' ? this._entitySource.value : this.listSource;
+      save.root.hidden = discard.root.hidden = !this.session.isDirty.value &&
+        (source?.readOnly.value === true || source?.access.value.can('view') === false);
+    });
     const more = this._actionsMenu();
     // the status bar is text: the way to act on "Data changed" is here, and only while it stands
     const reload = new Control(button('Refresh', () => void this.refresh()));
     reload.root.dataset.u2 = 'refresh-button';
-    reload.effect(() => reload.root.hidden = !this.stale.value);
+    // a reader denied View is offered it too: the grant that would let them in reaches no page by itself
+    reload.effect(() => {
+      const source = this._page.value === 'entity' ? this._entitySource.value : this.listSource;
+      reload.root.hidden = !this.stale.value && source?.access.value.can('view') !== false;
+    });
     const search = domains.search(this.listSource);
     const sort = this._sortMenu();
     const switcher = this._viewSwitch();
@@ -628,6 +635,9 @@ export class DomainApp extends Control {
     const source = this._page.peek() === 'entity' ? this._entitySource.peek() : this.listSource;
     if (source === null || !await confirmDiscard(this.session, {action: 'reload the rows'}))
       return false;
+    // the access is read again too, once: the platform caches it until told otherwise, and a grant made by
+    // another session never tells
+    emsBackends.domain?.dropAccess?.();
     await source.refresh();
     return true;
   }
@@ -1039,11 +1049,21 @@ export class DomainApp extends Control {
     if (page === 'entity' && entity !== null) {
       const source = this.build(() => draft ? this._source({draft: true, defaults: this._options.defaults}) :
         this._source({query: query ?? Filters.group('and', [Filters.cond('id', '=', entity)]), pageSize: 1}));
-      // a source of one has no list to make its row current
+      // a source of one has no list to make its row current; no row where View still reads true may be a
+      // revoke the cached access has not seen (the server answers a reader without View with no rows):
+      // the caches go once and the access is read again, so the page says no access instead of not found
+      let rechecked = draft;
       source.effect(() => {
         const rows = source.rows.items.value;
-        if (source.state.value === 'ready' && rows.length > 0 && source.currentRow.peek() === null)
+        if (source.state.value !== 'ready')
+          return;
+        if (rows.length > 0 && source.currentRow.peek() === null)
           source.currentRow.value = rows[0];
+        else if (rows.length === 0 && !rechecked && source.access.peek().can('view')) {
+          rechecked = true;
+          emsBackends.domain?.dropAccess?.();
+          void source.reloadAccess();
+        }
       });
       const {children, history, include, exclude} = this._options;
       const form = this.build(() => new DomainForm(source, {system: 'footer', include, exclude,

@@ -8,6 +8,7 @@ import {backends, Scope, Rows, notify, allowedActions, Control} from '@datagrok-
 import {Usage} from 'datagrok-api/u2core';
 import {SharedSession} from '../src/core/session.js';
 import {backend} from './domain-fixtures.mjs';
+import {byKind} from '@datagrok-libraries/u2/testing';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/facade.js');
@@ -1817,4 +1818,82 @@ scoped('domains.views: a view per table, addressed and brought forward, where it
     for (const app of [...DomainApp.live])
       app.dispose();
   }
+});
+
+// EQ-023: the access is cached until the caches are dropped, and a reader without View gets no
+// rows: a row opened from a list loaded before the revoke must re-read the access, once
+scoped('EQ-023: View revoked after the list loaded: the row opened from it re-reads the access and says no access', async () => {
+  const memory = backend();
+  const issues = memory.tableSync('grit.issue');
+  const query = issues.query.bind(issues);
+  let revoked = false;
+  let cached = null;
+  let drops = 0;
+  issues.access = () => Promise.resolve(cached ??= {can: {view: !revoked, insert: false, edit: false, delete: false,
+    share: false}, fields: {title: 'readonly'}});
+  issues.query = (spec) => revoked ? Promise.resolve([]) : query(spec);
+  memory.dropAccess = () => (drops++, cached = null);
+  emsBackends.domain = memory;
+  const table = await domains.table('grit.issue');
+  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
+  document.body.append(a.root);
+  await flush();
+  revoked = true;
+  a.listSource.currentRow.value = a.listSource.rows.byKey('i1');
+  a.listSource.activate.value++;
+  await flush();
+  await flush();
+  assert.match(byKind(a, 'domain-form')[0].textContent, /You do not have access to issues\./);
+  assert.equal(drops, 1, 'the caches go once');
+  a.dispose();
+});
+
+// EQ-054: the platform caches the caller's access with no expiry and a grant made by another
+// session never drops it: the memory table answers the cached access until the caches go
+function grantedElsewhere() {
+  const memory = backend();
+  const issues = memory.tableSync('grit.issue');
+  const query = issues.query.bind(issues);
+  const state = {granted: false, drops: 0, issues};
+  let cached = null;
+  issues.access = () => Promise.resolve(cached ??= {can: {view: state.granted, insert: state.granted,
+    edit: state.granted, delete: false, share: false}, fields: {}});
+  issues.query = (spec) => state.granted ? query(spec) : Promise.resolve([]);
+  memory.dropAccess = () => (state.drops++, cached = null);
+  emsBackends.domain = memory;
+  return state;
+}
+
+scoped('EQ-054: opening the app again reads the access afresh, so it follows a grant made meanwhile', async () => {
+  const state = grantedElsewhere();
+  const first = await domains.route('/domains/grit/issue');
+  await flush();
+  assert.equal(state.drops, 1, 'opening drops the caches once');
+  first.close?.();
+  DomainApp.of(first).dispose();
+  await state.issues.access();
+  state.granted = true;
+  const reopened = DomainApp.of(await domains.route('/domains/grit/issue'));
+  await flush();
+  await flush();
+  assert.equal(reopened.listSource.rows.items.value.length, 3, 'the rows show');
+  assert.equal(reopened.listSource.access.value.can('insert'), true, 'the reopened app reads the grant');
+  reopened.dispose();
+});
+
+scoped('EQ-054: Refresh on the no-access page reads the access afresh and brings the rows and New back', async () => {
+  const state = grantedElsewhere();
+  const table = await domains.table('grit.issue');
+  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
+  document.body.append(a.root);
+  const [add, , , , refresh] = testOwner().build(() => a.ribbon()).main;
+  await flush();
+  await state.issues.access();
+  state.granted = true;
+  fire(refresh.root.querySelector('button') ?? refresh.root, 'click');
+  await flush();
+  await flush();
+  assert.equal(a.listSource.rows.items.value.length, 3, 'the rows show after Refresh');
+  assert.equal(add.root.hidden, false, 'New appears once the re-read finds the grant');
+  a.dispose();
 });

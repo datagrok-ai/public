@@ -1,4 +1,5 @@
 import type * as DG from 'datagrok-api/dg';
+import {emsBackends} from '../core/domain-backend.js';
 import {domains} from './facade.js';
 import {DomainAddress} from './address.js';
 import {DomainApp} from './app.js';
@@ -21,6 +22,8 @@ export async function route(address: string): Promise<DG.ViewBase | null> {
   const open = DomainApp.openAt(DomainApp.baseOf(`${schema}.${table}`), rest);
   if (open !== undefined)
     return open;
+  // opening is when the caller's access is read afresh: a grant made elsewhere meanwhile is not behind the cache
+  emsBackends.domain?.dropAccess?.();
   // the platform's own view opens instead; an unknown table is no failure worth logging
   const handle = await domains.table(`${schema}.${table}`).catch((e) => {
     if (!DomainErrors.isNotFound(e))

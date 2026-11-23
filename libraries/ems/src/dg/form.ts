@@ -504,7 +504,8 @@ export class DomainForm extends Control {
       else if (state === 'error')
         el.replaceChildren(span(DomainErrors.message(source.error.value, source), 'u2-domain-form-error'));
       else
-        el.replaceChildren(span(this._options.empty ?? DomainForm.emptyHint(source), 'u2-domain-form-hint'));
+        el.replaceChildren(span(DomainErrors.noView(source) ?? this._options.empty ?? DomainForm.emptyHint(source),
+          'u2-domain-form-hint'));
     });
     return el;
   }
