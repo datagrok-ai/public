@@ -656,9 +656,10 @@ function checkRefusing(memory, {constraint = 'weight_positive', message = 'Weigh
   const issue = memory.tableSync('grit.issue');
   const refuse = (rows) => when(rows) ? {error: 'validation', rows: [{index: 0, id: null,
     errors: [{column: null, code: 'check', message, constraint}]}]} : null;
-  const validate = issue.validate.bind(issue);
+  const validate = issue.validate?.bind(issue);
   const batch = issue.batch.bind(issue);
-  issue.validate = async (rows, options) => refuse(rows) ?? validate(rows, options);
+  if (validate !== undefined)
+    issue.validate = async (rows, options) => refuse(rows) ?? validate(rows, options);
   issue.batch = async (rows, options) => refuse(rows) ?? batch(rows, options);
 }
 
@@ -710,6 +711,25 @@ scoped('a refused CHECK no row can be named for stays on the batch and keeps the
     assert.equal(shown.disabled, true);
   }
 });
+
+scoped('a commit the server refuses whole reports each row that breaks the CHECK as an error with its message',
+  async () => {
+    const memory = backend();
+    noDryRun(memory);
+    checkRefusing(memory);
+    const {running} = await opened(memory, weights('1', '-1', '2', '-3'));
+    named('allOrNothing').value = false;
+    await toMapping();
+    await toPreview();
+    fire(importButton(), 'click');
+    for (let i = 0; i < 3; i++)
+      await flush();
+    assert.deepEqual((await rowCells('report')).map((r) => r.split('|').filter((c) => c !== '').join('|')),
+      ['1|Not imported|Another row has errors', '2|Error|Weight is positive', '3|Not imported|Another row has errors',
+        '4|Error|Weight is positive'], 'a row carrying errors is an error, whatever its status');
+    fire(buttonNamed('CLOSE'), 'click');
+    await running;
+  });
 
 scoped('a commit refused whole names the offender past the 1,000 rows previewed, not "uncheck All or nothing"',
   async () => {
