@@ -5,6 +5,7 @@ import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {backends, Scope, Rows, notify, signal} from '@datagrok-libraries/u2';
 import {DomainSource} from '../src/core/domain-source.js';
 import {SharedSession, confirmDiscard} from '../src/core/session.js';
+import {saveButton} from '../src/dg/buttons.js';
 import {backend} from './domain-fixtures.mjs';
 
 function scoped(name, body) {
@@ -748,4 +749,53 @@ scoped('EQ-001: a server error on a field holds through an edit elsewhere and cl
   unguard();
   projects.dispose();
   issues.dispose();
+});
+
+/** EQ-033: a project source with a Save button, every save of which the server refuses with
+ * [problem] (and [code]); `sent` counts what reached it. */
+async function refusing(problem, code = null) {
+  const memory = backend();
+  const out = {sent: 0};
+  emsBackends.domain = {
+    table: (address) => memory.table(address),
+    saveAll: (edits) => {
+      out.sent++;
+      for (const edit of edits)
+        Object.assign(edit, {problem, problemCode: code});
+      return Promise.resolve(false);
+    },
+  };
+  out.session = new SharedSession();
+  out.projects = new DomainSource({table: 'grit.project', session: out.session}, env);
+  out.projects.start();
+  await flush();
+  out.save = testOwner().build(() => saveButton(out.session));
+  out.projects.rows.byKey('p1').key = 'DG';
+  assert.equal(await out.session.save(), false);
+  await flush();
+  return out;
+}
+
+scoped('EQ-033: after a server refusal a client error still disables Save, and Ctrl+S sends nothing', async () => {
+  const {session, projects, save, ...out} = await refusing('Key DG already belongs to Datagrok');
+  assert.equal(save.button.disabled, false, 'the server\'s refusal holds nothing');
+  projects.rows.byKey('p1').name = '';
+  await flush();
+  assert.equal(save.button.disabled, true, 'the client\'s own verdict does');
+  assert.equal(await session.save(), false, 'Ctrl+S');
+  assert.equal(out.sent, 1, 'nothing was sent');
+  save.dispose();
+  projects.dispose();
+});
+
+scoped('EQ-033: a save refused as forbidden still holds Save and Ctrl+S until Discard', async () => {
+  const {session, projects, save, ...out} = await refusing('forbidden', 'forbidden');
+  assert.equal(save.button.disabled, true, 'a 403 holds Save: resending only meets it again');
+  assert.equal(await session.save(), false, 'Ctrl+S');
+  assert.equal(out.sent, 1, 'and sends nothing');
+  session.discard();
+  await flush();
+  assert.equal(projects.blocked.value, null, 'until the user lets go of the changes');
+  save.dispose();
+  projects.dispose();
 });

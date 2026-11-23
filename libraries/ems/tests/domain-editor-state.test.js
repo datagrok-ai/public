@@ -223,3 +223,34 @@ scoped('EQ-033: a cell the server refused stays shown, does not hold Save, and t
   }
   state.dispose();
 });
+
+scoped('EQ-033: a client error the retry finds is the client\'s, and holds', async () => {
+  const {editor} = fakeEditor(ROWS);
+  editor.validate = function() { // the server's mark goes; the client finds the second title empty
+    delete this.errorsOf(0).title;
+    this.errorsOf(1).title = {message: 'Title is required', kind: 'error'};
+    this.onChanged.fire(this);
+    return 1;
+  };
+  const state = new EditorEditState(editor);
+  const real = DG.DomainSession.prototype.save;
+  let sent = 0;
+  DG.DomainSession.prototype.save = async function() {
+    if (++sent === 1)
+      this.editors[0].fail(0, 'title', 'Taken');
+    // then the editor refuses its own cells and sends nothing
+    this.lastRefusal = sent === 1 ? {message: 'Taken', editor: this.editors[0]} :
+      {message: 'Fix the cell errors first', editor: null};
+    return false;
+  };
+  try {
+    const dg = new DgDomainBackend();
+    assert.equal(await dg.saveAll([state]), false);
+    assert.equal(await dg.saveAll([state]), false);
+    assert.equal(state.refused('i2', 'title'), false, 'never taken for the server\'s');
+    assert.equal(state.blocking.value, 'Title is required', 'the client\'s error holds the batch');
+  } finally {
+    DG.DomainSession.prototype.save = real;
+  }
+  state.dispose();
+});

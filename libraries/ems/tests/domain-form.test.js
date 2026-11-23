@@ -1199,3 +1199,25 @@ scoped('a draft shows the column defaults, so a required column with one is alre
   create.dispose();
   draft.dispose();
 });
+
+scoped('EQ-033: a field holding the server\'s refusal shows it, and the form does not hold Save on it', async () => {
+  const {src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const form = testOwner().build(() => domains.form(src));
+  const save = domains.saveButton(src);
+  src.rows.byKey('i1').title = 'Aspirin 2';
+  await flush();
+  // the platform editor's mapping of the server's error onto the cell, which it says is the server's
+  const edit = src.edit.value;
+  edit.errorOf = (key, column) => key === 'i1' && column === 'title' ? 'Title Aspirin 2 already belongs to i7' : null;
+  edit.refused = (key, column) => key === 'i1' && column === 'title';
+  edit.onChanged.fire('i1');
+  form.validate();
+  await flush();
+  assert.equal(form.input('title').validity.value, 'Title Aspirin 2 already belongs to i7', 'the field shows it');
+  assert.equal(form.problem.value, null, 'and the form does not hold Save on it');
+  assert.equal(save.button.disabled, false);
+  save.dispose();
+  form.dispose();
+  src.dispose();
+});
