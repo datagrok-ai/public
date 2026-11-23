@@ -522,13 +522,35 @@ function nameCell<TRow extends DomainRowLike>(table: DomainTable<TRow>, row: Row
   return `${rowName(table, row, source)}: ${field}${problem}`;
 }
 
-/** The row's caption — or, where that is only its id, its place among the source's rows: "Order line 2". */
+/** The row's caption — or, where that names nothing (empty, or ids: the row's own, a reference's, a uuid), its
+ * place among the source's rows: "Order line 2". A caption a person can read ("QAT070A-1") stays. */
 function rowName<TRow extends DomainRowLike>(table: DomainTable<TRow>, row: RowView<TRow>,
   source?: DomainSource<TRow>): string {
   const caption = table.renderer.caption(row);
-  const at = caption !== row.id || source === undefined ? -1 :
-    source.rows.items.peek().findIndex((r) => r.id === row.id);
+  if (source === undefined || !madeOfIds(table, row, caption))
+    return caption;
+  const at = source.rows.items.peek().findIndex((r) => r.id === row.id);
   return at < 0 ? caption : `${capital(nounOf(table.info, true))} ${at + 1}`;
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Whether a caption names nothing: empty, exactly a uuid, or only the row's id, its reference ids, numbers and
+ * separators ("<project id>-1"). "Sample A-1" and a caption that merely contains a uuid name the row. */
+export function madeOfIds<TRow extends DomainRowLike>(table: DomainTable<TRow>, row: RowView<TRow>,
+  caption: string): boolean {
+  if (caption === '' || UUID.test(caption))
+    return true;
+  const ids = [row.id];
+  for (const p of table.properties) {
+    const value = p.name === undefined || !DomainTable.isReference(p) ? undefined : (row as any)[p.name];
+    if (typeof value === 'string' && value !== '')
+      ids.push(value);
+  }
+  let rest = caption;
+  for (const id of ids.sort((x, y) => y.length - x.length))
+    rest = rest.split(id).join(' ');
+  return /^[\s\d\-_:/,.#]*$/.test(rest);
 }
 
 /** `domains.table(address)` and every domain control (`domains.form(src)`, `domains.list(src)`, …), each made at

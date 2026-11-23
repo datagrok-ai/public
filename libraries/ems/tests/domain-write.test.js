@@ -8,6 +8,7 @@ import {SharedSession} from '../src/core/session.js';
 import {backend} from './domain-fixtures.mjs';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
+const DG = await import('datagrok-api/dg');
 const {domains} = await import('../src/dg/facade.js');
 const {DomainApp} = await import('../src/dg/app.js');
 
@@ -154,6 +155,37 @@ scoped('the writer\'s own cell refusal names the row and the field, and marks th
   await flush();
   assert.equal(await source.save(), true);
   source.dispose();
+});
+
+/** The refusal over issue i2 emptied of its title, under a handler captioning rows `caption(values)`, or none. */
+async function emptiedTitle(caption) {
+  class Handle extends DG.DomainObjectHandler {
+    getCaption(x) { return caption(x.values); }
+  }
+  if (caption)
+    DG.ObjectHandler.register(new Handle('grit.issue'));
+  try {
+    emsBackends.domain = backend();
+    const table = await domains.table('grit.issue');
+    const source = testOwner().build(() => table.source({}));
+    await flush();
+    source.rows.byKey('i2').title = '';
+    await flush();
+    assert.equal(await source.save(), false);
+    const message = source.error.value.message;
+    source.dispose();
+    return message;
+  } finally {
+    DG.ObjectHandler.registered.length = 0;
+  }
+}
+
+scoped('an emptied title is named by place unless the caption names the row', async () => {
+  const byPlace = 'Cannot save: Issue 2: Title: Value can\'t be empty';
+  assert.equal(await emptiedTitle((v) => `${v.project_id}-${v.number}`), byPlace, 'a project id and a number');
+  assert.equal(await emptiedTitle(null), byPlace, 'no handler');
+  assert.equal(await emptiedTitle((v) => `QAT070A-${v.number}`), 'Cannot save: QAT070A-2: Title: Value can\'t be empty',
+    'a readable caption stays');
 });
 
 scoped('the validators run over a row the frame filter hides — the writer sends it all the same', async () => {

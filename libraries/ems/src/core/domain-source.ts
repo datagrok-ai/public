@@ -275,7 +275,10 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       const code = (error as {code?: unknown} | undefined)?.code;
       if ((code === 'validation' || code === DomainSource.REFUSED) && this._state.value !== 'error')
         return DomainSource._message(error);
-      return this.validity.value;
+      const problem = this.validity.value;
+      const edit = this._edit.value;
+      // the writer's own cell verdict is named the way its refusal is: the row and the field
+      return problem !== null && edit?.validity.value === problem ? this._name(edit, problem)?.message ?? problem : problem;
     });
     this.blocking = computed(() => {
       // what the client refused before sending (a guard, two edits of one row) and a 403 hold
@@ -781,15 +784,22 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
 
   // the writer reports the message alone, and "Cannot save: Value can't be empty" names no field
   private _locate(edit: EditState, problem: string): string | null {
+    const named = this._name(edit, problem);
+    if (named === null)
+      return null;
+    this.markProblem(named.row);
+    return named.message;
+  }
+
+  // no side effects, so the live reason of a disabled Save reads the same as the refusal
+  private _name(edit: EditState, problem: string): {row: string, message: string} | null {
     const name = this.nameCell;
     if (name === undefined)
       return null;
     for (const row of this.pending()) {
       for (const prop of this._schema.properties) {
-        if (edit.errorOf(row.id, prop.name) !== problem)
-          continue;
-        this.markProblem(row.id);
-        return name(row, prop.name, problem);
+        if (edit.errorOf(row.id, prop.name) === problem)
+          return {row: row.id, message: name(row, prop.name, problem)};
       }
     }
     return null;

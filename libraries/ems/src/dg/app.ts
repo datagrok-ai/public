@@ -8,7 +8,7 @@ import type {DomainSource} from '../core/domain-source.js';
 import {capital, nounOf, emsBackends} from '../core/domain-backend.js';
 import type {DomainTableInfoLike} from '../core/domain-backend.js';
 import {SharedSession, confirmDiscard} from '../core/session.js';
-import {domains, DomainTable} from './facade.js';
+import {domains, DomainTable, madeOfIds} from './facade.js';
 import {DomainList} from './list.js';
 import type {DomainListMode} from './list.js';
 import {SAVE_SHORTCUTS, isSaveKey, DomainForm} from './form.js';
@@ -738,9 +738,10 @@ export class DomainApp extends Control {
   }
 
   private _caption(source: DomainSource, row: RowView): string {
-    const shown = this.table.renderer.caption(source.current(row));
-    // an emptied name leaves a saved row nameless (a blank, or the bare id): it keeps the name the row holds
-    return shown === '' || shown === row.id ? this.table.renderer.caption(row) : shown;
+    const current = source.current(row);
+    const shown = this.table.renderer.caption(current);
+    // an emptied name leaves a saved row nameless (a blank, or ids): it keeps the name the row holds
+    return madeOfIds(this.table, current, shown) ? this.table.renderer.caption(row) : shown;
   }
 
   /** How a table is named in a view title, a breadcrumb root or a child tab: the display name
