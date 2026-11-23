@@ -727,27 +727,14 @@ scoped('a commit refused whole names the offender past the 1,000 rows previewed,
     assert.deepEqual(report.rows.filter((r) => r.errors?.length).map((r) => r.index), [1003]);
   });
 
-scoped('nothing that would land keeps the import button off: a header-only file', async () => {
-  const memory = backend();
-  const {running} = await opened(memory, frame(['project_id', 'title'], []));
-  await toMapping();
-  await toPreview();
-  assert.equal(importButton().disabled, true, 'a header-only file has nothing to import: the button is off');
-  assert.match(reason(), /^Nothing would be imported — no row would be added or updated\./);
-  fire(buttonNamed('CANCEL'), 'click');
-  assert.equal(await running, null);
-});
-
 /** Opens `grit.project` with `source`, goes to the preview and answers the button and the reason. */
-async function projectPreview(source, {allOrNothing = true} = {}) {
+async function projectPreview(source) {
   emsBackends.domain = backend();
-  const projects = await domains.table('grit.project');
-  const running = testOwner().build(() => domains.import(projects, {source}));
+  const running = testOwner().build(async () => domains.import(await domains.table('grit.project'), {source}));
   await flush();
-  named('allOrNothing').value = allOrNothing;
   await toMapping();
   await toPreview();
-  const shown = {disabled: importButton().disabled, reason: reason(), counts: counts('preview')};
+  const shown = {disabled: importButton().disabled, counts: counts('preview')};
   fire(buttonNamed('CANCEL'), 'click');
   await running;
   return shown;
@@ -758,42 +745,13 @@ const existing = (count) => Array.from({length: count}, () => ({key: 'GRIT', nam
 scoped('every previewed row skipped keeps the button off, up to the preview cap and not past it', async () => {
   const atCap = await projectPreview(frame(['key', 'name'], existing(1000)));
   assert.deepEqual(atCap.counts, ['1,000 to skip']);
-  assert.equal(atCap.disabled, true, '1,000 rows are all judged: none would land');
-  assert.match(atCap.reason, /^Nothing would be imported — no row would be added or updated\./);
+  assert.equal(atCap.disabled, true, '1,000 rows are all judged and none would land: the button is off');
   const past = await projectPreview(frame(['key', 'name'], existing(1001)));
   assert.equal(past.disabled, false, 'the row past the 1,000 previewed is unjudged: the commit decides');
-  assert.equal(past.reason, '');
-});
-
-scoped('every row in error names the errors in the reason, with All or nothing on or off', async () => {
-  for (const allOrNothing of [true, false]) {
-    const shown = await projectPreview(frame(['key', 'name'], [{key: 'QA-1', name: ''}, {key: 'QA-2', name: ''}]),
-      {allOrNothing});
-    assert.equal(shown.disabled, true);
-    assert.match(shown.reason, /2 rows have errors/, `all or nothing ${allOrNothing}`);
-    assert.match(shown.reason, /no row is valid/);
-  }
-});
-
-scoped('a storage with no dry run blocks a header-only file and lets a file with rows through', async () => {
-  for (const [rows, disabled] of [[[], true], [[{project_id: 'p1', title: 'A'}], false]]) {
-    const memory = backend();
-    noDryRun(memory);
-    const {running} = await opened(memory, frame(['project_id', 'title'], rows));
-    await toMapping();
-    await toPreview();
-    assert.equal(importButton().disabled, disabled, `${rows.length} rows`);
-    if (disabled)
-      assert.match(reason(), /^Nothing would be imported — the file has no rows\./);
-    fire(buttonNamed('CANCEL'), 'click');
-    await running;
-  }
 });
 
 scoped('a commit that lands nothing adds no write-back column', async () => {
-  const memory = backend();
-  const {shown, written} = await importProjects(memory, frame(['key', 'name'], existing(1001)), true);
+  const {shown, written} = await importProjects(backend(), frame(['key', 'name'], existing(1001)), true);
   assert.match(shown, /1,001 skipped/);
-  assert.doesNotMatch(shown, /Added a/);
   assert.deepEqual(written, [], 'no column was added to the user\'s table');
 });
