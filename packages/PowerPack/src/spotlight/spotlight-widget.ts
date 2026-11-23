@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import dayjs from 'dayjs';
 import {queries} from '../package-api';
+import {_package} from '../package';
 import {LearningWidget} from '../widgets/learning-widget';
 import {WorkspaceTab} from './workspace-tab';
 import {isSpotlightEntity} from './entity-kinds';
@@ -129,7 +130,8 @@ export class SpotlightWidget extends DG.Widget {
     this.tabControl.root.style.width = '100%';
 
     this.root.appendChild(this.tabControl.root);
-    this.root.appendChild(await this.createRandomizedTipOfTheDay());
+    if (_package.settings['showTipOfTheDay'] !== false)
+      this.root.appendChild(await this.createRandomizedTipOfTheDay());
     // TODO: uncomment when JS API 1.27/1.26.5 is released
     // this.subs.push((grok.events.onCurrentObjectChanged.subscribe((args) => {
     //   const trigger = args.args.trigger;
