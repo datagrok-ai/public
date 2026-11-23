@@ -126,7 +126,7 @@ export class SpotlightWidget extends DG.Widget {
       });
     }
 
-    this.tabControl.root.style.height = '90%';
+    this.tabControl.root.style.height = 'auto';
     this.tabControl.root.style.width = '100%';
 
     this.root.appendChild(this.tabControl.root);

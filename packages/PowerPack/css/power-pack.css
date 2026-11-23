@@ -74,12 +74,7 @@
 }
 
 .power-pack-widget-host:hover {
-    flex-direction: column;
-    width: initial!important;
-    height: 300px!important;
-    grid-column: span 1;
     box-shadow: 0px 0px 2px var(--grey-2), 0px 5px 9px -4px var(--grey-3);
-    /*border: 1px solid #f2f2f5;*/
 }
 
 .power-pack-widgets-host .d4-dialog-header:hover {
@@ -107,11 +102,16 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
 
 .power-pack-widget-host:has(.power-pack-activity-widget-content) {
     grid-column: 1 / -1;
+    height: auto!important;
 }
 
 .power-pack-activity-widget-content .d4-tab-host.d4-tab-vertical .d4-tab-content {
     overflow: auto;
     margin-bottom: 5px;
+}
+
+.power-pack-activity-widget-content .d4-tab-host.d4-tab-vertical > .d4-tab-content {
+    contain: size;
 }
 
 /* starts the scrollbar below the widget's remove icon */
@@ -232,10 +232,7 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
 }
 
 .power-pack-activity-widget-spotlight-tip {
-    flex-basis: 100%;
-    position: absolute;
-    bottom: 8px;
-    left: 8px;
+    margin: 4px 0 0 8px;
 }
 
 .power-pack-activity-widget-spotlight-tip .tip-prev {
@@ -365,7 +362,7 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
     display: grid;
     grid-gap: 16px;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    grid-template-rows: repeat(auto-fill, 300px);
+    grid-auto-rows: max-content;
     margin-bottom: 10px;
 }
 
