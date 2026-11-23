@@ -1160,6 +1160,39 @@ source('a page check that answers after a new sort started leaves the new list\'
   src.dispose();
 });
 
+source('a page whose re-base is overtaken by a new query leaves the new query\'s load the status', async () => {
+  emsBackends.domain = backend();
+  const inner = emsBackends.domain.table.bind(emsBackends.domain);
+  const gate = {hold: false, waiting: []};
+  emsBackends.domain.table = async (address) => {
+    const t = await inner(address);
+    return Object.assign(Object.create(Object.getPrototypeOf(t)), t, {
+      frame: async (spec) => {
+        const f = await t.frame(spec);
+        if (gate.hold)
+          await new Promise((go) => gate.waiting.push(go));
+        return f;
+      },
+      // the page check answers that the boundary moved: the page re-bases the window
+      query: async () => [{id: 'moved'}],
+    });
+  };
+  const src = await issues({pageSize: 1});
+  gate.hold = true;
+  const paging = src.loadMore();
+  await until(() => gate.waiting.length === 1);
+  src.query.value = 'title = "Aspirin"';
+  await until(() => gate.waiting.length === 2);
+  gate.waiting.shift()();
+  await paging;
+  assert.equal(src.state.value, 'loading', 'the new query is still being read');
+  gate.hold = false;
+  gate.waiting.splice(0).forEach((go) => go());
+  await until(() => src.state.value === 'ready');
+  assert.deepEqual(titles(src), ['Aspirin']);
+  src.dispose();
+});
+
 source('an edit typed while the access re-read is reading the rows survives it landing', async () => {
   const memory = backend();
   const t = await memory.table('grit.issue');
