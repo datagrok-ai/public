@@ -45,7 +45,8 @@
   "scripts": {
     "build": "grok api && grok build",
     "typecheck": "grok tsc --noEmit -p tsconfig.json",
-    "lint": "eslint --ext .ts,.tsx src"
+    "lint": "eslint --ext .ts,.tsx src",
+    "test:unit": "node --experimental-strip-types --test tests/lookup.test.mjs"
   },
   "canEdit": [
     "Administrators"
