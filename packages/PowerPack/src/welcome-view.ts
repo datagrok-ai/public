@@ -25,7 +25,7 @@ export function welcomeView(): DG.View | undefined {
   const inputHost = ui.div([
     ui.iconFA('search'),
     inputContainer,
-  ], 'd4-search-bar');
+  ], 'd4-search-bar,power-pack-welcome-search');
   const helpDiv = ui.divText('Use Ctrl+Space to see suggestions', 'power-search-help-text-container');
   inputHost.appendChild(helpDiv);
 
@@ -49,8 +49,19 @@ export function welcomeView(): DG.View | undefined {
   const viewHost = ui.div([widgetsPanel, searchHost], 'power-pack-view-host');
   setWorkspacePreviewHost(previewHost);
   const view = DG.View.create();
-  view.root.appendChild(inputHost);
   view.root.appendChild(viewHost);
+  // without tabs, the view's ribbon is the otherwise empty top row; the mode is known only after the settings load
+  let inRibbon: boolean | null = null;
+  const placeSearch = () => {
+    if (grok.shell.windows.simpleMode === inRibbon)
+      return;
+    inRibbon = grok.shell.windows.simpleMode;
+    view.setRibbonPanels(inRibbon ? [[inputHost]] : []);
+    if (!inRibbon)
+      view.root.prepend(inputHost);
+  };
+  placeSearch();
+  view.subs.push(grok.events.onEvent('grok-panels-changed').subscribe(placeSearch));
   view.root.classList.add('power-pack-welcome-view');
 
   const widgetFunctions = DG.Func.find({meta: {role: DG.FUNC_TYPES.DASHBOARD}, returnType: 'widget'});

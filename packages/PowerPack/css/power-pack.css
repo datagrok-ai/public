@@ -1,8 +1,9 @@
-.power-pack-welcome-view {
+.ui-panel.power-pack-welcome-view {
     display: flex;
     flex-direction: column;
     height: 100%;
     overflow: hidden;
+    padding-top: 4px;
 }
 
 .power-pack-view-host {
@@ -70,7 +71,6 @@
     grid-column: span 1;
     box-shadow: 0px 0px 2px var(--grey-3);
     transition: box-shadow 200ms ease-in-out;
-    /*border: 1px solid #f2f2f5;*/
 }
 
 .power-pack-widget-host:hover {
@@ -235,27 +235,13 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
     margin: 4px 0 0 8px;
 }
 
-.power-pack-activity-widget-spotlight-tip .tip-prev {
-    margin-right: 4px;
-}
-
-.power-pack-activity-widget-spotlight-tip .tip-prev.tip-prev-hidden {
-    display: none;
-    visibility: hidden;
-}
-
 .power-pack-activity-widget-spotlight-tip .tip-next {
     margin-left: 4px;
-}
-
-.power-pack-activity-widget-spotlight-tip .tip-prev,
-.power-pack-activity-widget-spotlight-tip .tip-next {
     opacity: 0;
     cursor: pointer;
     transition: opacity 0.2s;
 }
 
-.power-pack-activity-widget-spotlight-tip:hover .tip-prev,
 .power-pack-activity-widget-spotlight-tip:hover .tip-next {
     opacity: 1;
 }
@@ -374,11 +360,25 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
     color: var(--text-color-light);
 }
 
-.power-pack-welcome-view .d4-search-bar .ui-input-root {
+.power-pack-welcome-search .ui-input-root,
+:is(.d4-ribbon, .d4-ribbon-panel, .d4-ribbon-item):has(.power-pack-welcome-search) {
     flex-grow: 1;
 }
 
-.power-pack-welcome-view .d4-search-bar .ui-input-editor {
+.d4-ribbon .d4-ribbon-item > .power-pack-welcome-search.d4-search-bar {
+    flex-grow: 1;
+    background: none;
+}
+
+.d4-ribbon:has(.power-pack-welcome-search) > .d4-ribbon-spacer {
+    flex-grow: 0;
+}
+
+.d4-ribbon-item .power-pack-welcome-search .fal {
+    font-size: 13px;
+}
+
+.power-pack-welcome-search .ui-input-editor {
     font-size: 16px;
 }
 

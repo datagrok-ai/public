@@ -175,10 +175,7 @@ export function setupSearchUI() {
 
   const maxRetries = 10;
   function searchForSearchBox() {
-    const searchBoxContainer = document.getElementsByClassName('power-pack-welcome-view')[0];
-    if (!searchBoxContainer)
-      return null;
-    return Array.from(searchBoxContainer.getElementsByClassName('power-search-search-everywhere-input'))[0] as HTMLInputElement;
+    return document.querySelector<HTMLInputElement>('.power-search-search-everywhere-input');
   }
 
   function initInput(searchInput: HTMLInputElement) {
