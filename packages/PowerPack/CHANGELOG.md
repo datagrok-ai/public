@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [public#4640](https://github.com/datagrok-ai/public/issues/4640): Spotlight: Fixed the Interactive Tutorials links doing nothing; a new user's empty workspace shows the getting-started columns across the full width; headers sit further from their items than the items from each other; empty tabs' messages line up with the tab names
 * Search: The home page's search moves into the otherwise empty top row, leaving more room below: the view's ribbon without tabs, the tab strip while Home is the only tab; the page has less padding on top
 * Spotlight: The home page's Spotlight widget is as tall as its tabs, longer tabs scroll
 * Spotlight: Added the `showTipOfTheDay` setting to hide the tip of the day on the home page
