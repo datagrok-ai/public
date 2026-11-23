@@ -453,11 +453,6 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     if (this.scope.isDisposed)
       return;
     const gen = ++this._gen;
-    // a load that keeps the shown rows below keeps what is known about their window too
-    const restart = this._restart;
-    const moved = this._moved;
-    this._restart = false;
-    this._moved = false;
     let readFor = this._readFor();
     // a reload of the collection shown, started over a clean session, keeps the rows when changes appear
     // in the session before it lands — a child row typed under the current row, which `_drop` would dispose
@@ -511,8 +506,6 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       if (this.isDirty.peek() || (keepOverSession && this.session.isDirty.peek())) {
         frame.dispose();
         this._probed = shown;
-        this._restart ||= restart;
-        this._moved ||= moved;
         batch(() => {
           // over changes elsewhere in the session the rows are behind the server, as a peer save marks them
           if (!this.isDirty.peek())
@@ -543,6 +536,10 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
         await this.refresh();
         return;
       }
+      // what is known about the old window (a lost one, a shift) is dropped only with it: a load that fails,
+      // bails over pending changes or is overtaken leaves the next page to start over or re-base
+      this._restart = false;
+      this._moved = false;
       if (shownFrame !== undefined)
         this._swap(frame, window, baseline, this._keep(), landed);
       else {
