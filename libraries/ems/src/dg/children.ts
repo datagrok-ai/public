@@ -149,10 +149,9 @@ export class DomainChildren extends Control {
       (code !== 'validation' && code !== DomainSource.REFUSED) ? null : DomainErrors.message(error, source);
   }
 
-  // null unless the table is not viewable or its link to the parent is a column the caller cannot read
+  // null unless the link to the parent is a column the caller cannot read; a table without View is told only by
+  // its read, since rows granted one by one still answer
   private _denied(entry: ChildEntry): string | null {
-    if (!entry.table.access.can('view'))
-      return DomainErrors.noAccess(entry.table.info);
     return entry.table.access.field(entry.fk) !== 'hidden' ? null :
       DomainErrors.noLink(entry.table.info, this.parent.schema.info);
   }
@@ -165,7 +164,8 @@ export class DomainChildren extends Control {
     const opened = this.tabs.activeTab.peek();
     // a table the caller may not view answers a count of 0: not a count to show
     const counts = await Promise.all(entries.map((e) => this._denied(e) !== null ? null :
-      e.table.table.count({filter: `${e.fk} = "${row.id}"`}).catch(() => null)));
+      e.table.table.count({filter: `${e.fk} = "${row.id}"`})
+        .then((n) => n === 0 && !e.table.access.can('view') ? null : n, () => null)));
     if (this.scope.isDisposed || this.parent.currentRow.peek()?.id !== row.id)
       return;
     for (const [i, e] of entries.entries())
@@ -230,14 +230,15 @@ export class DomainChildren extends Control {
         pane.replaceChildren(divH([add.root], 'u2-domain-children-toolbar'), body, empty);
         pending.effect(() => {
           const ready = child.state.value === 'ready';
-          const none = denied !== null || (ready && child.rows.items.value.length === 0);
-          if (denied !== null)
-            empty.textContent = denied;
-          add.root.hidden = denied !== null;
+          const blocked = denied ?? (ready ? DomainErrors.noView(child) : null);
+          const none = blocked !== null || (ready && child.rows.items.value.length === 0);
+          if (blocked !== null)
+            empty.textContent = blocked;
+          add.root.hidden = blocked !== null;
           empty.hidden = !none;
           body.hidden = none;
           state.blank.value = none;
-          if (ready && !draft && denied === null)
+          if (ready && !draft && blocked === null)
             state.count.value = child.total.value;
         });
       }));

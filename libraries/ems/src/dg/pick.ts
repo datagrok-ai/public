@@ -63,14 +63,15 @@ export class DomainPick extends PickInput<PickItem> {
             unbound = bound.unbound;
             if (unbound.length > 0)
               return [];
-            // the server answers a reader without View with no rows: only the access tells it from an empty table
-            const info = (await DomainPick.table(table)).info;
-            denied = (await (await DomainPick.table(table)).access()).can.view === false ?
-              DomainErrors.noAccess(info) : null;
-            if (denied !== null)
-              return [];
             const page = await DomainPick.page(table, query, {filter: bound.filter, limit});
             more = page.more;
+            // the server answers a reader without View with no rows: only the access tells it from an empty
+            // table; a false View is table-wide only, so rows granted one by one still answer
+            const t = await DomainPick.table(table);
+            denied = page.items.length === 0 && (await t.access()).can.view === false ?
+              DomainErrors.noAccess(t.info) : null;
+            if (denied !== null)
+              return [];
             // the held value opens the list, so it is never missing from it
             const held = typeAhead.selected.peek();
             return held === null || query.trim() !== '' ? page.items :

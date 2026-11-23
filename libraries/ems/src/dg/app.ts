@@ -1129,8 +1129,9 @@ export class DomainApp extends Control {
         const rows = source.rows.items.value;
         if (source.state.value !== 'ready')
           return;
-        // a table the caller may not view has no history or children to show: the form says so
-        if (!source.access.value.can('view') && this._panes.length > 0) {
+        // a row the caller may not view has no history or children to show: the form says so. View is table-wide
+        // only, so a row read through its own grant keeps them; the total lands with the state, the rows after it
+        if (source.total.value === 0 && !source.access.value.can('view') && this._panes.length > 0) {
           for (const pane of this._panes)
             pane.dispose();
           this._panes = [];
