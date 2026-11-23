@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Saving: Fixed a refusal about a new row under a deleted parent quoting the row as `""` when its name was cleared, or by its internal id when it had no caption: it is called "New <row>" as in the list, and a row with no name is not quoted
 * Lists: Fixed a `?sort=` link or a saved sort written with a space after a comma (`!run_date, name`), or with a `prop.<name>` key, silently dropping those keys: keys are trimmed and a `prop.` key sorts by the column it names, as the server reads them
 * Import: Fixed the import wizard refusing to open ("You cannot create …") for a user who cannot write a required column, even to update existing rows: where the table offers Add or update, the wizard opens and matched rows are updated by their key
 * Permissions: Fixed a user who reaches rows through row grants only being told "You do not have access to …", with no Clear button, whenever a filter, a search or the text typed in a picker matched nothing: they now read that nothing matches and can clear the filter or search

@@ -376,6 +376,19 @@ scoped('EQ-062: the refusal names the row under the deleted parent, not another 
   src.dispose();
 });
 
+scoped('a refusal about a new row with an empty name under a deleted parent calls it New <noun>, not ""', async () => {
+  const memory = emsBackends.domain = crmWithEmpty();
+  const deals = await domains.table('crm.deal');
+  const src = testOwner().build(() => deals.source({pageSize: 10}));
+  await flush();
+  await memory.transaction([{op: 'delete', table: 'crm.company', id: 'c3'}]);
+  src.newRow({seller_id: 'c3', title: ''});
+  assert.equal(await src.save(), false);
+  await flush();
+  assert.equal(DomainErrors.message(src.error.value, src), 'Cannot save "New deal": its seller was deleted. Restore the seller first.');
+  src.dispose();
+});
+
 scoped('EQ-053: a children tab whose table needs a column the user cannot set has its New off and says why', async () => {
   const schema = {...SCHEMA, tables: {...SCHEMA.tables, contact: {...SCHEMA.tables.contact, columns: {
     ...SCHEMA.tables.contact.columns, badge: {type: 'string', required: true}}}}};

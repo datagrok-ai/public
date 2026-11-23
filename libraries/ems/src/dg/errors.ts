@@ -56,9 +56,10 @@ export class DomainErrors {
     if (parent === undefined)
       return `${subject} was deleted. Restore the ${target} first.`;
     const named = DomainErrors._nameOf(parent.source, parent.row);
+    const quoted = named === null ? '' : ` "${named}"`;
     return parent.row[Rows.STATE] === 'deleted' ?
-      `${subject} "${named}" is being deleted. Undo the deletion, or remove the new reference to it.` :
-      `${subject} "${named}" was deleted. Restore the ${target} first.`;
+      `${subject}${quoted} is being deleted. Undo the deletion, or remove the new reference to it.` :
+      `${subject}${quoted} was deleted. Restore the ${target} first.`;
   }
 
   // the row naming `parentId`; without it (an older server) the one whose parent is known deleted, null if ambiguous
@@ -95,10 +96,11 @@ export class DomainErrors {
     return undefined;
   }
 
-  private static _nameOf(source: DomainSource, row: RowView): string {
+  // the renderer's caption: "New <noun>" for a draft with no name; a saved row's bare id names nothing, so null
+  private static _nameOf(source: DomainSource, row: RowView): string | null {
     const name = source.schema.info.nameColumn;
-    const value = name == null ? null : row[name];
-    return String(value ?? source.caption?.(row) ?? row.id);
+    const caption = source.caption?.(row) ?? String((name == null ? null : row[name]) ?? '');
+    return caption === '' || caption === row.id ? null : caption;
   }
 
   /** What a page over `source` says in place of its empty or not-found state when the table denies the caller
