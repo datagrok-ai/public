@@ -191,6 +191,8 @@ scoped('an emptied title is named by place unless the caption names the row', as
   await kept('QAT070A-2');
   await kept('Sample p1-2');
   await kept('Run 0b9d7c1e-5a3f-4c2e-9d1a-7f3e2b6a8c40 (2)');
+  await kept('12345');
+  await kept('2024-05');
 });
 
 scoped('the validators run over a row the frame filter hides — the writer sends it all the same', async () => {
