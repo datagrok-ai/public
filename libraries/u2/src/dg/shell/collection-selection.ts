@@ -38,7 +38,7 @@ export function collectionSelection(source: SelectableCollection, rows: VirtualR
   const owner = options.owner;
   // two controls over one source (a list and a table that takes its place) must not both write:
   // the one out of view leaves the lead, the frame's selection and the source alone, and adopts
-  // them again when it is shown (EQ-041)
+  // them again when it is shown
   const active = options.active ?? signal(true);
   // the list's selection and the source's current row are one thing, written in either direction —
   // seeded from the row that is current already, so the first effect does not clear it
@@ -53,7 +53,7 @@ export function collectionSelection(source: SelectableCollection, rows: VirtualR
       source.currentRow.value = row;
   });
   // the row the lead sat on: when it leaves the collection (a saved delete) the source hands the
-  // current row on, and that move is not the user's — the rows they picked stay picked (EQ-040)
+  // current row on, and that move is not the user's — the rows they picked stay picked
   let leadId = current?.id ?? null;
   const picked = signal(false);
   owner.effect(() => {

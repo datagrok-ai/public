@@ -532,7 +532,7 @@ class ImportFlow {
       rows: refused.map((r) => ({index: r.index, predicted: 'error', errors: r.errors}))};
   }
 
-  // the server pins a CHECK that fails a set-based write on the batch's first row (core EMS-038), so that row is no
+  // the server pins a CHECK that fails a set-based write on the batch's first row, so that row is no
   // answer: a grammar constraint is judged here on every payload row and its error put on the rows that break it.
   // One that cannot be judged, or that no row here breaks (an update's stored columns, a server default), stays on
   // the batch as a note. Any other error stays on the row the server named

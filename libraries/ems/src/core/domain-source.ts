@@ -446,8 +446,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     // in the session before it lands — a child row typed under the current row, which `_drop` would dispose
     const keepOverSession = readFor === this._shownFor && !this.session.isDirty.peek();
     // the same collection read again — a peer's write the poll saw, another source's save, Refresh — is
-    // re-read over the window shown (EQ-025), as the re-base after a save is, and swapped in place: the
-    // current row and the selection stay by id, never through null (EQ-002). A new query, search, sort or
+    // re-read over the window shown, as the re-base after a save is, and swapped in place: the
+    // current row and the selection stay by id, never through null. A new query, search, sort or
     // trash mode is a new collection and starts over from the first page
     const shownFrame = readFor === this._shownFor ? this._frame : undefined;
     const window = shownFrame === undefined ? this.pageSize : Math.max(this._loaded, this.pageSize);
@@ -842,7 +842,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     let entry = this._watched.get(address);
     if (entry === undefined) {
       this._watched.set(address, entry = {moved: new Set()});
-      // the baseline now, not at the first tick: a write before that tick is a move, as for the rows (EQ-037)
+      // the baseline now, not at the first tick: a write before that tick is a move, as for the rows
       if (this.live.peek())
         void this._probeWatched(address, entry);
     }
@@ -1207,7 +1207,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   }
 
   // whether `id`, the row a window of `count` rows ended on, has left offset `count - 1` on the server: one
-  // id, not a page. With ties on the sort (EMS-082) the server may answer another id with nothing written,
+  // id, not a page. With ties on the sort the server may answer another id with nothing written,
   // and the window is re-read needlessly; an empty sort is total (`created_on, id`)
   private async _shifted(count: number, id: string | null): Promise<boolean> {
     const table = this._table;
