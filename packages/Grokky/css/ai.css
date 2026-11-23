@@ -607,6 +607,9 @@
 }
 
 .grokky-strip {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
   padding: 8px 12px;
   border-left: 3px solid;
   border-bottom: 1px solid var(--grey-2);
@@ -616,6 +619,29 @@
   border-left-color: var(--red-3);
   background: var(--red-1);
   color: var(--red-4);
+}
+
+.grokky-strip-success {
+  border-left-color: var(--green-2);
+  background: var(--green-1);
+  color: var(--green-3);
+}
+
+.grokky-strip-muted {
+  border-left-color: var(--grey-3);
+  background: var(--grey-1);
+  color: var(--grey-5);
+}
+
+.grokky-strip-answer {
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
+.grokky-strip-answer > i {
+  color: inherit;
+  pointer-events: none;
 }
 
 .grokky-unverified-warning {

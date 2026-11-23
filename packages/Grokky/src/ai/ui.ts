@@ -304,8 +304,17 @@ export async function runPromptWithLifecycle(
 }
 
 function buildConfirmCard(input: any, resolve: (confirmed: boolean) => void): HTMLElement {
+  const answer = (confirmed: boolean) => {
+    const [style, icon, text] = confirmed ? ['success', 'check', 'Confirmed'] : ['muted', 'times', 'Cancelled'];
+    buttons.remove();
+    strip.classList.replace('grokky-strip-danger', `grokky-strip-${style}`);
+    strip.append(ui.divH([ui.iconFA(icon), ui.divText(text)], 'grokky-strip-answer'));
+    resolve(confirmed);
+  };
+  const strip = ui.divH([ui.divText(input.action ?? 'Confirm action')], 'grokky-strip grokky-strip-danger');
+  const buttons = ui.divH([ui.bigButton('OK', () => answer(true)), ui.button('CANCEL', () => answer(false))]);
   return ui.divV([
-    ui.divText(input.action ?? 'Confirm action', 'grokky-strip grokky-strip-danger'),
+    strip,
     ui.divV([
       ui.tableFromMap({
         ...(input.name ? {Name: input.name} : {}),
@@ -313,10 +322,7 @@ function buildConfirmCard(input: any, resolve: (confirmed: boolean) => void): HT
         ...(input.created ? {Created: input.created} : {}),
         ...(input.details ? {Details: input.details} : {}),
       }),
-      ui.divH([
-        ui.bigButton('OK', () => resolve(true)),
-        ui.button('CANCEL', () => resolve(false)),
-      ]),
+      buttons,
     ], 'grokky-confirm-body'),
   ], 'grokky-confirm-card');
 }
