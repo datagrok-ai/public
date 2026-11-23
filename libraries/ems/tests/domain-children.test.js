@@ -7,6 +7,7 @@ import {backends, Scope, signal, Rows, Registry, SpecContext, renderSpec, regist
 import {MemoryDomainBackend} from '../src/core/memory-domain.js';
 import {Property, WidgetDescriptor, platform} from '@datagrok-libraries/u2/tests/platform-doubles.mjs';
 import {backend} from './domain-fixtures.mjs';
+import {byKind} from '@datagrok-libraries/u2/testing';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/facade.js');
@@ -310,6 +311,55 @@ scoped('a New from the children toolbar is an unsaved change of its own: the gat
   assert.equal(Rows.isDraft(contacts.currentRow.value), true, 'the draft is current');
   assert.equal(parent.session.isDirty.value, true, 'the press is the change — Ctrl+S and the leave gate answer');
   assert.equal(parent.session.summary.value, '1 unsaved change');
+  children.dispose();
+  parent.dispose();
+});
+
+scoped('EQ-053: a children tab whose table needs a column the user cannot set has its New off and says why', async () => {
+  const schema = {...SCHEMA, tables: {...SCHEMA.tables, contact: {...SCHEMA.tables.contact, columns: {
+    ...SCHEMA.tables.contact.columns, badge: {type: 'string', required: true}}}}};
+  const can = {view: true, insert: true, edit: true, delete: true, share: true};
+  for (const badge of ['readonly', undefined]) {
+    const fields = {name: 'editable', company_id: 'editable', ...(badge === undefined ? {} : {badge})};
+    emsBackends.domain = new MemoryDomainBackend(schema, {access: {can, fields},
+      rows: Object.fromEntries(Object.entries(ROWS).map(([t, list]) => [t, list.map((r) => ({...r}))]))});
+    const companies = await domains.table('crm.company');
+    const parent = testOwner().build(() => companies.source({pageSize: 10}));
+    await flush();
+    parent.currentRow.value = parent.rows.byKey('c1');
+    const children = testOwner().build(() => domains.children(parent, {mode: 'list'}));
+    await settle();
+    await flush();
+    const add = byKind(children, 'new-button')[0];
+    assert.equal(add.disabled, true, `the children New is off (badge ${badge ?? 'hidden'})`);
+    assert.equal(add.getAttribute('aria-description'), 'You cannot create contacts: they need a value for Badge, ' +
+      `which you cannot set. Ask the table's owner to ${badge === undefined ? 'share Badge with you' : 'let you edit Badge'}.`);
+    children.dispose();
+    parent.dispose();
+  }
+});
+
+// EQ-052: the server refuses a read that filters on a column the caller cannot see (a 400 the tab
+// swallows), so a tab whose link to the parent is hidden must ask nothing about that link
+scoped('EQ-052: a child tab whose link to the parent is hidden queries and counts nothing by that link', async () => {
+  const memory = crm();
+  const contact = memory.tableSync('crm.contact');
+  const open = contact.access;
+  contact.access = () => open.call(contact).then((a) => ({...a, fields: {...a.fields, company_id: 'hidden'}}));
+  const asked = [];
+  for (const read of ['count', 'query']) {
+    const real = contact[read].bind(contact);
+    contact[read] = (spec) => (asked.push(JSON.stringify(spec ?? {})), real(spec));
+  }
+  emsBackends.domain = memory;
+  const companies = await domains.table('crm.company');
+  const parent = testOwner().build(() => companies.source({pageSize: 10}));
+  await flush();
+  parent.currentRow.value = parent.rows.byKey('c1');
+  const children = testOwner().build(() => domains.children(parent, {mode: 'list'}));
+  await settle();
+  await settle();
+  assert.deepEqual(asked.filter((spec) => spec.includes('company_id')), [], 'nothing filters on the hidden link');
   children.dispose();
   parent.dispose();
 });

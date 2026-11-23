@@ -1848,6 +1848,28 @@ scoped('EQ-023: View revoked after the list loaded: the row opened from it re-re
   a.dispose();
 });
 
+// EQ-053: New is gated on every way to a new row (review: the ribbon alone left the empty list and /new)
+scoped('EQ-053: a View-only required column turns New off, on the ribbon, the empty list and the /new page', async () => {
+  const reason = 'You cannot create issues: they need a value for Project id, which you cannot set. ' +
+    'Ask the table\'s owner to let you edit Project id.';
+  emsBackends.domain = backend({access: {can: {view: true, insert: true, edit: true, delete: true, share: true},
+    fields: {title: 'editable', number: 'readonly', project_id: 'readonly'}}, rows: {project: [], issue: []}});
+  const table = await domains.table('grit.issue');
+  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
+  document.body.append(a.root);
+  await flush();
+  const add = testOwner().build(() => a.ribbon()).main[0];
+  assert.equal(add.root.getAttribute('aria-description'), reason, 'New is off for a View-only required column');
+  assert.equal([...a.root.querySelectorAll('button')].some((b) => b.textContent === 'New issue'), false,
+    'the empty list offers no New button');
+  assert.equal(await a.create(), true);
+  await flush();
+  // the entity page's form host: the form and, beside it, why it is hidden
+  assert.equal(a.form.value.root.parentElement.lastElementChild.textContent, reason, 'the /new page shows the reason');
+  assert.equal(a.form.value.root.hidden, true, 'instead of a form that can never save');
+  a.dispose();
+});
+
 // EQ-054: the platform caches the caller's access with no expiry and a grant made by another
 // session never drops it: the memory table answers the cached access until the caches go
 function grantedElsewhere() {

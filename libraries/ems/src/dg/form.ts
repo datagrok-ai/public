@@ -317,9 +317,10 @@ export class DomainForm extends Control {
       const extra: Partial<DomainPickOptions> = {filter, params: () => row, siblings: source.schema};
       overrides = {...overrides, [name]: {...overrides?.[name], ...extra}};
     }
-    // a draft's empty readonly field is filled by the save
+    // a draft's empty readonly field is filled by the save only where the server fills it (a default, a generated
+    // column); one the caller may not write stays empty and says nothing
     for (const prop of draft ? source.schema.properties : []) {
-      if (!DomainTable.isReference(prop))
+      if (!DomainTable.isReference(prop) && DomainTable.isAssignedOnSave(source.schema.info, prop))
         overrides = {...overrides, [prop.name!]: {emptyText: 'assigned on save', ...overrides?.[prop.name!]}};
     }
     const form = propertyForm(source.schema.properties.filter((p) => !system.has(p.name)), row, {

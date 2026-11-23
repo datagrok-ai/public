@@ -185,12 +185,14 @@ export class DomainList extends Control {
     const what = nounOf(info);
     const trash = source.deleted.value === 'only';
     const create = this._options.create;
+    const noCreate = DomainTable.noCreate(source);
     const actions = denied !== null ? [] : search !== '' ? [button('Clear search', () => source.search.value = '')] :
       filtered ? [clearFilter()] :
-        create !== undefined && !trash && source.access.value.can('insert') ?
+        create !== undefined && !trash && noCreate === null && source.access.value.can('insert') ?
           [button(`New ${nounOf(info, true)}`, () => create(), {primary: true})] : [];
     const said = denied ?? this._options.empty ?? (search !== '' ? `No ${what} match "${search}"` :
-      filtered ? `No ${what} match the filter` : trash ? 'Trash is empty' : `No ${what} yet`);
+      filtered ? `No ${what} match the filter` : trash ? 'Trash is empty' :
+      `No ${what} yet${create !== undefined && noCreate !== null ? `. ${noCreate}` : ''}`);
     const state = emptyState(said,
       {icon: denied !== null ? 'lock' : search !== '' ? 'search' : trash ? 'trash-alt' : 'inbox', actions});
     state.classList.add('u2-domain-list-nothing');

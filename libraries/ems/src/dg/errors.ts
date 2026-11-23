@@ -49,7 +49,30 @@ export class DomainErrors {
   static noView(source: DomainSource): string | null {
     if (source.access.value.can('view'))
       return null;
-    return `You do not have access to ${nounOf(source.schema.info)}. Ask the table's owner to share it with you.`;
+    return DomainErrors.noAccess(source.schema.info);
+  }
+
+  /** The no-View wording for a table whose access is known without a source (a picker's target). */
+  static noAccess(info: Parameters<typeof nounOf>[0]): string {
+    return `You do not have access to ${nounOf(info)}. Ask the table's owner to share it with you.`;
+  }
+
+  /** The wording for a child tab whose FK to the parent is a column the caller cannot read: the server refuses
+   * every read and write through that column, so the tab cannot show or add the children. */
+  static noLink(child: Parameters<typeof nounOf>[0], parent: Parameters<typeof nounOf>[0]): string {
+    return `You do not have access to ${nounOf(child)}: you cannot see how ${nounOf(child)} link to this ` +
+      `${nounOf(parent, true)}. Ask the table's owner to share the link column with you.`;
+  }
+
+  /** The wording for creating on a table with required columns the caller cannot set: every Save would be refused.
+   * A hidden column is asked to be shared, a View-only one to be made editable. */
+  static noRequired(info: Parameters<typeof nounOf>[0], hidden: readonly string[],
+    viewOnly: readonly string[]): string {
+    const names = [...hidden, ...viewOnly].join(', ');
+    const asks = [...(hidden.length > 0 ? [`share ${hidden.join(', ')} with you`] : []),
+      ...(viewOnly.length > 0 ? [`let you edit ${viewOnly.join(', ')}`] : [])];
+    return `You cannot create ${nounOf(info)}: they need a value for ${names}, which you cannot set. ` +
+      `Ask the table's owner to ${asks.join(' and ')}.`;
   }
 
   /** One balloon; after a 403 the affordances were built from an access snapshot the server just

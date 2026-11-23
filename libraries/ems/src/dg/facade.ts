@@ -223,6 +223,43 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     return semType === 'User' || semType === 'Group' || REF_ADDRESS.test(semType);
   }
 
+  /** Whether the server fills a draft's `prop` on save: it has a default, or it is a column the table
+   * generates (its name column, an optional business-key part: the auto-numbered one). Any other column the caller may not write stays empty. */
+  static isAssignedOnSave(info: DomainTableInfoLike, prop: IProperty): boolean {
+    return (prop.defaultValue ?? null) !== null || prop.name === info.nameColumn ||
+      (prop.nullable !== false && info.businessKey.includes(prop.name!));
+  }
+
+  /** The required columns a new row cannot get a value for from the caller: no default, nothing fills them, and
+   * the access hides them or leaves them read-only on a draft. Every Save would be refused for them. */
+  static unsettable(properties: readonly IProperty[], info: DomainTableInfoLike, access: Access,
+    except: readonly string[] = []): IProperty[] {
+    const draft = access.columnPolicy().forDraft();
+    return properties.filter((p) => p.nullable === false && !DomainTable.isAssignedOnSave(info, p) &&
+      !except.includes(p.name!) &&
+      !SYSTEM_COLUMNS.some(([name]) => name === p.name) && draft.field(p.name!) !== 'editable');
+  }
+
+  /** {@link DomainErrors.noRequired} over `columns`, split by whether the access hides them or leaves them View-only. */
+  static noRequired(info: DomainTableInfoLike, columns: readonly IProperty[], access: Access): string {
+    const draft = access.columnPolicy().forDraft();
+    const caption = (p: IProperty) => DomainTable.captionOf(p);
+    return DomainErrors.noRequired(info, columns.filter((p) => draft.field(p.name!) === 'hidden').map(caption),
+      columns.filter((p) => draft.field(p.name!) !== 'hidden').map(caption));
+  }
+
+  /** What every way into a new row (the ribbon, the empty list, `/new`, a children tab) says when the caller
+   * cannot create a savable row on `source`'s table; null while the table is loading or when they can. A column
+   * the source's defaults fill is not the caller's to set. */
+  static noCreate(source: DomainSource): string | null {
+    if (source.edit.value === undefined)
+      return null;
+    const filled = Object.entries(source.defaults).filter(([, v]) => v !== undefined && v !== null).map(([k]) => k);
+    const columns = DomainTable.unsettable(source.schema.properties, source.schema.info, source.access.value, filled);
+    return columns.length === 0 ? null :
+      DomainTable.noRequired(source.schema.info, columns, source.access.value);
+  }
+
   /** A started source over this table. */
   source(options: Omit<DomainSourceOptions, 'table' | 'defaults'> & {defaults?: RowValues<TRow>} = {}):
     DomainSource<TRow> {

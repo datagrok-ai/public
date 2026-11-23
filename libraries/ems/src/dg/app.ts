@@ -480,8 +480,10 @@ export class DomainApp extends Control {
     if (this._ribbon !== undefined)
       return this._ribbon;
     const singular = nounOf(this.table.info, true);
+    // a required column the caller cannot set makes every Save fail: say so before they type
+    const blocked = computed(() => DomainTable.noCreate(this.listSource));
     const add = new Control(this.build(() =>
-      iconButton('plus', () => void this.create(), {tooltip: `New ${singular}`})));
+      iconButton('plus', () => void this.create(), {tooltip: `New ${singular}`, disabled: blocked})));
     add.root.dataset.u2 = 'new-button';
     // in the trash the slot stays, so SAVE and DISCARD do not move
     add.effect(() => {
@@ -1057,6 +1059,14 @@ export class DomainApp extends Control {
         const rows = source.rows.items.value;
         if (source.state.value !== 'ready')
           return;
+        // a table the caller may not view has no history or children to show: the form says so
+        if (!source.access.value.can('view') && this._panes.length > 0) {
+          for (const pane of this._panes)
+            pane.dispose();
+          this._panes = [];
+          this.panes.replaceChildren();
+          return;
+        }
         if (rows.length > 0 && source.currentRow.peek() === null)
           source.currentRow.value = rows[0];
         else if (rows.length === 0 && !rechecked && source.access.peek().can('view')) {
@@ -1074,6 +1084,20 @@ export class DomainApp extends Control {
           [domains.history(source, undefined, {include, exclude})]),
       ]);
       this._formHost.replaceChildren(form.root);
+      // a new row that can never be saved shows why instead of the form
+      if (draft) {
+        const why = div([], 'u2-domain-form-empty');
+        source.effect(() => {
+          const reason = DomainTable.noCreate(source);
+          if (reason === null)
+            why.replaceChildren();
+          else
+            why.replaceChildren(span(reason, 'u2-domain-form-hint'));
+          form.root.hidden = reason !== null;
+          why.hidden = reason === null;
+        });
+        this._formHost.append(why);
+      }
       this.panes.replaceChildren(...this._panes.map((pane) => pane.root));
       batch(() => {
         this._entitySource.value = source;
