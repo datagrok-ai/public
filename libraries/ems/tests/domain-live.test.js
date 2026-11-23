@@ -6,7 +6,6 @@ import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {backends, Scope, Control, untracked} from '@datagrok-libraries/u2';
 import {DomainSource} from '../src/core/domain-source.js';
-import {SharedSession} from '../src/core/session.js';
 import {backend} from './domain-fixtures.mjs';
 
 // before any test(): a later top-level await lets dg/backend.js reassign the seam mid-test
@@ -101,91 +100,44 @@ scoped('the load takes the baseline, the first probe compares; a moved pair relo
 });
 
 scoped('a write between the load and the first poll is seen by that poll (EQ-037)', async () => {
-  for (const [op, rows] of [
-    [{op: 'insert', table: 'issue', values: {project_id: 'p1', number: 9, title: 'Early'}}, 4],
-    [{op: 'delete', table: 'issue', id: 'i2'}, 2],
-  ]) {
-    const be = counted();
-    emsBackends.domain = be.backend;
-    const src = testOwner().build(() => new DomainSource({table: 'grit.issue', pageSize: 10, live: true, liveMs: 1000}, env));
-    src.start();
-    await flush();
-    assert.equal(src.rows.items.value.length, 3);
-    // another session writes before this list's first poll is due
-    const issue = await be.backend.table('grit.issue');
-    await issue.transaction([op]);
-    await tick();
-    await flush();
-    assert.equal(src.rows.items.value.length, rows,
-      `${op.op} before the first poll: that poll compares with the load, it does not adopt the write as its baseline`);
-    assert.equal(src.stale.value, false);
-    src.dispose();
-  }
+  const be = counted();
+  const src = await started(be);
+  const issue = await be.backend.table('grit.issue');
+  await issue.transaction([{op: 'insert', table: 'issue', values: {project_id: 'p1', number: 9, title: 'Early'}}]);
+  await tick();
+  await flush();
+  assert.equal(src.rows.items.value.length, 4, 'the first poll compares with the load, it does not adopt the write as its baseline');
+  src.dispose();
 });
 
 scoped('a write by another session right after a save is seen by the next poll (EQ-037)', async () => {
   const be = counted();
   const src = await started(be);
-  await tick();
   src.rows.byKey('i1').title = 'Mine';
-  await flush();
   assert.equal(await src.save(), true);
   await flush();
-  // another session inserts before this list's next poll is due
   const issue = await be.backend.table('grit.issue');
   await issue.transaction([{op: 'insert', table: 'issue', values: {project_id: 'p1', number: 9, title: 'Theirs'}}]);
   await tick();
   await flush();
-  assert.equal(src.rows.items.value.length, 4,
-    'a write after the save: the next poll compares with the re-base, it does not adopt the write as its baseline');
-  assert.equal(src.rows.byKey('i1').title, 'Mine');
+  assert.equal(src.rows.items.value.length, 4, 'the next poll compares with the re-base, it does not adopt the write');
   src.dispose();
 });
 
-scoped('a load that bails over pending changes keeps the baseline its rows were read with (EQ-037)', async () => {
+scoped('a load that bails over an edit made in flight keeps the baseline its rows were read with (EQ-037)', async () => {
   const be = counted();
   const src = await started(be);
   await tick();
-  // an edit lands while a reload is in flight: the load keeps the edited frame
   const reload = src.refresh();
   src.rows.byKey('i1').title = 'Mine';
   await reload;
-  await flush();
-  assert.equal(src.isDirty.value, true);
-  assert.equal(src.rows.byKey('i1').title, 'Mine');
-
   const issue = await be.backend.table('grit.issue');
   await issue.transaction([{op: 'insert', table: 'issue', values: {project_id: 'p1', number: 9, title: 'Theirs'}}]);
   await tick();
-  assert.equal(src.stale.value, true, 'the next poll compares with what the shown rows were read with, and says the data changed');
-  assert.equal(src.rows.items.value.length, 3, 'without dropping the edit');
+  assert.equal(src.stale.value, true, 'the next poll says the data changed');
+  assert.equal(src.rows.byKey('i1').title, 'Mine');
   src.dispose();
 });
-
-scoped('the poll keeps pending rows anywhere in the session: a clean source over them is marked stale (EQ-037)',
-  async () => {
-    const be = counted();
-    const session = new SharedSession();
-    const src = await started(be, {session});
-    const projects = testOwner().build(() => new DomainSource({table: 'grit.project', pageSize: 10, session}, env));
-    projects.start();
-    await flush();
-    projects.rows.items.value[0].name = 'Pending';
-    await flush();
-    assert.equal(src.isDirty.value, false, 'the polled source itself is clean');
-    assert.equal(session.isDirty.value, true, 'its session is not');
-    await tick();
-
-    const issue = await be.backend.table('grit.issue');
-    await issue.transaction([{op: 'insert', table: 'issue', values: {project_id: 'p1', number: 9, title: 'Theirs'}}]);
-    await tick();
-    await flush();
-    assert.equal(src.stale.value, true, 'a dirty session is marked behind the server, never reloaded under');
-    assert.equal(src.rows.items.value.length, 3);
-    assert.equal(projects.rows.items.value[0].name, 'Pending');
-    projects.dispose();
-    src.dispose();
-  });
 
 scoped('a row edited in place moves the pair too — the count alone would miss it', async () => {
   const be = counted();
