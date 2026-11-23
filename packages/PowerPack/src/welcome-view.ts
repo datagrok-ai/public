@@ -26,11 +26,8 @@ export function welcomeView(): DG.View | undefined {
     ui.iconFA('search'),
     inputContainer,
   ], 'd4-search-bar');
-  const helpDiv = ui.divText('Use Ctrl+Space to see suggestions', {style: {
-    marginLeft: '12px', fontSize: '10px', color: 'var(--text-color-light)',
-    fontStyle: 'italic',
-    marginBottom: '10px', flexGrow: '0',
-  }, classes: 'power-search-help-text-container'});
+  const helpDiv = ui.divText('Use Ctrl+Space to see suggestions', 'power-search-help-text-container');
+  inputHost.appendChild(helpDiv);
 
   const updateHelp = () => {helpDiv.style.visibility = input.value ? 'visible' : 'hidden';};
   updateHelp();
@@ -41,7 +38,6 @@ export function welcomeView(): DG.View | undefined {
       showSearchSuggestions(input);
     }
   });
-  inputHost.style.marginBottom = '0px';
   suggestionMenuKeyNavigation(inputContainer);
 
   const searchHost = ui.block([], 'power-pack-search-host');
@@ -54,7 +50,6 @@ export function welcomeView(): DG.View | undefined {
   setWorkspacePreviewHost(previewHost);
   const view = DG.View.create();
   view.root.appendChild(inputHost);
-  view.root.appendChild(helpDiv);
   view.root.appendChild(viewHost);
   view.root.classList.add('power-pack-welcome-view');
 

@@ -366,9 +366,12 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
     margin-bottom: 10px;
 }
 
-.power-pack-welcome-view .d4-search-bar {
-    margin-bottom: 10px;
-
+.power-search-help-text-container {
+    margin-left: 12px;
+    white-space: nowrap;
+    font-size: 10px;
+    font-style: italic;
+    color: var(--text-color-light);
 }
 
 .power-pack-welcome-view .d4-search-bar .ui-input-root {
