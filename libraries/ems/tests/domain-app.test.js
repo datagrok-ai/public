@@ -1706,3 +1706,19 @@ scoped('domains.views: a view per table, addressed and brought forward, where it
       app.dispose();
   }
 });
+
+scoped('table view: an aggregation header click sets no sort the server would refuse; a plain header still sorts', async () => {
+  const {app: a} = await app();
+  a.view.value = 'table';
+  a.output.aggregations.value = [{column: 'Notes.Weight', aggregation: 'avg'}];
+  await flush();
+  const head = (column) => [...a.root.querySelectorAll('[role="columnheader"]')].find((h) => h.dataset.column === column);
+  const before = a.listSource.sort.peek();
+  fire(head('avg(Notes.Weight)'), 'click');
+  await flush();
+  assert.equal(a.listSource.sort.peek(), before, 'the aggregation header sets no sort the server would refuse');
+  fire(head('title'), 'click');
+  await flush();
+  assert.equal(a.listSource.sort.peek(), 'title', 'an own-value header still sorts');
+  a.dispose();
+});
