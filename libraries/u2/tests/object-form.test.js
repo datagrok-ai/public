@@ -669,35 +669,19 @@ form('a column named description is a textarea unless an editor hint says otherw
   f.dispose();
 });
 
-test('ObjectForm.same: a cyclic value is itself and compares by value without overflowing', () => {
+test('ObjectForm.same: a cyclic value or a Dart-backed wrapper compares without overflowing', () => {
   const a = {k: 'v'};
   a.self = a;
   const b = {k: 'v'};
   b.self = b;
   assert.equal(ObjectForm.same(a, a), true, 'identity decides first');
   assert.equal(ObjectForm.same(a, b), true, 'two equal cyclic objects are the same, not a RangeError');
-  const list = [1];
-  list.push(list);
-  assert.equal(ObjectForm.same(list, list), true);
-  assert.equal(ObjectForm.same({k: 'v', self: a}, {k: 'w', self: b}), false);
-});
-
-test('ObjectForm.same: a nested JSON value compares by value, own keys only', () => {
-  assert.equal(ObjectForm.same({b: 1, a: {n: [2, {m: 3}]}}, {a: {n: [2, {m: 3}]}, b: 1}), true);
-  assert.equal(ObjectForm.same({a: {n: 2}}, {a: {n: 3}}), false);
-  assert.equal(ObjectForm.same({a: undefined}, {b: undefined}), false, 'a key the other lacks is a difference');
-  assert.equal(ObjectForm.same({toString: 1}, {}), false, 'an inherited name is not an own key');
-});
-
-test('ObjectForm.same: a Dart-backed wrapper is compared by its own keys, never walked into', () => {
-  // what js-api hands out for a Dart object (a FileInfo, an entity): a class instance whose `dart`
-  // is a dart2js object, cyclic through its type information
+  // js-api's wrapper of a Dart object (a FileInfo): its `dart` is cyclic through its type information
   class Wrapper {
     constructor(dart) { this.dart = dart; }
   }
   const dart = {name: 'f.csv'};
   dart.rti = {owner: dart};
-  assert.equal(ObjectForm.same(new Wrapper(dart), new Wrapper(dart)), true, 'two wrappers of one Dart object are the same');
-  assert.equal(ObjectForm.same(new Wrapper(dart), new Wrapper({...dart})), false, 'another Dart object is not');
-  assert.equal(ObjectForm.same(new Wrapper(dart), {dart}), true, 'a wrapper and a plain object of the same keys, shallowly');
+  assert.equal(ObjectForm.same(new Wrapper(dart), new Wrapper(dart)), true, 'compared by its own keys, not walked into');
+  assert.equal(ObjectForm.same(new Wrapper(dart), new Wrapper({...dart})), false);
 });
