@@ -552,6 +552,39 @@ source('containment: an unknown table is an error state; no backend throws at co
   assert.throws(() => new DomainSource({table: 'grit.issue'}, env()), /no platform backend/);
 });
 
+source('a filter the server refuses: clearing it reloads the rows, and a left filter\'s late refusal is not shown', async () => {
+  const inner = backend();
+  const gate = {hold: false, waiting: []};
+  emsBackends.domain = {table: async (address) => {
+    const t = await inner.table(address);
+    return Object.assign(Object.create(Object.getPrototypeOf(t)), t, {frame: async (spec) => {
+      if (spec.filter === undefined)
+        return t.frame(spec);
+      if (gate.hold)
+        await new Promise((go) => gate.waiting.push(go));
+      throw new Error('the filter is refused');
+    }});
+  }};
+  const src = await issues({pageSize: 10});
+  src.query.value = 'title = "Aspirin"';
+  await until(() => src.state.value === 'error');
+  src.query.value = '';
+  await until(() => src.state.value !== 'loading');
+  assert.equal(src.state.value, 'ready', 'back to the rows shown reloads them');
+  assert.equal(src.error.value, undefined);
+
+  gate.hold = true;
+  src.query.value = 'title = "Aspirin"';
+  await until(() => gate.waiting.length === 1);
+  src.query.value = '';
+  gate.waiting.splice(0).forEach((go) => go());
+  await until(() => src.state.value !== 'loading');
+  assert.equal(src.state.value, 'ready', 'the refusal is about a filter no longer asked for');
+  assert.equal(src.error.value, undefined);
+  assert.equal(titles(src).length, 3);
+  src.dispose();
+});
+
 source('schema round trip: the registry example builds, and the sub-bind and query prop agree', async () => {
   emsBackends.domain = backend();
   const reg = new Registry();

@@ -552,6 +552,15 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       this._ready = undefined;
       if (gen !== this._gen)
         return;
+      // a failure lands as a success does: one for a scope the source no longer asks for is not its answer
+      if (readFor !== this._readFor()) {
+        await this.refresh();
+        return;
+      }
+      // the rows kept were read for another scope than the one refused: they answer neither now, so going
+      // back to theirs reads it again
+      if (readFor !== this._shownFor)
+        this._shownFor = undefined;
       batch(() => {
         this._error.value = e;
         this._state.value = 'error';
