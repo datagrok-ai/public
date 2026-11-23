@@ -175,16 +175,22 @@ export class MemoryEditState implements EditState {
     if (this._saving.peek())
       return;
     const row = this._row(key);
-    if (row === undefined || Object.is(row[column], value))
+    if (row === undefined)
       return;
     const state = row[Rows.STATE] as RowState | undefined;
+    const prop = this._table.properties.find((p) => p.name === column);
+    // as the dg writer: a json or string_list value retyped as the row had it reverts the cell, whatever its text
+    if (state !== 'new' && typeof value === 'string' && prop !== undefined && MemoryEditState.isTextCell(prop)) {
+      const originals = this._originals.get(row);
+      const original = originals?.has(column) ? originals.get(column) : row[column];
+      if (sameJson(original, value))
+        value = original;
+    }
+    if (Object.is(row[column], value))
+      return;
     if (state !== 'new') {
       const originals = this._originals.get(row) ?? new Map<string, unknown>();
       this._originals.set(row, originals);
-      // as the dg writer: a JSON value retyped as the row had it reverts the cell, whatever its text
-      const original = originals.has(column) ? originals.get(column) : row[column];
-      if (typeof value === 'string' && sameJson(original, value))
-        value = original;
       if (!originals.has(column))
         originals.set(column, row[column]);
       else if (Object.is(originals.get(column), value))

@@ -10,6 +10,7 @@ import {DomainSource} from '../src/core/domain-source.js';
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const DG = await import('datagrok-api/dg');
 const {DgDomainBackend} = await import('../src/dg/backend.js');
+const {MemoryDomainBackend} = await import('../src/core/memory-domain.js');
 
 function scoped(name, body) {
   test(name, async () => {
@@ -254,6 +255,25 @@ scoped('EQ-033: a client error the retry finds is the client\'s, and holds', asy
     DG.DomainSession.prototype.save = real;
   }
   state.dispose();
+});
+
+scoped('JSON-looking text retyped in a plain string column is written as typed, by both writers', async () => {
+  const {df, editor} = fakeEditor([{id: 'i1', title: '{"a":1}'}]);
+  editor.properties = [{name: 'title', propertyType: 'string'}];
+  editor.changesOf = () => ({});
+  const platform = new EditorEditState(editor);
+  platform.setValue('i1', 'title', '{"a": 1}');
+  assert.equal(df.get('title', 0), '{"a": 1}', 'the platform writer writes the text');
+  platform.dispose();
+  const memory = new MemoryDomainBackend({name: 'qa', tables: {item: {columns: {
+    notes: {type: 'string'}, meta: {type: 'json'}}}}}, {rows: {item: [{id: 'r1', notes: '{"a":1}', meta: {a: 1}}]}});
+  const frame = await memory.tableSync('qa.item').frame({});
+  frame.edit.setValue('r1', 'notes', '{"a": 1}');
+  assert.equal(frame.df.get('notes', 0), '{"a": 1}', 'the memory writer writes the text');
+  frame.edit.setValue('r1', 'meta', '{"a": 1}');
+  assert.equal(frame.edit.isChanged('r1', 'meta'), false, 'a json cell retyped as it was is no change');
+  assert.equal(frame.edit.changeCount.value, 1, 'only the string column counts');
+  frame.dispose();
 });
 
 /* EQ-057: a json cell written through the platform editor. The double behaves as js-api does where it

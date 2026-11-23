@@ -1,6 +1,6 @@
 import type * as DG from 'datagrok-api/dg';
 import {signal, computed, ReadonlySignal, Emitter, FrameRows} from '@datagrok-libraries/u2';
-import {sameJson} from '../core/edit-state.js';
+import {sameJson, MemoryEditState} from '../core/edit-state.js';
 import type {EditSaved, EditState} from '../core/edit-state.js';
 import type {DataFrameLike} from '@datagrok-libraries/u2';
 
@@ -147,14 +147,15 @@ export class EditorEditState implements EditState {
     this.editor.validate();
   }
 
-  /** A JSON value retyped as the row had it is the cell reverted, not a write the editor compares
-   * by its text (another key order is another text). */
+  /** A json or string_list value retyped as the row had it is the cell reverted, not a write the editor
+   * compares by its text (another key order is another text). */
   setValue(key: string, column: string, value: unknown): void {
     const at = this.indexOf(key);
     if (at < 0)
       return;
     const editor = this.editor;
-    const json = typeof value === 'string' && /^\s*[[{]/.test(value);
+    const prop = editor.properties?.find((p) => p.name === column);
+    const json = typeof value === 'string' && prop !== undefined && MemoryEditState.isTextCell(prop);
     const changes: Record<string, unknown> = json ? editor.changesOf(at) : {};
     const changed = Object.hasOwn(changes, column);
     if (json && sameJson(changed ? changes[column] : this.df.get(column, at), value)) {
