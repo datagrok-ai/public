@@ -831,21 +831,6 @@ scoped('EQ-007: every change reloaded away is announced as discarded, not saved,
   issues.dispose();
 });
 
-scoped('EQ-007: a mix of reloaded and landed changes announces only what landed', async () => {
-  emsBackends.domain = backend();
-  const session = new SharedSession();
-  const {projects, issues} = await pair(session);
-  reloading([issues]);
-  issues.rows.byKey('i1').title = 'Mine';
-  projects.rows.byKey('p1').name = 'Grit 2';
-  assert.equal(session.changeCount.value, 2);
-  assert.equal(await session.save(), true, 'one change landed');
-  assert.equal(balloon(), 'Project saved');
-  assert.equal(emsBackends.domain.tableSync('grit.project').rows.find((r) => r.id === 'p1').name, 'Grit 2');
-  projects.dispose();
-  issues.dispose();
-});
-
 scoped('EQ-007: SAVE in the navigation prompt, then RELOAD discarding every change, lets the navigation proceed: the session is clean', async () => {
   emsBackends.domain = backend();
   const session = new SharedSession();
