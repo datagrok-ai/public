@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Permissions: Fixed a save refused for lack of permission still standing, with Save off, after the edits were undone by hand: the refusal goes once nothing is left to save, as on Discard, and the next edit is saved
 * Lists: Fixed a list staying on the error after a filter the server refused was cleared (or a refused filter's late answer showing over the rows already back): going back to the rows shown reads them again
 * Lists: Fixed a search or filter changed while a save was re-reading the list showing the previous scope's rows until something else reloaded it: the rows of the new scope are read once the save's re-read lands
 * Lists: Fixed a list over a table with no searchable column, opened with a search (from the address or a saved search), loading its rows twice: the dropped search no longer reads as a scope change

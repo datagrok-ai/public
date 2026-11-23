@@ -866,6 +866,36 @@ scoped('a save refused as forbidden holds Save through another edit of the refus
   }
 });
 
+scoped('a save refused as forbidden lets go once its edits are undone by hand: the next edit is saved', async () => {
+  const memory = backend();
+  let refused = true;
+  emsBackends.domain = {
+    table: (address) => memory.table(address),
+    saveAll: (edits) => {
+      if (!refused)
+        return memory.saveAll(edits);
+      for (const edit of edits)
+        Object.assign(edit, {problem: 'forbidden', problemCode: 'forbidden'});
+      return Promise.resolve(false);
+    },
+  };
+  const session = new SharedSession();
+  const projects = testOwner().build(() => new DomainSource({table: 'grit.project', session}, env));
+  projects.start();
+  await flush();
+  projects.rows.byKey('p1').name = 'Grit 2';
+  assert.equal(await session.save(), false);
+  projects.rows.byKey('p1').name = 'Grit';
+  await flush();
+  assert.equal(projects.isDirty.value, false);
+  assert.equal(projects.blocking.value, null, 'the refusal goes with the edits it refused');
+  assert.equal(projects.blocked.value, null);
+  refused = false;
+  projects.rows.byKey('p1').name = 'Grit 3';
+  assert.equal(await session.save(), true, 'the next edit is sent and saved');
+  projects.dispose();
+});
+
 // the platform session's RELOAD in the conflict dialog drops the conflicting writer's edits inside
 // `saveAll` and retries the rest: the backend still answers true, and says what each writer wrote
 function reloading(dropped) {

@@ -332,6 +332,22 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       if (!this._searchable.value && this.search.value !== '')
         this.search.value = '';
     });
+    // a 403 holds Save until the changes it refused are gone, discarded (`revert`) or undone by hand: then the
+    // refusal goes, and the writer it left built under the old access is rebuilt. The session's changes too:
+    // a clean source the batch referenced (a pristine parent) holds the copy until they go
+    this.effect(() => {
+      this.session.isDirty.value;
+      if (this.isDirty.value)
+        return;
+      if (DomainSource.isForbidden(this._error.peek()) && this._state.peek() !== 'error') {
+        batch(() => {
+          this._error.value = undefined;
+          this._problemRow.value = null;
+        });
+      }
+      if (this._regate)
+        void this._rebuildWriter();
+    });
     // the frame's current row and `currentRow` are one thing, written in either direction
     this.effect(() => {
       const row = this.currentRow.value;
