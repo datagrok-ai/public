@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Permissions: Fixed a save refused for lack of permission enabling Save again once you edited another field of the refused row, so Save sent the same refused changes again: the refusal holds through any edit until you discard the changes
 * Pages: Fixed an edit typed while the rows were being re-read (the access re-read after a refused save, or a Load more that found the list shifted) being silently thrown away when the re-read landed: the edit stays, and the re-read is done again once the changes are saved or discarded
 * Pages: Fixed every row page opened from a list dropping the access caches and reading the access and the row a second time: the access is read again only when the page finds no row
 * Lists: Fixed the first Load more after a search, filter or sort change re-reading every loaded page, or showing "Data changed" over pending edits, when nothing changed: a page check of the previous list that answered late was applied to the new one

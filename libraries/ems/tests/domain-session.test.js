@@ -831,6 +831,41 @@ scoped('EQ-033: a save refused as forbidden holds Save and Ctrl+S through a chil
   }
 });
 
+scoped('a save refused as forbidden holds Save through another edit of the refused row, until Discard', async () => {
+  for (const thrown of [false, true]) {
+    const memory = backend();
+    let sent = 0;
+    emsBackends.domain = {
+      table: (address) => memory.table(address),
+      saveAll: (edits) => {
+        sent++;
+        if (thrown)
+          throw Object.assign(new Error('Edit is required on "grit.project"'), {code: 'forbidden'});
+        for (const edit of edits)
+          Object.assign(edit, {problem: 'forbidden', problemCode: 'forbidden'});
+        return Promise.resolve(false);
+      },
+    };
+    const session = new SharedSession();
+    const projects = testOwner().build(() => new DomainSource({table: 'grit.project', session}, env));
+    projects.start();
+    const save = testOwner().build(() => saveButton(session));
+    await flush();
+    projects.rows.byKey('p1').key = 'DG';
+    assert.equal(await session.save(), false);
+    projects.rows.byKey('p1').name = 'Datagrok 2';
+    await flush();
+    assert.equal(save.button.disabled, true, `the refused source's own edit keeps Save off (thrown: ${thrown})`);
+    assert.equal(await session.save(), false, 'Ctrl+S');
+    assert.equal(sent, 1, 'and sends nothing');
+    session.discard();
+    await flush();
+    assert.equal(projects.blocked.value, null, 'Discard clears it');
+    save.dispose();
+    projects.dispose();
+  }
+});
+
 // the platform session's RELOAD in the conflict dialog drops the conflicting writer's edits inside
 // `saveAll` and retries the rest: the backend still answers true, and says what each writer wrote
 function reloading(dropped) {

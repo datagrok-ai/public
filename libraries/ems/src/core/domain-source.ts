@@ -1073,6 +1073,12 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   revert(): void {
     this._unapplied.value = new Map();
     this._edit.peek()?.discard();
+    if (DomainSource.isForbidden(this._error.peek())) {
+      batch(() => {
+        this._error.value = undefined;
+        this._problemRow.value = null;
+      });
+    }
     if (this._regate && !this.isDirty.peek())
       void this._rebuildWriter();
   }
@@ -1169,11 +1175,14 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       // the editor removes saved deletes and re-keys saved drafts without a frame event: the
       // row projection follows its onChanged instead
       frame.edit.onChanged.subscribe(() => {
-        // a refusal stands in the summary until the next edit or discard takes it back
-        batch(() => {
-          this._error.value = undefined;
-          this._problemRow.value = null;
-        });
+        // a refusal stands in the summary until the next edit or discard takes it back; a 403 is about
+        // access, not the values, and holds through edits until the changes are let go of (`revert`)
+        if (!DomainSource.isForbidden(this._error.peek())) {
+          batch(() => {
+            this._error.value = undefined;
+            this._problemRow.value = null;
+          });
+        }
         // and a refusal the session copied onto the other sources of the batch with it, once its
         // cause is gone
         this.session.changed?.(this);
