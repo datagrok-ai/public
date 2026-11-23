@@ -151,9 +151,11 @@ export function openImport(table: DomainTable, options: DomainImportOptions = {}
     notify.warning(`There is no column of ${table.address} you may write.`);
     return Promise.resolve(null);
   }
-  // a required column with no default that the caller cannot write and the import does not derive fails every row
+  // a required column with no default that the caller cannot write and the import does not derive fails every new
+  // row; Add or update still updates the matched rows without it, as long as it can match them by their key
   const stuck = DomainTable.unsettable(table.properties, table.info, table.access, derived);
-  if (stuck.length > 0 || table.info.hiddenRequired) {
+  const updates = table.table.support.batch.upsert && !stuck.some((p) => table.info.businessKey.includes(p.name!));
+  if ((stuck.length > 0 || table.info.hiddenRequired) && !updates) {
     notify.warning(DomainTable.noRequired(table.info, stuck, table.access));
     return Promise.resolve(null);
   }

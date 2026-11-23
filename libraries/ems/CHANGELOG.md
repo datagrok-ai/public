@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Import: Fixed the import wizard refusing to open ("You cannot create …") for a user who cannot write a required column, even to update existing rows: where the table offers Add or update, the wizard opens and matched rows are updated by their key
 * Permissions: Fixed a user who reaches rows through row grants only being told "You do not have access to …", with no Clear button, whenever a filter, a search or the text typed in a picker matched nothing: they now read that nothing matches and can clear the filter or search
 * Lists: Fixed a search or filter changed while a save was re-reading the list showing the previous scope's rows until something else reloaded it: the rows of the new scope are read once the save's re-read lands
 * Lists: Fixed a list over a table with no searchable column, opened with a search (from the address or a saved search), loading its rows twice: the dropped search no longer reads as a scope change
