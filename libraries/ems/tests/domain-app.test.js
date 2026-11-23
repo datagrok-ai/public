@@ -677,6 +677,22 @@ scoped('a refused save says why in the status bar and balloons once, with no for
   a.dispose();
 });
 
+scoped('a shared ?sort= keeps only the columns this caller may read, and the list loads', async () => {
+  // the access leaves `description` out, as for a restricted column
+  const fields = Object.fromEntries(['id', 'version', 'created_on', 'updated_on', 'author_id', 'project_id',
+    'number', 'title'].map((c) => [c, 'editable']));
+  emsBackends.domain = backend({access: {can: {view: true}, fields}});
+  const table = await domains.table('grit.issue');
+  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
+  document.body.append(a.root);
+  await flush();
+  assert.equal(await a.open('?sort=description,!number'), true);
+  await flush();
+  assert.equal(a.listSource.sort.value, '!number', 'the hidden column is dropped from the sort');
+  assert.equal(a.listSource.state.value, 'ready');
+  a.dispose();
+});
+
 scoped('a ?q= link or a saved search is sent as the box formats it: the server reads what the box validated', async () => {
   const {app: a} = await app();
   const formatted = (q) => Filters.format(Filters.parse(q, a.listSource.schema, 'domain').root);
