@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Lists: Fixed a Load more clicked just before the filter changed appending a page of the new filter's rows to the old list, which stayed mixed until the new rows landed (or for good if they failed): the page is dropped
 * Lists: Fixed a Load more that found the list shifted marking the list loaded while a new filter's rows were still being read, or over that filter's error: the newer load sets the status
 * Permissions: Fixed a save refused for lack of permission still standing, with Save off, after the edits were undone by hand: the refusal goes once nothing is left to save, as on Discard, and the next edit is saved
 * Lists: Fixed a list staying on the error after a filter the server refused was cleared (or a refused filter's late answer showing over the rows already back): going back to the rows shown reads them again

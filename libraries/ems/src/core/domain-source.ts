@@ -595,6 +595,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this._state.value = 'loading';
     try {
       await this._serve();
+      // a load started meanwhile reads another scope: a page of it does not belong in this frame
+      if (gen !== this._gen)
+        return;
       const offset = this._loaded;
       const boundary = this._last;
       // what the server answered at `offset`; an id the frame already holds is not appended a second time

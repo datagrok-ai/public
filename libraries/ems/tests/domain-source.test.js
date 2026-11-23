@@ -1193,6 +1193,30 @@ source('a page whose re-base is overtaken by a new query leaves the new query\'s
   src.dispose();
 });
 
+source('a page asked for just before a new query is not a page of the new query appended to the old rows', async () => {
+  emsBackends.domain = backend();
+  const inner = emsBackends.domain.table.bind(emsBackends.domain);
+  const gate = {hold: false, waiting: []};
+  emsBackends.domain.table = async (address) => {
+    const t = await inner(address);
+    // the new query's load is held: the old rows stay shown meanwhile
+    return Object.assign(Object.create(Object.getPrototypeOf(t)), t, {
+      frame: async (spec) => (gate.hold && await new Promise((go) => gate.waiting.push(go)), t.frame(spec)),
+    });
+  };
+  const src = await issues({pageSize: 1});
+  gate.hold = true;
+  const paging = src.loadMore();
+  src.query.value = 'done = false';
+  await paging;
+  assert.deepEqual(titles(src), ['Aspirin'], 'the old rows, with no page of "done = false" behind them');
+  gate.hold = false;
+  gate.waiting.splice(0).forEach((go) => go());
+  await until(() => src.state.value === 'ready');
+  assert.deepEqual(titles(src), ['Ibuprofen']);
+  src.dispose();
+});
+
 source('an edit typed while the access re-read is reading the rows survives it landing', async () => {
   const memory = backend();
   const t = await memory.table('grit.issue');
