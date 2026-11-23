@@ -122,19 +122,21 @@ scoped('EQ-018: on a server without DomainTable.userColumns Edit properties refu
 
 scoped('EQ-028: the confirmation lists the drops the server plans, not the client diff, and SAVE waits for consent', async () => {
   const calls = [];
-  // the client only adds a column; the server's plan also drops one that holds values
+  // the client only adds a column; the server's plan also drops one that holds values and retypes another
   stub(calls, {manifest: MANIFEST, extVersion: 96, plan: {destructive: true,
-    drops: {tables: [], columns: [{table: 'issue', column: 'mine', nonNullValues: 3}]}}});
+    drops: {tables: [], columns: [{table: 'issue', column: 'mine', nonNullValues: 3}]},
+    typeChanges: [{table: 'issue', column: 'title', to: 'int'}]}});
   const {done} = await openAndAdd();
   await save();
   const confirm = byKind(document, 'dialog').find((d) => state(d).name === 'properties-confirm');
   assert.match(confirm.textContent, /issue\.mine dropped.*3 values deleted/,
     'the confirmation lists the plan\'s drop with its value count');
+  assert.match(confirm.textContent, /issue\.title: type changes to int/, 'the confirmation lists the plan\'s type change');
   const commits = () => extensions(calls).filter((c) => !c[2]);
   byName(confirm, 'SAVE').click();
   await flush();
   assert.deepEqual(commits(), [], 'nothing committed before the deletion is confirmed');
-  user.click(byName(byName(confirm, 'confirmDestructive'), 'Delete 3 stored values'));
+  user.click(byName(byName(confirm, 'confirmDestructive'), 'Delete 3 stored values and change the type of 1 column'));
   await flush();
   byName(confirm, 'SAVE').click();
   await flush();
