@@ -603,6 +603,12 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       const read = await frame.append(this._spec(offset));
       if (gen !== this._gen)
         return;
+      // a re-base (a save's, an access re-read's) swapped the frame while the page was read, and bumps no `_gen`:
+      // the page landed in the frame dropped, and is asked for again after the window now held
+      if (this._frame !== frame) {
+        this._state.value = 'ready';
+        return this.loadMore();
+      }
       this._loaded += read;
       this._last = read === 0 ? this._last : DomainSource._lastOf(frame.df, frame.df.rowCount);
       this._done = read < this.pageSize;
