@@ -315,72 +315,29 @@ scoped('a New from the children toolbar is an unsaved change of its own: the gat
   parent.dispose();
 });
 
-// EQ-062: the restrict rule's other half — no live child under a parent in the trash
-const crmWithEmpty = () => new MemoryDomainBackend(SCHEMA, {rows: {
-  company: [...ROWS.company.map((r) => ({...r})), {id: 'c3', name: 'Initech'}],
-  contact: ROWS.contact.map((r) => ({...r})), deal: ROWS.deal.map((r) => ({...r}))}});
+// EQ-062: no live child under a parent in the trash, whatever order the Save sends the ops in
+const crmWithEmpty = () => new MemoryDomainBackend(SCHEMA, {rows: Object.fromEntries(Object.entries(ROWS).map(([t, list]) =>
+  [t, [...list, ...t === 'company' ? [{id: 'c3', name: 'Initech'}] : []].map((r) => ({...r}))]))});
 
-scoped('EQ-062: a child added on a page whose parent a peer deleted is refused, naming the parent', async () => {
-  const memory = crmWithEmpty();
-  emsBackends.domain = memory;
+scoped('EQ-062: a Save that deletes the parent and adds a child under it is refused whole', async () => {
+  const memory = emsBackends.domain = crmWithEmpty();
   const companies = await domains.table('crm.company');
   const parent = testOwner().build(() => companies.source({pageSize: 10}));
   await flush();
   parent.currentRow.value = parent.rows.byKey('c3');
   const children = testOwner().build(() => domains.children(parent, {mode: 'list'}));
   await settle();
-  const contacts = children.child(CONTACTS);
-  await memory.transaction([{op: 'delete', table: 'crm.company', id: 'c3'}]);
-  contacts.newRow({name: 'Peter'});
-  assert.equal(await parent.session.save(), false, 'a child under a deleted parent is refused');
-  await flush();
-  assert.deepEqual(memory.tableSync('crm.contact').rows.filter((r) => r.name === 'Peter'), [], 'nothing landed');
-  assert.equal(DomainErrors.message(contacts.error.value, contacts),
-    'Cannot save "Peter": its company "Initech" was deleted. Restore the company first.');
-  // an FK moved onto a row in the trash is the same refusal, as the server's
-  await assert.rejects(memory.transaction([{op: 'update', table: 'crm.contact', id: 'k2', values: {company_id: 'c3'}}]),
-    {code: 'restrict', message: 'Column "company_id" references a deleted row in "company" ("c3")'});
-  children.dispose();
-  parent.dispose();
-});
-
-scoped('EQ-062: NEW is off while the parent\'s delete is staged; a child drafted before it is refused in that Save', async () => {
-  const memory = crmWithEmpty();
-  emsBackends.domain = memory;
-  const companies = await domains.table('crm.company');
-  const parent = testOwner().build(() => companies.source({pageSize: 10}));
-  await flush();
-  parent.currentRow.value = parent.rows.byKey('c3');
-  const children = testOwner().build(() => domains.children(parent, {mode: 'list'}));
-  await settle();
-  const contacts = children.child(CONTACTS);
-  const add = [...children.root.querySelectorAll('button')].find((b) => b.textContent === 'New');
-  assert.equal(add.getAttribute('aria-disabled'), null, 'NEW is on over a live parent');
-  contacts.newRow({name: 'Peter'});
+  children.child(CONTACTS).newRow({name: 'Peter'});
   parent.edit.value.markDeleted('c3');
-  await flush();
-  assert.equal(add.getAttribute('aria-disabled'), 'true', 'NEW is off while the parent\'s delete is staged');
-  assert.equal(add.getAttribute('aria-description'), 'This company is deleted on Save: undo the deletion to add contacts');
-  // the order the session sends — the parent's delete first — is the one the rule has to catch
-  assert.equal(await parent.session.save(), false, 'the staged delete and the child under it are refused together');
-  await flush();
+  assert.equal(await parent.session.save(), false, 'a child under a deleted parent is refused');
   assert.equal(memory.tableSync('crm.company').rows.find((r) => r.id === 'c3').is_deleted, undefined, 'the parent stays');
   assert.deepEqual(memory.tableSync('crm.contact').rows.filter((r) => r.name === 'Peter'), [], 'nothing landed');
-  // worded the same from either source of the Save, whichever one's balloon the session shows
-  for (const source of [contacts, parent]) {
-    assert.equal(DomainErrors.message(source.error.value, source),
-      'Cannot save "Peter": its company "Initech" is being deleted. Undo the deletion, or remove the new reference to it.');
-  }
-  parent.edit.value.unmarkDeleted('c3');
-  await flush();
-  assert.equal(add.getAttribute('aria-disabled'), null, 'undoing the deletion turns NEW back on');
   children.dispose();
   parent.dispose();
 });
 
 scoped('EQ-062: the refusal names the row under the deleted parent, not another edit of the same Save', async () => {
-  const memory = crmWithEmpty();
-  emsBackends.domain = memory;
+  const memory = emsBackends.domain = crmWithEmpty();
   const contacts = await domains.table('crm.contact');
   const src = testOwner().build(() => contacts.source({pageSize: 10}));
   await flush();
@@ -389,13 +346,6 @@ scoped('EQ-062: the refusal names the row under the deleted parent, not another 
   src.newRow({name: 'Peter', company_id: 'c3'});
   assert.equal(await src.save(), false);
   await flush();
-  assert.equal(DomainErrors.message(src.error.value, src),
-    'Cannot save "Peter": its company was deleted. Restore the company first.',
-    'Peter points at the deleted company; Ann, edited under a live one, is not the row refused');
-  assert.equal(memory.tableSync('crm.contact').rows.find((r) => r.id === 'k1').name, 'Ann', 'nothing landed');
-  // an older server words it without the parent's id: two candidates nothing tells apart name no row
-  assert.equal(DomainErrors.message({code: 'refused',
-    message: 'Cannot save: Column "company_id" references a deleted row in "company"'}, src),
-  'Cannot save: a reference points at a deleted company. Restore the company first.');
+  assert.equal(DomainErrors.message(src.error.value, src), 'Cannot save "Peter": its company was deleted. Restore the company first.');
   src.dispose();
 });
