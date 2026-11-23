@@ -754,6 +754,9 @@ scoped('a shared ?sort= keeps only the columns this caller may read, and the lis
   await flush();
   assert.equal(a.listSource.sort.value, '!number', 'the hidden column is dropped from the sort');
   assert.equal(a.listSource.state.value, 'ready');
+  assert.equal(await a.open('?sort=!number, prop.title, prop.description'), true);
+  await flush();
+  assert.equal(a.listSource.sort.value, '!number,prop.title', 'keys are trimmed, a prop. term names its column');
   a.dispose();
 });
 
@@ -768,6 +771,10 @@ scoped('a saved search sorting by a column removed since drops it, says so once,
   assert.equal(a.listSource.sort.value, '!number', 'only the columns the table describes are sent');
   assert.equal(a.listSource.state.value, 'ready');
   assert.equal(document.body.querySelectorAll('[role="alert"]').length, 1, 'said once');
+  SavedSearches.apply(a.listSource, {q: '', search: '', sort: '!number, title'});
+  await flush();
+  assert.equal(a.listSource.sort.value, '!number,title', 'a space after the comma keeps the key');
+  assert.equal(document.body.querySelectorAll('[role="alert"]').length, 1, 'and nothing more is said');
   a.dispose();
 });
 
