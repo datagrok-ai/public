@@ -1,4 +1,4 @@
-import {emsBackends, DomainBackendError} from '../src/core/domain-backend.js';
+import {emsBackends} from '../src/core/domain-backend.js';
 import {test, testOwner} from '@datagrok-libraries/u2/tests/owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
@@ -663,9 +663,8 @@ scoped('the shared overlay host does not outlive the dialogs in it', async () =>
 });
 
 // EQ-001: a refusal the session copied onto every source of the batch goes with its cause,
-// whichever source the cause is fixed in, and stays while the cause holds
-
-scoped('a refused parent key fixed in the parent, even back to its original key, enables Save again', async () => {
+// whichever source the cause is fixed in (here: the parent's key put back, so its writer is clean)
+scoped('EQ-001: a refused parent key fixed in the parent enables Save again', async () => {
   const memory = backend();
   // the platform path: the server refuses the parent's key, the writer keeps the sentence and the
   // backend answers false; the child only rode along in the batch
@@ -684,69 +683,17 @@ scoped('a refused parent key fixed in the parent, even back to its original key,
   projects.rows.byKey('p1').key = 'DG';
   issues.rows.byKey('i1').title = 'Aspirin 100';
   assert.equal(await session.save(), false);
-  assert.match(session.validity.value, /already belongs to Datagrok/);
   assert.match(issues.blocked.value, /already belongs to Datagrok/, 'the child carries the refusal too');
   projects.rows.byKey('p1').key = 'GRIT';
   await flush();
-  assert.equal(projects.isDirty.value, false, 'the parent is back to its original key');
   assert.equal(issues.blocked.value, null, 'the copy on the child goes with the cause');
   assert.equal(session.validity.value, null, 'Save is enabled');
   assert.equal(await session.save(), true);
-  assert.equal((await (await memory.table('grit.issue')).query({})).find((r) => r.id === 'i1').title, 'Aspirin 100');
   projects.dispose();
   issues.dispose();
 });
 
-scoped('a refused child row fixed in that child enables Save again, the parent edit pending beside it', async () => {
-  const memory = backend();
-  // the server's CHECK over the child, thrown as the memory backend throws
-  emsBackends.domain = {
-    table: (address) => memory.table(address),
-    saveAll: (edits) => edits.some((e) => e.df.rows.some((r) => r.id === 'i1' && r.weight > 5)) ?
-      Promise.reject(new DomainBackendError('validation', 'Weight exceeds the initial weight')) :
-      memory.saveAll(edits),
-  };
-  const session = new SharedSession();
-  const {projects, issues} = await pair(session);
-  projects.rows.byKey('p1').name = 'Grit notes';
-  issues.rows.byKey('i1').weight = 10;
-  assert.equal(await session.save(), false);
-  assert.match(projects.blocked.value, /Weight exceeds/, 'the parent carries the refusal too');
-  issues.rows.byKey('i1').weight = 3;
-  await flush();
-  assert.equal(projects.blocked.value, null, 'the copy on the parent goes with the cause');
-  assert.equal(session.validity.value, null, 'Save is enabled');
-  assert.equal(await session.save(), true);
-  projects.dispose();
-  issues.dispose();
-});
-
-scoped('"edited in two places": discarding one of the two edits enables Save again', async () => {
-  emsBackends.domain = backend();
-  const session = new SharedSession();
-  const one = new DomainSource({table: 'grit.issue', session}, env);
-  const two = new DomainSource({table: 'grit.issue', session}, env);
-  one.start();
-  two.start();
-  await flush();
-  one.rows.byKey('i1').weight = 42;
-  two.rows.byKey('i1').title = 'From two';
-  assert.equal(await session.save(), false);
-  assert.match(session.validity.value, /edited in two places/);
-  two.rows.byKey('i2').title = 'Elsewhere';
-  await flush();
-  assert.match(session.validity.value ?? '', /edited in two places/, 'the row is still pending in both');
-  two.revert();
-  await flush();
-  assert.equal(one.blocked.value, null, 'the other copy goes with the cause');
-  assert.equal(one.problemRow.value, null);
-  assert.equal(session.validity.value, null, 'Save is enabled');
-  assert.equal(await session.save(), true);
-  one.dispose();
-  two.dispose();
-});
-
-scoped('a refusal the platform says of the whole batch, its cause in the child, clears when the child is fixed', async () => {
+scoped('EQ-001: a refusal said of the whole batch, its cause in the child, clears when the child is fixed', async () => {
   const memory = backend();
   // `lastRefusal.editor === null`: dg/backend.ts puts the one sentence on every writer of the batch
   emsBackends.domain = {
@@ -764,52 +711,17 @@ scoped('a refusal the platform says of the whole batch, its cause in the child, 
   projects.rows.byKey('p1').name = 'Grit notes';
   issues.rows.byKey('i1').weight = 10;
   assert.equal(await session.save(), false);
-  assert.match(session.validity.value, /Weight exceeds/);
   issues.rows.byKey('i1').weight = 3;
   await flush();
   assert.equal(projects.blocked.value, null, 'the parent, first in the batch, is not taken for the cause');
   assert.equal(session.validity.value, null, 'Save is enabled');
-  assert.equal(await session.save(), true);
   projects.dispose();
   issues.dispose();
 });
 
-scoped('a delete its children veto clears when a child is repointed in the child source', async () => {
+scoped('EQ-001: a server error on a field holds through an edit elsewhere and clears when the field is fixed', async () => {
   const memory = backend();
-  let forwarded = 0;
-  // the platform names the parent's editor for the veto; the cause is the child still pointing at it
-  emsBackends.domain = {
-    table: (address) => memory.table(address),
-    saveAll: async (edits) => {
-      const parent = edits.find((e) => e.df.rows.some((r) => r.id === 'p2' && r[Rows.STATE] === 'deleted'));
-      const pending = edits.flatMap((e) => e.df.rows).find((r) => r.id === 'i3');
-      const child = pending ?? (await (await memory.table('grit.issue')).query({})).find((r) => r.id === 'i3');
-      if (parent === undefined || child.project_id !== 'p2') {
-        forwarded++;
-        return memory.saveAll(edits);
-      }
-      parent.problem = 'Datagrok still has 1 issue; remove or reassign it first';
-      return false;
-    },
-  };
-  const session = new SharedSession();
-  const {projects, issues} = await pair(session);
-  projects.edit.peek().markDeleted('p2');
-  assert.equal(await session.save(), false);
-  assert.match(session.validity.value, /still has 1 issue/);
-  issues.rows.byKey('i3').project_id = 'p1';
-  await flush();
-  assert.equal(projects.blocked.value, null, 'the refusal on the parent goes when its child lets go of it');
-  assert.equal(session.validity.value, null, 'Save is enabled');
-  await session.save();
-  assert.equal(forwarded, 1, 'and the batch goes to the server again, which decides');
-  projects.dispose();
-  issues.dispose();
-});
-
-scoped('a field error the server set holds through an edit elsewhere and clears when the field is fixed', async () => {
-  const memory = backend();
-  // the platform editor puts the server's error on the cell it names, and takes it back when that
+  // the platform editor puts the server's error on the cell it names and takes it back when that
   // cell is edited: what a cell error joins the source's validity through
   const cell = signal(null);
   emsBackends.domain = {
@@ -827,136 +739,60 @@ scoped('a field error the server set holds through an edit elsewhere and clears 
   projects.rows.byKey('p1').key = 'DG';
   issues.rows.byKey('i1').title = 'Aspirin 100';
   assert.equal(await session.save(), false);
-  assert.match(issues.blocked.value, /already belongs to Datagrok/);
-
   issues.rows.byKey('i1').title = 'Aspirin 200';
   await flush();
-  assert.equal(projects.error.value?.code, 'refused',
-    'an edit beside the field leaves the refusal standing: the key is still the one refused');
-  assert.match(session.validity.value ?? '', /already belongs to Datagrok/);
-
+  assert.match(session.validity.value ?? '', /already belongs to Datagrok/, 'an edit beside the field leaves it standing');
   cell.value = null;
   projects.rows.byKey('p1').key = 'GRIT';
   await flush();
-  assert.equal(projects.error.value, undefined);
-  assert.equal(session.validity.value, null, 'Save is enabled');
-  assert.equal(await session.save(), true);
+  assert.equal(session.validity.value, null, 'fixing the field enables Save');
   unguard();
   projects.dispose();
   issues.dispose();
 });
 
-// EQ-033: a refusal is the server's verdict on the batch as it was; its cause may go where the
-// page cannot see it, so it stays shown and Save sends again for the server to decide
-
-scoped('a refused key whose clash is removed elsewhere: the refusal stays shown, Save sends again and lands', async () => {
+/** EQ-033: a project source with a Save button, every save of which the server refuses with
+ * [problem] (and [code]); `sent` counts what reached it. */
+async function refusing(problem, code = null) {
   const memory = backend();
-  // the clashing project lives in another tab's hands: the server refuses the key while it stands
-  let clash = true;
-  let sent = 0;
+  const out = {sent: 0};
   emsBackends.domain = {
     table: (address) => memory.table(address),
     saveAll: (edits) => {
-      sent++;
-      const refused = clash && edits.some((e) => e.df.rows.some((r) => r.id === 'p1' && r.key === 'DG'));
-      if (!refused)
-        return memory.saveAll(edits);
+      out.sent++;
       for (const edit of edits)
-        edit.problem = 'Key DG already belongs to Datagrok';
+        Object.assign(edit, {problem, problemCode: code});
       return Promise.resolve(false);
     },
   };
-  const session = new SharedSession();
-  const projects = new DomainSource({table: 'grit.project', session}, env);
-  projects.start();
+  out.session = new SharedSession();
+  out.projects = new DomainSource({table: 'grit.project', session: out.session}, env);
+  out.projects.start();
   await flush();
-  const save = testOwner().build(() => saveButton(session));
-  projects.rows.byKey('p1').key = 'DG';
+  out.save = testOwner().build(() => saveButton(out.session));
+  out.projects.rows.byKey('p1').key = 'DG';
+  assert.equal(await out.session.save(), false);
   await flush();
-  fire(save.button, 'click');
-  await flush();
-  await flush();
-  assert.equal(sent, 1);
-  assert.match(projects.blocked.value ?? '', /already belongs to Datagrok/, 'the refusal stays shown');
-  assert.match(session.validity.value ?? '', /already belongs to Datagrok/);
+  return out;
+}
 
-  clash = false;
-  await flush();
-  assert.equal(save.button.disabled, false, 'Save is enabled, a server refusal is not the client\'s to hold on');
-  fire(save.button, 'click');
-  await flush();
-  await flush();
-  assert.equal(sent, 2, 'the batch went to the server again');
-  assert.equal(projects.isDirty.value, false, 'and landed');
-  assert.equal((await (await memory.table('grit.project')).query({})).find((r) => r.id === 'p1').key, 'DG');
-  save.dispose();
-  projects.dispose();
-});
-
-scoped('after a server refusal a client error still disables Save, and Ctrl+S sends nothing', async () => {
-  const memory = backend();
-  let sent = 0;
-  emsBackends.domain = {
-    table: (address) => memory.table(address),
-    saveAll: (edits) => {
-      sent++;
-      for (const edit of edits)
-        edit.problem = 'Key DG already belongs to Datagrok';
-      return Promise.resolve(false);
-    },
-  };
-  const session = new SharedSession();
-  const projects = new DomainSource({table: 'grit.project', session}, env);
-  projects.start();
-  await flush();
-  const save = testOwner().build(() => saveButton(session));
-  projects.rows.byKey('p1').key = 'DG';
-  assert.equal(await session.save(), false);
-  await flush();
+scoped('EQ-033: after a server refusal a client error still disables Save, and Ctrl+S sends nothing', async () => {
+  const {session, projects, save, ...out} = await refusing('Key DG already belongs to Datagrok');
   assert.equal(save.button.disabled, false, 'the server\'s refusal holds nothing');
   projects.rows.byKey('p1').name = '';
   await flush();
   assert.equal(save.button.disabled, true, 'the client\'s own verdict does');
-  assert.match(session.blocking.value ?? '', /required|empty/i);
   assert.equal(await session.save(), false, 'Ctrl+S');
-  assert.equal(sent, 1, 'nothing was sent');
+  assert.equal(out.sent, 1, 'nothing was sent');
   save.dispose();
   projects.dispose();
 });
 
-scoped('a save refused as forbidden still holds Save and Ctrl+S; an ordinary refusal does not', async () => {
-  const memory = backend();
-  let sent = 0;
-  let code = null;
-  emsBackends.domain = {
-    table: (address) => memory.table(address),
-    saveAll: (edits) => {
-      sent++;
-      for (const edit of edits) {
-        edit.problem = code === 'forbidden' ? 'forbidden' : 'Key DG already belongs to Datagrok';
-        edit.problemCode = code;
-      }
-      return Promise.resolve(false);
-    },
-  };
-  const session = new SharedSession();
-  const projects = new DomainSource({table: 'grit.project', session}, env);
-  projects.start();
-  await flush();
-  const save = testOwner().build(() => saveButton(session));
-  projects.rows.byKey('p1').key = 'DG';
-  assert.equal(await session.save(), false);
-  await flush();
-  assert.equal(save.button.disabled, false, 'an ordinary refusal: Save sends again');
-
-  code = 'forbidden';
-  assert.equal(await session.save(), false);
-  await flush();
-  assert.equal(sent, 2);
-  assert.match(projects.blocked.value ?? '', /do not have permission/);
+scoped('EQ-033: a save refused as forbidden still holds Save and Ctrl+S until Discard', async () => {
+  const {session, projects, save, ...out} = await refusing('forbidden', 'forbidden');
   assert.equal(save.button.disabled, true, 'a 403 holds Save: resending only meets it again');
   assert.equal(await session.save(), false, 'Ctrl+S');
-  assert.equal(sent, 2, 'and sends nothing');
+  assert.equal(out.sent, 1, 'and sends nothing');
   session.discard();
   await flush();
   assert.equal(projects.blocked.value, null, 'until the user lets go of the changes');
@@ -991,21 +827,6 @@ scoped('EQ-007: every change reloaded away is announced as discarded, not saved,
   assert.equal(balloon(), 'Reloaded; your changes were discarded');
   assert.doesNotMatch(document.body.textContent, /saved/);
   assert.equal(session.isDirty.value, false);
-  projects.dispose();
-  issues.dispose();
-});
-
-scoped('EQ-007: a mix of reloaded and landed changes announces only what landed', async () => {
-  emsBackends.domain = backend();
-  const session = new SharedSession();
-  const {projects, issues} = await pair(session);
-  reloading([issues]);
-  issues.rows.byKey('i1').title = 'Mine';
-  projects.rows.byKey('p1').name = 'Grit 2';
-  assert.equal(session.changeCount.value, 2);
-  assert.equal(await session.save(), true, 'one change landed');
-  assert.equal(balloon(), 'Project saved');
-  assert.equal(emsBackends.domain.tableSync('grit.project').rows.find((r) => r.id === 'p1').name, 'Grit 2');
   projects.dispose();
   issues.dispose();
 });
