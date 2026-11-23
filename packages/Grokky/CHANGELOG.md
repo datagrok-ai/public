@@ -2,7 +2,7 @@
 
 ## v.next
 
-* [public#4650](https://github.com/datagrok-ai/public/issues/4650): Fixed scripts in a reply running: replies are rendered sanitized, so event handlers, `javascript:` links and code-running markup no longer run
+* [public#4650](https://github.com/datagrok-ai/public/issues/4650): Fixed the AI panel rendering replies as trusted HTML, so scripts in a reply ran
 * Grokky: The chat keeps a reading width in a wide panel: replies on white, your prompt in a bubble that fits its text
 * Grokky: Fixed "Speech recognition error: aborted" in the console when voice input stops
 * Grokky: Added bringing back earlier prompts with the Up and Down arrow keys in the prompt box
