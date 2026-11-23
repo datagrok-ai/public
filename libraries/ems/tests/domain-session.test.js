@@ -975,6 +975,51 @@ scoped('a 403 over two tables lets Save go once a re-read restores the grant rev
   issues.dispose();
 });
 
+scoped('a save over a re-read access keeps the new row current under its id, and rebuilds the writer once', async () => {
+  const memory = backend();
+  const table = memory.tableSync('grit.project');
+  const frame = table.frame.bind(table);
+  let reads = 0;
+  table.frame = (spec) => (reads++, frame(spec));
+  emsBackends.domain = {
+    table: (address) => memory.table(address),
+    // the platform editor's order: the rows turn clean, its re-read runs, onSaved fires last
+    saveAll: async ([edit]) => {
+      edit.setSaving(true);
+      try {
+        const pending = edit.buildOps();
+        const results = await memory.transaction(pending.map((p) => p.op));
+        const fire = edit.onSaved.fire.bind(edit.onSaved);
+        let saved;
+        edit.onSaved.fire = (r) => saved = r;
+        edit.applyResults(pending, results);
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        fire(saved);
+        return true;
+      } finally {
+        edit.setSaving(false);
+      }
+    },
+  };
+  const session = new SharedSession();
+  const projects = testOwner().build(() => new DomainSource({table: 'grit.project', session}, env));
+  projects.start();
+  await flush();
+  const draft = projects.newRow({key: 'NEW', name: 'New project'});
+  const issues = testOwner().build(() =>
+    new DomainSource({table: 'grit.issue', session, defaults: {project_id: draft.id}}, env));
+  await session.reloadAccess();
+  reads = 0;
+  assert.equal(await session.save(), true);
+  await flush();
+  const id = (await table.query({})).find((r) => r.key === 'NEW').id;
+  assert.equal(projects.currentRow.value?.id, id, 'the current row is the saved row, under its real id');
+  assert.equal(issues.defaults.project_id, id, 'a child under the draft names the row it became');
+  assert.equal(reads, 1, 'the writer is rebuilt once, by the save');
+  projects.dispose();
+  issues.dispose();
+});
+
 // the platform session's RELOAD in the conflict dialog drops the conflicting writer's edits inside
 // `saveAll` and retries the rest: the backend still answers true, and says what each writer wrote
 function reloading(dropped) {

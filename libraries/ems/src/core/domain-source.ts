@@ -345,7 +345,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
           this._problemRow.value = null;
         });
       }
-      if (this._regate)
+      // a save turns the rows clean before its writer reports the ids it assigned: the save's own re-base
+      // (`afterSave`) rebuilds it then
+      if (this._regate && !this.isSaving.peek() && !this.session.isSaving.peek())
         void this._rebuildWriter();
     });
     // the frame's current row and `currentRow` are one thing, written in either direction
@@ -722,8 +724,13 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       this._regate = true;
       return;
     }
-    // the re-read rows carry the server's `~can_*` now, which replace the table's answer per row
-    // (`Access.row`): what was built from the old rows' (the form) is built again
+    this._publishRegated();
+  }
+
+  // the re-read rows carry the server's `~can_*` now, which replace the table's answer per row
+  // (`Access.row`): what was built from the old rows' (the form) is built again
+  private _publishRegated(): void {
+    this._regate = false;
     if (this._regated !== undefined && !this.scope.isDisposed)
       this._access.value = Access.from(this._regated);
   }
@@ -943,7 +950,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     // the batch moved the collection itself: the re-base takes the baseline again with the window it
     // re-reads; until then (and where it cannot) the next probe adopts, never reads our own write as theirs
     this._probed = undefined;
-    await this._rebase();
+    // the writer a 403's re-read was waiting to rebuild is the one the re-base builds
+    if (await this._rebase() && this._regate)
+      this._publishRegated();
     // and the re-base has just re-read the window, so the rows are the server's again — a save
     // clears the stale mark as a reload does, or "Data changed — Refresh" would stand for good
     this._isStale.value = false;

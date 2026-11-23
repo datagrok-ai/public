@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Saving: Fixed a save after Refresh over unsaved changes losing the id a new row was given: the row did not stay current under its real id, and child rows under it kept naming the unsaved draft
 * Permissions: Fixed Save staying off after a save refused for lack of permission on one table of a page that also edited another (a record and its children), once the access was granted again and Refresh pressed: Save sends the pending changes
 * Pages: Fixed a page whose rebuild after Edit properties failed staying on "Properties changed: save or discard to reload" with nothing left to save or discard, and the failure going unreported: it balloons why, the page reads "Data changed — Refresh", and Refresh tries the rebuild again
 * Trees: Fixed a node you clicked while a followed tree was refreshing (after a peer's change) being ignored and the previous node selected again when the refresh ended: your pick is selected at once and stays
