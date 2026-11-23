@@ -649,7 +649,6 @@ export class DomainApp extends Control {
     // the access is read again too, once: the platform caches it until told otherwise, and a grant made by
     // another session never tells
     emsBackends.domain?.dropAccess?.();
-
     if (this._reshaped.peek() !== null)
       await this._settle();
     else

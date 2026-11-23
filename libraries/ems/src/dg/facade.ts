@@ -264,7 +264,7 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     const draft = access.columnPolicy().forDraft();
     const caption = (p: IProperty) => DomainTable.captionOf(p);
     return DomainErrors.noRequired(info, columns.filter((p) => draft.field(p.name!) === 'hidden').map(caption),
-      columns.filter((p) => draft.field(p.name!) !== 'hidden').map(caption));
+      columns.filter((p) => draft.field(p.name!) !== 'hidden').map(caption), info.hiddenRequired);
   }
 
   /** What every way into a new row (the ribbon, the empty list, `/new`, a children tab) says when the caller
@@ -275,7 +275,7 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
       return null;
     const filled = Object.entries(source.defaults).filter(([, v]) => v !== undefined && v !== null).map(([k]) => k);
     const columns = DomainTable.unsettable(source.schema.properties, source.schema.info, source.access.value, filled);
-    return columns.length === 0 ? null :
+    return columns.length === 0 && !source.schema.info.hiddenRequired ? null :
       DomainTable.noRequired(source.schema.info, columns, source.access.value);
   }
 

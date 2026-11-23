@@ -153,7 +153,7 @@ export function openImport(table: DomainTable, options: DomainImportOptions = {}
   }
   // a required column with no default that the caller cannot write and the import does not derive fails every row
   const stuck = DomainTable.unsettable(table.properties, table.info, table.access, derived);
-  if (stuck.length > 0) {
+  if (stuck.length > 0 || table.info.hiddenRequired) {
     notify.warning(DomainTable.noRequired(table.info, stuck, table.access));
     return Promise.resolve(null);
   }

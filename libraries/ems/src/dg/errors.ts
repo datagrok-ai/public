@@ -1,6 +1,6 @@
 import {emsBackends, nounOf} from '../core/domain-backend.js';
 import * as grok from 'datagrok-api/grok';
-import {Rows, notify} from '@datagrok-libraries/u2';
+import {Rows, notify, plural} from '@datagrok-libraries/u2';
 import type {NotifyHandle, RowView} from '@datagrok-libraries/u2';
 import {DomainSource} from '../core/domain-source.js';
 import {DgDomainBackend} from './backend.js';
@@ -123,11 +123,14 @@ export class DomainErrors {
   }
 
   /** The wording for creating on a table with required columns the caller cannot set: every Save would be refused.
-   * A hidden column is asked to be shared, a View-only one to be made editable. */
+   * A hidden column is asked to be shared, a View-only one to be made editable; a column the caller may not
+   * read (`unseen` of them) is counted, never named. */
   static noRequired(info: Parameters<typeof nounOf>[0], hidden: readonly string[],
-    viewOnly: readonly string[]): string {
-    const names = [...hidden, ...viewOnly].join(', ');
+    viewOnly: readonly string[], unseen = 0): string {
+    const names = [...hidden, ...viewOnly,
+      ...(unseen > 0 ? [`${plural(unseen, 'column', 'columns')} you cannot see`] : [])].join(', ');
     const asks = [...(hidden.length > 0 ? [`share ${hidden.join(', ')} with you`] : []),
+      ...(unseen > 0 ? [`share ${unseen === 1 ? 'it' : 'them'} with you`] : []),
       ...(viewOnly.length > 0 ? [`let you edit ${viewOnly.join(', ')}`] : [])];
     return `You cannot create ${nounOf(info)}: they need a value for ${names}, which you cannot set. ` +
       `Ask the table's owner to ${asks.join(' and ')}.`;

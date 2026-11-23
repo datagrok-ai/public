@@ -2,7 +2,7 @@ import {uuid4} from 'datagrok-api/u2core';
 import {Filters, notify, Access, MemoryFrame, Rows, isEmpty, Component} from '@datagrok-libraries/u2';
 import type {FilterCondition, FilterGroup, IProperty, AccessData, FieldAccess,
   MemoryColumn} from '@datagrok-libraries/u2';
-import {DomainBackendError, isUnscoped, toPlural, toSingular} from './domain-backend.js';
+import {DomainBackendError, isUnscoped, toPlural, toSingular, readableInfo} from './domain-backend.js';
 import type {AuditEntryLike, DomainBackend, DomainBatchOptionsLike, DomainBatchReportLike,
   DomainBatchValidationLike, DomainBatchValidationRowLike, DomainFrameLike, DomainProbeLike,
   DomainQueryLike, DomainReadScope, DomainSupportLike, DomainTableInfoLike, DomainTableLike,
@@ -430,7 +430,7 @@ export class MemoryTable implements DomainTableLike {
     };
     const readable = (name: string) => Access.from(this._access).field(name) !== 'hidden';
     this.properties = this._columns.filter((p) => readable(p.name!));
-    this.info = {...this._info, searchableColumns: this._info.searchableColumns.filter(readable)};
+    this.info = readableInfo(this._info, this._columns, readable);
   }
 
   access(): Promise<AccessData> {

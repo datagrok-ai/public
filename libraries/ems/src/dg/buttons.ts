@@ -79,7 +79,8 @@ export function newButton(source: DomainSource,
   const control = component((self) => {
     const el = button(options.text ?? 'New', () => source.newRow(
       typeof values === 'function' ? values(source.currentRow.peek()) : values),
-    {disabled: computed(() => source.edit.value === undefined ? 'Loading…' : options.disabled?.() ?? DomainTable.noCreate(source))});
+    {disabled: computed(() => source.edit.value === undefined ? 'Loading…' :
+      options.disabled?.() ?? DomainTable.noCreate(source))});
     self.effect(() => {
       el.hidden = !source.access.value.can('insert');
     });

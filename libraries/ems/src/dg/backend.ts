@@ -5,7 +5,7 @@ import type {IProperty, DataFrameLike} from '@datagrok-libraries/u2';
 import type {AuditEntryLike, DomainBackend, DomainBatchReportLike, DomainDeletedMode, DomainFrameLike, DomainProbeLike,
   DomainQueryLike, DomainReadScope, DomainSupportLike, DomainTableInfoLike, DomainTableLike, DomainTransactionOpLike,
   DomainTransactionResultLike} from '../core/domain-backend.js';
-import {emsBackends, DomainBackendError, isUnscoped} from '../core/domain-backend.js';
+import {emsBackends, DomainBackendError, isUnscoped, readableInfo} from '../core/domain-backend.js';
 import type {EditState} from '../core/edit-state.js';
 import {EditorEditState} from './editor-state.js';
 
@@ -167,7 +167,7 @@ export class DgDomainTable implements DomainTableLike {
     // through row grants only polls the aggregate over what it may see
     const readable = DgDomainTable.readable(access);
     return new DgDomainTable(address, client, properties.filter((p) => readable(p.name)),
-      {...info, searchableColumns: info.searchableColumns.filter(readable)}, access.support,
+      readableInfo(info, properties, readable), access.support,
       access.support.version && access.can.view);
   }
 

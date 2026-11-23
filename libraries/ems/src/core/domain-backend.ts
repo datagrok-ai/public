@@ -30,6 +30,19 @@ export interface DomainTableInfoLike {
   hierarchy?: boolean;
   /** That self-referencing column, when the table is a hierarchy. */
   parentColumn?: string | null;
+  /** How many required columns with no default the caller may not read. The handle describes the
+   * readable columns only ({@link readableInfo}), so this count is all a New gate knows of the rest. */
+  hiddenRequired?: number;
+}
+
+/** A table's `info` as this caller reads it: the registry describes every column, a restricted one
+ * too, and the handle narrows its answers to the ones `readable` keeps. */
+export function readableInfo<T extends DomainTableInfoLike>(info: T, columns: readonly IProperty[],
+  readable: (name: string) => boolean): T {
+  const hidden = columns.filter((p) => !readable(p.name!) && p.nullable === false &&
+    (p.defaultValue ?? null) === null).length;
+  return {...info, searchableColumns: info.searchableColumns.filter(readable),
+    ...(hidden > 0 ? {hiddenRequired: hidden} : {})};
 }
 
 /** Which rows a query answers: the live ones (the default), the live and the soft-deleted, or
