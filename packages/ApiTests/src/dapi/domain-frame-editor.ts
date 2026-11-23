@@ -605,75 +605,29 @@ category('Dapi: domain frame editor', () => {
     }
   });
 
-  test('EQ-060: stale delete/restore conflict dialog: reload keeps the row, overwrite writes', async () => {
+  // EQ-060: the delete and restore RELOAD/OVERWRITE paths are covered headless on the built bundle
+  // (js-api scripts/unit/domain-conflict.test.cjs); this is the one only a server answers: a restore's
+  // RELOAD reads the trashed row (deleted: include), never "no longer exists"
+  test('EQ-060: a stale restore, RELOAD: the trashed row is re-read and the restore dropped', async () => {
     const prefix = `fe-409-del-${stamp()}`;
-    const ids = await seed(prefix, 1);
-    const id = ids[0];
+    const id = (await seed(prefix, 1))[0];
     const original = (DG.DomainObjectHandler as any).showConflictDialog;
+    (DG.DomainObjectHandler as any).showConflictDialog = async () => 'reload';
     try {
-      let decision: 'reload' | 'overwrite' = 'reload';
-      const asked: unknown[] = [];
-      (DG.DomainObjectHandler as any).showConflictDialog = async (_subject: string, op?: string) => {
-        asked.push(op);
-        return decision;
-      };
-      // The refusal a server honouring the delete/restore version answers (core); built here so the
-      // dialog path runs on a server that does not refuse yet.
-      const conflict = (current: number, expected: number) => new DG.DomainVersionConflictError(
-        `Version conflict: expected ${expected}, current ${current}`, 409,
-        {error: 'version-conflict', id: id, currentVersion: current, expectedVersion: expected, opIndex: 0});
-      const resolve = async (editor: DomainFrameEditor) => {
-        const failing = editor.buildOps()[0];
-        return editor.resolveConflict(conflict((await items().get(id, {deleted: 'include'})).version,
-          failing.op.expectedVersion!), failing);
-      };
-
-      // delete, RELOAD: the peer's edit is shown, the delete is dropped
-      let editor = await editorFor(prefix);
-      editor.markDeleted(0);
-      await items().update(id, {name: 'Their name'});
-      expect(await resolve(editor), true, 'reload did not resolve the conflict');
-      expect(asked.pop(), 'delete', 'the dialog was not worded for a delete');
-      expect(editor.stateOf(0), '', 'reload kept the delete staged');
-      expect(editor.buildOps().length, 0, 'reload left an op');
-      expect(editor.dataFrame.get('name', 0), 'Their name', 'reload did not show their change');
-      editor.detach();
-
-      // delete, OVERWRITE: the delete goes out at the current version and lands
-      decision = 'overwrite';
-      editor = await editorFor(prefix);
-      editor.markDeleted(0);
-      await items().update(id, {name: 'Theirs again'});
-      const current = (await items().get(id)).version;
-      expect(await resolve(editor), true, 'overwrite did not resolve the conflict');
-      expect(editor.buildOps()[0].op.expectedVersion, current, 'overwrite did not take the current version');
-      expect(await editor.save(), true, 'the overwritten delete did not save');
-      expect(await items().get(id), null, 'the overwritten delete did not land');
-      editor.detach();
-
-      // restore, RELOAD: the trashed row is read with its deletion flag, never "no longer exists"
-      decision = 'reload';
-      editor = await DomainFrameEditor.create(items() as any, {query: {...specFor(prefix), deleted: 'only'} as any});
+      await items().delete(id);
+      const editor = await DomainFrameEditor.create(items() as any, {query: {...specFor(prefix), deleted: 'only'} as any});
       editor.markRestored(0);
       await items().restore(id);
       await items().delete(id);
       const trashed = (await items().get(id, {deleted: 'include'})).version;
-      expect(await resolve(editor), true, 'reload did not resolve the restore conflict');
-      expect(asked.pop(), 'restore', 'the dialog was not worded for a restore');
+      const failing = editor.buildOps()[0];
+      // the refusal a server honouring the restore version answers (core), built so it runs on any server
+      const conflict = new DG.DomainVersionConflictError(`Version conflict: expected ${failing.op.expectedVersion}`,
+        409, {error: 'version-conflict', id, currentVersion: trashed, expectedVersion: failing.op.expectedVersion, opIndex: 0});
+      expect(await editor.resolveConflict(conflict, failing), true, 'reload did not resolve the restore conflict');
       expect(editor.stateOf(0), '', 'reload kept the restore staged');
       expect(editor.dataFrame.get('version', 0), trashed, 'reload did not read the trashed row');
       expect(editor.dataFrame.get(DG.DOMAIN_DELETED_COLUMN, 0), true, 'the reloaded row left the trash');
-
-      // restore, OVERWRITE: restaged after the reload, it goes out at the current version and lands
-      decision = 'overwrite';
-      editor.markRestored(0);
-      await items().restore(id);
-      await items().delete(id);
-      const now = (await items().get(id, {deleted: 'include'})).version;
-      expect(await resolve(editor), true, 'overwrite did not resolve the restore conflict');
-      expect(editor.buildOps()[0].op.expectedVersion, now, 'overwrite did not take the current version');
-      expect(await editor.save(), true, 'the overwritten restore did not save');
-      expect((await items().get(id))?.id, id, 'the overwritten restore did not land');
       editor.detach();
     } finally {
       (DG.DomainObjectHandler as any).showConflictDialog = original;

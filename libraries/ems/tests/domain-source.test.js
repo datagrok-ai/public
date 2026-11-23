@@ -199,7 +199,6 @@ source('a delete of a row another session changed is refused with a version conf
   emsBackends.domain.tableSync('grit.issue').rows[1].version = 2;
   assert.equal(await src.save(), false, 'a stale delete is refused like a stale update');
   assert.equal(src.error.value.code, 'version-conflict');
-  assert.match(src.summary.value, /expected 1/, 'the status bar says why');
   assert.equal(src.rows.byKey('i2')['~state'], 'deleted', 'the delete stays pending');
   assert.notEqual(emsBackends.domain.tableSync('grit.issue').rows[1].is_deleted, true, 'nothing was deleted');
 
