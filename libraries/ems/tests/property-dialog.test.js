@@ -4,7 +4,7 @@ import {register} from 'node:module';
 import {flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {layout} from '@datagrok-libraries/u2/tests/layout.mjs';
 import {Scope, notify} from '@datagrok-libraries/u2';
-import {byKind, byName} from '@datagrok-libraries/u2/testing';
+import {byKind, byName, state, user} from '@datagrok-libraries/u2/testing';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const grok = await import('datagrok-api/grok');
@@ -118,4 +118,27 @@ scoped('EQ-018: on a server without DomainTable.userColumns Edit properties refu
   stub(calls, {manifest: MANIFEST, extVersion: 96, table: () => ({name: 'issue'})});
   await assert.rejects(domains.editProperties(NAME, 'issue'), /unavailable on this server version/);
   assert.deepEqual(extensions(calls), [], 'no extension sent');
+});
+
+scoped('EQ-028: the confirmation lists the drops the server plans, not the client diff, and SAVE waits for consent', async () => {
+  const calls = [];
+  // the client only adds a column; the server's plan also drops one that holds values
+  stub(calls, {manifest: MANIFEST, extVersion: 96, plan: {destructive: true,
+    drops: {tables: [], columns: [{table: 'issue', column: 'mine', nonNullValues: 3}]}}});
+  const {done} = await openAndAdd();
+  await save();
+  const confirm = byKind(document, 'dialog').find((d) => state(d).name === 'properties-confirm');
+  assert.match(confirm.textContent, /issue\.mine dropped.*3 values deleted/,
+    'the confirmation lists the plan\'s drop with its value count');
+  const commits = () => extensions(calls).filter((c) => !c[2]);
+  byName(confirm, 'SAVE').click();
+  await flush();
+  assert.deepEqual(commits(), [], 'nothing committed before the deletion is confirmed');
+  user.click(byName(byName(confirm, 'confirmDestructive'), 'Delete 3 stored values'));
+  await flush();
+  byName(confirm, 'SAVE').click();
+  await flush();
+  await flush();
+  assert.equal(commits()[0]?.[1].confirmDestructive, true, 'the confirmed save commits');
+  assert.equal(await done, true);
 });
