@@ -228,8 +228,7 @@ export function tags(entity: Entity): HTMLElement {
   return api.grok_UI_Tags(entity.dart);
 }
 
-/** Renders markdown. Pass `sanitize: true` for text written by users or a model, or taken from data: scripts,
- * event handlers, `javascript:` links and code-running `#{...}` markup are not run.
+/** Renders markdown. Pass `sanitize: true` for untrusted text: scripts and event handlers do not run.
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/markdown} */
 export function markdown(text: string, options?: {sanitize?: boolean}): HTMLElement {
   return api.grok_UI_Markdown(text, options?.sanitize ?? false);
