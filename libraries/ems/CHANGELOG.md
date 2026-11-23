@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Trees: Fixed a node you clicked while a followed tree was refreshing (after a peer's change) being ignored and the previous node selected again when the refresh ended: your pick is selected at once and stays
 * Pages: Fixed a new unsaved row that held a value in a column removed in Edit properties staying unsavable after the value was cleared, so the whole draft had to be discarded: Save is on again once nothing removed is pending
 * Lists: Fixed scrolling a list whose filter was changed over unsaved edits appending rows of the new filter behind the old ones
 * Lists: Fixed the current row and the selection snapping back to where they were when a save started (or a Load more that found the list shifted) if you moved them while the rows were re-read: your newer choice stands

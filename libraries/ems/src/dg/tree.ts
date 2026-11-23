@@ -51,6 +51,8 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
   private readonly _notice = signal<string | null>(null);
   // the selection a refresh is re-finding: `selected` stays on it while the rows below shift
   private readonly _held = signal<{row: RowView<TRow> | null} | null>(null);
+  // the node the user picked while a refresh held the selection: placed last, over the row the refresh re-found
+  private _picked: {row: RowView<TRow> | null} | null = null;
   private _read = false;
   private _refreshing: Promise<void> | undefined;
   private _again = false;
@@ -105,14 +107,29 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
       if (node === null || node.id !== this.tree.selectedNode.peek()?.id)
         return;
       e.stopPropagation();
+      this._pick(null);
       void this._clear();
     }, {capture: true});
+    let from: TreeNode<RowView<TRow>> | null = null;
     this.scope.listen(this.root, 'keydown', (e) => {
-      if ((e as KeyboardEvent).key !== 'Escape' || this.tree.selectedNode.peek() === null)
+      from = this.tree.selectedNode.peek();
+      if ((e as KeyboardEvent).key !== 'Escape' || from === null)
         return;
       e.stopPropagation();
+      this._pick(null);
       void this._clear();
     }, {capture: true});
+    // the list has moved its selection by now: what is selected is the user's pick
+    this.scope.listen(this.root, 'click', (e) => {
+      const node = this.tree.nodeForRow(e.target);
+      if (node !== null && node.id === this.tree.selectedNode.peek()?.id)
+        this._pick(node.data ?? null);
+    });
+    this.scope.listen(this.root, 'keydown', () => {
+      const node = this.tree.selectedNode.peek();
+      if (node !== from)
+        this._pick(node?.data ?? null);
+    });
     this.effect(() => {
       const problem = this._error.value;
       const notice = this._notice.value;
@@ -172,6 +189,7 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     const run = async (): Promise<void> => {
       do {
         this._again = false;
+        this._picked = null;
         await this._refresh();
       } while (this._again && !this.scope.isDisposed);
     };
@@ -201,7 +219,7 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
       const reveal = this._options.expandTo;
       if (first && reveal !== undefined)
         await this.expandTo(reveal);
-      else if (this._kept.peek() !== null)
+      else if (this._kept.peek() !== null || this._picked !== null)
         await this._reopen();
       else if (first || was === null)
         await this._clear();
@@ -213,6 +231,15 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
           await this.tree.expandPath([was.id]);
         else
           await this._reselect(row);
+      }
+      while (this._picked !== null && !this.scope.isDisposed) {
+        const picked = this._picked.row;
+        this._picked = null;
+        this.tree.clearSelection();
+        if (picked === null)
+          await this._clear();
+        else
+          await this._reselect(picked);
       }
     } catch (e) {
       this._error.value = DomainErrors.message(e);
@@ -269,6 +296,15 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     }
     await this._toParent(row,
       now === undefined ? `${caption} was deleted` : `${caption} is no longer reachable from here`);
+  }
+
+  // `selected` follows a pick at once, so what is bound to it does not wait for the re-read
+  private _pick(row: RowView<TRow> | null): void {
+    if (this._held.peek() === null || this._refreshing === undefined)
+      return;
+    this._picked = {row};
+    this._kept.value = null;
+    this._held.value = {row};
   }
 
   private _pending(track: boolean): boolean {
