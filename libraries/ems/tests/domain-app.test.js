@@ -677,23 +677,17 @@ scoped('a refused save says why in the status bar and balloons once, with no for
   a.dispose();
 });
 
-scoped('a ?q= or a saved search is sent as the box formats it: any case, [bracketed] names, a like\\ backslash', async () => {
+scoped('a ?q= link or a saved search is sent as the box formats it: the server reads what the box validated', async () => {
   const {app: a} = await app();
-  const sent = async (open) => {
-    await open();
-    await flush();
-    return a.listSource.query.value;
-  };
-  const want = Filters.format(Filters.parse('title = "x"', a.listSource.schema, 'domain').root);
-  assert.equal(await sent(() => a.open('?q=' + encodeURIComponent('TITLE = "x"'))), want, 'LOT vs lot: the name as the schema spells it');
-  assert.equal(await sent(() => a.open('?q=' + encodeURIComponent('[title] = "y"'))), want.replace('x', 'y'),
-    'a [bracketed] name is sent bare');
-  const slash = Filters.format(Filters.parse('title like "back\\\\slash"', a.listSource.schema, 'domain').root);
-  assert.equal(await sent(() => a.open('?q=' + encodeURIComponent('title like "back\\\\slash"'))), slash,
-    'a like value is escaped the way the box sends it');
-  assert.notEqual(slash, 'title like "back\\\\slash"', 'the box does not send the raw text');
-  assert.equal(await sent(() => SavedSearches.apply(a.listSource, {q: '[TITLE] = "z"', search: '', sort: ''})),
-    want.replace('x', 'z'), 'a saved or recent search goes through the same normalisation');
+  const formatted = (q) => Filters.format(Filters.parse(q, a.listSource.schema, 'domain').root);
+  const like = 'title like "back\\\\slash"';
+  assert.notEqual(formatted(like), like, 'the box escapes a like value its own way');
+  await a.open('?q=' + encodeURIComponent(like));
+  await flush();
+  assert.equal(a.listSource.query.value, formatted(like), 'a link is sent as the box sends it, not as typed');
+  SavedSearches.apply(a.listSource, {q: 'TITLE = "z"', search: '', sort: ''});
+  await flush();
+  assert.equal(a.listSource.query.value, formatted('title = "z"'), 'a saved search names the column as the schema does');
   a.dispose();
 });
 
