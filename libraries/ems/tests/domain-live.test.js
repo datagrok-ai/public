@@ -6,6 +6,7 @@ import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {backends, Scope} from '@datagrok-libraries/u2';
 import {DomainSource} from '../src/core/domain-source.js';
+import {SharedSession} from '../src/core/session.js';
 import {backend} from './domain-fixtures.mjs';
 
 // before any test(): a later top-level await lets dg/backend.js reassign the seam mid-test
@@ -136,6 +137,23 @@ scoped('a load that bails over an edit made in flight keeps the baseline its row
   await tick();
   assert.equal(src.stale.value, true, 'the next poll says the data changed');
   assert.equal(src.rows.byKey('i1').title, 'Mine');
+  src.dispose();
+});
+
+scoped('the poll keeps pending rows anywhere in the session: a clean source over them is marked stale (EQ-037)', async () => {
+  const be = counted();
+  const session = new SharedSession();
+  const src = await started(be, {session});
+  const projects = testOwner().build(() => new DomainSource({table: 'grit.project', pageSize: 10, session}, env));
+  projects.start();
+  await flush();
+  projects.rows.items.value[0].name = 'Pending';
+  const issue = await be.backend.table('grit.issue');
+  await issue.transaction([{op: 'insert', table: 'issue', values: {project_id: 'p1', number: 9, title: 'Theirs'}}]);
+  await tick();
+  assert.equal(src.stale.value, true, 'a dirty session is marked behind the server, never reloaded under');
+  assert.equal(src.rows.items.value.length, 3);
+  projects.dispose();
   src.dispose();
 });
 
