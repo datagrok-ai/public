@@ -22,6 +22,10 @@ export interface NumberInputOptions extends InputOptions<number | null> {
 }
 
 const INT = /^-?\d+$/;
+/** The 32-bit range of the platform's `int` column, which an int input holds itself to when it has
+ * no tighter bound: a frame column wraps a larger number silently (3000000000 becomes -1294967296). */
+const INT32_MIN = -2147483648;
+const INT32_MAX = 2147483647;
 const FLOAT = /^-?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/;
 
 /** Numeric editor over a text field: `input type=number` brings a native spinner and its own
@@ -288,8 +292,15 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
     return (this._int ? INT : FLOAT).test(trimmed) ? Number(trimmed) : undefined;
   }
 
-  private _clamp(value: number): number {
+  // the declared bounds; an int input is never wider than the int32 range
+  private _bounds(): {min: number | undefined, max: number | undefined} {
     const {min, max} = this.options;
+    return this._int ? {min: Math.max(min ?? INT32_MIN, INT32_MIN), max: Math.min(max ?? INT32_MAX, INT32_MAX)} :
+      {min, max};
+  }
+
+  private _clamp(value: number): number {
+    const {min, max} = this._bounds();
     if (min !== undefined && value < min)
       return min;
     if (max !== undefined && value > max)
@@ -298,7 +309,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
   }
 
   private _outOfRange(value: number | null): string | null {
-    const {min, max} = this.options;
+    const {min, max} = this._bounds();
     if (value == null)
       return null;
     if (min !== undefined && value < min)

@@ -48,6 +48,16 @@ function type(input, text) {
   return el;
 }
 
+// EQ-071: a platform int column wraps what it cannot hold (3000000000 is stored as -1294967296)
+smoke('an int input without bounds is held to the int32 range', () => {
+  const input = mount(new NumberInput({label: 'Count', mode: 'int'}));
+  type(input, '3000000000');
+  assert.equal(input.validity.value, 'Value must be at most 2147483647', 'an int column wraps 3000000000; refuse it');
+  type(input, '2147483647');
+  assert.equal(input.validity.value, null, 'the largest int is still accepted');
+  input.dispose();
+});
+
 smoke('out-of-range text stays on screen, reaches the value, and only marks the input invalid', () => {
   const input = mount(new NumberInput({label: 'Dose', min: 0, max: 100}));
   type(input, '1000');
