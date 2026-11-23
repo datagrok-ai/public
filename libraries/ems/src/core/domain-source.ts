@@ -591,7 +591,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       else if (moved) {
         // the re-base takes a fresh baseline with the window it re-reads
         this._probed = undefined;
-        await this._rebase();
+        // an edit typed while the window was re-read keeps the old one: behind the server, as above
+        if (!await this._rebase() && this.isDirty.peek())
+          this._isStale.value = true;
       }
       // the total too: a write after the boundary is not a shift, but it moves "N of M"
       if ((moved || this._done) && this._table !== undefined && gen === this._gen) {
@@ -636,7 +638,11 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private async _rebuildWriter(): Promise<void> {
     this._regate = false;
     try {
-      await this._rebase();
+      // an edit typed while the window was re-read keeps the old writer until the revert
+      if (!await this._rebase() && this.isDirty.peek()) {
+        this._regate = true;
+        return;
+      }
     } catch {
       // the rows and the writer stay as they were; the next revert tries again
       this._regate = true;
@@ -923,12 +929,13 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     return true;
   }
 
-  // a batch that inserted, deleted or moved a row shifts the server's offsets: the next page would skip or repeat
-  private async _rebase(): Promise<void> {
+  // a batch that inserted, deleted or moved a row shifts the server's offsets: the next page would skip or repeat.
+  // Answers whether the window was swapped
+  private async _rebase(): Promise<boolean> {
     const table = this._table;
     const frame = this._frame;
     if (table === undefined || frame === undefined || this._noRows)
-      return;
+      return false;
     // the window as it was before the batch applied — `_loaded` is what the server answered, and
     // the frame may have just lost every row of it to a delete
     const window = Math.max(this._loaded, frame.df.rowCount) || this.pageSize;
@@ -940,13 +947,16 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     // to the next poll, not its baseline
     const baseline = await this._baseline(table);
     const replacement = await table.frame(this._spec(0, window));
-    if (gen !== this._gen) {
+    // an edit made while the window was read would be swapped away with the old frame; a save's own
+    // re-base runs with the writers closed, so this is only a reload or a page check typed over
+    if (gen !== this._gen || this.isDirty.peek()) {
       replacement.dispose();
-      return;
+      return false;
     }
     // the rows now shown were read for this scope: a query or search changed over the pending edits is applied
     this._shownFor = readFor;
     this._swap(replacement, window, baseline, kept);
+    return true;
   }
 
   // the window re-read swapped in place, never through `_drop`: a row's proxy is keyed, reads whatever

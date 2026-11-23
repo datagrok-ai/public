@@ -1126,3 +1126,28 @@ source('a page check that answers after a new sort started leaves the new list\'
   assert.deepEqual(gate.offsets, [], 'the page appended, the window not read again from the top');
   src.dispose();
 });
+
+source('an edit typed while the access re-read is reading the rows survives it landing', async () => {
+  const memory = backend();
+  const t = await memory.table('grit.issue');
+  const frame = t.frame.bind(t);
+  let hold = null;
+  t.frame = async (spec) => {
+    const f = await frame(spec);
+    await hold;
+    return f;
+  };
+  emsBackends.domain = memory;
+  const src = await issues();
+  let release;
+  hold = new Promise((go) => release = go);
+  const reloading = src.reloadAccess();
+  await flush();
+  src.rows.byKey('i1').title = 'Typed by the user';
+  release();
+  await reloading;
+  await flush();
+  assert.equal(src.rows.byKey('i1').title, 'Typed by the user', 'the edit stays');
+  assert.equal(src.isDirty.value, true, 'and is still pending');
+  src.dispose();
+});
