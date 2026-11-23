@@ -908,10 +908,12 @@ export class DomainApp extends Control {
     const row = source?.currentRow.peek() ?? null;
     if (source === null || row === null || Rows.isDraft(row))
       return [];
+    // answered for this row, as the list answers it: the ⋯ menu's table-level filter must not ask
+    // again, as a row-mode table's table-level edit/delete are false negatives
     return allowedActions([...this.table.actions.for(row), DomainList.deleteAction(() => {
       this._deleting = source;
       source.edit.peek()?.markDeleted(row.id);
-    })], {access: source.access.peek(), row});
+    })], {access: source.access.peek(), row}).map(({requires: _, ...action}) => action);
   }
 
   private _wireMode(): void {
