@@ -1,7 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {AxisSync} from './formula-lines/axis-sync';
+import {syncItemWithAxes} from './formula-lines/axis-sync';
 import {CreationControl} from './formula-lines/creation-control';
 import {Editor} from './formula-lines/editor';
 import {Host} from './formula-lines/host';
@@ -63,7 +63,7 @@ export class FormulaLinesDialog {
 
     this.initDefaultOnOpenState();
 
-    this.dialog.sub(new AxisSync(this.preview, this.editor, () => this.currentTable).subscribe());
+    this.dialog.sub(syncItemWithAxes(this.preview, this.editor, () => this.currentTable));
   }
 
   /** The items table over the preview on the left, the editor on the right. */

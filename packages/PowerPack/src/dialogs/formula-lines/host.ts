@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {ItemList} from './item-list';
 import {ITEM_CAPTION} from './types';
-import {barChartIsVertical, isSingleAxis} from './viewer-axes';
+import {axisProps, isSingleAxis} from './viewer-axes';
 
 /**
  * The table or viewer the dialog edits: its formula lines and annotation regions,
@@ -58,14 +58,9 @@ export class Host {
 
 /** Single-axis viewers show only the lines and bands that cross their value axis. */
 function allowedItems(viewer: DG.Viewer): string[] | undefined {
-  if (viewer.type === DG.VIEWER.BOX_PLOT)
-    return [ITEM_CAPTION.HORZ_LINE, ITEM_CAPTION.HORZ_BAND];
-  if (viewer.type === DG.VIEWER.HISTOGRAM)
-    return [ITEM_CAPTION.VERT_LINE, ITEM_CAPTION.VERT_BAND];
-  if (viewer.type === DG.VIEWER.BAR_CHART) {
-    return barChartIsVertical(viewer) ?
-      [ITEM_CAPTION.HORZ_LINE, ITEM_CAPTION.HORZ_BAND] :
-      [ITEM_CAPTION.VERT_LINE, ITEM_CAPTION.VERT_BAND];
-  }
-  return undefined;
+  if (!isSingleAxis(viewer))
+    return undefined;
+  return axisProps(viewer).y ?
+    [ITEM_CAPTION.HORZ_LINE, ITEM_CAPTION.HORZ_BAND] :
+    [ITEM_CAPTION.VERT_LINE, ITEM_CAPTION.VERT_BAND];
 }

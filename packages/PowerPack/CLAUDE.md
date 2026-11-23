@@ -17,7 +17,7 @@ src/
     formula-lines.ts      # FormulaLinesDialog: wires the parts below
     formula-lines/        # Host (source items, viewer rules), ItemList, Table, Preview (+ viewer-axes,
                           # preview-viewer), Editor (+ item / formula-line / annotation-region forms),
-                          # CreationControl (+ item-factory, history), AxisSync, formulas, types
+                          # CreationControl (+ item-factory, history), axis-sync, formulas, types
   search/                # Search providers (entity-search, power-search, help)
   workers/               # Web workers (exceljs-worker)
   tests/                 # Test files

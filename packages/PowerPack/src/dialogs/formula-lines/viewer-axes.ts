@@ -6,7 +6,7 @@ import {AxisColumns, AxisNames} from './types';
 // viewers (box plot, histogram, bar chart) have only the value axis.
 
 /** The look properties that hold the X and the Y column of the [viewer]. */
-function axisProps(viewer: DG.Viewer): {x?: string, y?: string} {
+export function axisProps(viewer: DG.Viewer): {x?: string, y?: string} {
   switch (viewer.type) {
   case DG.VIEWER.LINE_CHART: return {x: 'xColumnName', y: 'yColumnNames'};
   case DG.VIEWER.BOX_PLOT: return {y: 'valueColumnName'};
@@ -23,7 +23,7 @@ export function isSingleAxis(viewer: DG.Viewer): boolean {
 }
 
 /** Resolves bar-chart `verticalMode` from the attached host viewer, mirroring the Dart-side getter. */
-export function barChartIsVertical(viewer: DG.Viewer): boolean {
+function barChartIsVertical(viewer: DG.Viewer): boolean {
   const orientation = viewer.getOptions().look.orientation;
   if (orientation === 'vertical')
     return true;
