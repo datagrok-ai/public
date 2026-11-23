@@ -182,9 +182,10 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     const first = !this._read;
     const was = this.tree.selectedNode.peek();
     const row = was?.data ?? null;
-    // the selection is a list index: rows that land above it would move it to another node
+    // the selection is a list index: rows that land above it would move it to another node; a kept row
+    // has no node, and is what `selected` is
     if (!first)
-      this._held.value = {row};
+      this._held.value = {row: this._kept.peek() ?? row};
     if (first)
       this._loading.value = true;
     this._error.value = null;

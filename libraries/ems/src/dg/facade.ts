@@ -207,11 +207,11 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
   }
 
   /** The number a whole-number key stands for as typed: a bare number, or the key as its property's `format` shows
-   * it (`DG-000072` under `DG-000000`: the literal text before the zero run, then the digits). Null when it is
+   * it (`DG-000072` under `DG-000000`: the text before the trailing zero run, then the digits). Null when it is
    * neither. */
   static parseKey(prop: IProperty, typed: string): number | null {
     const format = prop.format ?? '';
-    const prefix = /^[^0#.,]*/.exec(format)?.[0] ?? '';
+    const prefix = format.replace(/0+$/, '');
     const value = typed.trim();
     const digits = prefix !== '' && value.toUpperCase().startsWith(prefix.toUpperCase()) ?
       value.slice(prefix.length) : value;

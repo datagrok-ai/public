@@ -354,3 +354,21 @@ scoped('a disposed tree reads nothing more when its source sees a change (EQ-067
     f.done();
   }
 });
+
+scoped('a deleted node kept over pending changes stays selected through every later refresh', async () => {
+  const f = await following({expandTo: 'l4'});
+  try {
+    f.source.newRow({name: 'Draft', parent_id: 'l4'});
+    await f.peer.transaction([{op: 'delete', table: 'location', id: 'l4'}]);
+    await f.tick();
+    assert.equal(f.tree.selected.value?.id, 'l4');
+    const seen = [];
+    f.tree.effect(() => seen.push(f.tree.selected.value?.id ?? null));
+    await f.peer.transaction([{op: 'update', table: 'location', id: 'l2', values: {name: 'Room 2'}}]);
+    await f.tick();
+    assert.ok(labels(f.tree).includes('Room 2'), 'the refresh ran');
+    assert.deepEqual(seen, ['l4'], 'what is bound to the selection is never handed null and back');
+  } finally {
+    f.done();
+  }
+});

@@ -33,3 +33,11 @@ test('a key typed as its format shows it finds its record, as the bare number do
   assert.equal(found[3].error, 'No compound with Grok ID nonesuch', 'a value that parses to nothing is a row error');
   assert.deepEqual(asked[0][0].value.sort((a, b) => a - b), [72, 73], 'the server is asked for the numbers');
 });
+
+test('a key format whose literal prefix holds a zero still parses keys typed in it', async () => {
+  const {DomainTable} = await import('../src/dg/facade.js');
+  const prop = {...KEY, format: 'C10-0000'};
+  assert.equal(DomainTable.parseKey(prop, 'C10-0042'), 42, 'the prefix is everything before the trailing zero run');
+  assert.equal(DomainTable.parseKey(prop, '42'), 42);
+  assert.equal(DomainTable.parseKey(KEY, 'DG-000072'), 72);
+});
