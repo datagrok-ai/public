@@ -754,6 +754,9 @@ scoped('a shared ?sort= keeps only the columns this caller may read, and the lis
   await flush();
   assert.equal(a.listSource.sort.value, '!number', 'the hidden column is dropped from the sort');
   assert.equal(a.listSource.state.value, 'ready');
+  assert.equal(await a.open('?sort=!number, prop.title, prop.description'), true);
+  await flush();
+  assert.equal(a.listSource.sort.value, '!number,prop.title', 'keys are trimmed, a prop. term names its column');
   a.dispose();
 });
 
@@ -768,6 +771,10 @@ scoped('a saved search sorting by a column removed since drops it, says so once,
   assert.equal(a.listSource.sort.value, '!number', 'only the columns the table describes are sent');
   assert.equal(a.listSource.state.value, 'ready');
   assert.equal(document.body.querySelectorAll('[role="alert"]').length, 1, 'said once');
+  SavedSearches.apply(a.listSource, {q: '', search: '', sort: '!number, title'});
+  await flush();
+  assert.equal(a.listSource.sort.value, '!number,title', 'a space after the comma keeps the key');
+  assert.equal(document.body.querySelectorAll('[role="alert"]').length, 1, 'and nothing more is said');
   a.dispose();
 });
 
@@ -2032,4 +2039,35 @@ scoped('a user who reaches rows only through row grants sees them: picker, child
   assert.match(byKind(a, 'domain-children')[0].textContent, /Issues \(2\)/, 'the child tab counts the granted children');
   assert.doesNotMatch(document.body.textContent, /do not have access/);
   a.dispose();
+});
+
+scoped('a row-grant reader whose filter, search or typed text matches nothing is told so, and can clear it', async () => {
+  const fields = Object.fromEntries(['key', 'name', 'project_id', 'number', 'title'].map((c) => [c, 'readonly']));
+  emsBackends.domain = backend({access: {can: {view: false, insert: false, edit: false, delete: false, share: false},
+    fields}});
+  const table = await domains.table('grit.project');
+  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
+  document.body.append(a.root);
+  await flush();
+  a.listSource.query.value = 'name = "nothing like this"';
+  await flush();
+  assert.match(a.root.textContent, /No projects match the filter/);
+  assert.ok([...a.root.querySelectorAll('button')].some((b) => b.textContent === 'Clear filter'), 'Clear filter stays');
+  a.listSource.query.value = '';
+  a.listSource.search.value = 'nothing like this';
+  await flush();
+  assert.match(a.root.textContent, /No projects match "nothing like this"/);
+  a.dispose();
+  const {DomainPick} = await import('../src/dg/pick.js');
+  const pick = testOwner().build(() => new DomainPick('grit.project', {label: 'Project', debounceMs: 0}));
+  document.body.append(pick.root);
+  const input = pick.root.querySelector('input');
+  input.focus();
+  input.value = 'nothing like this';
+  fire(input, 'input');
+  await flush();
+  await flush();
+  assert.match(document.body.textContent, /No matches/, 'the picker says nothing matches the typed text');
+  assert.doesNotMatch(document.body.textContent, /do not have access/);
+  pick.dispose();
 });

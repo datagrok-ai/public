@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
-import {Control, signal, computed, batch, ReadonlySignal, Signal, button, div, divH, divV, span,
+import {Control, signal, computed, batch, untracked, ReadonlySignal, Signal, button, div, divH, divV, span,
   icon, Filters, allowedActions, actionsMenu, iconButton, ButtonGroup, Breadcrumbs, Rows, Menu, LabelColumn, Reason,
   text} from '@datagrok-libraries/u2';
 import type {FilterGroup, IWidgetStatus, Action, RowView, Scope, IProperty} from '@datagrok-libraries/u2';
@@ -194,6 +194,7 @@ export class DomainApp extends Control {
   // the columns Edit properties… dropped under pending changes, and how the page is rebuilt once they are settled
   private readonly _reshaped: Signal<{removed: ReadonlyMap<string, IProperty[]>, rebuild: () => Promise<void>} | null> =
     signal(null);
+  private _settling: Promise<void> | null = null;
 
   private static readonly _byView = new WeakMap<DG.ViewBase, DomainApp>();
   private static readonly _views = new WeakMap<DomainApp, DG.ViewBase>();
@@ -666,8 +667,11 @@ export class DomainApp extends Control {
     this._reshaped.value = {removed, rebuild};
     if (!first)
       return;
-    for (const event of [this.session.onSaved, this.session.onDiscarded])
-      this.subscribe(event, () => void this._settle());
+    // not onSaved / onDiscarded alone: an edit undone by hand, or a save that reloaded over a conflict, cleans it too
+    this.effect(() => {
+      if (!this.session.isDirty.value && !this.session.isSaving.value)
+        untracked(() => void this._settle());
+    });
     const guarded = new WeakSet<DomainSource>();
     this.effect(() => {
       for (const source of this.session.sources.value) {
@@ -697,12 +701,14 @@ export class DomainApp extends Control {
   }
 
   // once the session is clean, the page is rebuilt over the table's new columns — once
-  private async _settle(): Promise<void> {
+  // the mark goes once the rebuild landed, so a failed one leaves the page stale; one rebuild at a time
+  private _settle(): Promise<void> {
     const reshaped = this._reshaped.peek();
     if (reshaped === null || this.session.isDirty.peek())
-      return;
-    this._reshaped.value = null;
-    await reshaped.rebuild();
+      return Promise.resolve();
+    return this._settling ??= reshaped.rebuild().then(() => {
+      this._reshaped.value = null;
+    }).finally(() => this._settling = null);
   }
 
   /** A query switch for the ribbon — one button per preset, the pressed one writing the list's

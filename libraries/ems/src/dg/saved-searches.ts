@@ -21,10 +21,12 @@ const label = (s: DomainSearch) => [s.q, s.search && `Search "${s.search}"`].fil
 const persist = () => void grok.userSettings.flush();
 
 /** The keys of `sort` over columns the table describes (a column the caller may not read, or one removed since, is
- * refused by the server for the whole read, so it is dropped and the rest of the order kept). */
+ * refused by the server for the whole read, so it is dropped and the rest of the order kept). Keys are trimmed, and a
+ * `prop.<name>` key names the column `<name>`, as the server reads them. */
 export function sortable(sort: string, properties: readonly {name?: string}[]): string {
   const columns = new Set(properties.map((p) => p.name));
-  return sort.split(',').filter((key) => key !== '' && columns.has(key.replace(/^!/, ''))).join(',');
+  return sort.split(',').map((key) => key.trim())
+    .filter((key) => key !== '' && columns.has(key.replace(/^!/, '').replace(/^prop\./, ''))).join(',');
 }
 
 /** The query text as the box reads it, in the form the box sends: a link's, a saved or a recent search's text goes
@@ -104,9 +106,9 @@ export class SavedSearches {
     void confirmDiscard(source.session, {action: 'change the filter'}).then((ok) => {
       if (!ok)
         return;
-      if (sort !== search.sort) {
-        const gone = search.sort.split(',').filter((k) => k !== '' && !sort.split(',').includes(k))
-          .map((k) => k.replace(/^!/, ''));
+      const gone = search.sort.split(',').map((k) => k.trim()).filter((k) => k !== '' && !sort.split(',').includes(k))
+        .map((k) => k.replace(/^!/, ''));
+      if (gone.length > 0) {
         notify.warning(`Sort by ${gone.join(', ')} is no longer available; showing ${sort === '' ?
           'the default order' : `the order by ${sort}`}`);
       }

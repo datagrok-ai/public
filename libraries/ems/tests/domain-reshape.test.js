@@ -115,3 +115,21 @@ scoped('reshaped: Refresh asks to discard the pending changes, then rebuilds the
     done();
   }
 });
+
+scoped('reshaped: an edit undone by hand leaves the session clean, and the page is rebuilt then', async () => {
+  const {app, added, done} = await docked();
+  try {
+    app.listSource.rows.byKey('i1').title = 'Edited';
+    await flush();
+    emsBackends.domain = reshaped((columns) => ({...columns, severity: {type: 'string'}}));
+    await DomainViews.reload('grit');
+    await flush();
+    assert.equal(app.status.value.notice, NOTICE);
+    app.listSource.rows.byKey('i1').title = 'Aspirin';
+    await flush();
+    assert.equal(app.session.isDirty.value, false, 'nothing left to save or discard');
+    assert.equal(added.length, 1, 'rebuilt once the session is clean');
+  } finally {
+    done();
+  }
+});

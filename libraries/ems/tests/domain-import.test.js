@@ -837,3 +837,30 @@ scoped('EQ-053: an import still opens when the importer derives the unwritable r
   await flush();
   void running;
 });
+
+scoped('an import opens for Add or update though a required column is View-only: matched rows need only the key', async () => {
+  const project = SCHEMA.tables.project;
+  emsBackends.domain = new MemoryDomainBackend({...SCHEMA, tables: {...SCHEMA.tables, project: {...project,
+    columns: {...project.columns, cost: {type: 'float', required: true}}}}},
+  {rows: {project: ROWS.project.map((r) => ({...r, cost: 1}))}, access: {can: FULL,
+    fields: {key: 'editable', name: 'editable', description: 'editable', cost: 'readonly'}}});
+  const projects = await domains.table('grit.project');
+  const warn = notify.warning;
+  const said = [];
+  notify.warning = (text) => said.push(text);
+  try {
+    const running = testOwner().build(() => domains.import(projects,
+      {source: frame(['key', 'description'], [{key: 'GRIT', description: 'Updated'}])}));
+    await flush();
+    assert.deepEqual(said, [], 'no refusal up front');
+    await toMapping();
+    named('mode').value = 'upsert';
+    await flush();
+    assert.match(mapping().parentElement.textContent, /Required: Key ✓/, 'Add or update asks for the key alone');
+    buttonNamed('CANCEL').click();
+    await flush();
+    void running;
+  } finally {
+    notify.warning = warn;
+  }
+});
