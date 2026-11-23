@@ -242,12 +242,11 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     return semType === 'User' || semType === 'Group' || REF_ADDRESS.test(semType);
   }
 
-  /** Whether the server fills a draft's `prop` on save: it has a default, or it is a column the table
-   * generates (its name column, an optional business-key part: the auto-numbered one). Any other column the
-   * caller may not write stays empty. */
+  /** Whether the server fills a draft's `prop` on save: it has a default, or it is the column the table
+   * numbers (an optional business-key part). The server never fills a name column: that one, and any other the
+   * caller may not write, stays empty. */
   static isAssignedOnSave(info: DomainTableInfoLike, prop: IProperty): boolean {
-    return (prop.defaultValue ?? null) !== null || prop.name === info.nameColumn ||
-      (prop.nullable !== false && info.businessKey.includes(prop.name!));
+    return (prop.defaultValue ?? null) !== null || (prop.nullable !== false && info.businessKey.includes(prop.name!));
   }
 
   /** The required columns a new row cannot get a value for from the caller: no default, nothing fills them, and
