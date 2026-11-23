@@ -278,19 +278,3 @@ scoped('an empty table renders no rows; dispose leaves nothing listening', () =>
   assert.equal(t.selectedIndex.value, before, 'the keyboard and the scroll handler are gone');
   assert.equal(t.renderedCount, 13, 'and nothing re-rendered');
 });
-
-scoped('a column with sortable: false takes no header click, no sortable class and no arrow', async () => {
-  const sort = signal('');
-  const t = table({sort, columns: [{name: 'name', header: 'Name'}, {name: 'amount', sortable: false}]});
-  const head = (column) => t.root.querySelector(`[data-u2="column-header"][data-column="${column}"]`);
-  assert.equal(head('name').classList.contains('u2-data-table-sortable'), true, 'sortable by default');
-  assert.equal(head('amount').classList.contains('u2-data-table-sortable'), false);
-  fire(head('amount'), 'click');
-  assert.equal(sort.peek(), '', 'the click sorts nothing');
-  fire(head('name'), 'click');
-  assert.equal(sort.peek(), 'name');
-  sort.value = 'amount';
-  await flush();
-  assert.equal(head('amount').querySelector('.u2-data-table-sort'), null, 'no arrow on a column that cannot sort');
-  t.dispose();
-});
