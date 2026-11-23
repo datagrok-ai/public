@@ -220,6 +220,8 @@ export class DomainChildren extends Control {
         // a child saved under a parent the same Save deletes would land live under a row in the trash
         const add = domains.newButton(child, {}, {disabled: () => {
           this.parent.changeCount.value;
+          // the rows too: one field edited and the row deleted are each one change
+          this.parent.rows.items.value;
           return this.parent.currentRow.value?.[Rows.STATE] !== 'deleted' ? null :
             `This ${nounOf(this.parent.schema.info, true)} is deleted on Save: ` +
             `undo the deletion to add ${entry.label.toLowerCase()}`;
