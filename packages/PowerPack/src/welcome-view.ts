@@ -50,18 +50,37 @@ export function welcomeView(): DG.View | undefined {
   setWorkspacePreviewHost(previewHost);
   const view = DG.View.create();
   view.root.appendChild(viewHost);
-  // without tabs, the view's ribbon is the otherwise empty top row; the mode is known only after the settings load
-  let inRibbon: boolean | null = null;
+  // The search takes the otherwise empty top row: the view's ribbon without tabs, or the tab strip while Home is its
+  // only tab. The mode is known only after the settings load.
+  let place: 'ribbon' | 'strip' | 'page' | null = null;
+  const tabStrip = () => view.root.closest('.grok-tab-host')?.querySelector<HTMLElement>(':scope > .tab-handle-list-container');
+  const stripRoom = (strip: HTMLElement) => {
+    let used = 0;
+    for (const c of Array.from(strip.children))
+      if (c !== inputHost) used += (c as HTMLElement).offsetWidth;
+    return strip.clientWidth - used;
+  };
   const placeSearch = () => {
-    if (grok.shell.windows.simpleMode === inRibbon)
+    const strip = tabStrip();
+    const newPlace = grok.shell.windows.simpleMode ? 'ribbon' :
+      strip && strip.querySelectorAll('.tab-handle:not(.tab-handle-preview, .tab-handle-temp-tab)').length === 1 &&
+      stripRoom(strip) >= 300 ? 'strip' : 'page';
+    if (newPlace === place)
       return;
-    inRibbon = grok.shell.windows.simpleMode;
-    view.setRibbonPanels(inRibbon ? [[inputHost]] : []);
-    if (!inRibbon)
+    place = newPlace;
+    view.setRibbonPanels(place === 'ribbon' ? [[inputHost]] : []);
+    if (place === 'strip')
+      strip!.append(inputHost);
+    else if (place === 'page')
       view.root.prepend(inputHost);
   };
   placeSearch();
-  view.subs.push(grok.events.onEvent('grok-panels-changed').subscribe(placeSearch));
+  const resized = new rxjs.Subject<void>();
+  const resizeObserver = new ResizeObserver(() => resized.next());
+  resizeObserver.observe(view.root);
+  view.subs.push(
+    rxjs.merge(grok.events.onEvent('grok-panels-changed'), grok.events.onViewAdded, grok.events.onViewRemoved, resized).pipe(debounceTime(50)).subscribe(placeSearch),
+    new rxjs.Subscription(() => resizeObserver.disconnect()));
   view.root.classList.add('power-pack-welcome-view');
 
   const widgetFunctions = DG.Func.find({meta: {role: DG.FUNC_TYPES.DASHBOARD}, returnType: 'widget'});

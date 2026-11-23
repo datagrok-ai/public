@@ -2,7 +2,7 @@
 
 ## v.next
 
-* Search: Without tabs, the home page's search sits in the top row, leaving more room below; the page has less padding on top
+* Search: The home page's search moves into the otherwise empty top row, leaving more room below: the view's ribbon without tabs, the tab strip while Home is the only tab; the page has less padding on top
 * Spotlight: The home page's Spotlight widget is as tall as its tabs, longer tabs scroll
 * Spotlight: Added the `showTipOfTheDay` setting to hide the tip of the day on the home page
 * Search: Fixed Ctrl+Space not showing suggestions in an empty search box or after reopening the home page; the "Use Ctrl+Space" hint shows only once you type

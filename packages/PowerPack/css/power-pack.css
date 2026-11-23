@@ -370,6 +370,13 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
     background: none;
 }
 
+.tab-handle-list-container > .power-pack-welcome-search {
+    flex: 1 1 0;
+    min-width: 0;
+    order: 1;
+    margin-left: 16px;
+}
+
 .d4-ribbon:has(.power-pack-welcome-search) > .d4-ribbon-spacer {
     flex-grow: 0;
 }

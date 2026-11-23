@@ -997,10 +997,10 @@
       "subclassEms": 0,
       "classBuildsUi": 0,
       "cssFiles": 1,
-      "cssLines": 1817,
+      "cssLines": 1824,
       "cssInternalLines": 0,
-      "cssImportant": 42,
-      "commentLines": 952,
+      "cssImportant": 41,
+      "commentLines": 947,
       "fileHeaders": 15,
       "privateDocs": 45,
       "classes": {
@@ -1405,6 +1405,13 @@
       "reason": "chem sketcher removed margins",
       "grown": [
         "packages/Chem cssLines: 2758 → 2765"
+      ]
+    },
+    {
+      "date": "2026-11-23",
+      "reason": "PowerPack: home search placed in the tab strip or ribbon",
+      "grown": [
+        "packages/PowerPack cssLines: 1817 → 1824"
       ]
     }
   ]
