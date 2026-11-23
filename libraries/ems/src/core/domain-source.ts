@@ -187,8 +187,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   // the caller of `rebind` re-reads; a refresh here would drop the frame the batch just landed in
   private _rebinding = false;
   // the writer was built under an access a 403 contradicted, and pending changes kept it: the
-  // next revert rebuilds it
+  // next revert rebuilds it, then publishes this re-read access again
   private _regate = false;
+  private _regated: AccessData | undefined;
   private readonly _liveMs: number;
   private _timer: ReturnType<typeof setInterval> | undefined;
   // undefined until the first probe after a load, which only sets the baseline
@@ -487,6 +488,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       return;
     this._access.value = Access.from(data);
     this._regate = true;
+    this._regated = data;
     if (!this.isDirty.peek())
       await this._rebuildWriter();
   }
@@ -498,7 +500,12 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     } catch {
       // the rows and the writer stay as they were; the next revert tries again
       this._regate = true;
+      return;
     }
+    // the re-read rows carry the server's `~can_*` now, which replace the table's answer per row
+    // (`Access.row`): what was built from the old rows' (the form) is built again
+    if (this._regated !== undefined && !this.scope.isDisposed)
+      this._access.value = Access.from(this._regated);
   }
 
   /** Stages the restore of soft-deleted rows into the session's unit of work — they are pending
