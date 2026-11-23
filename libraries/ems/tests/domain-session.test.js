@@ -789,16 +789,43 @@ scoped('EQ-033: after a server refusal a client error still disables Save, and C
   projects.dispose();
 });
 
-scoped('EQ-033: a save refused as forbidden still holds Save and Ctrl+S until Discard', async () => {
-  const {session, projects, save, ...out} = await refusing('forbidden', 'forbidden');
-  assert.equal(save.button.disabled, true, 'a 403 holds Save: resending only meets it again');
-  assert.equal(await session.save(), false, 'Ctrl+S');
-  assert.equal(out.sent, 1, 'and sends nothing');
-  session.discard();
-  await flush();
-  assert.equal(projects.blocked.value, null, 'until the user lets go of the changes');
-  save.dispose();
-  projects.dispose();
+scoped('EQ-033: a save refused as forbidden holds Save and Ctrl+S through a child edit, until Discard', async () => {
+  for (const thrown of [false, true]) {
+    const memory = backend();
+    let sent = 0;
+    emsBackends.domain = {
+      table: (address) => memory.table(address),
+      saveAll: (edits) => {
+        sent++;
+        if (thrown)
+          throw Object.assign(new Error('Edit is required on "grit.project"'), {code: 'forbidden'});
+        for (const edit of edits)
+          Object.assign(edit, {problem: 'forbidden', problemCode: 'forbidden'});
+        return Promise.resolve(false);
+      },
+    };
+    const session = new SharedSession();
+    // owned: the 403 re-reads the access and rebuilds the pristine child's writer
+    const [projects, issues] = ['grit.project', 'grit.issue'].map((table) =>
+      testOwner().build(() => new DomainSource({table, session}, env)));
+    projects.start();
+    issues.start();
+    const save = testOwner().build(() => saveButton(session));
+    await flush();
+    projects.rows.byKey('p1').key = 'DG';
+    assert.equal(await session.save(), false);
+    issues.rows.byKey('i1').title = 'Aspirin 100';
+    await flush();
+    assert.equal(save.button.disabled, true, `a 403 holds Save through a change elsewhere (thrown: ${thrown})`);
+    assert.equal(await session.save(), false, 'Ctrl+S');
+    assert.equal(sent, 1, 'and sends nothing');
+    session.discard();
+    await flush();
+    assert.deepEqual([projects.blocked.value, issues.blocked.value], [null, null], 'Discard clears both');
+    save.dispose();
+    projects.dispose();
+    issues.dispose();
+  }
 });
 
 // the platform session's RELOAD in the conflict dialog drops the conflicting writer's edits inside
