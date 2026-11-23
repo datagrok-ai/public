@@ -40,9 +40,9 @@ function stub(calls, server) {
   DG.Property.propertyOptions = Object.fromEntries(['friendlyName', 'description', 'choices', 'min', 'max', 'format']
     .map((name) => [name, {name, type: name === 'choices' ? 'list' : 'string'}]));
   // ownership is the registry's word (DomainTable.userColumns): the `origin: 'user'` stamps say which columns it
-  // lists, and manifest() answers without them, as the server does
-  const tables = () => Object.entries(server.manifest.tables).map(([name, t]) => ({name, origin: 'package',
-    userColumns: Object.keys(t.columns).filter((c) => t.columns[c].origin === 'user')}));
+  // lists, and manifest() answers without them, as the server does; `server.table` lists an older server's table
+  const tables = () => Object.entries(server.manifest.tables).map(([name, t]) => server.table?.() ?? {name,
+    origin: 'package', userColumns: Object.keys(t.columns).filter((c) => t.columns[c].origin === 'user')});
   const list = async () => (calls.push(['ownership']), [{name: NAME, managedBy: 'package', tables: tables()}]);
   grok.dapi.domains.schemas = {list: async () => [{name: NAME, managedBy: 'package'}], include: () => ({list})};
   grok.dapi.domains.schema = (name) => ({name,
@@ -96,4 +96,26 @@ scoped('EQ-027: Edit properties saves against the extension version it was opene
   assert.match(byKind(document, 'status-line')[0].textContent, /Someone else changed these properties meanwhile/);
   byName(dialog(), 'CANCEL').click();
   assert.equal(await done, false, 'nothing saved');
+});
+
+scoped('EQ-018: a saved user column stays the user\'s, and adding the next column sends it back', async () => {
+  const calls = [];
+  stub(calls, {manifest: MANIFEST, extVersion: 96});
+  const {done} = await openAndAdd();
+  const mine = [...document.querySelectorAll('[role="treeitem"]')].find((n) => n.textContent.startsWith('mine'));
+  assert.equal(mine.querySelector('.fa-lock'), null, 'the user column is not locked as a plugin column');
+  await save();
+  const [commit] = extensions(calls).filter((c) => !c[2]);
+  assert.deepEqual(Object.keys(commit[1].extend.issue.columns).sort(), ['mine', 'property'],
+    'the extension is the user\'s columns as full state: the saved one is not dropped');
+  assert.equal(await done, true);
+});
+
+// datagrok-api comes from the server: an older one cannot say who owns a column, and a full-state extension sent
+// without knowing would drop the user's columns
+scoped('EQ-018: on a server without DomainTable.userColumns Edit properties refuses, and nothing is sent', async () => {
+  const calls = [];
+  stub(calls, {manifest: MANIFEST, extVersion: 96, table: () => ({name: 'issue'})});
+  await assert.rejects(domains.editProperties(NAME, 'issue'), /unavailable on this server version/);
+  assert.deepEqual(extensions(calls), [], 'no extension sent');
 });
