@@ -7,6 +7,7 @@ import {DomainApp} from './app.js';
 import {DomainAddress} from './address.js';
 import {SavedSearches} from './saved-searches.js';
 import {rawEffect} from 'datagrok-api/u2core';
+import type {IProperty} from '@datagrok-libraries/u2';
 
 /** What `DomainTable.app()` takes for one view, less what the views decide: its name and path. */
 export type DomainViewOptions = Omit<DomainAppViewOptions, 'name' | 'path'>;
@@ -86,18 +87,45 @@ export class DomainViews {
     return view;
   }
 
+  /** Every open view of the schema's tables rebuilt over its new columns (Edit properties… saved). A view whose
+   * session has unsaved changes is not rebuilt under them: it is marked ({@link DomainApp.reshape}) and rebuilt once
+   * they are saved or discarded. */
   static async reload(schema: string): Promise<void> {
     DomainTable.forget(schema);
     for (const app of [...DomainApp.live]) {
-      const old = DomainApp.viewOf(app);
-      if (!app.table.address.startsWith(`${schema}.`) || old === undefined || app.session.isDirty.peek())
+      if (!app.table.address.startsWith(`${schema}.`) || DomainApp.viewOf(app) === undefined)
         continue;
-      const views = DomainViews._byTable.get(app.table.address);
-      const view = views !== undefined ? await views._new(app.path.peek().slice(views._options.path.length)) :
-        (await domains.table(app.table.address)).app({path: app.base});
-      grok.shell.addView(view);
-      old.close();
+      if (!app.session.isDirty.peek()) {
+        await DomainViews._rebuild(app);
+        continue;
+      }
+      // per table of the schema the page shows — its own, and its children tabs' — the columns it lost
+      const shown = new Map<string, IProperty[]>([[app.table.address, app.table.properties]]);
+      for (const source of app.session.sources.peek()) {
+        if (source.table.startsWith(`${schema}.`) && !shown.has(source.table))
+          shown.set(source.table, source.schema.properties);
+      }
+      const removed = new Map<string, IProperty[]>();
+      for (const [address, properties] of shown) {
+        const views = DomainViews._byTable.get(address);
+        const fresh = await (views?._options.handle ?? domains.table)(address);
+        const kept = new Set(fresh.properties.map((p) => p.name));
+        removed.set(address, properties.filter((p) => !kept.has(p.name)));
+      }
+      app.reshape(removed, () => DomainViews._rebuild(app));
     }
+  }
+
+  // a new view of the app's table at the app's address, in place of the app's own
+  private static async _rebuild(app: DomainApp): Promise<void> {
+    const old = DomainApp.viewOf(app);
+    if (old === undefined)
+      return;
+    const views = DomainViews._byTable.get(app.table.address);
+    const view = views !== undefined ? await views._new(app.path.peek().slice(views._options.path.length)) :
+      (await domains.table(app.table.address)).app({path: app.base});
+    grok.shell.addView(view);
+    old.close();
   }
 
   /** An item per view under `node` — the app's tree browser: one selected brings its view forward at the list —

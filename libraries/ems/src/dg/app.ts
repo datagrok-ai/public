@@ -3,7 +3,7 @@ import type * as DG from 'datagrok-api/dg';
 import {Control, signal, computed, batch, ReadonlySignal, Signal, button, div, divH, divV, span,
   icon, Filters, allowedActions, actionsMenu, iconButton, ButtonGroup, Breadcrumbs, Rows, Menu, LabelColumn, Reason,
   text} from '@datagrok-libraries/u2';
-import type {FilterGroup, IWidgetStatus, Action, RowView, Scope} from '@datagrok-libraries/u2';
+import type {FilterGroup, IWidgetStatus, Action, RowView, Scope, IProperty} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
 import {capital, nounOf, emsBackends} from '../core/domain-backend.js';
 import type {DomainTableInfoLike} from '../core/domain-backend.js';
@@ -31,6 +31,9 @@ export type DomainAppMode = 'live' | 'trash';
 
 /** What the status bar says while a live source is behind the server ({@link DomainApp.refresh}). */
 const STALE = 'Data changed — Refresh';
+
+/** What it says while Edit properties… changed the table's columns under pending changes ({@link DomainApp.reshape}). */
+const RESHAPED = 'Properties changed: save or discard to reload';
 
 /** Below this width the ribbon has no room for the presets. */
 const COMPACT_WIDTH = 700;
@@ -187,6 +190,9 @@ export class DomainApp extends Control {
   private readonly _presets: Action[] = [];
   private readonly _sync: ViewSync;
   private _opening: {address: string, done: Promise<boolean>} | undefined;
+  // the columns Edit properties… dropped under pending changes, and how the page is rebuilt once they are settled
+  private readonly _reshaped =
+    signal<{removed: ReadonlyMap<string, IProperty[]>, rebuild: () => Promise<void>} | null>(null);
 
   private static readonly _byView = new WeakMap<DG.ViewBase, DomainApp>();
   private static readonly _views = new WeakMap<DomainApp, DG.ViewBase>();
@@ -397,13 +403,16 @@ export class DomainApp extends Control {
         return {count, selected, notice: null, problem: this._filterProblem.value ?? 'Filter not applied'};
       // a live source saw the collection move while this session had changes to protect: what is
       // pending still matters, and so does that the rows under it are no longer the server's
+      // the page's columns are not the table's any more: say so before what the rows did
+      if (this._reshaped.value !== null)
+        return {count, selected, notice: pending === null ? RESHAPED : `${pending} — ${RESHAPED}`, problem};
       if (source !== null && source.stale.value)
         return {count, selected, notice: pending === null ? STALE : `${pending} — ${STALE}`, problem};
       return {count, selected, notice: pending, problem};
     });
     this.summary = computed(() => DomainApp.summaryOf(this.status.value));
-    this.stale = computed(() =>
-      (this._page.value === 'entity' ? this._entitySource.value : this.listSource)?.stale.value ?? false);
+    this.stale = computed(() => this._reshaped.value !== null ||
+      ((this._page.value === 'entity' ? this._entitySource.value : this.listSource)?.stale.value ?? false));
     this._wireMode();
     this.own(() => this._close());
     const fit = new ResizeObserver(() => {
@@ -640,8 +649,59 @@ export class DomainApp extends Control {
     // the access is read again too, once: the platform caches it until told otherwise, and a grant made by
     // another session never tells
     emsBackends.domain?.dropAccess?.();
-    await source.refresh();
+
+    if (this._reshaped.peek() !== null)
+      await this._settle();
+    else
+      await source.refresh();
     return true;
+  }
+
+  /** Edit properties… changed the tables' columns while the session has changes the page cannot carry over: the
+   * page keeps its columns, says so and is {@link stale}, and `rebuild` runs once the session is saved or
+   * discarded. `removed` holds the columns each table (`<schema>.<table>`: the app's own, its children tabs') lost:
+   * a pending change to one of them is never sent — Save refuses it by name. */
+  reshape(removed: ReadonlyMap<string, IProperty[]>, rebuild: () => Promise<void>): void {
+    const first = this._reshaped.peek() === null;
+    this._reshaped.value = {removed, rebuild};
+    if (!first)
+      return;
+    for (const event of [this.session.onSaved, this.session.onDiscarded])
+      this.subscribe(event, () => void this._settle());
+    const guarded = new WeakSet<DomainSource>();
+    this.effect(() => {
+      for (const source of this.session.sources.value) {
+        if (guarded.has(source))
+          continue;
+        guarded.add(source);
+        const problem = computed(() => {
+          source.changeCount.value;
+          return this._removedChange(source, this._reshaped.value?.removed.get(source.table) ?? []);
+        });
+        source.guard(() => problem.peek(), problem);
+      }
+    });
+  }
+
+  // a column dropped under a pending change: Discard drops every change, so undoing this one alone is said first
+  private _removedChange(source: DomainSource, removed: IProperty[]): string | null {
+    const edit = source.edit.peek();
+    for (const row of source.pending()) {
+      const prop = removed.find((p) => Rows.isDraft(row) ? row[p.name!] != null : edit?.isChanged(row.id, p.name!));
+      if (prop !== undefined)
+        return `${DomainTable.captionOf(prop)} was removed in Edit properties…: ` +
+          'undo your change to it, or Discard all changes';
+    }
+    return null;
+  }
+
+  // once the session is clean, the page is rebuilt over the table's new columns — once
+  private async _settle(): Promise<void> {
+    const reshaped = this._reshaped.peek();
+    if (reshaped === null || this.session.isDirty.peek())
+      return;
+    this._reshaped.value = null;
+    await reshaped.rebuild();
   }
 
   /** A query switch for the ribbon — one button per preset, the pressed one writing the list's
