@@ -151,3 +151,58 @@ scoped('the box carries the class its sheet selects, and a search during a write
   search.dispose();
   src.dispose();
 });
+
+// the source over the issue table, its frame reads counted, the current row i3, one edit pending, a search typed
+async function searchedOverEdits() {
+  emsBackends.domain = backend();
+  const inner = emsBackends.domain.table.bind(emsBackends.domain);
+  const reads = {frames: 0};
+  emsBackends.domain.table = async (address) => {
+    const t = await inner(address);
+    return Object.assign(Object.create(Object.getPrototypeOf(t)), t, {frame: (spec) => (reads.frames++, t.frame(spec))});
+  };
+  const table = await domains.table('grit.issue');
+  const src = testOwner().build(() => table.source({pageSize: 10}));
+  await flush();
+  await wait(10);
+  src.currentRow.value = src.rows.byKey('i3');
+  src.rows.byKey('i1').title = 'Edited';
+  src.search.value = 'Ibuprofen';
+  await flush();
+  await wait(20);
+  reads.frames = 0;
+  return {src, reads};
+}
+
+scoped('a search changed over pending edits applies when Discard makes the source clean (EQ-008)', async () => {
+  const {src, reads} = await searchedOverEdits();
+  assert.equal(src.rows.items.value.some((r) => r.title === 'Edited'), true, 'held while dirty');
+  src.discard();
+  await flush();
+  await wait(20);
+  assert.deepEqual(src.rows.items.value.map((r) => r.title), ['Ibuprofen'],
+    `after discard the deferred search ran: rows ${JSON.stringify(src.rows.items.value.map((r) => r.title))}`);
+  assert.equal(reads.frames, 1, 'one read');
+  const current = src.currentRow.value?.id;
+  assert.equal(current === undefined || src.rows.indexOf(current) >= 0, true, 'the current row is in the rows shown or none');
+  src.dispose();
+});
+
+scoped('a search changed over pending edits is applied by the Save\'s own re-base: one read, the current row kept (EQ-008)', async () => {
+  const {src, reads} = await searchedOverEdits();
+  src.currentRow.value = src.rows.byKey('i2');
+  assert.equal(await src.save(), true);
+  await flush();
+  await wait(30);
+  assert.deepEqual(src.rows.items.value.map((r) => r.title), ['Ibuprofen'], 'the pending search applies');
+  assert.equal(reads.frames, 1, 'exactly one read of the rows, no second refresh');
+  assert.equal(src.currentRow.value?.id, 'i2', 'the current row is kept');
+  // the re-base recorded the scope it read: a later Discard has no search left to apply
+  src.rows.byKey('i2').title = 'Edited again';
+  src.discard();
+  await flush();
+  await wait(30);
+  assert.equal(reads.frames, 1, 'Discard after the save reads nothing: the search was applied once');
+  assert.equal(src.currentRow.value?.id, 'i2');
+  src.dispose();
+});

@@ -332,7 +332,11 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       this.search.value;
       this.sort.value;
       this.deleted.value;
-      if (!this.isDirty.peek() && !this._rebinding)
+      // read, not peeked: a re-query skipped over pending edits runs when the source turns clean (Discard,
+      // or a Save) — the rows shown were read for another scope. Clean with the same scope reloads nothing
+      // (a Save in flight re-bases onto the new scope itself, and records it in `_shownFor`)
+      const dirty = this.isDirty.value;
+      if (!dirty && !this._rebinding && !this.isSaving.peek() && (this._shownFor === undefined || this._readFor() !== this._shownFor))
         void this.refresh();
     });
     this.effect(() => {
@@ -800,6 +804,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     const window = Math.max(this._loaded, frame.df.rowCount) || this.pageSize;
     const gen = this._gen;
     const kept = this._keep();
+    const readFor = this._readFor();
     await this._serve(true);
     // read BEFORE the window, as a load does: a write by someone else after the save is a change
     // to the next poll, not its baseline
@@ -809,6 +814,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       replacement.dispose();
       return;
     }
+    // the rows now shown were read for this scope: a query or search changed over the pending edits is applied
+    this._shownFor = readFor;
     this._swap(replacement, window, baseline, kept);
   }
 
