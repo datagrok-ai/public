@@ -24,6 +24,12 @@ export function activityDashboardWidget() : any {
   return PackageFunctions.activityDashboardWidget();
 }
 
+//input: widget content 
+//input: string title { optional: true }
+export function showSpotlightPreview(content: DG.Widget, title?: string) : void {
+  PackageFunctions.showSpotlightPreview(content, title);
+}
+
 //name: Community
 //output: widget result
 //meta.role: dashboard

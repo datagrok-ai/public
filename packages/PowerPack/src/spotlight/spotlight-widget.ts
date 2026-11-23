@@ -8,6 +8,7 @@ import {LearningWidget} from '../widgets/learning-widget';
 import {WorkspaceTab} from './workspace-tab';
 import {isSpotlightEntity} from './entity-kinds';
 import {clearWorkspacePreview} from './preview-host';
+import {openDefaultTabOnce, spotlightTabContent, spotlightTabFunctions} from './package-tabs';
 
 
 enum SpotlightTabNames {
@@ -98,12 +99,15 @@ export class SpotlightWidget extends DG.Widget {
       'My Activity': () => ui.wait(async () => await this.getActivityTab()),
       'Learn': () => new LearningWidget().root,
     };
+    const packageTabs = spotlightTabFunctions().filter((f) => !(f.friendlyName in tabs));
+    for (const func of packageTabs)
+      tabs[func.friendlyName] = () => ui.wait(async () => spotlightTabContent(func));
 
     this.tabControl = ui.tabControl(tabs, {vertical: true, key: 'spotlight-widget'});
+    openDefaultTabOnce(this.tabControl, packageTabs);
     this.subs.push(this.tabControl.onTabChanged.subscribe((tabPane: DG.TabPane) => {
       this.cleanLists();
-      if (tabPane.name !== 'Workspace')
-        clearWorkspacePreview();
+      clearWorkspacePreview();
       this.updateContentOverflow(tabPane);
       for (const id of Array.from(this.markedReadIds)) {
         for (const el of Array.from(tabPane.content.querySelectorAll(`[data-notification-id="${id}"]`))) {
