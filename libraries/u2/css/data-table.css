@@ -132,6 +132,18 @@
   color: var(--dg-selection-text);
 }
 
+/* the current row — where Enter and a bulk action's "clicked row" land — in the list's colour, over
+   the selection's when the row is both, so it reads apart from the other picked rows */
+.u2-data-table-row-current,
+.u2-data-table-row-current:hover {
+  background: var(--u2-row-current-bg);
+}
+
+.u2-data-table-row-current.u2-data-table-row-selected,
+.u2-data-table-row-current.u2-data-table-row-selected:hover {
+  background: linear-gradient(var(--u2-row-current-bg), var(--u2-row-current-bg)), var(--u2-row-selected-bg);
+}
+
 /* the editor's per-cell verdicts, the platform grid's colours in table terms: an unsaved edit is
    the amber DIRTY_CELL_COLOR, a refusal the red INVALID_CELL_COLOR (its message is the title) */
 .u2-data-table-row .u2-cell-changed {

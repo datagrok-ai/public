@@ -23,6 +23,9 @@ export interface DomainListOptions {
   empty?: string;
   /** What an empty, unfiltered list offers as its primary action. */
   create?: () => void;
+  /** False while another control (the table view) shows the same source: this list then leaves the
+   * source's current row and selection to it. */
+  active?: ReadonlySignal<boolean>;
 }
 
 /** A card is the handler's card — a title, a description line and the creation time. */
@@ -68,7 +71,7 @@ export class DomainList extends Control {
     this.list.root.classList.add('u2-domain-list-rows', 'u2-list-no-ring');
     this.list.setItems(source.rows.items as ReadonlySignal<RowView[]>);
 
-    collectionSelection(source, this.list, {owner: this});
+    collectionSelection(source, this.list, {owner: this, active: _options.active});
     // a list over a table starts on its first row; a draft source is a form's, not a list's
     let seeded = source.isDraft;
     this.effect(() => {
