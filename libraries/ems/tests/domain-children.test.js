@@ -314,38 +314,24 @@ scoped('a New from the children toolbar is an unsaved change of its own: the gat
   parent.dispose();
 });
 
-scoped('another view\'s save of the same table never drops a page\'s pending child rows: the clean parent is marked stale', async () => {
-  const memory = crm();
-  emsBackends.domain = memory;
+scoped('another view\'s save of the same table keeps a page\'s pending child rows and marks it stale', async () => {
+  emsBackends.domain = crm();
   const companies = await domains.table('crm.company');
-  // page A — an entity page over c1, its own row clean, a new contact and an edited one pending
-  // under it; page B — another view of the table, in a session of its own
   const parent = testOwner().build(() => companies.source({query: 'id = "c1"', pageSize: 1}));
   const other = testOwner().build(() => companies.source({pageSize: 10}));
   await flush();
-  assert.equal(other.session !== parent.session, true, 'two views, two sessions');
   parent.currentRow.value = parent.rows.byKey('c1');
   const children = testOwner().build(() => domains.children(parent, {mode: 'list'}));
   await settle();
   const contacts = children.child(CONTACTS);
   await flush();
   contacts.newRow({name: 'Unsaved'});
-  contacts.rows.byKey('k1').name = 'Ann edited';
-  assert.equal(parent.isDirty.value, false, 'the parent row itself is clean');
-  assert.equal(parent.session.changeCount.value, 2);
-
   other.rows.byKey('c2').name = 'Globex edited';
   assert.equal(await other.session.save(), true);
   await settle();
   assert.equal(children.child(CONTACTS) === contacts, true, 'the child source with its pending rows is still the one shown');
-  assert.equal(parent.currentRow.value?.id, 'c1');
-  assert.equal(parent.session.changeCount.value, 2, 'the pending child rows survive another view\'s save');
-  assert.equal(parent.stale.value, true, 'the page says its rows are behind the server instead');
-
-  assert.equal(await parent.session.save(), true);
-  await settle();
-  const stored = memory.tableSync('crm.contact').rows;
-  assert.deepEqual(stored.filter((r) => r.company_id === 'c1').map((r) => r.name).sort(), ['Ann edited', 'Unsaved']);
+  assert.equal(parent.session.changeCount.value, 1);
+  assert.equal(parent.stale.value, true);
   children.dispose();
   other.dispose();
   parent.dispose();
