@@ -101,16 +101,11 @@ export function probabilityInput(engine: Engine): string | undefined {
   return input?.propertyType === DG.TYPE.BOOL ? text : undefined;
 }
 
-/** [hyperparameters] with the method's probability input set to [on]; unchanged for a method without one. */
-export function withProbabilityInput(engine: Engine, hyperparameters: Hyperparameters, on: boolean): Hyperparameters {
+/** [hyperparameters] with the method's probability input on: Forge always trains such a method with its class
+ * probabilities (SVM's Platt scaling); a method ignores it for a regression, as EDA's SVM does. */
+export function withProbabilityInput(engine: Engine, hyperparameters: Hyperparameters): Hyperparameters {
   const name = probabilityInput(engine);
-  return name === undefined ? hyperparameters : {...hyperparameters, [name]: on};
-}
-
-/** Whether the method's trials carry class probabilities with Predict probability [on]: always for
- * `mlprobabilities: 'true'`, only when on for a method whose probabilities are a train input. */
-export function hasProbabilities(engine: Engine, on: boolean): boolean {
-  return probabilityInput(engine) === undefined ? givesProbabilities(engine) : on;
+  return name === undefined ? hyperparameters : {...hyperparameters, [name]: true};
 }
 
 /** The method accepts concurrent train and apply calls (`meta.mlparallel: true` on `train`): a search runs its fits

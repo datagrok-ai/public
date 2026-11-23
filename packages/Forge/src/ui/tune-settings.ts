@@ -6,7 +6,7 @@ import {defaultHyperparameters, defaultValuesOf, Engine, Hyperparameters, visibl
   from '../engines/engine';
 import {errorMessage} from '../forge-error';
 import {ModelTask} from '../generated/db';
-import {METRIC_LABELS, MetricId} from '../metrics/metrics';
+import {METRIC_DESCRIPTIONS, METRIC_LABELS, MetricId, metricOfLabel} from '../metrics/metrics';
 import {isRecord} from '../preparation/preparation-options';
 import {chosenOf, DEFAULT_BUDGET_SECONDS, defaultMetric, rangeProblem, SEARCH_METRICS, SearchChoice, SearchSpace,
   searchSpaceOf, SpaceDimension, TunedRange} from '../training/search';
@@ -722,6 +722,16 @@ export class TuneSettings {
   static setMetrics(select: HTMLSelectElement, ids: MetricId[], id: MetricId): void {
     select.replaceChildren(...ids.map((x) => TuneSettings.option(x, METRIC_LABELS[x])));
     select.value = id;
+  }
+
+  /** Each metric option in [select] shows [description] of its metric on hover. */
+  static describeMetricOptions(select: HTMLElement,
+    description: (id: MetricId) => string = (id) => METRIC_DESCRIPTIONS[id]): void {
+    for (const option of select.querySelectorAll('option')) {
+      const id = metricOfLabel(option.textContent);
+      if (id !== undefined)
+        option.title = description(id);
+    }
   }
 
   /** The label column of [root]'s grid is as wide as [label] of the form (the platform sets the labels' widths). */

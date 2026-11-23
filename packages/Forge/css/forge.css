@@ -459,21 +459,22 @@ div.forge-gallery > .forge-gallery-below {
   padding: 5px 0 0 !important;
 }
 
-/* The model cards at the end of the form, so they span its width; a pinned card is a click target, so it darkens while
-   pressed. */
+/* Trained models: the cards at the end of the form; a pinned card is a click target. */
 .forge-cards {
-  gap: 10px;
-  margin-top: 10px;
+  gap: 8px;
+  margin-top: 6px;
 }
 
 .forge-card {
-  --forge-card-indent: 12px;
   box-sizing: border-box;
-  padding: 10px;
-  border: 1px solid var(--grey-2);
-  border-radius: 5px;
-  background-color: color-mix(in srgb, var(--grey-1) 50%, var(--white));
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 14px 10px;
+  border: 1px solid var(--grey-2);
+  border-radius: 4px;
+  background-color: color-mix(in srgb, var(--grey-1) 50%, var(--white));
 }
 
 .forge-card:not(.forge-card-current) {
@@ -485,79 +486,164 @@ div.forge-gallery > .forge-gallery-below {
 }
 
 .forge-card.forge-card-current {
-  background-color: color-mix(in srgb, var(--blue-1) 8%, transparent);
-}
-
-/* Performance and Settings alike: the names in the light text colour, the values as the platform's key-value tables
-   show them (d4.css .d4-info-table) and right-aligned, the header darker than both and lighter than the bold title. */
-.forge-card-table {
-  align-self: flex-start;
-  margin-top: 6px;
-  color: var(--grey-5);
-}
-
-.forge-card-table td {
-  padding: 0 0 0 var(--forge-card-indent);
-}
-
-.forge-card-table td:not(:first-child) {
-  min-width: 52px;
-  text-align: right;
-}
-
-.forge-card-table td:first-child {
-  color: var(--text-color-light);
-}
-
-.forge-card-table tr.header > td {
-  font-weight: 500;
-  color: var(--text-color);
+  background-color: color-mix(in srgb, var(--blue-1) 8%, var(--white));
+  border-color: color-mix(in srgb, var(--blue-1) 25%, var(--white));
 }
 
 .forge-card-header {
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.forge-card-body {
+  flex: 1 1 0;
+  min-width: 0;
+  gap: 2px;
+}
+
+.forge-card-title-row {
   align-items: center;
   gap: 8px;
 }
 
 .forge-card-title {
-  flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 14px;
   font-weight: bold;
   color: var(--text-color);
 }
 
+.forge-card-best {
+  flex: none;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background-color: var(--green-1);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--green-3);
+}
+
 .forge-card-icon {
   flex: none;
+  margin-left: auto;
   padding: 4px 0 4px 8px;
   font-size: larger;
   color: var(--blue-1);
   cursor: pointer;
 }
 
-/* After a search, what it chose: the italic status look of the form (.forge-tune-status-text). */
-.forge-card-caption {
-  font-size: 12px;
+.forge-card-kind {
   font-style: italic;
-  color: var(--text-color-light);
 }
 
 .forge-card-settings {
-  align-items: flex-start;
+  margin: 4px 0 0 10px;
+  font-size: 14px;
+  color: var(--text-color-light);
 }
 
-/* A note starts where the tables' text does. */
-.forge-card .forge-note {
-  margin-left: var(--forge-card-indent);
+/* The pairs never reflow: a card narrower than the table scrolls it. */
+.forge-card-settings-table {
+  margin-left: 10px;
+  overflow-x: auto;
+  font-size: 14px;
 }
 
-/* Show more / Show less under Performance, where the table's text starts. */
-.forge-card-more {
+.forge-card-settings-table table td {
+  padding: 0 0 0 8px;
+  white-space: nowrap;
+  color: var(--text-color);
+}
+
+.forge-card-settings-table table td:nth-child(odd) {
+  color: var(--text-color-light);
+}
+
+.forge-card-settings-table table td:first-child {
+  padding-left: 0;
+}
+
+.forge-card-settings-table table td:nth-child(3) {
+  padding-left: 24px;
+}
+
+.forge-card-main {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.forge-card-score {
+  align-items: baseline;
+  gap: 6px;
+}
+
+.forge-card-metric,
+.forge-card-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.forge-card-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.forge-card-status {
+  margin-left: auto;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.forge-card-ok {
+  color: var(--green-3);
+}
+
+.forge-card-warn {
+  color: var(--orange-3);
+}
+
+.forge-card-status > .grok-icon {
+  font-size: inherit;
+  color: inherit;
+  cursor: default;
+}
+
+.forge-card-tip-table {
   align-self: flex-start;
-  margin: 4px 0 0 var(--forge-card-indent);
-  font-size: 12px;
+  width: auto;
+}
+
+.forge-card-tip-table td:not(:first-child) {
+  padding-left: 12px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.forge-card-tip-table.forge-card-status-tip-table td:not(:first-child) {
+  text-align: left;
+}
+
+.forge-card-tip-table td:first-child {
+  color: var(--text-color-light);
+}
+
+.forge-card-tip-table tr.header > td {
+  font-weight: bold;
+  color: var(--text-color);
+}
+
+.forge-card-tip-table tr.forge-card-tip-selected > td {
+  font-weight: 500;
+  color: var(--text-color);
 }
 
 .forge-train-results {

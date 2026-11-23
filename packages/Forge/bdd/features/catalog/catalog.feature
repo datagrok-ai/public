@@ -129,7 +129,7 @@ Feature: The model catalog: a model's panes, its commands, comparing, sharing, e
     Then the context panel should show the Forge model "forge-test-cat-iris-{time}"
     When user expands "Performance" pane in context panel
     Then the "text of cell 1 of Metric" reading of grid viewer in "Performance" pane in context panel should be "Accuracy"
-    And the "text of cell 2 of Metric" reading of grid viewer in "Performance" pane in context panel should be "F1"
+    And the "text of cell 2 of Metric" reading of grid viewer in "Performance" pane in context panel should be "F1 score"
     And the "rows" reading of grid viewer in "Performance" pane in context panel should be 6
     And the "text of cell 1 of Train" reading of grid viewer in "Performance" pane in context panel should be the "metrics.train.accuracy" of the Forge model "forge-test-cat-iris-{time}" on the server to three decimals
     And the "text of cell 1 of Validation" reading of grid viewer in "Performance" pane in context panel should be the "metrics.validation.accuracy" of the Forge model "forge-test-cat-iris-{time}" on the server to three decimals
@@ -217,7 +217,7 @@ Feature: The model catalog: a model's panes, its commands, comparing, sharing, e
     Then tooltip should contain text "Compare in a new view"
     When user clicks on "Compare in a new view" icon in forge app
     Then the "Compare models" view should be current
-    And table "Compare models" should have columns "Name, Description, Method, Task, Target, Training rows, Created, MSE (train), MSE (validation), RMSE (train), RMSE (validation), MAE (train), MAE (validation), R2 (train), R2 (validation), Accuracy (train), Accuracy (validation), F1 (train), F1 (validation)"
+    And table "Compare models" should have columns "Name, Description, Method, Task, Target, Training rows, Created, MSE (train), MSE (validation), RMSE (train), RMSE (validation), MAE (train), MAE (validation), R2 (train), R2 (validation), Accuracy (train), Accuracy (validation), F1 score (train), F1 score (validation)"
     And table "Compare models" should have 2 rows
     And forms viewer should be visible
     And the "text of cell 1 of Name" reading of grid viewer should be "forge-test-cat-quality-{time}"

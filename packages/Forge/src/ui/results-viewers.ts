@@ -31,7 +31,7 @@ export const PANEL_TEXTS: {[key in PanelText]: [title: string, tooltip: string]}
   prCurve: ['PR Curve', 'Precision against recall at every cutoff of the positive class\'s probability (or score); ' +
     'the dashed line is the positive class\'s share of the rows (a model that guesses); with Predict probability ' +
     'the circle is the current Classification threshold. The AP (average precision) is the one of Performance.'],
-  perClass: ['Per-class', 'Each class against the rest: precision, recall (sensitivity), F1 and, with class ' +
+  perClass: ['Per-class', 'Each class against the rest: precision, recall (sensitivity), F1 score and, with class ' +
     'probabilities, AUC-ROC, one line per class in the class\'s color.'],
   metrics: ['Performance', 'How well the model predicts, on the training rows and in validation.'],
   confusions: ['Confusions', 'How often each actual class is predicted as each class.'],
@@ -551,7 +551,7 @@ function titleValue(name: string, value: number | undefined): string {
 const CLASS = 'Class';
 const PER_CLASS_AXES = ['precision', 'sensitivity', 'f1', 'auc'] as const;
 type PerClassAxis = typeof PER_CLASS_AXES[number];
-const PER_CLASS_NAMES: Record<PerClassAxis, string> = {precision: 'Precision', sensitivity: 'Recall', f1: 'F1',
+const PER_CLASS_NAMES: Record<PerClassAxis, string> = {precision: 'Precision', sensitivity: 'Recall', f1: 'F1 score',
   auc: 'AUC-ROC'};
 /** The most characters of the class names (plus {@link LEGEND_ITEM_CHARS} per class for its color mark) a legend on
  * top of **Per-class** holds in one line of a third of the pane; a longer one is not shown. */

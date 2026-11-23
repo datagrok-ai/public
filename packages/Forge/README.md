@@ -12,9 +12,12 @@ share and delete models.
 ## Train a model
 
 Open a table, then **ML | Models | Train Model...**. The **Predictive model** view opens with the inputs on the left, in
-groups you can fold with their chevrons: **Data** (Table, Target, Features), **Preparation** (see "Preparation"; shown
-only while one of its inputs applies), **Method** (Method, **Settings** and the method's settings; see "Search") and **Validation** (see
-"Validation"). They start open but **Validation**, which starts folded, and a group with a problem opens itself. The results are on the right; drag the splitter between them to resize.
+groups you can fold with their chevrons: **Data** (Table, Target, Features), **Preparation** (data preparation, see
+"Preparation"; shown only while one of its inputs applies), **Method** (Method, **Settings** and the method's settings;
+see "Search"), **Output** (Predict probability and the threshold, see "Output"; shown for a text or yes/no target with
+two or more classes) and **Validation** (see "Validation"). They start open but **Validation**, which starts folded, and
+a group with a problem opens itself. After the inputs and **Train**, **Trained models** (see "Compare models"). The
+results are on the right; drag the splitter between them to resize.
 
 * **Table**: the table to learn from, the current one by default
 * **Target**: the column to predict, the last column by default. A numerical target makes a regression model;
@@ -99,8 +102,8 @@ completed trial, the limit followed by `, Focus on leaders` for that strategy)
 with either `Test: <N> rows held out before
 the search` or, when nothing was held out, `Validation after a search is optimistic: the best of the trials was chosen
 on it`, for two classes, `Positive class: <class>`, and, with **Predict probability** on two classes,
-`Classification threshold: <t>` (`Classification threshold: <t>, the best F1 on the validation rows: its validation
-values are optimistic` while the threshold is the best value of the metric **Best threshold by** chose, see "Preparation").
+`Classification threshold: <t>` (`Classification threshold: <t>, the best F1 score on the validation rows: its validation
+values are optimistic` while the threshold is the best value of the metric **Best threshold by** chose, see "Output").
 
 Hover a column header or a metric name to see what it means; hover a red value to see what is wrong with it, and a
 value shown as `0.000` that is not 0 to see it in exponent form (`3.2e-05`); other values have no tooltip:
@@ -108,9 +111,9 @@ value shown as `0.000` that is not 0 to see it in exponent form (`3.2e-05`); oth
 | Task | Metrics |
 |---|---|
 | Regression | **MSE**, **RMSE** (mean squared error and its root; lower is better), **MAE** (mean absolute error; lower is better), **R2** (the share of the target's variation the model explains; 1 is perfect) |
-| Classification | **Accuracy** (the share of correct predictions), **F1** (balances precision and recall; for more than two classes, the average over the classes), **Balanced accuracy** (the average over the classes of the share of each class predicted correctly), **MCC** (Matthews correlation, -1 to 1) |
+| Classification | **Accuracy** (the share of correct predictions), **F1 score** (balances precision and recall; for more than two classes, the average over the classes), **Balanced accuracy** (the average over the classes of the share of each class predicted correctly), **MCC** (Matthews correlation, -1 to 1) |
 | Two classes | also **Recall (Sensitivity)**, **Specificity**, **Precision**, **Negative Predictive Value**, computed for the positive class named under the table (the first class in alphabetical order) |
-| Classifier with class probabilities | **AUC-ROC** (the area under the ROC curve of the probabilities: 0.5 is a coin toss, 1 is perfect), for every classifier whose method returns class probabilities (all EDA classifiers; SVM only with **Predict probability**): for two classes, of the positive class's probability; with more than two classes, the average over the classes of the one-vs-rest AUCs; **Average precision** (the area under the precision-recall curve of the positive class's probability; the average over the classes for more than two); **Log loss** (the average of -ln(probability of the actual class): 0 is perfect, lower is better; a confident wrong prediction costs most) and **Brier score** (the mean squared difference between the class probabilities and the actual class, 0 or 1: 0 is perfect, lower is better; 0.25 is guessing 0.5 for two classes; with more than two classes, summed over the classes), computed by Forge. With **Predict probability**, the label metrics are those of the labels the **Classification threshold** gives; the probability metrics do not depend on it |
+| Classifier with class probabilities | **AUC-ROC** (the area under the ROC curve of the probabilities: 0.5 is a coin toss, 1 is perfect), for every classifier whose method returns class probabilities (all EDA classifiers; SVM through Platt scaling, see "Output"): for two classes, of the positive class's probability; with more than two classes, the average over the classes of the one-vs-rest AUCs; **Average precision** (the area under the precision-recall curve of the positive class's probability; the average over the classes for more than two); **Log loss** (the average of -ln(probability of the actual class): 0 is perfect, lower is better; a confident wrong prediction costs most) and **Brier score** (the mean squared difference between the class probabilities and the actual class, 0 or 1: 0 is perfect, lower is better; 0.25 is guessing 0.5 for two classes; with more than two classes, summed over the classes), computed by Forge. With **Predict probability**, the label metrics are those of the labels the **Classification threshold** gives; the probability metrics do not depend on it |
 
 Average precision, the per-class values and the curves come from Crux (scikit-learn's metrics) through the EDA
 package's `classificationReport` function; without it, or when it fails, Forge shows the other metrics only.
@@ -161,7 +164,10 @@ whose grid marks its own values):
   deviate significantly from the actual ones.`; hover: a list such as `variance: predicted 0.214, actual 0.762`; see
   **Statistics**)
 * about the metrics: **R2** or **AUC-ROC** below its threshold (`R2 is below 0.3.`, `AUC-ROC is below 0.5.`) and
-  validation values far from the training ones, in one line (`The model may be overfitting.`; hover: a list such as
+  validation values worse than the training ones by more than the metric allows (0.05 for a score from 0 to 1 such as
+  Accuracy or AUC-ROC, 0.1 for MCC and R2, 1.5 times the training value for an error such as RMSE or Log loss; on the values rounded to three decimals as
+  shown), in one
+  line (`The model may be overfitting.`; hover: a list such as
   `Accuracy: train 0.900, validation 0.400`); see **Performance**, whose grid shows each such value in red, with
   `The validation <metric> is far from the training one: the model may be overfitting.` in its tooltip
 
@@ -182,7 +188,7 @@ The viewers:
   model saved with the former regression mode of **Predict probability** draws both from its scores in Run Evaluation,
   **Per-class** (three or more classes: a parallel coordinates plot
   with one line per class in the class's color - the same colors as **Features** and **Class balance** - across
-  **Precision**, **Recall**, **F1** and **AUC-ROC**, the validation values, the evaluation's in Run Evaluation; the
+  **Precision**, **Recall**, **F1 score** and **AUC-ROC**, the validation values, the evaluation's in Run Evaluation; the
   legend of the classes is on top when it is short, not shown otherwise; no in-chart filters or color selector),
   **Predicted <target> vs Actual** (the first two
   numerical features colored by the target, when there are two; a right prediction is a circle, a wrong one a cross),
@@ -198,8 +204,8 @@ a row of the grid and the point lights up (rows skipped for missing values shift
 **Target**, **Features** and the rows used stay the same (a hyperparameter or **Method** change, a change of **Predict
 probability** or **Classification threshold**), a new result keeps the viewers, their zoom and the sizes you dragged,
 and only the predictions in them change; a panel that appears or goes (**Wrong predictions**, the
-method's own views) lays out again only the rows it changes, at their starting sizes. Any other change builds the viewers again. A change of **Predict probability** (for a method whose
-probabilities are not a setting) or of **Classification threshold** re-cuts the class probabilities of the last
+method's own views) lays out again only the rows it changes, at their starting sizes. Any other change builds the viewers again. A change of **Predict probability** or of
+**Classification threshold** re-cuts the class probabilities of the last
 training, without retraining: **ROC Curve** and **PR Curve** stay as they are and only their circles move, the panels
 of the labels change; a retrain redraws both curves in the same plots.
 
@@ -207,7 +213,7 @@ Under the rows (and **Wrong predictions**), the panel **Runs** (hover its title:
 inputs again.`) lists every training of this view that was not stopped by a change (completed, failed or
 cancelled), newest first, the newest one current: **#** (its number in this view), **Method**,
 **Target**, **Features** (how many; hover for the names), **Preparation** (`impute (4 neighbors, Euclidean)`,
-`one-hot`, `skip unique categories`, `probability (threshold 0.42, best F1)` for a completed
+`one-hot`, `skip unique categories`, `probability (threshold 0.42, best F1 score)` for a completed
 two-class training with the threshold optimized for a metric, `probability (threshold 0.42)` for one edited by hand
 or a training that did not complete, `probability` for more classes; empty
 when none), **Rows**, **Status** (`completed`,
@@ -217,9 +223,8 @@ when none), **Rows**, **Status** (`completed`,
 preparation, validation (with the split seed), method and settings again when they differ from the form's. A click on a row whose inputs the form already has, while the results show that training, only makes
 it current; when only **Predict probability**, **Classification threshold** or **Best threshold by** differs, the click sets
 them back (an optimized threshold with its metric, a hand-edited one as edited) and the results are re-cut without
-training (for SVM, whose probabilities are a setting, **Predict probability** differs as
-that setting, so the click trains); after a cancelled or failed training, a click on its row trains it again. The
-**Method** tooltip lists the settings without that hidden one. The read-only grid moves
+training; after a cancelled or failed training, a click on its row trains it again. The
+**Method** tooltip lists the settings without SVM's hidden **Class probabilities**. The read-only grid moves
 nothing with the arrow keys. After a click that sets other inputs, the view
 then trains as after any change (a slow method waits for **Train**), and the new training becomes the first row. When
 the table no longer has a column of that run, a warning says `The table no longer has the columns of this run:
@@ -227,41 +232,55 @@ the table no longer has a column of that run, a warning says `The table no longe
 
 ### Compare models
 
-Under the inputs (and **Train** when shown), a card shows the current model: the newest completed training of the
-table in this view, on a light blue background. The cards are as wide as the inputs (their right edge is **Tune**'s)
-and as tall as their content. A failed or cancelled training, or an input changed before the next
-training, leaves it as it is. Its header is the method in bold; under it, for the winner of a search, an italic line
-reads `Auto-tuned model` (Find best model) or `Auto-tuned settings` (Tune); other cards show nothing between the
-header and the tabs (the features and the preparation are in **Runs**). Two tabs follow, both small tables of one look (the header row darker than the
-rows, the names light grey, the values a shade darker and right-aligned, no colored values):
+Under the inputs (and **Train** when shown), the group **Trained models** compares the models trained in this view.
+It is hidden until a training completes, and starts expanded. The cards are as wide as the inputs (their right edge is
+**Tune**'s).
 
-* **Performance** (open at first): the metrics of that training in the columns of the **Performance** grid
-  (**Metric**, **Train**, **Validation**, and **Test** after a search with a hold out), with three decimals; three
-  rows: first the metric its search optimized (Tune or Find best model), else `Balanced accuracy` for a classifier and
-  `R2` for a regressor, then the next metrics in the grid's order. **Show more** under the table (`Show all metrics`)
-  lists every metric, the first one still first, and turns into **Show less** (`Show fewer metrics`), on that card
-  only (a new current card starts with three rows);
-  hovering a value shows it in full with what the column measures and, for a value **Performance** marks, the
-  finding; hover a header or a metric for its meaning. The values are the ones recorded with the training: a later
-  change of **Predict probability** or **Classification threshold** re-cuts **Performance**, not the card.
-* **Settings**: every setting of the method (**Setting**, **Value**) with its value as trained, the ones the method
-  ignored included, but not SVM's **Class probabilities**, which **Predict probability** sets (hover a row for its
-  meaning; `No settings` for a method without any).
+**Compare by** at the top of the group (hover: `The metric the cards show, sort and compare by.`) lists the metrics of
+the shown cards; hover an item for its meaning (lower is better for Log loss, Brier score, MSE, RMSE and MAE). It follows the current card (the metric its search optimized, else
+`Balanced accuracy` for a classifier and `R2` for a regressor) until you pick one, which then stays while it is listed
+and the view is open.
 
-The tabs switch together: a click on a tab of one card shows that tab on every card, and a new card opens on it.
+The first card is the current model: the newest completed training of the table in this view, on a light blue
+background. A failed or cancelled training, or an input changed before the next training, leaves it as it is. Each
+card shows:
+
+* the method in bold, **Best** next to it on every shown card whose validation value of the metric is the best at
+  three decimals, ties included (on every card when they all tie; not shown with one card), and at the right "+" (the current card)
+  or a trash (a pinned card);
+* under the method, in italics, how the settings were chosen when the model trained, as **Settings** read
+  (`Default settings`, `Customized settings`, `Auto-tuned settings` — found by a search of this one method: Tune, or
+  Find best model over one method — or `Auto-tuned model` — the winner of Find best model over two methods or more:
+  the method was chosen too), and just under it a name-value list of every setting and its
+  value as trained, defaults included, two settings a row (`Iterations 20  Rate 0.3`, then the next two; a
+  single setting is one row, e.g. `Shrinkage 0.238`); a narrow card scrolls the list sideways. Hover a setting for what it
+  means (its tooltip in **Manual**). A method without settings shows none of it. Neither the settings nor the method run
+  under the "+" or the trash;
+* the metric and its validation value (`Balanced accuracy 0.927`), and at the right the status `No overfitting`
+  (green, with a tick) or `Overfitting` (amber, with `!`), by the overfitting rule of "Results" (0.05 for a score from
+  0 to 1, 0.1 for MCC and R2, 1.5 times for an error) applied to the values as shown, rounded to three decimals (an
+  error's ratio to two). Hover the metric's name for what it means (as in **Performance**), its value for every metric
+  with its **Train** and **Validation** values, the chosen metric highlighted; hover the status for the metric, its
+  **Train**, **Validation** and, for a score, **Gap** (train − validation of the shown values) or, for an error,
+  **Ratio** (validation / train, two decimals; `-` for a training value of 0, where any validation error overfits),
+  and `Should perform about as well on new data.` or `May perform worse on new data.`
+
+The values are the ones recorded with the training: a later change of **Predict probability** or **Classification
+threshold** re-cuts **Performance**, not the card. The pinned cards follow the current one on a light grey background,
+sorted by the metric (best first, a card without it last, ties newest pinned first).
 
 The "+" at the right of the current card's header (hover: `Pin to compare with other models`) pins the model: a light
-grey card of the same training appears right under the current card, above the cards pinned before, with a trash icon
+grey card of the same training joins the pinned cards, with a trash icon
 (`Remove from the comparison`) that removes it. While a pinned card has the current model's inputs (every input but
-**Predict probability**, **Classification threshold** and **Best threshold by**; for SVM, whose probabilities are a
-setting, **Predict probability** counts), the current card shows no icon; removing that pinned card brings "+" back. Nothing limits the number of pinned cards. Click a pinned card (not its tab headers or its icon) to set
-its inputs again, as a click on its **Runs** row does.
+**Predict probability**, **Classification threshold** and **Best threshold by**), the current card shows no icon; removing that pinned card brings "+" back. Nothing limits the number of pinned cards. Click a pinned card (not its icon) to set its inputs again, as
+a click on its **Runs** row does.
 
 The cards compare models of the same data: a card is shown only while **Target** and the **Validation** inputs (the
 scheme, its folds or test fraction, shuffle, and the split seed when shuffled) are the ones it was trained with; a
 change hides the other cards at once, and setting the inputs back shows them again before any retraining.
 **Features**, the preparation, the method and its settings may differ. The cards are kept for the session of the view
-and are not saved; a **Table** change starts an empty list. **Train** stays at the panel's bottom edge while the inputs
+and are not saved; a **Table** change starts an empty list. While no card is shown, **Trained models** is hidden.
+**Train** stays at the panel's bottom edge while the inputs
 scroll; once the cards come into view, it scrolls up with the end of the inputs.
 
 ### Search
@@ -283,9 +302,9 @@ status, and no **Tune**.
 text; a click on it opens it) and **Tune** at the right under it. **Search options** lists first the search's own rows:
 
 * **Metric**: what the search maximizes (or minimizes for an error), measured by the validation the **Validation**
-  group sets: `Balanced accuracy` (the default), `Accuracy`, `F1`, `MCC`, `AUC-ROC`, `Log loss`, `Brier score`
+  group sets: `Balanced accuracy` (the default), `Accuracy`, `F1 score`, `MCC`, `AUC-ROC`, `Log loss`, `Brier score`
   (these two minimized) for a classifier (`AUC-ROC`, `Log loss` and `Brier score` need a method that returns class
-  probabilities: with SVM without **Predict probability** every trial fails), `R2` (the default), `RMSE`, `MAE` for a
+  probabilities), `R2` (the default), `RMSE`, `MAE` for a
   regression
 * **Limit**: what ends the search, one limit (a radio, hover: `What ends the search: a time or a trial limit`):
   **Time** or **Trials** (the default); under it the one input it chooses:
@@ -327,9 +346,9 @@ selection. It is disabled, with the reason as its tooltip, while the selection h
 training runs, while a range has a problem (`Fix the highlighted range`), when nothing is left to tune (`All
 settings are fixed`) and while the limit is invalid (the field's first message, captioned: `Max time: Value must be
 less than 60`, `Max trials: Value must be greater than 1`); a search never starts with one of these problems.
-**Predict probability** stays as the form has it: the trials score the labels its threshold gives (for SVM, every
-trial fits with **Class probabilities**, about five times slower); the winner's training then optimizes the threshold
-for **Best threshold by** again, unless the threshold was edited by hand. **Missing values** stays as the form has it.
+**Predict probability** stays as the form has it: the trials score the labels its threshold gives (SVM's trials
+always fit with **Class probabilities**, about five times slower for a classifier); the winner's training then
+optimizes the threshold for **Best threshold by** again, unless the threshold was edited by hand. **Missing values** stays as the form has it.
 
 Each trial is a regular training of the method with other settings, validated as the **Validation** group says (its
 folds, stratification, shuffle and split seed) on the same folds for every trial; with **Hold-out**, each trial is
@@ -391,7 +410,7 @@ without a completed trial last):
 `Pinned: <settings>`), **<Metric> (CV)**, or **<Metric> (hold-out)** with **Hold-out**
 (hover for the fold values; one value with a hold out), **SE** (the standard error of the metric over the folds; 0 with a hold out),
 **<Metric> − SE** (the score less its standard error, plus for an error minimized: **<Metric> + SE**; hover the
-header, e.g. for F1: `F1 minus its standard error over the folds: a cautious estimate of F1. The method with the
+header, e.g. for F1 score: `F1 score minus its standard error over the folds: a cautious estimate of F1 score. The method with the
 highest value is chosen.`, for RMSE `RMSE plus its standard error ... The method with the lowest value is chosen.`;
 with a hold out `(0 on a hold out: one score)` instead of `over the folds`),
 **Trials** (hover the header: `Every trial of the method, pruned and failed ones included.`) and **Chosen** (hover
@@ -422,11 +441,12 @@ each user keeps it open or folded, and it opens on an invalid limit) over these 
   Neural Network, TabM, RealMLP, then the others). A server method is not listed (`Not listed: <Method>: Runs on the
   server; not searched in the browser`), nor, while **Predict probability** is on, a method without class
   probabilities (`Not listed: <Method> gives no class probabilities`), nor, under **AUC-ROC**, **Log loss** or **Brier
-  score**, a method without them with the current settings (SVM with **Predict probability** off: `Not listed: SVM
-  gives no class probabilities, which AUC-ROC needs`). Above 1 minute every method is checked; at 1 minute, or with
+  score**, a method without them (`Not listed: <Method> gives no class probabilities, which AUC-ROC needs`). Above 1
+  minute every method is checked; at 1 minute, or with
   **Trials**, only the ones that retrain by themselves on this data (not RealMLP, nor TabM above 200 rows, Neural Network above 2000 rows,
-  Random Forest above 20000 cells), and not SVM while **Predict probability** is on (its fits are about five times
-  slower). A method you check or uncheck keeps your choice; the others follow the time limit, the metric and
+  Random Forest above 20000 cells), and not SVM for a classifier (its fits with class probabilities are about five times
+  slower); on a table of more than 1000 rows SVM is unchecked at any limit, for a regression too (the label's tooltip
+  says so: `SVM: unchecked by default on more than 1000 rows`). A method you check or uncheck keeps your choice; the others follow the time limit, the metric and
   **Predict probability**
 
 **Find** sits at the right under Search options, where **Tune** does, also while Search options is folded. Each user
@@ -436,8 +456,8 @@ the model shown.
 **Predict probability** stays enabled while a checked method gives class probabilities, or while none is checked (Find
 is then disabled); otherwise it is unchecked and disabled: `No checked method gives class probabilities`; toggling it changes the list's defaults and trains nothing.
 **Missing values** shows for features with empty cells even when the suggested method could keep them: the search
-skips those rows, or imputes them with **Impute**, and never keeps them, as every method gets the same folds; the run,
-the card and a saved model record that.
+skips those rows, or imputes them with **Impute**, and never keeps them, as every method gets the same folds; the run
+and a saved model record that.
 
 **Find** (its tooltip: `Find the best model`) is disabled, with the reason as its tooltip, as **Tune** is, when no
 method is checked (`Check at least one method`) and while the limit is invalid (`Max time: ...`, `Max trials: ...`, `Max
@@ -478,9 +498,8 @@ round <N>` in its **Trials** and **Method** tooltips (round 1 is the defaults).
 ### Preparation
 
 The **Preparation** group, between **Data** and **Method**, prepares the data before the method gets it. Each input is
-shown only while it applies to the checked features and the target, and the group is hidden while none does; an input
-that disappears goes back to its default (except **Classification threshold** and **Best threshold by**, see below). Hover
-an input to see what it does.
+shown only while it applies to the checked features, and the group is hidden while none does; an input that
+disappears goes back to its default. Hover an input to see what it does.
 
 * **Missing values**: shown when a checked feature has empty cells; its tooltip lists the columns and how many cells
   are empty. **Skip rows** (the default) leaves those rows out. **Impute** fills the empty cells from the most similar
@@ -504,6 +523,13 @@ an input to see what it does.
   them can be applied to. When it leaves no feature, **Features** turns red: `Skip unique categories leaves no
   feature. Check more features.` A molecule feature, while a method that takes molecules is installed, is never left
   out, although SMILES are usually all different
+
+### Output
+
+The **Output** group, between **Method** and **Validation**, decides what the model outputs. It is shown while the
+target is text or yes/no with two or more classes. Each input is shown only while it applies to the target; an input
+that disappears goes back to its default (except **Classification threshold** and **Best threshold by**, see below).
+
 * **Predict probability** (unchecked by default): shown while the target is text or yes/no with two or more classes.
   It uses the method's own class probabilities; the method stays the classifier it is. Its tooltip: `Adds the
   probability of each class when the model is applied; for two classes, lets you choose the classification threshold
@@ -514,10 +540,10 @@ an input to see what it does.
   first one in alphabetical order) where its probability reaches **Classification threshold**, else the other class;
   for more classes, the most probable class. When the method returns no probabilities for this data, nothing is added.
   Toggling it does not retrain: the labels and their metrics are computed again from the class probabilities of the
-  last training; **AUC-ROC**, **Average precision**, **Log loss** and **Brier score** do not change. SVM is the
-  exception: its probabilities are its **Class probabilities** setting (Platt scaling, an internal cross-validation,
-  about five times the training time), which **Predict probability** sets and the settings do not show, so toggling it
-  retrains SVM and adds a run
+  last training; **AUC-ROC**, **Average precision**, **Log loss** and **Brier score** do not change. SVM is no
+  exception: Forge always trains it with its **Class probabilities** setting (Platt scaling, an internal
+  cross-validation, about five times the training time of a classifier), so it has the curves and the probability
+  metrics whether or not **Predict probability** is checked
 * **Classification threshold** (two classes, under a checked **Predict probability**): a number from 0 to 1 (0.5
   until a best is found) with a slider, shown with 3 significant digits (`0.520`; an exact value as it is: `0.5`, `0.9`) while the full value
   is used, saved and shown everywhere else; its tooltip (on the caption and the box): `Rows whose probability of <positive class> is at
@@ -532,10 +558,10 @@ an input to see what it does.
   model records the metric (`thresholdMetric` in its options) and its **Performance** pane reads the same line; after a
   hand edit it reads `Classification threshold: <t>` and records no metric. Unchecking **Predict probability** keeps
   **Best threshold by**, the threshold and its hand edit: checked again, a threshold not edited by hand is optimized
-  for the kept metric, and a hand-edited one stays until **Set**. A target with other classes sets them back to `F1`
-  and 0.5 and forgets the hand edit.
+  for the kept metric, and a hand-edited one stays until **Set**. A target with other classes sets them back to `F1
+  score` and 0.5 and forgets the hand edit.
 * **Best threshold by** (two classes, under **Classification threshold**; its tooltip: `The metric the classification
-  threshold maximizes on the validation rows.`): `F1` (the default), `Balanced accuracy` (its tooltip says it picks
+  threshold maximizes on the validation rows.`): `F1 score` (the default), `Balanced accuracy` (its tooltip says it picks
   the threshold Youden's J picks), `MCC` or `Accuracy` (each item's tooltip describes the metric). The threshold is
   optimized at once: when **Predict probability** is checked and after every new training (a search's winner too),
   **Classification threshold** becomes the value that maximizes the metric on the out-of-fold probabilities (the
@@ -673,7 +699,7 @@ empty for most methods, see "Methods"), **Keeps training rows** (the model file 
 **Retrains live**, **Roles**, **Hyperparameters** (the setting names) and **Settings**: a json text with one entry per
 setting, `name`, `type` and, when the method declares them, `default`, `min`, `max`, `choices` and `description`. These
 are the names and values `trainModel`'s `hyperparameters` accepts. A method's probability setting (SVM's
-`probability`) is not listed: `predictProbability` sets it.
+`probability`) is not listed: Forge always turns it on.
 
 With a `table`, two more columns: **Applicable** (the method can learn from the table's default features, as the
 **Predictive model** view picks them, to predict `target`) and **Suggested** (the method `trainModel` trains with when
@@ -725,7 +751,8 @@ preparation), `metrics` (`train`, `validation`, for two classes `positiveClass` 
 each class's `label`, `rows` and `train` / `validation` values of `precision`, `sensitivity`, `f1`, `auc`,
 `averagePrecision`; `test` after a search that held rows out; null when none were saved), `search` (the search that
 chose the settings, as `trainModel` returns it; null without one),
-`findings` (`{text, detail}` for a metric below its threshold or a validation value far from the training one, as
+`findings` (`{text, detail}` for a metric below its threshold or a validation value worse than the training one by
+the overfitting rule (0.05 for a 0-1 score, 0.1 for MCC and R2, 1.5 times for an error), as
 the metrics grid marks them), `seed`, `splitting`, `storage` (`mode`, with a reference its `source`, with a copy its
 `tableId`), `dataset` (`name`, `rows` and `summary`, the data summary kept instead of the data), `hasModelFile`,
 `keepsTrainingRows`, `author` (a login), `created` and `updated` (ISO dates), `lastRun` (`when` and `status` of the
@@ -772,7 +799,7 @@ seed 42):
   | `neighbors`, `distance` | the EDA imputer's (`4`, `Euclidean`) | the settings of `impute` |
   | `oneHot` | on when every text or yes/no feature has at most 20 categories (while `skipUniqueCategories` is on, features whose values are all different do not count) | One-hot encoding of text and yes/no features |
   | `skipUniqueCategories` | `true` | leaves out text features whose values are all different |
-  | `predictProbability` | `false` | for a text or boolean target: the saved model adds the class probabilities when applied, and the labels come from them (for two classes, at `threshold`; for more, the most probable class). It stays on with `search` (the trials score those labels) and, for SVM, sets its `probability` setting |
+  | `predictProbability` | `false` | for a text or boolean target: the saved model adds the class probabilities when applied, and the labels come from them (for two classes, at `threshold`; for more, the most probable class). It stays on with `search` (the trials score those labels) (SVM always trains with its probability setting on) |
   | `threshold` | optimized | two classes with `predictProbability`: the probability of the first class from which a row is predicted as it. Without it, the value that maximizes `thresholdMetric` on the validation rows (after a search, on the winner's), stored with the model as `thresholdMetric`; `0.5` when there is none (the validation rows hold one class). A given `threshold` is used as it is and no metric is stored. `cutoff` is accepted as its old name (`threshold` wins when both are given) |
   | `thresholdMetric` | `f1` | the metric the threshold is optimized for: `f1`, `balancedAccuracy`, `mcc` or `accuracy` (as **Best threshold by**); ignored when `threshold` (or `cutoff`) is given |
   | `scheme` | `kfold` | how Validation is measured: `kfold` (cross-validation) or `holdout` (one held out part, then the final model on all rows), as **Scheme** in "Validation" |
@@ -781,7 +808,7 @@ seed 42):
   | `stratified` | `true` | each class keeps its share in every part or in the hold out; ignored for a regression |
   | `shuffle` | `true` | shuffles the rows by `seed` before the split; `false`: blocks of consecutive rows, or the last rows held out |
   | `seed` | `42` | the split seed, a whole number from 0 to 2147483647 (with `search`, also of the search's hold out and of the trials' settings) |
-  | `search` | none (`{budgetSeconds: 60}` with `auto`) | `{metric, budgetSeconds, maxTrials, strategy, methods, topK}`, each key optional, but one limit, `budgetSeconds` or `maxTrials`, never both (neither: `budgetSeconds: 60`): with a method, tunes its settings first, as **Tune** does, with `auto` finds the best model, as **Find** does (see "Search"), then trains the chosen ones. `metric`: `r2` (regression default), `rmse`, `mae`, `balancedAccuracy` (classifier default), `accuracy`, `f1`, `mcc`, `auc`, `logLoss`, `brier` (these two minimized); `budgetSeconds`: a whole number of seconds, at least 1; `maxTrials`: starts no more than that many trials (of all methods; completed, pruned and failed ones alike); only with `auto`: `strategy`, `equal` (the default: each method an equal share of the limit, at least one trial each) or `halving` (successive halving, as **Leaders**), `methods`, the method names to try (by default every browser method that can learn from the data, without the ones lacking class probabilities while `predictProbability` is on or under `auc`, `logLoss`, `brier`, and at 60 seconds or less or with `maxTrials` only the ones that retrain by themselves, not SVM with `predictProbability`), and `topK`, how many methods successive halving keeps to tune (default `3`) |
+  | `search` | none (`{budgetSeconds: 60}` with `auto`) | `{metric, budgetSeconds, maxTrials, strategy, methods, topK}`, each key optional, but one limit, `budgetSeconds` or `maxTrials`, never both (neither: `budgetSeconds: 60`): with a method, tunes its settings first, as **Tune** does, with `auto` finds the best model, as **Find** does (see "Search"), then trains the chosen ones. `metric`: `r2` (regression default), `rmse`, `mae`, `balancedAccuracy` (classifier default), `accuracy`, `f1`, `mcc`, `auc`, `logLoss`, `brier` (these two minimized); `budgetSeconds`: a whole number of seconds, at least 1; `maxTrials`: starts no more than that many trials (of all methods; completed, pruned and failed ones alike); only with `auto`: `strategy`, `equal` (the default: each method an equal share of the limit, at least one trial each) or `halving` (successive halving, as **Leaders**), `methods`, the method names to try (by default every browser method that can learn from the data, without the ones lacking class probabilities while `predictProbability` is on or under `auc`, `logLoss`, `brier`, and at 60 seconds or less or with `maxTrials` only the ones that retrain by themselves, not SVM for a classifier, and never SVM on a table of more than 1000 rows unless methods names it), and `topK`, how many methods successive halving keeps to tune (default `3`) |
 
 * `name`: saves the model under this name; without a name the model is trained and measured but not saved.
   `description` and `tags` (comma-separated) go with it
@@ -846,13 +873,13 @@ its inputs, whose data preparation fails or whose search completes no trial reco
   'maxTrials' cannot be combined: choose one limit.`
 * `Naive Bayes declares no search space, so it cannot be tuned.`, `No trial completed within the budget. Give the
   search more time.`, `No trial completed: <the first failed trial's error>` (for example `No trial completed: The
-  metric AUC-ROC needs class probabilities; SVM gives none.`), `The search was cancelled before a trial completed.`
+  metric AUC-ROC needs class probabilities; <Method> gives none.`, a method without class probabilities), `The search was cancelled before a trial completed.`
 * with `auto`: `The search option 'methods' needs a list of method names.`, `The option 'topK' needs a whole number of
   at least 1.`, `The option 'missingValues' keep cannot be used with method auto. Use skip or impute.`, `The
   hyperparameters cannot be given with method auto: every method starts from its defaults.`, `Linear Regression cannot
   take part in the search: it cannot learn from this selection.` (`...: it runs on the server.` for a server method),
-  `<Method> gives no class probabilities, so Predict probability cannot be used with it.`, `SVM cannot take part in
-  the search: it gives no class probabilities, which AUC-ROC needs.`, `No method can take part in the search. Check
+  `<Method> gives no class probabilities, so Predict probability cannot be used with it.`, `<Method> cannot take part
+  in the search: it gives no class probabilities, which AUC-ROC needs.`, `No method can take part in the search. Check
   the features and the target.`, `The search option 'strategy' needs equal or halving.`, `At least one trial per
   method: <N>.` (`equal` with fewer `maxTrials` than methods); with a method: `The search options 'strategy',
   'methods' and 'topK' need method auto.`
@@ -1008,7 +1035,7 @@ model's commands, then come the panes:
   accuracy, limit 100 trials)`), **Applicable to** (the open tables that fit), and
   **Tags**, which you can edit right there
 * **Performance**: the metrics saved with the model (the **Metric / Train / Validation** grid of the training, with
-  **Test** after a search that held rows out, a value below its threshold or far from the training one in red, as in
+  **Test** after a search that held rows out, a value below its threshold or worse than the training one by the overfitting rule in red, as in
   the results) and how it was validated (with the search bullets), then **Run
   Evaluation** (for a model trained and saved in Forge; its tooltip: "Apply the model to its training data, or to an
   open table, and show how well it predicts."). It measures the model again on data with known targets: the
@@ -1136,9 +1163,10 @@ the `train` function serve **Tune**:
 
 One more optional key of the `train` function serves **Predict probability**: `meta.mlprobabilities`, `'true'` when
 `apply` returns the `proba_<class>` columns of a classifier, or the name of a bool `train` input that turns them on
-(EDA's SVM: `probability`). Such an input is set from **Predict probability**, hidden from the settings, Search options,
-the card's **Settings** tab and `Forge:listMethods`, and refused in `trainModel`'s `hyperparameters`. Without the key, **Predict
-probability** is disabled for the method. EDA declares `'true'` on every classifier but SVM.
+(EDA's SVM: `probability`). Forge always turns such an input on (a method ignores it for a regression), hides it from
+the settings, Search options, the **Trained models** cards' settings and `Forge:listMethods`, and refuses it in `trainModel`'s
+`hyperparameters`. Without the key, **Predict probability** is disabled for the method. EDA declares `'true'` on every
+classifier but SVM, which names its probability input.
 
 ### Methods that take molecules
 
@@ -1153,8 +1181,9 @@ it, and a method you chose says so in a balloon: `XGBoost cannot learn from Mole
 installed, a molecule column is a text feature like any other. A saved model remembers that `smiles` is a Molecule
 column, and **Apply** asks for a Molecule column for it.
 
-Builds of the molecule branch register a temporary method, **Forge Check (molecules)** (linear regression on the
-numerical features, molecules ignored), to check this end to end; it is deleted before that branch merges.
+Debug builds of this version register a temporary method, **Forge Check (molecules)** (linear regression on the
+numerical features, molecules ignored), to check this end to end; it is deleted before the next release. Chemprop
+(Chem) declares `Molecule`.
 
 ## Data storage
 

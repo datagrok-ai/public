@@ -6,14 +6,14 @@ import {ModelInfo} from '../catalog/model-edit';
 import {applicableEngines, ApplicableEngines, EngineFailure} from '../engines/applicable-engines';
 import {CHECK_TIMEOUT_MS, NoAnswerError} from '../engines/engine-calls';
 import {defaultHyperparameters, enabledRules, EnabledRules, Engine, featureSemTypes, givesProbabilities,
-  handlesMissingValues, Hyperparameters, isEnabled, isServerEngine, probabilityInput, visibleHyperparametersOf,
-  withProbabilityInput} from '../engines/engine';
+  handlesMissingValues, Hyperparameters, isEnabled, isServerEngine, visibleHyperparametersOf, withProbabilityInput}
+  from '../engines/engine';
 import {errorMessage, ForgeError} from '../forge-error';
 import {ModelTask, TrainingRunStatus} from '../generated/db';
 import {BestThresholdMetric, METRIC_LABELS, taskOf} from '../metrics/metrics';
 import {_package} from '../package';
 import {missingColumnsOf, MissingValuesSettings} from '../preparation/missing-values';
-import {PreparedFeatures, twoClasses} from '../preparation/pipeline';
+import {PreparationSteps, PreparedFeatures, twoClasses} from '../preparation/pipeline';
 import {DatasetFingerprint, datasetFingerprint, featuresHadGaps} from '../storage/dataset-fingerprint';
 import {datasetRefOf} from '../storage/dataset-ref';
 import {StorageChoice, TrainingRunRecord, trainingRunOf} from '../storage/model-fields';
@@ -21,7 +21,7 @@ import {saveTrainedModel} from '../storage/model-store';
 import {recordTrainingRun} from '../storage/training-run-store';
 import {browserSearch} from '../training/browser-search';
 import {defaultFeatures} from '../training/default-features';
-import {bestCandidates, bestSearchPlan, canContinue, failedSearchMessage, quickEngines, requestFingerprint,
+import {bestCandidates, bestSearchPlan, canContinue, failedSearchMessage, requestFingerprint,
   runPlanned, SearchChoice, SearchMode, searchableEngines, SearchState, searchTitle, tuneSearchPlan}
   from '../training/search';
 import {bestThresholdOf, checkSelection, failedCheck, hasDataProblems, MetricsRecord, prepareTraining,
@@ -36,6 +36,7 @@ import {FindSettings} from './find-settings';
 import {ForgeApp} from './forge-app';
 import {MissingValuesInputs} from './missing-values-inputs';
 import {ModelCards} from './model-cards';
+import {OutputInputs} from './output-inputs';
 import {PreparationInputs} from './preparation-inputs';
 import {reportError} from './report-error';
 import {ResultsPane} from './results-pane';
@@ -76,6 +77,7 @@ interface TrainForm {
   target: DG.InputBase<DG.Column | null>;
   features: DG.InputBase<DG.Column[]>;
   preparation: PreparationInputs;
+  output: OutputInputs;
   validation: ValidationInputs;
   method: DG.ChoiceInput<string | null>;
   hyperparameters: Map<string, DG.InputBase>;
@@ -120,7 +122,7 @@ export class TrainView extends DG.ViewBase {
    * Search and Runs, all in one vertical splitter. */
   readonly resultsPane = new ResultsPane(this.resultsStatus, [{block: this.searchPanel.root, height: 320},
     {block: this.runsPanel.root, height: 260}]);
-  /** The model cards under the form: the current model and the pinned ones (same data only). */
+  /** The **Trained models** group under the form: the current model and the pinned ones (same data only). */
   readonly modelCards = new ModelCards((run) => this.restoreRun(run));
   lastTraining: Training | undefined;
   /** The recorded trainings of the current table, newest first; a Table change starts a new list. */
@@ -273,11 +275,15 @@ export class TrainView extends DG.ViewBase {
     return this.form.preparation;
   }
 
+  get outputInputs(): OutputInputs {
+    return this.form.output;
+  }
+
   get validationInputs(): ValidationInputs {
     return this.form.validation;
   }
 
-  /** **Data**, **Preparation**, **Method** and **Validation**. */
+  /** **Data**, **Preparation**, **Method**, **Output** and **Validation**. */
   get groups(): readonly CollapsibleGroup[] {
     return this.form.groups;
   }
@@ -330,7 +336,7 @@ export class TrainView extends DG.ViewBase {
 
   save(): void {
     const training = this.lastTraining;
-    if (training === undefined || training.isSaved || this.form.preparation.thresholdProblem !== null)
+    if (training === undefined || training.isSaved || this.form.output.thresholdProblem !== null)
       return;
     saveModelDialog(TrainView.defaultModelName(training.result), (info, choice) => this.saveModelAs(info, choice),
       {ref: datasetRefOf(training.table), rowCount: training.table.rowCount}).show();
@@ -363,9 +369,10 @@ export class TrainView extends DG.ViewBase {
   private createForm(table: DG.DataFrame, previous?: ValidationInputs): TrainForm {
     const target = table.columns.byIndex(table.columns.length - 1);
     const onChanged = () => this.requestCheck();
-    const preparation = new PreparationInputs(onChanged, () => this.onProbabilityToggled(), () => this.requestRecut(),
-      (metric) => this.bestThreshold(metric), () => TrainView.messageOf(this.check?.problems.missingValues),
+    const preparation = new PreparationInputs(onChanged, () => TrainView.messageOf(this.check?.problems.missingValues),
       this.semTypes);
+    const output = new OutputInputs(() => this.onProbabilityToggled(), () => this.requestRecut(),
+      (metric) => this.bestThreshold(metric));
     const validation = new ValidationInputs(onChanged);
     if (previous !== undefined)
       validation.restore(previous.settings(), previous.seedValue);
@@ -373,17 +380,19 @@ export class TrainView extends DG.ViewBase {
     const targetInput = ui.input.column('Target', {table, value: target, nullable: false,
       tooltipText: TrainView.targetTooltip(target), onValueChanged: (t, input) => {
         input.setTooltip(TrainView.targetTooltip(t));
-        preparation.update(featuresInput.value, t);
+        preparation.update(featuresInput.value);
+        output.update(t);
         validation.update(t);
         onChanged();
       }});
     const checked = defaultFeatures(table, target).map((c) => c.name);
     const featuresInput = ui.input.columns('Features', {table, checked, nullable: false,
       tooltipText: 'Columns the model uses to make predictions.', onValueChanged: (columns) => {
-        preparation.update(columns, targetInput.value);
+        preparation.update(columns);
         onChanged();
       }});
-    preparation.update(featuresInput.value, target);
+    preparation.update(featuresInput.value);
+    output.update(target);
     targetInput.addValidator(() => TrainView.messageOf(this.check?.problems.target));
     featuresInput.addValidator(() => TrainView.messageOf(this.check?.problems.features));
     const tableInput = ui.input.table('Table', {items: grok.shell.tables, value: table,
@@ -397,19 +406,21 @@ export class TrainView extends DG.ViewBase {
     methodInput.addValidator(() => TrainView.messageOf(this.check?.problems.method));
     const find = new FindSettings(this.findButton, methodInput.captionLabel, {onChanged: () => {
       if (this.isAutoMethod)
-        preparation.setProbabilityReason(find.probabilityReason);
+        output.setProbabilityReason(find.probabilityReason);
       this.updateControls();
     }});
+    find.setRowCount(table.rowCount);
 
     const dataInputs = [tableInput, targetInput, featuresInput];
     const methodBody = ui.div([]);
     const groups = [new CollapsibleGroup('Data', dataInputs.map((input) => input.root)), preparation.group,
-      new CollapsibleGroup('Method', [methodBody]), validation.group];
+      new CollapsibleGroup('Method', [methodBody]), output.group, validation.group];
     this.unsubscribeForm();
     this.interactivity.clear();
     ui.setDisplay(this.trainRow, false);
     this.formSubs = [...groups[0].expandOnError(dataInputs), ...groups[1].expandOnError(preparation.inputs),
-      ...groups[2].expandOnError([methodInput, ...find.inputs]), ...groups[3].expandOnError(validation.inputs),
+      ...groups[2].expandOnError([methodInput, ...find.inputs]), ...groups[3].expandOnError(output.inputs),
+      ...groups[4].expandOnError(validation.inputs),
       ...find.subs,
       // The platform's column inputs keep a removed column until their dialog is opened again.
       table.onColumnsRemoved.subscribe(() => TrainView.dropRemovedColumns(table, targetInput, featuresInput)),
@@ -420,7 +431,7 @@ export class TrainView extends DG.ViewBase {
     ui.empty(this.formPane);
     // One form, so the labels of every group line up.
     const formRoot = ui.form([]);
-    formRoot.append(...groups.map((g) => g.root), this.trainRow, this.modelCards.root);
+    formRoot.append(...groups.map((g) => g.root), this.trainRow, this.modelCards.group.root);
     this.formPane.append(formRoot);
     this.lastTraining = undefined;
     this.runs = [];
@@ -431,8 +442,8 @@ export class TrainView extends DG.ViewBase {
     this.resultsPane.layout();
     this.showHint(RESULTS_HINT);
     // fillMethod adds the tune settings.
-    const form = {table, tableInput, target: targetInput, features: featuresInput, preparation, validation,
-      method: methodInput, hyperparameters: new Map(), find, methodBody, groups} as TrainForm;
+    const form = {table, tableInput, target: targetInput, features: featuresInput, preparation, output,
+      validation, method: methodInput, hyperparameters: new Map(), find, methodBody, groups} as TrainForm;
     this.fillMethod(form);
     this.requestCheck();
     return form;
@@ -452,9 +463,9 @@ export class TrainView extends DG.ViewBase {
     this.rules = rules ?? {};
     // Under Auto the search never keeps the rows with missing values, whatever the suggested method could.
     form.preparation.setKeepsMissingValues(!this.isAutoMethod && handlesMissingValues(engine));
-    const {predictProbability} = form.preparation;
+    const {predictProbability} = form.output;
     form.find.setPredictProbability(predictProbability.value);
-    form.preparation.setProbabilityReason(this.probabilityReason(form));
+    form.output.setProbabilityReason(this.probabilityReason(form));
     form.method.setTooltip(this.isAutoMethod ? AUTO_TOOLTIP : METHOD_TOOLTIP);
     if (this.locked !== null) {
       this.locked.set(predictProbability, predictProbability.enabled);
@@ -571,22 +582,23 @@ export class TrainView extends DG.ViewBase {
     if (target === null)
       return null;
     const {validation} = this.form;
-    const steps = this.form.preparation.steps();
     return {engine: this.engine, features: this.form.features.value, target,
-      hyperparameters: withProbabilityInput(this.engine, TrainView.valuesOf(this.form.hyperparameters),
-        steps.predictProbability), seed: validation.seedValue,
-      validation: validation.settings(), missingValues: this.form.preparation.missingValues.settings(), steps};
+      hyperparameters: withProbabilityInput(this.engine, TrainView.valuesOf(this.form.hyperparameters)),
+      seed: validation.seedValue, validation: validation.settings(),
+      missingValues: this.form.preparation.missingValues.settings(), steps: this.steps()};
   }
 
-  /** Predict probability changed: under Auto the Candidates list follows it and nothing trains; else a method whose
-   * probabilities are a setting trains again, any other re-cuts the result. */
+  private steps(): PreparationSteps {
+    return {...this.form.preparation.steps(), ...this.form.output.steps()};
+  }
+
+  /** Predict probability changed: under Auto the Candidates list follows it and nothing trains; else the result is
+   * re-cut. */
   private onProbabilityToggled(): void {
     if (this.isAutoMethod) {
-      this.form.find.setPredictProbability(this.form.preparation.steps().predictProbability);
+      this.form.find.setPredictProbability(this.form.output.predictProbability.value);
       this.updateControls();
-    } else if (probabilityInput(this.engine) !== undefined)
-      this.requestCheck();
-    else
+    } else
       this.requestRecut();
   }
 
@@ -679,18 +691,18 @@ export class TrainView extends DG.ViewBase {
     if (this.isAutoMethod && check.prepared !== undefined) {
       const {columns, target} = check.prepared;
       const browser = searchableEngines(check.engines, this.engines);
-      const live = await quickEngines(browser, columns, target, false);
+      const live = await Promise.all(browser.map((e) => retrainsLive(e, columns, target)));
       if (checkNumber !== this.checkNumber)
         return;
-      for (const e of browser)
-        this.interactivity.set(e.name, live.includes(e));
+      for (const [i, e] of browser.entries())
+        this.interactivity.set(e.name, live[i]);
       this.setFindMethods(check.engines);
     }
     this.check = {...check, prepared: undefined};
     this.resultsPane.setDataInsights(check.insights);
     this.showMethods(check);
     const settings = this.form.preparation.missingValues.visibleInputs;
-    for (const input of [this.form.target, this.form.features, this.form.method, this.form.preparation.threshold,
+    for (const input of [this.form.target, this.form.features, this.form.method, this.form.output.threshold,
       ...settings, ...this.form.validation.usedInputs, ...this.activeHyperparameters(), ...this.form.find.inputs])
       input.validate();
     if (check.engines.length > 0)
@@ -729,7 +741,7 @@ export class TrainView extends DG.ViewBase {
     this.form.find.setMethods([...searchableEngines(engines, this.engines).map((e) =>
       FindSettings.entryOf(e, this.interactivity.get(e.name) === true)),
     ...engines.filter(isServerEngine).map((e) => FindSettings.entryOf(e, false))]);
-    this.form.preparation.setProbabilityReason(this.probabilityReason(this.form));
+    this.form.output.setProbabilityReason(this.probabilityReason(this.form));
   }
 
   /** Merges the [late] answers of the pending methods into the check shown, unless a newer check started: a method in
@@ -865,7 +877,7 @@ export class TrainView extends DG.ViewBase {
       .map((input) => `${input.caption}: ${input.validity}`);
     const settings = this.form.preparation.missingValues.visibleInputs.map((input) => input.validity)
       .filter((v): v is string => v !== null);
-    const threshold = this.form.preparation.thresholdProblem;
+    const threshold = this.form.output.thresholdProblem;
     return [...TrainView.dataProblems(this.check), ...settings, ...captioned(this.form.validation.usedInputs),
       ...(this.isAutoMethod ? [] : captioned(this.activeHyperparameters())),
       ...(threshold === null ? [] : [`Classification threshold: ${threshold}`])][0] ?? null;
@@ -896,8 +908,8 @@ export class TrainView extends DG.ViewBase {
       ModelCards.keyOf(target.name, this.form.validation.settings(), this.form.validation.seedValue));
     const training = this.lastTraining;
     ui.setDisabled(this.saveButton, this.isTraining || training === undefined || training.isSaved ||
-      this.form.preparation.thresholdProblem !== null);
-    this.form?.preparation.updateSet();
+      this.form.output.thresholdProblem !== null);
+    this.form?.output.updateSet();
     this.publishState(problem);
   }
 
@@ -1038,14 +1050,14 @@ export class TrainView extends DG.ViewBase {
       return;
     }
     this.form.tune.setMode(MANUAL);
-    // Any change but Predict probability (of a method without a probability setting) and the threshold drops
-    // lastTraining: while it is there, it is the result of the form's inputs.
+    // Any change but Predict probability and the threshold drops lastTraining: while it is there, it is the result of
+    // the form's inputs.
     const current = this.selection();
     if (this.lastTraining !== undefined && current !== null && isSameInputs(run, TrainView.runInputsOf(current))) {
-      const {preparation} = this.form;
-      if (preparation.predictProbability.value !== run.steps.predictProbability)
-        preparation.predictProbability.value = run.steps.predictProbability;
-      preparation.restoreThreshold(run.steps);
+      const {output} = this.form;
+      if (output.predictProbability.value !== run.steps.predictProbability)
+        output.predictProbability.value = run.steps.predictProbability;
+      output.restoreThreshold(run.steps);
       this.requestRecut();
       return;
     }
@@ -1053,6 +1065,7 @@ export class TrainView extends DG.ViewBase {
     this.form.target.value = target;
     this.form.features.value = run.featureNames.map((name) => table.getCol(name));
     this.form.preparation.restore(run.steps, run.missingValues);
+    this.form.output.restore(run.steps);
     this.form.validation.restore(run.validation, run.seed);
     this.requestCheck();
   }
@@ -1092,8 +1105,8 @@ export class TrainView extends DG.ViewBase {
           const fingerprint = datasetFingerprint(request.features, request.target);
           const planned = mode === 'tune' ?
             tuneSearchPlan(request, engine, selection.hyperparameters, choice, seed, space) :
-            bestSearchPlan(request, bestCandidates(this.candidateEngines(choice.methods ?? []), this.engines,
-              selection.steps.predictProbability), choice, seed);
+            bestSearchPlan(request, bestCandidates(this.candidateEngines(choice.methods ?? []), this.engines), choice,
+              seed);
           const requestKey = requestFingerprint(planned.plan.request);
           const continued = previous !== undefined && canContinue(previous, planned.plan, requestKey) ? previous :
             undefined;
@@ -1209,8 +1222,8 @@ export class TrainView extends DG.ViewBase {
   /** Every input of the form: the data, the preparation, the validation, the method, its settings and the Find best
    * model block. */
   private formInputs(): DG.InputBase[] {
-    const {tableInput, target, features, preparation, validation, method, hyperparameters, find} = this.form;
-    return [tableInput, target, features, ...preparation.inputs, ...validation.inputs, method,
+    const {tableInput, target, features, preparation, output, validation, method, hyperparameters, find} = this.form;
+    return [tableInput, target, features, ...preparation.inputs, ...output.inputs, ...validation.inputs, method,
       ...hyperparameters.values(), ...find.inputs];
   }
 
@@ -1306,16 +1319,16 @@ export class TrainView extends DG.ViewBase {
     const training = this.lastTraining;
     if (training === undefined)
       return;
-    const {preparation} = this.form;
-    preparation.threshold.validate();
-    if (preparation.thresholdProblem !== null) {
+    const {output} = this.form;
+    output.threshold.validate();
+    if (output.thresholdProblem !== null) {
       this.showHint(FIX_SETTINGS);
       return;
     }
-    training.result = recutResult(training.result, preparation.steps());
+    training.result = recutResult(training.result, this.steps());
     const {binaryClassificationThreshold, thresholdMetric} = training.result.options;
     if (binaryClassificationThreshold !== undefined && thresholdMetric !== undefined)
-      preparation.setThreshold(binaryClassificationThreshold, thresholdMetric);
+      output.setThreshold(binaryClassificationThreshold, thresholdMetric);
     this.updateControls();
     this.showResults(training);
   }

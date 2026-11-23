@@ -14,7 +14,7 @@ Feature: Training a classifier on iris in the Train view
   for a rejected selection in 2.5); the loader next to Performance (it shows while aria-busy is true, which is what
   the waits read); the tooltips of Table, Target, Features (outside a problem) and the hyperparameters, the Performance
   headers and metric names, the Insights pairs and the Runs cells (claimable as Method's is, left out); the Runs cell
-  "F1 (validation)" (the grid reports only the cells it draws, and at 1920 px that column is past the right edge);
+  "F1 score (validation)" (the grid reports only the cells it draws, and at 1920 px that column is past the right edge);
   the catalog's other columns of the saved model and the catalog refreshing by itself while open (2.2 steps 1 and 4:
   only the name row is claimed); the Created date; the places of the panels in their rows (5.13: Class balance
   moving between rows 2 and 3; claimable by their boxes, left out); 5.13 step 2's hover of a wrong prediction and
@@ -83,7 +83,7 @@ Feature: Training a classifier on iris in the Train view
     When user expands "Data" group
     Then Target input should be visible
     And the "text of cell 1 of Metric" reading of grid viewer in "Performance" results panel should be "Accuracy"
-    And the "text of cell 2 of Metric" reading of grid viewer in "Performance" results panel should be "F1"
+    And the "text of cell 2 of Metric" reading of grid viewer in "Performance" results panel should be "F1 score"
     And the "rows" reading of grid viewer in "Performance" results panel should be 6
     And the "text of cell 1 of Train" reading of grid viewer in "Performance" results panel should be between 0.95 and 1
     And the "text of cell 1 of Validation" reading of grid viewer in "Performance" results panel should be between 0.85 and 1

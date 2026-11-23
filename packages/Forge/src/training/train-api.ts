@@ -19,9 +19,10 @@ import {recordTrainingRun} from '../storage/training-run-store';
 import {browserSearch} from './browser-search';
 import {defaultFeatures} from './default-features';
 import {DEFAULT_SEED, DEFAULT_VALIDATION, TEST_FRACTION_RANGE, ValidationScheme, ValidationSettings} from './k-fold';
-import {bestCandidates, bestSearch, COMBINED_LIMITS, DEFAULT_BUDGET_SECONDS, defaultMetric, exclusionOf,
-  failedSearchMessage, isQuickLimit, NO_PROGRESS, probabilitiesOf, quickEngines, SEARCH_METRICS, SEARCH_STRATEGIES,
-  SearchCandidate, SearchChoice, searchableEngines, SearchRecord, searchTitle, TOP_K, tuneSearch} from './search';
+import {bestCandidates, bestSearch, COMBINED_LIMITS, DEFAULT_BUDGET_SECONDS, defaultMetric, defaultUncheckReason,
+  exclusionOf, failedSearchMessage, isQuickLimit, NO_PROGRESS, probabilitiesOf, quickEngines, SEARCH_METRICS,
+  SEARCH_STRATEGIES, SearchCandidate, SearchChoice, searchableEngines, SearchRecord, searchTitle, TOP_K, tuneSearch}
+  from './search';
 import {checkSelection, hasDataProblems, MAX_SEED, MetricsRecord, prepareTraining, problemMessages,
   SelectionCheck, trainingEngines, TrainingRequest, TrainingResult, TrainingSelection, trainModel}
   from './train-model';
@@ -81,14 +82,15 @@ type ModelSave = Pick<TrainedModel, 'name' | 'description' | 'tags' | 'storage'>
 /** The body of `Forge:trainModel`: the Train view's checks, defaults and validation without the view.
  * Every finished attempt is a `training_run` row with `source: api` (a failed or cancelled one is recorded before its
  * error is rethrown); a refused input or a failed preparation records nothing. With a name, the model is saved;
- * nothing is uploaded unless the storage is `copy`. Nothing is added to the table. */
-export async function runTrainModel(input: TrainModelInput): Promise<TrainModelResult> {
+ * nothing is uploaded unless the storage is `copy`. Nothing is added to the table. [discovered] replaces the installed
+ * methods (a test's stub). */
+export async function runTrainModel(input: TrainModelInput, discovered?: Engine[]): Promise<TrainModelResult> {
   const {table} = input;
   const target = table.col(input.target);
   if (target === null)
     throw new ForgeError(`The table has no column '${input.target}'.`);
   const features = featuresOf(table, target, input.features);
-  const {engines, engine: preferred} = trainingEngines();
+  const {engines, engine: preferred} = trainingEngines(discovered);
   const method = input.method || null;
   const isAuto = method === 'auto';
   const chosen = method !== null && !isAuto ? engineNamed(engines, method) : preferred;
@@ -111,22 +113,21 @@ export async function runTrainModel(input: TrainModelInput): Promise<TrainModelR
   const progressOf = (text: string) => input.showProgress === false ? undefined :
     DG.TaskBarProgressIndicator.create(text, {cancelable: true});
   if (!isAuto) {
-    const hyperparameters = withProbabilityInput(engine, hyperparametersFor(engine, input.hyperparameters ?? {}),
-      predictProbability);
+    const hyperparameters = withProbabilityInput(engine, hyperparametersFor(engine, input.hyperparameters ?? {}));
     return await trainAndSave({...selection, engine, hyperparameters}, table.name, save, progressOf, options.search);
   }
   const search = options.search!;
-  const candidates = bestCandidates(await autoEngines(check, engines, search, predictProbability), engines,
-    predictProbability);
-  const hyperparameters = withProbabilityInput(engine, defaultHyperparameters(engine), predictProbability);
+  const candidates = bestCandidates(await autoEngines(check, engines, search, predictProbability, table.rowCount),
+    engines);
+  const hyperparameters = withProbabilityInput(engine, defaultHyperparameters(engine));
   return await trainAndSave({...selection, engine, hyperparameters}, table.name, save, progressOf, search, candidates);
 }
 
 /** The methods of method auto: the browser methods of [check] named by the search's `methods`, each refused when it
  * cannot take part; by default the ones that fit Predict probability and the metric, at a quick time limit or a trial
- * limit only those that retrain live. */
-async function autoEngines(check: SelectionCheck, engines: Engine[], search: SearchChoice,
-  predictProbability: boolean): Promise<Engine[]> {
+ * limit only those that retrain live, never by default one {@link defaultUncheckReason} names. */
+export async function autoEngines(check: SelectionCheck, engines: Engine[], search: SearchChoice,
+  predictProbability: boolean, rowCount: number): Promise<Engine[]> {
   const pool = searchableEngines(check.engines, engines);
   // Defined: the check's data problems were thrown.
   const {columns, target} = check.prepared!;
@@ -148,9 +149,8 @@ async function autoEngines(check: SelectionCheck, engines: Engine[], search: Sea
   }
   if (search.methods !== undefined)
     return pool.filter((e) => search.methods!.includes(e.name));
-  const eligible = pool.filter((e) => exclusion(e) === null);
-  return isQuickLimit(search.budgetSeconds) ? await quickEngines(eligible, columns, target, predictProbability) :
-    eligible;
+  const eligible = pool.filter((e) => exclusion(e) === null && defaultUncheckReason(e.name, rowCount) === null);
+  return isQuickLimit(search.budgetSeconds) ? await quickEngines(eligible, columns, target) : eligible;
 }
 
 /** The body of `Forge:listMethods`: {@link methodList}; with a table, **Applicable** and **Suggested** as `trainModel`

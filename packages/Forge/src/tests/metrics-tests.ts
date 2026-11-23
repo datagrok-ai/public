@@ -4,7 +4,7 @@ import {category, expect, expectArray, expectExceptionAsync, expectFloat, test}
 import {ForgeError} from '../forge-error';
 import {areValuesSimilar, aucOf, aucOfProbabilities, BEST_THRESHOLD_METRICS, bestThreshold, CLASS_METRIC_IDS,
   ClassProbabilities, classificationMetrics, METRIC_DESCRIPTIONS, METRIC_IDS, METRIC_LABELS, metricFindings, MetricId,
-  MetricValues, probabilityMetrics, probabilityOf, regressionMetrics} from '../metrics/metrics';
+  MetricValues, overfittingOf, probabilityMetrics, probabilityOf, regressionMetrics} from '../metrics/metrics';
 import {ClassificationReport, classificationReport, curvesOf} from '../metrics/report';
 import {defaultMetric, directionOf, SEARCH_METRICS} from '../training/search';
 import {metricsRecordOf} from '../training/train-model';
@@ -127,8 +127,51 @@ category('Metrics', () => {
       auc: 0.98}}).length, 0);
     const oneSplit = metricFindings({train: {auc: 0.6}, validation: {auc: 0.55}});
     expect(oneSplit.length, 0, JSON.stringify(oneSplit));
-    const belowOnValidation = metricFindings({train: {auc: 0.52}, validation: {auc: 0.45}});
+    const belowOnValidation = metricFindings({train: {auc: 0.52}, validation: {auc: 0.49}});
     expectArray(belowOnValidation.map((f) => `${f.kind}: ${f.splits.join()}`), ['threshold: validation']);
+    expect(metricFindings({train: {accuracy: 0.4}, validation: {accuracy: 0.9}}).length, 0);
+    const error = metricFindings({train: {rmse: 1}, validation: {rmse: 1.6}});
+    expectArray(error.map((f) => `${f.id} ${f.kind}`), ['rmse mismatch']);
+  });
+
+  test('overfittingOf: 0.05 for the scores, 0.1 for MCC and R2, 1.5 times for the errors', async () => {
+    const accuracy = overfittingOf('accuracy', 0.96, 0.90);
+    expect(accuracy.isOverfitting, true);
+    expectFloat(accuracy.gap ?? NaN, 0.06, 1e-9);
+    expect(overfittingOf('accuracy', 0.95, 0.91).isOverfitting, false);
+    expect(overfittingOf('auc', 0.90, 0.95).isOverfitting, false);
+    expect(overfittingOf('mcc', 0.9, 0.85).isOverfitting, false);
+    expect(overfittingOf('mcc', 0.9, 0.79).isOverfitting, true);
+    expect(overfittingOf('r2', 0.8, 0.65).isOverfitting, true);
+    const logLoss = overfittingOf('logLoss', 0.1, 0.16);
+    expect(logLoss.isOverfitting, true);
+    expect(`${logLoss.ratio} ${logLoss.gap}`, '1.6 undefined');
+    expect(overfittingOf('logLoss', 0.1, 0.14).isOverfitting, false);
+    expect(overfittingOf('brier', 0, 0).isOverfitting, false);
+    expect(overfittingOf('mse', 0, 0.1).isOverfitting, true);
+  });
+
+  test('overfittingOf decides on the values rounded to 3 decimals, as shown', async () => {
+    const shown = overfittingOf('accuracy', 0.9734, 0.9466);
+    expect(shown.gap, 0.026);
+    const atLimit = overfittingOf('accuracy', 0.96, 0.91);
+    expect(`${atLimit.gap} ${atLimit.isOverfitting}`, '0.05 false');
+    const roundedDown = overfittingOf('accuracy', 0.95049, 0.9);
+    expect(`${roundedDown.gap} ${roundedDown.isOverfitting}`, '0.05 false');
+    expect(overfittingOf('accuracy', 0.9506, 0.9).isOverfitting, true);
+    expect(overfittingOf('mcc', 0.9, 0.8).isOverfitting, false);
+    const ratioOf = (train: number, validation: number) => {
+      const {kind, ratio, isOverfitting} = overfittingOf('logLoss', train, validation);
+      return `${kind} ${ratio} ${isOverfitting}`;
+    };
+    expect(ratioOf(0.1, 0.15), 'ratio 1.5 false');
+    expect(ratioOf(0.0996, 0.1497), 'ratio 1.5 false', 'The raw values overfit, the shown ones not');
+    expect(ratioOf(0.1, 0.151), 'ratio 1.51 true');
+    expect(ratioOf(0.123, 0.185), 'ratio 1.5 false', 'The shown ratio is 1.50');
+    expect(ratioOf(0, 0.2), 'ratio undefined true');
+    expect(ratioOf(0, 0), 'ratio undefined false');
+    const {kind, ratio} = overfittingOf('accuracy', 0.9, 0.8);
+    expect(`${kind} ${ratio}`, 'gap undefined');
   });
 
   test('METRIC_IDS ends with the Crux and the probability ids; every id has a label and a description', async () => {

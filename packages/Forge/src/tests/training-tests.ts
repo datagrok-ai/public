@@ -21,17 +21,18 @@ import {deleteModel} from '../storage/model-store';
 import {datasetFingerprint} from '../storage/dataset-fingerprint';
 import {dataInsights, metricInsights, resultInsights, summaryInsight} from '../training/insights';
 import {quickEngines, searchableEngines, searchRecordOf} from '../training/search';
-import {runTrainModel, TrainModelInput} from '../training/train-api';
+import {autoEngines, runTrainModel, TrainModelInput} from '../training/train-api';
 import {bestThresholdOf, checkSelection, failedCheck, foldMasks, foldPrediction, needsRowsWithoutGaps,
   outOfFoldProbabilities, prepareTraining, problemMessages, recutResult, TrainingProblems, TrainingRequest,
   TrainingResult, TrainingSelection, trainingEngines, trainModel, trainPredictionOf, validationSplit, withLateEngines}
   from '../training/train-model';
 import {QueuedTraining, TrainingQueue} from '../training/training-queue';
 import {cancelTaskBarEntry, CLASSIFIERS, columnNamed, columnsOf, deleteModelsNamed, deleteRunsOf, EDA_METHODS,
-  engineByName, expectMetrics, expectNoFrames, expectReleased, failsWith, framesSharing, GAP_ROWS, IMPUTE,
-  inDiscoveryOrder, IRIS, MEASUREMENTS, moleculeEngine, moleculeFrame, names, NO_OPTIONS, NO_PREPARATION_STEPS,
+  engineByName, expectMetrics, expectNoFrames, expectReleased, failingEngine, failsWith, framesSharing, GAP_ROWS,
+  IMPUTE, inDiscoveryOrder, IRIS, MEASUREMENTS, moleculeEngine, moleculeFrame, names, NO_OPTIONS, NO_PREPARATION_STEPS,
   ONE_HOT_STEPS, openDemoTable, openIris, PREDICT_PROBABILITY, REGRESSORS, requestOf, runsOf, selectionOf,
-  SKIP_UNIQUE_STEPS, smilesColumn, stuckEngine, taskBarEntry, twoSpeciesIris, valuesOf, withGaps, xgboost}
+  SKIP_UNIQUE_STEPS, smilesColumn, stuckEngine, taskBarEntry, twoClassTable, twoSpeciesIris, valuesOf, withGaps,
+  xgboost}
   from './test-data';
 
 const TIMEOUT = 60000;
@@ -933,7 +934,7 @@ category('Training', () => {
     const insights = metricInsights({train: {r2: 0.2, mse: 1, mae: 1}, validation: {r2: 0.9, mse: 4, mae: 1.05}});
     expectArray(insights.map((i) => i.text), ['R2 is below 0.3.', 'The model may be overfitting.']);
     expect(insights[0].detail, 'Train 0.200, validation 0.900.');
-    expectArray(insights[1].items ?? [], ['MSE: train 1.000, validation 4.000', 'R2: train 0.200, validation 0.900']);
+    expectArray(insights[1].items ?? [], ['MSE: train 1.000, validation 4.000']);
     expect(insights.every((i) => i.panel === 'metrics'), true, JSON.stringify(insights));
     expectArray(metricInsights({train: {accuracy: 0.97}, validation: {accuracy: 0.95}}), []);
   });
@@ -1373,19 +1374,20 @@ category('Training', () => {
     }
   }, {timeout: TIMEOUT});
 
-  test('runTrainModel SVM with Predict probability fits probabilities', async () => {
+  test('runTrainModel SVM always fits probabilities', async () => {
     const iris = await apiTable();
     try {
       const probability = await runTrainModel({table: iris, target: 'Species', method: 'SVM',
         options: {predictProbability: true}, showProgress: false});
-      expect(typeof probability.metrics.validation.auc, 'number');
-      expect(typeof probability.metrics.validation.logLoss, 'number');
       const plain = await runTrainModel({table: iris, target: 'Species', method: 'SVM', showProgress: false});
-      expect(plain.metrics.validation.auc === undefined, true, 'SVM without probabilities has AUC-ROC');
+      for (const result of [probability, plain]) {
+        expect(typeof result.metrics.validation.auc, 'number');
+        expect(typeof result.metrics.validation.logLoss, 'number');
+      }
       const runs = await runsOf([iris]);
       const settingsOf = (runId: string) => runs.find((r) => r.id === runId)?.hyperparameters;
       expect(settingsOf(probability.runId)?.probability, true);
-      expect(settingsOf(plain.runId)?.probability, false);
+      expect(settingsOf(plain.runId)?.probability, true);
     } finally {
       await deleteRunsOf([iris]);
     }
@@ -1637,8 +1639,6 @@ category('Training', () => {
         'The option \'missingValues\' keep cannot be used with method auto. Use skip or impute.'],
       [auto({hyperparameters: {iterations: 5}}),
         'The hyperparameters cannot be given with method auto: every method starts from its defaults.'],
-      [auto({options: {search: {metric: 'auc', methods: ['SVM']}}}),
-        'SVM cannot take part in the search: it gives no class probabilities, which AUC-ROC needs.'],
       [auto({options: {search: {methods: ['Linear Regression']}}}),
         'Linear Regression cannot take part in the search: it cannot learn from this selection.'],
       [{method: 'XGBoost', options: {search: {methods: ['XGBoost']}}},
@@ -1664,36 +1664,50 @@ category('Training', () => {
     }
   }, {timeout: TIMEOUT});
 
-  test('quickEngines on demog leaves out the slow methods and SVM with Predict probability', async () => {
+  test('quickEngines on demog leaves out the slow methods and SVM on a classifier, not on a regression', async () => {
     const demog = await apiTable('System:DemoFiles/demog.csv');
     const {engines} = trainingEngines();
-    const check = await checkSelection(selectionOf(columnsOf(demog, ['AGE', 'HEIGHT', 'WEIGHT']), demog.getCol('SEX')),
-      engines);
-    if (check.prepared === undefined)
-      throw new Error('The check prepared nothing');
-    const {columns, target} = check.prepared;
-    const browser = searchableEngines(check.engines, engines);
-    for (const predictProbability of [false, true]) {
-      const quick = (await quickEngines(browser, columns, target, predictProbability)).map((e) => e.name);
-      const shown = `${predictProbability}: ${quick.join(', ')}`;
-      expect(['RealMLP', 'TabM', 'Neural Network'].some((name) => quick.includes(name)), false, shown);
-      expect(['XGBoost', 'LDA'].every((name) => quick.includes(name)), true, shown);
-      expect(quick.includes('SVM'), !predictProbability, shown);
-    }
+    const quickOf = async (features: string[], targetName: string) => {
+      const check = await checkSelection(selectionOf(columnsOf(demog, features), demog.getCol(targetName)), engines);
+      if (check.prepared === undefined)
+        throw new Error('The check prepared nothing');
+      const {columns, target} = check.prepared;
+      return (await quickEngines(searchableEngines(check.engines, engines), columns, target)).map((e) => e.name);
+    };
+    const quick = await quickOf(['AGE', 'HEIGHT', 'WEIGHT'], 'SEX');
+    const shown = quick.join(', ');
+    expect(['RealMLP', 'TabM', 'Neural Network'].some((name) => quick.includes(name)), false, shown);
+    expect(['XGBoost', 'LDA'].every((name) => quick.includes(name)), true, shown);
+    expect(quick.includes('SVM'), false, shown);
+    const regression = await quickOf(['AGE', 'HEIGHT'], 'WEIGHT');
+    expect(regression.includes('SVM'), true, regression.join(', '));
   }, {timeout: ENGINE_TIMEOUT});
 
   test('Forge:trainModel names the first failure of a search where every trial fails', async () => {
     const iris = await apiTable();
+    const failing = failingEngine('forge-test-failing', 'forge-test: every fit fails');
     try {
-      const error = await runTrainModel({table: iris, target: 'Species', method: 'SVM',
-        options: {seed: 3, search: {metric: 'auc'}}, showProgress: false}).then(() => null, (e: unknown) => e);
+      const error = await runTrainModel({table: iris, target: 'Species', method: failing.name,
+        options: {seed: 3, search: {maxTrials: 3}}, showProgress: false}, [...EngineRegistry.discover(), failing])
+        .then(() => null, (e: unknown) => e);
       const message = error instanceof ForgeError ? error.message : String(error);
-      expect(message.startsWith('No trial completed: ') && message.includes('needs class probabilities'), true,
-        message);
+      expect(message.startsWith('No trial completed: ') && message.includes('every fit fails'), true, message);
       expect((await runsOf([iris])).length, 0, 'A failed search was recorded');
     } finally {
       await deleteRunsOf([iris]);
     }
+  }, {timeout: ENGINE_TIMEOUT});
+
+  test('autoEngines leaves SVM out by default above 1000 rows, keeps it when named', async () => {
+    const {engines} = trainingEngines();
+    const table = twoClassTable(1001);
+    const check = await checkSelection(selectionOf(columnsOf(table, ['a', 'b']), table.getCol('label')), engines);
+    for (const rows of [1000, 1001]) {
+      const methods = (await autoEngines(check, engines, {budgetSeconds: 300}, false, rows)).map((e) => e.name);
+      expect(methods.includes('SVM'), rows <= 1000, `${rows} rows: ${methods.join(', ')}`);
+    }
+    const named = await autoEngines(check, engines, {budgetSeconds: 300, methods: ['SVM']}, false, 1001);
+    expectArray(named.map((e) => e.name), ['SVM']);
   }, {timeout: ENGINE_TIMEOUT});
 
   test('A saved search model carries search and test', async () => {

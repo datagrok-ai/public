@@ -5,8 +5,8 @@ import {Engine, isServerEngine} from '../engines/engine';
 import {ModelTask} from '../generated/db';
 import {METRIC_LABELS, MetricId} from '../metrics/metrics';
 import {isRecord} from '../preparation/preparation-options';
-import {DEFAULT_BUDGET_SECONDS, DEFAULT_STRATEGY, defaultMetric, exclusionOf, isQuickLimit, isQuickMethod,
-  MethodProbabilities, probabilitiesOf, SEARCH_METRICS, SEARCH_STRATEGIES, SearchChoice, SearchStrategy}
+import {DEFAULT_BUDGET_SECONDS, DEFAULT_STRATEGY, defaultMetric, defaultUncheckReason, exclusionOf, isQuickLimit,
+  isQuickMethod, MethodProbabilities, probabilitiesOf, SEARCH_METRICS, SEARCH_STRATEGIES, SearchChoice, SearchStrategy}
   from '../training/search';
 import {LimitInputs, StoredLimit, TRIALS} from './limit-inputs';
 import {NOT_SEARCHED, STATUS_TOOLTIPS, TuneSettings} from './tune-settings';
@@ -41,8 +41,9 @@ interface StoredFind extends StoredLimit {
  * line (Not searched), the **Search options** toggle and grid (Metric, Strategy, Limit, Max time or Max trials, and
  * Candidates: the browser methods that can learn from the data, cheapest first; a server method, one without class
  * probabilities while Predict probability is on, or one without them under a probability metric is not listed, its
- * reason in the label's tooltip; a slow one, or SVM with Predict probability on, unchecked unless the time limit is
- * above a minute) and the Find bar. Search options starts collapsed; its state, Metric, Strategy, the limit and the
+ * reason in the label's tooltip; a slow one, or a method whose probabilities are a train input (SVM) on a classifier,
+ * unchecked unless the time limit is above a minute; SVM unchecked on a table of more than 1000 rows at any limit) and
+ * the Find bar. Search options starts collapsed; its state, Metric, Strategy, the limit and the
  * user's method toggles are remembered per user. */
 export class FindSettings {
   readonly root = ui.div([], 'forge-find');
@@ -67,6 +68,7 @@ export class FindSettings {
   /** Whether the limit was quick at the last listing ({@link isQuickLimit}): the methods' default checks follow it. */
   private isQuick = true;
   private predictProbability = false;
+  private rowCount = 0;
   private isLocked = false;
   private isLoaded = false;
   private isRebuilding = false;
@@ -163,6 +165,14 @@ export class FindSettings {
     this.updateErrors();
   }
 
+  /** The table has [rowCount] rows: the default checks follow it ({@link defaultUncheckReason}). */
+  setRowCount(rowCount: number): void {
+    if (rowCount === this.rowCount)
+      return;
+    this.rowCount = rowCount;
+    this.rebuild();
+  }
+
   /** Lists the metrics of [task], keeping the chosen one when it applies, else the remembered one, else the default. */
   setTask(task: ModelTask | undefined): void {
     if (task === undefined || task === this.task)
@@ -231,7 +241,10 @@ export class FindSettings {
   /** The tooltip of the Candidates label: what the list is, then why each unlisted method is not listed. */
   private candidatesTooltip(): HTMLElement {
     const reasons = this.entries.map((e) => this.reasonOf(e)).filter((r): r is string => r !== null);
-    return ui.divV([METHODS_TOOLTIP, ...reasons.map((r) => `Not listed: ${r}`)].map((text) => ui.divText(text)));
+    const unchecked = this.entries.filter((e) => this.reasonOf(e) === null)
+      .map((e) => defaultUncheckReason(e.name, this.rowCount)).filter((r): r is string => r !== null);
+    return ui.divV([METHODS_TOOLTIP, ...reasons.map((r) => `Not listed: ${r}`), ...unchecked]
+      .map((text) => ui.divText(text)));
   }
 
   /** Why [entry] cannot take part: it runs on the server, or it gives no class probabilities while Predict
@@ -246,9 +259,11 @@ export class FindSettings {
         null;
   }
 
-  /** Checked above the quick limit; at it, only a quick method ({@link isQuickMethod}). */
+  /** Checked above the quick limit; at it, only a quick method ({@link isQuickMethod}); never one
+   * {@link defaultUncheckReason} names. */
   private defaultCheck(entry: MethodEntry): boolean {
-    return !this.isQuick || isQuickMethod(entry.isLive, entry.probabilities, this.predictProbability);
+    return defaultUncheckReason(entry.name, this.rowCount) === null &&
+      (!this.isQuick || isQuickMethod(entry.isLive, entry.probabilities, this.task === 'classification'));
   }
 
   /** Whether the limit is quick now: a trial limit, or a time limit of at most {@link QUICK_BUDGET_SECONDS}. */
