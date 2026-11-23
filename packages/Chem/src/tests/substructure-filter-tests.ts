@@ -571,6 +571,41 @@ M  END
   });
 
   // the typed molecule kept for its own molblock must not swallow a query feature drawn on it, which leaves its SMILES
+  test('a SMILES with stereo centres pasted into the text box filters as the molecule, Similar too', async () => {
+    // reported 2026-11-23: smiles.csv, the canonical_smiles card's sketcher, this text pasted into its text box was read
+    // as SMARTS for [C@@H]'s H count: every atom drawn aromatic- or aliphatic-only, Contains found its row, Similar
+    // nothing (the filter fingerprinted the drawing's query). Pasted on the canvas it was drawn as the molecule.
+    const text = 'Nc1ncnc2c1c(Br)cn2[C@@H]3OC[C@@H](O)[C@H]3O';
+    const df = await readDataframe('smiles.csv');
+    await grok.data.detectSemanticTypes(df);
+    const row = df.col('canonical_smiles')!.toList().indexOf(text);
+    expect(row >= 0, true, 'the text\'s row in smiles.csv');
+    // in the Crux sketcher, the default and the report's: it drops a SMARTS text that also reads as SMILES, and the
+    // filter then searched its drawing (another sketcher kept the text, and the filter searched that as a molecule)
+    const sketcherType = grok.chem.currentSketcherType;
+    grok.chem.currentSketcherType = 'Crux';
+    const dialogs: DG.Dialog[] = [];
+    const filter = await createFilter('canonical_smiles', df, dialogs);
+    try {
+      filter.sketcher.setValue(text); // what the text box's Enter and paste call
+      await waitUntil(() => filter.currentMolecule === text,
+        () => `the filter does not search the text pasted: it holds ${filter.currentMolecule.slice(0, 80)}`, 15000);
+      await searchEnded(filter);
+      await waitUntil(() => df.filter.trueCount < df.rowCount, 'Contains did not filter', 10000);
+      expect(df.filter.get(row), true, 'Contains: its row passes');
+      filter.searchTypeInput.value = SubstructureSearchType.IS_SIMILAR;
+      await waitUntil(() => filter.searchType === SubstructureSearchType.IS_SIMILAR, 'the search type did not change',
+        5000);
+      await searchEnded(filter);
+      await waitUntil(() => df.filter.get(row), () => `Similar: its row does not pass (${df.filter.trueCount} rows)`,
+        15000);
+    } finally {
+      dialogs.forEach((it) => it.close());
+      filter.detach();
+      grok.chem.currentSketcherType = sketcherType;
+    }
+  });
+
   test('a ring bond count drawn on a typed molecule is an edit', async () => {
     const df = await readDataframe('tests/sar-small_test.csv');
     await grok.data.detectSemanticTypes(df);

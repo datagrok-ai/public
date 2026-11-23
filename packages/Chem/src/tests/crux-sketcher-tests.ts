@@ -6,6 +6,7 @@ import {_package} from '../package-test';
 import {PackageFunctions} from '../package';
 import {SubstructureFilter} from '../widgets/chem-substructure-filter';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
+import {getQueryMolSafe} from '../utils/mol-creation_rdkit';
 
 const SMILES = 'CC(C(=O)OCCCc1cccnc1)c2cccc(c2)C(=O)c3ccccc3';
 const STEREO_SMILES = 'N[C@@H](C)C(=O)O';
@@ -415,19 +416,27 @@ category('Crux sketcher', () => {
   // run20 STAND S-004: the filter's text box gave Crux `[NH2]c1ccccc1` as SMILES, which drops a bracket atom's H count:
   // the filter searched any N on benzene (264 of mol1K's rows where the text finds 11), and `[CH3]c` drew nothing. A
   // substructure filter's host now sets such a text as SMARTS; a sketcher outside a filter still takes it as a molecule.
+  // Only a bracket a SMILES does not need is a query's H count: a canonical SMILES with stereo centres pasted into the
+  // filter's box (reported 2026-11-23: smiles.csv's Nc1ncnc2c1c(Br)cn2[C@@H]3OC[C@@H](O)[C@H]3O) was read as SMARTS,
+  // every atom drawn aromatic- or aliphatic-only, and Similar found nothing; it stays a molecule, as pasted on the
+  // canvas.
   test('a typed bracket H count stays the query\'s in the substructure filter', async () => {
-    // the text typed, in a filter or not; molecules the drawn query finds, and ones it misses
-    const rows: [string, boolean, string[], string[]][] = [
-      ['[NH2]c1ccccc1', true, ['Nc1ccccc1'], ['CNc1ccccc1']],
-      ['[CH3]c', true, ['Cc1ccccc1'], ['CCc1ccccc1']],
-      ['c1cc[nH]c1', true, ['c1cc[nH]c1'], ['Cn1cccc1']],
-      ['[NH2]c1ccccc1', false, ['Nc1ccccc1', 'CNc1ccccc1'], []],
+    // the text typed, in a filter or not; whether the filter searches the drawing's query or the molecule typed;
+    // molecules the filter's search finds, and ones it misses
+    const rows: [string, boolean, 'query' | 'molecule', string[], string[]][] = [
+      ['[NH2]c1ccccc1', true, 'query', ['Nc1ccccc1'], ['CNc1ccccc1']],
+      ['[CH3]c', true, 'query', ['Cc1ccccc1'], ['CCc1ccccc1']],
+      ['c1cc[nH]c1', true, 'molecule', ['c1cc[nH]c1', 'Cn1cccc1'], []],
+      ['Nc1ncnc2c1c(Br)cn2[C@@H]3OC[C@@H](O)[C@H]3O', true, 'molecule', ['Nc1ncnc2c1c(Br)cn2[C@@H]3OC[C@@H](O)[C@H]3O',
+        'Nc1ncnc2c1c(Br)cn2[C@@H]3OC[C@@](C)(O)[C@H]3O'], ['Nc1ncnc2c1ccn2C']],
+      ['N[C@@H](C)C(=O)O', true, 'molecule', ['N[C@@H](C)C(=O)O', 'CC(C)(N)C(=O)O'], ['NCC(=O)O']],
+      ['[NH2]c1ccccc1', false, 'molecule', ['Nc1ccccc1', 'CNc1ccccc1'], []],
     ];
     const problems: string[] = [];
     for (const filter of [true, false]) {
       const s = await openCrux(undefined, filter);
       try {
-        for (const [text, , finds, misses] of rows.filter((r) => r[1] === filter)) {
+        for (const [text, , reads, finds, misses] of rows.filter((r) => r[1] === filter)) {
           const before = cruxElement(s)!.smarts;
           s.host.setValue(text);
           for (let i = 0; i < 30 && cruxElement(s)!.smarts === before; i++)
@@ -435,14 +444,27 @@ category('Crux sketcher', () => {
           await cruxSettled(s.host.sketcher!);
           const smarts = cruxElement(s)!.smarts;
           const where = `${text} ${filter ? 'in a filter' : 'outside a filter'}, drawn as "${smarts}"`;
-          // the filter's key (chem-substructure-filter.ts getSketcherMolecule): read as a query, not as a molecule
+          // the filter's key (chem-substructure-filter.ts getSketcherMolecule): the drawing's query, or the text typed
           const key = s.host.sketcher!.explicitMol?.value ?? s.host.getMolFile();
-          if (filter && !DG.chem.isMolBlock(key) && !DG.chem.isSmarts(key))
-            problems.push(`${where}: the filter's key "${key}" reads as a molecule`);
-          for (const [target, want] of [...finds.map((t) => [t, true] as const), ...misses.map((t) => [t, false] as const)]) {
-            const got = smarts !== '' && matchSets(target, smarts) !== '[]';
-            if (got !== want)
-              problems.push(`${where}: ${got ? 'finds' : 'misses'} ${target}`);
+          const readsAs = DG.chem.isMolBlock(key) || DG.chem.isSmarts(key) ? 'query' : 'molecule';
+          if (readsAs !== reads)
+            problems.push(`${where}: the filter's key "${key.slice(0, 80)}" reads as a ${readsAs}`);
+          // a molecule is drawn as one: no atom or bond query on the canvas (an aromatic- or aliphatic-only atom)
+          if (reads === 'molecule' && s.host.getMolFile().includes('SMARTSQ'))
+            problems.push(`${where}: drawn with query atoms`);
+          // what the filter's search finds with that key (getQueryMolSafe, as the search builds its query)
+          const query = getQueryMolSafe(key, DG.chem.isMolBlock(key) ? '' : key, rdkit);
+          const targets = [...finds.map((t) => [t, true] as const), ...misses.map((t) => [t, false] as const)];
+          try {
+            for (const [target, want] of targets) {
+              const mol = rdkit.get_mol(target);
+              const got = !!query && mol.get_substruct_match(query) !== '{}';
+              mol.delete();
+              if (got !== want)
+                problems.push(`${where}: ${got ? 'finds' : 'misses'} ${target}`);
+            }
+          } finally {
+            query?.delete();
           }
         }
       } finally {
