@@ -299,7 +299,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
           return problem.value;
       }
       const edit = this._edit.value;
-      return (edit?.blocking ?? edit?.validity)?.value ?? null;
+      const problem = (edit?.blocking ?? edit?.validity)?.value ?? null;
+      return problem === null || edit === undefined ? problem : this._name(edit, problem)?.message ?? problem;
     });
     this.isSaving = computed(() => this._edit.value?.isSaving.value ?? false);
     this.summary = computed(() => this._summary());

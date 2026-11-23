@@ -146,6 +146,8 @@ scoped('the writer\'s own cell refusal names the row and the field, and marks th
   const draft = source.newRow({project_id: 'p1', number: 7});
   await flush();
   assert.equal(source.validity.value, 'Value can\'t be empty', 'the writer says only what is wrong');
+  assert.equal(source.session.blocking.value, 'New issue: Title: Value can\'t be empty',
+    'what holds Save off names the row and the field before any save, as the refusal does');
   assert.equal(await source.save(), false);
   assert.equal(source.error.value.message, 'Cannot save: New issue: Title: Value can\'t be empty',
     'the refusal names the row and the field the writer refused over');
