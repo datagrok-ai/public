@@ -791,6 +791,18 @@ scoped('a commit that lands nothing adds no write-back column', async () => {
   assert.deepEqual(written, [], 'no column was added to the user\'s table');
 });
 
+// mapping only: the linked records are found through `grok.dapi.domains`, which the memory backend does not serve
+scoped('EQ-019: a column of names auto-maps to the reference\'s find-by field, a column of ids to the id', async () => {
+  for (const [value, target] of [['Datagrok', 'project_id.name'], [UID, 'project_id']]) {
+    const {running} = await opened(backend(), frame(['project', 'title'], [{project: value, title: 'A'}]));
+    await toMapping();
+    assert.equal(named('project').value, target, `"${value}" maps to ${target}`);
+    fire(buttonNamed('CANCEL'), 'click');
+    assert.equal(await running, null);
+    resetDom();
+  }
+});
+
 const FULL = {view: true, insert: true, edit: true, delete: true, share: true};
 
 scoped('EQ-053: an import refuses up front when a required column with no default cannot be written', async () => {

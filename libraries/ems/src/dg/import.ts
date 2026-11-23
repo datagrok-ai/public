@@ -10,7 +10,7 @@ import {fromDartInput} from '@datagrok-libraries/u2/dg';
 import {DomainTable} from './facade.js';
 import {DomainDataTable} from './grid.js';
 import {DomainErrors} from './errors.js';
-import {ImportLinks} from './import-links.js';
+import {ImportLinks, UUID} from './import-links.js';
 import type {ImportLink, LinkField, LinkMatch} from './import-links.js';
 
 export interface DomainImportOptions {
@@ -908,8 +908,24 @@ class ImportFlow {
     const names = (p: IProperty) => [plain(p.name ?? ''), plain(p.friendlyName ?? '')].filter((n) => n !== '');
     const hit = (test: (a: string) => boolean) => this._targets.find((p) => names(p).some(test))?.name;
     const typed = column.semType ? this._targets.filter((p) => p.semType === column.semType) : [];
-    return hit((a) => a === want) ?? hit((a) => a.startsWith(want) || want.startsWith(a)) ??
+    const target = hit((a) => a === want) ?? hit((a) => a.startsWith(want) || want.startsWith(a)) ??
       hit((a) => a.includes(want) || want.includes(a)) ?? (typed.length === 1 ? typed[0].name! : SKIP);
+    // a reference's caption ("substance") over values that are no ids ("Ethanol") names the records: find them by
+    // their name or key; a column called as the id column itself (`substance_id`) holds ids
+    const link = this._links.get(target);
+    if (link === undefined || plain(target) === want || ImportFlow._ids(column))
+      return target;
+    const info = link.target.info;
+    const by = [info.nameColumn, info.businessKey[0]].find((f) => link.fields.some((l) => l.prop.name === f));
+    return by === undefined ? target : `${target}.${by}`;
+  }
+
+  private static _ids(column: DG.Column): boolean {
+    for (let i = 0; i < column.length; i++) {
+      if (!column.isNone(i) && !UUID.test(text(column.get(i))))
+        return false;
+    }
+    return true;
   }
 
   private _mapping(): Map<string, string> {

@@ -10,7 +10,7 @@ import {SYSTEM_COLUMNS} from './backend.js';
 const MATCHABLE = ['string', 'int', 'bigint', 'datetime'];
 const PAGE = 10000;
 const DAY_MS = 24 * 60 * 60 * 1000;
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** A field a linked record is found by; `path` is what the query reads: `<ref>.<key>` for a link of its own. */
 export interface LinkField {
