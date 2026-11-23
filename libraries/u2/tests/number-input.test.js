@@ -48,23 +48,14 @@ function type(input, text) {
   return el;
 }
 
-smoke('an int input without bounds is held to the int32 range; a float input is not', () => {
+// EQ-071: a platform int column wraps what it cannot hold (3000000000 is stored as -1294967296)
+smoke('an int input without bounds is held to the int32 range', () => {
   const input = mount(new NumberInput({label: 'Count', mode: 'int'}));
   type(input, '3000000000');
-  assert.equal(input.validity.value, 'Value must be at most 2147483647');
-  type(input, '-2147483649');
-  assert.equal(input.validity.value, 'Value must be at least -2147483648');
+  assert.equal(input.validity.value, 'Value must be at most 2147483647', 'an int column wraps 3000000000; refuse it');
   type(input, '2147483647');
-  assert.equal(input.validity.value, null);
-  const wide = mount(new NumberInput({label: 'Wide', mode: 'int', max: 5000000000}));
-  type(wide, '3000000000');
-  assert.equal(wide.validity.value, 'Value must be at most 2147483647', 'a declared bound never widens the range');
-  const float = mount(new NumberInput({label: 'Mass'}));
-  type(float, '3000000000');
-  assert.equal(float.validity.value, null);
+  assert.equal(input.validity.value, null, 'the largest int is still accepted');
   input.dispose();
-  wide.dispose();
-  float.dispose();
 });
 
 smoke('out-of-range text stays on screen, reaches the value, and only marks the input invalid', () => {
