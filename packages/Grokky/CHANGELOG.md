@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Grokky: Fixed suggestions naming the wrong column, such as an ID column in the Molecules prompts or a date in the numeric ones
 * Grokky: Confirmation card shows its answer in the header
 * [public#4648](https://github.com/datagrok-ai/public/issues/4648): Fixed asterisks in the Stop notice
 * Grokky: Fixed voice input sending only the first word: the whole phrase is captured, shown as it is spoken, and sent after a pause
