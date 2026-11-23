@@ -442,7 +442,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     const moved = this._moved;
     this._restart = false;
     this._moved = false;
-    const readFor = this._readFor();
+    let readFor = this._readFor();
     // a reload of the collection shown, started over a clean session, keeps the rows when changes appear
     // in the session before it lands — a child row typed under the current row, which `_drop` would dispose
     const keepOverSession = readFor === this._shownFor && !this.session.isDirty.peek();
@@ -465,6 +465,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       if (gen !== this._gen)
         return;
       this._adopt(table);
+      // the first adopt drops a search the table refuses: what is read is the scope without it
+      readFor = this._readFor();
       if (this.deleted.peek() !== 'exclude')
         DomainSource.requireRestore(table);
       // apart from the query, so a refused filter does not take New away; before the spec, whose captions
