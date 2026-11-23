@@ -227,14 +227,16 @@ export class DomainChildren extends Control {
         // a list's form takes the focus itself; the grid needs it handed over once the button's own click has refocused it
         if (grid !== null)
           add.root.addEventListener('click', () => queueMicrotask(() => grid.grid.root.focus()));
-        pane.replaceChildren(divH([add.root], 'u2-domain-children-toolbar'), body, empty);
+        // the button's own hidden is newButton's, gated on insert: a tab with nothing to show hides around it
+        const toolbar = divH([add.root], 'u2-domain-children-toolbar');
+        pane.replaceChildren(toolbar, body, empty);
         pending.effect(() => {
           const ready = child.state.value === 'ready';
           const blocked = denied ?? (ready ? DomainErrors.noView(child) : null);
           const none = blocked !== null || (ready && child.rows.items.value.length === 0);
           if (blocked !== null)
             empty.textContent = blocked;
-          add.root.hidden = blocked !== null;
+          toolbar.hidden = blocked !== null;
           empty.hidden = !none;
           body.hidden = none;
           state.blank.value = none;

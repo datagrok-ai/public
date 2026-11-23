@@ -524,3 +524,21 @@ scoped('a reload kept over a child row typed in flight keeps its lost window: th
   children.dispose();
   parent.dispose();
 });
+
+scoped('a child tab hides New from a user who may view the child table but not insert into it', async () => {
+  const memory = crm();
+  memory.tableSync('crm.contact').access = () => Promise.resolve({can: {view: true, insert: false, edit: false,
+    delete: false, share: false}, fields: {name: 'readonly', company_id: 'readonly'}});
+  emsBackends.domain = memory;
+  const companies = await domains.table('crm.company');
+  const parent = testOwner().build(() => companies.source({pageSize: 10}));
+  await flush();
+  parent.currentRow.value = parent.rows.byKey('c1');
+  const children = testOwner().build(() => domains.children(parent, {mode: 'list'}));
+  await settle();
+  await flush();
+  assert.match(children.root.textContent, /Ann/, 'the readable children show');
+  assert.equal(byKind(children, 'new-button')[0].hidden, true, 'no New without Insert');
+  children.dispose();
+  parent.dispose();
+});
