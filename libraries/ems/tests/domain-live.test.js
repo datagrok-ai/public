@@ -110,6 +110,20 @@ scoped('a write between the load and the first poll is seen by that poll (EQ-037
   src.dispose();
 });
 
+scoped('a write by another session right after a save is seen by the next poll (EQ-037)', async () => {
+  const be = counted();
+  const src = await started(be);
+  src.rows.byKey('i1').title = 'Mine';
+  assert.equal(await src.save(), true);
+  await flush();
+  const issue = await be.backend.table('grit.issue');
+  await issue.transaction([{op: 'insert', table: 'issue', values: {project_id: 'p1', number: 9, title: 'Theirs'}}]);
+  await tick();
+  await flush();
+  assert.equal(src.rows.items.value.length, 4, 'the next poll compares with the re-base, it does not adopt the write');
+  src.dispose();
+});
+
 scoped('a load that bails over an edit made in flight keeps the baseline its rows were read with (EQ-037)', async () => {
   const be = counted();
   const src = await started(be);
