@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [public#4648](https://github.com/datagrok-ai/public/issues/4648): Fixed asterisks in the Stop notice
 * Grokky: Fixed voice input sending only the first word: the whole phrase is captured, shown as it is spoken, and sent after a pause
 * Grokky: A prompt that fails or loses its connection says why above the prompt box, and the next prompt reconnects
 * Grokky: Fixed SAVE staying active after the AI saved the project

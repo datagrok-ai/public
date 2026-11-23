@@ -461,7 +461,7 @@ async function streamOnce(
 
       forSession(client.onAborted, async () => {
         panel.clearStreaming();
-        chatSession.session.addUiMessage('**Processing aborted by user**', false, {system: true});
+        chatSession.session.addUiMessage('Processing aborted by user', false, {system: true});
         cleanup();
         resolve();
       });
