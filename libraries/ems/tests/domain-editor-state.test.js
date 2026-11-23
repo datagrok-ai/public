@@ -5,6 +5,7 @@ import {Scope, FrameRows, Rows} from '@datagrok-libraries/u2';
 import {DataFrame, Stream} from '@datagrok-libraries/u2/tests/platform-doubles.mjs';
 import {register} from 'node:module';
 import {EditorEditState} from '../src/dg/editor-state.js';
+import {DomainSource} from '../src/core/domain-source.js';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const DG = await import('datagrok-api/dg');
@@ -254,3 +255,80 @@ scoped('EQ-033: a client error the retry finds is the client\'s, and holds', asy
   }
   state.dispose();
 });
+
+/* EQ-057: a json cell written through the platform editor. The double behaves as js-api does where it
+   matters: `toDart` makes a Dart map of a PLAIN object only (anything else reaches the frame as it is),
+   a Dart map is cyclic through its type information, the editor's change compare is `JSON.stringify`
+   (`wireEquals`), and `validateCellValue` is the server's js-api — before 1.27.14 it refuses a json
+   cell's text, after it leaves the text to the server. */
+function jsApiEditor(acceptsText) {
+  const df = new DataFrame([{name: 'id', type: 'string'}, {name: 'meta', type: 'string'}],
+    [{id: 'r1', meta: '{"k":"v"}'}]);
+  const changes = [{}];
+  const toDart = (x) => {
+    if (typeof x !== 'object' || x === null || Object.getPrototypeOf(x) !== Object.prototype)
+      return x;
+    const map = Object.assign(Object.create({constructor: function LinkedHashMapCell() {}}), x);
+    map.$ti = {owner: map};
+    return map;
+  };
+  const wireEquals = (a, b) => a === b || JSON.stringify(a) === JSON.stringify(b);
+  class Editor {
+    static validateCellValue(p, value) {
+      if (value === null || value === undefined || (acceptsText && typeof value === 'string'))
+        return null;
+      return typeof value === 'object' && !Array.isArray(value) ? null :
+        `Types differ. Expected: map, passed: ${Array.isArray(value) ? 'list' : 'string'}`;
+    }
+    constructor() {
+      this.table = 'qa.item';
+      this.properties = [{name: 'meta', propertyType: 'map', nullable: true}];
+      this.isDirty = false; this.changeCount = 0; this.isSaving = false;
+      this.onChanged = new Stream(); this.onDirtyChanged = new Stream(); this.onSavingChanged = new Stream();
+      this.onSaved = new Stream();
+    }
+    get dataFrame() { return df; }
+    stateOf(row) { return Object.keys(changes[row]).length > 0 ? 'modified' : ''; }
+    changesOf(row) { return changes[row]; }
+    errorsOf() { return {}; }
+    errorOf(row, column) {
+      const message = Object.hasOwn(changes[row], column) ? Editor.validateCellValue(this.properties[0], df.get(column, row)) : null;
+      return message === null ? null : {message, kind: 'error'};
+    }
+    isChanged(row, column) { return Object.hasOwn(changes[row], column); }
+    setValue(row, column, value) {
+      const original = Object.hasOwn(changes[row], column) ? undefined : df.get(column, row);
+      df.set(column, row, toDart(value));
+      if (original !== undefined)
+        changes[row][column] = original;
+      if (wireEquals(changes[row][column], df.get(column, row)))
+        delete changes[row][column];
+      this.onChanged.fire(this);
+    }
+    revertCell(row, column) {
+      df.set(column, row, changes[row][column]);
+      delete changes[row][column];
+      this.onChanged.fire(this);
+    }
+    detach() {}
+  }
+  return {df, editor: new Editor()};
+}
+
+for (const acceptsText of [true, false]) {
+  const server = acceptsText ? 'a js-api that takes json text' : 'a js-api that refuses json text';
+  scoped(`EQ-057: a typed json object reaches the platform frame as something it can compare and send (${server})`, async () => {
+    const {df, editor} = jsApiEditor(acceptsText);
+    const state = new EditorEditState(editor);
+    const write = (value) => state.setValue('r1', 'meta', DomainSource.frameValue(df, 'meta', value));
+    assert.doesNotThrow(() => write({k: 'v', k2: 'v2'}),
+      'writing a typed json object into the frame does not throw (no Dart map in the cell)');
+    const cell = df.get('meta', 0);
+    assert.equal(typeof cell === 'string', acceptsText, acceptsText ? 'as its JSON text' : 'as an object, the fallback');
+    assert.deepEqual(JSON.parse(acceptsText ? cell : JSON.stringify(cell)), {k: 'v', k2: 'v2'});
+    assert.equal(state.errorOf('r1', 'meta'), null, 'and the editor takes it');
+    write({k: 'v'});
+    assert.equal(state.isChanged('r1', 'meta'), false, 'retyping the original pair is no change');
+    state.dispose();
+  });
+}

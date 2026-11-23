@@ -1,5 +1,6 @@
 import type * as DG from 'datagrok-api/dg';
 import {signal, computed, ReadonlySignal, Emitter, FrameRows} from '@datagrok-libraries/u2';
+import {sameJson} from '../core/edit-state.js';
 import type {EditSaved, EditState} from '../core/edit-state.js';
 import type {DataFrameLike} from '@datagrok-libraries/u2';
 
@@ -146,10 +147,45 @@ export class EditorEditState implements EditState {
     this.editor.validate();
   }
 
+  /** A JSON value retyped as the row had it is the cell reverted, not a write the editor compares
+   * by its text (another key order is another text). */
   setValue(key: string, column: string, value: unknown): void {
     const at = this.indexOf(key);
-    if (at >= 0)
-      this.editor.setValue(at, column, value);
+    if (at < 0)
+      return;
+    const editor = this.editor;
+    const json = typeof value === 'string' && /^\s*[[{]/.test(value);
+    const changes: Record<string, unknown> = json ? editor.changesOf(at) : {};
+    const changed = Object.hasOwn(changes, column);
+    if (json && sameJson(changed ? changes[column] : this.df.get(column, at), value)) {
+      if (changed)
+        editor.revertCell(at, column);
+      return;
+    }
+    editor.setValue(at, column, EditorEditState.legacyJson(editor, column, value));
+  }
+
+  /** Fallback for a server whose js-api refuses a `json` cell written as its JSON text ("Types differ.
+   * Expected: map, passed: string" — datagrok-api 1.27.13 and earlier): the object as a {@link JsonCell}.
+   * A plain object would be stored as a Dart map, which the editor's change compare throws on.
+   * datagrok-api after 1.27.13 takes the text (`validateCellValue` leaves it to the server), and
+   * then this hands the text on as it is; drop it once no supported server ships the older one. */
+  static legacyJson(editor: DG.DomainFrameEditor, column: string, value: unknown): unknown {
+    if (typeof value !== 'string' || value === '')
+      return value;
+    const prop = editor.properties?.find((p) => p.name === column);
+    // the editor's own class: the platform's, whichever js-api the server ships
+    const check = (editor.constructor as typeof DG.DomainFrameEditor).validateCellValue;
+    if (prop?.propertyType !== 'map' || typeof check !== 'function' || check(prop, value) === null)
+      return value;
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(value);
+    } catch (_) {
+      return value;
+    }
+    return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed) ?
+      new JsonCell(parsed as Record<string, unknown>) : value;
   }
 
   newRow(values: Record<string, unknown> = {}, options?: {pristine?: boolean}): string {
@@ -236,5 +272,20 @@ export class EditorEditState implements EditState {
       if (cells.size === 0)
         this._refused.delete(key);
     }
+  }
+}
+
+/** A `json` cell's object for an editor that refuses its text ({@link EditorEditState.legacyJson}):
+ * not a plain object, so js-api `toDart` hands it to the frame as it is instead of making a Dart
+ * map of it; its own keys are the pairs and it serializes as them, so the editor's change compare
+ * and the transaction see the object. Relies on that `toDart` rule and on a string column storing
+ * the object unconverted — hence only a fallback. */
+export class JsonCell {
+  constructor(value: Record<string, unknown>) {
+    Object.assign(this, value);
+  }
+
+  toJSON(): Record<string, unknown> {
+    return {...this as Record<string, unknown>};
   }
 }

@@ -858,6 +858,10 @@ category('Dapi: domain frame editor', () => {
       'a non-numeric int was not rejected');
     expect(validateCellValue(sku, ''), "Value can't be empty", 'a required empty value was accepted');
     expect(validateCellValue(sku, null), "Value can't be empty", 'a required null was accepted');
+    const meta = DG.Property.fromOptions({name: 'meta', type: DG.TYPE.MAP, nullable: true});
+    expect(validateCellValue(meta, '{"k":"v"}'), null, 'a json cell as its JSON text was rejected');
+    expect(validateCellValue(meta, {k: 'v'}), null, 'a json cell as an object was rejected');
+    expect(validateCellValue(meta, ['k']), 'Types differ. Expected: map, passed: list', 'a list in a json cell was accepted');
   });
 
   test('Grid.attachEditor: platform decoration, hidden service columns, capability gating', async () => {

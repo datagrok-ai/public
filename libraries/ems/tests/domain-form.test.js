@@ -1200,6 +1200,106 @@ scoped('a draft shows the column defaults, so a required column with one is alre
   draft.dispose();
 });
 
+/* EQ-056: the platform frame holds a `string_list` cell as the JSON text of the list (`queryDf`, and the
+   editor's post-save re-read); the memory backend holds it the same way. The form must show the items,
+   save what was typed as items, and show a saved list as items again. */
+async function listForm(tags) {
+  emsBackends.domain = backend();
+  const store = emsBackends.domain.tableSync('grit.issue');
+  store.rows.find((r) => r.id === 'i1').tags = tags;
+  const {src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const form = testOwner().build(() => domains.form(src));
+  document.body.append(form.root);
+  await flush();
+  const input = form.input('tags');
+  const field = input.root.querySelector('input');
+  const stored = () => store.rows.find((r) => r.id === 'i1').tags;
+  return {src, form, input, field, stored};
+}
+
+scoped('EQ-056: a stored string_list shows its items, and an added item saves the items, shown again after', async () => {
+  const {src, form, input, field, stored} = await listForm(['a', 'b']);
+  assert.deepEqual(input.value, ['a', 'b'], 'the string_list field reads the stored list as its items');
+  field.value = `${field.value},c`;
+  fire(field, 'input');
+  await flush();
+  assert.equal(await src.save(), true);
+  await flush();
+  assert.deepEqual(stored(), ['a', 'b', 'c'], 'the edited string_list is saved as the items the field showed plus c');
+  assert.deepEqual(input.value, ['a', 'b', 'c'], 'after the save the field shows the saved items');
+  form.dispose();
+  src.dispose();
+});
+
+/* EQ-057: the platform frame holds a `json` cell as the JSON text of the object, like a `string_list` one
+   (EQ-056); the memory backend holds it the same way. The form must show the pairs, write a typed pair
+   (as the frame's text — a JS object handed to the frame is stored as a Dart map, which throws on compare),
+   save it, and treat an empty object as no change. */
+const JSON_SCHEMA = {name: 'qa', tables: {item: {columns: {
+  name: {type: 'string', required: true, isName: true}, meta: {type: 'json'}}}}};
+
+async function jsonForm(meta) {
+  emsBackends.domain = new MemoryDomainBackend(JSON_SCHEMA,
+    {rows: {item: [{id: 'r1', name: 'R1', ...(meta === undefined ? {} : {meta})}]}});
+  const store = emsBackends.domain.tableSync('qa.item');
+  const table = await domains.table('qa.item');
+  const src = testOwner().build(() => table.source({pageSize: 10}));
+  await flush();
+  src.currentRow.value = src.rows.byKey('r1');
+  const form = testOwner().build(() => domains.form(src));
+  document.body.append(form.root);
+  await flush();
+  const input = form.input('meta');
+  const cells = () => [...input.root.querySelectorAll('input[aria-label="Key"], input[aria-label="Value"]')].map((c) => c.value);
+  const type = async (row, key, value) => {
+    for (const [part, text] of [['Key', key], ['Value', value]]) {
+      const cell = input.root.querySelectorAll(`input[aria-label="${part}"]`)[row];
+      cell.value = text;
+      fire(cell, 'input');
+    }
+    await flush();
+  };
+  const addRow = async () => {
+    const buttons = input.root.querySelectorAll('button[aria-label="Add row"]');
+    fire(buttons[buttons.length - 1], 'click');
+    await flush();
+  };
+  const stored = () => store.rows.find((r) => r.id === 'r1');
+  return {src, form, input, cells, type, addRow, stored};
+}
+
+scoped('EQ-057: a stored json object shows its pairs, and a typed pair is written and saved with them', async () => {
+  const {src, form, input, cells, type, addRow, stored} = await jsonForm({k: 'v'});
+  assert.deepEqual(input.value, {k: 'v'}, 'the json field reads the stored object as its pairs');
+  await addRow();
+  await type(1, 'k2', 'v2');
+  assert.equal(await src.save(), true);
+  await flush();
+  assert.deepEqual(stored().meta, {k: 'v', k2: 'v2'}, 'the saved json holds the stored pair and the typed one');
+  assert.deepEqual(cells(), ['k', 'v', 'k2', 'v2'], 'after the save the field shows the saved pairs');
+  assert.equal(src.changeCount.value, 0, 'and nothing is left unsaved');
+  form.dispose();
+  src.dispose();
+});
+
+scoped('EQ-057: the memory backend takes json and string_list cells as the server coerces them', async () => {
+  const memory = new MemoryDomainBackend({name: 'qa', tables: {item: {columns: {
+    name: {type: 'string', required: true}, meta: {type: 'json'}, tags: {type: 'string_list'}}}}});
+  const table = memory.tableSync('qa.item');
+  const report = await table.batch([{name: 'a', meta: '{"k":"v"}', tags: '["x","y"]'}]);
+  assert.equal(report.inserted, 1, 'a batch of JSON text is planned, not refused');
+  const row = table.rows.find((r) => r.name === 'a');
+  assert.deepEqual([row.meta, row.tags], [{k: 'v'}, ['x', 'y']], 'JSON text is decoded, as the server does');
+  await assert.rejects(memory.transaction([{op: 'insert', table: 'item', values: {name: 'b', meta: ['k']}}]),
+    (e) => e.message.endsWith('Cannot convert "["k"]" to map'), 'a list is no json object');
+  const frame = await table.frame({});
+  frame.edit.setValue(row.id, 'meta', ['k']);
+  assert.equal(frame.edit.errorOf(row.id, 'meta'), 'Types differ. Expected: map, passed: list',
+    'a list in a json cell is refused as the platform editor refuses it');
+  frame.dispose();
+});
+
 scoped('EQ-033: a field holding the server\'s refusal shows it, and the form does not hold Save on it', async () => {
   const {src} = await issues();
   src.currentRow.value = src.rows.byKey('i1');
