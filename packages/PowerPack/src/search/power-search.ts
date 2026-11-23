@@ -297,49 +297,7 @@ async function searchProvidersSearch(s: string, host: HTMLDivElement, searchInpu
     return;
   _searchProvidersPromise ??= _getSearchProviders();
   await _searchProvidersPromise;
-
-  let showSuggestions = false;
-  const addSuggestion = (text: string, value?: string, priority?: number, onValueEnter?: (s: string, view?: DG.ViewBase) => void) => {
-    // make sure that its not an exact match, where it does not make sense to add it as a suggestion
-    if ((value ?? text) === searchInput.value)
-      return;
-    _suggestionsMenu!.item(text, () => {
-      if (value) {
-        searchInput.value = value;
-        searchInput.dispatchEvent(new Event('input', {bubbles: true})); // Trigger input event to update the view
-      }
-      searchInput.focus();
-      if (onValueEnter)
-        onValueEnter(searchInput.value, grok.shell.v);
-    }, priority);
-    showSuggestions = true;
-  };
-
-  // separate handler for suggestions
-  const processSuggestions = async () => {
-    const suggestions = await searchSuggestions(searchInput.value?.trim() ?? '');
-    _suggestionsMenu?.hide();
-    _suggestionsMenu = null;
-    _suggestionsMenu = DG.Menu.popup();
-    showSuggestions = false;
-    for (const sug of suggestions)
-      addSuggestion(sug.text, sug.value, sug.priority, sug.onValueEnter);
-    if (showSuggestions) {
-      _suggestionsMenu.show({element: searchInput.parentElement!, x: searchInput.offsetLeft,
-        y: searchInput.offsetTop + searchInput.offsetHeight});
-    }
-  };
-  await processSuggestions();
-  if (!_ctrlSpaceSubscribed) {
-    _ctrlSpaceSubscribed = true;
-    searchInput.addEventListener('keydown', (event) => {
-      if (event.ctrlKey && (event.key === ' ' || event.key === 'Spacebar')) {
-        event.preventDefault();
-        processSuggestions();
-      }
-    });
-  }
-
+  await showSearchSuggestions(searchInput);
 
   searchProviders.forEach((sp) => {
     if (!sp['home'])

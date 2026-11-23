@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
-import {powerSearch} from './search/power-search';
+import {powerSearch, showSearchSuggestions} from './search/power-search';
 import {getSettings, saveSettings, UserWidgetsSettings, widgetHostFromFunc} from './utils';
 import {setWorkspacePreviewHost, setWorkspaceCustomizeEl} from './spotlight/preview-host';
 import {getCurrentUserGroup} from './spotlight/group-favorites';
@@ -32,14 +32,15 @@ export function welcomeView(): DG.View | undefined {
     marginBottom: '10px', flexGrow: '0',
   }, classes: 'power-search-help-text-container'});
 
-  // input.addEventListener('input', () => {
-  //   if (!input.value)
-  //     helpDiv.style.visibility = 'hidden';
-  //   else
-  //     helpDiv.style.visibility = 'visible';
-  // });
-
-  // helpDiv.style.display = input.value ? 'flex' : 'none';
+  const updateHelp = () => {helpDiv.style.visibility = input.value ? 'visible' : 'hidden';};
+  updateHelp();
+  input.addEventListener('input', updateHelp);
+  input.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.code === 'Space') {
+      e.preventDefault();
+      showSearchSuggestions(input);
+    }
+  });
   inputHost.style.marginBottom = '0px';
   suggestionMenuKeyNavigation(inputContainer);
 
@@ -103,6 +104,7 @@ export function welcomeView(): DG.View | undefined {
 
   function doSearch(s: string) {
     input.value = s;
+    updateHelp();
     const search = s !== '';
     widgetsPanel.style.display = (search ? 'none' : '');
     searchHost.style.display = (search ? '' : 'none');
