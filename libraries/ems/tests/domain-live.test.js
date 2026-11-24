@@ -671,6 +671,24 @@ scoped('a peer\'s rename of a referenced row reaches the rows within a poll, one
   src.dispose();
 });
 
+scoped('a save while a reload is held leaves the source behind: a peer\'s change shows once the hold lifts', async () => {
+  const be = counted();
+  const src = await started(be);
+  let open = true;
+  const release = src.holdReload(() => open);
+  src.rows.byKey('i1').title = 'Mine';
+  await peerUpdate(be, 'issue', 'i3', {title: 'Theirs'});
+  await tick();
+  assert.equal(await src.save(), true);
+  await flush();
+  open = false;
+  await tick();
+  await flush();
+  assert.equal(src.rows.byKey('i3').title, 'Theirs');
+  release();
+  src.dispose();
+});
+
 scoped('a source pinned to one referenced row, as a child tab is, leaves that table to the row\'s page', async () => {
   const be = counted();
   const src = await started(be, {query: 'project_id = "p1"'});

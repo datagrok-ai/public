@@ -983,12 +983,16 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
    * of the same table reloaded — it is holding the rows this batch just rewrote. */
   async afterSave(): Promise<void> {
     const gen = this._gen;
+    const shown = this._probed;
     this._probed = undefined;
-    if (await this._rebase() && this._regate)
-      this._publishRegated();
-    // and the re-base has just re-read the window, so the rows are the server's again — a save
-    // clears the stale mark as a reload does, or "Data changed — Refresh" would stand for good
-    this._isStale.value = false;
+    // a re-base re-reads the window, so the rows are the server's again — a save clears the stale
+    // mark as a reload does, or "Data changed — Refresh" would stand for good; a held one keeps both
+    if (await this._rebase()) {
+      if (this._regate)
+        this._publishRegated();
+      this._isStale.value = false;
+    } else
+      this._probed ??= shown;
     for (const source of DomainSource.live) {
       if (source === this || source.table !== this.table)
         continue;
