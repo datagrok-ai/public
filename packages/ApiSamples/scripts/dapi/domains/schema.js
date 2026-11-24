@@ -6,6 +6,11 @@ const schema = grok.dapi.domains.schema('apitests');
 const manifest = await schema.manifest();
 grok.shell.info(`tables: ${Object.keys(manifest.tables).join(', ')}`);
 
+// Who owns a table and which columns users added: not in the manifest, read off the registry.
+const registered = await grok.dapi.domains.schemas.include('tables.columns.property')
+  .filter('name = "apitests"').first();
+grok.shell.info(registered.tables.map((t) => `${t.name}: ${t.origin} [${t.userColumns.join(', ')}]`).join('\n'));
+
 const audit = await schema.audit({limit: 5});
 grok.shell.info(`latest events: ${audit.map((a) => a.op).join(', ')}`);
 

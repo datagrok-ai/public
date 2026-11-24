@@ -265,6 +265,34 @@ category('Dapi: domain lifecycle', () => {
     expect(Array.isArray(rows), true);
   });
 
+  test('table origin and user columns', async () => {
+    const name = `zzor${`${Date.now()}`.slice(-8)}`;
+    try {
+      await grok.dapi.domains.createSchema(name);
+    } catch (e: any) {
+      if (e instanceof DG.DomainError && (e.code === 'forbidden' || e.status === 403)) {
+        console.log('skipped: no CreateDomainSchema privilege');
+        return;
+      }
+      throw e;
+    }
+    const handle = grok.dapi.domains.schema(name);
+    try {
+      await handle.apply({tables: {things: {columns: {name: {type: 'string'}}}},
+        ifVersion: `${(await handle.manifest())['version']}`});
+      const tables = (await grok.dapi.domains.schemas.include('tables.columns.property').list())
+        .flatMap((s) => s.tables.map((t) => ({schema: s.name, table: t})));
+      const things = tables.find((t) => t.schema === name)!.table;
+      const item = tables.find((t) => t.schema === 'apitests' && t.table.name === 'item')!.table;
+      expect(things.origin, 'user');
+      expect(things.userColumns.join(), 'name');
+      expect(item.origin, 'package');
+      expect(item.userColumns.length, 0);
+    } finally {
+      await handle.delete();
+    }
+  });
+
   test('schema grants: list, grant, revoke round-trip', async () => {
     const schema = grok.dapi.domains.schema('apitests');
     const group = await allUsers();
