@@ -43,7 +43,6 @@ category('Dapi: domain session', () => {
       const [insert] = parent.buildOps();
       expect(insert.op.ref, draft, 'the insert op does not name its draft id as ref');
       expect('id' in (insert.op.values as any), false, 'the draft id leaked into the insert values');
-      // a sibling's draft is a reference when the batch names it (a DomainSession passes every editor's)
       const [event] = child.buildOps(new Set([draft]));
       expect((event.op.values as any).item_id, `$${draft}`, 'the sibling draft reference was not rewritten to $ref');
     } finally {

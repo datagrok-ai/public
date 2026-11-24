@@ -605,9 +605,6 @@ category('Dapi: domain frame editor', () => {
     }
   });
 
-  // EQ-060: the delete and restore RELOAD/OVERWRITE paths are covered headless on the built bundle
-  // (js-api scripts/unit/domain-conflict.test.cjs); this is the one only a server answers: a restore's
-  // RELOAD reads the trashed row (deleted: include), never "no longer exists"
   test('EQ-060: a stale restore, RELOAD: the trashed row is re-read and the restore dropped', async () => {
     const prefix = `fe-409-del-${stamp()}`;
     const id = (await seed(prefix, 1))[0];
@@ -621,7 +618,6 @@ category('Dapi: domain frame editor', () => {
       await items().delete(id);
       const trashed = (await items().get(id, {deleted: 'include'})).version;
       const failing = editor.buildOps()[0];
-      // the refusal a server honouring the restore version answers (core), built so it runs on any server
       const conflict = new DG.DomainVersionConflictError(`Version conflict: expected ${failing.op.expectedVersion}`,
         409, {error: 'version-conflict', id, currentVersion: trashed, expectedVersion: failing.op.expectedVersion, opIndex: 0});
       expect(await editor.resolveConflict(conflict, failing), true, 'reload did not resolve the restore conflict');

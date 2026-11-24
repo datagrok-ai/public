@@ -92,8 +92,6 @@ export async function stockroomLocations(): Promise<DG.ViewBase> {
   const addAt = (node: RowView) => newContainerAt(containers, node.id,
     {site: typeof node.site === 'string' ? node.site : undefined, caption: locations.renderer.caption(node)});
   const host = ViewHost.create({name: 'Locations', content: () => {
-    // the "all" row is the way back to every container once a node has been picked; the tree rides the
-    // containers' live probe, so a peer's rename, move or delete of a location reads it again
     const tree = domains.tree(locations, {allNode: 'All locations', follow: source,
       actions: [{name: 'New container', icon: 'plus', run: addAt}]});
     const table = domains.dataTable(source,

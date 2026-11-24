@@ -1,6 +1,4 @@
-// Pure (no platform imports) so a headless test can run it. The server answers 100 rows when a read names no limit,
-// so every read here names one and pages until a short page: under a stereo- or tautomer-insensitive rule several
-// compounds share a hash, and the rows can outnumber the hashes asked for.
+// The server answers 100 rows when a read names no limit, so every read names one and pages.
 export const LOOKUP_CHUNK = 500;
 export const LOOKUP_PAGE = 1000;
 
@@ -12,7 +10,6 @@ export interface LookupQuery {
   offset: number;
 }
 
-// the first (lowest molregno) row of every hash found among `hashes`
 export async function lookupFirstByHash<T extends {molregno: number}>(
   hashes: string[], column: string,
   query: (spec: LookupQuery) => Promise<T[]>,
