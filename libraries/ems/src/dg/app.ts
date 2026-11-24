@@ -664,6 +664,8 @@ export class DomainApp extends Control {
     if (this._reshaped.peek() !== null)
       await this._settle();
     else if (await this._outdated()) {
+      if (this.session.isDirty.peek())
+        return true;
       DomainTable.forget(this.table.address.split('.')[0]);
       await DomainViews.rebuild(this);
     } else if (this.scope.isDisposed || source !== shown() ||

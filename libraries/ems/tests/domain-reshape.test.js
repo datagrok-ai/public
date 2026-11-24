@@ -70,7 +70,23 @@ scoped('Refresh rebuilds the page when the table\'s columns changed meanwhile: a
   const other = (await domains.table('grit.project')).app({path: '/apps/T/Projects'});
   try {
     assert.equal(await app.goTo('entity', 'i2'), true);
-    emsBackends.domain = reshaped((columns) => ({...columns, severity: {type: 'string'}}));
+    const next = reshaped((columns) => ({...columns, severity: {type: 'string'}}));
+    const read = next.table.bind(next);
+    let release;
+    const held = new Promise((resolve) => release = resolve);
+    next.table = (address) => held.then(() => read(address));
+    emsBackends.domain = next;
+    const refreshing = app.refresh();
+    await flush();
+    app.entitySource.value.currentRow.value.title = 'Typed meanwhile';
+    next.table = read;
+    release();
+    assert.equal(await refreshing, true);
+    await flush();
+    assert.deepEqual([view.dart.closed, added.length, app.session.changeCount.value], [0, 0, 1],
+      'an edit typed while Refresh checked the columns is not rebuilt away');
+    app.session.discard();
+    await flush();
     assert.deepEqual(await Promise.all([app.refresh(), app.refresh()]), [true, true]);
     await flush();
     assert.equal(view.dart.closed, 1);
