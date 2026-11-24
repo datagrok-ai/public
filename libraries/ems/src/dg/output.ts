@@ -15,6 +15,8 @@ const LIMIT = 100000;
 // the statistics in the field's own unit: a count, a variance or a shape has another one, or none
 const IN_UNIT: string[] = [DG.AGG.FIRST, DG.AGG.MIN, DG.AGG.MAX, DG.AGG.SUM, DG.AGG.MED, DG.AGG.AVG, DG.AGG.STDEV,
   DG.AGG.Q1, DG.AGG.Q2, DG.AGG.Q3, 'geomean'];
+// all else is computed from the values, so it means nothing across units
+const COUNTS: string[] = [DG.AGG.TOTAL_COUNT, DG.AGG.VALUE_COUNT, DG.AGG.UNIQUE_COUNT, DG.AGG.MISSING_VALUE_COUNT];
 
 /** Where an aggregated field lives: its table, the column naming the list's row (`batch_id.compound_id` one table
  * away), the field, and every table a write to which moves the value. */
@@ -109,7 +111,7 @@ export function domainOutput(source: DomainSource, table: DomainTable, exclude: 
         groups.add(a.aggregation as DG.AggregationType,
           a.aggregation === DG.AGG.TOTAL_COUNT ? null : linked.get(a.column)!.column, outputKey(a));
       }
-      const measured = list.filter((a) => linked.get(a.column)!.measured && IN_UNIT.includes(a.aggregation));
+      const measured = list.filter((a) => linked.get(a.column)!.measured && !COUNTS.includes(a.aggregation));
       if (measured.length > 0)
         groups.add(DG.AGG.UNIQUE_COUNT, 'unit', '#units').add(DG.AGG.FIRST, 'unit', '#unit');
       const result = groups.aggregate();
@@ -118,7 +120,7 @@ export function domainOutput(source: DomainSource, table: DomainTable, exclude: 
         for (const a of list) {
           const value = result.get(outputKey(a), i);
           row[outputKey(a)] = !measured.includes(a) ? value : result.get('#units', i) > 1 ? 'mixed units' :
-            `${DomainDataTable.number(value)} ${result.get('#unit', i)}`;
+            IN_UNIT.includes(a.aggregation) ? `${DomainDataTable.number(value)} ${result.get('#unit', i)}` : value;
         }
         found.set(String(result.get(path, i)), row);
       }
