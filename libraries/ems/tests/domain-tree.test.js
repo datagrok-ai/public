@@ -261,6 +261,12 @@ scoped('a peer\'s delete of the selected node over pending changes keeps it sele
   const f = await following({expandTo: 'l4'});
   try {
     f.source.newRow({name: 'Draft', parent_id: 'l4'});
+    const real = f.peer.query;
+    f.peer.query = (spec) => spec.filter?.property !== 'id' ? real.call(f.peer, spec) :
+      (f.peer.query = real, Promise.reject(new Error('blip')));
+    await f.peer.transaction([{op: 'update', table: 'location', id: 'l2', values: {name: 'Room 2'}}]);
+    await f.tick();
+    assert.equal(f.tree.selected.value?.id, 'l4', 'a read that failed once does not drop the selection');
     await f.peer.transaction([{op: 'delete', table: 'location', id: 'l4'}]);
     await f.tick();
     assert.equal(f.tree.selected.value?.id, 'l4', 'what is bound to the selection is not rebound over pending changes');
