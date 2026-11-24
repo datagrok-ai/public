@@ -29,7 +29,7 @@ Editors.register({
 domains.configure('stockroom.sds_document', (sheets) => {
   sheets.renderer = {...sheets.renderer, caption: (r) =>
     [r['~caption_substance_id'], r.revision && `rev. ${r.revision}`, r.language].filter((v) => !!v).join(' · ')};
-});
+}, {id: 'stockroom'});
 
 /** A view per stockroom table under `/apps/Stockroom/Stockroom`, the substances at its root; `/apps/Stockroom` is the
  * Stockroom app too, and `/apps/Stockroom/Locations` the Stockroom locations app. */
