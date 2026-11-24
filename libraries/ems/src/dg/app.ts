@@ -1258,8 +1258,9 @@ export class DomainApp extends Control {
         const restore = button('Restore', () => void this.table.restore(row.id as string)
           .then(() => source.refresh()).catch((e) => DomainErrors.report(e)));
         restore.hidden = !source.access.peek().can('delete');
-        const named = madeOfIds(this.table, row as RowView, name) ? '' : ` "${name}"`;
-        notice.replaceChildren(span(`${noun}${named} was deleted.`, 'u2-domain-form-hint'), restore);
+        const named = madeOfIds(this.table, row as RowView, name) ? noun :
+          name.toLowerCase().startsWith(noun.toLowerCase()) ? `"${name}"` : `${noun} "${name}"`;
+        notice.replaceChildren(span(`${named} was deleted.`, 'u2-domain-form-hint'), restore);
         notice.hidden = false;
         form.root.hidden = true;
       }, () => undefined);
