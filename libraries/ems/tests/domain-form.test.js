@@ -941,7 +941,7 @@ scoped('a refused save names the field by its caption; the verdicts are shown', 
   const form = testOwner().build(() => domains.form(draft));
   const save = domains.saveButton(draft);
   await flush();
-  draft.currentRow.value.number = 2;
+  draft.currentRow.value.number = 9;
   await flush();
   assert.equal(form.problem.value, 'Title is required');
   assert.equal(save.button.getAttribute('aria-disabled'), 'true', 'Save is off, its tooltip saying why');

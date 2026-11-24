@@ -652,7 +652,7 @@ source('a draft is written under insert, an existing row under edit as its own c
   assert.deepEqual(columns(inserter), []);
   const fresh = inserter.newRow({project_id: 'p1', title: 'Fresh'});
   assert.deepEqual(columns(inserter), ['project_id', 'number', 'title']);
-  fresh.number = 1;
+  fresh.number = 8;
   assert.equal(await inserter.save(), true);
   assert.equal(emsBackends.domain.tableSync('grit.issue').rows.at(-1).title, 'Fresh');
   inserter.dispose();

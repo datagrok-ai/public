@@ -79,6 +79,8 @@ const CORE_REF_SEM_TYPES: Record<string, string> = {user: 'User', group: 'Group'
  * `Rows.DELETED`; not a declared property, so no form or filter sees it. */
 const IS_DELETED = 'is_deleted';
 
+const TEXT_OPERATORS = new Set(['like', '!like', 'starts', 'ends', 'matches', '!matches']);
+
 /** `DomainBackend` over a schema.json in memory, meaning what the server means: filters through the filter
  * feature's own `toMask`, a transaction ordered as the server orders it and landing on every table or none. */
 export class MemoryDomainBackend implements DomainBackend {
@@ -259,6 +261,7 @@ export class MemoryDomainBackend implements DomainBackend {
       if (op.op === 'insert') {
         const row = table.stamp(table.withDefaults(values), 1);
         table.check(row, index);
+        table.checkKey(rows, row, index);
         parentsLive(table, row, Object.keys(table.refs));
         rows.push(row);
         if (op.ref !== undefined)
@@ -303,6 +306,7 @@ export class MemoryDomainBackend implements DomainBackend {
         }
         const row = table.stamp({...rows[at], ...values}, (rows[at].version as number) + 1);
         table.check(row, index, Object.keys(values));
+        table.checkKey(rows, row, index, Object.keys(values));
         parentsLive(table, row, Object.keys(values).filter((column) => column in table.refs));
         entry(op.op, id!, {...rows[at]}, {...row});
         rows[at] = row;
@@ -595,7 +599,8 @@ export class MemoryTable implements DomainTableLike {
     const matched = (await this._where({filter})).filter((row) => this._canEdit(row) &&
       Object.entries(values).some(([column, value]) => !Component.sameValue(plain(row[column]), plain(value))));
     const ids = matched.slice(0, cap).map((row) => String(row.id));
-    await this.transaction(ids.map((id) => ({op: 'update' as const, table: this.address, id, values})));
+    const sent = MemoryTable._literal(values);
+    await this.transaction(ids.map((id) => ({op: 'update' as const, table: this.address, id, values: sent})));
     return {updated: ids.length, hasMore: matched.length > cap};
   }
 
@@ -614,7 +619,7 @@ export class MemoryTable implements DomainTableLike {
       return {error: 'validation', inserted: 0, updated: 0, skipped: 0, errorCount: errors.size,
         rows: failed.slice(0, cap)};
     }
-    const results = await this.transaction(ops);
+    const results = await this.transaction(ops.map((op) => ({...op, values: MemoryTable._literal(op.values!)})));
     const landed = posted.map((index, i) => ({index, id: results[i].id ?? null,
       status: ops[i].op === 'insert' ? 'inserted' : 'updated'}));
     return {
@@ -763,6 +768,22 @@ export class MemoryTable implements DomainTableLike {
     }
   }
 
+  /** The business key's unique index over the live rows; an update is checked when it sends a key column. */
+  checkKey(rows: Row[], row: Row, index: number, columns?: string[]): void {
+    const key = this._info.businessKey;
+    if (key.length > 0 && (columns === undefined || key.some((c) => columns.includes(c))) &&
+        rows.some((r) => r.id !== row.id && r[IS_DELETED] !== true &&
+          key.every((c) => row[c] != null && r[c] === row[c])))
+      throw new DomainBackendError('validation', `Operation ${index}: duplicate business key (${key.join(', ')})`);
+  }
+
+  // a bulk edit and an upload carry values, never `$` references
+  private static _literal(values: Row): Row {
+    const escape = (v: unknown): unknown => Array.isArray(v) ? v.map(escape) :
+      typeof v === 'string' && v.startsWith('$') ? `$${v}` : v;
+    return Object.fromEntries(Object.entries(values).map(([k, v]) => [k, escape(v)]));
+  }
+
   /** A written value as the server coerces it, for the cells the frame holds as text. */
   decode(column: string, value: unknown, index: number): unknown {
     const prop = this.properties.find((p) => p.name === column);
@@ -817,8 +838,16 @@ export class MemoryTable implements DomainTableLike {
     const {filter, search, deleted = 'exclude'} = scope;
     let rows = this.rows;
     if (filter !== undefined && filter !== '') {
-      const mask = await Filters.toMask(Filters.recordsFrame(this.rows, this._columns),
-        this._resolved(MemoryTable._tree(filter)));
+      const root = this._resolved(MemoryTable._tree(filter));
+      // a text operator reads any column as its text, as the server's `::text` cast does
+      const texts = new Set<string>();
+      Filters.walk(root, (n) => {
+        if (!Filters.isGroup(n) && TEXT_OPERATORS.has(n.operator))
+          texts.add(n.property);
+      });
+      const mask = await Filters.toMask(Filters.recordsFrame(this.rows, this._columns.map((p) =>
+        texts.has(p.name!) && p.propertyType !== 'string_list' ? {...p, propertyType: 'string', type: 'string'} : p)),
+      root);
       rows = rows.filter((_, i) => mask.get(i));
     }
     if (deleted !== 'include')
@@ -833,10 +862,11 @@ export class MemoryTable implements DomainTableLike {
     return rows;
   }
 
-  // `under` is the only operator with no DataFrame form, so the mask never sees one
+  // `under` and `fuzzy` have no DataFrame form: a subtree becomes its ids, fuzzy the server's substring match
   private _resolved(root: FilterGroup): FilterGroup {
     return {...root, nodes: root.nodes.map((node) => 'nodes' in node ? this._resolved(node) :
-      node.operator === 'under' ? this._subtree(node) : node)};
+      node.operator === 'under' ? this._subtree(node) :
+        node.operator === 'fuzzy' ? {...node, operator: 'like'} : node)};
   }
 
   // walks the target's live rows, as the server does: a deleted branch truncates the subtree instead of leaking it

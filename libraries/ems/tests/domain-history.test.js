@@ -205,12 +205,12 @@ scoped('a reference cell shows the name it points at, not the uuid; the pane car
   const table = await domains.table('grit.issue');
   const src = testOwner().build(() => table.source({pageSize: 10}));
   await flush();
-  src.currentRow.value = src.rows.byKey('i1');
+  src.currentRow.value = src.rows.byKey('i2');
   const history = testOwner().build(() => domains.history(src));
   await settle();
   assert.equal(history.root.querySelector('.u2-accordion-title').textContent, 'History');
 
-  src.rows.byKey('i1').project_id = 'p2';
+  src.rows.byKey('i2').project_id = 'p2';
   assert.equal(await src.save(), true);
   await settle();
   assert.deepEqual(changes(lines(history)[0]), ['Project id: Grit → Datagrok'],

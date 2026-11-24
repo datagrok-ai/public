@@ -163,7 +163,7 @@ test('transaction: choices, min and max refuse the batch; author_id and the time
     (e) => e.code === 'validation' && /column "priority": Must be one of: low, high/.test(e.message));
   await assert.rejects(issue.transaction([{op: 'update', table: 'issue', id: 'i1', values: {number: 0}}]),
     (e) => e.code === 'validation' && /column "number": Must be at least 1/.test(e.message));
-  const [inserted] = await issue.transaction([{op: 'insert', table: 'issue', values: {project_id: 'p1', title: 'x', number: 1}}]);
+  const [inserted] = await issue.transaction([{op: 'insert', table: 'issue', values: {project_id: 'p1', title: 'x', number: 9}}]);
   const [row] = await issue.query({filter: `id = "${inserted.id}"`});
   assert.equal(row.author_id, 'u7');
   assert.equal(typeof row.created_on, 'string');
@@ -338,7 +338,7 @@ test('saveAll: every writer\'s batch as one transaction, the results sliced back
   const ops = issues.edit.buildOps(new Set([p])); // the batch's drafts, as saveAll passes them
   assert.deepEqual(ops.map((x) => x.op.op), ['update', 'insert']);
   assert.deepEqual(ops[1].op, {op: 'insert', table: 'grit.issue', ref: ops[1].row.id,
-    values: {project_id: `$${p}`, title: 'Child of a draft'}}, 'the draft reference is the server\'s $ref');
+    values: {project_id: `$${p}`, title: 'Child of a draft', done: false}}, 'the draft reference is the server\'s $ref');
   assert.equal(await be.saveAll([projects.edit, issues.edit]), true);
   assert.equal(projects.edit.isDirty.value, false);
   assert.equal(issues.edit.isDirty.value, false);
@@ -562,4 +562,21 @@ test('ancestors: the chain stops at an ancestor out of sight, at a cycle and at 
   const chain = await deep.ancestors('d79');
   assert.equal(chain.length, MemoryTable.maxPathDepth);
   assert.equal(chain.at(-1).id, 'd78', 'root-first, truncated at the far end');
+});
+
+test('as the platform: a taken business key is refused, a leading $ in a bulk value is text, text operators read any column', async () => {
+  const be = backend();
+  const project = be.tableSync('grit.project');
+  const taken = (e) => e.code === 'validation' && /duplicate business key \(key\)/.test(e.message);
+  await assert.rejects(project.transaction([{op: 'insert', table: 'project', values: {key: 'GRIT', name: 'Dup'}}]), taken);
+  await assert.rejects(project.transaction([{op: 'update', table: 'project', id: 'p2', values: {key: 'GRIT'}}]), taken);
+  assert.equal(project.rows.length, 2);
+
+  await project.updateWhere('key = "DG"', {name: '$100'});
+  await project.batch([{key: 'X', name: '$$5 off'}]);
+  assert.deepEqual(project.rows.slice(1).map((r) => r.name), ['$100', '$$5 off']);
+
+  const titles = async (filter) => (await be.tableSync('grit.issue').query({filter})).map((r) => r.title);
+  assert.deepEqual(await titles('number like "%1%"'), ['Aspirin', 'Naproxen']);
+  assert.deepEqual(await titles('title fuzzy "SPIR"'), ['Aspirin']);
 });
