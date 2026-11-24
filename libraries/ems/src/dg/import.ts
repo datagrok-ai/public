@@ -587,8 +587,7 @@ class ImportFlow {
     return notes.map(({message, at}) => {
       const shown = at.slice(0, 10).map((i) => (sent[i] + 1).toLocaleString()).join(', ');
       const more = at.length > 10 ? ` and ${(at.length - 10).toLocaleString()} more` : '';
-      return `The server refuses the whole batch — ${message}` + (at.length === 0 ?
-        '; it does not say which row, and no row here breaks it.' :
+      return `The server refuses the whole batch — ${message}` + (at.length === 0 ? '; it does not say which row.' :
         ` (${at.length === 1 ? 'row' : 'rows'} ${shown}${more}).`);
     });
   }
