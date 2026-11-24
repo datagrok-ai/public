@@ -80,6 +80,7 @@ class SharedProbe {
   private _probing: Promise<void> | undefined;
   private _timer: ReturnType<typeof setInterval> | undefined;
   private _ms = 0;
+  private _failures = 0;
 
   private constructor(private readonly _address: string, private readonly _backend: DomainBackend) {}
 
@@ -117,10 +118,16 @@ class SharedProbe {
         return;
       const now = await table.probe({});
       this._last = now;
+      this._failures = 0;
       for (const seen of [...this._watchers.keys()])
         seen(now);
     } catch {
       this._table = undefined;
+      // a table the caller lost access to: the next watcher to join tries again
+      if (++this._failures >= DomainSource.liveFailures) {
+        clearInterval(this._timer);
+        this._ms = 0;
+      }
     }
   }
 
@@ -130,6 +137,7 @@ class SharedProbe {
       return;
     clearInterval(this._timer);
     this._ms = ms;
+    this._failures = 0;
     this._timer = setInterval(() => {
       if (typeof document === 'undefined' || !document.hidden)
         void this.probe();

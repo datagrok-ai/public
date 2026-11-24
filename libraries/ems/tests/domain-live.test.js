@@ -255,6 +255,20 @@ scoped('a probe that fails keeps the baseline, and a run of failures stops the t
   src.dispose();
 });
 
+scoped('a watched table whose probe keeps failing is dropped after the same run of failures', async () => {
+  const be = counted();
+  const inner = be.backend.table;
+  be.backend.table = async (address) => {
+    const t = await inner(address);
+    return address !== 'grit.project' ? t : Object.assign(Object.create(Object.getPrototypeOf(t)), t,
+      {probe: (spec) => (be.probes.push(spec), Promise.reject(new Error('forbidden')))});
+  };
+  const src = await started(be);
+  await tick(DomainSource.liveFailures + 3);
+  assert.equal(be.probes.filter((p) => !('filter' in p)).length, DomainSource.liveFailures);
+  src.dispose();
+});
+
 scoped('nothing is asked while the tab is hidden, and nothing after dispose', async () => {
   const be = counted();
   const src = await started(be);
