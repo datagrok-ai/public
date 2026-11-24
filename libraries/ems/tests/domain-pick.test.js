@@ -97,7 +97,8 @@ scoped('a written id resolves to its name; an unknown id shows itself', async ()
 scoped('a backend that declares resolveNames answers an id there: one call, no query', async () => {
   const calls = [];
   emsBackends.domain = {
-    table: () => Promise.resolve({info: {}, query: () => assert.fail('the resolver path reads no row')}),
+    table: () => Promise.resolve({info: {}, access: async () => ({can: {view: true}}),
+      query: () => assert.fail('the resolver path reads no row')}),
     saveAll: () => Promise.resolve(true),
     resolveNames: (table, ids) => {
       calls.push({table, ids: [...ids]});
@@ -108,6 +109,11 @@ scoped('a backend that declares resolveNames answers an id there: one call, no q
   assert.deepEqual(calls, [{table: 'grit.project', ids: ['p1']}]);
   assert.deepEqual(await DomainPick.resolve('grit.project', 'gone'), {id: 'gone', name: 'gone'},
     'an id the resolver answers null for is shown as itself');
+  emsBackends.domain = {
+    table: async () => ({info: {singularName: 'location'}, access: async () => ({can: {view: false}})}),
+    resolveNames: () => assert.fail('a table the caller may not read is not asked')};
+  assert.deepEqual(await DomainPick.resolve('stock.location', 'l9'), {id: 'l9', name: 'A location you cannot see'},
+    'a reference into a table the caller may not read never shows the id');
 });
 
 scoped('an extra filter narrows the candidates; an empty query lists them all', async () => {

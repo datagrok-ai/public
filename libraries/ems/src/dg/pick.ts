@@ -1,4 +1,4 @@
-import {emsBackends, nounOf} from '../core/domain-backend.js';
+import {capital, emsBackends, nounOf} from '../core/domain-backend.js';
 import {InputOptions, text, div, span, TypeAhead, Filters, Rows, PickInput} from '@datagrok-libraries/u2';
 import type {ObjectRenderer, DomainCondition, DomainConditionNode, DomainConditionTree,
   FilterSchema} from '@datagrok-libraries/u2';
@@ -167,12 +167,14 @@ export class DomainPick extends PickInput<PickItem> {
     const caption = await DomainPick.host?.caption(table) ?? null;
     const backend = emsBackends.domain;
     const t = await DomainPick.table(table).catch(() => undefined);
-    if (caption === null && backend?.resolveNames !== undefined && t?.info.hiddenName === undefined) {
+    // a table the caller may not read names nothing: never the id; a row it does not answer stays its id, the
+    // stale reference it may be
+    if (t === undefined || (await t.access().catch(() => undefined))?.can.view === false)
+      return {id, name: `${capital(t === undefined ? 'a row' : `a ${nounOf(t.info, true)}`)} you cannot see`};
+    if (caption === null && backend?.resolveNames !== undefined && t.info.hiddenName === undefined) {
       const name = (await backend.resolveNames(table, [id]))[id];
       return {id, name: name || id};
     }
-    if (t === undefined)
-      return {id, name: id};
     const [row] = await t.query({filter: {property: 'id', operator: '=', value: id}, limit: 1});
     return row === undefined ? {id, name: id} : DomainPick.item(row, t.info, caption);
   }
