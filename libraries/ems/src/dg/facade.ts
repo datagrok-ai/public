@@ -357,7 +357,9 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
    * claims the rows. */
   static handlerRenderer(table: DomainTable): ObjectRenderer<RowView> {
     const inner = handlerRenderer<DG.DomainRow>();
-    const plain = DomainTable.schemaRenderer(() => ({properties: table.properties, info: table.info}));
+    // the titles read the caption the table has now: an app's own replaces this one's
+    const plain = DomainTable.schemaRenderer(() => ({properties: table.properties, info: table.info}),
+      (row) => table.renderer.caption(row));
     // a draft has no identity the handler could show; a handler card counts only when the handler
     // defines one — the platform's default is the generic property table
     const handled = (row: RowView): DG.DomainRow | null => {
@@ -402,7 +404,8 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
   /** What a row looks like from its schema alone: the name column (else the first business-key
    * column, else the id; "New <singular>" for a draft without one), and on a card the
    * list-item-rendering recipe — the title, one muted description line, the creation time. */
-  static schemaRenderer(schema: () => {properties: IProperty[], info: DomainTableInfoLike}): ObjectRenderer<RowView> {
+  static schemaRenderer(schema: () => {properties: IProperty[], info: DomainTableInfoLike},
+    captionOf?: (row: RowView) => string): ObjectRenderer<RowView> {
     const label = (row: RowView): {text: string, draft: boolean} => {
       const {info, properties} = schema();
       const column = info.nameColumn ?? info.businessKey.find((key) =>
@@ -416,9 +419,12 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
       return Rows.isDraft(row) ? {text: `New ${nounOf(info, true)}`, draft: true} :
         {text: row.id, draft: false};
     };
+    // a title is never an id: a row named by its id alone reads as its noun
     const titleOf = (row: RowView): HTMLElement => {
-      const {text: caption, draft} = label(row);
-      return span(caption, draft ? 'u2-domain-list-name u2-domain-draft' : 'u2-domain-list-name');
+      const {text, draft} = label(row);
+      const caption = captionOf?.(row) ?? text;
+      const shown = caption === row.id || UUID.test(caption) ? capital(nounOf(schema().info, true)) : caption;
+      return span(shown, draft ? 'u2-domain-list-name u2-domain-draft' : 'u2-domain-list-name');
     };
     const description = (row: RowView): string => {
       const {properties, info} = schema();

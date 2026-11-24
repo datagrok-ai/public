@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Lists: A row's card and list title use the table's own caption, and never show an id
 * Import: The preview shows a user named by login or name as typed, not as its id
 * Records: A record whose table has no name column is titled by its noun, never by its id
 * Live refresh: Fixed a record created on its page not following other users' changes after Save

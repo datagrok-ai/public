@@ -62,7 +62,7 @@ function mount(list, height = 300) {
 const names = (list, options) => list.actionsFor(options).map((a) => a.text);
 
 scoped('rows render by id; the schema names them without a handler, the handler where one claims them', async () => {
-  const {src} = await issues();
+  const {table, src} = await issues();
   const list = testOwner().build(() => domains.list(src));
   assert.equal(list.root.dataset.u2, 'domain-list');
   const rows = mount(list);
@@ -75,6 +75,13 @@ scoped('rows render by id; the schema names them without a handler, the handler 
   const {properties, info} = src.schema;
   assert.equal(DomainTable.schemaRenderer(() => ({properties, info: {...info, nameColumn: null}}))
     .caption(src.rows.byKey('i2')), 'Issue 2', 'the name hidden: the key\'s own column, never the reference in it');
+  table.renderer = {...table.renderer, caption: (r) => r.id === 'i1' ? 'Configured' : r.id};
+  const second = testOwner().build(() => domains.list(src));
+  const dressed = mount(second);
+  assert.deepEqual(dressed.slice(0, 2).map((r) => r.querySelector('.u2-domain-list-content').textContent),
+    ['Configured', 'Issue'], 'the configured caption, and a row named by its id alone reads as its noun');
+  table.renderer = table.defaultRenderer;
+  second.dispose();
   list.dispose();
   src.dispose();
 });
