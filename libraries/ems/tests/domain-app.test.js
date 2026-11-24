@@ -2152,13 +2152,15 @@ scoped('a sum of quantities says its unit, or "mixed units" where the units diff
     await flush();
     await flush();
     a.output.aggregations.value = [{column: 'Containers.Quantity', aggregation: 'sum'},
-      {column: 'Containers.Quantity', aggregation: 'variance'}];
+      {column: 'Containers.Quantity', aggregation: 'variance'},
+      {column: 'Containers.Quantity', aggregation: 'first'}];
     for (let i = 0; i < 4; i++)
       await flush();
     const sum = (id) => a.output.values.value.get(id)?.['sum(Containers.Quantity)'];
     assert.deepEqual([sum('l1'), sum('l2')], ['mixed units', '5 kg']);
     assert.equal(a.output.values.value.get('l2')?.['variance(Containers.Quantity)'], 1, 'a variance is not in kg');
     assert.equal(a.output.values.value.get('l1')?.['variance(Containers.Quantity)'], 'mixed units');
+    assert.equal(a.output.values.value.get('l1')?.['first(Containers.Quantity)'], '0.6 L');
     a.dispose();
   } finally {
     grok.dapi.domains.table = served;

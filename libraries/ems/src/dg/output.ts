@@ -119,7 +119,9 @@ export function domainOutput(source: DomainSource, table: DomainTable, exclude: 
         const row = found.get(String(result.get(path, i))) ?? {};
         for (const a of list) {
           const value = result.get(outputKey(a), i);
-          row[outputKey(a)] = !measured.includes(a) ? value : result.get('#units', i) > 1 ? 'mixed units' :
+          // the first value is one value, in the first row's unit
+          const mixed = result.get('#units', i) > 1 && a.aggregation !== DG.AGG.FIRST;
+          row[outputKey(a)] = !measured.includes(a) ? value : mixed ? 'mixed units' :
             IN_UNIT.includes(a.aggregation) ? `${DomainDataTable.number(value)} ${result.get('#unit', i)}` : value;
         }
         found.set(String(result.get(path, i)), row);
