@@ -6,6 +6,7 @@
 * Lists: Fixed a search, filter or sort changed during a save or over unsaved edits not being applied
 * Lists: Fixed the current row and the selection being lost on save, refresh or switching to the table view
 * Lists: Fixed sort keys with spaces or a `prop.` prefix being dropped, and sorting by unsortable columns
+* Lists: Fixed a long card title wrapping and hiding the card's second line; it now ends with an ellipsis
 * Live refresh: Fixed a peer's write going unnoticed, discarding unsaved edits or leaving stale aggregations
 * Save: Fixed Save staying off, or resending refused changes, after a refused save
 * Save: Fixed a stale delete or restore overwriting another session's change: it is now a version conflict

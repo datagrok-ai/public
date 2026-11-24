@@ -159,11 +159,14 @@
   font-weight: 600;
 }
 
-.u2-domain-card-description {
-  color: var(--dg-text-color-light);
+:is(.u2-domain-card > *, .u2-domain-card-description) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+:is(.u2-domain-card-description, .u2-domain-card-time) {
+  color: var(--dg-text-color-light);
 }
 
 .u2-list-row.u2-domain-list-restored,
@@ -244,10 +247,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--dg-text-color-light);
-}
-
-.u2-domain-card-time {
   color: var(--dg-text-color-light);
 }
 
