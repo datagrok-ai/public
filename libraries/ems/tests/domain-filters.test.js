@@ -435,13 +435,29 @@ scoped('a search saved in this tab keeps the ones another tab saved since this o
   userSettings.values = {};
   const {dapi} = await import('datagrok-api/grok');
   const get = dapi.userDataStorage.get;
-  dapi.userDataStorage.get = async () => ({Alpha: '{"q":"","search":"alpha","sort":""}'});
+  const flushed = userSettings.flush;
+  let server = {Alpha: '{"q":"","search":"alpha","sort":""}'};
+  dapi.userDataStorage.get = async () => server;
+  userSettings.flush = async () => {
+    const sent = {...userSettings.values['ems-searches|grit.issue']};
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    server = sent;
+  };
   try {
     await SavedSearches.save('grit.issue', 'Beta', {q: '', search: 'beta', sort: ''});
     assert.deepEqual(Object.keys(userSettings.values['ems-searches|grit.issue']), ['Alpha', 'Beta']);
     await SavedSearches.remove('grit.issue', 'Beta');
     assert.deepEqual(Object.keys(userSettings.values['ems-searches|grit.issue']), ['Alpha']);
+    await SavedSearches.save('grit.issue', 'Beta', {q: '', search: 'beta', sort: ''});
+    await SavedSearches.save('grit.issue', 'Gamma', {q: '', search: 'gamma', sort: ''});
+    assert.deepEqual(Object.keys(userSettings.values['ems-searches|grit.issue']), ['Alpha', 'Beta', 'Gamma']);
+    dapi.userDataStorage.get = async () => {
+      throw new Error('offline');
+    };
+    await SavedSearches.save('grit.issue', 'Delta', {q: '', search: 'delta', sort: ''});
+    assert.deepEqual(Object.keys(server), ['Alpha', 'Beta', 'Gamma', 'Delta'], 'kept when the read fails');
   } finally {
+    userSettings.flush = flushed;
     dapi.userDataStorage.get = get;
   }
 });

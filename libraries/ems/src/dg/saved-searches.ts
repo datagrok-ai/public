@@ -17,10 +17,17 @@ const same = (a: DomainSearch, b: DomainSearch) => a.q === b.q && a.search === b
 const label = (s: DomainSearch) => [s.q, s.search && `Search "${s.search}"`].filter((x) => x).join(' · ');
 /** grok.userSettings keeps writes in memory until its 10 s sync: an explicit save is sent now. */
 const persist = () => void grok.userSettings.flush();
+let writes = Promise.resolve();
 /** grok.userSettings writes a whole group from this tab's copy, which another tab may have added to since:
- * a write is made over the server's copy. */
-async function fresh(group: string): Promise<void> {
-  grok.userSettings.put(group, await grok.dapi.userDataStorage.get(group, true) ?? {});
+ * a write is made over the server's copy (this tab's where the read fails), one write at a time. */
+function write(group: string, change: () => void): Promise<void> {
+  return writes = writes.then(async () => {
+    await grok.dapi.userDataStorage.get(group, true)
+      .then((server) => grok.userSettings.put(group, server ?? {}), () => {});
+    change();
+    SavedSearches.changed.value++;
+    await grok.userSettings.flush();
+  });
 }
 
 /** The keys of `sort` over columns the table describes: the server refuses a read that names any other. */
@@ -57,18 +64,12 @@ export class SavedSearches {
     return [...SavedSearches.saved(table).keys()].find((k) => k.trim().toLowerCase() === key) ?? null;
   }
 
-  static async save(table: string, name: string, search: DomainSearch): Promise<void> {
-    await fresh(savedKey(table));
-    grok.userSettings.add(savedKey(table), name, JSON.stringify(search));
-    persist();
-    SavedSearches.changed.value++;
+  static save(table: string, name: string, search: DomainSearch): Promise<void> {
+    return write(savedKey(table), () => grok.userSettings.add(savedKey(table), name, JSON.stringify(search)));
   }
 
-  static async remove(table: string, name: string): Promise<void> {
-    await fresh(savedKey(table));
-    grok.userSettings.delete(savedKey(table), name);
-    persist();
-    SavedSearches.changed.value++;
+  static remove(table: string, name: string): Promise<void> {
+    return write(savedKey(table), () => grok.userSettings.delete(savedKey(table), name));
   }
 
   static recent(table: string): DomainSearch[] {
