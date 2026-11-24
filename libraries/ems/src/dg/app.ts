@@ -1177,8 +1177,8 @@ export class DomainApp extends Control {
     draft = false): void {
     this._close();
     if (page === 'entity' && entity !== null) {
-      const source = this.build(() => draft ? this._source({draft: true, defaults: this._options.defaults,
-          liveMs: this._options.liveMs}) :
+      const source = this.build(() => draft ?
+        this._source({draft: true, defaults: this._options.defaults, liveMs: this._options.liveMs}) :
         this._source({query: query ?? Filters.group('and', [Filters.cond('id', '=', entity)]), pageSize: 1,
           live: this._options.live ?? true, liveMs: this._options.liveMs}));
       if (this.table.info.hierarchy)
