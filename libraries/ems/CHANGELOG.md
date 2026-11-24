@@ -2,6 +2,9 @@
 
 ## v.next
 
+* Live refresh: Fixed a save made while a grid cell was open hiding a peer's later change
+* Links: Fixed `/apps/<Package>?entity=<id>` opening the list instead of the record
+* Bulk edit: Fixed a field narrowed by a shared value when some matched rows have none
 * Delete: Asks first, in a list or on a record, where a delete leaves rows of other tables unlinked
 * Lists: Fixed Load more skipping, repeating or mixing rows after a save, a filter change or a peer's write
 * Lists: Fixed a search, filter or sort changed during a save or over unsaved edits not being applied

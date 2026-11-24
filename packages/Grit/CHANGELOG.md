@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Issues: Reads statuses, priorities, types and projects again only when one changes, not on every page
+* Issues: Fixed `#0` in the search clearing it and showing every issue
 * Issues: A handle typed into the search (`GRIT-12`, `grit-12`, `#012`) finds the issue through a filter that reads as the handle and that the next search drops, and cards name it with the project key and follow renamed statuses, priorities and keys
 * Issues: Fixed the Open preset leaving out issues without a status, so a new issue vanished from it
 * Issues: Fixed a failed read of the `closed` status leaving the page without Assign to me, Close and the closing rule; the next issue table now asks again
