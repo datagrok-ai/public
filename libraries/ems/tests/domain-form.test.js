@@ -1454,3 +1454,21 @@ scoped('EQ-033: a field holding the server\'s refusal shows it, and the form doe
   form.dispose();
   src.dispose();
 });
+
+scoped('a hierarchy row is not offered itself or its subtree as its parent', async () => {
+  emsBackends.domain = (await import('./domain-fixtures.mjs')).hierarchyBackend();
+  const table = await domains.table('stock.location');
+  const src = testOwner().build(() => table.source({pageSize: 10}));
+  await flush();
+  src.currentRow.value = src.rows.byKey('l2');
+  const form = testOwner().build(() => domains.form(src, {overrides: {parent_id: {debounceMs: 0}}}));
+  document.body.append(form.root);
+  await flush();
+  form.input('parent_id').root.querySelector('input').focus();
+  await flush();
+  await flush();
+  assert.deepEqual([...document.body.querySelectorAll('[role="option"]')].map((el) => el.textContent),
+    ['Site', 'Other site']);
+  form.dispose();
+  src.dispose();
+});

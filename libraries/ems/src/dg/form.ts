@@ -325,6 +325,11 @@ export class DomainForm extends Control {
       const extra: Partial<DomainPickOptions> = {filter, params: () => row, siblings: source.schema};
       overrides = {...overrides, [name]: {...overrides?.[name], ...extra}};
     }
+    const parent = table?.info.parentColumn;
+    if (parent != null && !draft) {
+      const extra: Partial<DomainPickOptions> = {notUnder: row.id};
+      overrides = {...overrides, [parent]: {...overrides?.[parent], ...extra}};
+    }
     for (const prop of draft ? source.schema.properties : []) {
       if (!DomainTable.isReference(prop) && DomainTable.isAssignedOnSave(source.schema.info, prop))
         overrides = {...overrides, [prop.name!]: {emptyText: 'assigned on save', ...overrides?.[prop.name!]}};
