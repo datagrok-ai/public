@@ -8,6 +8,7 @@
 * Lists: Fixed sort keys with spaces or a `prop.` prefix being dropped, and sorting by unsortable columns
 * Live refresh: Fixed a peer's write going unnoticed, discarding unsaved edits or leaving stale aggregations
 * Live refresh: Refresh is always offered on a table that is not polled for changes
+* Live refresh: Fixed a table beside a tree keeping a referenced row's old name after a peer renamed it
 * Save: Fixed Save staying off, or resending refused changes, after a refused save
 * Save: Fixed a stale delete or restore overwriting another session's change: it is now a version conflict
 * Save: Fixed "saved" announced for changes a conflict reload dropped, and refusals naming a row by its ids

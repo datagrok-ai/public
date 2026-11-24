@@ -879,8 +879,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
         continue;
       entry.last = undefined;
       void source._probeWatched(this.table, entry);
-      for (const moved of [...entry.moved])
-        moved();
+      source._notify(this.table, entry);
     }
     if (!this._noRows && this._table !== undefined) {
       const total = await this._count(this._table);
@@ -1241,10 +1240,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       await Promise.all([...this._watched].map(([address, entry]) => this._probeWatched(address, entry)));
       if (before === undefined || (before.count === now.count && before.last === now.last))
         return;
-      if (this.isDirty.peek() || this.session.isDirty.peek() || this.isSaving.peek())
-        this._isStale.value = true;
-      else
-        await this.refresh();
+      await this._behind();
     } catch {
       // the baseline stands: the next good probe compares against the last pair that WAS answered,
       // so a change made during an outage is still seen
@@ -1264,13 +1260,26 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       const now = await table.probe({});
       const before = entry.last;
       entry.last = now;
-      if (before !== undefined && (before.count !== now.count || before.last !== now.last)) {
-        for (const moved of [...entry.moved])
-          moved();
-      }
+      if (before !== undefined && (before.count !== now.count || before.last !== now.last))
+        this._notify(address, entry);
     } catch {
       entry.table = undefined;
     }
+  }
+
+  // the rows carry the captions of a watched table they reference
+  private _notify(address: string, entry: {moved: Set<() => void>}): void {
+    for (const moved of [...entry.moved])
+      moved();
+    if (address !== this.table && this._schema.properties.some((p) => p.ref === address))
+      void this._behind();
+  }
+
+  private async _behind(): Promise<void> {
+    if (this.isDirty.peek() || this.session.isDirty.peek() || this.isSaving.peek())
+      this._isStale.value = true;
+    else
+      await this.refresh();
   }
 
   private async _baseline(table: DomainTableLike): Promise<DomainProbeLike | undefined> {

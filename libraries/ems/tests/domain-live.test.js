@@ -694,3 +694,15 @@ scoped('a save that re-bases while a peer\'s reload is in flight keeps the curre
   assert.deepEqual(selectedIds(src), ['i2', 'i3']);
   src.dispose();
 });
+
+scoped('a peer\'s rename of a referenced row reaches the rows through a table the source already watches', async () => {
+  const be = counted();
+  const src = await started(be);
+  const unwatch = src.watch('grit.project', () => {});
+  await tick();
+  await peerUpdate(be, 'project', 'p1', {name: 'Renamed'});
+  await tick();
+  assert.equal(src.rows.byKey('i1')['~caption_project_id'], 'Renamed');
+  unwatch();
+  src.dispose();
+});
