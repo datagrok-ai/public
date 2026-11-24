@@ -469,9 +469,11 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     const about = source.problemRow.peek();
     if (DomainErrors.codeOf(error) !== 'validation' || row === null || (about !== null && about !== row.id))
       return [];
+    // a rule over several columns is fixed where its message says, not on the field it is attached to
+    if (this.validators.columns.some((name) => this.validators.check(name, row[name], row) !== null))
+      return [];
     const edit = source.edit.peek();
-    return this.properties.filter(({name}) => name !== undefined &&
-      ((edit?.errorOf(row.id, name) ?? null) !== null || this.validators.check(name, row[name], row) !== null))
+    return this.properties.filter(({name}) => name !== undefined && (edit?.errorOf(row.id, name) ?? null) !== null)
       .map((p) => DomainTable.captionOf(p));
   }
 
@@ -499,27 +501,34 @@ async function configured<TRow extends DomainRowLike>(table: DomainTable<TRow>):
   return table;
 }
 
-/** The first problem the table's validators find over `rows`, named by row and column. */
+/** The first problem the table's validators find over `rows`, named by row and column, or by how many rows
+ * share it. */
 export function firstProblem<TRow extends DomainRowLike>(table: DomainTable<TRow>, rows: Iterable<RowView<TRow>>,
   source?: DomainSource<TRow>): {row: RowView<TRow>, message: string} | null {
   const columns = table.validators.columns;
+  let found: {row: RowView<TRow>, column: string, problem: string} | null = null;
+  let count = 0;
   for (const row of rows) {
-    for (const column of columns) {
-      const problem = table.validators.check(column, row[column], row);
-      // the refusal names the row it is about: from a list, "Status: …" alone names nothing
-      if (problem !== null)
-        return {row, message: nameCell(table, row, column, problem, source)};
-    }
+    const column = columns.find((c) => table.validators.check(c, row[c], row) !== null);
+    if (column === undefined)
+      continue;
+    const problem = table.validators.check(column, row[column], row)!;
+    found ??= {row, column, problem};
+    if (column === found.column && problem === found.problem)
+      count++;
   }
-  return null;
+  // the refusal names the row it is about: from a list, "Status: …" alone names nothing
+  return found === null ? null :
+    {row: found.row, message: nameCell(table, found.row, found.column, found.problem, source, count)};
 }
 
 /** A refusal about one cell, named: the row's caption and the column's, as a list or a grid needs
  * them — the writer's own "Value can't be empty" says nothing about which field. */
 function nameCell<TRow extends DomainRowLike>(table: DomainTable<TRow>, row: RowView<TRow>, column: string,
-  problem: string, source?: DomainSource<TRow>): string {
+  problem: string, source?: DomainSource<TRow>, count = 1): string {
   const caption = DomainTable.captionOf(table.properties.find((p) => p.name === column) ?? {name: column});
-  return `${rowName(table, row, source)}: ${DomainTable.named(caption, problem)}`;
+  const subject = count > 1 ? `${count} ${nounOf(table.info)}` : rowName(table, row, source);
+  return `${subject}: ${DomainTable.named(caption, problem)}`;
 }
 
 /** The row's caption or, where that names nothing, its place among the source's rows. */

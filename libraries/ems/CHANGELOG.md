@@ -13,6 +13,7 @@
 * Save: Fixed Save staying off after a refused save or a cancelled conflict; Refresh waits for a save
 * Save: Fixed a stale delete or restore overwriting another session's change: it is now a version conflict
 * Save: Fixed "saved" announced for changes a conflict reload dropped, and refusals naming a row by its ids
+* Save: A rule's refusal says its message, not "Fix <field>", and how many rows it refuses ("2 issues: …")
 * Permissions: Fixed access or columns shared or revoked while the app is open not showing until a reload
 * Permissions: Fixed users without View told a table is empty, and row-grant users told they have no access
 * Permissions: Fixed New offered where no save can succeed, and hidden columns offered in sort and filters
