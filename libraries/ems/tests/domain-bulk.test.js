@@ -141,6 +141,13 @@ scoped('a parent that is one of the rows, or under one, is refused: no row ends 
     [null, 'l1', 'l2', 'l3', null]);
   fire(buttonNamed('CANCEL'), 'click');
   assert.equal(await running, null);
+  const {hierarchyCycle} = await import('../src/dg/backend.js');
+  const stored = memory.tableSync('stock.location');
+  assert.match(await hierarchyCycle(stored, ['l2'], 'l9', new Map([['l9', 'l4'], ['l2', 'l9']]), 'Room'),
+    /^Cannot move "Room" under itself/, 'two pending moves that close a loop between them');
+  assert.equal(await hierarchyCycle(stored, ['l2'], 'l9', new Map([['l2', 'l9']])), null);
+  assert.equal(await hierarchyCycle({...stored, ancestors: () => Promise.reject(new Error('no such row'))},
+    ['l2'], '~new:1'), null, 'a parent added in the same save is asked nothing');
   source.dispose();
 });
 

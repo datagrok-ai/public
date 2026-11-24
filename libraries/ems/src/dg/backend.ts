@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {Access} from '@datagrok-libraries/u2';
+import {Access, Rows} from '@datagrok-libraries/u2';
 import type {IProperty, DataFrameLike} from '@datagrok-libraries/u2';
 import type {AuditEntryLike, DomainBackend, DomainBatchReportLike, DomainDeletedMode, DomainFrameLike, DomainProbeLike,
   DomainQueryLike, DomainReadScope, DomainSupportLike, DomainTableInfoLike, DomainTableLike, DomainTransactionOpLike,
@@ -25,14 +25,22 @@ const SYSTEM_SHAPES = {
 export const SYSTEM_COLUMNS: readonly (readonly [name: string, type: string, caption: string])[] =
   Object.entries(SYSTEM_SHAPES).map(([name, [type, caption]]) => [name, type, caption]);
 
-/** Why `parent` cannot become the parent of the rows `ids`: it is one of them, or under one. */
-export async function hierarchyCycle(table: DomainTableLike, ids: readonly unknown[], parent: unknown):
-  Promise<string | null> {
-  if (typeof parent !== 'string' || table.ancestors === undefined)
-    return null;
-  const chain = [parent, ...(await table.ancestors(parent)).map((a) => a.id)];
-  return chain.some((id) => ids.includes(id)) ?
-    `Cannot move a ${nounOf(table.info, true)} under itself or one of its descendants` : null;
+/** Why `parent` cannot become the parent of the rows `ids`: it is one of them, or under one, once the pending
+ * `moved` (row id → new parent) have landed. */
+export async function hierarchyCycle(table: DomainTableLike, ids: readonly unknown[], parent: unknown,
+  moved: ReadonlyMap<unknown, unknown> = new Map(), name?: unknown): Promise<string | null> {
+  const up = async (id: unknown): Promise<unknown[]> =>
+    typeof id !== 'string' || id === '' || Rows.isDraft(id) || table.ancestors === undefined ? [] :
+      [id, ...(await table.ancestors(id)).map((a) => a.id).reverse()];
+  let chain = await up(parent);
+  const what = name == null ? `a ${nounOf(table.info, true)}` : `"${name}"`;
+  for (let i = 0; i < chain.length; i++) {
+    if (ids.includes(chain[i]))
+      return `Cannot move ${what} under itself or one of its descendants`;
+    if (moved.has(chain[i]))
+      chain = chain.indexOf(chain[i]) < i ? [] : [...chain.slice(0, i + 1), ...await up(moved.get(chain[i]))];
+  }
+  return null;
 }
 
 /** Fills `emsBackends.domain` at dg import over `grok.dapi.domains`; its `frame()` makes `DomainSource` a frame
@@ -87,16 +95,20 @@ export class DgDomainBackend implements DomainBackend {
       state.problemCode = null;
       state.retry?.();
     }
-    for (const state of states) {
+    const moves = states.flatMap((state) => {
       const {editor, df, table} = state;
       const column = table?.info.parentColumn;
-      for (let i = 0; column != null && i < df.rowCount; i++) {
-        if (editor.stateOf(i) !== 'modified' || !editor.isChanged(i, column))
-          continue;
-        state.problem = await hierarchyCycle(table!, [df.get('id', i)], df.get(column, i));
-        if (state.problem !== null)
-          return false;
-      }
+      const name = table?.info.nameColumn;
+      return column == null ? [] : [...Array(df.rowCount).keys()]
+        .filter((i) => editor.stateOf(i) === 'modified' && editor.isChanged(i, column))
+        .map((i) => ({state, id: df.get('id', i), parent: df.get(column, i),
+          name: name == null ? null : df.get(name, i)}));
+    });
+    const moved = new Map(moves.map((m) => [m.id, m.parent]));
+    for (const {state, id, parent, name} of moves) {
+      state.problem = await hierarchyCycle(state.table!, [id], parent, moved, name);
+      if (state.problem !== null)
+        return false;
     }
     const before = states.map((state) => state.errorCells?.());
     const session = new DG.DomainSession(states.map((e) => e.editor), {quiet: true});

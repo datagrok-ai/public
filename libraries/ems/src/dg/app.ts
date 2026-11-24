@@ -224,6 +224,7 @@ export class DomainApp extends Control {
     this.own(() => DomainApp.live.delete(this));
 
     this.listSource = this._source({query: _options.query ?? '', sort: _options.sort, pageSize: _options.pageSize,
+      defaults: _options.defaults,
       live: _options.live ?? true, liveMs: _options.liveMs});
     this.own(() => this.listSource.dispose());
     this.list = this.build(() => new DomainList(this.listSource, {mode: _options.mode,
@@ -397,7 +398,7 @@ export class DomainApp extends Control {
       // what a bulk action would act on, beside the count — the platform grid's own convention
       const selected = entity ? 0 : this.listSource.selection.value.length;
       const failed = source?.error.value !== undefined ? source :
-        this.session.sources.value.find((s) => DomainErrors.codeOf(s.error.value) === DomainSource.REFUSED);
+        this.session.sources.value.find((s) => s.error.value !== undefined && s.state.value !== 'error');
       const problem = failed == null ? null : DomainErrors.message(failed.error.value, failed);
       // the rows answer the filter that was applied, not the one in the box: while that one is
       // invalid they are shown stale, and a refusal of the old one is not the news
@@ -490,7 +491,7 @@ export class DomainApp extends Control {
     if (this._ribbon !== undefined)
       return this._ribbon;
     const singular = nounOf(this.table.info, true);
-    const blocked = computed(() => DomainTable.noCreate(this.listSource, this._options.defaults));
+    const blocked = computed(() => DomainTable.noCreate(this.listSource));
     const add = new Control(this.build(() =>
       iconButton('plus', () => void this.create(), {tooltip: `New ${singular}`, disabled: blocked})));
     add.root.dataset.u2 = 'new-button';
@@ -511,7 +512,8 @@ export class DomainApp extends Control {
     });
     const more = this._actionsMenu();
     // the status bar is text: the way to act on "Data changed" is here, and only while it stands
-    const reload = new Control(button('Refresh', () => void this.refresh()));
+    const reload = new Control(button('Refresh',
+      () => void this.refresh().catch((e) => DomainErrors.report(e))));
     reload.root.dataset.u2 = 'refresh-button';
     reload.effect(() => {
       const source = this._page.value === 'entity' ? this._entitySource.value : this.listSource;
@@ -660,7 +662,7 @@ export class DomainApp extends Control {
       await DomainViews.rebuild(this);
     } else {
       await source.refresh();
-      if (source === this._entitySource.peek())
+      if (source === this._entitySource.peek() && this.session.sources.peek().every((s) => s.pending().length === 0))
         this._fillPanes(source);
     }
     return true;
