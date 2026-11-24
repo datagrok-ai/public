@@ -945,7 +945,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
 
   // swapped in place, never through `_drop`: the current row is never null on the way
   private _swap(frame: DomainFrameLike, window: number, baseline: DomainProbeLike | undefined,
-    kept: {current: string | null, at: number, selected: string[]}, also?: () => void): void {
+    kept: {current: string | null, selected: string[]}, also?: () => void): void {
     const old = this._frame;
     this._unwire?.();
     this._unwire = undefined;
@@ -965,37 +965,28 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this._restore(kept);
   }
 
-  private _keep(): {current: string | null, at: number, selected: string[]} {
-    const current = this.currentRow.peek()?.id ?? null;
-    return {current, at: current === null ? -1 : this._rows.indexOf(current),
-      selected: this._selection.peek().map((row) => row.id)};
+  private _keep(): {current: string | null, selected: string[]} {
+    return {current: this.currentRow.peek()?.id ?? null, selected: this._selection.peek().map((row) => row.id)};
   }
 
-  private _restoring = false;
-
-  private _restore(kept: {current: string | null, at: number, selected: string[]}): void {
+  private _restore(kept: {current: string | null, selected: string[]}): void {
     const df = this._df.peek();
     if (df === undefined)
       return;
     batch(() => {
-      if (kept.current !== null) {
-        const at = this._rows.indexOf(kept.current);
-        const to = at >= 0 ? at : Math.min(kept.at, df.rowCount - 1);
-        if (to >= 0) {
-          df.currentRowIdx = to;
-          this._syncCurrent();
-        }
+      const at = kept.current === null ? -1 : this._rows.indexOf(kept.current);
+      if (at >= 0) {
+        df.currentRowIdx = at;
+        this._syncCurrent();
       }
       const selection = df.selection as
         {set?(i: number, value: boolean, notify?: boolean): void, fireChanged?(): void} | null | undefined;
       if (typeof selection?.set === 'function') {
-        this._restoring = true;
         for (const id of kept.selected) {
           const index = this._rows.indexOf(id);
           if (index >= 0)
             selection.set(index, true, false);
         }
-        this._restoring = false;
         selection.fireChanged?.();
       }
       this._syncSelection();
@@ -1047,12 +1038,6 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   revert(): void {
     this._unapplied.value = new Map();
     this._edit.peek()?.discard();
-    if (DomainSource.isForbidden(this._error.peek())) {
-      batch(() => {
-        this._error.value = undefined;
-        this._problemRow.value = null;
-      });
-    }
     if (this._regate && !this.isDirty.peek())
       void this._rebuildWriter();
   }
@@ -1166,7 +1151,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
           this.currentRow.value = this.rows.byKey(real) ?? null;
       }),
       frame.df.onCurrentRowChanged.subscribe(() => this._syncCurrent()),
-      frame.df.onSelectionChanged.subscribe(() => this._restoring || this._syncSelection()),
+      frame.df.onSelectionChanged.subscribe(() => this._syncSelection()),
       frame.df.onValuesChanged.subscribe(bump),
     ];
     this._unwire = () => {
