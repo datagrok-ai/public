@@ -32,6 +32,14 @@ export namespace funcs {
     return await grok.functions.call('FileEditors:PreviewRtf', { file });
   }
 
+  export async function previewOdt(file: DG.FileInfo ): Promise<DG.View> {
+    return await grok.functions.call('FileEditors:PreviewOdt', { file });
+  }
+
+  export async function previewDoc(file: DG.FileInfo ): Promise<DG.View> {
+    return await grok.functions.call('FileEditors:PreviewDoc', { file });
+  }
+
   export async function previewTex(file: DG.FileInfo ): Promise<DG.View> {
     return await grok.functions.call('FileEditors:PreviewTex', { file });
   }

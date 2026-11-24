@@ -148,10 +148,12 @@ held by *Mozilla Foundation and contributors*.
 
 ### rtf.js (3.0.9)
 
-In-browser RTF/EMF parser used to display RTF documents.
+In-browser RTF/EMF/WMF parser used to display RTF documents, bundled from the npm package.
 
 - Upstream: https://github.com/tbluemel/rtf.js
-- License: **MIT**
+- License: **MIT**. Its source files also name *Tom Zoehner* (2016-2020, EMF/WMF) and
+  *Ynse Hoornenborg* (2020) as copyright holders under the same license.
+- Bundled dependency: **codepage** (1.15.0, SheetJS), Apache-2.0, text in `node_modules/codepage/LICENSE`.
 
 ```
 The MIT License (MIT)
@@ -176,6 +178,23 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+### JSZip (3.10.1)
+
+ZIP reader used to open ODT documents.
+
+- Upstream: https://github.com/Stuk/jszip
+- License: dual **MIT** or GPL-3.0-or-later; used under the **MIT** option. Copyright
+  *Stuart Knightley and contributors*. The full text is in `node_modules/jszip/LICENSE.markdown`.
+
+### cfb (1.2.2)
+
+Compound File Binary (OLE) reader used to open Word 97-2003 (DOC) documents.
+
+- Upstream: https://github.com/SheetJS/js-cfb
+- License: **Apache-2.0**. Copyright *SheetJS LLC*. The full text is in `node_modules/cfb/LICENSE`;
+  the npm package does not ship a NOTICE file.
+- Bundled dependencies: **adler-32** (1.3.1) and **crc-32** (1.2.2), both SheetJS, Apache-2.0, no NOTICE file.
 
 ---
 

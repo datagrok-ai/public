@@ -6,16 +6,18 @@
     "name": "Dmytro Kovalyov",
     "email": "dkovalyov@datagrok.ai"
   },
-  "description": "Support for previewing and opening text file formats (PDF, DOCX, TEX)",
+  "description": "Support for previewing and opening text file formats (PDF, DOCX, DOC, ODT, RTF, TEX)",
   "dependencies": {
     "@datagrok-libraries/test": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",
     "cash-dom": "catalog:",
+    "cfb": "^1.2.2",
     "codemirror": "^6.0.2",
     "codemirror-lang-latex": "^0.1.0-alpha.2",
     "datagrok-api": "workspace:^",
     "dayjs": "catalog:",
     "docx-preview": "^0.1.18",
+    "jszip": "^3.10.1",
     "latex.js": "^0.12.6",
     "pdfjs-dist": "^4.2.67",
     "rtf.js": "^3.0.9"

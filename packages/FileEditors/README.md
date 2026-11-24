@@ -4,9 +4,9 @@ The **File Editors** package for Datagrok allows you to open and preview various
 
 ## Features
 
-Currently, we support PDF, DOCX, and TEX formats, with plans to include more in the future.
+Currently, we support PDF, DOCX, DOC, ODT, RTF, and TEX formats. DOC files are shown as plain text.
 
-- **Text File Formats Support:** Easily open and preview PDF, DOCX, and TEX files.
+- **Text File Formats Support:** Easily open and preview PDF, DOCX, DOC, ODT, RTF, and TEX files.
 
 - **Editing Capabilities (Coming Soon):** While editing is in the works, we're aiming to introduce powerful features soon. Expect support for various text formats as we continue to enhance package.
 

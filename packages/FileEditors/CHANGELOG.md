@@ -3,6 +3,10 @@
 ## v.next
 
 * PDF, DOCX, RTF: The preview view is named after the file (its tab had no title)
+* RTF: Fixed the preview failing to load its renderer (the bundle was dropped in the rspack migration)
+* DOCX, RTF: The preview scrolls as one document instead of squeezing each page into its own box
+* DOC, ODT: Added previews (ODT with formatting, DOC as plain text)
+* DOCX, RTF, ODT: A document can no longer run script in the preview (DOCX symbol markup, javascript: links), and DOCX styles no longer leak into the app
 
 ## 1.3.2 (2026-07-12)
 
