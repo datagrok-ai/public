@@ -227,8 +227,8 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
   }
 
   /** Whether the server can order the list by this column: not a reference and not the key. */
-  static isSortable(prop: {name?: string, ref?: string}): boolean {
-    return prop.ref === undefined && prop.name !== 'id';
+  static isSortable(prop: IProperty): boolean {
+    return !DomainTable.isReference(prop) && prop.name !== 'id';
   }
 
   /** Whether the column holds another row's id rather than a value of its own — a ref column
