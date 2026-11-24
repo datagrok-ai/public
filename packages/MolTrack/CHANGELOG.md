@@ -2,7 +2,7 @@
 
 ## v.next
 
-* Import: Fixed a file with more than 100 already registered structures: only the first 100 were recognised, the rest were sent as new and the server refused the whole import
+* Import: Fixed an import of more than 100 already registered structures being refused
 * Import: Added finding linked records by their fields: map a file column to Batch › EPA Batch ID, Assay Run › Cell Lot and the like
 * Compounds: Added a table view with Output columns and Aggregations over batches and assay results under the filters
 * Compounds: Fixed the Identity pane's Parent row being added to an identity that another compound had replaced meanwhile
