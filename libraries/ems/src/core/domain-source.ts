@@ -73,7 +73,7 @@ type Watched = {moved: Set<() => void>, last?: DomainProbeLike, leave?: () => vo
 
 // one probe of a watched table per poll, however many sources watch it; it goes with its last watcher
 class SharedProbe {
-  static readonly all = new Map<string, SharedProbe>();
+  private static readonly _all = new WeakMap<DomainBackend, Map<string, SharedProbe>>();
   private readonly _watchers = new Map<(now: DomainProbeLike) => void, number>();
   private _last: DomainProbeLike | undefined;
   private _table: Promise<DomainTableLike> | undefined;
@@ -84,10 +84,17 @@ class SharedProbe {
 
   private constructor(private readonly _address: string, private readonly _backend: DomainBackend) {}
 
+  static of(backend: DomainBackend, address: string): SharedProbe | undefined {
+    return SharedProbe._all.get(backend)?.get(address);
+  }
+
   static join(address: string, backend: DomainBackend, ms: number, seen: (now: DomainProbeLike) => void): () => void {
-    let shared = SharedProbe.all.get(address);
+    let tables = SharedProbe._all.get(backend);
+    if (tables === undefined)
+      SharedProbe._all.set(backend, tables = new Map());
+    let shared = tables.get(address);
     if (shared === undefined)
-      SharedProbe.all.set(address, shared = new SharedProbe(address, backend));
+      tables.set(address, shared = new SharedProbe(address, backend));
     const fresh = shared._watchers.size > 0 ? shared._last : undefined;
     shared._watchers.set(seen, ms);
     shared._arm();
@@ -102,7 +109,7 @@ class SharedProbe {
         shared._arm();
       else {
         clearInterval(shared._timer);
-        SharedProbe.all.delete(address);
+        tables.delete(address);
       }
     };
   }
@@ -1003,7 +1010,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       entry.last = undefined;
       source._notify(this.table, entry);
     }
-    void SharedProbe.all.get(this.table)?.probe();
+    void SharedProbe.of(this._backend, this.table)?.probe();
     if (!this._noRows && this._table !== undefined) {
       const total = await this._count(this._table);
       if (gen === this._gen)

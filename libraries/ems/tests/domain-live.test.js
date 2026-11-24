@@ -269,6 +269,24 @@ scoped('a watched table whose probe keeps failing is dropped after the same run 
   src.dispose();
 });
 
+scoped('two backends watching one table address each ask their own', async () => {
+  const one = counted();
+  const two = counted();
+  const open = async (be) => {
+    emsBackends.domain = be.backend;
+    const src = testOwner().build(() => new DomainSource({table: 'grit.issue', live: true, liveMs: 1000}, env));
+    src.start();
+    await flush();
+    return src;
+  };
+  const a = await open(one);
+  const b = await open(two);
+  await tick();
+  assert.equal(two.probes.filter((p) => !('filter' in p)).length, 2, 'its baseline and its poll');
+  a.dispose();
+  b.dispose();
+});
+
 scoped('nothing is asked while the tab is hidden, and nothing after dispose', async () => {
   const be = counted();
   const src = await started(be);
