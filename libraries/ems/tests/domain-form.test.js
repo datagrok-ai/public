@@ -1308,6 +1308,10 @@ scoped('a stored json object shows its pairs, and a typed pair is saved with the
 scoped('a hierarchy row is not offered itself or its subtree as its parent', async () => {
   emsBackends.domain = (await import('./domain-fixtures.mjs')).hierarchyBackend();
   const table = await domains.table('stock.location');
+  const store = emsBackends.domain.tableSync('stock.location');
+  const query = store.query.bind(store);
+  const subtree = [];
+  store.query = (spec) => (spec.filter?.operator === 'under' && subtree.push(spec.columns), query(spec));
   const src = testOwner().build(() => table.source({pageSize: 10}));
   await flush();
   src.currentRow.value = src.rows.byKey('l2');
@@ -1319,6 +1323,13 @@ scoped('a hierarchy row is not offered itself or its subtree as its parent', asy
   await flush();
   assert.deepEqual([...document.body.querySelectorAll('[role="option"]')].map((el) => el.textContent),
     ['Site', 'Other site']);
+  const input = form.input('parent_id').root.querySelector('input');
+  input.value = 'Other';
+  fire(input, 'input');
+  await flush();
+  await flush();
+  assert.deepEqual([...document.body.querySelectorAll('[role="option"]')].map((el) => el.textContent), ['Other site']);
+  assert.deepEqual(subtree, [[]], 'the subtree is read once per opening, ids only');
   form.dispose();
   src.dispose();
 });
