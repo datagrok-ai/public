@@ -89,6 +89,19 @@ scoped('a pending change to a column Edit properties… removed is never sent; D
   try {
     assert.equal(await app.goTo('entity', 'p1'), true);
     await flush();
+    const memory = emsBackends.domain;
+    const read = memory.table.bind(memory);
+    let release;
+    const held = new Promise((resolve) => release = resolve);
+    memory.table = (address) => held.then(() => read(address));
+    const refreshing = app.refresh();
+    app.session.sources.value.find((s) => s.table === 'grit.issue').newRow({title: 'Typed meanwhile'});
+    memory.table = read;
+    release();
+    assert.equal(await refreshing, true);
+    assert.equal(app.session.changeCount.value, 1, 'a row added while Refresh was reading is not rebuilt away');
+    app.session.discard();
+    await flush();
     app.session.sources.value.find((s) => s.table === 'grit.issue').rows.byKey('i1').priority = 'low';
     await flush();
     const next = reshaped(({priority, ...columns}) => columns);

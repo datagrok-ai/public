@@ -7,7 +7,7 @@ import {layout} from '@datagrok-libraries/u2/tests/layout.mjs';
 import {backends, Scope, Rows, notify, allowedActions, Control} from '@datagrok-libraries/u2';
 import {Usage} from 'datagrok-api/u2core';
 import {SharedSession} from '../src/core/session.js';
-import {backend, holdFrames} from './domain-fixtures.mjs';
+import {backend} from './domain-fixtures.mjs';
 import {byKind} from '@datagrok-libraries/u2/testing';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
@@ -265,6 +265,11 @@ scoped('New: the entity page over a pristine draft; once saved the page is the r
   assert.equal(a.entity.value, saved.id);
   assert.equal(a.path.value, `${BASE}?entity=${saved.id}`);
   assert.equal(a.session.isDirty.value, false);
+  assert.equal(await a.refresh(), true);
+  await flush();
+  await flush();
+  assert.equal(a.path.value, `${BASE}?entity=${saved.id}`, 'Refresh stays on the row just created');
+  assert.equal(a.form.value.input('title').value, 'Fresh');
   a.dispose();
 });
 
@@ -604,6 +609,11 @@ scoped('a save refused as "forbidden" re-reads the access, and Discard leaves th
   a.session.discard();
   await flush();
   assert.equal(a.form.value.input('title'), undefined);
+  table.access = cached;
+  table.rows.find((r) => r.id === 'i1')['~can_edit'] = true;
+  assert.equal(await a.refresh(), true);
+  await flush();
+  assert.notEqual(a.form.value.input('title'), undefined, 'a grant Refresh reads opens the form again');
   a.dispose();
 });
 
@@ -1945,16 +1955,8 @@ scoped('a user who reaches rows only through row grants sees them: picker, child
   await flush();
   await flush();
   assert.equal(byKind(b, 'new-button')[0].closest('[hidden]'), null, 'the first child can be added');
-  const gate = holdFrames(emsBackends.domain, 'grit.project');
-  gate.hold = true;
-  const refreshing = b.refresh();
-  await flush();
   fire(byKind(b, 'new-button')[0], 'click');
   await flush();
-  gate.release();
-  await refreshing;
-  await flush();
-  assert.equal(b.session.isDirty.value, true, 'a child row added while Refresh reads is kept');
   const child = b.session.sources.value.find((s) => s.table === 'grit.issue');
   child.pending()[0].title = 'Fresh';
   child.refuse('Column "project_id" references a deleted row in "project" ("p1")');

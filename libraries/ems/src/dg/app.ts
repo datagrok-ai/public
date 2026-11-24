@@ -660,11 +660,10 @@ export class DomainApp extends Control {
     else if (await this._outdated()) {
       DomainTable.forget(this.table.address.split('.')[0]);
       await DomainViews.rebuild(this);
-    } else {
+    } else if (source === this.listSource || this.session.sources.peek().some((s) => s.pending().length > 0))
       await source.refresh();
-      if (source === this._entitySource.peek() && this.session.sources.peek().every((s) => s.pending().length === 0))
-        this._fillPanes(source);
-    }
+    else if (!this.scope.isDisposed)
+      this._show('entity', this._entity.peek(), source.isDraft ? null : source.query.peek() as FilterGroup);
     return true;
   }
 
@@ -1155,10 +1154,15 @@ export class DomainApp extends Control {
           void source.reloadAccess();
         }
       });
-      const {include, exclude} = this._options;
+      const {children, history, include, exclude} = this._options;
       const form = this.build(() => new DomainForm(source, {system: 'footer', include, exclude,
         labelColumn: this.labelColumn, empty: `${capital(nounOf(this.table.info, true))} "${entity}" was not found.`}));
-      this._fillPanes(source);
+      this._panes = this.build(() => [
+        ...(children === false ? [] : [domains.children(source, children === true ? undefined : children)]),
+        ...(history === false || !this.table.table.support.audit ? [] :
+          [domains.history(source, undefined, {include, exclude})]),
+      ]);
+      this.panes.replaceChildren(...this._panes.map((pane) => pane.root));
       this._formHost.replaceChildren(form.root);
       if (draft) {
         const why = div([], 'u2-domain-form-empty');
@@ -1182,18 +1186,6 @@ export class DomainApp extends Control {
       this._entity.value = page === 'entity' ? entity : null;
       this._page.value = page;
     });
-  }
-
-  private _fillPanes(source: DomainSource): void {
-    const {children, history, include, exclude} = this._options;
-    for (const pane of this._panes)
-      pane.dispose();
-    this._panes = this.build(() => [
-      ...(children === false ? [] : [domains.children(source, children === true ? undefined : children)]),
-      ...(history === false || !this.table.table.support.audit ? [] :
-        [domains.history(source, undefined, {include, exclude})]),
-    ]);
-    this.panes.replaceChildren(...this._panes.map((pane) => pane.root));
   }
 
   private _close(): void {
