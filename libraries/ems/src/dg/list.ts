@@ -41,6 +41,8 @@ export class DomainList extends Control {
   /** The rows are not the ones the filter box reads as — set while that filter is invalid, so
    * they are shown dimmed instead of as the answer (`DomainApp` wires it to `DomainFilters`). */
   readonly stale: Signal<boolean> = signal(false);
+  // a second Delete while the first still asks is the same delete
+  private static readonly _asking = new WeakSet<DomainSource>();
 
   private readonly _table: DomainTable | undefined;
   private _default: ObjectRenderer<RowView> | undefined;
@@ -165,10 +167,24 @@ export class DomainList extends Control {
   /** Marks `rows` deleted once the user agrees to what the delete leaves without its link: the rows a `setnull`
    * reference holds them by, counted per table. */
   static async confirmDelete(source: DomainSource, rows: readonly RowView[]): Promise<void> {
+    if (DomainList._asking.has(source))
+      return;
+    DomainList._asking.add(source);
+    try {
+      if (await DomainList._agreed(source, rows)) {
+        for (const row of rows)
+          source.edit.peek()?.markDeleted(row.id);
+      }
+    } finally {
+      DomainList._asking.delete(source);
+    }
+  }
+
+  private static async _agreed(source: DomainSource, rows: readonly RowView[]): Promise<boolean> {
     const ids = rows.map((row) => row.id);
     const saved = ids.filter((id) => !Rows.isDraft(id));
     const info = source.schema.info;
-    const manifests = new Map<string, Promise<DG.DomainRegisteredManifest>>();
+    const manifests = new Map<string, Promise<DG.DomainRegisteredManifest | null>>();
     const counts = await Promise.allSettled((saved.length === 0 ? [] : info.childTables).map(async (c) => {
       const child = await DomainTable.shared(`${c.schema}.${c.table}`);
       const n = await child.table.count({filter: [{property: c.fkColumn, operator: '=', value: saved}, 'and',
@@ -176,20 +192,23 @@ export class DomainList extends Control {
       if (n === 0)
         return '';
       if (!manifests.has(c.schema))
-        manifests.set(c.schema, grok.dapi.domains.schema(c.schema).manifest());
-      const column = (await manifests.get(c.schema)!).tables[c.table]?.columns[c.fkColumn];
+        manifests.set(c.schema, grok.dapi.domains.schema(c.schema).manifest().catch(() => null));
+      const manifest = await manifests.get(c.schema)!;
+      if (manifest === null)
+        return null;
+      const column = manifest.tables[c.table]?.columns[c.fkColumn];
       return column?.onDelete === 'setnull' ? `${n.toLocaleString()} ${nounOf(child.info, n === 1)}` : '';
     }));
-    const unlinked = counts.flatMap((c) => c.status === 'fulfilled' && c.value !== '' ? [c.value] : []);
+    const unlinked = counts.flatMap((c) => c.status === 'fulfilled' && c.value ? [c.value] : []);
     const caption = rows.length === 1 ? DomainTable.of(source)?.renderer.caption(rows[0]) : undefined;
     const what = caption ? `"${caption}"` : rows.length === 1 ? `the ${nounOf(info, true)}` :
       `${rows.length.toLocaleString()} ${nounOf(info)}`;
-    if (unlinked.length > 0 && !await confirmDialog({title: 'Delete', destructive: true, confirmText: 'Delete',
-      message: `Deleting ${what} leaves ${new Intl.ListFormat('en').format(unlinked)} without a ` +
-        `${nounOf(info, true)}. Delete anyway?`}))
-      return;
-    for (const id of ids)
-      source.edit.peek()?.markDeleted(id);
+    const one = nounOf(info, true);
+    const message = unlinked.length > 0 ? `Deleting ${what} leaves ${new Intl.ListFormat('en').format(unlinked)} ` +
+      `without ${/^[aeiou]/.test(one) ? 'an' : 'a'} ${one}. Delete anyway?` :
+      counts.some((c) => c.status === 'fulfilled' && c.value === null) ?
+        `Delete ${what}? Rows that refer to it may lose the link.` : null;
+    return message === null || confirmDialog({title: 'Delete', destructive: true, confirmText: 'Delete', message});
   }
 
   static deleteAction(run: () => void | Promise<void>): Action {
