@@ -149,8 +149,12 @@ export class SavedSearches {
       const saved = SavedSearches.saved(source.table);
       for (const [name, search] of saved)
         menu.item(name, () => SavedSearches.apply(source, search));
-      if (saved.size > 0)
-        menu.separator();
+      if (saved.size > 0) {
+        menu.group('Delete saved search');
+        for (const name of saved.keys())
+          menu.item(name, () => SavedSearches.remove(source.table, name));
+        menu.endGroup().separator();
+      }
       for (const r of SavedSearches.recent(source.table))
         menu.item(label(r), () => SavedSearches.apply(source, r), {detail: new Date(r.at!).toLocaleTimeString()});
       return menu.separator().item('Clear recent searches', () => SavedSearches.clearRecent(source.table));

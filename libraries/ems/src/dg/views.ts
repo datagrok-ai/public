@@ -39,7 +39,6 @@ export interface DomainViewsOptions {
 export class DomainViews {
   // where each table's rows open: the views made over it last
   private static readonly _byTable = new Map<string, DomainViews>();
-  private static _deleteSaved: {unsubscribe(): void} | undefined;
   private static readonly _rebuilding = new WeakMap<DomainApp, Promise<void>>();
 
   constructor(private readonly _options: DomainViewsOptions) {
@@ -154,16 +153,10 @@ export class DomainViews {
         child.remove();
       for (const entry of this._options.views) {
         for (const [name, search] of SavedSearches.saved(entry.table)) {
-          saved.item(`${entry.name}: ${name}`, {savedSearch: {table: entry.table, name}})
+          saved.item(`${entry.name}: ${name}`)
             .onSelected.subscribe(() => void this.show(`${this._segment(entry)}${SavedSearches.query(search)}`));
         }
       }
-    });
-    type ContextMenu = {args: {item?: DG.TreeViewNode, menu: DG.Menu}};
-    DomainViews._deleteSaved ??= grok.events.onContextMenu.subscribe((e: ContextMenu) => {
-      const saved = e.args.item?.value?.savedSearch;
-      if (saved !== undefined)
-        e.args.menu.item('Delete', () => void SavedSearches.remove(saved.table, saved.name));
     });
   }
 

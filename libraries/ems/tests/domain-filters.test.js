@@ -381,8 +381,16 @@ scoped('saved and recent searches: the list names the saved search it holds, his
   for (let i = 0; i < 25; i++)
     SavedSearches.record('grit.issue', {...high, search: `t${i}`});
   assert.equal(SavedSearches.recent('grit.issue').length, 20);
-  await SavedSearches.remove('grit.issue', 'High');
+  document.body.append(filters.root);
+  fire(filters.root.querySelector('.u2-domain-filters-tools button'), 'click');
+  await flush();
+  const panel = () => [...document.body.querySelectorAll('.u2-menu')].at(-1);
+  fire(panel().querySelectorAll('.u2-menu-item-sub')[0], 'click');
+  fire([...panel().querySelectorAll('[role="menuitem"]')].find((e) => e.textContent.includes('High')), 'click');
+  await flush();
+  assert.deepEqual([...SavedSearches.saved('grit.issue').keys()], [], 'the history menu deletes a saved search');
   assert.equal(SavedSearches.title(src), null);
+  filters.root.remove();
   filters.dispose();
   src.dispose();
 });
