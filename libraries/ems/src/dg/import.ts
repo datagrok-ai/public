@@ -767,6 +767,7 @@ class ImportFlow {
           missed[i].push(matches[i].error!);
       }
     }
+    await this._namedUsers(rows);
     const prepare = this._table.importer?.prepare;
     const verdicts = prepare === undefined ? [] : await prepare(rows, progress);
     return cells.map((cell, i): Planned => {
@@ -781,6 +782,25 @@ class ImportFlow {
       return problems.length === 0 ? {cells: cell, payload, verdict} :
         {cells: cell, payload: null, verdict: {error: problems.join('; ')}};
     });
+  }
+
+  // a user column takes a login or a name too, where exactly one user answers to it; one read of the users for all
+  private async _namedUsers(rows: Record<string, unknown>[]): Promise<void> {
+    const columns = this._targets.filter((p) => p.semType === 'User');
+    if (!rows.some((row) => columns.some((p) => ImportLinks.idProblem(p, row[p.name!]) !== null)))
+      return;
+    const ids = new Map<string, string | null>();
+    for (const user of await grok.dapi.users.list().catch(() => [])) {
+      for (const key of new Set([user.login, user.friendlyName].filter((k) => !!k).map((k) => k.toLowerCase())))
+        ids.set(key, ids.has(key) ? null : user.id);
+    }
+    for (const row of rows) {
+      for (const p of columns) {
+        const id = ImportLinks.idProblem(p, row[p.name!]) === null ? null : ids.get(String(row[p.name!]).toLowerCase());
+        if (id)
+          row[p.name!] = id;
+      }
+    }
   }
 
   private _validate(row: Record<string, unknown>): string[] {

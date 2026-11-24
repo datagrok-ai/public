@@ -11,6 +11,7 @@ import {SCHEMA, backend} from './domain-fixtures.mjs';
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/facade.js');
 const DG = await import('datagrok-api/dg');
+const grok = await import('datagrok-api/grok');
 // a project id as the platform has them: an import maps a reference column of non-uuids to its find-by field
 const P1 = '9b2c4f1a-3e5d-4a7b-8c6e-1f0a2d3b4c5e';
 
@@ -278,8 +279,10 @@ scoped('a storage with no dry run previews the mapped rows without verdicts, and
 
 scoped('only the mapped columns are posted, under their target names', async () => {
   const memory = backend();
-  const {running} = await opened(memory,
-    frame(['project_id', 'title', 'note'], [{project_id: P1, title: 'Imported', note: 'skipped'}]));
+  const users = grok.dapi.users;
+  grok.dapi.users = {...users, list: async () => [{id: P1, login: 'tester', friendlyName: 'Tester'}]};
+  const {running} = await opened(memory, frame(['project_id', 'title', 'note', 'reporter'],
+    [{project_id: P1, title: 'Imported', note: 'skipped', reporter: 'Tester'}]));
   await toMapping();
   assert.equal(named('note').value, '(skip)');
   fire(buttonNamed('NEXT'), 'click');
@@ -289,6 +292,8 @@ scoped('only the mapped columns are posted, under their target names', async () 
   const landed = issues(memory).find((r) => r.title === 'Imported');
   assert.notEqual(landed, undefined, 'the row was inserted');
   assert.equal('note' in landed, false, 'a skipped source column never reached the backend');
+  assert.equal(landed.reporter, P1, 'a user column takes a login or a name');
+  grok.dapi.users = users;
   assert.deepEqual(counts('report'), ['1 added']);
   fire(buttonNamed('CLOSE'), 'click');
   const result = await running;

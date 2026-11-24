@@ -40,15 +40,15 @@ export class ImportLinks {
 
   static idHint(prop: IProperty): string | null {
     const kind = prop.semType === 'User' ? 'user' : prop.semType === 'Group' ? 'group' : null;
-    return kind === null ? null : `${DomainTable.captionOf(prop)} takes a ${kind} id (uuid), ` +
-      `not a ${kind === 'user' ? 'login or name' : 'group name'}`;
+    return kind === null ? null : kind === 'user' ? `${DomainTable.captionOf(prop)} takes a user's login or name, ` +
+      'or the user id (uuid)' : `${DomainTable.captionOf(prop)} takes a group id (uuid), not a group name`;
   }
 
   /** What is wrong with a non-id value in a user or group column, as a row's error; null otherwise. */
   static idProblem(prop: IProperty, value: unknown): string | null {
     const kind = prop.semType === 'User' ? 'user' : prop.semType === 'Group' ? 'group' : null;
     return kind === null || typeof value !== 'string' || value === '' || UUID.test(value) ? null :
-      `expected a ${kind} id (uuid), got "${value}"`;
+      kind === 'user' ? `"${value}" names no single user` : `expected a group id (uuid), got "${value}"`;
   }
 
   /** The links among `targets`, each with the fields its records can be found by. */
