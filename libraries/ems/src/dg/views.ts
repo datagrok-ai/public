@@ -62,7 +62,8 @@ export class DomainViews {
   async open(address = ''): Promise<DG.ViewBase | null> {
     const {entry, rest} = this._route(address);
     const segment = /^\/?([^/?]*)/.exec(address)![1];
-    if (segment !== '' && DomainViews._key(segment) !== DomainViews._key(this._segment(entry)))
+    const key = DomainViews._key(segment);
+    if (key !== '' && key !== DomainViews._key(this._segment(entry)) && key !== DomainViews._key(entry.name))
       grok.shell.warning(`This app has no ${segment} view: showing ${entry.name}`);
     return DomainApp.openAt(this.baseOf(entry.table), this._at(entry, rest)) === undefined ? this._new(address) : null;
   }
