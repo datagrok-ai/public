@@ -14,7 +14,7 @@ export interface SessionButtonOptions {
 /** A button over a session: a Control rather than a bare button, so the effects it runs have an owner
  * (the view's host disposes ribbon controls with the view). */
 export class SessionButton extends Control {
-  static readonly WAITING = 'Wait for the batch being saved to finish';
+  static readonly WAITING = 'Saving…';
 
   readonly button: HTMLButtonElement;
   readonly session: DomainSession;

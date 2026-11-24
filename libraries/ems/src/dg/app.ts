@@ -18,6 +18,7 @@ import type {DomainFiltersOptions} from './filters.js';
 import type {DomainChildrenOptions} from './children.js';
 import {DomainAddress} from './address.js';
 import {DomainErrors} from './errors.js';
+import {SessionButton} from './buttons.js';
 import {DgDomainTable} from './backend.js';
 import {DomainDataTable} from './grid.js';
 import {domainOutput, outputKey} from './output.js';
@@ -513,8 +514,8 @@ export class DomainApp extends Control {
     });
     const more = this._actionsMenu();
     // the status bar is text: the way to act on "Data changed" is here, and only while it stands
-    const reload = new Control(button('Refresh',
-      () => void this.refresh().catch((e) => DomainErrors.report(e))));
+    const reload = new Control(button('Refresh', () => void this.refresh().catch((e) => DomainErrors.report(e)),
+      {disabled: computed(() => this.session.isSaving.value ? SessionButton.WAITING : null)}));
     reload.root.dataset.u2 = 'refresh-button';
     reload.effect(() => {
       const refused = this.session.sources.value.some((s) => DomainSource.isForbidden(s.error.value));

@@ -116,6 +116,17 @@ test('a stale update, RELOAD: json and string_list values land as the JSON text 
   assert.equal(ed._df.cols.tags[0], '["x","y"]');
 });
 
+test('a stale update, CANCEL: the edit stays pending, unmarked, and the refusal says so in words', async () => {
+  dialog(null);
+  const {ed} = editor('modified', null);
+  ed._info.singularName = 'Item';
+  ed._df.cols[E.CHANGES_COLUMN][0] = JSON.stringify({name: 'Theirs'});
+  const failing = {op: {op: 'update', table: 'item', id: 'r1'}, row: 0};
+  assert.equal(await ed.resolveConflict(conflict(2), failing), false);
+  assert.deepEqual(plain(ed.errorsOf(0)), {});
+  assert.equal(await ed.refusalFor(conflict(2), failing), 'Mine changed since you read it');
+});
+
 test('a text starting with ~new: is sent as typed, and only a draft id of the batch as a $ref', () => {
   const draft = '~new:7b1f8c3e-5d2a-4e6b-9c1d-0a2b3c4d5e6f';
   const {ed} = editor('modified', null, {concurrency: 'none'});

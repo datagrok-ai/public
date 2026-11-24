@@ -8,6 +8,7 @@
 * Domains: A save refused for changing a write-once column names it by its caption
 * Domains: `DomainFrameEditor.draftIds` leaves out a draft that was added and then deleted
 * Domains: Stale deletes and restores now raise the conflict dialog; `showConflictDialog` takes the operation
+* Domains: CANCEL in the conflict dialog keeps the edits unmarked, and the refusal names the row
 * Domains: Fixed RELOAD in the conflict dialog for deleted, restored and removed rows and for `json` cells
 * Domains: Fixed text starting with `~new:` failing to save; `buildOps` takes the batch's draft ids
 * Domains: Added `DomainSession.lastRefusal.code`; a `json` cell accepts its JSON text

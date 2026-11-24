@@ -224,7 +224,7 @@ export class DomainSession implements IEditorHost {
           const at = this._locate(parts, e?.opIndex);
           if (e instanceof DomainVersionConflictError && at != null) {
             if (!(await at.editor.resolveConflict(e, at.failing)))
-              return this._refuse(e?.message ?? `${e}`, at.editor, e?.opIndex, e?.code);
+              return this._refuse(await at.editor.refusalFor(e, at.failing), at.editor, e?.opIndex, e?.code);
             parts = this.buildOps();
             if (parts == null)
               return this._refuse(DomainSession.CELL_ERRORS);

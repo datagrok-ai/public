@@ -971,6 +971,7 @@ scoped('closing through the write-back is blocked: the view is clean and still b
   const saving = a.session.save();
   await flush();
   assert.equal(a.session.isDirty.value, false, 'the batch landed: the rows read clean already');
+  assert.equal(a.ribbon().main[4].root.getAttribute('aria-description'), 'Saving…', 'Refresh waits for the save');
   const e = {args: {view: {dart: view.dart}}, prevented: 0, preventDefault() {
     this.prevented++;
   }};

@@ -1223,7 +1223,7 @@ export class DomainFrameEditor implements IFrameEditor {
    * external shape — its own dialog, showing what was read, what is there now and what is
    * pending per guard column) sends this row's changed values UNGUARDED on the retry, and on that
    * retry only. Resolves to whether the batch should be rebuilt and retried; false when the
-   * user dismissed it, in which case the row's changed cells say why. */
+   * user dismissed it, the edits kept as they were: the next save asks again. */
   async resolveConflict(e: DomainVersionConflictError, failing: DomainPendingOp): Promise<boolean> {
     this._onConflict.next(e);
     const row = failing.row;
@@ -1274,11 +1274,8 @@ export class DomainFrameEditor implements IFrameEditor {
         this._write(() => this._df.set('version', row, e.currentVersion));
       return true;
     }
-    for (const column of Object.keys(this.changesOf(row)))
-      this._setError(row, column, {message: e.message, kind: 'conflict'});
     if (kind != null && decision !== 'reload')
       balloon.warning(`${subject} changed since you read it: its ${kind} is still pending`);
-    this._fire();
     return false;
   }
 
@@ -1350,6 +1347,8 @@ export class DomainFrameEditor implements IFrameEditor {
       return this._frozenText(frozen);
     const named = this._displayOf(failing.row);
     const noun = this._info.singularName.toLowerCase();
+    if (e instanceof DomainVersionConflictError)
+      return `${named ?? `This ${noun}`} changed since you read it`;
     if (e instanceof DomainNotFoundError && failing.op.op === 'update')
       return `${named ?? `This ${noun}`} was deleted by someone else: discard your changes to it`;
     if (e instanceof DomainForbiddenError && `${e.message}`.toLowerCase() === 'forbidden') {
