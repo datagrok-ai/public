@@ -9,6 +9,7 @@
 * Lists: Fixed a long card title wrapping and hiding the card's second line; it now ends with an ellipsis
 * Live refresh: Fixed a list, tree or aggregation missing a peer's write or rename, or dropping unsaved edits
 * Live refresh: Refresh is always offered on a table that is not polled for changes
+* Live refresh: Child tabs follow a peer's writes, and say "Data changed — Refresh" over unsaved changes
 * Save: Fixed Save staying off, or resending refused changes, after a refused save
 * Save: Fixed a stale delete or restore overwriting another session's change: it is now a version conflict
 * Save: Fixed "saved" announced for changes a conflict reload dropped, and refusals naming a row by its ids

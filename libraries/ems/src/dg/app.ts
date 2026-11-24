@@ -78,7 +78,7 @@ export interface DomainAppOptions {
   pageSize?: number;
   /** Whether the list follows the server (`DomainSourceOptions.live`), ON by default: it probes
    * the table every {@link liveMs} and reloads while the session is clean, marking the page
-   * {@link DomainApp.stale} while it is not. The entity page is one row and is not polled. */
+   * {@link DomainApp.stale} while it is not. The entity page is one row and is not polled; its child tabs are. */
   live?: boolean;
   liveMs?: number;
   mode?: DomainListMode;
@@ -409,13 +409,13 @@ export class DomainApp extends Control {
       // pending still matters, and so does that the rows under it are no longer the server's
       if (this._reshaped.value !== null)
         return {count, selected, notice: pending === null ? STALE : `${pending} — ${RESHAPED}`, problem};
-      if (source !== null && source.stale.value)
+      if (this.stale.value)
         return {count, selected, notice: pending === null ? STALE : `${pending} — ${STALE}`, problem};
       return {count, selected, notice: pending, problem};
     });
     this.summary = computed(() => DomainApp.summaryOf(this.status.value));
-    this.stale = computed(() => this._reshaped.value !== null ||
-      ((this._page.value === 'entity' ? this._entitySource.value : this.listSource)?.stale.value ?? false));
+    this.stale = computed(() => this._reshaped.value !== null || (this._page.value === 'entity' ?
+      this.session.sources.value.some((s) => s !== this.listSource && s.stale.value) : this.listSource.stale.value));
     this._wireMode();
     this.own(() => this._close());
     const fit = new ResizeObserver(() => {
@@ -1168,7 +1168,8 @@ export class DomainApp extends Control {
       const form = this.build(() => new DomainForm(source, {system: 'footer', include, exclude,
         labelColumn: this.labelColumn, empty: `${capital(nounOf(this.table.info, true))} "${entity}" was not found.`}));
       this._panes = this.build(() => [
-        ...(children === false ? [] : [domains.children(source, children === true ? undefined : children)]),
+        ...(children === false ? [] : [domains.children(source, {live: this._options.live ?? true,
+          liveMs: this._options.liveMs, ...(children === true ? {} : children)})]),
         ...(history === false || !this.table.table.support.audit ? [] :
           [domains.history(source, undefined, {include, exclude})]),
       ]);

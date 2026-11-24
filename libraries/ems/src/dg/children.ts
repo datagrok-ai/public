@@ -16,6 +16,9 @@ export interface DomainChildrenOptions {
   mode?: DomainChildrenMode;
   /** Grid mode, per child table (address or bare name): the columns shown and the one that opens a row. */
   grids?: Record<string, {columns?: string[], open?: string}>;
+  /** Whether a tab follows the server (`DomainSourceOptions.live`). */
+  live?: boolean;
+  liveMs?: number;
 }
 
 /** One tab: the child table, the FK column pointing at the parent, the tab's id and label. */
@@ -45,11 +48,13 @@ export class DomainChildren extends Control {
   private readonly _sources = new Map<string, DomainSource>();
   private readonly _tabStates = new Map<string, TabState>();
   private readonly _grids: NonNullable<DomainChildrenOptions['grids']>;
+  private readonly _live: Pick<DomainChildrenOptions, 'live' | 'liveMs'>;
 
   constructor(readonly parent: DomainSource, options: DomainChildrenOptions = {}) {
     super();
     this.mode = options.mode ?? 'grid';
     this._grids = options.grids ?? {};
+    this._live = {live: options.live, liveMs: options.liveMs};
     this.entries = this._entries;
     this.root.classList.add('u2-domain-children', `u2-domain-children-${this.mode}`);
     this.root.dataset.u2 = 'domain-children';
@@ -203,7 +208,7 @@ export class DomainChildren extends Control {
         const denied = this._denied(entry);
         const child = entry.table.source({query: draft || denied !== null ? '' : `${entry.fk} = "${row.id}"`,
           defaults: denied !== null ? {} : {[entry.fk]: row.id}, session: this.parent.session,
-          empty: draft || denied !== null});
+          empty: draft || denied !== null, ...this._live});
         this._sources.set(entry.id, child);
         state.current.value = child;
         // the parent's id is the same on every row here, and the column is not the user's to edit
