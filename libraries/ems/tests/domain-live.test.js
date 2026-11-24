@@ -639,6 +639,14 @@ scoped('a peer\'s rename of a referenced row reaches the rows within a poll, one
   src.dispose();
 });
 
+scoped('a source pinned to one referenced row, as a child tab is, leaves that table to the row\'s page', async () => {
+  const be = counted();
+  const src = await started(be, {query: 'project_id = "p1"'});
+  await tick();
+  assert.equal(be.probes.length, 2, 'the baseline and one poll, both of the rows');
+  src.dispose();
+});
+
 scoped('a source that has nothing of its own to poll still polls the tables watched through it', async () => {
   for (const [options, probe] of [[{empty: true}, true], [{}, false]]) {
     const be = counted();
