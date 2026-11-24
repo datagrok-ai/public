@@ -93,10 +93,9 @@ export const issuesOptions: DomainViewOptions = {mode: 'cards', itemHeight: 48, 
   shortcuts: {'m': 'Assign to me', 'c': 'Close'},
   setup: (app) => {
     const source = app.listSource;
-    app.effect(() => {
-      if (source.state.value === 'loading')
-        void reloadLookups().catch(() => {});
-    });
+    // the names the cards show, read again when their table moves rather than per page
+    for (const table of ['grit.status', 'grit.priority', 'grit.issue_type', 'grit.project'])
+      app.own(source.watch(table, () => void reloadLookups().catch(() => {})));
     // the server searches text: a typed handle (`GRIT-12`, `#12`) becomes a filter on the number, in the project
     // it names; the next search drops that filter again
     let derived: string | null = null;
