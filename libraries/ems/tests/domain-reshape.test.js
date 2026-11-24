@@ -39,7 +39,7 @@ async function docked(address = 'grit.issue', options = {path: BASE}) {
     for (const v of [view, ...added])
       DomainApp.of(v)?.dispose();
   };
-  return {app: DomainApp.of(view), added, done};
+  return {app: DomainApp.of(view), view, added, done};
 }
 
 function scoped(name, body) {

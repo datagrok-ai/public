@@ -601,6 +601,9 @@ scoped('a current row and a selection picked while a save re-reads the rows are 
   src.dispose();
 });
 
+const peerUpdate = async (be, table, id, values) =>
+  (await be.backend.table(`grit.${table}`)).transaction([{op: 'update', table, id, values}]);
+
 scoped('a peer\'s rename of a referenced row reaches the rows through a table the source already watches', async () => {
   const be = counted();
   const src = await started(be);
