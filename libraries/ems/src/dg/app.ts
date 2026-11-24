@@ -650,7 +650,8 @@ export class DomainApp extends Control {
   }
 
   private async _refresh(): Promise<boolean> {
-    const source = this._page.peek() === 'entity' ? this._entitySource.peek() : this.listSource;
+    const shown = () => this._page.peek() === 'entity' ? this._entitySource.peek() : this.listSource;
+    const source = shown();
     if (source === null)
       return false;
     if (!await confirmDiscard(this.session, {action: 'reload the rows'})) {
@@ -665,9 +666,12 @@ export class DomainApp extends Control {
     else if (await this._outdated()) {
       DomainTable.forget(this.table.address.split('.')[0]);
       await DomainViews.rebuild(this);
-    } else if (source === this.listSource || this.session.sources.peek().some((s) => s.pending().length > 0))
+    } else if (this.scope.isDisposed || source !== shown())
+      return true;
+    else if (source === this.listSource || this.session.isDirty.peek() ||
+      this.session.sources.peek().some((s) => s.pending().length > 0))
       await source.refresh();
-    else if (!this.scope.isDisposed)
+    else
       this._show('entity', this._entity.peek(), source.isDraft ? null : source.query.peek() as FilterGroup);
     return true;
   }
