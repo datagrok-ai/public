@@ -123,6 +123,12 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
     contain: size;
 }
 
+/* a scrolled list fades out under the widget's top edge instead of being cut right at it */
+.power-pack-activity-widget-content .d4-tab-vertical > .d4-tab-content:has(.power-pack-activity-widget-notifications-tab,
+    .power-pack-activity-widget-favorites-tab, .power-pack-activity-widget-activity-tab) {
+    mask-image: linear-gradient(transparent, black 10px);
+}
+
 /* starts the scrollbar below the widget's remove icon */
 .power-pack-activity-widget-content .d4-tab-host.d4-tab-vertical .d4-tab-content::-webkit-scrollbar-track:vertical {
     margin-top: 14px;
