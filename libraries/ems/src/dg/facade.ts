@@ -233,7 +233,7 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
   }
 
   static isSortable(prop: IProperty): boolean {
-    return !DomainTable.isReference(prop) && prop.name !== 'id';
+    return !DomainTable.isReference(prop) && prop.name !== 'id' && prop.name !== 'version';
   }
 
   /** Whether the column holds another row's id rather than a value of its own — a ref column

@@ -287,6 +287,8 @@ scoped('a reference column does not sort: the order would be by the ids, not the
   const {table, src, dt} = await dataTable();
   const sortable = table.properties.filter((p) => table.constructor.isSortable(p)).map((p) => p.name);
   assert.deepEqual(['project_id', 'reporter', 'title'].filter((name) => sortable.includes(name)), ['title']);
+  assert.deepEqual(['id', 'version', 'author_id', 'created_on', 'updated_on'].filter((name) => sortable.includes(name)),
+    ['created_on', 'updated_on'], 'of the system columns, the dates alone');
   dt.dispose();
   src.dispose();
 });
