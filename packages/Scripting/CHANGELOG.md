@@ -1,5 +1,9 @@
 # Scripting changelog
 
+## 1.1.6 (2026-11-23)
+
+* Rebuilt the jkg_* kernel images from master: the Node.js kernel runs on Node 22.23.5 (November 2026 security release), the other images pick up current base and dependency patches
+
 ## 1.1.5 (2026-11-18)
 
 * [core#1692](https://github.com/datagrok-ai/core/issues/1692): Fixed Julia scripts failing with "Worker did not start the julia script: no data read within 45 s" on hosts whose CPU differs from the image build machine (jkg_julia 1.1.5 is precompiled for a portable CPU target); the other jkg_* images are rebuilt from master
