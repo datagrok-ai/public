@@ -545,7 +545,7 @@
       }
     },
     "packages/Chem": {
-      "files": 319,
+      "files": 322,
       "u2Files": 4,
       "valueValue": 0,
       "valuePeek": 0,
@@ -569,8 +569,8 @@
       "cssFiles": 4,
       "cssLines": 2765,
       "cssInternalLines": 0,
-      "cssImportant": 112,
-      "commentLines": 11792,
+      "cssImportant": 110,
+      "commentLines": 12023,
       "fileHeaders": 13,
       "privateDocs": 189,
       "classes": {
