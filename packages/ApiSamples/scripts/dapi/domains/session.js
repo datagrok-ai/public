@@ -13,8 +13,8 @@ const parent = await DG.DomainFrameEditor.create(items, {query: {filter: `sku = 
 const child = await DG.DomainFrameEditor.create(events, {query: {filter: `kind = "${sku}"`}});
 
 // The parent does not exist yet: its id is a draft the child refers to as a plain value.
-const row = parent.addRow({sku: sku, name: 'Widget', quantity: 1});
-const draft = parent.dataFrame.get('id', row);
+parent.addRow({sku: sku, name: 'Widget', quantity: 1});
+const [draft] = parent.draftIds();
 child.addRow({item_id: draft, kind: sku, amount: 1});
 
 const session = new DG.DomainSession([parent, child]);
@@ -28,7 +28,8 @@ if (await session.save()) {
   const itemId = parent.dataFrame.get('id', 0);
   const event = await events.get(child.dataFrame.get('id', 0));
   grok.shell.info(`item ${itemId}; the event points at ${event.item_id}`);
-}
+} else
+  grok.shell.warning(`${session.lastRefusal.code}: ${session.lastRefusal.message}`);
 session.dispose();
 
 await items.deleteWhere({property: 'sku', operator: '=', value: sku});
