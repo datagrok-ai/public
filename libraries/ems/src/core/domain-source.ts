@@ -274,6 +274,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private _probing = false;
   private _following = false;
   private _failures = 0;
+  private _accessKey = '';
   // `as`: the query with every host condition replaced by the id list `hosted` gave
   private _served: {query: string | FilterGroup, as: string | FilterGroup} | undefined;
   private _serving: AbortController | undefined;
@@ -535,7 +536,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       const data = await table.access();
       if (gen !== this._gen)
         return;
-      this._access.value = Access.from(data);
+      this._access.value = this._accessOf(data);
       if (!this._following && !this.isEmpty) {
         this._following = true;
         void this._follow();
@@ -561,7 +562,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
         frame.dispose();
         this._probed = shown;
         batch(() => {
-          if (!this.isDirty.peek())
+          if (!this.isDirty.peek() || shownFrame !== undefined)
             this._isStale.value = true;
           this._state.value = 'ready';
         });
@@ -696,7 +697,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     if (this.scope.isDisposed)
       return false;
     const before = this._access.peek();
-    const access = Access.from(data);
+    const access = this._accessOf(data);
     const restored = this._held403() && this._grants(access) && !this._grants(before);
     batch(() => {
       this._access.value = access;
@@ -1341,6 +1342,15 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     } finally {
       this._probing = false;
     }
+  }
+
+  // equal grants keep the one Access: a form rebuilt over a new one would drop the focus and what is typed
+  private _accessOf(data: AccessData): Access {
+    const key = JSON.stringify(data);
+    if (key === this._accessKey)
+      return this._access.peek();
+    this._accessKey = key;
+    return Access.from(data);
   }
 
   private _join(address: string, entry: Watched): void {

@@ -687,10 +687,12 @@ scoped('an open record follows a peer: reloaded while clean, stale over an edit,
     const idle = be.probes.length;
     await tick();
     assert.equal(be.probes.length - idle, 2, 'the record and its project table; the list behind it waits');
+    const shown = title();
     await peerUpdate(be, 'issue', 'i1', {title: 'Theirs'});
     await tick();
     await flush();
     assert.equal(title().value, 'Theirs');
+    assert.equal(title(), shown, 'refreshed in place, so the focus and a half-typed value stay');
 
     title().value = 'Mine';
     await flush();
