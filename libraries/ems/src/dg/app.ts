@@ -489,7 +489,7 @@ export class DomainApp extends Control {
     if (this._ribbon !== undefined)
       return this._ribbon;
     const singular = nounOf(this.table.info, true);
-    const blocked = computed(() => DomainTable.noCreate(this.listSource));
+    const blocked = computed(() => DomainTable.noCreate(this.listSource, this._options.defaults));
     const add = new Control(this.build(() =>
       iconButton('plus', () => void this.create(), {tooltip: `New ${singular}`, disabled: blocked})));
     add.root.dataset.u2 = 'new-button';
