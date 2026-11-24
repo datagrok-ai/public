@@ -26,7 +26,7 @@ import {IDartApi} from '../../api/grok_api.g';
 import {COLUMN_TYPE, ColumnType, TYPE} from '../../const';
 import {DomainRegistryClient, DomainTableClient} from '../../dapi';
 import {Column, DataFrame} from '../../dataframe';
-import {DomainAccess, DomainConditionTree, DomainError, DomainQuerySpec, DomainRestrictError,
+import {DomainAccess, DomainConditionTree, DomainError, DomainNotFoundError, DomainQuerySpec, DomainRestrictError,
   DomainTableInfo, DomainTransactionOp, DomainValidationError, DomainVersionConflictError,
   DOMAIN_ACCESS_COLUMNS, DOMAIN_DELETED_COLUMN} from '../../domains';
 import {DomainObjectHandler} from '../../domains-ui';
@@ -1337,6 +1337,9 @@ export class DomainFrameEditor implements IFrameEditor {
       return this.duplicateRefusal(failing.row, e);
     if (e instanceof DomainRestrictError)
       return this.restrictRefusal(e);
+    if (e instanceof DomainNotFoundError && failing.op.op === 'update')
+      return `${this._displayOf(failing.row) ?? `This ${this._info.singularName.toLowerCase()}`} was deleted by`
+        + ' someone else: discard your changes to it';
     return `${e?.message ?? e}`;
   }
 
@@ -1844,11 +1847,12 @@ export class DomainFrameEditor implements IFrameEditor {
   }
 
   private _displayOf(row: number): string | null {
-    const name = this._info.nameColumn;
-    if (name == null || !this._df.columns.contains(name))
-      return null;
-    const v = this._wire(row, name);
-    return v == null || `${v}` === '' ? null : `${v}`;
+    const text = (column: string | null | undefined): string =>
+      column == null || !this._df.columns.contains(column) ? '' : `${this._wire(row, column) ?? ''}`;
+    const name = text(this._info.nameColumn);
+    const key = this._info.businessKey ?? [];
+    const keyed = key.length === 1 ? text(key[0]) : '';
+    return name !== '' ? name : keyed === '' ? null : `${this._info.singularName} ${keyed}`;
   }
 }
 
