@@ -6,7 +6,7 @@ import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {layout} from '@datagrok-libraries/u2/tests/layout.mjs';
 import {backends, Scope, Control, notify} from '@datagrok-libraries/u2';
 import {MemoryDomainBackend} from '../src/core/memory-domain.js';
-import {SCHEMA, backend, hierarchyBackend} from './domain-fixtures.mjs';
+import {SCHEMA, backend, hierarchyBackend, until} from './domain-fixtures.mjs';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/facade.js');
@@ -340,5 +340,41 @@ scoped('a backend that declares no writes offers no bulk edit, and says so by na
   const {source} = await table(memory);
   assert.equal(await domains.bulkEdit(source), null);
   assert.match(balloon('error'), /does not support bulk edits/);
+  source.dispose();
+});
+
+scoped('a ref column with a schema filter picks among the rows the change or the selection allows', async () => {
+  const memory = new MemoryDomainBackend({name: 'grit', tables: {
+    project: {friendlyName: 'Projects', columns: {name: {type: 'string', isName: true}}},
+    issue: {friendlyName: 'Issues', columns: {
+      project_id: {type: 'ref', ref: 'project', friendlyName: 'Project'},
+      title: {type: 'string', isName: true},
+      parent_id: {type: 'ref', ref: 'issue', filter: 'project_id = $project_id', friendlyName: 'Parent'},
+    }},
+  }}, {rows: {
+    project: [{id: 'p1', name: 'Grit'}, {id: 'p2', name: 'Datagrok'}],
+    issue: [{id: 'i1', project_id: 'p1', title: 'Aspirin'}, {id: 'i2', project_id: 'p1', title: 'Ibuprofen'},
+      {id: 'i3', project_id: 'p2', title: 'Naproxen'}],
+  }});
+  const {source} = await table(memory);
+  select(source, (i) => i < 2);
+  const {running} = await opened(source);
+  const offeredParents = async (gone) => {
+    const typeAhead = field('parent_id').typeAhead;
+    const labels = () => typeAhead.getItems({all: true}).list.map((i) => i.label);
+    typeAhead.open();
+    await until(() => labels().length > 0 && !labels().includes(gone));
+    typeAhead.close();
+    return labels();
+  };
+  choose('parent_id');
+  await flush();
+  assert.deepEqual(await offeredParents(), ['Aspirin', 'Ibuprofen'], 'the project the selected rows share');
+  choose('project_id', 'parent_id');
+  field('project_id').value = 'p2';
+  await flush();
+  assert.deepEqual(await offeredParents('Aspirin'), ['Naproxen'], 'the project the change writes');
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null);
   source.dispose();
 });
