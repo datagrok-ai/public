@@ -218,7 +218,8 @@ async function _run(source: DomainSource, form: ObjectForm, columns: string[], s
     throw new Error(refused);
   const cycle = await hierarchyCycle(handle.table, written[schema.info.parentColumn ?? ''], async (ids) =>
     (await handle.table.query({limit: 1, filter: Filters.toDomainTree(
-      Filters.group('and', [scope, Filters.cond('id', 'in', ids)]), {schema})})).length > 0);
+      Filters.group('and', [scope, Filters.cond('id', 'in', ids)]), {schema})})).length > 0, new Map(),
+  selection && source.selection.peek().length === 1 ? source.selection.peek()[0][schema.info.nameColumn ?? ''] : null);
   if (cycle !== null)
     throw new Error(cycle);
   const report = await handle.table.updateWhere!(filter, written, {limit: MAX_ROWS}).catch((e) => {
