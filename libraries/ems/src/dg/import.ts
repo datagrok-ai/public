@@ -5,6 +5,7 @@ import {signal, computed, Control, div, divH, divV, span, plural, text, link, Wi
   BoolInput, badge, dot, statusLine, Form, notify, Scope, Filters, timestamp} from '@datagrok-libraries/u2';
 import type {IProperty, ChoiceItem, BadgeVariant, RowView, FilterProperty} from '@datagrok-libraries/u2';
 import {capital, nounOf} from '../core/domain-backend.js';
+import {MemoryEditState} from '../core/edit-state.js';
 import type {DomainBatchOptionsLike, DomainBatchReportLike, DomainBatchValidationLike} from '../core/domain-backend.js';
 import {fromDartInput} from '@datagrok-libraries/u2/dg';
 import {DomainTable} from './facade.js';
@@ -31,7 +32,7 @@ export interface DomainImporter {
    * the number of rows done. */
   prepare?(rows: Record<string, unknown>[], progress: (done: number) => void): Promise<DomainImportVerdict[]>;
   /** The columns of the preview or the report, given the ones the import would show: `~row`,
-   * `~result`, each mapped target by its name and `~note` in the preview; `~row`, `~result`, `~key` and
+   * `~result`, `~note` and each mapped target by its name in the preview; `~row`, `~result`, `~key` and
    * `~note` in the report. */
   columns?(defaults: DomainImportColumn[], step: DomainImportStep): DomainImportColumn[];
   /** The height of a preview or report row, for columns that draw. */
@@ -663,8 +664,8 @@ class ImportFlow {
   }
 
   private _previewColumns(mapping: [string, string][]): DomainImportColumn[] {
-    return [ImportFlow._numberColumn(), ImportFlow._resultColumn(VERDICTS),
-      ...mapping.map(([target]) => this._valueColumn(target)), ImportFlow._noteColumn()];
+    return [ImportFlow._numberColumn(), ImportFlow._resultColumn(VERDICTS), ImportFlow._noteColumn(),
+      ...mapping.map(([target]) => this._valueColumn(target))];
   }
 
   private _reportColumns(saved: Map<string, RowView>): DomainImportColumn[] {
@@ -736,40 +737,48 @@ class ImportFlow {
     const cells = this._payload(frame, mapping, frame.rowCount);
     // what is sent: a link's id in place of the fields that found it; a row naming no record leaves the link alone
     const rows = cells.map((row) => Object.fromEntries(Object.entries(row).filter(([key]) => !key.includes('.'))));
-    const missed: (string | null)[] = rows.map(() => null);
+    const missed: string[][] = rows.map(() => []);
     for (const [column, matches] of await this._resolveLinks(frame, mapping)) {
       for (const [i, row] of rows.entries()) {
         if (matches[i].id !== null)
           row[column] = matches[i].id;
-        missed[i] ??= matches[i].error;
+        if (matches[i].error !== null)
+          missed[i].push(matches[i].error!);
       }
     }
     const prepare = this._table.importer?.prepare;
     const verdicts = prepare === undefined ? [] : await prepare(rows, progress);
     return cells.map((cell, i): Planned => {
-      const verdict = missed[i] !== null ? {error: missed[i]!} : verdicts[i] ?? {};
+      // a row the server never sees has every problem said here, the ones it would have found too
+      const verdict = missed[i].length > 0 ?
+        {error: [...missed[i], ...this._validate(rows[i]), ...this._valueProblems(rows[i])].join('; ')} :
+        verdicts[i] ?? {};
       if (verdict.error !== undefined || verdict.existing !== undefined || verdict.sameAs !== undefined)
         return {cells: cell, payload: null, verdict};
       const payload = {...rows[i], ...verdict.values};
-      const problem = this._validate(payload);
-      return problem === null ? {cells: cell, payload, verdict} :
-        {cells: cell, payload: null, verdict: {error: problem}};
+      const problems = this._validate(payload);
+      return problems.length === 0 ? {cells: cell, payload, verdict} :
+        {cells: cell, payload: null, verdict: {error: problems.join('; ')}};
     });
   }
 
-  private _validate(row: Record<string, unknown>): string | null {
+  private _validate(row: Record<string, unknown>): string[] {
     const validators = this._table.validators;
-    for (const prop of this._targets) {
-      const problem = ImportLinks.idProblem(prop, row[prop.name!]);
-      if (problem !== null)
-        return `${ImportFlow._caption(this, prop.name!)}: ${problem}`;
-    }
-    for (const column of validators.columns) {
-      const problem = validators.check(column, row[column], row as RowView);
-      if (problem !== null)
-        return `${ImportFlow._caption(this, column)}: ${problem}`;
-    }
-    return null;
+    const problems = this._targets.map((prop) => [prop.name!, ImportLinks.idProblem(prop, row[prop.name!])]);
+    for (const column of validators.columns)
+      problems.push([column, validators.check(column, row[column], row as RowView)]);
+    return problems.filter(([, problem]) => problem !== null)
+      .map(([column, problem]) => `${ImportFlow._caption(this, column!)}: ${problem}`);
+  }
+
+  private _valueProblems(row: Record<string, unknown>): string[] {
+    return this._targets.filter((prop) => prop.name! in row && !ImportLinks.isLink(prop)).flatMap((prop) => {
+      const value = row[prop.name!];
+      const numeric = ['int', 'double', 'float'].includes(prop.propertyType ?? prop.type ?? '');
+      const problem = numeric && typeof value === 'string' && !Number.isFinite(Number(value)) ?
+        `"${value}" is not a number` : MemoryEditState.problemOf(prop, value);
+      return problem === null ? [] : [`${ImportFlow._caption(this, prop.name!)}: ${problem}`];
+    });
   }
 
   // a sent row's place in the batch is its index here
