@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Added `openRunDialog`, which picks a saved run of a function in Compute2's run browser, and `openWorkflowRun`, which opens a saved run in its view
 * Added `historyInput` (`HistoryInput`), Compute2's input for a saved run of a model, picked in its Open dialog and loaded with its inputs and outputs
 * Added `getCallExports` and `exportCall`, which list a run's exports as its Export menu does and run one, returning its file
 * Added `reportFuncCallExcel`, the default Excel report of a run as a named `DG.FileInfo` and its workbook, for RFV custom exports to start from; pass it the args the export gets (`CustomExportArgs`)

@@ -111,6 +111,18 @@ export async function loadWorkflowRun(id: string): Promise<LoadedRun> {
   return call.getOutputParamValue();
 }
 
+/** Opens a saved run in its view: a workflow run in the Tree Wizard, a single function run in its editor. */
+export async function openWorkflowRun(id: string): Promise<void> {
+  await DG.Func.find({package: 'Compute2', name: 'OpenWorkflowRun'})[0].prepare({id}).call();
+}
+
+/** Picks a saved run of a function in Compute2's run browser; resolves to it loaded, or to null when cancelled. */
+export async function openRunDialog(func: DG.Func): Promise<DG.FuncCall | null> {
+  const call = DG.Func.find({package: 'Compute2', name: 'OpenRunDialog'})[0].prepare({func});
+  await call.call();
+  return call.getOutputParamValue();
+}
+
 /** The default Excel report of a run, as its export menu builds it, for a custom export to start from: pass on
  * the args the export gets, so that a workflow step's report uses the step's hook and meta, and the file says
  * whether the run is completed. */
