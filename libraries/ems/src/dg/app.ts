@@ -224,6 +224,7 @@ export class DomainApp extends Control {
     this.own(() => DomainApp.live.delete(this));
 
     this.listSource = this._source({query: _options.query ?? '', sort: _options.sort, pageSize: _options.pageSize,
+      defaults: _options.defaults,
       live: _options.live ?? true, liveMs: _options.liveMs});
     this.own(() => this.listSource.dispose());
     this.list = this.build(() => new DomainList(this.listSource, {mode: _options.mode,
@@ -490,7 +491,7 @@ export class DomainApp extends Control {
     if (this._ribbon !== undefined)
       return this._ribbon;
     const singular = nounOf(this.table.info, true);
-    const blocked = computed(() => DomainTable.noCreate(this.listSource, this._options.defaults));
+    const blocked = computed(() => DomainTable.noCreate(this.listSource));
     const add = new Control(this.build(() =>
       iconButton('plus', () => void this.create(), {tooltip: `New ${singular}`, disabled: blocked})));
     add.root.dataset.u2 = 'new-button';
