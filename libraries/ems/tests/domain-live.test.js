@@ -725,6 +725,10 @@ scoped('an open record follows a peer: reloaded while clean, stale over an edit,
     await flush();
     assert.equal(title().value, 'Theirs');
     assert.equal(title(), shown, 'refreshed in place, so the focus and a half-typed value stay');
+    await peerUpdate(be, 'project', 'p1', {name: 'Renamed'});
+    await tick();
+    await flush();
+    assert.equal(app.form.value.input('project_id').typeAhead.selected.value.name, 'Renamed');
 
     title().value = 'Mine';
     await flush();
