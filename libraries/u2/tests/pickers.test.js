@@ -558,7 +558,7 @@ picker('columns, columns map and aggregations list no hidden column, and default
 
   const aggregations = aggregatedColumnsInput('Aggregations', table);
   fire(aggregations.root.querySelector('[aria-label="Add aggregation"]'), 'click');
-  assert.deepEqual(aggregations.getState().value, [{column: 'MW', aggregation: 'avg'}],
+  assert.deepEqual(aggregations.getState().value, [{column: 'MW', aggregation: 'sum'}],
     'a new row starts on the first listed numerical column');
   assert.deepEqual([...aggregations.root.querySelector('select').querySelectorAll('option')].map((o) => o.value), LISTED,
     'the row\'s column choice');

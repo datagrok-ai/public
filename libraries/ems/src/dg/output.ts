@@ -2,15 +2,17 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {Form, Rows, component, div, notify, signal, untracked} from '@datagrok-libraries/u2';
 import type {IProperty, ReadonlySignal, RowView} from '@datagrok-libraries/u2';
-import {ColumnsInput, AggregatedColumnsInput} from '@datagrok-libraries/u2/dg';
+import {ColumnsInput, AggregatedColumnsInput, aggregationsFor} from '@datagrok-libraries/u2/dg';
 import type {ColumnAggregation} from '@datagrok-libraries/u2/dg';
 import type {DomainSource} from '../core/domain-source.js';
 import {DomainTable} from './facade.js';
 import {DomainApp} from './app.js';
 import {SYSTEM_COLUMNS} from './backend.js';
 import {DomainErrors} from './errors.js';
+import {DomainDataTable} from './grid.js';
 
 const LIMIT = 100000;
+const COUNTS = aggregationsFor('');
 
 /** Where an aggregated field lives: its table, the column naming the list's row (`batch_id.compound_id` one table
  * away), the field, and every table a write to which moves the value. */
@@ -19,6 +21,7 @@ interface Linked {
   path: string;
   column: string;
   tables: string[];
+  measured: boolean;
 }
 
 const own = (p: IProperty) => !SYSTEM_COLUMNS.some(([name]) => name === p.name) && !Rows.isService(p.name!);
@@ -69,8 +72,10 @@ export function domainOutput(source: DomainSource, table: DomainTable, exclude: 
     for (const {from, path, via, tables} of reached) {
       const title = DomainApp.titleOf(from.info);
       const name = reached.filter((r) => r.from.address === from.address).length > 1 ? `${title} (${via})` : title;
+      const units = from.properties.some((p) => p.name === 'unit');
       for (const p of from.properties.filter((p) => own(p) && !DomainTable.isReference(p))) {
-        linked.set(`${name}.${DomainTable.captionOf(p)}`, {address: from.address, path, column: p.name!, tables});
+        linked.set(`${name}.${DomainTable.captionOf(p)}`, {address: from.address, path, column: p.name!, tables,
+          measured: units && /(^|_)quantity$/.test(p.name!)});
         fields.push([`${name}.${DomainTable.captionOf(p)}`, p]);
       }
     }
@@ -97,11 +102,17 @@ export function domainOutput(source: DomainSource, table: DomainTable, exclude: 
         groups.add(a.aggregation as DG.AggregationType,
           a.aggregation === DG.AGG.TOTAL_COUNT ? null : linked.get(a.column)!.column, outputKey(a));
       }
+      const measured = list.filter((a) => linked.get(a.column)!.measured && !COUNTS.includes(a.aggregation));
+      if (measured.length > 0)
+        groups.add(DG.AGG.UNIQUE_COUNT, 'unit', '#units').add(DG.AGG.FIRST, 'unit', '#unit');
       const result = groups.aggregate();
       for (let i = 0; i < result.rowCount; i++) {
         const row = found.get(String(result.get(path, i))) ?? {};
-        for (const a of list)
-          row[outputKey(a)] = result.get(outputKey(a), i);
+        for (const a of list) {
+          const value = result.get(outputKey(a), i);
+          row[outputKey(a)] = !measured.includes(a) ? value : result.get('#units', i) > 1 ? 'mixed units' :
+            `${DomainDataTable.number(value)} ${result.get('#unit', i)}`;
+        }
         found.set(String(result.get(path, i)), row);
       }
     }

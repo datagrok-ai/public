@@ -991,10 +991,10 @@ export interface DomainBatchRowResult {
 
 /** Base of all structured /domains failures; [body] is the server's error envelope. */
 export class DomainError extends Error {
+  name = 'DomainError';
   constructor(message: string, public readonly status: number,
               public readonly body: {[key: string]: any}) {
     super(message);
-    this.name = new.target.name;
   }
   /** Server discriminant: 'validation' | 'version-conflict' | 'access-conflict' | 'restrict' | 'filter' |
    * 'forbidden' | 'not-found' | 'unsupported' | 'manifest-validation' | 'invalid-mode' | 'id-collision' |
@@ -1007,6 +1007,7 @@ export class DomainError extends Error {
 }
 
 export class DomainValidationError extends DomainError {          // code 'validation'
+  name = 'DomainValidationError';
   get rows(): DomainRowErrors[] { return this.body['rows'] ?? []; }
   /** True when the failure is a business-key/idempotency uniqueness conflict
    * (per-row error code 'unique' — how the server reports duplicates under errorOnDuplicate). */
@@ -1015,6 +1016,7 @@ export class DomainValidationError extends DomainError {          // code 'valid
   }
 }
 export class DomainVersionConflictError extends DomainError {     // code 'version-conflict'
+  name = 'DomainVersionConflictError';
   get id(): string { return this.body['id']; }
   /** The row's version as the server holds it; a schema apply's conflict carries the schema's
    * apply counter, a string. */
@@ -1034,11 +1036,12 @@ export class DomainVersionConflictError extends DomainError {     // code 'versi
    * they may have moved again. */
   get current(): {[column: string]: unknown} | undefined { return this.body['current']; }
 }
-export class DomainRestrictError extends DomainError {}           // code 'restrict'
-export class DomainFilterError extends DomainError {}             // code 'filter'
-export class DomainForbiddenError extends DomainError {}          // code 'forbidden'
-export class DomainNotFoundError extends DomainError {}           // code 'not-found'
+export class DomainRestrictError extends DomainError { name = 'DomainRestrictError'; }  // code 'restrict'
+export class DomainFilterError extends DomainError { name = 'DomainFilterError'; }  // code 'filter'
+export class DomainForbiddenError extends DomainError { name = 'DomainForbiddenError'; }  // code 'forbidden'
+export class DomainNotFoundError extends DomainError { name = 'DomainNotFoundError'; }  // code 'not-found'
 export class DomainManifestValidationError extends DomainError {  // code 'manifest-validation'
+  name = 'DomainManifestValidationError';
   /** The issues by manifest path ({@link DomainManifestIssue}). */
   get errors(): DomainManifestIssue[] { return this.body['errors'] ?? []; }
 }
@@ -1047,6 +1050,7 @@ export class DomainManifestValidationError extends DomainError {  // code 'manif
  * ({@link DomainForbiddenError}): no grant makes it succeed. {@link DomainAccess.support}
  * says the same thing BEFORE the call, so a client should never see this one. */
 export class DomainUnsupportedError extends DomainError {         // code 'unsupported'
+  name = 'DomainUnsupportedError';
   /** The operation the table cannot do ('ancestors', 'batch', …). */
   get op(): string { return `${this.body['op'] ?? ''}`; }
 }

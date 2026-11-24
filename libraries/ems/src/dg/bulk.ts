@@ -10,6 +10,7 @@ import {DomainTable, firstProblem} from './facade.js';
 import {DomainErrors} from './errors.js';
 import {hierarchyCycle} from './backend.js';
 import {DomainFilters} from './filters.js';
+import type {DomainPickOptions} from './pick.js';
 
 export interface DomainBulkEditOptions {
   /** The columns offered, in this order; every column the caller may write by default. */
@@ -90,8 +91,14 @@ function _open(source: DomainSource, props: IProperty[], required: Set<string>, 
   const handle = DomainTable.of(source)!;
   const dialog = Dialog.create(`Bulk edit ${nounOf(source.schema.info)}`, {name: 'bulk-edit'});
   dialog.root.classList.add('u2-domain-bulk');
+  const selection = source.selection.peek();
+  const params = () => Object.fromEntries(source.schema.properties.map(({name}) => [name,
+    picker.peek().includes(name!) ? form.input(name!)?.peek() :
+      target.peek().kind === SELECTED ? _shared(selection, name!) : undefined]));
+  const overrides = Object.fromEntries(Object.entries(handle.info.refFilters)
+    .map(([name, filter]): [string, Partial<DomainPickOptions>] => [name, {filter, params, siblings: source.schema}]));
   const form = dialog.build(() =>
-    propertyForm(props, {}, {access: source.access.peek().columnPolicy(), layout: 'normal'}));
+    propertyForm(props, {}, {access: source.access.peek().columnPolicy(), layout: 'normal', overrides}));
 
   const header = div([], 'u2-domain-bulk-header');
   form.root.prepend(header);
@@ -105,7 +112,6 @@ function _open(source: DomainSource, props: IProperty[], required: Set<string>, 
     .filter((p) => target.value.count <= 1 || !keys.has(p.name!))
     .map((p) => ({value: p.name!, label: DomainTable.captionOf(p)}))));
 
-  const selection = source.selection.peek();
   for (const prop of props) {
     const input = form.input(prop.name!);
     if (input === undefined)
@@ -180,6 +186,11 @@ function _applyTo(dialog: Dialog, form: ObjectForm, header: HTMLElement, targets
 function _current(rows: readonly RowView[], column: string): string {
   const seen = new Set(rows.map((row) => text(row[column])));
   return seen.size > 1 ? `${seen.size} different values` : '';
+}
+
+function _shared(rows: readonly RowView[], column: string): unknown {
+  const seen = new Set(rows.map((row) => row[column]));
+  return seen.size === 1 ? [...seen][0] : undefined;
 }
 
 function _tooMany(source: DomainSource): string {
