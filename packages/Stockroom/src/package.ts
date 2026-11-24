@@ -26,13 +26,13 @@ Editors.register({
 });
 
 /** A view per stockroom table under the Stockroom app, the substances at its root; `/apps/Stockroom/Locations` is the
- * Locations app. */
+ * Stockroom locations app. */
 const views = domains.views({
   path: '/apps/Stockroom',
   views: [
     {table: 'stockroom.substance', name: 'Substances', segment: ''},
     {table: 'stockroom.container', name: 'Containers', options: {sort: 'label'}},
-    {table: 'stockroom.location', name: 'Locations', segment: 'LocationList'},
+    {table: 'stockroom.location', name: 'Location list', segment: 'LocationList'},
     {table: 'stockroom.vendor', name: 'Vendors'},
     {table: 'stockroom.purchase_order', name: 'Purchase Orders'},
     {table: 'stockroom.sds_document', name: 'Safety Data Sheets'},
@@ -79,6 +79,7 @@ export function newContainerAt(containers: DomainTable, location: string,
 }
 
 //name: Locations
+//friendlyName: Stockroom locations
 //description: The stockroom location tree, and the containers stored anywhere under the selected node
 //tags: app
 //meta.icon: images/flask.svg
@@ -94,7 +95,7 @@ export async function stockroomLocations(): Promise<DG.ViewBase> {
     containers.source({session, live: true, pageSize: 100, sort: 'label'})));
   const addAt = (node: RowView) => newContainerAt(containers, node.id,
     {site: typeof node.site === 'string' ? node.site : undefined, caption: locations.renderer.caption(node)});
-  const host = ViewHost.create({name: 'Locations', content: () => {
+  const host = ViewHost.create({name: 'Stockroom locations', content: () => {
     const tree = domains.tree(locations, {allNode: 'All locations', follow: source,
       actions: [{name: 'New container', icon: 'plus', run: addAt}]});
     const table = domains.dataTable(source,
