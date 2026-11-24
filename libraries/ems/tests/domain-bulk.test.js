@@ -377,4 +377,14 @@ scoped('a ref column with a schema filter picks among the rows the change or the
   fire(buttonNamed('CANCEL'), 'click');
   assert.equal(await running, null);
   source.dispose();
+
+  const {source: filtered} = await table(memory, {query: 'title != "Naproxen"'});
+  const {running: all} = await opened(filtered);
+  choose('parent_id');
+  for (let i = 0; i < 4; i++)
+    await flush();
+  assert.deepEqual(await offeredParents(), ['Aspirin', 'Ibuprofen'], 'the project every matching row shares');
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await all, null);
+  filtered.dispose();
 });
