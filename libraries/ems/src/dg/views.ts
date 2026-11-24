@@ -72,6 +72,9 @@ export class DomainViews {
    * docks. */
   async show(address: string): Promise<DG.ViewBase> {
     const {entry, rest} = this._route(address);
+    // the platform makes a view current on any click inside it: a view brought forward before the click that asked
+    // for it is done bubbling would go back behind the view clicked
+    await new Promise((resolve) => setTimeout(resolve));
     return DomainApp.openAt(this.baseOf(entry.table), rest) ?? grok.shell.addView(await this._new(address));
   }
 

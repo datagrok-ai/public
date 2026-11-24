@@ -1861,6 +1861,27 @@ scoped('a package\'s main app hands its own address\'s ?entity= to the view unde
   }
 });
 
+scoped('a view a click on another view opens is current once that click reaches the view clicked', async () => {
+  emsBackends.domain = backend();
+  const home = {name: 'Home'};
+  grok.shell.addView = (view) => grok.shell.v = view;
+  const views = domains.views({path: '/apps/H', views: [{table: 'grit.issue', name: 'Issues'}]});
+  try {
+    await domains.table('grit.issue');
+    const shown = views.show('Issues');
+    for (let i = 0; i < 50; i++)
+      await Promise.resolve();
+    grok.shell.v = home;
+    const view = await shown;
+    assert.equal(grok.shell.v === view, true, 'not taken back by the page the click was on');
+  } finally {
+    delete grok.shell.addView;
+    grok.shell.v = undefined;
+    for (const app of [...DomainApp.live])
+      app.dispose();
+  }
+});
+
 // the last test: the views it makes stay registered for the process
 scoped('domains.views: a view per table, addressed and brought forward, where its rows open, an item each', async () => {
   emsBackends.domain = backend();
