@@ -1136,6 +1136,8 @@ scoped('Refresh is in the ribbon only while the page is stale, and reloads throu
   assert.equal(a.session.isDirty.value, false);
   assert.equal(a.stale.value, false, 'the reload cleared it');
   assert.equal(reload.root.hidden, true);
+  await a.goTo('entity', 'i1');
+  assert.equal(reload.root.hidden, false, 'a row page always offers it: its panes are read on Refresh alone');
   a.dispose();
 });
 
