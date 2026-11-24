@@ -6,6 +6,7 @@
 * Domain schemas: Added `DomainTable.origin` and `userColumns`; removed `origin` from the manifest types
 * Domains: A save refused for a reference to a deleted row marks the cell and names its column
 * Domains: A save refused for changing a write-once column names it by its caption
+* Domains: Fixed domain errors named by a minified class (`n5: …`) in the bundle; each has a fixed `name`
 * Domains: `DomainFrameEditor.draftIds` leaves out a draft that was added and then deleted
 * Domains: Stale deletes and restores now raise the conflict dialog; `showConflictDialog` takes the operation
 * Domains: CANCEL in the conflict dialog keeps the edits unmarked, and the refusal names the row
