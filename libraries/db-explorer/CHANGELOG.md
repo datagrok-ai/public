@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Fixed a value's card cutting its loading indicator while the value loads, as in PowerPack's search for a ChEMBL id
 * Fixed an unhandled rejection when a value's associations cannot be read, e.g. a database out of reach whose queries time out: they are left out with a warning, and the card shows its own failure
 * Fixed a caller that asked for the schema while it loaded: it waited for ever when the connection was not found, and after a load that failed it still queried the database (and waited for that query to time out too); it now gets no schema, as a later caller does
 * Added catalogs: a configuration can name the catalog of its schema (`catalogName`) for a database that has them (Databricks, Snowflake, SQL Server); its tables, joins and references are then read as `catalog.schema.table`, and the editor offers the catalog before the schema and reads the schemas and tables of that catalog alone. A configuration without a catalog reads the connection's own catalog, as before
