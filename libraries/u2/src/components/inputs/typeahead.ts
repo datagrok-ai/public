@@ -59,6 +59,9 @@ export class TypeAhead<T> extends Control {
   readonly text: ReadonlySignal<string>;
   readonly isOpen: ReadonlySignal<boolean>;
   readonly machineState: ReadonlySignal<TypeAheadState>;
+  /** Enter picks only a row the user moved to, or the one row named exactly as typed — a dropdown's
+   * first row is highlighted to be seen, not to be taken. */
+  explicitEnter = false;
 
   private readonly _input = document.createElement('input');
   private readonly _options: TypeAheadOptions<T>;
@@ -76,6 +79,7 @@ export class TypeAhead<T> extends Control {
   /** The popup lists everything, whatever the box holds — until the next keystroke. */
   private readonly _all = signal(false);
   private _echo = false;
+  private _moved = false;
 
   constructor(options: TypeAheadOptions<T>) {
     super();
@@ -168,9 +172,8 @@ export class TypeAhead<T> extends Control {
       this._pendingPick = false;
       if (view.kind !== 'ready')
         return;
-      const typed = this._text.peek().trim().toLowerCase();
-      const exact = view.items.findIndex((item) => itemText(item).toLowerCase() === typed);
-      this._commit(exact >= 0 ? exact : 0, document.activeElement === input);
+      const exact = this._exact(view.items);
+      this._commit(exact >= 0 || this.explicitEnter ? exact : 0, document.activeElement === input);
     });
 
     bindValue(input, this._text, {owner: this.scope});
@@ -266,6 +269,7 @@ export class TypeAhead<T> extends Control {
         break;
       case 'arrowDown':
         if (state === 'open') {
+          this._moved = true;
           this._list.move(1);
           break;
         }
@@ -273,17 +277,20 @@ export class TypeAhead<T> extends Control {
         this._openPopup();
         break;
       case 'arrowUp':
-        if (state === 'open')
+        if (state === 'open') {
+          this._moved = true;
           this._list.move(-1);
+        }
         break;
       case 'enter':
         if (state !== 'open')
           break;
         if (this.selected.peek() !== null && this._list.activeIndex.peek() < 0)
           this._dismiss();
-        else if (this._view.peek().kind === 'ready')
-          this._commit(this._list.activeIndex.peek());
-        else
+        else if (this._view.peek().kind === 'ready') {
+          this._commit(this.explicitEnter && !this._moved ? this._exact(this._items.peek()) :
+            this._list.activeIndex.peek());
+        } else if (this._view.peek().kind === 'loading' || this._view.peek().kind === 'idle')
           this._pendingPick = true;
         break;
       case 'escape':
@@ -325,6 +332,7 @@ export class TypeAhead<T> extends Control {
 
   private _onInput(): void {
     this._pendingPick = false;
+    this._moved = false;
     this._all.value = false;
     // the handler runs batched: the text sync sees the flag when the batch ends, and drops it
     if (this.selected.peek() !== null) {
@@ -374,6 +382,14 @@ export class TypeAhead<T> extends Control {
       this._source.query(this._text.peek());
   }
 
+  // the one row whose text is what was typed; -1 for none or several
+  private _exact(items: T[]): number {
+    const typed = this._text.peek().trim().toLowerCase();
+    const at = items.findIndex((item) => this._itemText(item).toLowerCase() === typed);
+    return at >= 0 && items.findIndex((item, i) => i > at && this._itemText(item).toLowerCase() === typed) < 0 ?
+      at : -1;
+  }
+
   private _commit(index: number, focus = true): void {
     const item = this._items.peek()[index];
     if (item === undefined)
@@ -385,8 +401,10 @@ export class TypeAhead<T> extends Control {
   }
 
   private _onKeyDown(e: KeyboardEvent): void {
+    if (e.isComposing)
+      return;
     const own = e.key === 'Enter' ? this._options.onEnter : e.key === 'Escape' ? this._options.onEscape : undefined;
-    if (own !== undefined && !this._list.isOpen.peek() && !e.isComposing) {
+    if (own !== undefined && !this._list.isOpen.peek()) {
       e.preventDefault();
       e.stopPropagation();
       own(e, this);
