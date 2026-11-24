@@ -537,7 +537,8 @@ source('containment: an unknown table is an error state; no backend throws at co
 
   let attempts = 0;
   const flaky = backend();
-  emsBackends.domain = {table: (address) => ++attempts === 1 ? Promise.reject(new Error('offline')) : flaky.table(address)};
+  emsBackends.domain = {table: (address) => address === 'grit.issue' && ++attempts === 1 ?
+    Promise.reject(new Error('offline')) : flaky.table(address)};
   const retried = await issues();
   assert.equal(retried.state.value, 'error');
   await retried.refresh();

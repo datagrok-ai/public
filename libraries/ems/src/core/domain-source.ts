@@ -202,6 +202,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private _timer: ReturnType<typeof setInterval> | undefined;
   private _probed: {count: number, last: string | null} | undefined;
   private _probing = false;
+  private _following = false;
   private _failures = 0;
   // `as`: the query with every host condition replaced by the id list `hosted` gave
   private _served: {query: string | FilterGroup, as: string | FilterGroup} | undefined;
@@ -452,6 +453,10 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       if (gen !== this._gen)
         return;
       this._access.value = Access.from(data);
+      if (!this._following && !this.isEmpty) {
+        this._following = true;
+        void this._follow();
+      }
       await this._serve(true);
       if (gen !== this._gen)
         return;
@@ -1278,6 +1283,18 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       void this._behind();
   }
 
+  // a rename where the captions come from moves the rows; a table seen only through row grants has no cheap probe
+  private async _follow(): Promise<void> {
+    const columns = this._captionColumns();
+    const tables = new Set(this._schema.properties.filter((p) => columns.includes(p.name) && p.ref !== this.table)
+      .map((p) => p.ref!));
+    for (const address of tables) {
+      const access = await this._backend.table(address).then((t) => t.access()).catch(() => undefined);
+      if (access !== undefined && Access.from(access).can('view') && !this.scope.isDisposed)
+        this.own(this.watch(address, () => {}));
+    }
+  }
+
   private async _behind(): Promise<void> {
     if (this._unsaved() || this.session.isDirty.peek() || this.isSaving.peek())
       this._isStale.value = true;
@@ -1327,8 +1344,10 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
 
   // a caption asked for a `User`/`Group` ref or a hidden column is refused, and fails the whole query
   private _captions(): string[] {
-    if (this._table?.support.captions !== true)
-      return [];
+    return this._table?.support.captions === true ? this._captionColumns() : [];
+  }
+
+  private _captionColumns(): string[] {
     const listed = this._captionOption;
     const access = this._access.peek();
     const refs = this._schema.properties.filter((p) => REF_ADDRESS.test(p.semType ?? '') &&

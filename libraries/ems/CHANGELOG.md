@@ -11,6 +11,7 @@
 * Live refresh: Refresh is always offered on a table that is not polled for changes
 * Live refresh: Child tabs follow a peer's writes, and say "Data changed — Refresh" over unsaved changes
 * Live refresh: An open record follows a peer's edit or delete; over unsaved edits it says "Data changed"
+* Live refresh: Lists, child tabs and records show a peer's rename of a referenced row, such as a project
 * Save: Fixed Save staying off after a refused save or a cancelled conflict; Refresh waits for a save
 * Save: Fixed a stale delete or restore overwriting another session's change: it is now a version conflict
 * Save: Fixed "saved" announced for changes a conflict reload dropped, and refusals naming a row by its ids
