@@ -619,7 +619,8 @@ scoped('a commit past the 1,000 rows the server itemizes still writes back every
 scoped('a dry run the server refuses whole over a CHECK puts it on the rows that break it, as SQL reads NULL', async () => {
   const memory = backend();
   memory.tableSync('grit.issue').validate = async () => ({error: 'validation', rows: [{index: 0, id: null,
-    errors: [{column: null, code: 'check', message: 'Weight is positive', constraint: 'weight_positive'}]}]});
+    errors: [{column: null, code: 'check', message: 'Weight is positive', constraint: 'weight_positive'},
+      {column: 'title', code: 'unique', message: 'Duplicate value'}]}]});
   const {running} = await opened(memory, frame(['project_id', 'title', 'weight'],
     ['1', '-1', '', '-3'].map((weight, i) => ({project_id: P1, title: `QA-${i + 1}`, weight}))));
   await toMapping();
@@ -630,6 +631,7 @@ scoped('a dry run the server refuses whole over a CHECK puts it on the rows that
   await flush();
   assert.deepEqual([...rows.querySelectorAll('.u2-data-table-row')].map((r) => /Error/.test(r.textContent)),
     [false, true, false, true]);
+  assert.match(rows.parentElement.textContent, /Title is already used; it does not say which row/, 'not on row 1');
   assert.equal(importButton().disabled, true, 'nothing would land');
   fire(buttonNamed('CANCEL'), 'click');
   assert.equal(await running, null);

@@ -537,7 +537,7 @@ class ImportFlow {
       rows: refused.map((r) => ({index: r.index, predicted: 'error', errors: r.errors}))};
   }
 
-  // the server pins a failed CHECK on the batch's first row, so the constraint is judged per row here
+  // the server pins a refusal of the whole statement on the batch's first row: a CHECK is judged per row here
   private async _attributed(rows: DomainBatchReportLike['rows'], payloads: Record<string, unknown>[]):
     Promise<{rows: DomainBatchReportLike['rows'], notes: {message: string, at: number[]}[]}> {
     type Row = DomainBatchReportLike['rows'][number];
@@ -553,12 +553,12 @@ class ImportFlow {
       if (!out.has(row.index))
         out.set(row.index, {...row, errors: []});
       for (const error of row.errors ?? []) {
-        if (error.code !== 'check') {
+        if (error.code !== 'check' && (row.status !== undefined || row.id != null)) {
           add(row.index, error, row);
           continue;
         }
-        const at = await this._breaking(error.constraint, payloads) ?? [];
-        notes.push({message: error.message, at});
+        const at = error.code === 'check' ? await this._breaking(error.constraint, payloads) ?? [] : [];
+        notes.push({message: this._describe([error]), at});
         for (const index of at)
           add(index, error, row);
       }
