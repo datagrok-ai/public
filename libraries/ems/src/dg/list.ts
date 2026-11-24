@@ -4,7 +4,7 @@ import {Control, signal, button, iconButton, div, divH, span, timestamp, text, V
   loader, emptyState, Rows, Reason, confirmDialog} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, Signal, ObjectRenderer, Action, RowView} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
-import {nounOf} from '../core/domain-backend.js';
+import {nounOf, withArticle} from '../core/domain-backend.js';
 import {ActionRegistry, DomainTable} from './facade.js';
 import type {DomainAction} from './facade.js';
 import {DomainErrors} from './errors.js';
@@ -205,7 +205,7 @@ export class DomainList extends Control {
       `${rows.length.toLocaleString()} ${nounOf(info)}`;
     const one = nounOf(info, true);
     const message = unlinked.length > 0 ? `Deleting ${what} leaves ${new Intl.ListFormat('en').format(unlinked)} ` +
-      `without ${/^[aeiou]/.test(one) ? 'an' : 'a'} ${one}. Delete anyway?` :
+      `without ${withArticle(one)}. Delete anyway?` :
       counts.some((c) => c.status === 'fulfilled' && c.value === null) ?
         `Delete ${what}? Rows that refer to it may lose the link.` : null;
     return message === null || confirmDialog({title: 'Delete', destructive: true, confirmText: 'Delete', message});

@@ -1,4 +1,4 @@
-import {capital, emsBackends, nounOf} from '../core/domain-backend.js';
+import {capital, emsBackends, nounOf, withArticle} from '../core/domain-backend.js';
 import {InputOptions, text, div, span, TypeAhead, Filters, Rows, PickInput} from '@datagrok-libraries/u2';
 import type {ObjectRenderer, DomainCondition, DomainConditionNode, DomainConditionTree,
   FilterSchema} from '@datagrok-libraries/u2';
@@ -170,7 +170,7 @@ export class DomainPick extends PickInput<PickItem> {
     // a table the caller may not read names nothing: never the id; a row it does not answer stays its id, the
     // stale reference it may be
     if (t === undefined || (await t.access().catch(() => undefined))?.can.view === false)
-      return {id, name: `${capital(t === undefined ? 'a row' : `a ${nounOf(t.info, true)}`)} you cannot see`};
+      return {id, name: `${capital(withArticle(t === undefined ? 'row' : nounOf(t.info, true)))} you cannot see`};
     if (caption === null && backend?.resolveNames !== undefined && t.info.hiddenName === undefined) {
       const name = (await backend.resolveNames(table, [id]))[id];
       return {id, name: name || id};

@@ -8,7 +8,7 @@ import type {Input, IProperty, FilterGroup, FilterSchema, IWidgetStatus,
 import {propertyForm, ObjectForm, Editors, userPick, groupPick, kindOf} from '@datagrok-libraries/u2/dg';
 import type {ObjectFormOptions} from '@datagrok-libraries/u2/dg';
 import {DomainSource} from '../core/domain-source.js';
-import {capital, nounOf, emsBackends} from '../core/domain-backend.js';
+import {capital, nounOf, emsBackends, withArticle} from '../core/domain-backend.js';
 import {DomainTable} from './facade.js';
 import {SYSTEM_COLUMNS} from './backend.js';
 import {DomainErrors} from './errors.js';
@@ -469,8 +469,9 @@ export class DomainForm extends Control {
               if (p === undefined || !DomainTable.isReference(p))
                 return text(v);
               const known = await DomainForm.captionOf(p, String(v)).catch(() => null);
-              return known !== null && known !== String(v) ? known :
-                `a ${DomainTable.captionOf(p).toLowerCase()} you cannot see`;
+              // mid-sentence: "… is not in a site you cannot see"
+              return known !== null && known !== String(v) ? known.replace(/^A(n?) (.* you cannot see)$/, 'a$1 $2') :
+                `${withArticle(DomainTable.captionOf(p).toLowerCase())} you cannot see`;
             };
             const where = await Promise.all(params.map((field) =>
               caption(this.source.schema.properties.find((p) => p.name === field), values[field])));
@@ -744,7 +745,7 @@ export class DomainForm extends Control {
 
   static emptyHint(source: DomainSource): string {
     const name = nounOf(source.schema.info, true);
-    return `Select ${/^[aeiou]/.test(name) ? 'an' : 'a'} ${name} to edit.`;
+    return `Select ${withArticle(name)} to edit.`;
   }
 }
 

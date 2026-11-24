@@ -2,7 +2,7 @@ import {Control, Scope, signal, computed, untracked, ReadonlySignal, Signal, div
   Rows} from '@datagrok-libraries/u2';
 import type {RowView} from '@datagrok-libraries/u2';
 import {DomainSource} from '../core/domain-source.js';
-import {toPlural, nounOf} from '../core/domain-backend.js';
+import {toPlural, nounOf, withArticle} from '../core/domain-backend.js';
 import {domains, DomainTable} from './facade.js';
 import {DomainApp} from './app.js';
 import {DomainErrors} from './errors.js';
@@ -197,7 +197,7 @@ export class DomainChildren extends Control {
       state.current.value = undefined;
       if (row === null) {
         const noun = nounOf(this.parent.schema.info, true);
-        pane.replaceChildren(span(`Select ${/^[aeiou]/.test(noun) ? 'an' : 'a'} ${noun}.`, 'u2-domain-children-hint'));
+        pane.replaceChildren(span(`Select ${withArticle(noun)}.`, 'u2-domain-children-hint'));
         state.blank.value = true;
         return;
       }

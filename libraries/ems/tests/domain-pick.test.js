@@ -114,6 +114,9 @@ scoped('a backend that declares resolveNames answers an id there: one call, no q
     resolveNames: () => assert.fail('a table the caller may not read is not asked')};
   assert.deepEqual(await DomainPick.resolve('stock.location', 'l9'), {id: 'l9', name: 'A location you cannot see'},
     'a reference into a table the caller may not read never shows the id');
+  emsBackends.domain = {table: async () => ({info: {singularName: 'assay'},
+    access: async () => ({can: {view: false}})})};
+  assert.equal((await DomainPick.resolve('m.assay', 'a1')).name, 'An assay you cannot see');
 });
 
 scoped('an extra filter narrows the candidates; an empty query lists them all', async () => {

@@ -332,6 +332,11 @@ export function nounOf(info: {singularName?: string, pluralName?: string}, one =
   return (one ? info.singularName || 'row' : info.pluralName || 'rows').replace(/_/g, ' ').toLowerCase();
 }
 
+/** "an assay", "a site". */
+export function withArticle(noun: string): string {
+  return `${/^[aeiou]/i.test(noun) ? 'an' : 'a'} ${noun}`;
+}
+
 export function capital(text: string): string {
   return `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
 }
