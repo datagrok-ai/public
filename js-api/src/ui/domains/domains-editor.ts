@@ -52,8 +52,8 @@ const registry = new DomainRegistryClient();
 export type DomainRowState = '' | 'new' | 'modified' | 'deleted' | 'restored';
 
 /** One cell-level problem, as stored in {@link DomainFrameEditor.ERRORS_COLUMN}: `'error'` blocks
- * {@link DomainFrameEditor.save}, `'conflict'` (a dismissed version conflict)
- * only marks the cell. */
+ * {@link DomainFrameEditor.save}, `'conflict'` (a dismissed version conflict, a reference to a
+ * deleted row) only marks the cell. */
 export interface DomainCellError {
   message: string;
   kind: 'error' | 'conflict';
@@ -988,12 +988,12 @@ export class DomainFrameEditor implements IFrameEditor {
     return guard;
   }
 
-  /** The id of every draft row of the frame — the drafts its batch may reference. */
+  /** The id of every draft row the batch inserts — the drafts it may reference. */
   draftIds(): Set<string> {
     const ids = new Set<string>();
     for (let row = 0; row < this._df.rowCount; row++) {
       const id = this._wire(row, 'id');
-      if (DomainFrameEditor.isDraftId(id))
+      if (DomainFrameEditor.isDraftId(id) && this.stateOf(row) !== 'deleted')
         ids.add(id);
     }
     return ids;
@@ -1273,6 +1273,8 @@ export class DomainFrameEditor implements IFrameEditor {
     }
     for (const column of Object.keys(this.changesOf(row)))
       this._setError(row, column, {message: e.message, kind: 'conflict'});
+    if (kind != null)
+      balloon.warning(`${subject} changed since you read it: its ${kind} is still pending`);
     this._fire();
     return false;
   }
@@ -1336,7 +1338,8 @@ export class DomainFrameEditor implements IFrameEditor {
     if (e instanceof DomainValidationError && e.isDuplicate)
       return this.duplicateRefusal(failing.row, e);
     if (e instanceof DomainRestrictError)
-      return this.restrictRefusal(e);
+      return typeof e.body['column'] === 'string' ? this._deletedParentRefusal(e, failing.row)
+        : this.restrictRefusal(e);
     const named = this._displayOf(failing.row);
     const noun = this._info.singularName.toLowerCase();
     if (e instanceof DomainNotFoundError && failing.op.op === 'update')
@@ -1388,6 +1391,18 @@ export class DomainFrameEditor implements IFrameEditor {
       .toLowerCase().replace(/_/g, ' ');
     return `${subject} still has ${count === 0 ? '' : `${count} `}${noun};`
       + ` remove or reassign ${count === 1 ? 'it' : 'them'} first`;
+  }
+
+  /** "Location refers to a deleted location: restore it or pick another", on the cell as well. */
+  private _deletedParentRefusal(e: DomainError, row: number): string {
+    const column = e.body['column'];
+    const parent = `${e.body['table'] ?? 'row'}`.replace(/_/g, ' ');
+    const message = `${this._captionOf(column)} refers to a deleted ${parent}: restore it or pick another`;
+    if (this._df.columns.contains(column)) {
+      this._setError(row, column, {message: message, kind: 'conflict'});
+      this._fire();
+    }
+    return message;
   }
 
   /** Opens/closes the editor around a transaction (see {@link save}); a
@@ -1785,9 +1800,6 @@ export class DomainFrameEditor implements IFrameEditor {
     }
   }
 
-  /** The row's display value for a dialog caption: the registry's declared name
-   * column when the frame carries it — the same identity every other platform
-   * surface shows. Null falls the caller back to the id. */
   /** The caption a user knows [column] by. */
   private _captionOf(column: string): string {
     const caption = this._propByName.get(column)?.friendlyName;
@@ -1851,6 +1863,8 @@ export class DomainFrameEditor implements IFrameEditor {
     return -1;
   }
 
+  /** What a message calls [row]: its name, else its single business key ("Chemical K-1"); null
+   * falls the caller back to its own words. */
   private _displayOf(row: number): string | null {
     const text = (column: string | null | undefined): string =>
       column == null || !this._df.columns.contains(column) ? '' : `${this._wire(row, column) ?? ''}`;
