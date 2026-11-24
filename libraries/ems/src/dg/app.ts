@@ -193,6 +193,7 @@ export class DomainApp extends Control {
   private readonly _reshaped: Signal<{removed: ReadonlyMap<string, IProperty[]>, rebuild: () => Promise<void>} | null> =
     signal(null);
   private _settling: Promise<void> | null = null;
+  private _refreshing: Promise<boolean> | undefined;
 
   private static readonly _byView = new WeakMap<DG.ViewBase, DomainApp>();
   private static readonly _views = new WeakMap<DomainApp, DG.ViewBase>();
@@ -644,7 +645,11 @@ export class DomainApp extends Control {
 
   /** Reads the page's collection again — what the status bar's "Refresh" stands for while the
    * page is {@link stale}. Through the gate: a reload drops whatever is pending. */
-  async refresh(): Promise<boolean> {
+  refresh(): Promise<boolean> {
+    return this._refreshing ??= this._refresh().finally(() => this._refreshing = undefined);
+  }
+
+  private async _refresh(): Promise<boolean> {
     const source = this._page.peek() === 'entity' ? this._entitySource.peek() : this.listSource;
     if (source === null)
       return false;
