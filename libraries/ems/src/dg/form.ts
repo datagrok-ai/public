@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
 import {Control, Scope, Signal, ReadonlySignal, computed, signal, untracked, Rows, Access, Filters, div, span,
-  timestamp, EMPTY, isEmpty, text, loader, link, iconButton, notify, PickInput,
+  timestamp, isEmpty, text, loader, link, iconButton, notify, PickInput,
   ChoiceInput} from '@datagrok-libraries/u2';
 import type {Input, IProperty, FilterGroup, FilterSchema, IWidgetStatus,
   RowView} from '@datagrok-libraries/u2';
@@ -91,10 +91,8 @@ export class DomainForm extends Control {
     this.problem = computed(() => {
       for (const input of this._form.value?.inputs ?? []) {
         const message = input.validity.value;
-        if (message !== null && !this._refused(input.name, message) && !this._stored.get(input)?.value) {
-          const caption = capital(input.label);
-          return message === EMPTY ? `${caption} is required` : DomainTable.named(caption, message);
-        }
+        if (message !== null && !this._refused(input.name, message) && !this._stored.get(input)?.value)
+          return DomainTable.named(capital(input.label), message);
       }
       this._violationsVersion.value;
       for (const c of this._constraints) {

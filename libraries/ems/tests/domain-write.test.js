@@ -153,9 +153,9 @@ scoped('the writer\'s own cell refusal names the row and the field, and marks th
   await flush();
   assert.equal(source.validity.value, 'Value can\'t be empty', 'the writer says only what is wrong');
   assert.equal(await source.save(), false);
-  assert.equal(source.error.value.message, 'Cannot save: New issue: Title: Value can\'t be empty',
+  assert.equal(source.error.value.message, 'Cannot save: New issue: Title is required',
     'the refusal names the row and the field the writer refused over');
-  assert.equal(source.summary.value, 'Cannot save: New issue: Title: Value can\'t be empty');
+  assert.equal(source.summary.value, 'Cannot save: New issue: Title is required');
   assert.equal(source.problemRow.value, draft.id, 'and marks the row');
   draft.title = 'Titled';
   await flush();

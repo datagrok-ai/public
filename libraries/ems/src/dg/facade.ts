@@ -1,6 +1,6 @@
 import {emsBackends, capital, nounOf} from '../core/domain-backend.js';
 import * as DG from 'datagrok-api/dg';
-import {Access, Rows, allowedActions, divV, span, timestamp, text, notify, plural, untracked}
+import {Access, Rows, allowedActions, divV, span, timestamp, text, notify, plural, untracked, EMPTY}
   from '@datagrok-libraries/u2';
 import type {Capability, IProperty, ObjectRenderer, Action, ColumnOf, DomainRowLike, RowValues, RowView,
   ReadonlySignal, NotifyHandle, Reason} from '@datagrok-libraries/u2';
@@ -208,6 +208,8 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
 
   /** `message` under `caption`, unless it starts with it ("CAS must look like 50-78-2"). */
   static named(caption: string, message: string): string {
+    if (message === EMPTY)
+      return `${caption} is required`;
     return message.slice(0, caption.length).toLowerCase() === caption.toLowerCase() &&
       !/^\w/.test(message.slice(caption.length)) ? message : `${caption}: ${message}`;
   }
