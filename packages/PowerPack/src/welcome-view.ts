@@ -151,8 +151,8 @@ function suggestionMenuKeyNavigation(inputContainer: HTMLElement) {
   inputContainer.addEventListener('keydown', (e) => {
     if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && e.key !== 'Enter')
       return;
-    const currentlySelected: HTMLElement | null = inputContainer.querySelector('.d4-menu-item-hover');
-    const allItems: HTMLElement[] = Array.from(inputContainer.querySelectorAll('.d4-menu-item') ?? []);
+    const currentlySelected: HTMLElement | null = document.querySelector('.d4-vert-menu.d4-menu-popup .d4-menu-item-hover');
+    const allItems: HTMLElement[] = Array.from(document.querySelectorAll('.d4-vert-menu.d4-menu-popup .d4-menu-item') ?? []);
     if (!allItems || allItems.length === 0)
       return;
     allItems.sort((a, b) => a.offsetTop - b.offsetTop); // sort by vertical position

@@ -330,6 +330,15 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
     height: initial;
 }
 
+/* A view outside the workspace is not a flex column, so its dock area would keep the pixel height of the first layout */
+.power-pack-widget-content .grok-table-view {
+    min-height: 0;
+}
+
+.power-pack-widget-content .grok-table-view > .d4-root {
+    height: 100% !important;
+}
+
 .power-pack-search-host iframe {
     border: none;
 }
