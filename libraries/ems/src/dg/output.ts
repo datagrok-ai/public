@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {Form, Rows, component, div, notify, signal, untracked} from '@datagrok-libraries/u2';
 import type {IProperty, ReadonlySignal, RowView} from '@datagrok-libraries/u2';
-import {ColumnsInput, AggregatedColumnsInput, aggregationsFor} from '@datagrok-libraries/u2/dg';
+import {ColumnsInput, AggregatedColumnsInput} from '@datagrok-libraries/u2/dg';
 import type {ColumnAggregation} from '@datagrok-libraries/u2/dg';
 import type {DomainSource} from '../core/domain-source.js';
 import {DomainTable} from './facade.js';
@@ -12,7 +12,9 @@ import {DomainErrors} from './errors.js';
 import {DomainDataTable} from './grid.js';
 
 const LIMIT = 100000;
-const COUNTS = aggregationsFor('');
+// the statistics in the field's own unit: a count, a variance or a shape has another one, or none
+const IN_UNIT: string[] = [DG.AGG.FIRST, DG.AGG.MIN, DG.AGG.MAX, DG.AGG.SUM, DG.AGG.MED, DG.AGG.AVG, DG.AGG.STDEV,
+  DG.AGG.Q1, DG.AGG.Q2, DG.AGG.Q3, 'geomean'];
 
 /** Where an aggregated field lives: its table, the column naming the list's row (`batch_id.compound_id` one table
  * away), the field, and every table a write to which moves the value. */
@@ -41,12 +43,15 @@ export function domainOutput(source: DomainSource, table: DomainTable, exclude: 
   const aggregations = signal<ColumnAggregation[]>([]);
   const values = signal(new Map<string, Record<string, unknown>>());
   const linked = new Map<string, Linked>();
+  // a key names a row: typed as text, it is counted, never summed — and never the new row's first pick
+  const keys = new Set<string>();
   let built = false;
   let gen = 0;
 
   // a domain property's type is a column type: the pickers offer each field what the platform offers its type
   const frame = (fields: [string, IProperty][]) => DG.DataFrame.fromColumns(fields.map(([name, p]) =>
-    DG.Column.fromType((p.propertyType ?? DG.COLUMN_TYPE.STRING) as DG.ColumnType, name, 0)));
+    DG.Column.fromType((keys.has(name) ? DG.COLUMN_TYPE.STRING : p.propertyType ?? DG.COLUMN_TYPE.STRING) as
+      DG.ColumnType, name, 0)));
 
   // the tables that refer to this one, and theirs: `Batches.Purity (%)`, `Assay Results.Reported CLint`; one that
   // cannot be opened is left out, and one reached twice is told apart by the link, as the children tabs do
@@ -77,6 +82,8 @@ export function domainOutput(source: DomainSource, table: DomainTable, exclude: 
         linked.set(`${name}.${DomainTable.captionOf(p)}`, {address: from.address, path, column: p.name!, tables,
           measured: units && /(^|_)quantity$/.test(p.name!)});
         fields.push([`${name}.${DomainTable.captionOf(p)}`, p]);
+        if (from.info.businessKey.includes(p.name!))
+          keys.add(`${name}.${DomainTable.captionOf(p)}`);
       }
     }
     return fields;
@@ -102,7 +109,7 @@ export function domainOutput(source: DomainSource, table: DomainTable, exclude: 
         groups.add(a.aggregation as DG.AggregationType,
           a.aggregation === DG.AGG.TOTAL_COUNT ? null : linked.get(a.column)!.column, outputKey(a));
       }
-      const measured = list.filter((a) => linked.get(a.column)!.measured && !COUNTS.includes(a.aggregation));
+      const measured = list.filter((a) => linked.get(a.column)!.measured && IN_UNIT.includes(a.aggregation));
       if (measured.length > 0)
         groups.add(DG.AGG.UNIQUE_COUNT, 'unit', '#units').add(DG.AGG.FIRST, 'unit', '#unit');
       const result = groups.aggregate();
