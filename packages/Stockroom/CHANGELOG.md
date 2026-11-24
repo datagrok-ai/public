@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Safety Data Sheets: A sheet is named by its substance, revision and language
 * Locations: `?entity=<id>` opens the tree on that location, and the address follows the selected one
 * Safety Data Sheets, Hazard and Precautionary Statements: Messages name one row as a safety data sheet or a statement, not an sds document
 * Locations: The tree app is named Stockroom locations, and Stockroom › Locations, the flat list, Location list
