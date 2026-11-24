@@ -981,7 +981,7 @@ source('sort travels with the query: `!col` descending, dropped from the spec wh
   const src = new DomainSource({table: 'grit.issue', pageSize: 10, sort: '!weight'}, env());
   src.start();
   await flush();
-  assert.equal(specs[0].sort, '!weight');
+  assert.equal(specs[0].sort, '!weight,id');
   assert.deepEqual(src.rows.items.value.map((r) => r.title), ['Naproxen', 'Aspirin', 'Ibuprofen'],
     'heaviest first');
 
@@ -1174,6 +1174,28 @@ source('another session\'s insert before the window does not repeat a row on the
   await insertFirst(emsBackends.domain);
   await src.loadMore();
   assert.deepEqual(titles(src), ['Acetaminophen', 'Aspirin', 'Ibuprofen', 'Naproxen']);
+  src.dispose();
+});
+
+source('paging a sort full of ties re-reads nothing: every sorted read ends with the row id', async () => {
+  emsBackends.domain = backend();
+  const gate = holdFrames(emsBackends.domain, 'grit.issue');
+  const table = emsBackends.domain.tableSync('grit.issue');
+  const query = table.query.bind(table);
+  const sorts = [];
+  let flip = false;
+  // a server orders the rows a sort leaves tied as it likes, differently from one read to the next
+  table.query = (spec) => {
+    sorts.push(spec.sort);
+    return query(/(^|,)id$/.test(spec.sort) ? spec : {...spec, sort: `${spec.sort},${(flip = !flip) ? '!' : ''}id`});
+  };
+  const src = await issues({pageSize: 1, sort: 'done'});
+  await src.loadMore();
+  await src.loadMore();
+  assert.equal(gate.frames, 1, 'no window read');
+  assert.deepEqual(src.rows.items.value.map((r) => r.id), ['i2', 'i3', 'i1']);
+  assert.deepEqual([...new Set(sorts)], ['done,id']);
+  assert.equal(src.sort.value, 'done');
   src.dispose();
 });
 
