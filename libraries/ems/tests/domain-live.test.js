@@ -691,10 +691,16 @@ scoped('a save while a reload is held leaves the source behind: a peer\'s change
 
 scoped('a source pinned to one referenced row, as a child tab is, leaves that table to the row\'s page', async () => {
   const be = counted();
-  const src = await started(be, {query: 'project_id = "p1"'});
+  const src = await started(be, {query: 'project_id = "p1"', defaults: {project_id: 'p1'}});
   await tick();
   assert.equal(be.probes.length, 2, 'the baseline and one poll, both of the rows');
   src.dispose();
+  const filtered = testOwner().build(() =>
+    new DomainSource({table: 'grit.issue', query: 'project_id = "p1"', live: true, liveMs: 1000}, env));
+  filtered.start();
+  await flush();
+  assert.equal(filtered._watched.has('grit.project'), true, 'a filter alone pins nothing: it may be cleared');
+  filtered.dispose();
 });
 
 scoped('a source that has nothing of its own to poll still polls the tables watched through it', async () => {

@@ -1409,13 +1409,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     void this._follow();
   }
 
-  // a column pinned to one row (a child tab's parent) is named by the page that holds that row
+  // a column every row of the source is pinned to (a child tab's parent) is named by the page that holds that row
   private async _follow(): Promise<void> {
-    const q = this.query.peek();
-    const tree = typeof q === 'string' ? Filters.parse(q).root : q;
-    const pinned = tree.op !== 'and' || tree.not === true ? [] :
-      tree.nodes.flatMap((n) => !Filters.isGroup(n) && n.operator === '=' ? [n.property] : []);
-    const columns = this._captionColumns().filter((name) => !pinned.includes(name));
+    const columns = this._captionColumns().filter((name) => !(name in this.defaults));
     const tables = new Set(this._schema.properties.filter((p) => columns.includes(p.name) && p.ref !== this.table)
       .map((p) => p.ref!));
     for (const address of tables) {
