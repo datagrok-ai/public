@@ -78,8 +78,8 @@ scoped('rows render by id; the schema names them without a handler, the handler 
   table.renderer = {...table.renderer, caption: (r) => r.id === 'i1' ? 'Configured' : r.id};
   const second = testOwner().build(() => domains.list(src));
   const dressed = mount(second);
-  assert.deepEqual(dressed.slice(0, 2).map((r) => r.querySelector('.u2-domain-list-content').textContent),
-    ['Configured', 'Issue'], 'the configured caption, and a row named by its id alone reads as its noun');
+  assert.deepEqual(dressed.slice(0, 2).map((r) => r.textContent), ['Configured', 'Issue'],
+    'the configured caption, and a row named by its id alone reads as its noun');
   table.renderer = table.defaultRenderer;
   second.dispose();
   list.dispose();
