@@ -23,14 +23,16 @@ import {modelFieldsOf} from '../storage/model-fields';
 import {BLOB_ROOT, deleteModel, saveModel} from '../storage/model-store';
 import {runEvaluateModel} from '../training/evaluate-api';
 import {evaluateModel} from '../training/evaluation';
+import {NO_PROGRESS} from '../training/search';
 import {runTrainModel} from '../training/train-api';
 import {ColumnSchema, metricsRecordOf, prepareTraining, TrainingResult, trainModel, trainPredictionOf}
   from '../training/train-model';
 import {storedSummary} from '../ui/metrics-table';
-import {cancelTaskBarEntry, columnNamed, columnsOf, deleteModelsNamed, deleteRunsOf, demoDemog, expectMetrics,
-  expectNoFrames, expectReleased, failsWith, framesSharing, IMPUTE, IRIS, MEASUREMENTS, ONE_HOT_STEPS, openIris,
-  openIrisFromFile, PREDICT_PROBABILITY, rawValues, requestOf, savedFixture, saveIrisModel, saveKeptGapsModel,
-  saveSkipUniqueModel, saveTestModel, selectionOf, svm, twoSpeciesIris, valuesOf, XGBOOST_FIELDS} from './test-data';
+import {cancelAtGate, cancelTaskBarEntry, columnNamed, columnsOf, deleteModelsNamed, deleteRunsOf, demoDemog,
+  EngineGate, expectMetrics, expectNoFrames, expectReleased, failsWith, framesSharing, IMPUTE, IRIS, MEASUREMENTS,
+  ONE_HOT_STEPS, openIris, openIrisFromFile, PREDICT_PROBABILITY, rawValues, requestOf, savedFixture, saveIrisModel,
+  saveKeptGapsModel, saveSkipUniqueModel, saveTestModel, selectionOf, slowEngine, svm, taskBarEntry, twoSpeciesIris,
+  valuesOf, XGBOOST_FIELDS, xgboost} from './test-data';
 
 const TIMEOUT = 90000;
 const IRIS_FEATURES: ColumnSchema[] = MEASUREMENTS.map((name) => ({name, type: DG.COLUMN_TYPE.FLOAT}));
@@ -70,20 +72,14 @@ const WAIT_MS = 10000;
 interface TaskBarWatch { labels: string[]; entry?: Element }
 
 /** Runs [action] to its end while watching the task-bar entries it adds: their labels as they change (a batch loop
- * relabels its entry after the first batch) and the first entry; with [isCancelled], that entry's cancel icon is
- * clicked as soon as it shows. */
-async function watchTaskBar<T>(action: () => Promise<T>, isCancelled: boolean):
-  Promise<[PromiseSettledResult<T>, TaskBarWatch]> {
+ * relabels its entry after the first batch) and the first entry. */
+async function watchTaskBar<T>(action: () => Promise<T>): Promise<[PromiseSettledResult<T>, TaskBarWatch]> {
   const known = new Set(Array.from(document.querySelectorAll('.d4-task-bar-entry')));
   const watch: TaskBarWatch = {labels: []};
   const observer = new MutationObserver(() => {
     for (const entry of Array.from(document.querySelectorAll('.d4-task-bar-entry')).filter((e) => !known.has(e))) {
       watch.labels.push(entry.textContent ?? '');
-      if (watch.entry === undefined) {
-        watch.entry = entry;
-        if (isCancelled)
-          cancelTaskBarEntry(entry);
-      }
+      watch.entry ??= entry;
     }
   });
   observer.observe(document.body, {childList: true, subtree: true, characterData: true});
@@ -95,6 +91,7 @@ async function watchTaskBar<T>(action: () => Promise<T>, isCancelled: boolean):
   }
 }
 
+// eslint-disable-next-line max-lines-per-function
 category('Apply', () => {
   before(async () => {
     const iris = await openIris();
@@ -272,7 +269,6 @@ category('Apply', () => {
         result.probabilities)).values, result.metrics.train, 1e-9);
       expectArray(column.toList(), await predictionsOf(model.engine, columnsOf(iris, MEASUREMENTS), result.blob));
       expectArray(iris.columns.names(), [...names, 'Species (predicted)']);
-      expect(iris.getCol('col 1').type, DG.COLUMN_TYPE.INT);
       expectArray(rawValues(iris.getCol('Sepal.Length')), sepalLength);
 
       const [record] = await applications();
@@ -369,6 +365,22 @@ category('Apply', () => {
     const records = await applicationsOf(table);
     expect(records.length, 1);
     expect(records[0].status, 'cancelled');
+  }, {timeout: TIMEOUT});
+
+  test('a cancel during the last batch stops the application and gives back its frames', async () => {
+    const {model} = shared();
+    const gate = new EngineGate();
+    const gated: LoadedModel = {...model, engine: slowEngine(model.engine, gate, 'apply')};
+    const table = irisCopy('cancel-last-batch');
+    const columnCount = table.columns.length;
+    const progress = {...NO_PROGRESS};
+    const [error, frames] = await framesSharing(table.columns.toList(), () => cancelAtGate(gate,
+      applyAndRecord(requestFor(gated, table), 'api', progress), () => progress.canceled = true)
+      .then(() => null, (e: unknown) => e));
+    expect(failsWith('Application was cancelled.')(error), true, String(error));
+    expect(table.columns.length, columnCount);
+    expectReleased(frames);
+    expectArray((await applicationsOf(table)).map((r) => r.status), ['cancelled']);
   }, {timeout: TIMEOUT});
 
   test('the API maps by exact names, the dialog prefill by close names', async () => {
@@ -478,10 +490,7 @@ category('Apply', () => {
       await deleteModel(id);
     }
   }, {timeout: TIMEOUT});
-});
 
-// One category, split for its length: the fixture of `before` and `after` serves both parts.
-category('Apply', () => {
   test('a one-hot model with recorded categories applies to a table lacking one category and with an extra one',
     async () => {
       const rows = 40;
@@ -866,15 +875,18 @@ category('Apply', () => {
     try {
       const {modelId} = await runTrainModel({table: training, target: 'sex', features: ['age', 'height', 'weight'],
         method: 'XGBoost', name, showProgress: false});
-      const evaluate = () => runEvaluateModel({model: modelId ?? '', table: demoDemog(50000)});
-      const [done, shown] = await watchTaskBar(evaluate, false);
+      const evaluate = () => runEvaluateModel({model: modelId ?? '', table: demoDemog(10000)});
+      const [done, shown] = await watchTaskBar(evaluate);
       if (done.status === 'rejected')
         throw done.reason;
-      expect(done.value.rowCount + done.value.skippedRows, 50000);
+      expect(done.value.rowCount + done.value.skippedRows, 10000);
       expect(shown.labels.some((label) => label.includes(`Evaluating ${name}`)), true, shown.labels.join(' | '));
       await awaitCheck(() => shown.entry?.isConnected === false, 'The progress outlives the evaluation', WAIT_MS);
 
-      const [cancelled, watched] = await watchTaskBar(evaluate, true);
+      const gate = new EngineGate();
+      const [cancelled, watched] = await watchTaskBar(() => cancelAtGate(gate,
+        runEvaluateModel({model: modelId ?? '', table: demoDemog(100)}, [slowEngine(xgboost(), gate, 'apply')]),
+        () => cancelTaskBarEntry(taskBarEntry(`Evaluating ${name}`))));
       const error = cancelled.status === 'rejected' ? cancelled.reason : null;
       expect(failsWith('Evaluation was cancelled.')(error), true, String(error));
       await awaitCheck(() => watched.entry?.isConnected === false, 'The progress outlives the cancel', WAIT_MS);

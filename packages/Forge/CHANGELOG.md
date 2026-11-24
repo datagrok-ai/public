@@ -76,5 +76,6 @@
 * GROK-20932: Added Tune to the Train view: Settings (Manual / Auto-tune) with a Default / Auto-tuned / Customized status and a reset button, Search options with per-setting ranges, choices and pins, a metric and a trials-or-time budget (remembered per user and method), a seeded random search of meta.mlspace on the folds every trial shares (fold fits in parallel with meta.mlparallel), median pruning, a held out Test for 500 rows or more, the Search leaderboard, the chosen settings trained as a regular run; the search saved with the model and the run (schema 0.1.19), shown in Performance and Details, and returned by Forge:trainModel (options.search) and Forge:getModel (search, metrics.test); stratified folds for every classifier
 * GROK-20932: Added the model cards under the Train view's inputs (the built-in tool's compare cards): the current model and the pinned ones, the settings status as trained, a click on a pinned card setting its inputs again, pinned cards shown only on the data they were trained on
 * GROK-20932: Improved the message after a tune: `Optimal settings for <Method> found.`
+* GROK-20932: Fixed a cancel during the last batch of Apply and Run Evaluation: it now stops the application or evaluation
 
 ## 0.0.1 (2026-09-30)

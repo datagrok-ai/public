@@ -132,7 +132,7 @@ category('Preparation', () => {
     expect(replayPostprocessing(prediction, NO_OPTIONS) === prediction, true, 'A new column without steps');
   });
 
-  test('missing-value ids are skipped, unknown ids refused', async () => {
+  test('missing-value ids are dropped, unknown ids refused', async () => {
     const columns = [DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'c', ['a', 'b'])];
     const recorded = {...NO_OPTIONS, preprocessingInfo: ['impute-missing', 'ignore-missing']};
     expect(replayPreprocessing(columns, recorded) === columns, true, 'The recorded ids were replayed');
@@ -261,7 +261,7 @@ category('Preparation', () => {
     expectReleased(frames);
   }, {timeout: 30000});
 
-  test('a semType feature is never skipped or one-hot encoded', async () => {
+  test('a semType feature is never left out or one-hot encoded', async () => {
     const {smiles, color, x, y} = moleculeFrame(12);
     const encoded = color.categories.map((c) => `color=${c}`);
     const prepared = prepareFeatures([smiles, color, x], y, {...SKIP_UNIQUE_STEPS, oneHot: true}, NO_OPTIONS,

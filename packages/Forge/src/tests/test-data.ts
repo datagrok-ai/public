@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {awaitCheck, delay, expect, expectArray, expectFloat} from '@datagrok-libraries/test/src/test';
+import {expect, expectArray, expectFloat, waitUntil} from '@datagrok-libraries/test/src/test';
 import {defaultHyperparameters, DOCKER_FUNC, Engine} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
 import {ForgeError} from '../forge-error';
@@ -11,7 +11,7 @@ import {DEFAULT_THRESHOLD, PreparationSteps} from '../preparation/pipeline';
 import {PreparationOptions} from '../preparation/preparation-options';
 import {datasetFingerprint} from '../storage/dataset-fingerprint';
 import {ModelFields, modelFieldsOf} from '../storage/model-fields';
-import {deleteModel, modelsChanged, saveModel} from '../storage/model-store';
+import {deleteModel, saveModel} from '../storage/model-store';
 import {DEFAULT_VALIDATION} from '../training/k-fold';
 import {prepareTraining, TrainingRequest, TrainingResult, TrainingSelection, trainModel}
   from '../training/train-model';
@@ -61,16 +61,6 @@ export function balloonWith(text: string): HTMLElement | null {
     .find((b) => (b.textContent ?? '').includes(text)) ?? null;
 }
 
-/** Reads [read] every 100 ms until [done] holds of what it read or 5 s pass; the last reading. */
-export async function readUntil<T>(read: () => Promise<T> | T, done: (value: T) => boolean): Promise<T> {
-  let value = await read();
-  for (let i = 0; i < 50 && !done(value); i++) {
-    await delay(100);
-    value = await read();
-  }
-  return value;
-}
-
 /** The task-bar entry whose text includes [text], or undefined. */
 export const taskBarEntry = (text: string) => Array.from(document.querySelectorAll('.d4-task-bar-entry'))
   .find((e) => (e.textContent ?? '').includes(text));
@@ -83,13 +73,10 @@ export function cancelTaskBarEntry(entry: Element | undefined): void {
   cancel.click();
 }
 
-/** Waits up to [ms] for the task-bar entry that shows [text] and cancels it a moment later. The entry is held from
- * when it shows: a training's text becomes the fold progress after the first fit. */
+/** Waits up to [ms] for the task-bar entry that shows [text] and cancels it. */
 export async function cancelOnceShown(text: string, ms: number): Promise<void> {
-  await awaitCheck(() => taskBarEntry(text) !== undefined, 'No task-bar progress', ms);
-  const entry = taskBarEntry(text);
-  await delay(100);
-  cancelTaskBarEntry(entry);
+  await waitUntil(() => taskBarEntry(text) !== undefined, `No task-bar progress ${text}`, ms);
+  cancelTaskBarEntry(taskBarEntry(text));
 }
 
 /** The demo table demog of [rows] generated rows, named `forge-test-demog-<time>`. */
@@ -97,18 +84,6 @@ export function demoDemog(rows: number): DG.DataFrame {
   const demog = grok.data.demo.demog(rows);
   demog.name = `forge-test-demog-${Date.now()}`;
   return demog;
-}
-
-/** Every grid of [grids] (by its pane's name) spans its accordion pane's content within 2 px, and still does once
- * [host], the accordion's container, is made wider. */
-export async function expectGridsFillPanes(host: HTMLElement, grids: {[pane: string]: DG.Grid}): Promise<void> {
-  const narrower = () => Object.entries(grids).filter(([, grid]) => {
-    const pane = grid.root.closest('.d4-accordion-pane-content');
-    return pane === null || Math.abs(grid.root.getBoundingClientRect().width - pane.getBoundingClientRect().width) >= 2;
-  }).map(([name]) => name).join(', ');
-  expect(narrower(), '', 'The grids narrower than their pane');
-  host.style.width = `${host.getBoundingClientRect().width + 160}px`;
-  await awaitCheck(() => narrower() === '', `Grids narrower than their pane once wider: ${narrower()}`, 5000);
 }
 
 /** The tests' own storage of the galleries' modes and sorts: the user's stay as they are, and each category's views
@@ -126,32 +101,6 @@ export function useTestGalleryStorage(): void {
 export function clearTestGalleryStorage(): void {
   grok.userSettings.put(TEST_GALLERY_STORAGE, {});
   Gallery.storage = USER_GALLERY_STORAGE;
-}
-
-/** The catalog's readiness attributes in the Forge view [root]: `<data-forge-catalog-load>/<aria-busy>`. */
-export function catalogState(root: Element): string {
-  const pane = root.querySelector('.forge-catalog');
-  return `${pane?.getAttribute('data-forge-catalog-load')}/${pane?.getAttribute('aria-busy')}`;
-}
-
-/** Clicks the catalog's Refresh in the Forge view [root] and reports a change of the models at once. The catalog must
- * be busy then; its readiness attributes ({@link catalogState}) when it next publishes a load and 1.5 s later, and
- * whether the frame [frame] reads was replaced in between. */
-export async function refreshThenChange(root: HTMLElement, frame: () => unknown):
-  Promise<{first: string; later: string; isRebound: boolean}> {
-  const refresh = root.querySelector('.forge-gallery-actions .fa-sync');
-  if (!(refresh instanceof HTMLElement))
-    throw new Error('No Refresh icon');
-  const state = () => catalogState(root);
-  refresh.click();
-  modelsChanged.next();
-  if (!state().endsWith('/true'))
-    throw new Error(`The catalog is not busy during a Refresh and a change: ${state()}`);
-  await awaitCheck(() => state().endsWith('/false'), 'The catalog does not publish a load', 5000);
-  const first = state();
-  const bound = frame();
-  await delay(1500);
-  return {first, later: state(), isRebound: frame() !== bound};
 }
 
 /** The training runs recorded for [tables] (frames or their names). */
@@ -217,18 +166,60 @@ export function stuckEngine(name: string, answer: Promise<unknown>, calls = {cou
     apply}, isLiveUpdate: true};
 }
 
-/** [base] as a method that never retrains live, so a small table reaches the slow-method paths; with [gate] its train
- * calls wait for it, so a test cancels a training at a known point. An engine stub, not a platform mock. */
-export function slowEngine(base: Engine, gate?: Promise<void>): Engine {
-  const {train} = base.functions;
-  if (gate === undefined || train === undefined)
+/** [base] as a method that never retrains live, so a small table reaches the slow-method paths; with [gate] its
+ * [role] calls (train by default, or apply) wait for it, so a test cancels a training or an application at a known
+ * point. An engine stub, not a platform mock. */
+export function slowEngine(base: Engine, gate?: EngineGate, role: 'train' | 'apply' = 'train'): Engine {
+  const func = base.functions[role];
+  if (gate === undefined || func === undefined)
     return {...base, isLiveUpdate: false};
-  const gated: DG.Func = Object.create(train);
+  const gated: DG.Func = Object.create(func);
   gated.apply = async (params) => {
-    await gate;
-    return train.apply(params);
+    await gate.pass();
+    return func.apply(params);
   };
-  return {...base, isLiveUpdate: false, functions: {...base.functions, train: gated}};
+  return {...base, isLiveUpdate: false, functions: {...base.functions, [role]: gated}};
+}
+
+/** A promise the test settles when it chooses: a stub's check answer. */
+export function deferred<T = void>(): {promise: Promise<T>; resolve: (value: T) => void} {
+  const holder: {resolve: (value: T) => void} = {resolve: () => {}};
+  const promise = new Promise<T>((resolve) => holder.resolve = resolve);
+  return {promise, resolve: (value) => holder.resolve(value)};
+}
+
+/** The gate of a {@link slowEngine}: its calls wait until [open]; [started] resolves when the first one reaches it. */
+export class EngineGate {
+  private readonly opened = deferred();
+  private readonly reached = deferred();
+  readonly started = this.reached.promise;
+
+  open(): void {
+    this.opened.resolve();
+  }
+
+  async pass(): Promise<void> {
+    this.reached.resolve();
+    await this.opened.promise;
+  }
+}
+
+/** Waits until [gate] holds a call of [work] (or [work] ends first), runs [cancel], opens the gate and returns [work]'s
+ * outcome. */
+export async function cancelAtGate<T>(gate: EngineGate, work: Promise<T>, cancel: () => unknown): Promise<T> {
+  const settled = Promise.allSettled([work]);
+  try {
+    await Promise.race([gate.started, settled]);
+    await cancel();
+  } finally {
+    gate.open();
+  }
+  return work;
+}
+
+/** [base] with [stub] in place of the method of its name, or added after them. */
+export function withEngine(stub: Engine, base: Engine[] = EngineRegistry.discover()): Engine[] {
+  return [...base.filter((e) => e.name !== stub.name), stub];
 }
 
 /** [rows] rows of two alternating classes and two float features; a test's own table. */
@@ -239,29 +230,6 @@ export function twoClassTable(rows: number = 1000): DG.DataFrame {
   const table = DG.DataFrame.fromColumns([a, b, label]);
   table.name = `forge-test-two-class-${rows}-${Date.now()}`;
   return table;
-}
-
-/** At most [rows] rows of [table] spread evenly over it, the rows [isKept] marks first: a test's copy, so a file
- * sorted by class keeps every class. */
-export function spreadRows(table: DG.DataFrame, rows: number, isKept: (i: number) => boolean = () => false):
-  DG.DataFrame {
-  const mask = Array.from({length: table.rowCount}, (_, i) => isKept(i));
-  const keptRows = mask.filter((m) => m).length;
-  const otherRows = table.rowCount - keptRows;
-  const k = Math.ceil(otherRows / Math.max(1, rows - keptRows));
-  let left = rows - keptRows;
-  let other = 0;
-  for (let i = 0; i < table.rowCount && left > 0; i++) {
-    if (mask[i])
-      continue;
-    if (other++ % k === 0) {
-      mask[i] = true;
-      left--;
-    }
-  }
-  const copy = table.clone(DG.BitSet.create(table.rowCount, (i) => mask[i]));
-  copy.name = `${table.name}-${rows}`;
-  return copy;
 }
 
 /** A browser method that declares [semTypes] features (`mlsemtypes`), whose check answers [answer] and counts the

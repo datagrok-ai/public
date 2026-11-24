@@ -35,7 +35,7 @@ category('Metrics', () => {
     expect(regressionMetrics(numbers([2, 2, 2]), numbers([1, 2, 3])).r2, 0);
   });
 
-  test('missing pairs are skipped', async () => {
+  test('missing pairs are left out', async () => {
     const metrics = regressionMetrics(numbers([1, null, 3, 4]), numbers([1.5, 2, 2.5, 5]));
     expectMetric(metrics, 'mse', (0.25 + 0.25 + 1) / 3);
   });

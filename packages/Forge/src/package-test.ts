@@ -18,9 +18,14 @@ export {tests};
 //input: string category {optional: true}
 //input: string test {optional: true}
 //input: object testContext {optional: true}
+//input: string skipToCategory {optional: true}
+//input: string skipToTest {optional: true}
+//input: bool returnOnFail {optional: true}
+//input: list<string> exclude {optional: true}
 //output: dataframe result
-export async function test(category: string, test: string, testContext: TestContext): Promise<DG.DataFrame> {
-  const data = await runTests({category, test, testContext});
+export async function test(category: string, test: string, testContext: TestContext, skipToCategory?: string,
+  skipToTest?: string, returnOnFail?: boolean, exclude?: string[]): Promise<DG.DataFrame> {
+  const data = await runTests({category, test, testContext, skipToCategory, skipToTest, returnOnFail, exclude});
   return DG.DataFrame.fromObjects(data) ?? DG.DataFrame.create();
 }
 
