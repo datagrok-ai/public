@@ -1097,3 +1097,27 @@ scoped('EQ-007: a source that wrote only part of its rows counts the rows that l
   projects.dispose();
   issues.dispose();
 });
+
+scoped('a save stopped at one source\'s own check leaves no earlier refusal on the others', async () => {
+  const memory = backend();
+  const cell = signal(null);
+  emsBackends.domain = {
+    table: (address) => memory.table(address),
+    saveAll: () => {
+      cell.value = 'Key DG already belongs to Datagrok';
+      return Promise.resolve(false);
+    },
+  };
+  const session = new SharedSession();
+  const {projects, issues} = await pair(session);
+  const unguard = projects.guard(() => cell.peek(), cell);
+  projects.rows.byKey('p1').key = 'DG';
+  issues.rows.byKey('i1').title = 'Aspirin 100';
+  assert.equal(await session.save(), false);
+  assert.match(issues.blocked.value, /already belongs/, 'the child carries the refusal');
+  assert.equal(await session.save(), false, 'the second save stops at the project\'s check');
+  assert.equal(issues.blocked.value, null, 'and the child\'s copy of the first refusal is gone');
+  unguard();
+  projects.dispose();
+  issues.dispose();
+});
