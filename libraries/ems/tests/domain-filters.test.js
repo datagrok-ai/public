@@ -381,7 +381,7 @@ scoped('saved and recent searches: the list names the saved search it holds, his
   for (let i = 0; i < 25; i++)
     SavedSearches.record('grit.issue', {...high, search: `t${i}`});
   assert.equal(SavedSearches.recent('grit.issue').length, 20);
-  SavedSearches.remove('grit.issue', 'High');
+  await SavedSearches.remove('grit.issue', 'High');
   assert.equal(SavedSearches.title(src), null);
   filters.dispose();
   src.dispose();

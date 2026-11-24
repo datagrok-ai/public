@@ -22,6 +22,7 @@
 * Properties: Fixed concurrent edits dropping columns, user columns shown locked and pages keeping old columns
 * Trees: Fixed the tree not following other sessions' changes, and losing a node picked during a refresh
 * Search: Fixed saved searches overwritten or lost on reload, and refused query text breaking the list
+* Search: Fixed a search saved or removed in one browser tab erasing the ones saved in another
 * Bulk edit: Fixed a table that takes no writes being reported as deleted rows awaiting restore
 * Trash: Fixed a restore under a deleted parent not naming the row in the status bar or among several
 * Import, Search: Fixed dates shown as raw GMT text in the import, and the taken-name sentence shown twice

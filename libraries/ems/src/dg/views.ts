@@ -144,7 +144,7 @@ export class DomainViews {
     DomainViews._deleteSaved ??= grok.events.onContextMenu.subscribe((e: ContextMenu) => {
       const saved = e.args.item?.value?.savedSearch;
       if (saved !== undefined)
-        e.args.menu.item('Delete', () => SavedSearches.remove(saved.table, saved.name));
+        e.args.menu.item('Delete', () => void SavedSearches.remove(saved.table, saved.name));
     });
   }
 
