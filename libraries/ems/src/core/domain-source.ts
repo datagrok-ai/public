@@ -75,7 +75,6 @@ type Watched = {moved: Set<() => void>, last?: DomainProbeLike, leave?: () => vo
 class SharedProbe {
   private static readonly _all = new WeakMap<DomainBackend, Map<string, SharedProbe>>();
   private readonly _watchers = new Map<(now: DomainProbeLike) => void, number>();
-  private _last: DomainProbeLike | undefined;
   private _table: Promise<DomainTableLike> | undefined;
   private _probing: Promise<void> | undefined;
   private _timer: ReturnType<typeof setInterval> | undefined;
@@ -95,13 +94,10 @@ class SharedProbe {
     let shared = tables.get(address);
     if (shared === undefined)
       tables.set(address, shared = new SharedProbe(address, backend));
-    const fresh = shared._watchers.size > 0 ? shared._last : undefined;
     shared._watchers.set(seen, ms);
     shared._arm();
-    if (fresh !== undefined)
-      seen(fresh);
-    else
-      void shared.probe();
+    // asked afresh: a result older than the newcomer's rows would read as a move
+    void shared.probe();
     return () => {
       if (!shared._watchers.delete(seen))
         return;
@@ -124,7 +120,6 @@ class SharedProbe {
       if (table.probe === undefined)
         return;
       const now = await table.probe({});
-      this._last = now;
       this._failures = 0;
       for (const seen of [...this._watchers.keys()])
         seen(now);
