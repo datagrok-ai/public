@@ -914,7 +914,9 @@ class ImportFlow {
       return target;
     const info = link.target.info;
     const [key, name] = [info.businessKey[0], info.nameColumn].map((f) => link.fields.find((l) => l.prop.name === f));
-    const by = [key, name].find((f) => f !== undefined && names(f.prop).some((n) => want.includes(n))) ?? name ?? key;
+    const words = column.name.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase().split(/[^a-z0-9]+/);
+    const ends = (n: string) => words.some((_, i) => words.slice(i).join('') === n);
+    const by = [key, name].find((f) => f !== undefined && names(f.prop).some(ends)) ?? name ?? key;
     return by === undefined ? target : `${target}.${by.prop.name}`;
   }
 
