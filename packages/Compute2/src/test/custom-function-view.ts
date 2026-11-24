@@ -222,6 +222,36 @@ category('Custom function view', () => {
     expect(view.counts.afterLoad, 1);
   }));
 
+  test('Open and Save dialogs list runs without the not-completed mark', () => withRunStorage(async (f) => {
+    const view = await readyView(f);
+    const name = `CFV no mark ${Date.now()}`;
+    f.track((await view.saveRun(view.funcCall!, {name})).id);
+    const listedRow = async (dialog: HTMLElement) => {
+      let row: HTMLElement | undefined;
+      await awaitCheck(() => !!(row = [...dialog.querySelectorAll<HTMLElement>('.c2-runs-row')]
+        .find((el) => el.querySelector('.c2-runs-row-name')?.textContent === name)),
+      'the saved run should be listed', 15000);
+      return row!;
+    };
+
+    const browsers = dialogsNow('.c2-runs-browser');
+    const opening = view.openRunWithDialog();
+    const browser = await openedDialog('.c2-runs-browser', browsers);
+    const browserMark = (await listedRow(browser)).querySelector('.c2-runs-not-completed');
+    findButton(browser, 'cancel').click();
+    await opening;
+
+    const dialogs = dialogsNow('.c2-runs-dialog');
+    const saving = view.saveRunWithDialog(view.funcCall!);
+    const saveDialog = await openedDialog('.c2-runs-dialog', dialogs);
+    const saveMark = (await listedRow(saveDialog)).querySelector('.c2-runs-not-completed');
+    findButton(saveDialog, 'cancel').click();
+    await saving;
+
+    expect(browserMark, null);
+    expect(saveMark, null);
+  }));
+
   test('A cancelled Open keeps the current run', () => withRunStorage(async (f) => {
     const view = await readyView(f);
     const before = view.funcCall;
