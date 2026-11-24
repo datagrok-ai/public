@@ -628,6 +628,13 @@ scoped('a peer\'s rename of a referenced row reaches the rows through a table th
   await peerUpdate(be, 'project', 'p1', {name: 'Renamed'});
   await tick();
   assert.equal(src.rows.byKey('i1')['~caption_project_id'], 'Renamed');
+  src.rows.byKey('i2').title = 'Mine';
+  await peerUpdate(be, 'project', 'p1', {name: 'Renamed again'});
+  await tick();
+  assert.equal(src.stale.value, true);
+  src.discard();
+  await tick();
+  assert.equal(src.rows.byKey('i1')['~caption_project_id'], 'Renamed again', 'once nothing is pending');
   unwatch();
   src.dispose();
 });

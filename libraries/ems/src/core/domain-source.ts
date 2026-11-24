@@ -1234,7 +1234,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       // the baseline moves only with the rows: a source left stale compares again once it is clean
       if (before === undefined)
         this._probed = now;
-      else if (before.count !== now.count || before.last !== now.last)
+      else if (before.count !== now.count || before.last !== now.last || this._isStale.peek())
         await this._behind();
     } catch {
       // the baseline stands: the next good probe compares against the last pair that WAS answered,
