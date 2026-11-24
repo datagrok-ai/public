@@ -338,7 +338,7 @@ class ImportFlow {
     if (this._frame.peek() !== frame || mapping !== JSON.stringify([...this._mapping()]))
       return;
     const byLink = this._linkMapping([...this._mapping()]);
-    this._linkStatus.value = [...byLink.keys()].map((column) => {
+    const status = await Promise.all([...byLink.keys()].map(async (column) => {
       const link = this._links.get(column)!;
       const by = byLink.get(column)!.map(([field]) => DomainTable.captionOf(field.prop)).join(' + ');
       const title = `${DomainTable.captionOf(link.prop)} by ${by}`;
@@ -347,8 +347,26 @@ class ImportFlow {
       const named = matches.get(column)!.filter((m) => m.id !== null || m.error !== null);
       const hit = named.filter((m) => m.id !== null).length;
       const found = `${hit === named.length ? 'all ' : `${hit} of `}${plural(named.length, 'row', 'rows')} found`;
-      return {text: `${title}: ${found}`, ok: hit === named.length && hit > 0};
-    });
+      const byKey = hit === 0 && named.length > 0 ? await this._foundByKey(frame, link, byLink.get(column)!) : null;
+      return {text: `${title}: ${found}${byKey ?? ''}`, ok: hit === named.length && hit > 0};
+    }));
+    if (this._frame.peek() === frame && mapping === JSON.stringify([...this._mapping()]))
+      this._linkStatus.value = status;
+  }
+
+  // a file column of keys mapped to the name finds nothing: what mapping it to the key would find
+  private async _foundByKey(frame: DG.DataFrame, link: ImportLink, fields: [LinkField, string][]):
+    Promise<string | null> {
+    const key = link.target.info.businessKey;
+    const field = key.length === 1 && fields.length === 1 && fields[0][0].path !== key[0] ?
+      link.fields.find((f) => f.path === key[0]) : undefined;
+    if (field === undefined)
+      return null;
+    const column = frame.columns.byName(fields[0][1]);
+    const values = Array.from({length: frame.rowCount}, (_, i) => [ImportFlow._valueOrNull(column, i)]);
+    const hit = (await ImportLinks.resolve(link, [field], values).catch(() => [])).filter((m) => m.id !== null).length;
+    return hit === 0 ? null : `; as ${DomainTable.captionOf(link.prop)} › ${DomainTable.captionOf(field.prop)}, ` +
+      `${plural(hit, 'row', 'rows')} would be found`;
   }
 
   // per link, the fields mapped to it and the file column each comes from
@@ -510,10 +528,12 @@ class ImportFlow {
     }
     const valid = sent.length > PREVIEW_ROWS ? null : report.willInsert + report.willUpdate;
     const noun = (n: number) => plural(n, nounOf(this._table.info, true), nounOf(this._table.info));
-    this._importText.value = valid === 0 && keys > 0 ? writeKeys : `Import ${noun(valid ?? sent.length)}`;
     // the counts are what the batch WOULD do row by row; all-or-nothing makes one bad row the
     // verdict on all of them
-    this._previewBlock.value = options.allOrNothing !== false && errors > 0 ? this._abortReason(errors, valid) :
+    const aborts = options.allOrNothing !== false && errors > 0;
+    this._importText.value = aborts ? `Nothing to import while ${plural(errors, 'row has', 'rows have')} errors` :
+      valid === 0 && keys > 0 ? writeKeys : `Import ${noun(valid ?? sent.length)}`;
+    this._previewBlock.value = aborts ? this._abortReason(errors, valid) :
       sent.length <= PREVIEW_ROWS && valid === 0 && keys === 0 ? ImportFlow._nothing(errors) : null;
   }
 
@@ -703,7 +723,8 @@ class ImportFlow {
 
   private _keyLink(row: DomainImportRow, saved: Map<string, RowView>): HTMLElement | string {
     const target = row.id === null ? undefined : saved.get(row.id);
-    return target === undefined ? '' : link(row.key, () => {
+    const name = this._table.info.nameColumn;
+    return target === undefined ? (name == null ? '' : cellText(row.values[name])) : link(row.key, () => {
       this._settle(this._result);
       this._table.open(target);
     });
