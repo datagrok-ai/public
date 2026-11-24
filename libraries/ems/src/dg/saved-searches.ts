@@ -168,7 +168,7 @@ export class SavedSearches {
     };
     name.addValidator(clash);
     Dialog.create('Save search').add(name)
-      .okDisabled(computed(() => name.value.trim() === '' ? 'Enter a name' : clash(name.value)), {footer: true})
+      .okDisabled(computed(() => name.value.trim() === '' ? 'Enter a name' : clash(name.value)))
       .onOK(() => SavedSearches._saveAs(source, name.peek().trim()), {text: 'SAVE', primary: true})
       .show();
   }
