@@ -684,8 +684,10 @@ export class DomainApp extends Control {
     for (const row of source.pending()) {
       const prop = removed.find((p) => Rows.isDraft(row) ? row[p.name!] != null : edit?.isChanged(row.id, p.name!));
       if (prop !== undefined) {
-        return `${DomainTable.captionOf(prop)} was removed in Edit properties…: ` +
-          'undo your change to it, or Discard all changes';
+        // a checkbox has no empty state to go back to
+        return `${DomainTable.captionOf(prop)} was removed in Edit properties…: ` + (Rows.isDraft(row) &&
+          prop.type === 'bool' ? `Discard all changes and add the ${nounOf(source.schema.info, true)} again` :
+          'undo your change to it, or Discard all changes');
       }
     }
     return null;
