@@ -638,11 +638,12 @@ scoped('a dry run the server refuses whole over a CHECK puts it on the rows that
 });
 
 // a name mapped to the id column would be refused row by row; an id mapped to the name would find nothing
-scoped('a column of names auto-maps to the reference\'s find-by field, a column of ids to the id', async () => {
-  for (const [value, target] of [['Datagrok', 'project_id.name'], [P1, 'project_id']]) {
-    const {running} = await opened(backend(), frame(['project', 'title'], [{project: value, title: 'A'}]));
+scoped('a column of names auto-maps to the reference\'s find-by field, of keys to its key, of ids to the id', async () => {
+  for (const [column, value, target] of [['project', 'Grit tracker', 'project_id.name'], ['project', P1, 'project_id'],
+    ['project', 'GRIT', 'project_id.key'], ['project_id', 'p1', 'project_id']]) {
+    const {running} = await opened(backend(), frame([column, 'title'], [{[column]: value, title: 'A'}]));
     await toMapping();
-    assert.equal(named('project').value, target);
+    assert.equal(named(column).value, target);
     fire(buttonNamed('CANCEL'), 'click');
     assert.equal(await running, null);
     resetDom();

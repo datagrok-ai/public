@@ -912,19 +912,21 @@ class ImportFlow {
     const target = hit((a) => a === want) ?? hit((a) => a.startsWith(want) || want.startsWith(a)) ??
       hit((a) => a.includes(want) || want.includes(a)) ?? (typed.length === 1 ? typed[0].name! : SKIP);
     const link = this._links.get(target);
-    if (link === undefined || ImportFlow._ids(column))
+    const all = (test: (value: string) => boolean) => {
+      for (let i = 0; i < column.length; i++) {
+        if (!column.isNone(i) && !test(text(column.get(i))))
+          return false;
+      }
+      return true;
+    };
+    const named = link !== undefined && plain(link.prop.name!) === want && all((v) => !/\s/.test(v.trim()));
+    if (link === undefined || named || all((v) => UUID.test(v)))
       return target;
     const info = link.target.info;
-    const by = [info.nameColumn, info.businessKey[0]].find((f) => link.fields.some((l) => l.prop.name === f));
-    return by === undefined ? target : `${target}.${by}`;
-  }
-
-  private static _ids(column: DG.Column): boolean {
-    for (let i = 0; i < column.length; i++) {
-      if (!column.isNone(i) && !UUID.test(text(column.get(i))))
-        return false;
-    }
-    return true;
+    const [key, name] = [info.businessKey[0], info.nameColumn].map((f) => link.fields.find((l) => l.prop.name === f));
+    const by = key !== undefined && info.businessKey.length === 1 && all((v) => ImportLinks.keyLike(key, v)) ? key :
+      name ?? key;
+    return by === undefined ? target : `${target}.${by.prop.name}`;
   }
 
   private _mapping(): Map<string, string> {

@@ -116,6 +116,13 @@ export class ImportLinks {
       values.flatMap((v) => ImportLinks._number(field, v) ?? []).map(Number) : values};
   }
 
+  /** Whether a file's value reads as a key of `field`: its whole number, or one word. */
+  static keyLike(field: LinkField, value: string): boolean {
+    const type = field.prop.propertyType ?? field.prop.type;
+    const typed = value.trim();
+    return type === 'int' || type === 'bigint' ? ImportLinks._number(field, typed) !== null : !/\s/.test(typed);
+  }
+
   private static _number(field: LinkField, value: string): string | null {
     const type = field.prop.propertyType ?? field.prop.type;
     if (type !== 'int' && type !== 'bigint')
