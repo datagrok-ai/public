@@ -8,6 +8,8 @@
 * Domains: Fixed RELOAD in the conflict dialog for deleted, restored and removed rows and for `json` cells
 * Domains: Fixed text starting with `~new:` failing to save; `buildOps` takes the batch's draft ids
 * Domains: Added `DomainSession.lastRefusal.code`; a `json` cell accepts its JSON text
+* Domains: Fixed refusals naming a row without a name column by its id: they name it by its business key
+* Domains: Fixed deleting a row someone else already deleted being refused and blocking the batch
 * Chem: Added `DG.chem.ISketcherOptions`, the third argument of `new DG.chem.Sketcher(mode, validationFunc, options)`: `sketcherType` shows that sketcher in the host whatever the session's (`DG.chem.currentSketcherType`, left as it is), and `showInput: false` leaves out the host's input row (the molecule field and its ≡ menu), the sketcher taking the whole host (Chem's Sketcher app)
 * Chem: Fixed `DG.chem.Sketcher` leaving the context panel on an earlier drawing: `grok.shell.o` keeps an object set as current for a second, so a drawing made within a second of the host's last one never became the current object; the host's next drawing now replaces its own last one (anything else made current since is replaced as before)
 * Chem: `DG.DEFAULT_SKETCHER` is `'Crux'` (was `'OpenChemLib'`), as Chem's Sketcher setting's default: the session's sketcher before Chem's init sets it, and the fallback of a molecule editor asked for a sketcher that has no function
