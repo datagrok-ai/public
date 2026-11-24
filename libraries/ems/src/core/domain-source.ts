@@ -224,7 +224,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this.deleted = signal<DomainDeletedMode>(options.deleted ?? 'exclude');
     this.live = signal(options.live ?? false);
     // a source that loads no rows has none to be behind
-    this.stale = this.isEmpty ? signal(false) : this._isStale;
+    this.stale = computed(() => this._isStale.value && !this.isEmpty && !DomainSource._namesDraft(this.query.value));
     this._liveMs = options.liveMs ?? DomainSource.liveMs;
     this.readOnly = computed(() => this.deleted.value !== 'exclude' || !this._writable.value);
     this._backend = requireBackend(this, emsBackends.domain, 'domain tables');
@@ -459,8 +459,11 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       const baseline = await this._baseline(table);
       if (gen !== this._gen)
         return;
-      const [frame, total] = await Promise.all([
-        table.frame(this._spec(0, window)), this._noRows ? 0 : this._count(table)]);
+      const reading = table.frame(this._spec(0, window));
+      const [frame, total] = await Promise.all([reading, this._noRows ? 0 : this._count(table)]).catch((e) => {
+        void reading.then((f) => f.dispose(), () => {});
+        throw e;
+      });
       if (gen !== this._gen) {
         frame.dispose();
         return;
@@ -526,6 +529,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       }
       if (readFor !== this._shownFor)
         this._shownFor = undefined;
+      else
+        this._probed = shown;
       batch(() => {
         this._error.value = e;
         this._state.value = 'error';
