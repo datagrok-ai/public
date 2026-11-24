@@ -177,6 +177,17 @@ test('a write-once column the server refuses to change is named by its caption',
   assert.equal(ed.errorsOf(0).name.message, message);
 });
 
+test('a unique column other than the business key is named with its value, on its own cell', async () => {
+  const {ed} = editor('', null);
+  ed._info = {nameColumn: 'name', businessKey: ['cas'], singularName: 'Substance'};
+  ed._propByName.set('name', {friendlyName: 'Name'});
+  const e = new DG.DomainValidationError('Validation failed', 409, {error: 'validation', rows: [{index: 0,
+    errors: [{column: 'name', code: 'unique', message: 'Duplicate value'}]}]});
+  const message = await ed.refusalFor(e, {op: {op: 'update'}, row: 0});
+  ed.mapValidationError(e, {op: {op: 'update'}, row: 0}, message);
+  assert.deepEqual([message, Object.keys(plain(ed.errorsOf(0)))], ['Name Mine is already used', ['name']]);
+});
+
 test('a delete of a row someone else already deleted lands, and the rest of the batch is sent', async () => {
   const {ed} = editor('deleted', null);
   for (const [name, value] of [['id', 'r2'], ['name', 'Other'], ['version', 1], [DG.DOMAIN_DELETED_COLUMN, false],

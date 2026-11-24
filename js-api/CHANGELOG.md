@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Domain editing: A duplicate in a unique column other than the key names that column ("Name X is already used") on its own cell
 * Chem: Fixed a SMILES with stereo centres, an aromatic N-H, a charge or an isotope pasted into a substructure filter's sketcher text box being read as SMARTS (`Nc1ncnc2c1c(Br)cn2[C@@H]3OC[C@@H](O)[C@H]3O`: every atom drawn aromatic- or aliphatic-only, and Similar found nothing). Only an H count a SMILES does not need (`[NH2]c1ccccc1`, `[CH3]c`, `[OH]`) still makes the text SMARTS, so that the H count stays the query's; a canonical SMILES stays a molecule, as when pasted on the canvas. A typed `c1cc[nH]c1` again finds N-substituted pyrroles too
 * Domain schemas: Added `DomainTable.origin` and `userColumns`; removed `origin` from the manifest types
 * Domains: A save refused for a reference to a deleted row marks the cell and names its column

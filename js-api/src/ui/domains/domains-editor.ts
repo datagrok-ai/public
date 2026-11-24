@@ -1315,7 +1315,7 @@ export class DomainFrameEditor implements IFrameEditor {
   mapValidationError(e: DomainValidationError, failing: DomainPendingOp, duplicateText?: string): void {
     const row = failing.row;
     const errors = e.rows?.[0]?.errors ?? [];
-    const duplicate = duplicateText ?? this._duplicateText();
+    const duplicate = duplicateText ?? this._uniqueText(row, e) ?? this._duplicateText();
     let mapped = false;
     for (const columnError of errors)
       if (columnError.column != null && this._df.columns.contains(columnError.column)) {
@@ -1363,6 +1363,9 @@ export class DomainFrameEditor implements IFrameEditor {
    * the key itself where it carries none: on the UPDATE path the id is the row being SAVED
    * (`repository.dart` `_mapPgError(rt, x, id: id)`), which names the wrong row. */
   async duplicateRefusal(row: number, e?: DomainValidationError): Promise<string> {
+    const unique = this._uniqueText(row, e);
+    if (unique !== null)
+      return unique;
     const key = this._info.businessKey ?? [];
     const values = key.map((c) => this._wire(row, c)).filter((v) => v != null && `${v}` !== '');
     if (values.length !== key.length)
@@ -1834,6 +1837,15 @@ export class DomainFrameEditor implements IFrameEditor {
   private _captionOf(column: string): string {
     const caption = this._propByName.get(column)?.friendlyName;
     return caption == null || caption === '' ? column : caption;
+  }
+
+  /** "Name Ethanol is already used": a unique column other than the business key, as the server names it
+   * (`repository.dart` `_mapPgError`, the `ux_` constraint); null where it names none or the key. */
+  private _uniqueText(row: number, e?: DomainValidationError): string | null {
+    const column = e?.rows?.[0]?.errors?.find((x) => x.code === 'unique')?.column;
+    if (column == null || !this._df.columns.contains(column) || (this._info.businessKey ?? []).includes(column))
+      return null;
+    return `${this._captionOf(column)} ${this._wire(row, column) ?? ''} is already used`;
   }
 
   /** The refusal a business-key clash gets where the row already holding the key is unknown. */
