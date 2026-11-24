@@ -224,7 +224,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this.sort = signal(options.sort ?? '');
     this.deleted = signal<DomainDeletedMode>(options.deleted ?? 'exclude');
     this.live = signal(options.live ?? false);
-    this.stale = this._isStale;
+    // a source that loads no rows has none to be behind
+    this.stale = this.isEmpty ? signal(false) : this._isStale;
     this._liveMs = options.liveMs ?? DomainSource.liveMs;
     this.readOnly = computed(() => this.deleted.value !== 'exclude' || !this._writable.value);
     this._backend = requireBackend(this, emsBackends.domain, 'domain tables');
@@ -462,7 +463,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
         frame.dispose();
         return;
       }
-      if (this.isDirty.peek() || (keepOverSession && this.session.isDirty.peek())) {
+      if (this.isDirty.peek() || (shownFrame !== undefined && this._unsaved()) ||
+        (keepOverSession && this.session.isDirty.peek())) {
         frame.dispose();
         this._probed = shown;
         batch(() => {
@@ -560,14 +562,14 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
         return;
       this._moved = shifted;
       const moved = this._moved;
-      if (moved && this.isDirty.peek())
+      if (moved && this._unsaved())
         this._isStale.value = true;
       else if (moved) {
         this._probed = undefined;
         const rebased = await this._rebase();
         if (gen !== this._gen)
           return;
-        if (!rebased && this.isDirty.peek())
+        if (!rebased && this._unsaved())
           this._isStale.value = true;
       }
       if ((moved || this._done) && this._table !== undefined) {
@@ -609,7 +611,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     });
     this._regate = true;
     this._regated = data;
-    if (!this.isDirty.peek())
+    if (!this._unsaved())
       await this._rebuildWriter();
     return restored;
   }
@@ -639,7 +641,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private async _rebuildWriter(): Promise<void> {
     this._regate = false;
     try {
-      if (!await this._rebase() && this.isDirty.peek()) {
+      if (!await this._rebase() && this._unsaved()) {
         this._regate = true;
         return;
       }
@@ -838,6 +840,11 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     return this._rows.pending() as RowView<TRow>[];
   }
 
+  // what a re-read would drop: a change, or a draft nothing was typed into yet
+  private _unsaved(): boolean {
+    return this.isDirty.peek() || this.pending().length > 0;
+  }
+
   /** Follows another table on this source's live probe; `moved` runs when it changed. Answers the unwatch. */
   watch(address: string, moved: () => void): () => void {
     let entry = this._watched.get(address);
@@ -868,7 +875,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     for (const source of DomainSource.live) {
       if (source === this || source.table !== this.table)
         continue;
-      if (source.isDirty.peek() || source.session.isDirty.peek())
+      if (source._unsaved() || source.session.isDirty.peek())
         source._isStale.value = true;
       else
         source.refresh().catch((e) => source.fail(e));
@@ -929,7 +936,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     // read BEFORE the window, as a load does
     const baseline = await this._baseline(table);
     const replacement = await table.frame(this._spec(0, window));
-    if (gen !== this._gen || this.isDirty.peek()) {
+    if (gen !== this._gen || this._unsaved()) {
       replacement.dispose();
       return false;
     }
@@ -1038,7 +1045,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   revert(): void {
     this._unapplied.value = new Map();
     this._edit.peek()?.discard();
-    if (this._regate && !this.isDirty.peek())
+    if (this._regate && !this._unsaved())
       void this._rebuildWriter();
   }
 
@@ -1263,7 +1270,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   }
 
   private async _behind(): Promise<void> {
-    if (this.isDirty.peek() || this.session.isDirty.peek() || this.isSaving.peek())
+    if (this._unsaved() || this.session.isDirty.peek() || this.isSaving.peek())
       this._isStale.value = true;
     else
       await this.refresh();
