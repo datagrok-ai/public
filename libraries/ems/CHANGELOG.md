@@ -2,58 +2,30 @@
 
 ## v.next
 
-* Lists: A row's card and list title use the table's own caption, and never show an id
-* Import: The preview shows a user named by login or name as typed, not as its id
-* Records: A record whose table has no name column is titled by its noun, never by its id
-* Live refresh: Fixed a record created on its page not following other users' changes after Save
-* Import: A user column takes a login or a name, where exactly one user has it, as well as the user id
-* Views: Fixed a link on a page (MolTrack's Register compound) opening its view behind that page
-* Trees: A tree over a table you cannot read says so instead of showing only its all row
-* Live refresh: Fixed a save made while a grid cell was open hiding a peer's later change
-* Links: Fixed `/apps/<Package>?entity=<id>` opening the list instead of the record
-* Bulk edit: Fixed a field narrowed by a shared value when some matched rows have none
-* Delete: Asks first, in a list or on a record, where a delete leaves rows of other tables unlinked
-* Lists: Fixed Load more skipping, repeating or mixing rows after a save, a filter change or a peer's write
-* Lists: Fixed a search, filter or sort changed during a save or over unsaved edits not being applied
-* Lists: Fixed the current row and the selection being lost on save, refresh or switching to the table view
-* Lists: Fixed sort keys with spaces or a `prop.` prefix being dropped, and links sorting by a reference or id
-* Lists: Fixed a long card title wrapping and hiding the card's second line; it now ends with an ellipsis
-* Live refresh: Fixed a list, tree or aggregation missing a peer's write or rename, or dropping unsaved edits
-* Live refresh: Refresh is always offered on a table that is not polled for changes
-* Live refresh: Child tabs follow a peer's writes, and say "Data changed — Refresh" over unsaved changes
-* Live refresh: An open record follows a peer's edit or delete; over unsaved edits it says "Data changed"
-* Live refresh: Lists, child tabs and records show a peer's rename of a referenced row, such as a project
-* Live refresh: Fixed a reload closing a grid cell being edited or losing the focus and typing in a record
-* Save: Fixed Save staying off after a refused save or a cancelled conflict; Refresh waits for a save
-* Save: Fixed a stale delete or restore overwriting another session's change: it is now a version conflict
-* Save: Fixed "saved" announced for changes a conflict reload dropped, and refusals naming a row by its ids
-* Save: A rule's refusal says its message, not "Fix <field>", and how many rows it refuses ("2 issues: …")
-* Permissions: Fixed access or columns shared or revoked while the app is open not showing until a reload
-* Permissions: Fixed users without View told a table is empty, and row-grant users told they have no access
-* Permissions: Fixed New offered where no save can succeed, and hidden columns offered in sort and filters
-* Forms: Fixed `json` and `string_list` fields showing and saving mangled values on the platform
-* Forms: Fixed number fields rounding a formatted value on blur and accepting values beyond the int range
-* Forms: Fixed validation of multi-column constraints and tightened rules; a stale reference is marked
-* Forms: Fixed typing ignored in a short reference dropdown, so Enter picked its first row
-* Forms: A record deleted pending the save reads as such, read-only, with Undo
-* Forms: A record of a tree table names its ancestors in the breadcrumb, and follows a saved move
-* Forms: Fixed a record deleted over a pending edit staying editable
-* Forms: Fixed a row or a reference the user cannot see being named by its uuid
-* Forms: A row deleted by someone else says so after Discard or from a link, with Restore where allowed
+* Lists: Cards and record titles use the table's caption or noun, never an id; long titles end with an ellipsis
+* Lists: Fixed Load more, search, filters, sort, the current row and the selection misbehaving around saves
+* Live refresh: Lists, trees, child tabs and records follow other users' edits, renames and deletes
+* Live refresh: Fixed reloads dropping unsaved edits, an open cell or the focus; Refresh is offered when needed
+* Save: Fixed Save staying off after a refusal, and stale deletes or restores overwriting others' changes
+* Save: Fixed misleading save messages; a refusal gives the rule's message, the number of rows and the row
+* Permissions: Fixed access changes showing only after a reload, and wrong "empty" or "no access" messages
+* Permissions: Fixed New, sort and filters offering what the user cannot save or see
+* Forms: Fixed JSON, list and number fields showing, rounding or saving wrong values
+* Forms: Fixed validation of multi-column rules and stale references, and typing in short reference dropdowns
+* Forms: Deleted records read as deleted, read-only, with Undo or Restore; hidden rows are not shown by id
+* Forms: A record of a tree table shows its ancestors in the breadcrumb
 * Children: Added Delete to a child grid's row menu; New is off under a deleted parent
-* Import: Fixed previews and reports for refused batches, files over 1,000 rows and files with nothing new
-* Import: Fixed links by formatted keys, auto-mapped key or name columns, updates without a required column
-* Import: Fixed dates shown as raw GMT text
-* Properties: Fixed concurrent edits dropping columns, user columns shown locked and pages keeping old columns
-* Trees: Fixed a node picked during a refresh being lost, and the parent picker offering a row's own subtree
-* Trash: Fixed a `?trash=1` link showing live rows as deleted on a table that has no trash
-* Trash: Fixed a restore refused under a deleted parent not saying which row it is about
-* Search: Fixed saved searches lost on reload or erased from another browser tab, and a taken name said twice
-* Search: Fixed the Mine preset putting your user id instead of `$me` in the address and recent searches
-* Filters: Fixed refused query text breaking the list, and a zoneless datetime reading differently from a link
-* Bulk edit: Fixed a table that takes no writes being reported as deleted rows awaiting restore
-* Bulk edit: A reference picker follows its schema filter (`site = $site`): the chosen or shared value narrows it
-* Table view: A sum of quantities shows its unit; any statistic says "mixed units" where the units differ
+* Delete: Asks first where a delete leaves rows of other tables unlinked
+* Import: A user column takes a login or a name as well as an id, and the preview shows it as typed
+* Import: Fixed previews, reports, key and name mapping, large files and dates shown as raw GMT text
+* Properties: Fixed concurrent edits dropping columns, user columns shown locked and pages showing old columns
+* Trees: A tree you cannot read says so; fixed lost selections and the parent picker offering a row's subtree
+* Links: Fixed record links opening the list, and links on a page opening their view behind it
+* Search: Fixed saved searches being lost or erased, and the Mine preset showing a user id in the address
+* Filters: Fixed refused query text breaking the list, and dates without a time zone reading inconsistently
+* Trash: Fixed trash links on tables without a trash, and restore refusals not naming the row
+* Bulk edit: Fixed reference pickers and shared-value narrowing, and read-only tables shown as deleted rows
+* Table view: Sums show their unit, and statistics say "mixed units" where units differ
 * [core#611](https://github.com/datagrok-ai/core/issues/611): Domain schemas: a named error code for an unknown group on grants — the binding dialog reads `unknown-group` instead of matching the message
 * History: Fixed "Show older" turning off with no reason while it loads; it now says "Loading older entries…"
 * u2-domain-pick: Fixed a pick bound to a read-only path rendering a spec error instead of a read-only input

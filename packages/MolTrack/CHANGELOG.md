@@ -2,7 +2,7 @@
 
 ## v.next
 
-* Home: Counts say a table is not shared with you instead of 0, and the Register actions are disabled with the reason when you cannot add rows
+* Home: Shows when a table is not shared with you, and disables Register with the reason when you cannot add
 * Import: Fixed an import of more than 100 already registered structures being refused
 * Import: Added finding linked records by their fields: map a file column to Batch › EPA Batch ID, Assay Run › Cell Lot and the like
 * Compounds: Added a table view with Output columns and Aggregations over batches and assay results under the filters

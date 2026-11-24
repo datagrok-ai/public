@@ -2,13 +2,10 @@
 
 ## v.next
 
-* Safety Data Sheets: A sheet is named by its substance, revision and language
-* Locations: `?entity=<id>` opens the tree on that location, and the address follows the selected one
-* Safety Data Sheets, Hazard and Precautionary Statements: Messages name one row as a safety data sheet or a statement, not an sds document
-* Locations: The tree app is named Stockroom locations, and Stockroom › Locations, the flat list, Location list
-* Stockroom: `/apps/Stockroom` opens the app, and an address naming no view says so before it shows the substances
-* Locations: Fixed Open on a tree node opening nothing; it opens the location's page in the Stockroom app
-* Locations: Fixed the tree never showing another session's rename, insert, move or delete of a location
+* Safety Data Sheets: Sheets are named by substance, revision and language; messages say sheet or statement
+* Locations: Fixed Open and the tree missing other sessions' changes; links open and follow a location
+* Locations: Renamed the tree app Stockroom locations and the flat list Location list
+* Stockroom: `/apps/Stockroom` opens the app; an address naming no view says so
 * Locations: The containers' source is built under an owner the view disposes, so the view no longer fails with a u2 `owner-missing` error where u2 is strict (dev, tests)
 * Locations: Added New container to a location's context menu
 * Locations: Showed the container count in the Containers header

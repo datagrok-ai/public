@@ -2,21 +2,13 @@
 
 ## v.next
 
-* Domain editing: A duplicate in a unique column other than the key names that column ("Name X is already used") on its own cell
+* Domains: Added `DomainTable.origin` and `userColumns`; removed `origin` from the manifest types
+* Domains: Added `DomainSession.lastRefusal.code`; `showConflictDialog` and `buildOps` take new arguments
+* Domains: Stale deletes and restores raise the conflict dialog; fixed its CANCEL and RELOAD
+* Domains: Refusals name the column and the row by caption or business key, not by id or a bare "forbidden"
+* Domains: Fixed saving text starting with `~new:`, `json` cells, and deleting a row already deleted elsewhere
+* Domains: Errors keep their names in the bundle; `DomainFrameEditor.draftIds` skips deleted drafts
 * Chem: Fixed a SMILES with stereo centres, an aromatic N-H, a charge or an isotope pasted into a substructure filter's sketcher text box being read as SMARTS (`Nc1ncnc2c1c(Br)cn2[C@@H]3OC[C@@H](O)[C@H]3O`: every atom drawn aromatic- or aliphatic-only, and Similar found nothing). Only an H count a SMILES does not need (`[NH2]c1ccccc1`, `[CH3]c`, `[OH]`) still makes the text SMARTS, so that the H count stays the query's; a canonical SMILES stays a molecule, as when pasted on the canvas. A typed `c1cc[nH]c1` again finds N-substituted pyrroles too
-* Domain schemas: Added `DomainTable.origin` and `userColumns`; removed `origin` from the manifest types
-* Domains: A save refused for a reference to a deleted row marks the cell and names its column
-* Domains: A save refused for changing a write-once column names it by its caption
-* Domains: Fixed domain errors named by a minified class (`n5: …`) in the bundle; each has a fixed `name`
-* Domains: `DomainFrameEditor.draftIds` leaves out a draft that was added and then deleted
-* Domains: Stale deletes and restores now raise the conflict dialog; `showConflictDialog` takes the operation
-* Domains: CANCEL in the conflict dialog keeps the edits unmarked, and the refusal names the row
-* Domains: Fixed RELOAD in the conflict dialog for deleted, restored and removed rows and for `json` cells
-* Domains: Fixed text starting with `~new:` failing to save; `buildOps` takes the batch's draft ids
-* Domains: Added `DomainSession.lastRefusal.code`; a `json` cell accepts its JSON text
-* Domains: Fixed refusals naming a row without a name column by its id: they name it by its business key
-* Domains: Fixed deleting a row someone else already deleted being refused and blocking the batch
-* Domains: Fixed a save refused for no permission ballooning the bare word "forbidden"
 * Chem: Added `DG.chem.ISketcherOptions`, the third argument of `new DG.chem.Sketcher(mode, validationFunc, options)`: `sketcherType` shows that sketcher in the host whatever the session's (`DG.chem.currentSketcherType`, left as it is), and `showInput: false` leaves out the host's input row (the molecule field and its ≡ menu), the sketcher taking the whole host (Chem's Sketcher app)
 * Chem: Fixed `DG.chem.Sketcher` leaving the context panel on an earlier drawing: `grok.shell.o` keeps an object set as current for a second, so a drawing made within a second of the host's last one never became the current object; the host's next drawing now replaces its own last one (anything else made current since is replaced as before)
 * Chem: `DG.DEFAULT_SKETCHER` is `'Crux'` (was `'OpenChemLib'`), as Chem's Sketcher setting's default: the session's sketcher before Chem's init sets it, and the fallback of a molecule editor asked for a sketcher that has no function
