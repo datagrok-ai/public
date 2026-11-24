@@ -223,7 +223,7 @@ export class SharedSession implements DomainSession {
   static forbidden(message: string | null | undefined): string {
     const said = (message ?? '').trim().replace(/\.$/, '');
     return `${said === '' || said.toLowerCase() === 'forbidden' ? 'you do not have permission to make these changes' :
-      said}. Discard the changes, or ask the table's owner for access`;
+      said}. Discard the changes, or ask the table's owner for access and then Refresh`;
   }
 
   private static _refused(batch: readonly DomainSource[], forbidden = false): (changed: DomainSource) => boolean {
