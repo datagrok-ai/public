@@ -747,6 +747,22 @@ scoped('a save refused as forbidden holds Save and Ctrl+S through a child edit, 
   }
 });
 
+scoped('a refusal raised by a form\'s guard goes when its source turns clean without a write', async () => {
+  emsBackends.domain = backend();
+  const session = new SharedSession();
+  const {projects, issues} = await pair(session);
+  const held = signal({row: 'i1', values: {title: ''}});
+  issues.guard(() => held.peek() === null ? null : 'Title is required');
+  issues.holdUnwritten(held);
+  assert.equal(await session.save(), false);
+  held.value = null;
+  projects.rows.byKey('p1').name = 'Grit 2';
+  await flush();
+  assert.equal(session.blocking.value, null);
+  projects.dispose();
+  issues.dispose();
+});
+
 scoped('a forbidden hold ends when a source of the batch turns clean, and when the user reloads the access', async () => {
   const out = refusing((edits) => holds(edits, 'i1', (r) => r.title !== 'Aspirin') && forbid(edits));
   const session = new SharedSession();

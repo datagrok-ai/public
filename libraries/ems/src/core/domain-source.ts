@@ -313,7 +313,10 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       this.session.isDirty.value;
       if (this.isDirty.value)
         return;
-      if (DomainSource.isForbidden(this._error.peek()) && this._state.peek() !== 'error') {
+      // a refused save does not outlive the changes it was about
+      const code = (this._error.peek() as {code?: unknown} | undefined)?.code;
+      if ((code === 'validation' || code === DomainSource.REFUSED || code === 'forbidden') &&
+        this._state.peek() !== 'error') {
         batch(() => {
           this._error.value = undefined;
           this._problemRow.value = null;
