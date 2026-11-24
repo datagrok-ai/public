@@ -9,10 +9,21 @@ import type {
   PipelineView as PipelineViewType,
 } from '@datagrok-libraries/compute-utils';
 
-// a custom view subclasses it, so the class itself comes along, not only its type
-export {CustomFunctionView} from '@datagrok-libraries/compute-utils/function-views/src/custom-function-view';
-export {HistoryInput, historyInput} from '@datagrok-libraries/compute-utils/function-views/src/history-input';
+import type {
+  CustomFunctionView as CustomFunctionViewType,
+} from '@datagrok-libraries/compute-utils/function-views/src/custom-function-view';
+import type {
+  HistoryInput as HistoryInputType, historyInput as historyInputType,
+} from '@datagrok-libraries/compute-utils/function-views/src/history-input';
 export type {HistoryInputOptions} from '@datagrok-libraries/compute-utils/function-views/src/history-input';
+
+// a custom view subclasses window.compute2.CustomFunctionView, so every package runs Compute2's copy
+export type CustomFunctionView = CustomFunctionViewType;
+export type HistoryInput = HistoryInputType;
+
+export function historyInput(...args: Parameters<typeof historyInputType>): ReturnType<typeof historyInputType> {
+  return window.compute2.historyInput(...args);
+}
 
 export type ComputationView = ComputationViewType;
 export type RichFunctionView = RichFunctionViewType;

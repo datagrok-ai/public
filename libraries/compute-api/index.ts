@@ -28,8 +28,18 @@ declare global {
 
       deepCopy: typeof deepCopy,
     },
+    // set once Compute2 is loaded, as by its editors
+    compute2: {
+      CustomFunctionView: typeof CustomFunctionViewClass,
+      historyInput: typeof historyInputFunc,
+    },
   }
 }
+
+import type {CustomFunctionView as CustomFunctionViewClass} from
+  '@datagrok-libraries/compute-utils/function-views/src/custom-function-view';
+import type {historyInput as historyInputFunc} from
+  '@datagrok-libraries/compute-utils/function-views/src/history-input';
 
 import * as UiUtils from './src/ui-utils';
 export {UiUtils};

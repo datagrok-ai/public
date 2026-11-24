@@ -59,6 +59,9 @@ declare global {
 export * from './package.g';
 import {_package, isRoleOnlyModelFilter} from './package-instance';
 export {_package} from './package-instance';
+// the one copy every package's custom views and history inputs use, as window.compute2
+export {CustomFunctionView};
+export {historyInput} from '@datagrok-libraries/compute-utils/function-views/src/history-input';
 
 let initRunned = false;
 let startUriLoaded = false;
