@@ -17,6 +17,11 @@ const same = (a: DomainSearch, b: DomainSearch) => a.q === b.q && a.search === b
 const label = (s: DomainSearch) => [s.q, s.search && `Search "${s.search}"`].filter((x) => x).join(' · ');
 /** grok.userSettings keeps writes in memory until its 10 s sync: an explicit save is sent now. */
 const persist = () => void grok.userSettings.flush();
+/** grok.userSettings writes a whole group from this tab's copy, which another tab may have added to since:
+ * a write is made over the server's copy. */
+async function fresh(group: string): Promise<void> {
+  grok.userSettings.put(group, await grok.dapi.userDataStorage.get(group, true) ?? {});
+}
 
 /** The keys of `sort` over columns the table describes: the server refuses a read that names any other. */
 export function sortable(sort: string, properties: readonly {name?: string}[]): string {
@@ -52,13 +57,15 @@ export class SavedSearches {
     return [...SavedSearches.saved(table).keys()].find((k) => k.trim().toLowerCase() === key) ?? null;
   }
 
-  static save(table: string, name: string, search: DomainSearch): void {
+  static async save(table: string, name: string, search: DomainSearch): Promise<void> {
+    await fresh(savedKey(table));
     grok.userSettings.add(savedKey(table), name, JSON.stringify(search));
     persist();
     SavedSearches.changed.value++;
   }
 
-  static remove(table: string, name: string): void {
+  static async remove(table: string, name: string): Promise<void> {
+    await fresh(savedKey(table));
     grok.userSettings.delete(savedKey(table), name);
     persist();
     SavedSearches.changed.value++;
@@ -153,7 +160,7 @@ export class SavedSearches {
       if (name === null)
         return SavedSearches._saveDialog(source);
       new Menu()
-        .item(`Save changes to "${name}"`, () => SavedSearches._saveAs(source, name))
+        .item(`Save changes to "${name}"`, () => void SavedSearches._saveAs(source, name))
         .item('Save as new search…', () => SavedSearches._saveDialog(source))
         .show({anchor: el});
     }, {tooltip: 'Save search', disabled});
@@ -168,13 +175,13 @@ export class SavedSearches {
     };
     name.addValidator(clash);
     Dialog.create('Save search').add(name)
-      .okDisabled(computed(() => name.value.trim() === '' ? 'Enter a name' : clash(name.value)), {footer: true})
+      .okDisabled(computed(() => name.value.trim() === '' ? 'Enter a name' : clash(name.value)))
       .onOK(() => SavedSearches._saveAs(source, name.peek().trim()), {text: 'SAVE', primary: true})
       .show();
   }
 
-  private static _saveAs(source: DomainSource, name: string): void {
-    SavedSearches.save(source.table, name, SavedSearches.of(source));
+  private static async _saveAs(source: DomainSource, name: string): Promise<void> {
+    await SavedSearches.save(source.table, name, SavedSearches.of(source));
     SavedSearches.current(source).value = name;
   }
 }

@@ -230,6 +230,8 @@ export const dapi = {
     invalidated: 0,
     invalidateUiCaches() { dapi.domains.invalidated++; },
   },
+  /** The server's copy of a grok.userSettings group; a test replaces get to stand for another tab's write. */
+  userDataStorage: {get: async (name) => userSettings.values[name]},
   users: {find: async () => null},
   groups: {find: async () => null},
 };
@@ -246,6 +248,7 @@ export const data = {parseCsv: () => new DataFrame()};
 export const userSettings = {values: {}, get: (name) => userSettings.values[name],
   getValue: (name, key) => userSettings.values[name]?.[key],
   add: (name, key, value) => (userSettings.values[name] ??= {})[key] = value,
+  put: (name, data) => userSettings.values[name] = {...data},
   delete: (name, key) => delete userSettings.values[name]?.[key],
   /** js-api user_settings_storage.ts: sends pending writes to the server now instead of at the 10 s sync. */
   flush: async () => {}};

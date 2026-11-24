@@ -543,8 +543,11 @@ export function madeOfIds<TRow extends DomainRowLike>(table: DomainTable<TRow>, 
       ids.push(value);
   }
   let rest = caption;
-  for (const id of ids.sort((x, y) => y.length - x.length))
-    rest = rest.split(id).join(' ');
+  // a whole token: the id "5" is not in "2025"
+  for (const id of ids.sort((x, y) => y.length - x.length)) {
+    const escaped = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    rest = rest.replace(new RegExp(`(?<![0-9a-zA-Z])${escaped}(?![0-9a-zA-Z])`, 'g'), ' ');
+  }
   return rest !== caption && /^[\s\d\-_:/,.#]*$/.test(rest);
 }
 

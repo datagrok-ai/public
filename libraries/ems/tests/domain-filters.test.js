@@ -381,7 +381,7 @@ scoped('saved and recent searches: the list names the saved search it holds, his
   for (let i = 0; i < 25; i++)
     SavedSearches.record('grit.issue', {...high, search: `t${i}`});
   assert.equal(SavedSearches.recent('grit.issue').length, 20);
-  SavedSearches.remove('grit.issue', 'High');
+  await SavedSearches.remove('grit.issue', 'High');
   assert.equal(SavedSearches.title(src), null);
   filters.dispose();
   src.dispose();
@@ -418,15 +418,30 @@ scoped('a saved search reaches the server at once: save, remove and clear are fl
   userSettings.flush = async () => stored = structuredClone(userSettings.values);
   try {
     const high = {q: 'priority = "high"', search: '', sort: ''};
-    SavedSearches.save('grit.issue', 'High', high);
+    await SavedSearches.save('grit.issue', 'High', high);
     assert.equal(stored['ems-searches|grit.issue']?.High, JSON.stringify(high));
-    SavedSearches.remove('grit.issue', 'High');
+    await SavedSearches.remove('grit.issue', 'High');
     assert.equal(stored['ems-searches|grit.issue']?.High, undefined);
     SavedSearches.record('grit.issue', high);
-    SavedSearches.save('grit.issue', 'Any', high);
+    await SavedSearches.save('grit.issue', 'Any', high);
     SavedSearches.clearRecent('grit.issue');
     assert.equal(stored['ems-recent-searches']?.['grit.issue'], undefined);
   } finally {
     userSettings.flush = flushed;
+  }
+});
+
+scoped('a search saved in this tab keeps the ones another tab saved since this one loaded', async () => {
+  userSettings.values = {};
+  const {dapi} = await import('datagrok-api/grok');
+  const get = dapi.userDataStorage.get;
+  dapi.userDataStorage.get = async () => ({Alpha: '{"q":"","search":"alpha","sort":""}'});
+  try {
+    await SavedSearches.save('grit.issue', 'Beta', {q: '', search: 'beta', sort: ''});
+    assert.deepEqual(Object.keys(userSettings.values['ems-searches|grit.issue']), ['Alpha', 'Beta']);
+    await SavedSearches.remove('grit.issue', 'Beta');
+    assert.deepEqual(Object.keys(userSettings.values['ems-searches|grit.issue']), ['Alpha']);
+  } finally {
+    dapi.userDataStorage.get = get;
   }
 });

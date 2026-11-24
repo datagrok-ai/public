@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import type * as DG from 'datagrok-api/dg';
 import {signal, computed, Control, div, divH, divV, span, plural, text, link, Wizard, DataTable, ChoiceInput,
-  BoolInput, badge, dot, statusLine, Form, notify, Scope, Filters} from '@datagrok-libraries/u2';
+  BoolInput, badge, dot, statusLine, Form, notify, Scope, Filters, timestamp} from '@datagrok-libraries/u2';
 import type {IProperty, ChoiceItem, BadgeVariant, RowView, FilterProperty} from '@datagrok-libraries/u2';
 import {capital, nounOf} from '../core/domain-backend.js';
 import type {DomainBatchOptionsLike, DomainBatchReportLike, DomainBatchValidationLike} from '../core/domain-backend.js';
@@ -125,6 +125,12 @@ const OUTCOMES: Record<string, {label: string, variant: BadgeVariant}> = {
 };
 /** Rows of the report's key lookup per query. */
 const KEY_CHUNK = 500;
+
+// a frame's date cell is a dayjs, whose own text is "Thu, 15 Jan 2026 00:00:00 GMT"
+function cellText(value: unknown): string {
+  return typeof (value as {toDate?: unknown} | null)?.toDate !== 'function' ? text(value) :
+    timestamp(value as {toDate(): Date}, undefined, {utcDates: true}).textContent ?? '';
+}
 
 /** One row of the mapping step — the target is the choice input the flow keeps for that column. */
 interface Mapping {column: string}
@@ -379,7 +385,7 @@ class ImportFlow {
     const values: string[] = [];
     for (let i = 0; column && i < column.length && values.length < 3; i++) {
       if (!column.isNone(i))
-        values.push(text(column.get(i)));
+        values.push(cellText(column.get(i)));
     }
     return span(values.join(', '), 'u2-domain-import-text');
   }
@@ -674,7 +680,7 @@ class ImportFlow {
     const prop = this._table.properties.find((p) => p.name === target);
     return {name: target, header: ImportFlow._caption(this, target),
       width: DomainDataTable.width(prop, target === this._table.info.nameColumn),
-      render: (row) => text(row.values[target])};
+      render: (row) => cellText(row.values[target])};
   }
 
   private static _numberColumn(): DomainImportColumn {

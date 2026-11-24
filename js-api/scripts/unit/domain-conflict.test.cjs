@@ -127,3 +127,24 @@ test('a text starting with ~new: is sent as typed, and only a draft id of the ba
   const values = ed.buildOps().map((p) => p.op.values);
   assert.deepEqual(plain([values[0].name, values[1].name, values[3].parent_id]), ['~new:release notes', '$$x', `$${draft}`]);
 });
+
+test('a delete of a row someone else already deleted lands, and the rest of the batch is sent', async () => {
+  const {ed} = editor('deleted', null);
+  for (const [name, value] of [['id', 'r2'], ['name', 'Other'], ['version', 1], [DG.DOMAIN_DELETED_COLUMN, false],
+    [E.STATE_COLUMN, 'deleted'], [E.CHANGES_COLUMN, ''], [E.ERRORS_COLUMN, '']])
+    ed._df.cols[name].push(value);
+  Object.assign(ed, {_onSavingChanged: {next() {}}, _onSaved: {next() {}}, writeBack: async () => {}, rebind() {}});
+  ed.client.schema = 's';
+  const sent = [];
+  sandbox.grok_Dapi_Domains = () => ({});
+  sandbox.grok_Dapi_Domains_Transaction = (_, schema, ops) => {
+    sent.push(plain(ops).map((op) => op.id));
+    return sent.length > 1 ? Promise.resolve([{id: 'r2'}]) : Promise.reject(new DG.DomainNotFoundError(
+      'Row "r1" not found in s.item', 404, {error: 'not-found', id: 'r1', opIndex: 0}));
+  };
+  const session = Object.assign(Object.create(DG.DomainSession.prototype),
+    {editors: [ed], _quiet: true, _onSaved: {next() {}}, _lastRefusal: null});
+  assert.equal(await session.save(), true);
+  assert.deepEqual(sent, [['r1', 'r2'], ['r2']]);
+  assert.equal(ed._df.rowCount, 0, 'both rows left the frame');
+});

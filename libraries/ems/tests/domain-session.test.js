@@ -2,7 +2,7 @@ import {emsBackends} from '../src/core/domain-backend.js';
 import {test, testOwner} from '@datagrok-libraries/u2/tests/owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
-import {backends, Scope, Rows, notify} from '@datagrok-libraries/u2';
+import {backends, Scope, Rows, notify, signal} from '@datagrok-libraries/u2';
 import {DomainSource} from '../src/core/domain-source.js';
 import {SharedSession, confirmDiscard} from '../src/core/session.js';
 import {backend} from './domain-fixtures.mjs';
@@ -839,6 +839,30 @@ scoped('SAVE in the navigation prompt over a save the server refuses still holds
   const asking = confirmDiscard(session);
   fire(buttonNamed('SAVE'), 'click');
   assert.equal(await asking, false);
+  projects.dispose();
+  issues.dispose();
+});
+
+scoped('a save stopped at one source\'s own check leaves no earlier refusal on the others', async () => {
+  const memory = backend();
+  const cell = signal(null);
+  emsBackends.domain = {
+    table: (address) => memory.table(address),
+    saveAll: () => {
+      cell.value = 'Key DG already belongs to Datagrok';
+      return Promise.resolve(false);
+    },
+  };
+  const session = new SharedSession();
+  const {projects, issues} = await pair(session);
+  const unguard = projects.guard(() => cell.peek(), cell);
+  projects.rows.byKey('p1').key = 'DG';
+  issues.rows.byKey('i1').title = 'Aspirin 100';
+  assert.equal(await session.save(), false);
+  assert.match(issues.blocked.value, /already belongs/, 'the child carries the refusal');
+  assert.equal(await session.save(), false, 'the second save stops at the project\'s check');
+  assert.equal(issues.blocked.value, null, 'and the child\'s copy of the first refusal is gone');
+  unguard();
   projects.dispose();
   issues.dispose();
 });

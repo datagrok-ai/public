@@ -17,7 +17,8 @@ import * as rxjs from 'rxjs';
 
 import {IDartApi} from '../../api/grok_api.g';
 import {DomainsDataSource} from '../../dapi';
-import {DomainTransactionOp, DomainValidationError, DomainVersionConflictError} from '../../domains';
+import {DomainNotFoundError, DomainTransactionOp, DomainValidationError,
+  DomainVersionConflictError} from '../../domains';
 import {Balloon} from '../../widgets/menu';
 import {DomainFrameEditor} from './domains-editor';
 import type {DomainPendingOp, DomainSaveResult, IEditorHost} from './domains-editor';
@@ -210,6 +211,7 @@ export class DomainSession implements IEditorHost {
     for (const editor of this.editors)
       editor.setSaving(true);
     try {
+      const gone = new Map<DomainFrameEditor, DomainPendingOp[]>();
       for (let attempt = 0; ; attempt++) {
         if (attempt > CONFLICT_RETRY_LIMIT) {
           balloon.error('Cannot save: too many version conflicts in a row');
@@ -217,7 +219,8 @@ export class DomainSession implements IEditorHost {
         }
         let results: any[];
         try {
-          results = await domains().transaction(schema, this._ops(parts, schema));
+          const ops = this._ops(parts, schema);
+          results = ops.length === 0 ? [] : await domains().transaction(schema, ops);
         } catch (e: any) {
           const at = this._locate(parts, e?.opIndex);
           if (e instanceof DomainVersionConflictError && at != null) {
@@ -226,11 +229,20 @@ export class DomainSession implements IEditorHost {
             parts = this.buildOps();
             if (parts == null)
               return this._refuse(DomainSession.CELL_ERRORS);
+            gone.clear();
             continue;
           }
           if (at == null) {
             balloon.error(e?.message ?? `${e}`);
             return this._refuse(e?.message ?? `${e}`, null, e?.opIndex, e?.code);
+          }
+          // a row someone else already deleted: this delete has landed, the rest of the batch goes on
+          if (e instanceof DomainNotFoundError && at.failing.op.op === 'delete') {
+            const pending = parts.find((p) => p.editor === at.editor)!.pending;
+            pending.splice(pending.indexOf(at.failing), 1);
+            gone.set(at.editor, [...(gone.get(at.editor) ?? []), at.failing]);
+            attempt--;
+            continue;
           }
           // ONE sentence for all four surfaces: the cells, the status line that reads them,
           // the balloon, and `lastRefusal` for a host that words it itself
@@ -254,7 +266,8 @@ export class DomainSession implements IEditorHost {
         for (let i = 0; i < parts.length; i++)
           Object.assign(assigned, DomainFrameEditor.assignedOf(parts[i].pending, slices[i]));
         for (let i = 0; i < parts.length; i++) {
-          const r = await parts[i].editor.applyResults(parts[i].pending, slices[i], assigned);
+          const r = await parts[i].editor.applyResults(
+            [...parts[i].pending, ...(gone.get(parts[i].editor) ?? [])], slices[i], assigned);
           total.inserted += r.inserted;
           total.updated += r.updated;
           total.deleted += r.deleted;

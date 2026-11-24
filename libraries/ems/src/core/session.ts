@@ -108,10 +108,9 @@ export class SharedSession implements DomainSession {
       const states = new Set(batch.flatMap((s) => s.pending().map((r) => r[Rows.STATE])));
       const verb = states.size !== 1 ? 'saved' : states.has('deleted') ? 'deleted' :
         states.has('restored') ? 'restored' : 'saved';
-      for (const source of batch) {
-        if (source.check() !== null)
-          return false;
-      }
+      // every source is checked: a check takes back the copy of an earlier refusal
+      if (batch.map((s) => s.check()).some((problem) => problem !== null))
+        return false;
       if (this._overlapping(batch))
         return false;
       // dirty, yet no row carries a change: refused, never announced as saved
