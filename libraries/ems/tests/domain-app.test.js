@@ -1936,3 +1936,39 @@ scoped('an aggregation column follows a child row saved in this session', async 
     grok.dapi.domains.table = served;
   }
 });
+
+scoped('a table that cannot restore has no trash: `?trash=1` and setTrash leave the list live', async () => {
+  const memory = backend();
+  const issue = memory.tableSync('grit.issue');
+  issue.support = {...issue.support, deleted: false, restore: false};
+  Object.defineProperty(issue, 'restore', {value: undefined, configurable: true});
+  emsBackends.domain = memory;
+  const table = await domains.table('grit.issue');
+  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
+  document.body.append(a.root);
+  await a.open(`${BASE}?trash=1`);
+  await flush();
+  assert.equal(await a.setTrash(true), false);
+  assert.equal(a.mode.value, 'live');
+  assert.equal(a.summary.value, '3 issues');
+  a.dispose();
+});
+
+scoped('a table that cannot be polled always offers Refresh, which reads a peer\'s write', async () => {
+  const memory = backend();
+  const issue = memory.tableSync('grit.issue');
+  issue.support = {...issue.support, probe: false};
+  Object.defineProperty(issue, 'probe', {value: undefined, configurable: true});
+  emsBackends.domain = memory;
+  const table = await domains.table('grit.issue');
+  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
+  document.body.append(a.root);
+  const reload = ribbonControl(testOwner().build(() => a.ribbon()).main, 'refresh-button');
+  await flush();
+  assert.equal(reload.root.hidden, false);
+  await memory.transaction([{op: 'insert', table: 'grit.issue', values: {project_id: 'p1', number: 9, title: 'Peer'}}]);
+  fire(reload.root, 'click');
+  await flush();
+  assert.equal(a.summary.value, '4 issues');
+  a.dispose();
+});

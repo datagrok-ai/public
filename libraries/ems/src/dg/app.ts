@@ -22,6 +22,7 @@ import {DgDomainTable} from './backend.js';
 import {DomainDataTable} from './grid.js';
 import {domainOutput, outputKey} from './output.js';
 import {PropertyDialog} from './authoring/property-dialog.js';
+import {DomainViews} from './views.js';
 import {ViewSync} from '@datagrok-libraries/u2/dg';
 import type {ViewState} from '@datagrok-libraries/u2/dg';
 
@@ -512,7 +513,8 @@ export class DomainApp extends Control {
     reload.root.dataset.u2 = 'refresh-button';
     reload.effect(() => {
       const source = this._page.value === 'entity' ? this._entitySource.value : this.listSource;
-      reload.root.hidden = !this.stale.value && source?.access.value.can('view') !== false;
+      const polled = this._page.value === 'entity' || this.table.table.support.probe;
+      reload.root.hidden = polled && !this.stale.value && source?.access.value.can('view') !== false;
     });
     const search = domains.search(this.listSource);
     const sort = this._sortMenu();
@@ -603,7 +605,7 @@ export class DomainApp extends Control {
       table.push({text: 'Bulk edit…', icon: 'edit', requires: 'edit',
         run: () => void domains.bulkEdit(this.listSource)});
     }
-    const mode: Action[] = trash || !support.deleted || !support.restore ? [] : [{
+    const mode: Action[] = trash || !this._hasTrash ? [] : [{
       text: 'Show deleted', icon: 'history', requires: 'delete', run: () => void this.setTrash(true)}];
     const presets = this.compact.peek() && this._page.peek() === 'list' && !trash ? this._presets : [];
     const base = [presets, this._rowActions(), table, mode].filter((section) => section.length > 0)
@@ -618,6 +620,8 @@ export class DomainApp extends Control {
     if (mode === this._mode.peek())
       return true;
     const on = mode === 'trash';
+    if (on && !this._hasTrash)
+      return false;
     if (!await confirmDiscard(this.session, {action: on ? 'open the trash' : 'leave the trash'}))
       return false;
     // one move, one history entry: the page and the mode settle together
@@ -647,9 +651,18 @@ export class DomainApp extends Control {
     emsBackends.domain?.dropAccess?.();
     if (this._reshaped.peek() !== null)
       await this._settle();
+    else if (await this._outdated())
+      await DomainViews.reload(this.table.address.split('.')[0]);
     else
       await source.refresh();
     return true;
+  }
+
+  // the handle is as old as the view: columns shared or added since are not in it
+  private async _outdated(): Promise<boolean> {
+    const fresh = await emsBackends.domain?.table(this.table.address).catch(() => undefined);
+    const names = (table: {properties: IProperty[]}) => table.properties.map((p) => p.name).sort().join();
+    return fresh !== undefined && DomainApp._views.has(this) && names(fresh) !== names(this.table);
   }
 
   /** Keeps the page's columns while the session has pending changes; `rebuild` runs once it is clean. */
@@ -927,6 +940,11 @@ export class DomainApp extends Control {
     });
   }
 
+  private get _hasTrash(): boolean {
+    const support = this.table.table.support;
+    return support.deleted && support.restore;
+  }
+
   private _withTrash(path: string): string {
     return this.trash.value ? `${path}${path.includes('?') ? '&' : '?'}trash=1` : path;
   }
@@ -1029,7 +1047,7 @@ export class DomainApp extends Control {
     const at = address.indexOf('?');
     const params = new URLSearchParams(at < 0 ? '' : address.slice(at + 1));
     // trash mode is the list's own view of the table, and a path is authoritative about it
-    this._mode.value = params.get('trash') === '1' ? 'trash' : 'live';
+    this._mode.value = params.get('trash') === '1' && this._hasTrash ? 'trash' : 'live';
     const segment = DomainAddress.segmentOf(at < 0 ? address : address.slice(0, at), this._bases);
     // the draft sentinel is read off the raw spelling, before the escape comes off: `~new` is the
     // row keyed "new" in a segment and in `?entity=` alike

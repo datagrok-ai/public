@@ -8,7 +8,7 @@ import type {FilterTarget} from './validate.js';
 import {fuzzyPair, isCondition, negate, parseTree} from './grammar.js';
 import {spanOf} from '../span.js';
 import {escapeLike, operators} from './operators.js';
-import {kindOf} from './kinds.js';
+import {instant, kindOf} from './kinds.js';
 
 const BARE_PATH = /^[A-Za-z]\w*(\.[A-Za-z]\w*)*$/;
 const ESCAPED: Record<string, string> = {'\\': '\\\\', '"': '\\"', '\'': '\\\'', '\n': '\\n', '\r': '\\r', '\t': '\\t',
@@ -66,8 +66,8 @@ function typed(v: unknown, prop: FilterProperty | null): FilterScalar {
   const kind = kindOf(prop);
   if (kind === KIND.REF && prop.ref && v !== '@current')
     return {type: prop.ref, id: v};
-  if (kind === KIND.DATE_TIME && !Number.isNaN(Date.parse(v)))
-    return new Date(v);
+  if (kind === KIND.DATE_TIME && !Number.isNaN(instant(v)))
+    return new Date(instant(v));
   return v;
 }
 

@@ -22,6 +22,11 @@ export function kindOf(prop: FilterProperty): FilterKind {
   }
 }
 
+/** The instant a datetime text names, in ms: one with a time and no zone is UTC, as the server reads it. */
+export function instant(text: string): number {
+  return Date.parse(/\d:\d\d(:\d\d(\.\d+)?)?$/.test(text) ? `${text}Z` : text);
+}
+
 function scalarOut(v: unknown, now: Date): unknown {
   if (v instanceof Date)
     return v.toISOString();

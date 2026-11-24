@@ -299,3 +299,33 @@ scoped('a node the user clicks while a followed tree is refreshing stays selecte
     f.done();
   }
 });
+
+scoped('a kept deleted node released while a refresh runs gives way to its parent, never to nothing', async () => {
+  const f = await following({expandTo: 'l4'});
+  try {
+    f.source.newRow({name: 'Draft', parent_id: 'l4'});
+    await f.peer.transaction([{op: 'delete', table: 'location', id: 'l4'}]);
+    await f.tick();
+    const seen = [];
+    f.tree.effect(() => seen.push(f.tree.selected.value?.id ?? null));
+    const real = f.peer.query;
+    let release;
+    const gate = new Promise((resolve) => release = resolve);
+    f.peer.query = async (spec) => {
+      if (spec.filter?.property === 'parent_id')
+        await gate;
+      return real.call(f.peer, spec);
+    };
+    await f.peer.transaction([{op: 'update', table: 'location', id: 'l2', values: {name: 'Room 2'}}]);
+    await f.tick();
+    f.source.discard();
+    await settle();
+    release();
+    await settle();
+    f.peer.query = real;
+    assert.deepEqual([...new Set(seen)], ['l4', 'l3']);
+    assert.equal(f.tree.notice.value, 'Box was deleted');
+  } finally {
+    f.done();
+  }
+});

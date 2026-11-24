@@ -282,3 +282,11 @@ scoped('a ref cell takes the caption the query projected; only a frame without o
   dt.dispose();
   src.dispose();
 });
+
+scoped('a reference column does not sort: the order would be by the ids, not the names shown', async () => {
+  const {table, src, dt} = await dataTable();
+  const sortable = table.properties.filter((p) => table.constructor.isSortable(p)).map((p) => p.name);
+  assert.deepEqual(['project_id', 'reporter', 'title'].filter((name) => sortable.includes(name)), ['title']);
+  dt.dispose();
+  src.dispose();
+});

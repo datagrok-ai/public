@@ -7,10 +7,13 @@
 * Lists: Fixed the current row and the selection being lost on save, refresh or switching to the table view
 * Lists: Fixed sort keys with spaces or a `prop.` prefix being dropped, and sorting by unsortable columns
 * Live refresh: Fixed a peer's write going unnoticed, discarding unsaved edits or leaving stale aggregations
+* Live refresh: Refresh is always offered on a table that is not polled for changes
+* Live refresh: Fixed a table beside a tree keeping a referenced row's old name after a peer renamed it
 * Save: Fixed Save staying off, or resending refused changes, after a refused save
 * Save: Fixed a stale delete or restore overwriting another session's change: it is now a version conflict
 * Save: Fixed "saved" announced for changes a conflict reload dropped, and refusals naming a row by its ids
 * Permissions: Fixed access granted or revoked while the app is open not reaching it
+* Permissions: Fixed Refresh not showing columns shared with the user since the page was opened
 * Permissions: Fixed users without View told a table is empty, and row-grant users told they have no access
 * Permissions: Fixed New offered where no save can succeed, and hidden columns offered in sort and filters
 * Forms: Fixed `json` and `string_list` fields showing and saving mangled values on the platform
@@ -21,7 +24,9 @@
 * Import: Fixed matching by formatted keys and by names, and updates without access to a required column
 * Properties: Fixed concurrent edits dropping columns, user columns shown locked and pages keeping old columns
 * Trees: Fixed the tree not following other sessions' changes, and losing a node picked during a refresh
+* Trash: Fixed a `?trash=1` link showing live rows as deleted on a table that has no trash
 * Search: Fixed saved searches overwritten or lost on reload, and refused query text breaking the list
+* Filters: Fixed a datetime without a time zone selecting different rows from a link and from the box
 * [core#611](https://github.com/datagrok-ai/core/issues/611): Domain schemas: a named error code for an unknown group on grants — the binding dialog reads `unknown-group` instead of matching the message
 * History: Fixed "Show older" turning off with no reason while it loads; it now says "Loading older entries…"
 * u2-domain-pick: Fixed a pick bound to a read-only path rendering a spec error instead of a read-only input
