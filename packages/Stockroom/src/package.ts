@@ -97,7 +97,8 @@ export async function stockroomLocations(): Promise<DG.ViewBase> {
   const addAt = (node: RowView) => newContainerAt(containers, node.id,
     {site: typeof node.site === 'string' ? node.site : undefined, caption: locations.renderer.caption(node)});
   const host = ViewHost.create({name: 'Stockroom locations', content: () => {
-    const tree = domains.tree(locations, {allNode: 'All locations', follow: source,
+    const asked = new URLSearchParams(location.search).get('entity');
+    const tree = domains.tree(locations, {allNode: 'All locations', follow: source, expandTo: asked ?? undefined,
       actions: [{name: 'New container', icon: 'plus', run: addAt}]});
     const table = domains.dataTable(source,
       {columns: ['label', 'substance_id', 'location_id', 'lot', 'quantity', 'unit', 'expires'],
@@ -128,7 +129,11 @@ export async function stockroomLocations(): Promise<DG.ViewBase> {
     const panes = new Splitter([section('Locations', tree), section('Containers', table, where)],
       {direction: 'horizontal', sizes: [0.22, 0.78]});
     panes.root.classList.add('stockroom-locations');
-    return {root: panes, ribbon: [[add]], path: '/apps/Stockroom/Locations'};
+    const path = computed(() => {
+      const node = tree.selected.value;
+      return node === null ? '/apps/Stockroom/Locations' : `/apps/Stockroom/Locations?entity=${node.id}`;
+    });
+    return {root: panes, ribbon: [[add]], path};
   }});
   // after the chrome: the source outlives the controls reading it
   host.own(() => sourceOwner.dispose());
