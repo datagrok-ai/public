@@ -648,10 +648,11 @@ export class DomainApp extends Control {
     const source = this._page.peek() === 'entity' ? this._entitySource.peek() : this.listSource;
     if (source === null)
       return false;
-    if (this.session.isDirty.peek())
-      await this.session.reloadAccess();
-    if (!await confirmDiscard(this.session, {action: 'reload the rows'}))
+    if (!await confirmDiscard(this.session, {action: 'reload the rows'})) {
+      if (this.session.sources.peek().some((s) => DomainSource.isForbidden(s.error.peek())))
+        await this.session.reloadAccess();
       return false;
+    }
     // the platform caches the access, and a grant made by another session never invalidates it
     emsBackends.domain?.dropAccess?.();
     if (this._reshaped.peek() !== null)

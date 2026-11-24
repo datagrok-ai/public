@@ -593,6 +593,13 @@ scoped('a save refused as "forbidden" re-reads the access, and Discard leaves th
   }
   assert.equal(a.entitySource.value.access.value.can('edit'), false, 'the access was read again');
   assert.equal(testOwner().build(() => a.ribbon()).main[4].root.hidden, false, 'Refresh is the way to try again');
+  const read = grok.dapi.domains.invalidated;
+  const refreshing = a.refresh();
+  await flush();
+  assert.equal(grok.dapi.domains.invalidated, read, 'nothing is read again before the user answers');
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await refreshing, false);
+  assert.ok(grok.dapi.domains.invalidated > read, 'staying reads the access again: a restored grant lifts the hold');
   assert.equal(a.session.isDirty.value, true, 'the edit is kept until Discard');
   a.session.discard();
   await flush();
@@ -1138,6 +1145,24 @@ scoped('Refresh is in the ribbon only while the page is stale, and reloads throu
   assert.equal(reload.root.hidden, true);
   await a.goTo('entity', 'i1');
   assert.equal(reload.root.hidden, false, 'a row page always offers it: its panes are read on Refresh alone');
+  await flush();
+  const box = a.form.value.input('title').root.querySelector('input');
+  for (const written of [false, true]) {
+    box.value = '';
+    fire(box, 'input');
+    if (written)
+      a.form.value.input('description').value = 'Written';
+    await flush();
+    const refreshing = a.refresh();
+    await flush();
+    assert.equal(a.form.value.input('title').root.querySelector('input').value, '', 'asked before anything is read');
+    fire(buttonNamed('CANCEL'), 'click');
+    assert.equal(await refreshing, false);
+    await flush();
+    assert.equal(a.form.value.input('title').root.querySelector('input').value, '', 'an emptied field survives Cancel');
+  }
+  a.session.discard();
+  await flush();
   a.dispose();
 });
 
