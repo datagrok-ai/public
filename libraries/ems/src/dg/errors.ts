@@ -62,7 +62,7 @@ export class DomainErrors {
   private static _writer(source: DomainSource | undefined, column: string, parentId: string | undefined):
     {source: DomainSource, row: RowView} | null | undefined {
     if (source === undefined)
-      return undefined;
+      return null;
     const candidates: {source: DomainSource, row: RowView}[] = [];
     for (const s of [source, ...[...DomainSource.live].filter((x) => x !== source && x.session === source.session)]) {
       if (!s.schema.properties.some((p) => p.name === column))
