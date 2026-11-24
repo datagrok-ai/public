@@ -9,6 +9,7 @@ import {ObjectForm, propertyForm} from '@datagrok-libraries/u2/dg';
 import {DomainTable, firstProblem} from './facade.js';
 import {DomainErrors} from './errors.js';
 import {hierarchyCycle} from './backend.js';
+import {DomainFilters} from './filters.js';
 
 export interface DomainBulkEditOptions {
   /** The columns offered, in this order; every column the caller may write by default. */
@@ -203,9 +204,10 @@ function _filterOf(source: DomainSource): DomainQueryLike['filter'] {
 async function _run(source: DomainSource, form: ObjectForm, columns: string[], selection: boolean):
   Promise<number> {
   const handle = DomainTable.of(source)!;
-  const filter = selection ? Filters.toDomainTree(Filters.group('and',
-    [Filters.cond('id', 'in', source.selection.peek().map((row) => row.id))]), {schema: source.schema}) :
-    _filterOf(source);
+  const schema = source.schema;
+  const scope = !selection ? DomainFilters.treeOf(source.query.peek(), schema) :
+    Filters.group('and', [Filters.cond('id', 'in', source.selection.peek().map((row) => row.id))]);
+  const filter = selection ? Filters.toDomainTree(scope, {schema}) : _filterOf(source);
   // a chosen column left empty clears the column; one not chosen is not in the request
   const written = Object.fromEntries(columns.map((name) => {
     const value = form.input(name)?.peek();
@@ -214,13 +216,11 @@ async function _run(source: DomainSource, form: ObjectForm, columns: string[], s
   const refused = await _check(source, handle, filter, written, selection);
   if (refused !== null)
     throw new Error(refused);
-  const parent = source.schema.info.parentColumn;
-  if (parent != null && parent in written) {
-    const rows = selection ? source.selection.peek() : await handle.table.query({filter, limit: MAX_ROWS});
-    const cycle = await hierarchyCycle(handle.table, rows.map((row) => row.id), written[parent]);
-    if (cycle !== null)
-      throw new Error(cycle);
-  }
+  const cycle = await hierarchyCycle(handle.table, written[schema.info.parentColumn ?? ''], async (ids) =>
+    (await handle.table.query({limit: 1, filter: Filters.toDomainTree(
+      Filters.group('and', [scope, Filters.cond('id', 'in', ids)]), {schema})})).length > 0);
+  if (cycle !== null)
+    throw new Error(cycle);
   const report = await handle.table.updateWhere!(filter, written, {limit: MAX_ROWS}).catch((e) => {
     throw new Error(DomainErrors.message(e));
   });

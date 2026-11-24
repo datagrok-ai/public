@@ -25,22 +25,26 @@ const SYSTEM_SHAPES = {
 export const SYSTEM_COLUMNS: readonly (readonly [name: string, type: string, caption: string])[] =
   Object.entries(SYSTEM_SHAPES).map(([name, [type, caption]]) => [name, type, caption]);
 
-/** Why `parent` cannot become the parent of the rows `ids`: it is one of them, or under one, once the pending
- * `moved` (row id → new parent) have landed. */
-export async function hierarchyCycle(table: DomainTableLike, ids: readonly unknown[], parent: unknown,
-  moved: ReadonlyMap<unknown, unknown> = new Map(), name?: unknown): Promise<string | null> {
-  const up = async (id: unknown): Promise<unknown[]> =>
-    typeof id !== 'string' || id === '' || Rows.isDraft(id) || table.ancestors === undefined ? [] :
-      [id, ...(await table.ancestors(id)).map((a) => a.id).reverse()];
-  let chain = await up(parent);
-  const what = name == null ? `a ${nounOf(table.info, true)}` : `"${name}"`;
-  for (let i = 0; i < chain.length; i++) {
-    if (ids.includes(chain[i]))
-      return `Cannot move ${what} under itself or one of its descendants`;
-    if (moved.has(chain[i]))
-      chain = chain.indexOf(chain[i]) < i ? [] : [...chain.slice(0, i + 1), ...await up(moved.get(chain[i]))];
+/** Why `parent` cannot become the parent of the rows being moved: `among` finds one of them in it and its
+ * ancestors, once the pending `moved` (row id → new parent) have landed. */
+export async function hierarchyCycle(table: DomainTableLike, parent: unknown,
+  among: (ids: string[]) => boolean | Promise<boolean>, moved: ReadonlyMap<unknown, unknown> = new Map(),
+  name?: unknown): Promise<string | null> {
+  const jumped = new Set<unknown>();
+  for (let from = parent; ;) {
+    const chain = typeof from !== 'string' || from === '' || Rows.isDraft(from) || table.ancestors === undefined ? [] :
+      [from, ...(await table.ancestors(from)).map((a) => a.id).reverse()];
+    const at = chain.findIndex((id) => moved.has(id));
+    const walked = at < 0 ? chain : chain.slice(0, at + 1);
+    if (walked.length > 0 && await among(walked)) {
+      return `Cannot move ${name == null ? `a ${nounOf(table.info, true)}` : `"${name}"`} ` +
+        'under itself or one of its descendants';
+    }
+    if (at < 0 || jumped.has(chain[at]))
+      return null;
+    jumped.add(chain[at]);
+    from = moved.get(chain[at]);
   }
-  return null;
 }
 
 /** Fills `emsBackends.domain` at dg import over `grok.dapi.domains`; its `frame()` makes `DomainSource` a frame
@@ -106,7 +110,7 @@ export class DgDomainBackend implements DomainBackend {
     });
     const moved = new Map(moves.map((m) => [m.id, m.parent]));
     for (const {state, id, parent, name} of moves) {
-      state.problem = await hierarchyCycle(state.table!, [id], parent, moved, name);
+      state.problem = await hierarchyCycle(state.table!, parent, (ids) => ids.includes(id as string), moved, name);
       if (state.problem !== null)
         return false;
     }
