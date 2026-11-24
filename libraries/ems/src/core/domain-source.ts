@@ -247,6 +247,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private readonly _rows: FrameRows;
   private readonly _columns = new Map<string, Signal<unknown>>();
   private readonly _guards = new Set<() => string | null>();
+  private readonly _editing = new Set<() => boolean>();
   private readonly _problems = signal<readonly ReadonlySignal<string | null>[]>([]);
   private readonly _unwritten = signal<readonly ReadonlySignal<UnwrittenEdits | null>[]>([]);
   private readonly _unapplied = signal<ReadonlyMap<string, {value: unknown, message: string}>>(new Map());
@@ -939,8 +940,15 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   // or that a pending row of the session may refer to; one left behind goes with the re-read
   private _unsaved(): boolean {
     const current = this.currentRow.peek();
-    return this.isDirty.peek() || (this.pending().length > 0 &&
+    return this.isDirty.peek() || [...this._editing].some((editing) => editing()) || (this.pending().length > 0 &&
       (this.session.isDirty.peek() || (current !== null && Rows.isDraft(current))));
+  }
+
+  /** A control mid-edit on a value no row holds yet (an open cell editor): a reload waits, marking the source
+   * stale. Answers the release. */
+  holdReload(editing: () => boolean): () => void {
+    this._editing.add(editing);
+    return () => this._editing.delete(editing);
   }
 
   /** Follows another table on this source's live probe; `moved` runs when it changed. Answers the unwatch. */
