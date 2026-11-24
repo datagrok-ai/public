@@ -287,6 +287,24 @@ scoped('two backends watching one table address each ask their own', async () =>
   b.dispose();
 });
 
+scoped('a watched table answered by the change token, then by a count, takes a new baseline: nothing moved', async () => {
+  const be = counted();
+  const inner = be.backend.table;
+  let asked = 0;
+  be.backend.table = async (address) => {
+    const t = await inner(address);
+    return address !== 'grit.project' ? t : Object.assign(Object.create(Object.getPrototypeOf(t)), t,
+      {probe: async () => asked++ === 0 ? {count: -1, last: '7'} : {count: 2, last: '2026-01-01T00:00:00Z'}});
+  };
+  const src = await started(be);
+  let moved = 0;
+  const unwatch = src.watch('grit.project', () => moved++);
+  await tick(2);
+  assert.equal(moved, 0);
+  unwatch();
+  src.dispose();
+});
+
 scoped('nothing is asked while the tab is hidden, and nothing after dispose', async () => {
   const be = counted();
   const src = await started(be);

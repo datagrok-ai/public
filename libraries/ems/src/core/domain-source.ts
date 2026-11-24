@@ -1351,7 +1351,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       this._failures = 0;
       const before = this._probed;
       // the baseline moves only with the rows: a source left stale compares again once it is clean
-      if (before === undefined)
+      // the change token answering in place of a count, or the other way round, is a new baseline, not a move
+      if (before === undefined || (before.count < 0) !== (now.count < 0))
         this._probed = now;
       else if (before.count !== now.count || before.last !== now.last || this._isStale.peek())
         await this._behind();
@@ -1389,7 +1390,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       return;
     const before = entry.last;
     entry.last = now;
-    if (before !== undefined && (before.count !== now.count || before.last !== now.last))
+    if (before !== undefined && (before.count < 0) === (now.count < 0) &&
+        (before.count !== now.count || before.last !== now.last))
       this._notify(address, entry);
   }
 
