@@ -158,7 +158,8 @@ export function openImport(table: DomainTable, options: DomainImportOptions = {}
     return Promise.resolve(null);
   }
   const stuck = DomainTable.unsettable(table.properties, table.info, table.access, derived);
-  const updates = table.table.support.batch.upsert && !stuck.some((p) => table.info.businessKey.includes(p.name!));
+  const updates = table.table.support.batch.upsert && table.info.businessKey.length > 0 &&
+    !stuck.some((p) => table.info.businessKey.includes(p.name!));
   if ((stuck.length > 0 || table.info.hiddenRequired) && !updates) {
     notify.warning(DomainTable.noRequired(table.info, stuck, table.access));
     return Promise.resolve(null);
@@ -251,7 +252,7 @@ class ImportFlow {
       picker.value = open[0];
     const summary = span('', 'u2-domain-import-picked u2-form-note');
     const batch = this._table.table.support.batch;
-    if (batch.upsert) {
+    if (batch.upsert && this._table.info.businessKey.length > 0) {
       this._mode = new ChoiceInput({label: 'Mode', name: 'mode', value: 'insert', nullable: false,
         items: [{value: 'insert', label: 'Add new rows'}, {value: 'upsert', label: 'Add or update'}]});
     }
