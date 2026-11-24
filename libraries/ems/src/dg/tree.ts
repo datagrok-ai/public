@@ -147,7 +147,7 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
       if (this.tree.selectedNode.value !== null && this._held.peek() === null)
         this._kept.value = null;
       else if (!this._pending(true))
-        void this._leave(kept);
+        void this.refresh();
     });
     if (follow !== undefined) {
       void this._ready.then((table) => {
@@ -206,9 +206,14 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
       const reveal = this._options.expandTo;
       if (first && reveal !== undefined)
         await this.expandTo(reveal);
-      else if (this._kept.peek() !== null || this._picked !== null)
+      else if (this._kept.peek() !== null || this._picked !== null) {
         await this._reopen();
-      else if (first || was === null)
+        const kept = this._kept.peek();
+        if (kept !== null && this._picked === null && !this._pending(false)) {
+          this._kept.value = null;
+          await this._toParent(kept, `${table.renderer.caption(kept)} was deleted`);
+        }
+      } else if (first || was === null)
         await this._clear();
       else {
         await this._reopen();
@@ -291,16 +296,6 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     const read = (s: ReadonlySignal<boolean> | undefined): boolean =>
       s === undefined ? false : track ? s.value : s.peek();
     return read(follow?.isDirty) || read(follow?.session?.isDirty);
-  }
-
-  private async _leave(row: RowView<TRow>): Promise<void> {
-    this._held.value = {row};
-    this._kept.value = null;
-    try {
-      await this._toParent(row, `${this._table!.renderer.caption(row)} was deleted`);
-    } finally {
-      this._held.value = null;
-    }
   }
 
   private async _toParent(row: RowView<TRow>, gone: string): Promise<void> {
