@@ -672,14 +672,16 @@ export class DomainForm extends Control {
   private _renamed(input: DomainPick, name: string, row: RowView): void {
     const caption = row[Rows.caption(name)];
     const id = input.peek();
-    if (caption === this._projected.get(name) || typeof caption !== 'string' || id === null || id === '')
+    // a picker in use keeps what is typed into it; the next sync renames it
+    const busy = () => input.typeAhead.isOpen.peek() || input.root.contains(document.activeElement);
+    if (caption === this._projected.get(name) || typeof caption !== 'string' || id === null || id === '' || busy())
       return;
     this._projected.set(name, caption);
     const address = input.table;
     void (DomainPick.host?.caption(address) ?? Promise.resolve(null)).then(async (dressed) => {
       const item = dressed === null ? {...input.typeAhead.selected.peek() ?? {id}, id, name: caption} :
         await DomainPick.resolve(address, id);
-      if (input.peek() === id)
+      if (input.peek() === id && !busy())
         input.typeAhead.selected.value = item;
     }, () => undefined);
   }
