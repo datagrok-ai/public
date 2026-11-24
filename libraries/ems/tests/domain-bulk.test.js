@@ -143,11 +143,28 @@ scoped('a parent that is one of the rows, or under one, is refused: no row ends 
   assert.equal(await running, null);
   const {hierarchyCycle} = await import('../src/dg/backend.js');
   const stored = memory.tableSync('stock.location');
-  assert.match(await hierarchyCycle(stored, ['l2'], 'l9', new Map([['l9', 'l4'], ['l2', 'l9']]), 'Room'),
+  const {source: filtered} = await table(memory, {pageSize: 10, query: 'name != "Site"'}, 'stock.location');
+  const limits = [];
+  const query = stored.query.bind(stored);
+  stored.query = (spec) => (limits.push(spec.limit), query(spec));
+  const again = await opened(filtered);
+  choose('parent_id');
+  await flush();
+  field('parent_id').value = 'l9';
+  fire(ok(), 'click');
+  await flush();
+  assert.match(document.body.textContent, /Cannot move a location under itself/, 'the parent matches the filter');
+  assert.equal(limits.includes(1000), false, 'the matched rows are not read to find it: more may match');
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await again.running, null);
+  filtered.dispose();
+  stored.query = query;
+  const l2 = (ids) => ids.includes('l2');
+  assert.match(await hierarchyCycle(stored, 'l9', l2, new Map([['l9', 'l4'], ['l2', 'l9']]), 'Room'),
     /^Cannot move "Room" under itself/, 'two pending moves that close a loop between them');
-  assert.equal(await hierarchyCycle(stored, ['l2'], 'l9', new Map([['l2', 'l9']])), null);
+  assert.equal(await hierarchyCycle(stored, 'l9', l2, new Map([['l2', 'l9']])), null);
   assert.equal(await hierarchyCycle({...stored, ancestors: () => Promise.reject(new Error('no such row'))},
-    ['l2'], '~new:1'), null, 'a parent added in the same save is asked nothing');
+    '~new:1', l2), null, 'a parent added in the same save is asked nothing');
   source.dispose();
 });
 

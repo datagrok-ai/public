@@ -516,10 +516,9 @@ export class DomainApp extends Control {
       () => void this.refresh().catch((e) => DomainErrors.report(e))));
     reload.root.dataset.u2 = 'refresh-button';
     reload.effect(() => {
-      const source = this._page.value === 'entity' ? this._entitySource.value : this.listSource;
-      const polled = this._page.value === 'entity' || this.table.table.support.probe;
       const refused = this.session.sources.value.some((s) => DomainSource.isForbidden(s.error.value));
-      reload.root.hidden = polled && !this.stale.value && !refused && source?.access.value.can('view') !== false;
+      reload.root.hidden = this._page.value === 'list' && this.table.table.support.probe && !this.stale.value &&
+        !refused && this.listSource.access.value.can('view');
     });
     const search = domains.search(this.listSource);
     const sort = this._sortMenu();

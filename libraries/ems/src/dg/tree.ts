@@ -345,7 +345,9 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
   static requireHierarchy<T extends DomainRowLike>(table: DomainTable<T>): void {
     const parent = table.info.parentColumn;
     if (table.info.hierarchy !== true || parent === null || parent === undefined) {
-      throw new DomainBackendError('filter',
+      const unseen = table.info.childTables.some((c) => `${c.schema}.${c.table}` === table.address &&
+        !table.properties.some((p) => p.name === c.fkColumn));
+      throw new DomainBackendError('filter', unseen ? DomainErrors.noLink(table.info, table.info) :
         `${table.address} is not a hierarchy table — declare "hierarchy": true and one ref column to itself`);
     }
   }

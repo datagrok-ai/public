@@ -102,6 +102,9 @@ scoped('a non-hierarchy table is refused by name; no ancestors, no path', async 
   const issue = await domains.table('grit.issue');
   assert.throws(() => domains.tree(issue), (e) => e.code === 'filter' &&
     /grit\.issue is not a hierarchy table/.test(e.message));
+  emsBackends.domain = hierarchyBackend({access: {can: {view: true}, fields: {name: 'readonly'}}});
+  const unlinked = await domains.table('stock.location');
+  assert.throws(() => domains.tree(unlinked), /you cannot see how locations link/, 'no schema fault to report');
 
   // a backend that declares no ancestors keeps the tree, and says why the path did not open
   const be = hierarchyBackend();

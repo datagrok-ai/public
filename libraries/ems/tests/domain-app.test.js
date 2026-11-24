@@ -1136,6 +1136,8 @@ scoped('Refresh is in the ribbon only while the page is stale, and reloads throu
   assert.equal(a.session.isDirty.value, false);
   assert.equal(a.stale.value, false, 'the reload cleared it');
   assert.equal(reload.root.hidden, true);
+  await a.goTo('entity', 'i1');
+  assert.equal(reload.root.hidden, false, 'a row page always offers it: its panes are read on Refresh alone');
   a.dispose();
 });
 
@@ -1831,7 +1833,7 @@ scoped('a View-only required column turns New off on the ribbon, the empty list 
   emsBackends.domain = backend({access: {can: {view: true, insert: true, edit: true, delete: true, share: true},
     fields: {title: 'editable', number: 'readonly', project_id: 'readonly'}}, rows: {project: [], issue: []}});
   const table = await domains.table('grit.issue');
-  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
+  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10, defaults: {project_id: 'p1'}}));
   document.body.append(a.root);
   await flush();
   assert.match(testOwner().build(() => a.ribbon()).main[0].root.getAttribute('aria-description'), reason);
