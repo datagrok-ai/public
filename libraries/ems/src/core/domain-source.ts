@@ -198,7 +198,6 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   // the caller of `rebind` re-reads; a refresh here would drop the frame the batch just landed in
   private _rebinding = false;
   private _regate = false;
-  private _regated: AccessData | undefined;
   private readonly _liveMs: number;
   private _timer: ReturnType<typeof setInterval> | undefined;
   private _probed: {count: number, last: string | null} | undefined;
@@ -610,7 +609,6 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
         this.releaseForbidden();
     });
     this._regate = true;
-    this._regated = data;
     if (!this._unsaved())
       await this._rebuildWriter();
     return restored;
@@ -652,10 +650,11 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this._publishRegated();
   }
 
+  // the same grants as a new object: what was built over the old rows' `~can_*` is built again
   private _publishRegated(): void {
     this._regate = false;
-    if (this._regated !== undefined && !this.scope.isDisposed)
-      this._access.value = Access.from(this._regated);
+    if (!this.scope.isDisposed)
+      this._access.value = this._access.peek().narrow({});
   }
 
   /** Stages the restore of soft-deleted rows into the session's unit of work — they are pending
