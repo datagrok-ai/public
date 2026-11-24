@@ -70,6 +70,10 @@ scoped('rows render by id; the schema names them without a handler, the handler 
     ['Aspirin', 'Ibuprofen', 'Naproxen']);
   assert.equal(rows[0].querySelector('.u2-domain-list-name') !== null, true, 'the schema renderer');
   assert.equal(rows[0].querySelectorAll('.u2-row-actions button').length, 2, 'Open and Delete');
+  const {DomainTable} = await import('../src/dg/facade.js');
+  const {properties, info} = src.schema;
+  assert.equal(DomainTable.schemaRenderer(() => ({properties, info: {...info, nameColumn: null}}))
+    .caption(src.rows.byKey('i2')), 'Issue 2', 'the name hidden: the key\'s own column, never the reference in it');
   list.dispose();
   src.dispose();
 });

@@ -390,8 +390,9 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
    * list-item-rendering recipe — the title, one muted description line, the creation time. */
   static schemaRenderer(schema: () => {properties: IProperty[], info: DomainTableInfoLike}): ObjectRenderer<RowView> {
     const label = (row: RowView): {text: string, draft: boolean} => {
-      const info = schema().info;
-      const column = info.nameColumn ?? info.businessKey[0];
+      const {info, properties} = schema();
+      const column = info.nameColumn ?? info.businessKey.find((key) =>
+        properties.some((p) => p.name === key && !DomainTable.isReference(p)));
       const name = column === undefined ? undefined : row[column];
       // a bare number names nothing on its own: "Purchase order 9", not "9"
       if (typeof name === 'number' || typeof name === 'bigint')
