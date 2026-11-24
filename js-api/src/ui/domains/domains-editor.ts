@@ -1399,7 +1399,7 @@ export class DomainFrameEditor implements IFrameEditor {
     const table = `${e.body['table'] ?? 'row'}`;
     let parent = table.replace(/_/g, ' ');
     let message = `${this._captionOf(column)} refers to a deleted ${parent}: restore that ${parent} first`;
-    if (failing.op.op !== 'restore') {
+    if (failing.op.op !== 'restore' && e.body['table'] != null) {
       let name = '';
       try {
         const info = await registry.tableInfo(`${this.client.schema}.${table}`);
