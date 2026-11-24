@@ -605,10 +605,9 @@ category('Dapi: domain frame editor', () => {
     }
   });
 
-  // EQ-060: the delete and restore RELOAD/OVERWRITE paths are covered headless on the built bundle
-  // (js-api scripts/unit/domain-conflict.test.cjs); this is the one only a server answers: a restore's
-  // RELOAD reads the trashed row (deleted: include), never "no longer exists"
-  test('EQ-060: a stale restore, RELOAD: the trashed row is re-read and the restore dropped', async () => {
+  // the other RELOAD/OVERWRITE paths run headless (js-api scripts/unit/domain-conflict.test.cjs); only a
+  // server answers this one: a restore's RELOAD reads the trashed row, never "no longer exists"
+  test('a stale restore, RELOAD: the trashed row is re-read and the restore dropped', async () => {
     const prefix = `fe-409-del-${stamp()}`;
     const id = (await seed(prefix, 1))[0];
     const original = (DG.DomainObjectHandler as any).showConflictDialog;
