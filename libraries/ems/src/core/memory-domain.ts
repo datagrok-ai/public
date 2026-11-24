@@ -361,6 +361,7 @@ export class MemoryTable implements DomainTableLike {
   readonly info: DomainTableInfoLike;
   private readonly _columns: IProperty[];
   private readonly _info: DomainTableInfoLike;
+  private readonly _hidden: string[];
   readonly support: DomainSupportLike;
   /** Installed only for a hierarchy table, as the seam's rule says — see {@link _ancestors}. */
   readonly ancestors?: DomainTableLike['ancestors'];
@@ -426,6 +427,8 @@ export class MemoryTable implements DomainTableLike {
     };
     const readable = (name: string) => Access.from(this._access).field(name) !== 'hidden';
     this.properties = this._columns.filter((p) => readable(p.name!));
+    this._hidden = this._columns.map((p) => p.name!)
+      .filter((name) => !readable(name) && !SYSTEM.some(([column]) => column === name));
     this.info = readableInfo(this._info, this._columns, readable);
   }
 
@@ -452,6 +455,8 @@ export class MemoryTable implements DomainTableLike {
       }
       if (spec.deleted !== undefined && spec.deleted !== 'exclude')
         out[Rows.DELETED] = row[IS_DELETED] === true;
+      for (const name of this._hidden)
+        delete out[name];
       // the server's LEFT JOIN under the target's own View predicate: a null FK and a target the
       // caller may not see are the same null, and nothing says which
       for (const [name, target] of captions) {
@@ -464,6 +469,10 @@ export class MemoryTable implements DomainTableLike {
   }
 
   private _checkColumns(spec: DomainQueryLike): void {
+    for (const key of (spec.sort ?? '').split(',')) {
+      if (this._hidden.includes(key.trim().replace(/^!/, '')))
+        throw new DomainBackendError('filter', `Unknown or inaccessible sort column "${key.trim()}"`);
+    }
     for (const c of spec.columns ?? []) {
       const declared = !SYSTEM.some(([s]) => s === c) && this.properties.some((p) => p.name === c) &&
         this._access.fields[c] !== 'hidden';
@@ -829,7 +838,7 @@ export class MemoryTable implements DomainTableLike {
   }
 
   private _nameOf(row: Row): string {
-    const column = this._info.nameColumn;
+    const column = this.info.nameColumn;
     return String((column === null ? undefined : row[column]) ?? row.id);
   }
 
@@ -838,6 +847,10 @@ export class MemoryTable implements DomainTableLike {
     let rows = this.rows;
     if (filter !== undefined && filter !== '') {
       const root = this._resolved(MemoryTable._tree(filter));
+      Filters.walk(root, (n) => {
+        if (!Filters.isGroup(n) && this._hidden.includes(n.property.replace(TEXT, '')))
+          throw new DomainBackendError('filter', `Unknown or inaccessible column "${n.property.replace(TEXT, '')}"`);
+      });
       const frame = Filters.recordsFrame(this.rows, this._columns);
       const texts = Filters.recordsFrame(this.rows,
         this._columns.map((p) => ({...p, propertyType: 'string', type: 'string'})));

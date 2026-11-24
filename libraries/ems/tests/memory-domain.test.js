@@ -503,7 +503,7 @@ test('updateWhere: the Edit predicate narrows the selection silently', async () 
   assert.deepEqual((await issue.query()).map((r) => r.priority), ['low', undefined]);
 
   const readOnly = new MemoryDomainBackend(SCHEMA,
-    {rows, access: {can: {view: true, edit: false}, fields: {priority: 'editable'}}}).tableSync('grit.issue');
+    {rows, access: {can: {view: true, edit: false}, fields: {priority: 'editable', number: 'readonly'}}}).tableSync('grit.issue');
   assert.deepEqual(await readOnly.updateWhere('number >= 1', {priority: 'low'}), {updated: 1, hasMore: false},
     'a row\'s own ~can_edit is the truth the table-level denial cannot override');
 });
