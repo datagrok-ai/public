@@ -2046,7 +2046,8 @@ scoped('a sum of quantities says its unit, or "mixed units" where the units diff
     {id: 'c1', location_id: 'l1', quantity: 0.6, unit: 'L'}, {id: 'c2', location_id: 'l1', quantity: 500, unit: 'g'},
     {id: 'c3', location_id: 'l2', quantity: 2, unit: 'kg'}, {id: 'c4', location_id: 'l2', quantity: 3, unit: 'kg'}]}});
   const served = grok.dapi.domains.table;
-  const reduce = {sum: (v) => v.reduce((a, b) => a + b, 0), unique: (v) => new Set(v).size, first: (v) => v[0]};
+  const reduce = {sum: (v) => v.reduce((a, b) => a + b, 0), unique: (v) => new Set(v).size, first: (v) => v[0],
+    variance: () => 1};
   grok.dapi.domains.table = (address) => ({queryDf: async ({filter}) => {
     const rows = memory.tableSync(address).rows.filter((r) => filter.value.includes(r[filter.property]));
     return {rowCount: rows.length, groupBy: ([path]) => {
@@ -2067,11 +2068,13 @@ scoped('a sum of quantities says its unit, or "mixed units" where the units diff
     a.output.show();
     await flush();
     await flush();
-    a.output.aggregations.value = [{column: 'Containers.Quantity', aggregation: 'sum'}];
+    a.output.aggregations.value = [{column: 'Containers.Quantity', aggregation: 'sum'},
+      {column: 'Containers.Quantity', aggregation: 'variance'}];
     for (let i = 0; i < 4; i++)
       await flush();
     const sum = (id) => a.output.values.value.get(id)?.['sum(Containers.Quantity)'];
     assert.deepEqual([sum('l1'), sum('l2')], ['mixed units', '5 kg']);
+    assert.equal(a.output.values.value.get('l2')?.['variance(Containers.Quantity)'], 1, 'a variance is not in kg');
     a.dispose();
   } finally {
     grok.dapi.domains.table = served;

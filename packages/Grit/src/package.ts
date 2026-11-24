@@ -5,7 +5,7 @@ import {badge, batch, div, divV, span} from '@datagrok-libraries/u2';
 import type {BadgeVariant, RowView} from '@datagrok-libraries/u2';
 import {domains} from '@datagrok-libraries/ems/src/dg';
 import type {DomainViewOptions} from '@datagrok-libraries/ems/src/dg';
-import {GritIssueHandler, lookupName, warmLookups} from './grit-issue-handler';
+import {GritIssueHandler, lookupName, projectKey, reloadLookups, warmLookups} from './grit-issue-handler';
 import {gritDb, IssueRow} from './generated/db';
 import {getGritDb} from './generated/db-ui';
 export * from './package.g';
@@ -86,32 +86,38 @@ function priorityBadge(r: RowView<IssueRow>): HTMLElement[] {
 }
 
 export const openIssues = 'status_id.name != "closed" or status_id = null';
-
-async function handleQuery(key: string | undefined, number: string): Promise<string | null> {
-  if (key === undefined)
-    return `number = ${number}`;
-  const project = await gritDb.projects.getByKey({key});
-  return project === null ? null : `project_id = "${project.id}" and number = ${number}`;
-}
+const INT_MAX = 2147483647;
 
 /** The Issues app: the platform ribbon plus the Mine / Open presets, and a key for each action. */
 export const issuesOptions: DomainViewOptions = {mode: 'cards', itemHeight: 48, children: {tables: ['comment']},
   shortcuts: {'m': 'Assign to me', 'c': 'Close'},
-  // the server searches text: a typed handle (`GRIT-12`, `#12`) becomes the issue's number, in its project if named
-  setup: (app) => app.effect(() => {
-    const typed = app.listSource.search.value.trim();
-    const m = /^(?:([A-Za-z][A-Za-z0-9_]*)-|#)(\d+)$/.exec(typed);
-    if (m === null)
-      return;
-    void handleQuery(m[1], m[2]).then((q) => {
-      if (q === null || app.listSource.search.peek().trim() !== typed)
+  setup: (app) => {
+    const source = app.listSource;
+    app.effect(() => {
+      if (source.state.value === 'loading')
+        void reloadLookups().catch(() => {});
+    });
+    // the server searches text: a typed handle (`GRIT-12`, `#12`) becomes a filter on the number, in the project
+    // it names; the next search drops that filter again
+    let derived: string | null = null;
+    app.effect(() => {
+      const typed = source.search.value.trim();
+      const m = /^(?:([A-Za-z][A-Za-z0-9_]*)-|#)(\d+)$/.exec(typed);
+      const n = m === null ? NaN : Number(m[2]);
+      if (!Number.isSafeInteger(n) || n > INT_MAX) {
+        if (typed !== '' && derived !== null && source.query.peek() === derived)
+          source.query.value = '';
+        if (typed !== '')
+          derived = null;
         return;
+      }
+      derived = `${m![1] === undefined ? '' : `project_id.key = "${projectKey(m![1])}" and `}number = ${n}`;
       batch(() => {
-        app.listSource.search.value = '';
-        app.listSource.query.value = q;
+        source.search.value = '';
+        source.query.value = derived!;
       });
     });
-  }),
+  },
   ribbon: (base, app) => ({...base,
     presets: [app.presets(['Mine', 'assignee = $me'], ['Open', openIssues])]}),
 };

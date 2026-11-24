@@ -22,14 +22,29 @@ const typeColor = '#6c5fc7';
  * badges appear once the maps are in (rows arrive over the network anyway). */
 let lookupNames: Map<string, string> | null = null;
 let lookupsLoading: Promise<Map<string, string>> | null = null;
+let projectKeys: string[] = [];
 
 export function warmLookups(): Promise<Map<string, string>> {
   return lookupsLoading ??= Promise
     .all([gritDb.statuses.query({}), gritDb.priorities.query({}), gritDb.issueTypes.query({}),
       gritDb.projects.query({})])
-    .then(([statuses, priorities, types, projects]) => lookupNames = new Map([
-      ...[...statuses, ...priorities, ...types].map((r): [string, string] => [r.id, r.name]),
-      ...projects.map((p): [string, string] => [p.id, p.key])]));
+    .then(([statuses, priorities, types, projects]) => {
+      projectKeys = projects.map((p) => p.key);
+      return lookupNames = new Map([
+        ...[...statuses, ...priorities, ...types].map((r): [string, string] => [r.id, r.name]),
+        ...projects.map((p): [string, string] => [p.id, p.key])]);
+    });
+}
+
+/** Reads the lookups again; the old names show until the new ones are in. */
+export function reloadLookups(): Promise<Map<string, string>> {
+  lookupsLoading = null;
+  return warmLookups();
+}
+
+/** The project key as stored, for one typed in any case; as typed where no project has it. */
+export function projectKey(typed: string): string {
+  return projectKeys.find((key) => key.toLowerCase() === typed.toLowerCase()) ?? typed;
 }
 
 export function lookupName(id?: string): string | null {

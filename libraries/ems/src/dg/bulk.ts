@@ -1,6 +1,6 @@
 import {signal, computed, Filters, div, span, Dialog, Input, MultiSelect, RadioInput, notify, text}
   from '@datagrok-libraries/u2';
-import type {IProperty, ReadonlySignal, RowView} from '@datagrok-libraries/u2';
+import type {FilterValue, IProperty, ReadonlySignal, RowView} from '@datagrok-libraries/u2';
 import {confirmDiscard} from '../core/session.js';
 import type {DomainSource} from '../core/domain-source.js';
 import {nounOf} from '../core/domain-backend.js';
@@ -10,6 +10,7 @@ import {DomainTable, firstProblem} from './facade.js';
 import {DomainErrors} from './errors.js';
 import {hierarchyCycle} from './backend.js';
 import {DomainFilters} from './filters.js';
+import {DomainPick} from './pick.js';
 import type {DomainPickOptions} from './pick.js';
 
 export interface DomainBulkEditOptions {
@@ -92,9 +93,14 @@ function _open(source: DomainSource, props: IProperty[], required: Set<string>, 
   const dialog = Dialog.create(`Bulk edit ${nounOf(source.schema.info)}`, {name: 'bulk-edit'});
   dialog.root.classList.add('u2-domain-bulk');
   const selection = source.selection.peek();
+  const matched = new Map<string, unknown>();
+  if (targets.some((t) => t.kind === MATCHING)) {
+    for (const name of new Set(Object.values(handle.info.refFilters).flatMap((f) => DomainPick.bind(f).unbound)))
+      void _sharedMatching(source, name).then((value) => matched.set(name, value), () => undefined);
+  }
   const params = () => Object.fromEntries(source.schema.properties.map(({name}) => [name,
     picker.peek().includes(name!) ? form.input(name!)?.peek() :
-      target.peek().kind === SELECTED ? _shared(selection, name!) : undefined]));
+      target.peek().kind === SELECTED ? _shared(selection, name!) : matched.get(name!)]));
   const overrides = Object.fromEntries(Object.entries(handle.info.refFilters)
     .map(([name, filter]): [string, Partial<DomainPickOptions>] => [name, {filter, params, siblings: source.schema}]));
   const form = dialog.build(() =>
@@ -191,6 +197,19 @@ function _current(rows: readonly RowView[], column: string): string {
 function _shared(rows: readonly RowView[], column: string): unknown {
   const seen = new Set(rows.map((row) => row[column]));
   return seen.size === 1 ? [...seen][0] : undefined;
+}
+
+// the one value every row the filter matches holds: the first row's, unless a second row holds another
+async function _sharedMatching(source: DomainSource, column: string): Promise<unknown> {
+  const table = DomainTable.of(source)!.table;
+  const scope = DomainFilters.treeOf(source.query.peek(), source.schema);
+  const [first] = await table.query({filter: _filterOf(source), columns: [column], limit: 1});
+  const value = first?.[column];
+  if (value === null || value === undefined)
+    return undefined;
+  const other = await table.query({filter: Filters.toDomainTree(Filters.group('and',
+    [scope, Filters.cond(column, '!=', value as FilterValue)]), {schema: source.schema}), columns: [column], limit: 1});
+  return other.length === 0 ? value : undefined;
 }
 
 function _tooMany(source: DomainSource): string {

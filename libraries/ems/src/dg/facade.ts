@@ -210,6 +210,10 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
   static named(caption: string, message: string): string {
     if (message === EMPTY)
       return `${caption} is required`;
+    // the platform's bound message, worded as the others
+    const bound = /^Value should not be (less|more) than (\S+), passed: /.exec(message);
+    if (bound !== null)
+      return `${caption} must be at ${bound[1] === 'less' ? 'least' : 'most'} ${Number(bound[2])}`;
     return message.slice(0, caption.length).toLowerCase() === caption.toLowerCase() &&
       !/^\w/.test(message.slice(caption.length)) ? message : `${caption}: ${message}`;
   }

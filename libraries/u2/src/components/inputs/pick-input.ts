@@ -33,6 +33,7 @@ export class PickInput<T> extends Input<string | null, PickInputOptions<T>> {
   asDropdown(): void {
     const input = this._typeAhead.root.querySelector('input')!;
     this.root.classList.add('u2-pick-dropdown');
+    this._typeAhead.explicitEnter = true;
     this.scope.listen(input, 'click', () => {
       if (!this._typeAhead.isOpen.peek())
         this._typeAhead.open();

@@ -393,6 +393,10 @@ scoped('saved and recent searches: the list names the saved search it holds, his
   fire(panel().querySelector('[aria-haspopup="menu"]'), 'click');
   fire([...panel().querySelectorAll('[role="menuitem"]')].find((e) => e.textContent.includes('High')), 'click');
   await flush();
+  assert.deepEqual([...SavedSearches.saved('grit.issue').keys()], ['High'], 'not before the user agrees');
+  [...document.querySelectorAll('[role="dialog"] button')].find((b) => b.textContent === 'Delete').click();
+  await flush();
+  await flush();
   assert.deepEqual([...SavedSearches.saved('grit.issue').keys()], [], 'the history menu deletes a saved search');
   assert.equal(SavedSearches.title(src), null);
   filters.root.remove();

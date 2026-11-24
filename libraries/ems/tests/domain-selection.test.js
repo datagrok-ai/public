@@ -134,7 +134,7 @@ scoped('a saved delete of the current row keeps the other selected rows and hand
   fire(list.list.rowAt(0), 'click');
   fire(list.list.rowAt(2), 'click', {ctrlKey: true});
   await flush();
-  fire(list.list.root, 'keydown', {key: 'Delete'});
+  list.actionsFor(source.currentRow.value).find((a) => a.text === 'Delete').run();
   await flush();
   assert.equal(await source.save(), true);
   await flush();
