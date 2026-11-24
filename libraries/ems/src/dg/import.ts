@@ -912,11 +912,15 @@ class ImportFlow {
     const link = this._links.get(target);
     if (link === undefined || plain(link.prop.name!) === want || ImportFlow._ids(column))
       return target;
+    const ref = names(link.prop).flatMap((n) => [n, n.replace(/id$/, '')]).filter((r) => r !== '' && want.includes(r))
+      .sort((x, y) => y.length - x.length)[0];
+    if (ref === undefined)
+      return target;
+    const rest = want.slice(want.indexOf(ref) + ref.length);
     const info = link.target.info;
-    const [key, name] = [info.businessKey[0], info.nameColumn].map((f) => link.fields.find((l) => l.prop.name === f));
-    const words = column.name.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase().split(/[^a-z0-9]+/);
-    const ends = (n: string) => words.some((_, i) => words.slice(i).join('') === n);
-    const by = [key, name].find((f) => f !== undefined && names(f.prop).some(ends)) ?? name ?? key;
+    const field = (name?: string | null) => link.fields.find((f) => f.prop.name === name);
+    const by = rest === '' ? field(info.nameColumn) ?? field(info.businessKey[0]) :
+      link.fields.find((f) => names(f.prop).includes(rest));
     return by === undefined ? target : `${target}.${by.prop.name}`;
   }
 
