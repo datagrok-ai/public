@@ -1,5 +1,6 @@
 import * as grok from 'datagrok-api/grok';
-import {batch, computed, iconButton, signal, Dialog, Filters, Menu, TextInput, notify} from '@datagrok-libraries/u2';
+import {batch, computed, confirmDialog, iconButton, signal, Dialog, Filters, Menu, TextInput, notify}
+  from '@datagrok-libraries/u2';
 import type {Signal, FilterProperty, FilterSchema, IProperty} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
 import {confirmDiscard} from '../core/session.js';
@@ -151,8 +152,11 @@ export class SavedSearches {
         menu.item(name, () => SavedSearches.apply(source, search));
       if (saved.size > 0) {
         menu.group('Delete saved search');
-        for (const name of saved.keys())
-          menu.item(name, () => SavedSearches.remove(source.table, name));
+        for (const name of saved.keys()) {
+          menu.item(name, async () => await confirmDialog({title: 'Delete saved search', destructive: true,
+            confirmText: 'Delete', message: `Delete the saved search "${name}"?`}) &&
+            SavedSearches.remove(source.table, name));
+        }
         menu.endGroup().separator();
       }
       for (const r of SavedSearches.recent(source.table)) {
