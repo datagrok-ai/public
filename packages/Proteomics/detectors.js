@@ -1,6 +1,6 @@
 class ProteomicsPackageDetectors extends DG.Package {
   //meta.role: semTypeDetector
-  //input: column col
+  //input: column col {type: string}
   //output: string semType
   detectProteinId(col) {
     if (col.type !== DG.TYPE.STRING)
@@ -20,7 +20,7 @@ class ProteomicsPackageDetectors extends DG.Package {
   }
 
   //meta.role: semTypeDetector
-  //input: column col
+  //input: column col {type: string}
   //output: string semType
   detectGeneSymbol(col) {
     if (col.type !== DG.TYPE.STRING)
@@ -34,7 +34,7 @@ class ProteomicsPackageDetectors extends DG.Package {
   }
 
   //meta.role: semTypeDetector
-  //input: column col
+  //input: column col {type: string}
   //output: string semType
   detectSubcellularLocation(col) {
     if (col.type !== DG.TYPE.STRING)
@@ -49,7 +49,7 @@ class ProteomicsPackageDetectors extends DG.Package {
   }
 
   //meta.role: semTypeDetector
-  //input: column col
+  //input: column col {type: numerical}
   //output: string semType
   detectLog2FC(col) {
     if (col.type !== DG.TYPE.FLOAT && col.type !== DG.TYPE.INT)
@@ -63,7 +63,7 @@ class ProteomicsPackageDetectors extends DG.Package {
   }
 
   //meta.role: semTypeDetector
-  //input: column col
+  //input: column col {type: numerical}
   //output: string semType
   detectPValue(col) {
     if (col.type !== DG.TYPE.FLOAT && col.type !== DG.TYPE.INT)
@@ -79,7 +79,7 @@ class ProteomicsPackageDetectors extends DG.Package {
   }
 
   //meta.role: semTypeDetector
-  //input: column col
+  //input: column col {type: numerical}
   //output: string semType
   detectIntensity(col) {
     if (col.type !== DG.TYPE.FLOAT && col.type !== DG.TYPE.INT)
@@ -99,7 +99,7 @@ class ProteomicsPackageDetectors extends DG.Package {
   }
 
   //meta.role: semTypeDetector
-  //input: column col
+  //input: column col {type: string}
   //output: string semType
   detectDisplayName(col) {
     if (col.type !== DG.TYPE.STRING)
@@ -112,7 +112,7 @@ class ProteomicsPackageDetectors extends DG.Package {
   }
 
   //meta.role: semTypeDetector
-  //input: column col
+  //input: column col {type: string}
   //output: string semType
   detectSourceId(col) {
     if (col.type !== DG.TYPE.STRING)
@@ -125,7 +125,7 @@ class ProteomicsPackageDetectors extends DG.Package {
   }
 
   //meta.role: semTypeDetector
-  //input: column col
+  //input: column col {type: numerical}
   //output: string semType
   detectNumeratorMean(col) {
     if (col.type !== DG.TYPE.FLOAT && col.type !== DG.TYPE.INT)
@@ -138,7 +138,7 @@ class ProteomicsPackageDetectors extends DG.Package {
   }
 
   //meta.role: semTypeDetector
-  //input: column col
+  //input: column col {type: numerical}
   //output: string semType
   detectDenominatorMean(col) {
     if (col.type !== DG.TYPE.FLOAT && col.type !== DG.TYPE.INT)

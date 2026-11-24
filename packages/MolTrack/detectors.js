@@ -7,7 +7,7 @@
  */
 class MoltrackPackageDetectors extends DG.Package {
   //meta.role: semTypeDetector
-  //input: column col
+  //input: column col {type: string}
   //output: string semType
   detectGrokId(col) {
     if (!DG.Detector.sampleCategories(col, (s) => /^DG-\d{6}$/.test(s), 1))
@@ -17,7 +17,7 @@ class MoltrackPackageDetectors extends DG.Package {
   }
 
   //meta.role: semTypeDetector
-  //input: column col
+  //input: column col {type: string}
   //output: string semType
   detectGrokBatchId(col) {
     if (!DG.Detector.sampleCategories(col, (s) => /^DGB-\d{6}$/.test(s), 1))

@@ -7,7 +7,7 @@
  */
 class BiostructureViewerPackageDetectors extends DG.Package {
   //meta.role: semTypeDetector
-  //input: column col
+  //input: column col {type: string}
   //output: string semType
   //meta.skipTest: #2596, Fix for test data in the utils library
   detectPdb(col) {
@@ -31,7 +31,7 @@ class BiostructureViewerPackageDetectors extends DG.Package {
   }
 
   //meta.role: semTypeDetector
-  //input: column col
+  //input: column col {type: string}
   //output: string semType
   detectPdbId(col) {
     let res = null;

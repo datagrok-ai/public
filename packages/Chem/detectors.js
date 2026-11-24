@@ -48,7 +48,7 @@ class ChemPackageDetectors extends DG.Package {
 
   //name: detectMolecules
   //meta.role: semTypeDetector
-  //input: column col
+  //input: column col {type: string}
   //output: string semType
   //meta.skipTest: GROK-17630
   detectMolecules(col) {
@@ -167,7 +167,7 @@ class ChemPackageDetectors extends DG.Package {
 
   //name: detectReactions
   //meta.role: semTypeDetector
-  //input: column col
+  //input: column col {type: string}
   //output: string semType
   detectReactions(col) {
     // a column of CDXML pages (ChemDraw schemes): Chem reads them as reaction drawings in Crux mode
@@ -191,7 +191,7 @@ class ChemPackageDetectors extends DG.Package {
   }
 
   //meta.role: semTypeDetector
-  //input: column col
+  //input: column col {type: string}
   //output: string semType
   //meta.skipTest: GROK-17630
   detectMixture(col) {

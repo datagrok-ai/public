@@ -2,6 +2,7 @@
 
 ## v.next
 
+* core#1765: Detectors: Declared the column types the semantic type detectors check, so the platform no longer calls them for other columns
 * Sequence space: UMAP's Random Seed applies with Use WebGPU too: the same seed gives the same coordinates (on the same GPU). Test: `sequenceSpace`, sequenceSpace: same seed, same coordinates, on the GPU and on the CPU
 
 * Monomer libraries: Running a single Bio test category no longer resets the user's library selection. The category put the user's libraries back at its end, but the settings waited for the 10-second sync and the session closed first; the next start then cleared the test libraries' "explicit" list, which it did on every start whether or not one was stuck, and every library was loaded. The settings are now sent at once (`@datagrok-libraries/bio`), and the start fixes only a non-empty list

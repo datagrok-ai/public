@@ -8,7 +8,7 @@
 class ApiTestsPackageDetectors extends DG.Package {
 
   //meta.role: semTypeDetector
-  //input: column col
+  //input: column col {type: string}
   //output: string semType
   detectCountry(col) {
     if (col.name === 'countries' && col.type === DG.TYPE.STRING) {
@@ -19,7 +19,7 @@ class ApiTestsPackageDetectors extends DG.Package {
   }
 
   //meta.role: semTypeDetector
-  //input: column col
+  //input: column col {type: string}
   //output: string semType
   detectApiTestsKey(col) {
     if (col.name === 'apitests_key' && col.type === DG.TYPE.STRING) {
