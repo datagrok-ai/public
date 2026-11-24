@@ -4,7 +4,7 @@ import {checkLocks, property} from './schema.js';
 import type {FilterProperty, FilterSchema, FilterTemplate} from './schema.js';
 import {operators} from './operators.js';
 import type {FilterOperator} from './operators.js';
-import {kindOf} from './kinds.js';
+import {instant, kindOf} from './kinds.js';
 import {isSpanText} from '../span.js';
 
 export type FilterTarget = 'domain' | 'dataframe';
@@ -55,7 +55,7 @@ function badScalar(v: FilterScalar, kind: FilterKind, prop: FilterProperty, op: 
       break;
     case KIND.DATE_TIME:
       if (v instanceof Date ? Number.isNaN(v.getTime()) : isSpan(v) ? !isSpanText(v.span) :
-        typeof v !== 'string' || Number.isNaN(Date.parse(v)))
+        typeof v !== 'string' || Number.isNaN(instant(v)))
         return bad('a date or a time span');
       break;
     case KIND.BOOL:
