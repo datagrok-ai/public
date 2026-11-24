@@ -1393,12 +1393,29 @@ export class DomainFrameEditor implements IFrameEditor {
       + ` remove or reassign ${count === 1 ? 'it' : 'them'} first`;
   }
 
-  /** "Location refers to a deleted location: undo the deletion or pick another", on the cell as well. */
-  private _deletedParentRefusal(e: DomainError, failing: DomainPendingOp): string {
+  /** "Location "Shelf 2" of "Box 7" was deleted: pick another location", on the cell as well. */
+  private async _deletedParentRefusal(e: DomainError, failing: DomainPendingOp): Promise<string> {
     const column = e.body['column'];
-    const parent = `${e.body['table'] ?? 'row'}`.replace(/_/g, ' ');
-    const message = `${this._captionOf(column)} refers to a deleted ${parent}: `
-      + (failing.op.op === 'restore' ? `restore that ${parent} first` : 'undo the deletion or pick another');
+    const table = `${e.body['table'] ?? 'row'}`;
+    let parent = table.replace(/_/g, ' ');
+    let message = `${this._captionOf(column)} refers to a deleted ${parent}: restore that ${parent} first`;
+    if (failing.op.op !== 'restore') {
+      let name = '';
+      try {
+        const info = await registry.tableInfo(`${this.client.schema}.${table}`);
+        parent = info.singularName.toLowerCase();
+        if (info.nameColumn != null && e.body['parentId'] != null) {
+          const row = await new DomainTableClient(api.grok_Dapi_Domains(), this.client.schema, table)
+            .get(`${e.body['parentId']}`, {deleted: 'include'}) as {[column: string]: any};
+          name = `${row?.[info.nameColumn] ?? ''}`;
+        }
+      } catch (x) {
+        log.warning(`${this.table}: naming the deleted ${parent} failed — ${x}`);
+      }
+      const child = this._displayOf(failing.row);
+      message = `${this._captionOf(column)}${name === '' ? '' : ` "${name}"`}${child == null ? '' : ` of "${child}"`}`
+        + ` was deleted: pick another ${parent}`;
+    }
     if (this._df.columns.contains(column)) {
       this._setError(failing.row, column, {message: message, kind: 'conflict'});
       this._fire();

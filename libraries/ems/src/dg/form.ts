@@ -93,7 +93,8 @@ export class DomainForm extends Control {
         const message = input.validity.value;
         if (message !== null && !this._refused(input.name, message) && !this._stored.get(input)?.value) {
           const caption = capital(input.label);
-          return message === EMPTY ? `${caption} is required` : `${caption}: ${message}`;
+          return message === EMPTY ? `${caption} is required` :
+            message.startsWith(caption) ? message : `${caption}: ${message}`;
         }
       }
       this._violationsVersion.value;

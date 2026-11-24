@@ -1040,7 +1040,7 @@ scoped('a schema constraint refuses Save with its message; fixing the value clea
   form.input('weight').value = -1;
   await flush();
   assert.equal(form.input('weight').validity.value, 'Weight is positive', 'on the first column the expr names');
-  assert.equal(form.problem.value, 'Weight: Weight is positive');
+  assert.equal(form.problem.value, 'Weight is positive', 'a message naming its field is not prefixed again');
   assert.equal(await src.save(), false);
   assert.match(src.error.value.message, /Weight is positive/);
   assert.equal(src.isDirty.value, true);

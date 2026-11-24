@@ -146,6 +146,13 @@ test('a reference to a deleted parent is refused on its cell, by the column capt
   assert.equal(ed.errorsOf(0).location_id.message, message);
   ed.unmarkRestored(0);
   assert.equal(ed.errorOf(0, 'location_id'), null, 'an unstaged restore keeps no mark');
+  sandbox.grok_DomainRegistry_TableInfo = () => Promise.resolve({singularName: 'Location', nameColumn: 'name'});
+  sandbox.grok_Dapi_Domains = () => ({});
+  sandbox.grok_Dapi_Domains_GetRow = () => Promise.resolve({id: 'p1', name: 'Shelf 2'});
+  const peer = await ed.refusalFor(new DG.DomainRestrictError(refusal, 409, {error: 'restrict', id: 'r1',
+    column: 'location_id', table: 'location', parentId: 'p1', message: refusal}), {op: {op: 'update'}, row: 0});
+  assert.equal(peer, 'Location "Shelf 2" of "Mine" was deleted: pick another location');
+  assert.equal(ed.errorsOf(0).location_id.kind, 'conflict');
 });
 
 test('a delete of a row someone else already deleted lands, and the rest of the batch is sent', async () => {
