@@ -103,7 +103,7 @@ export const issuesOptions: DomainViewOptions = {mode: 'cards', itemHeight: 48, 
       const typed = source.search.value.trim();
       const m = /^(?:([A-Za-z][A-Za-z0-9_]*)-|#)(\d+)$/.exec(typed);
       const n = m === null ? NaN : Number(m[2]);
-      if (!Number.isSafeInteger(n) || n > INT_MAX) {
+      if (!Number.isSafeInteger(n) || n < 1 || n > INT_MAX) {
         if (typed !== '' && derived !== null && source.query.peek() === derived)
           source.query.value = '';
         if (typed !== '')
