@@ -21,13 +21,15 @@ let writes = Promise.resolve();
 /** grok.userSettings writes a whole group from this tab's copy, which another tab may have added to since:
  * a write is made over the server's copy (this tab's where the read fails), one write at a time. */
 function write(group: string, change: () => void): Promise<void> {
-  return writes = writes.then(async () => {
+  const run = writes.then(async () => {
     await grok.dapi.userDataStorage.get(group, true)
-      .then((server) => grok.userSettings.put(group, server ?? {}), () => {});
+      .then((server) => grok.userSettings.put(group, server ?? {})).catch(() => {});
     change();
     SavedSearches.changed.value++;
     await grok.userSettings.flush();
   });
+  writes = run.catch(() => {});
+  return run;
 }
 
 /** The keys of `sort` over columns the table describes: the server refuses a read that names any other. */
