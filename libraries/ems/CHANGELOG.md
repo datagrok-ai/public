@@ -21,6 +21,7 @@
 * Forms: Fixed number fields rounding a formatted value on blur and accepting values beyond the int range
 * Forms: Fixed validation of multi-column constraints and tightened rules; a stale reference is marked
 * Forms: Fixed typing ignored in a short reference dropdown, so Enter picked its first row
+* Forms: A record deleted pending the save reads as such, read-only, with Undo
 * Children: Added Delete to a child grid's row menu; New is off under a deleted parent
 * Import: Fixed previews and reports for refused batches, files over 1,000 rows and files with nothing new
 * Import: Fixed links by formatted keys, auto-mapped key or name columns, updates without a required column

@@ -190,10 +190,15 @@ export class DomainForm extends Control {
       this._shown?.dispose();
       this._editSub?.unsubscribe();
     });
+    const deleted = computed(() => {
+      source.changeCount.value;
+      return this.row.value?.[Rows.STATE] === 'deleted';
+    });
     this.effect(() => {
       const current = this.row.value;
       const access = _options.access ?? source.access.value;
-      untracked(() => this._show(current, access));
+      const gone = deleted.value;
+      untracked(() => this._show(current, gone ? access.narrow({edit: false}) : access, gone));
     });
     // the editing state moves under the form — a discard, a save, another control's write
     this.effect(() => {
@@ -282,7 +287,7 @@ export class DomainForm extends Control {
     return {source, row: signal(target as RowView | null)};
   }
 
-  private _show(row: RowView | null, access: Access): void {
+  private _show(row: RowView | null, access: Access, deleted = false): void {
     this._shown?.dispose();
     const scope = new Scope();
     this._shown = scope;
@@ -300,7 +305,9 @@ export class DomainForm extends Control {
       this._form.value = form;
       const system = this._options.system === 'footer' ? this._footer(row) : null;
       this._system = system;
-      this.root.replaceChildren(form.root, this._verdict, ...(system === null ? [] : [system]));
+      const note = deleted ? [div([`${capital(nounOf(this.source.schema.info, true))} will be deleted on save `,
+        link('Undo', () => this.source.edit.peek()?.unmarkDeleted(row.id))], 'u2-form-note')] : [];
+      this.root.replaceChildren(...note, form.root, this._verdict, ...(system === null ? [] : [system]));
       this._captions.clear();
       this._resolveCaptions(form, row, scope, system === null ? [] : DomainForm.systemProps(this.source));
       this._checkConstraints();
