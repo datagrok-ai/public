@@ -1,4 +1,5 @@
-import {Control, computed, signal, ReadonlySignal, div, span, VirtualTree, loader} from '@datagrok-libraries/u2';
+import {Access, Control, computed, signal, ReadonlySignal, div, span, VirtualTree, loader}
+  from '@datagrok-libraries/u2';
 import type {TreeNode, Action, DomainRowLike, RowView} from '@datagrok-libraries/u2';
 import {DomainBackendError} from '../core/domain-backend.js';
 import type {DomainQueryLike} from '../core/domain-backend.js';
@@ -202,6 +203,8 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
         return;
       this.tree.setRoots(roots);
       this._read = true;
+      const denied = roots.every((node) => node.data === undefined) &&
+        !Access.from(await table.table.access()).can('view');
       const reveal = this._options.expandTo;
       if (first && reveal !== undefined)
         await this.expandTo(reveal);
@@ -228,6 +231,10 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
           await this._clear();
         else
           await this._reselect(picked);
+      }
+      if (denied) {
+        this._noticeAt = this.selected.peek()?.id ?? null;
+        this._notice.value = DomainErrors.noAccess(table.info);
       }
     } catch (e) {
       this._error.value = DomainErrors.message(e);

@@ -105,6 +105,11 @@ scoped('a non-hierarchy table is refused by name; no ancestors, no path', async 
   emsBackends.domain = hierarchyBackend({access: {can: {view: true}, fields: {name: 'readonly'}}});
   const unlinked = await domains.table('stock.location');
   assert.throws(() => domains.tree(unlinked), /you cannot see how locations link/, 'no schema fault to report');
+  const denied = await tree({allNode: 'All locations'}, hierarchyBackend({rows: {location: []},
+    access: {can: {view: false}, fields: {name: 'readonly', parent_id: 'readonly', kind: 'readonly'}}}));
+  assert.equal(denied.tree.notice.value,
+    'You do not have access to locations. Ask the table\'s owner to share it with you.');
+  denied.tree.dispose();
 
   // a backend that declares no ancestors keeps the tree, and says why the path did not open
   const be = hierarchyBackend();

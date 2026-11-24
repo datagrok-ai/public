@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Trees: A tree over a table you cannot read says so instead of showing only its all row
 * Live refresh: Fixed a save made while a grid cell was open hiding a peer's later change
 * Links: Fixed `/apps/<Package>?entity=<id>` opening the list instead of the record
 * Bulk edit: Fixed a field narrowed by a shared value when some matched rows have none
