@@ -562,8 +562,7 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
    * my changes, take the server's), `'overwrite'` (retry against the current
    * version), or null when the dialog is dismissed. The caller applies it; the
    * platform's own editors resolve their conflicts through this same dialog. [op] words it for a
-   * stale delete or restore ("Delete anyway, or reload to see their changes?"); a server without
-   * that wording shows the edit one. */
+   * stale delete or restore. */
   static showConflictDialog(subject: string, op?: 'delete' | 'restore'): Promise<'reload' | 'overwrite' | null> {
     return domainCall(op != null && api.grok_DomainConflictDialog_ShowFor != null
       ? api.grok_DomainConflictDialog_ShowFor(subject, op) : api.grok_DomainConflictDialog_Show(subject));

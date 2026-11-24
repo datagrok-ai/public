@@ -555,9 +555,8 @@ export class DomainFrameEditor implements IFrameEditor {
    *
    * Numeric properties take a dart2js-safe path (under dart2js every whole number
    * `is double`, which would reject every integer), and `string_list` values are
-   * left to the server, which coerces them. So is a `json` (map) value given as
-   * text: the frame holds a json cell as its JSON text (`queryDf`, the post-save
-   * re-read), and the server decodes it. Returns null when the value is fine.
+   * left to the server, which coerces them, as is a `json` value given as its JSON
+   * text. Returns null when the value is fine.
    */
   static validateCellValue(p: Property, value: any): string | null {
     if (!p.nullable && (value == null || value === ''))
@@ -885,16 +884,14 @@ export class DomainFrameEditor implements IFrameEditor {
    * the row's `expectedVersion`, `'expected'` the ORIGINAL values of the changed columns
    * ({@link _guardOf} — a partial guard: only the columns whose declared type the warehouse can
    * compare, so an edit touching floats, datetimes, refs or empty originals alone carries none),
-   * `'none'` nothing. `'deleted'` rows delete, `'restored'` rows undo a landed soft delete; both
-   * carry the row's `expectedVersion` under `'version'`, so a row changed since it was read is
-   * refused as a version conflict. Exposed so a caller can inspect or extend the
+   * `'none'` nothing. `'deleted'` rows delete, `'restored'` rows undo a landed soft delete, both
+   * with the row's `expectedVersion` under `'version'`. Exposed so a caller can inspect or extend the
    * payload; a {@link DomainSession} concatenates several editors' into one
    * transaction.
    *
-   * A value equal to a draft id of the batch — of [drafts], by default this editor's
-   * own ({@link draftIds}); a {@link DomainSession} passes every participant's — goes out as
-   * the `'$<draftId>'` reference the server resolves; a literal leading `$` is escaped as `$$`;
-   * any other text, one starting with `~new:` included, goes out as typed. An empty cell of a NEW row is LEFT OUT of the insert rather
+   * A value equal to a draft id of [drafts] (by default this editor's own) goes out as the
+   * `'$<draftId>'` reference the server resolves; a literal leading `$` is
+   * escaped as `$$`. An empty cell of a NEW row is LEFT OUT of the insert rather
    * than sent as an explicit null, so the column takes its server-side default (a
    * bool cell has no empty state and is always sent, so a NOT NULL bool default is
    * not preserved); a column with no default and no value is rejected by the server's own
@@ -955,8 +952,7 @@ export class DomainFrameEditor implements IFrameEditor {
     return pending;
   }
 
-  /** `{expectedVersion}` of [row] on a version-guarded table whose frame carries the row's version;
-   * empty otherwise. */
+  /** `{expectedVersion}` of [row] on a version-guarded table; empty otherwise. */
   private _versionGuard(row: number): {expectedVersion?: number} {
     const version = this.access.support.concurrency === 'version' ? this._wire(row, 'version') : null;
     return typeof version === 'number' ? {expectedVersion: version} : {};
@@ -1003,9 +999,7 @@ export class DomainFrameEditor implements IFrameEditor {
     return ids;
   }
 
-  /** [v] as the transaction wire wants it: a draft id of [drafts] becomes a `$ref`, a
-   * literal leading `$` is doubled (the server's `$$` escape), lists element-wise; a `~new:`
-   * text that names no draft goes out as typed. */
+  /** [v] as the transaction wire wants it: a draft id becomes a `$ref`, a literal leading `$` is doubled. */
   private static _refValue(v: any, drafts: ReadonlySet<string>): any {
     if (Array.isArray(v))
       return v.map((x) => DomainFrameEditor._refValue(x, drafts));
@@ -1213,9 +1207,7 @@ export class DomainFrameEditor implements IFrameEditor {
     this._fire();
   }
 
-  /** A server value as the frame holds it: json and string_list values travel as objects and
-   * arrays, the frame holds them as JSON text (a Dart map in the cell makes the change compare
-   * throw). dayjs passes through. */
+  /** A server value as the frame holds it: json and string_list values as JSON text. */
   private static _cellOf(v: unknown): unknown {
     const plain = v != null && typeof v === 'object'
       && typeof (v as {toISOString?: unknown}).toISOString !== 'function';
@@ -1245,7 +1237,6 @@ export class DomainFrameEditor implements IFrameEditor {
       let fresh: any = null;
       let read = true;
       try {
-        // a staged restore's row is in the trash
         fresh = await this.client.get(id, kind === 'restore' ? {deleted: 'include'} : undefined);
       } catch (x: any) {
         balloon.error(`${subject} could not be reloaded: ${x?.message ?? x}`);
@@ -1254,7 +1245,6 @@ export class DomainFrameEditor implements IFrameEditor {
       if (read) {
         if (fresh == null) {
           balloon.error(`${subject} no longer exists.`);
-          // as a saved delete leaves it: cleared state alone would show the row as live
           this._write(() => this._df.rows.removeAt(row, 1, false));
           this._resetCaches();
         }

@@ -321,9 +321,7 @@ export interface DomainManifestColumn {
 }
 
 /** One table of a manifest, keyed by its logical name: its columns, business key and the
- * table-level keys of the manifest vocabulary. Who owns a table or column of a plugin schema (the
- * plugin, or a user who extended it) is never part of the manifest: read it from the registry
- * (`DomainTable.origin`, `DomainTable.userColumns` of `grok.dapi.domains.schemas`). */
+ * table-level keys of the manifest vocabulary. */
 export interface DomainManifestTable {
   /** The columns by logical name. */
   columns: {[name: string]: DomainManifestColumn};
@@ -498,8 +496,7 @@ export interface DomainRegisteredManifest extends DomainManifest {
   /** The schema row's creation instant (ISO 8601): what {@link DomainApplyBody.ifIncarnation} names.
    * A name deleted and re-created starts at version `'1'` again with a new incarnation. */
   incarnation: string;
-  /** Plugin schema: the `ifVersion` of an extension apply. The server's manifest does not carry it: read it from
-   * the plan of a dry-run apply ({@link DomainApplyPlan.extVersion}; an empty body plans nothing). */
+  /** Plugin schema: the `ifVersion` of an extension apply ({@link DomainApplyPlan.extVersion} of a dry run). */
   extVersion?: string;
 }
 
@@ -843,8 +840,7 @@ export interface DomainApplyPlan {
   /** Set on the answer of a commit that found nothing to change — the schema already holds what
    * the body declares: nothing is written and `version` stays the one the apply was made against. */
   noop?: true;
-  /** Package-managed schema: the schema's `ext_version` — the current one on a dry run (and on a noop or a plan
-   * awaiting confirmation), what the next extension apply sends as `ifVersion`; the one it moved to on a commit. */
+  /** Package-managed schema: the schema's `ext_version`, sent as `ifVersion` by the next extension apply. */
   extVersion?: number;
 }
 
@@ -1333,9 +1329,7 @@ export interface DomainTransactionOp {
   ref?: string;
   values?: object;
   id?: string;
-  /** Optimistic-concurrency guard for update, delete and restore ops on a platform-stored table
-   * (`support.concurrency === 'version'`). Servers that predate the delete and restore guard
-   * ignore it on those ops. */
+  /** Optimistic-concurrency guard for update, delete and restore ops on a version-guarded table. */
   expectedVersion?: number;
   /** Old-value guard for update ops on an external table (`support.concurrency === 'expected'`):
    * the columns' values as last read, every one AND-ed to the key; a mismatch refuses the whole

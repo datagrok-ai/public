@@ -60,8 +60,7 @@ export interface DomainSessionRefusal {
   editor: DomainFrameEditor | null;
   /** The transaction-wide index of the failing op, where the server named one. */
   opIndex?: number;
-  /** The server's error code (`DomainError.code`) — `'forbidden'` says the access the
-   * participants were built from is stale. */
+  /** The server's error code (`DomainError.code`). */
   code?: string;
 }
 
@@ -160,9 +159,7 @@ export class DomainSession implements IEditorHost {
 
   /** Every editor's batch (`prepareSave`), in editor order — what {@link save}
    * concatenates; null when any editor refused (a blocking cell error, already
-   * reported). A value is a reference when it is the draft id of any editor's row; a
-   * participant without `draftIds()` (an older or custom editor) contributes none and
-   * builds its own batch as before. */
+   * reported). A value is a reference when it is the draft id of any editor's row. */
   buildOps(): DomainSessionPart[] | null {
     const parts: DomainSessionPart[] = [];
     const drafts = new Set(this.editors.flatMap((editor) =>
