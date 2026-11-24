@@ -1459,6 +1459,9 @@ scoped('a selection Escape cleared in the table is not brought back by a view sw
   fire(table, 'scroll');
   await flush();
   assert.equal(a.status.value.selected, 2, 'the table takes over the rows the list picked');
+  fire(table.querySelectorAll('[role="row"]')[2], 'click', {ctrlKey: true});
+  await flush();
+  assert.equal(a.status.value.selected, 3, 'the hidden list does not write its own selection back');
   fire(table, 'keydown', {key: 'Escape'});
   await flush();
   a.view.value = 'list';
@@ -1858,6 +1861,7 @@ scoped('Refresh on the no-access page reads the access afresh: the rows and New 
   await flush();
   await issues.access();
   granted = true;
+  assert.equal(refresh.root.hidden, false);
   fire(refresh.root.querySelector('button') ?? refresh.root, 'click');
   await flush();
   await flush();
@@ -1880,7 +1884,7 @@ scoped('a user who reaches rows only through row grants sees them: picker, child
   assert.match(document.body.textContent, /Datagrok.*Grit/, 'the picker lists the granted rows');
   pick.dispose();
   const table = await domains.table('grit.project');
-  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
+  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10, children: {mode: 'list'}}));
   document.body.append(a.root);
   await flush();
   assert.equal(await a.goTo('entity', 'p1'), true);

@@ -678,6 +678,10 @@ scoped('a write the writer throws on is a problem on its field: Save is refused,
   assert.equal(document.querySelector('[role="status"]'), null, 'no "saved" balloon');
   edit.setValue = setValue;
   form.dispose();
+  const held = src.holdUnwritten(signal({row: 'i1', values: {title: 'held'}}));
+  assert.equal(await src.save(), false);
+  assert.match(src.error.value.message, /could not be written/);
+  held();
   src.dispose();
 });
 
@@ -1266,6 +1270,7 @@ scoped('a stored string_list shows its items, and an added item is saved with th
   field.value = `${field.value},c`;
   fire(field, 'input');
   await flush();
+  assert.equal(src.df.value.get('tags', 0), '["a","b","c"]');
   assert.equal(await src.save(), true);
   await flush();
   assert.deepEqual(stored().tags, ['a', 'b', 'c']);

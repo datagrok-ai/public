@@ -1179,10 +1179,12 @@ source('another session\'s insert before the window does not repeat a row on the
 
 source('over pending changes that shift is reported, never re-read away', async () => {
   emsBackends.domain = backend();
+  const gate = holdFrames(emsBackends.domain, 'grit.issue');
   const src = await issues({pageSize: 2, sort: 'title'});
   src.rows.byKey('i2').title = 'Ibuprofen edited';
   await insertFirst(emsBackends.domain);
   await src.loadMore();
+  assert.equal(gate.frames, 1, 'no window read to throw away');
   assert.equal(src.rows.byKey('i2').title, 'Ibuprofen edited');
   assert.equal(src.stale.value, true);
   assert.deepEqual(src.rows.items.value.map((r) => r.id), ['i1', 'i2', 'i3'], 'no row twice');

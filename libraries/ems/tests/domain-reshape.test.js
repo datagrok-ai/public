@@ -112,6 +112,7 @@ scoped('Refresh over changed properties asks to discard the pending changes befo
     await DomainViews.reload('grit');
     await flush();
     const reload = app.ribbon().main.find((c) => c.root.dataset.u2 === 'refresh-button');
+    assert.equal(reload.root.hidden, false);
     fire(reload.root.querySelector('button') ?? reload.root, 'click');
     await flush();
     assert.equal(added.length, 0, 'nothing rebuilt while the gate asks');

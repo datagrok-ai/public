@@ -733,6 +733,7 @@ scoped('a save refused as forbidden holds Save and Ctrl+S through a child edit, 
     projects.rows.byKey('p1').key = 'DG';
     assert.equal(await session.save(), false);
     issues.rows.byKey('i1').title = 'Aspirin 100';
+    projects.rows.byKey('p1').name = 'Grit 2';
     await flush();
     assert.equal(save.button.disabled, true, `thrown: ${thrown}`);
     assert.equal(await session.save(), false, 'Ctrl+S');
@@ -830,7 +831,7 @@ scoped('changes the conflict dialog reloaded away are announced as discarded, no
   issues.dispose();
 });
 
-scoped('SAVE in the navigation prompt over a save the server refuses still holds the navigation', async () => {
+scoped('SAVE in the navigation prompt holds the navigation over a refused save, not once nothing is unsaved', async () => {
   emsBackends.domain = backend();
   const session = new SharedSession();
   const {projects, issues} = await pair(session);
@@ -839,6 +840,14 @@ scoped('SAVE in the navigation prompt over a save the server refuses still holds
   const asking = confirmDiscard(session);
   fire(buttonNamed('SAVE'), 'click');
   assert.equal(await asking, false);
+  emsBackends.domain.saveAll = async ([edit]) => {
+    edit.discard();
+    edit.onSaved.fire({assigned: {}, written: 0});
+    return true;
+  };
+  const again = confirmDiscard(session);
+  fire(buttonNamed('SAVE'), 'click');
+  assert.equal(await again, true);
   projects.dispose();
   issues.dispose();
 });
