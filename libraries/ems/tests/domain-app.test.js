@@ -592,6 +592,7 @@ scoped('a save refused as "forbidden" re-reads the access, and Discard leaves th
     DG.DomainSession.next = true;
   }
   assert.equal(a.entitySource.value.access.value.can('edit'), false, 'the access was read again');
+  assert.equal(testOwner().build(() => a.ribbon()).main[4].root.hidden, false, 'Refresh is the way to try again');
   assert.equal(a.session.isDirty.value, true, 'the edit is kept until Discard');
   a.session.discard();
   await flush();
