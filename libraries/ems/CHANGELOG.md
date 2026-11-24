@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Import: The preview shows a user named by login or name as typed, not as its id
 * Records: A record whose table has no name column is titled by its noun, never by its id
 * Live refresh: Fixed a record created on its page not following other users' changes after Save
 * Import: A user column takes a login or a name, where exactly one user has it, as well as the user id

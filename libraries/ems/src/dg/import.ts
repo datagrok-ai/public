@@ -652,8 +652,11 @@ class ImportFlow {
 
   private _row(index: number, planned: Planned, kind: string, note: string, errors: DomainImportError[]):
     DomainImportRow {
-    return {index, values: {...planned.cells, ...planned.payload}, kind, label: planned.verdict.label ?? '', note,
-      errors, id: null, key: ''};
+    // a user named by login or name reads as typed; the payload carries the id
+    const typed = Object.fromEntries(this._targets.filter((p) => p.semType === 'User' && p.name! in planned.cells)
+      .map((p) => [p.name!, planned.cells[p.name!]]));
+    return {index, values: {...planned.cells, ...planned.payload, ...typed}, kind, label: planned.verdict.label ?? '',
+      note, errors, id: null, key: ''};
   }
 
   private _rowsTable(owner: Control, step: DomainImportStep, rows: DomainImportRow[],

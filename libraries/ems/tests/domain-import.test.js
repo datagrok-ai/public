@@ -280,19 +280,22 @@ scoped('a storage with no dry run previews the mapped rows without verdicts, and
 scoped('only the mapped columns are posted, under their target names', async () => {
   const memory = backend();
   const users = grok.dapi.users;
-  grok.dapi.users = {...users, list: async () => [{id: P1, login: 'tester', friendlyName: 'Tester'}]};
+  const tester = '1f2e3d4c-5b6a-4789-8abc-def012345678';
+  grok.dapi.users = {...users, list: async () => [{id: tester, login: 'tester', friendlyName: 'Tester'}]};
   const {running} = await opened(memory, frame(['project_id', 'title', 'note', 'reporter'],
     [{project_id: P1, title: 'Imported', note: 'skipped', reporter: 'Tester'}]));
   await toMapping();
   assert.equal(named('note').value, '(skip)');
   fire(buttonNamed('NEXT'), 'click');
   await flush();
+  const preview = document.querySelector('.u2-domain-import-preview').textContent;
+  assert.deepEqual([preview.includes('Tester'), preview.includes(tester)], [true, false], 'shown as typed');
   fire(importButton(), 'click');
   await flush();
   const landed = issues(memory).find((r) => r.title === 'Imported');
   assert.notEqual(landed, undefined, 'the row was inserted');
   assert.equal('note' in landed, false, 'a skipped source column never reached the backend');
-  assert.equal(landed.reporter, P1, 'a user column takes a login or a name');
+  assert.equal(landed.reporter, tester, 'a user column takes a login or a name');
   grok.dapi.users = users;
   assert.deepEqual(counts('report'), ['1 added']);
   fire(buttonNamed('CLOSE'), 'click');
