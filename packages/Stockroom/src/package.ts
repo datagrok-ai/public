@@ -97,7 +97,8 @@ export async function stockroomLocations(): Promise<DG.ViewBase> {
   const addAt = (node: RowView) => newContainerAt(containers, node.id,
     {site: typeof node.site === 'string' ? node.site : undefined, caption: locations.renderer.caption(node)});
   const host = ViewHost.create({name: 'Stockroom locations', content: () => {
-    const asked = new URLSearchParams(location.search).get('entity');
+    const asked = location.pathname.endsWith('/apps/Stockroom/Locations') ?
+      new URLSearchParams(location.search).get('entity') : null;
     const tree = domains.tree(locations, {allNode: 'All locations', follow: source, expandTo: asked ?? undefined,
       actions: [{name: 'New container', icon: 'plus', run: addAt}]});
     const table = domains.dataTable(source,

@@ -789,14 +789,19 @@ class ImportFlow {
     const columns = this._targets.filter((p) => p.semType === 'User');
     if (!rows.some((row) => columns.some((p) => ImportLinks.idProblem(p, row[p.name!]) !== null)))
       return;
+    const users = await grok.dapi.users.list().catch(() => []);
     const ids = new Map<string, string | null>();
-    for (const user of await grok.dapi.users.list().catch(() => [])) {
-      for (const key of new Set([user.login, user.friendlyName].filter((k) => !!k).map((k) => k.toLowerCase())))
+    for (const user of users) {
+      const key = user.friendlyName?.toLowerCase();
+      if (key)
         ids.set(key, ids.has(key) ? null : user.id);
     }
+    for (const user of users.filter((u) => !!u.login))
+      ids.set(user.login.toLowerCase(), user.id);
     for (const row of rows) {
       for (const p of columns) {
-        const id = ImportLinks.idProblem(p, row[p.name!]) === null ? null : ids.get(String(row[p.name!]).toLowerCase());
+        const id = ImportLinks.idProblem(p, row[p.name!]) === null ? null :
+          ids.get(String(row[p.name!]).trim().toLowerCase());
         if (id)
           row[p.name!] = id;
       }

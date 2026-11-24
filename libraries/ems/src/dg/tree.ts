@@ -333,7 +333,7 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     // `expandPath` walks down from the roots and stops where a step is missing — which is exactly
     // what a chain truncated at an ancestor the caller cannot see looks like from here
     if (this.tree.selectedNode.peek()?.data?.id !== id)
-      this._error.value = `${id} is not reachable from here — an ancestor is not visible to you`;
+      this._error.value = 'The row this address names is not in the tree, or an ancestor of it is not visible to you';
   }
 
   private async _expand(id: string, table = this._table!.table): Promise<void> {
