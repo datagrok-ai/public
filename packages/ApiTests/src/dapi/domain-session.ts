@@ -51,6 +51,19 @@ category('Dapi: domain session', () => {
     }
   });
 
+  test('draftIds lists the draft rows only', async () => {
+    const prefix = `ds-ids-${stamp()}`;
+    await items().insert({sku: `${prefix}-0`, name: 'Saved'});
+    const editor = await itemsEditor(prefix);
+    try {
+      const draft = editor.dataFrame.get('id', editor.addRow({sku: `${prefix}-1`, name: 'Draft'}));
+      expect([...editor.draftIds()].join(), draft);
+    } finally {
+      editor.detach();
+      await cleanup(prefix);
+    }
+  });
+
   test('two editors, one transaction: a draft item referenced by a draft event', async () => {
     const prefix = `ds-tx-${stamp()}`;
     const parent = await itemsEditor(prefix);
@@ -196,6 +209,7 @@ category('Dapi: domain session', () => {
       expect(refusal.message, parent.errorOf(row, 'sku')?.message,
         'lastRefusal does not say what the cell says');
       expect(typeof refusal.opIndex, 'number', 'lastRefusal carries no opIndex');
+      expect(refusal.code, 'validation');
       parent.setValue(row, 'sku', `${prefix}-1`);
       expect(await session.save(), true, 'the corrected batch did not land');
       expect(session.lastRefusal, null, 'a successful save did not clear lastRefusal');
