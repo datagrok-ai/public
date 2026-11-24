@@ -99,13 +99,13 @@ columns('aggregationsFor: the per-type exclusions of the Dart editor are honoure
     'an unregistered type counts rows and nothing else');
 });
 
-columns('defaultAggregation: avg where the type offers it, the first entry otherwise', () => {
+columns('defaultAggregation: sum where the type offers it, the first entry otherwise', () => {
   const table = DEMO();
   const column = (name) => table.columns.byName(name);
-  assert.equal(defaultAggregation(column('age')), 'avg');
+  assert.equal(defaultAggregation(column('age')), 'sum');
   assert.equal(defaultAggregation(column('sex')), 'count');
   assert.equal(defaultAggregation(column('started')), 'count',
-    'datetime is numerical to the platform but has no avg left');
+    'datetime is numerical to the platform but has no sum');
 });
 
 columns('columnsInput: the summary reads as Dart writes it', () => {
@@ -409,7 +409,7 @@ columns('aggregatedColumnsInput: rows add and remove, an empty value shows one a
   assert.equal(buttons().length, 1, 'nothing selected — just the add button');
 
   fire(buttons()[0], 'click');
-  assert.deepEqual(input.value, [{column: 'age', aggregation: 'avg'}],
+  assert.deepEqual(input.value, [{column: 'age', aggregation: 'sum'}],
     'the first numerical column at its default aggregation');
 
   fire(buttons()[0], 'click');
