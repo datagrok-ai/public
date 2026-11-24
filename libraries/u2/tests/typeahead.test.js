@@ -127,6 +127,12 @@ smoke('a dropdown takes only a row moved to or named exactly; an IME Enter and a
     fire(input, 'keydown', {key: 'Enter', isComposing: true});
     fire(input, 'keydown', {key: 'Enter'});
     assert.equal(typeahead.selected.value, null, 'the highlighted first row is not taken');
+    fire(input, 'keydown', {key: 'ArrowDown'});
+    fire(input, 'keydown', {key: 'Escape'});
+    fire(input, 'keydown', {key: 'ArrowDown'});
+    await flush();
+    fire(input, 'keydown', {key: 'Enter'});
+    assert.equal(typeahead.selected.value, null, 'a move made before Escape does not count once reopened');
     type(input, 'bruno bauer');
     await flush();
     fire(input, 'keydown', {key: 'Enter'});

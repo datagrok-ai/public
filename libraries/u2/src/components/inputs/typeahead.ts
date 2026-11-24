@@ -372,6 +372,7 @@ export class TypeAhead<T> extends Control {
     if (!this._list.isOpen.peek())
       return;
     this._all.value = false;
+    this._moved = false;
     if (this._machine.peek() === 'open')
       this._machine.value = 'focused';
     this._list.dismiss();
