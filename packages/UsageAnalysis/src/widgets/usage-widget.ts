@@ -38,14 +38,19 @@ export class UsageWidget extends DG.Widget {
         await grok.functions.call('UsageAnalysis:UniqueUsersSummary'), uniqueUsersChartStyle).root, {style: {paddingRight: '12px'}})]);
     }));
 
+    // a summary and the services that are down: the full list does not fit the card
     services.appendChild(ui.waitBox(async () => {
-      const infos = (await grok.dapi.admin.getServiceInfos()).map((info) => {
-        const d = ui.span([info.name]);
-        d.setAttribute('data', info.status);
+      const infos = await grok.dapi.admin.getServiceInfos();
+      const down = infos.filter((info) => info.status !== 'Running');
+      const serviceInfo = (text: string, status: string, tooltip: () => HTMLElement | string) => {
+        const d = ui.span([text]);
+        d.setAttribute('data', status);
         d.classList.add('ui-service-info');
-        return ui.div([ui.tooltip.bind(d, () => info.status)]);
-      });
-      const d = ui.div(infos, 'ui-service-info-wrapper');
+        return ui.div([ui.tooltip.bind(d, tooltip)]);
+      };
+      const summary = serviceInfo(down.length === 0 ? `All ${infos.length} running` : `${infos.length - down.length} of ${infos.length} running`,
+        'Running', () => ui.divV(infos.map((info) => ui.divText(`${info.name}: ${info.status}`))));
+      const d = ui.div([summary, ...down.map((info) => serviceInfo(info.name, info.status, () => info.status))], 'ui-service-info-wrapper');
       return ui.splitH([ui.box(ui.divText('System'),
         {style: {maxWidth: '70px'}}), d]);
     }));

@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Usage widget: System shows how many services run and names only those that do not, instead of a list that scrolled inside the card; hovering it lists every service
 * core#1765: Detectors: Declared the column types the semantic type detectors check, so the platform no longer calls them for other columns
 * Release dashboard: Tickets read GitHub issues instead of Jira (needs the `githubToken` credential)
 * Test dashboards: Ticket verdicts read GitHub issues instead of Jira
