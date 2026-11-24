@@ -35,6 +35,7 @@
 * Trash: Fixed a `?trash=1` link showing live rows as deleted on a table that has no trash
 * Trash: Fixed a restore refused under a deleted parent not saying which row it is about
 * Search: Fixed saved searches lost on reload or erased from another browser tab, and a taken name said twice
+* Search: Fixed the Mine preset putting your user id instead of `$me` in the address and recent searches
 * Filters: Fixed refused query text breaking the list, and a zoneless datetime reading differently from a link
 * Bulk edit: Fixed a table that takes no writes being reported as deleted rows awaiting restore
 * [core#611](https://github.com/datagrok-ai/core/issues/611): Domain schemas: a named error code for an unknown group on grants — the binding dialog reads `unknown-group` instead of matching the message

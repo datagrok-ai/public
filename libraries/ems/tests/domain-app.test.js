@@ -663,7 +663,7 @@ scoped('the ambient session is the app\'s; New is hidden without insert', async 
   a.dispose();
 });
 
-scoped('app({ribbon, shortcuts}): the option\'s presets write the query with $me bound; a shortcut runs an action',
+scoped('app({ribbon, shortcuts}): the option\'s presets write the query; a shortcut runs an action',
   async () => {
     emsBackends.domain = backend();
     const table = await domains.table('grit.issue');
@@ -684,9 +684,8 @@ scoped('app({ribbon, shortcuts}): the option\'s presets write the query with $me
     assert.deepEqual([...buttons].map((b) => b.textContent), ['Mine', 'Done']);
     fire(buttons[0], 'click');
     await flush();
-    assert.equal(a.listSource.query.value, 'reporter = "user-1"', 'the stub shell\'s user, bound as $me');
+    assert.equal(a.listSource.query.value, 'reporter = $me');
     assert.deepEqual(mine.selected.value, ['0'], 'the preset in force is pressed');
-    assert.equal(a.path.value, `${BASE}?q=${encodeURIComponent('reporter = "user-1"')}`);
     fire(buttons[0], 'click');
     await flush();
     assert.equal(a.listSource.query.value, '', 'a press on the preset in force clears the query');
@@ -910,8 +909,9 @@ scoped('Ctrl+S saves from the ribbon — outside the app root, where Tab from th
     }
   });
 
-scoped('a preset shows in the filter box as it was written, not as the id it binds to', async () => {
+scoped('$me stays in the query, the address and the recent searches; the request carries the user', async () => {
   emsBackends.domain = backend();
+  await emsBackends.domain.transaction([{op: 'update', table: 'grit.issue', id: 'i2', values: {reporter: 'me'}}]);
   const table = await domains.table('grit.issue');
   let mine;
   const view = table.app({path: BASE, ribbon: (base, app) =>
@@ -920,17 +920,17 @@ scoped('a preset shows in the filter box as it was written, not as the id it bin
   const a = DomainApp.of(view);
   await flush();
   await flush();
-  const filters = a.filters;
-  const box = filters.input.value;
+  const box = a.filters.input.value;
   fire(mine.root.querySelectorAll('.u2-btn-group-item')[0], 'click');
   await flush();
-  assert.equal(a.listSource.query.value, 'reporter = "user-1"', 'the query runs bound');
-  assert.equal(box.text.value, 'reporter = $me', 'the box says what the preset says');
-  assert.equal(box.commit(), true, 'and Enter on it changes nothing');
-  assert.equal(a.listSource.query.value, 'reporter = "user-1"');
-  fire(mine.root.querySelectorAll('.u2-btn-group-item')[1], 'click');
-  await flush();
-  assert.equal(box.text.value, 'done = true', 'a preset without a binding reads as itself');
+  assert.equal(a.listSource.query.value, 'reporter = $me');
+  assert.equal(box.text.value, 'reporter = $me');
+  assert.equal(a.path.value, `${BASE}?q=${encodeURIComponent('reporter = $me')}`);
+  assert.equal(JSON.parse(grok.userSettings.get('ems-recent-searches')['grit.issue'])[0].q, 'reporter = $me');
+  assert.deepEqual(a.listSource.rows.items.value.map((r) => r.id), ['i2']);
+  assert.equal(DgDomainTable.spec({filter: 'reporter = $me'}).filter, 'reporter = "user-1"');
+  assert.equal(box.commit(), true);
+  assert.deepEqual(mine.selected.value, ['0']);
   a.dispose();
 });
 

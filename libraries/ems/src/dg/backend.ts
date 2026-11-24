@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {Access, Rows} from '@datagrok-libraries/u2';
+import {Access, Filters, Rows} from '@datagrok-libraries/u2';
 import type {IProperty, DataFrameLike} from '@datagrok-libraries/u2';
 import type {AuditEntryLike, DomainBackend, DomainBatchReportLike, DomainDeletedMode, DomainFrameLike, DomainProbeLike,
   DomainQueryLike, DomainReadScope, DomainSupportLike, DomainTableInfoLike, DomainTableLike, DomainTransactionOpLike,
@@ -160,7 +160,7 @@ export class DgDomainTable implements DomainTableLike {
       this.restore = (id) => this._restore(id);
     if (support.updateWhere) {
       this.updateWhere = (filter, values, options) =>
-        this.client.updateWhere(filter as DG.DomainFilter, values, options);
+        this.client.updateWhere(DgDomainTable.bound(filter) as DG.DomainFilter, values, options);
     }
     if (support.writes) {
       this.batch = (rows, options) => this.client.batch(rows, options as DG.DomainBatchOptions) as
@@ -230,7 +230,7 @@ export class DgDomainTable implements DomainTableLike {
   }
 
   count(scope: DomainReadScope = {}): Promise<number> {
-    return this.client.count(scope as DG.DomainReadScope);
+    return this.client.count({...scope, filter: DgDomainTable.bound(scope.filter)} as DG.DomainReadScope);
   }
 
   private async _restore(id: string): Promise<void> {
@@ -251,7 +251,7 @@ export class DgDomainTable implements DomainTableLike {
     }
     const rows = await this.client.aggregate({
       measures: [{fn: 'count'}, {fn: 'max', column: 'updated_on', as: 'last'}],
-      ...(spec.filter === undefined ? {} : {filter: spec.filter as DG.DomainFilter}),
+      ...(spec.filter === undefined ? {} : {filter: DgDomainTable.bound(spec.filter) as DG.DomainFilter}),
       ...(spec.search === undefined ? {} : {search: spec.search}),
       ...(spec.deleted === undefined ? {} : {deleted: spec.deleted}),
     });
@@ -301,7 +301,19 @@ export class DgDomainTable implements DomainTableLike {
 
   /** The seam's query is the js-api spec: same filter tree, same paging keys. */
   static spec(spec: DomainQueryLike): DG.DomainQuerySpec {
-    return spec as DG.DomainQuerySpec;
+    return {...spec, filter: DgDomainTable.bound(spec.filter)} as DG.DomainQuerySpec;
+  }
+
+  /** `$me` bound to the caller: the query an app keeps, its address and its recent searches say `$me`. */
+  static bound(filter: DomainQueryLike['filter']): DomainQueryLike['filter'] {
+    const me = {me: grok.shell.user.id};
+    if (typeof filter === 'string') {
+      const parsed = /\$me\b/.test(filter) ? Filters.parse(filter) : undefined;
+      return parsed === undefined || parsed.problems.length > 0 ? filter :
+        Filters.format(Filters.bind(parsed.root, me));
+    }
+    return filter === undefined || !JSON.stringify(filter).includes('"$param":"me"') ? filter :
+      Filters.toDomainTree(Filters.bind(Filters.fromDomainTree(filter), me));
   }
 
   /** The access a frame's writer is built under: no edit and no insert over deleted rows, nothing

@@ -846,7 +846,7 @@ export class MemoryTable implements DomainTableLike {
     const {filter, search, deleted = 'exclude'} = scope;
     let rows = this.rows;
     if (filter !== undefined && filter !== '') {
-      const root = this._resolved(MemoryTable._tree(filter));
+      const root = this._resolved(Filters.bind(MemoryTable._tree(filter), {me: this._author}));
       Filters.walk(root, (n) => {
         if (!Filters.isGroup(n) && this._hidden.includes(n.property.replace(TEXT, '')))
           throw new DomainBackendError('filter', `Unknown or inaccessible column "${n.property.replace(TEXT, '')}"`);

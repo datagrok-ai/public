@@ -739,17 +739,18 @@ export class DomainApp extends Control {
   }
 
   /** A query switch for the ribbon — one button per preset, the pressed one writing the list's
-   * query (`$me` is the current user's id); the one matching the query in force is shown pressed.
-   * A press goes through the gate, like the filters. */
+   * query (`$me` is the current user's id, bound only as the request leaves); the one matching the
+   * query in force is shown pressed. A press goes through the gate, like the filters. */
   presets(...entries: [label: string, query: string][]): ButtonGroup {
     const source = this.listSource;
-    const bound = (at: number) => this._bound(entries[at][1]);
+    // parsed against the loaded schema, so a column-typed value round-trips the way the filters' own do
+    const preset = (at: number) => Filters.parse(entries[at][1], source.schema).root;
     const apply = (at: number) => {
       const q = source.query.peek();
       // `ButtonGroup`'s `single` is a radio group and never deselects: a press on the preset in
       // force clears the query here instead, and the effect below drops the pressed look
-      const tree = Filters.equals(bound(at), DomainFilters.treeOf(q, source.schema)) ?
-        Filters.group('and') : bound(at);
+      const tree = Filters.equals(preset(at), DomainFilters.treeOf(q, source.schema)) ?
+        Filters.group('and') : preset(at);
       source.query.value = typeof q === 'string' ? Filters.format(tree) : tree;
     };
     const press = (at: number) =>
@@ -764,13 +765,10 @@ export class DomainApp extends Control {
         return group.selected.peek().includes(String(at));
       }})));
     group.effect(() => {
-      // the schema arrives with the load: read the state so the presets are bound again once it has
+      // the schema arrives with the load: read the state so the presets are parsed again once it has
       source.state.value;
       const current = DomainFilters.treeOf(source.query.value, source.schema);
-      // the box shows a preset as it is written ("assignee = $me"), not the id the query carries
-      for (let i = 0; i < entries.length; i++)
-        DomainFilters.showAs(source, Filters.format(bound(i)), entries[i][1]);
-      const at = entries.findIndex((_, i) => Filters.equals(bound(i), current));
+      const at = entries.findIndex((_, i) => Filters.equals(preset(i), current));
       group.selected.value = at < 0 ? [] : [String(at)];
     });
     this._listOnly(group, () => this.compact.value);
@@ -976,12 +974,6 @@ export class DomainApp extends Control {
 
   private _listOnly(control: Control, folded: () => boolean = () => false): void {
     this.effect(() => control.root.hidden = this._page.value !== 'list' || folded());
-  }
-
-  // parsed against the loaded schema, so a column-typed value round-trips the way the filters' own do
-  private _bound(query: string) {
-    const schema = this.listSource.schema;
-    return Filters.bind(Filters.parse(query, schema).root, {me: grok.shell.user.id}, schema);
   }
 
   /** The browser's own gate: `beforeunload` is armed while anything is pending — a batch in
