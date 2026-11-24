@@ -2120,3 +2120,20 @@ scoped('Refresh over a save refused as forbidden reads the access again: the gra
   assert.equal(await a.session.save(), true, 'and the changes are saved');
   a.dispose();
 });
+
+scoped('a table that cannot restore has no trash: `?trash=1` and setTrash leave the list live', async () => {
+  const memory = backend();
+  const issue = memory.tableSync('grit.issue');
+  issue.support = {...issue.support, deleted: false, restore: false};
+  Object.defineProperty(issue, 'restore', {value: undefined, configurable: true});
+  emsBackends.domain = memory;
+  const table = await domains.table('grit.issue');
+  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
+  document.body.append(a.root);
+  await a.open(`${BASE}?trash=1`);
+  await flush();
+  assert.equal(await a.setTrash(true), false);
+  assert.equal(a.mode.value, 'live');
+  assert.equal(a.summary.value, '3 issues');
+  a.dispose();
+});

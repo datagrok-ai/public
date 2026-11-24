@@ -603,7 +603,7 @@ export class DomainApp extends Control {
       table.push({text: 'Bulk edit…', icon: 'edit', requires: 'edit',
         run: () => void domains.bulkEdit(this.listSource)});
     }
-    const mode: Action[] = trash || !support.deleted || !support.restore ? [] : [{
+    const mode: Action[] = trash || !this._hasTrash ? [] : [{
       text: 'Show deleted', icon: 'history', requires: 'delete', run: () => void this.setTrash(true)}];
     const presets = this.compact.peek() && this._page.peek() === 'list' && !trash ? this._presets : [];
     const base = [presets, this._rowActions(), table, mode].filter((section) => section.length > 0)
@@ -618,6 +618,8 @@ export class DomainApp extends Control {
     if (mode === this._mode.peek())
       return true;
     const on = mode === 'trash';
+    if (on && !this._hasTrash)
+      return false;
     if (!await confirmDiscard(this.session, {action: on ? 'open the trash' : 'leave the trash'}))
       return false;
     // one move, one history entry: the page and the mode settle together
@@ -927,6 +929,11 @@ export class DomainApp extends Control {
     });
   }
 
+  private get _hasTrash(): boolean {
+    const support = this.table.table.support;
+    return support.deleted && support.restore;
+  }
+
   private _withTrash(path: string): string {
     return this.trash.value ? `${path}${path.includes('?') ? '&' : '?'}trash=1` : path;
   }
@@ -1029,7 +1036,7 @@ export class DomainApp extends Control {
     const at = address.indexOf('?');
     const params = new URLSearchParams(at < 0 ? '' : address.slice(at + 1));
     // trash mode is the list's own view of the table, and a path is authoritative about it
-    this._mode.value = params.get('trash') === '1' ? 'trash' : 'live';
+    this._mode.value = params.get('trash') === '1' && this._hasTrash ? 'trash' : 'live';
     const segment = DomainAddress.segmentOf(at < 0 ? address : address.slice(0, at), this._bases);
     // the draft sentinel is read off the raw spelling, before the escape comes off: `~new` is the
     // row keyed "new" in a segment and in `?entity=` alike

@@ -21,6 +21,7 @@
 * Import: Fixed matching by formatted keys and by names, and updates without access to a required column
 * Properties: Fixed concurrent edits dropping columns, user columns shown locked and pages keeping old columns
 * Trees: Fixed the tree not following other sessions' changes, and losing a node picked during a refresh
+* Trash: Fixed a `?trash=1` link showing live rows as deleted on a table that has no trash
 * Search: Fixed saved searches overwritten or lost on reload, and refused query text breaking the list
 * [core#611](https://github.com/datagrok-ai/core/issues/611): Domain schemas: a named error code for an unknown group on grants — the binding dialog reads `unknown-group` instead of matching the message
 * History: Fixed "Show older" turning off with no reason while it loads; it now says "Loading older entries…"
