@@ -207,8 +207,9 @@ async function _sharedMatching(source: DomainSource, column: string): Promise<un
   const value = first?.[column];
   if (value === null || value === undefined)
     return undefined;
-  const other = await table.query({filter: Filters.toDomainTree(Filters.group('and',
-    [scope, Filters.cond(column, '!=', value as FilterValue)]), {schema: source.schema}), columns: [column], limit: 1});
+  const other = await table.query({filter: Filters.toDomainTree(Filters.group('and', [scope, Filters.group('or',
+    [Filters.cond(column, '!=', value as FilterValue), Filters.cond(column, 'is null')])]), {schema: source.schema}),
+  columns: [column], limit: 1});
   return other.length === 0 ? value : undefined;
 }
 
