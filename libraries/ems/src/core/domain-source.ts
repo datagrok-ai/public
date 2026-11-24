@@ -172,9 +172,6 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   readonly pageSize: number;
   readonly withAccess: boolean;
   readonly defaults: Record<string, unknown>;
-  readonly isDraft: boolean;
-  /** Loads no rows (`draft` implies it). */
-  readonly isEmpty: boolean;
   /** A signal, so the panel edits it live and a bound path drives it. */
   readonly query: Signal<string | FilterGroup>;
   /** The search text, re-queried on change like {@link query}. */
@@ -286,6 +283,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private _following = false;
   private _failures = 0;
   private _accessKey = '';
+  private _draft: boolean;
+  private _empty: boolean;
   // `as`: the query with every host condition replaced by the id list `hosted` gave
   private _served: {query: string | FilterGroup, as: string | FilterGroup} | undefined;
   private _serving: AbortController | undefined;
@@ -298,8 +297,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this.withAccess = options.withAccess ?? true;
     this._captionOption = options.captions;
     this.defaults = {...options.defaults};
-    this.isDraft = options.draft ?? false;
-    this.isEmpty = options.empty ?? this.isDraft;
+    this._draft = options.draft ?? false;
+    this._empty = options.empty ?? this._draft;
     this.query = signal<string | FilterGroup>(options.query ?? '');
     this.search = signal(options.search ?? '');
     this.searchable = this._searchable;
@@ -484,6 +483,33 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       held = this.live.value && this.paused.value;
     });
     this.own(() => this._halt());
+  }
+
+  get isDraft(): boolean {
+    return this._draft;
+  }
+
+  /** Loads no rows (`draft` implies it). */
+  get isEmpty(): boolean {
+    return this._empty;
+  }
+
+  /** A create source whose draft was saved becomes that row's: it reads `query` from now on, the row it holds
+   * standing, and follows the server as `live` says. */
+  settle(query: FilterGroup, live: boolean): void {
+    this._draft = this._empty = false;
+    this._rebinding = true;
+    try {
+      this.query.value = query;
+    } finally {
+      this._rebinding = false;
+    }
+    this._shownFor = this._readFor();
+    this._probed = undefined;
+    this.live.value = live;
+    const table = this._table;
+    if (table !== undefined)
+      void this._baseline(table).then((baseline) => this._probed ??= baseline);
   }
 
   get schema(): DomainSchema {

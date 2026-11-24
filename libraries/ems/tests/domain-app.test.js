@@ -355,11 +355,12 @@ scoped('New, saved, then deleted from its own page: back to the list once, with 
     try {
       assert.equal(await a.create(), true);
       await flush();
-      Object.assign(a.entitySource.value.currentRow.value, {project_id: 'p1', title: 'Fresh'});
+      const made = a.entitySource.value;
+      Object.assign(made.currentRow.value, {project_id: 'p1', title: 'Fresh'});
       await flush();
       assert.equal(await a.session.save(), true);
       await flush();
-      assert.equal(a.entitySource.value.isDraft, true, 'the page is still the draft source New made');
+      assert.equal(a.entitySource.value === made, true, 'the page is still the source New made');
       a.menuActions().find((x) => x.text === 'Delete').run();
       await flush();
       assert.equal(await a.session.save(), true);

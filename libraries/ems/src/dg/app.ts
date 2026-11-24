@@ -334,8 +334,11 @@ export class DomainApp extends Control {
     this.effect(() => {
       const source = this._entitySource.value;
       const row = source?.currentRow.value ?? null;
-      if (row !== null && source!.isDraft && this._entity.peek() === DomainApp.NEW && !Rows.isDraft(row))
-        this._entity.value = row.id;
+      if (row === null || !source!.isDraft || this._entity.peek() !== DomainApp.NEW || Rows.isDraft(row))
+        return;
+      this._entity.value = row.id;
+      untracked(() => source!.settle(Filters.group('and', [Filters.cond('id', '=', row.id)]),
+        this._options.live ?? true));
     });
     // and once the draft is discarded — by the Discard button or by a gate's DISCARD — the page
     // has no row left, so the app goes back to the list. `had` keeps the load's own empty window
@@ -1170,7 +1173,8 @@ export class DomainApp extends Control {
     draft = false): void {
     this._close();
     if (page === 'entity' && entity !== null) {
-      const source = this.build(() => draft ? this._source({draft: true, defaults: this._options.defaults}) :
+      const source = this.build(() => draft ? this._source({draft: true, defaults: this._options.defaults,
+          liveMs: this._options.liveMs}) :
         this._source({query: query ?? Filters.group('and', [Filters.cond('id', '=', entity)]), pageSize: 1,
           live: this._options.live ?? true, liveMs: this._options.liveMs}));
       if (this.table.info.hierarchy)

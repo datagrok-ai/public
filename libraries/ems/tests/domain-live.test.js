@@ -786,6 +786,16 @@ scoped('an open record follows a peer: reloaded while clean, stale over an edit,
     await flush();
     await flush();
     assert.match(app.root.querySelector('[data-u2-part="entity-page"]').textContent, /Issue "Theirs" was deleted\./);
+    assert.equal(await app.create(), true);
+    await flush();
+    Object.assign(app.entitySource.value.currentRow.value, {project_id: 'p1', title: 'Fresh'});
+    assert.equal(await app.session.save(), true);
+    await flush();
+    const created = title();
+    await peerUpdate(be, 'issue', app.entity.value, {title: 'Fresh, theirs'});
+    await tick();
+    await flush();
+    assert.deepEqual([title().value, title() === created], ['Fresh, theirs', true], 'a record created here follows too');
     await app.goTo('list');
     await flush();
     const asked = be.probes.length;

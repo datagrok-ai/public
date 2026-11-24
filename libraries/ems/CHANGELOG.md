@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Live refresh: Fixed a record created on its page not following other users' changes after Save
 * Import: A user column takes a login or a name, where exactly one user has it, as well as the user id
 * Views: Fixed a link on a page (MolTrack's Register compound) opening its view behind that page
 * Trees: A tree over a table you cannot read says so instead of showing only its all row
