@@ -80,6 +80,11 @@ scoped('rows render by id; the schema names them without a handler, the handler 
   const dressed = mount(second);
   assert.deepEqual(dressed.slice(0, 2).map((r) => r.textContent), ['Configured', 'Issue'],
     'the configured caption, and a row named by its id alone reads as its noun');
+  DG.ObjectHandler.register(new DG.DomainObjectHandler('grit.issue'));
+  const {DomainTable: T} = await import('../src/dg/facade.js');
+  const unnamed = T.handlerRenderer(Object.create(table, {info: {value: {...table.info, nameColumn: null}}}));
+  assert.notEqual(unnamed.listItem(src.rows.byKey('i1')).className, 'test-handler-item',
+    'with no name column the platform handler\'s item (the row\'s id) is not used');
   table.renderer = table.defaultRenderer;
   second.dispose();
   list.dispose();

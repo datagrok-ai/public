@@ -391,8 +391,11 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
         return name === row.id ? by(row, (x) => inner.caption(x), plain.caption) : name;
       },
       icon: (row) => by(row, (x) => inner.icon(x), (r) => span(plain.caption(r))),
-      listItem: (row) => by(row, (x) => inner.listItem(x), plain.listItem!),
-      markup: (row) => by(row, (x) => inner.markup(x), plain.listItem!),
+      // with no name column the platform's item is the row's id: the caption the table has is the better name
+      listItem: (row) => table.info.nameColumn == null ? plain.listItem!(row) :
+        by(row, (x) => inner.listItem(x), plain.listItem!),
+      markup: (row) => table.info.nameColumn == null ? plain.listItem!(row) :
+        by(row, (x) => inner.markup(x), plain.listItem!),
       tooltip: (row) => by(row, (x) => inner.tooltip(x), plain.card!),
       card: (row) => {
         const x = handled(row);
