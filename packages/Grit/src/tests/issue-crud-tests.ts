@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {gritDb, CommentRow, IssueInsert, IssueRow} from '../generated/db';
+import {openIssues} from '../package';
 
 // End-to-end issue CRUD over the typed clients generated from databases/grit/schema.json.
 category('Grit: issue CRUD', () => {
@@ -91,6 +92,8 @@ category('Grit: issue CRUD', () => {
       expect(await numberOf(b), 2, 'numbers must be contiguous within a project');
       expect(await numberOf(await insert({project_id: other.id, title: 'C'})), 1,
         'each project counts on its own');
+      expect((await gritDb.issues.query({filter: `project_id = "${other.id}" and (${openIssues})`})).length, 1,
+        'an issue without a status is open');
 
       // A supplied number (imports) is kept and the counter catches up.
       const supplied = await insert({project_id: project.id, number: 7, title: 'D'});

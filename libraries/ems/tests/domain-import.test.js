@@ -375,10 +375,10 @@ scoped('the preview draws the rows as they would land, each under its verdict, r
   fire(rows, 'scroll');
   await flush();
   assert.deepEqual([...rows.querySelectorAll('.u2-data-table-head')].map((c) => c.textContent),
-    ['#', 'Result', 'Project id', 'Title', 'Priority', 'Note'], 'the verdict leads, then the target captions and why');
+    ['#', 'Result', 'Note', 'Project id', 'Title', 'Priority'], 'the verdict and why lead, then the target captions');
   const cells = [...rows.querySelectorAll('.u2-data-table-row')]
     .map((r) => [...r.children].map((c) => c.textContent).join('|'));
-  assert.deepEqual(cells, [`1|Add|${P1}|A|low|`, `2|Error|${P1}|B|urgent|Priority: Must be one of: low, high`],
+  assert.deepEqual(cells, [`1|Add||${P1}|A|low`, `2|Error|Priority: Must be one of: low, high|${P1}|B|urgent`],
     'what the backend said it would do with the row, beside the row as it would be sent');
   const bad = rows.querySelector('.u2-cell-error');
   assert.notEqual(bad, null, 'the cell the backend refuses is marked, by the column it named');

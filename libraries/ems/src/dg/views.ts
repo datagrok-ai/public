@@ -39,7 +39,6 @@ export interface DomainViewsOptions {
 export class DomainViews {
   // where each table's rows open: the views made over it last
   private static readonly _byTable = new Map<string, DomainViews>();
-  private static _deleteSaved: {unsubscribe(): void} | undefined;
   private static readonly _rebuilding = new WeakMap<DomainApp, Promise<void>>();
 
   constructor(private readonly _options: DomainViewsOptions) {
@@ -62,6 +61,9 @@ export class DomainViews {
    * plain view for its path), and the open view answered again would be docked twice. */
   async open(address = ''): Promise<DG.ViewBase | null> {
     const {entry, rest} = this._route(address);
+    const segment = /^\/?([^/?]*)/.exec(address)![1];
+    if (segment !== '' && DomainViews._key(segment) !== DomainViews._key(this._segment(entry)))
+      grok.shell.warning(`This app has no ${segment} view: showing ${entry.name}`);
     return DomainApp.openAt(this.baseOf(entry.table), this._at(entry, rest)) === undefined ? this._new(address) : null;
   }
 
@@ -151,16 +153,10 @@ export class DomainViews {
         child.remove();
       for (const entry of this._options.views) {
         for (const [name, search] of SavedSearches.saved(entry.table)) {
-          saved.item(`${entry.name}: ${name}`, {savedSearch: {table: entry.table, name}})
+          saved.item(`${entry.name}: ${name}`)
             .onSelected.subscribe(() => void this.show(`${this._segment(entry)}${SavedSearches.query(search)}`));
         }
       }
-    });
-    type ContextMenu = {args: {item?: DG.TreeViewNode, menu: DG.Menu}};
-    DomainViews._deleteSaved ??= grok.events.onContextMenu.subscribe((e: ContextMenu) => {
-      const saved = e.args.item?.value?.savedSearch;
-      if (saved !== undefined)
-        e.args.menu.item('Delete', () => void SavedSearches.remove(saved.table, saved.name));
     });
   }
 
@@ -191,10 +187,14 @@ export class DomainViews {
     return entry.segment ?? entry.name.replace(/ /g, '');
   }
 
+  private static _key(segment: string): string {
+    return segment.replace(/ /g, '').toLowerCase();
+  }
+
   private _route(address: string): {entry: DomainViewEntry, rest: string} {
     const [, segment, rest] = /^\/?([^/?]*)(.*)$/.exec(address)!;
     const views = this._options.views;
-    const entry = views.find((v) => this._segment(v).toLowerCase() === segment.toLowerCase());
+    const entry = views.find((v) => DomainViews._key(this._segment(v)) === DomainViews._key(segment));
     return entry === undefined ? {entry: views[0], rest: address.startsWith('?') ? address : ''} : {entry, rest};
   }
 }

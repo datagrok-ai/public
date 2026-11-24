@@ -1,7 +1,7 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {badge, div, divV, span} from '@datagrok-libraries/u2';
+import {badge, batch, div, divV, span} from '@datagrok-libraries/u2';
 import type {BadgeVariant, RowView} from '@datagrok-libraries/u2';
 import {domains} from '@datagrok-libraries/ems/src/dg';
 import type {DomainViewOptions} from '@datagrok-libraries/ems/src/dg';
@@ -74,7 +74,8 @@ domains.configure<IssueRow>('grit.issue', async (issues) => {
     closedId !== null && v === closedId && !r.assignee ? 'Assign before closing' : null);
   // the status heads the second line, so a card without a description still fills its height
   issues.renderer = {...issues.renderer, card: (r) => divV([
-    div([span(`#${r.number} ${r.title}`, 'u2-domain-card-title'), ...priorityBadge(r)]),
+    div([span(`${lookupName(r.project_id) ?? ''}-${r.number} ${r.title}`, 'u2-domain-card-title'),
+      ...priorityBadge(r)]),
     span([lookupName(r.status_id), r.description].filter((d) => !!d).join(' · '), 'u2-domain-card-description'),
   ], 'u2-domain-card')};
 }, {id: 'grit'});
@@ -84,11 +85,35 @@ function priorityBadge(r: RowView<IssueRow>): HTMLElement[] {
   return name === null ? [] : [badge(name, {variant: priorityVariants[name] ?? 'default'})];
 }
 
+export const openIssues = 'status_id.name != "closed" or status_id = null';
+
+async function handleQuery(key: string | undefined, number: string): Promise<string | null> {
+  if (key === undefined)
+    return `number = ${number}`;
+  const project = await gritDb.projects.getByKey({key});
+  return project === null ? null : `project_id = "${project.id}" and number = ${number}`;
+}
+
 /** The Issues app: the platform ribbon plus the Mine / Open presets, and a key for each action. */
 export const issuesOptions: DomainViewOptions = {mode: 'cards', itemHeight: 48, children: {tables: ['comment']},
   shortcuts: {'m': 'Assign to me', 'c': 'Close'},
+  // the server searches text: a typed handle (`GRIT-12`, `#12`) becomes the issue's number, in its project if named
+  setup: (app) => app.effect(() => {
+    const typed = app.listSource.search.value.trim();
+    const m = /^(?:([A-Za-z][A-Za-z0-9_]*)-|#)(\d+)$/.exec(typed);
+    if (m === null)
+      return;
+    void handleQuery(m[1], m[2]).then((q) => {
+      if (q === null || app.listSource.search.peek().trim() !== typed)
+        return;
+      batch(() => {
+        app.listSource.search.value = '';
+        app.listSource.query.value = q;
+      });
+    });
+  }),
   ribbon: (base, app) => ({...base,
-    presets: [app.presets(['Mine', 'assignee = $me'], ['Open', 'status_id.name != "closed"'])]}),
+    presets: [app.presets(['Mine', 'assignee = $me'], ['Open', openIssues])]}),
 };
 
 /** A view per Grit table — the issues where they were, at `/apps/Grit/Issues`. Grit's one app answers everything

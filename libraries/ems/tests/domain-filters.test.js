@@ -381,8 +381,21 @@ scoped('saved and recent searches: the list names the saved search it holds, his
   for (let i = 0; i < 25; i++)
     SavedSearches.record('grit.issue', {...high, search: `t${i}`});
   assert.equal(SavedSearches.recent('grit.issue').length, 20);
-  await SavedSearches.remove('grit.issue', 'High');
+  const old = {...high, search: 'old', at: new Date(2020, 0, 2, 9, 30).getTime()};
+  userSettings.add('ems-recent-searches', 'grit.issue', JSON.stringify([...SavedSearches.recent('grit.issue'), old]));
+  document.body.append(filters.root);
+  fire(filters.root.querySelector('[aria-label="Saved and recent searches"]'), 'click');
+  await flush();
+  const panel = () => [...document.body.querySelectorAll('[role="menu"]')].at(-1);
+  const items = [...panel().querySelectorAll('[role="menuitem"]')].map((e) => e.textContent);
+  assert.deepEqual(items.filter((t) => t.includes('2020')).map((t) => t.includes('old')), [true],
+    'a recent search not from today says its date');
+  fire(panel().querySelector('[aria-haspopup="menu"]'), 'click');
+  fire([...panel().querySelectorAll('[role="menuitem"]')].find((e) => e.textContent.includes('High')), 'click');
+  await flush();
+  assert.deepEqual([...SavedSearches.saved('grit.issue').keys()], [], 'the history menu deletes a saved search');
   assert.equal(SavedSearches.title(src), null);
+  filters.root.remove();
   filters.dispose();
   src.dispose();
 });
