@@ -405,7 +405,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
    * after the source is ready. */
   newRow(values: RowValues<TRow> = {}, options?: {pristine?: boolean}): RowView<TRow> {
     if (this.readOnly.peek())
-      throw new DomainBackendError('forbidden', `${this.table}: ${this._readOnlyReason}`);
+      throw new DomainBackendError('forbidden', `${this.table}: ${this.readOnlyReason}`);
     const edit = this._edit.peek();
     if (edit === undefined)
       throw new Error(`${this.table}: the table is not loaded yet`);
@@ -788,7 +788,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
    * and the app's rules over it hold. */
   check(): string | null {
     if (this.readOnly.peek() && this.pending().some((r) => r[Rows.STATE] !== 'restored'))
-      return this._refuse(this._readOnlyReason);
+      return this._refuse(this.readOnlyReason);
     const edit = this._edit.peek();
     if (edit === undefined)
       return null;
@@ -1099,7 +1099,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     return problem;
   }
 
-  private get _readOnlyReason(): string {
+  get readOnlyReason(): string {
     return this._writable.peek() ? 'deleted rows are read-only until they are restored' :
       'the table does not accept writes';
   }

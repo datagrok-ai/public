@@ -38,7 +38,7 @@ export async function bulkEdit(source: DomainSource, options: DomainBulkEditOpti
   // the trash mode of the source, not a bound on its access: nothing in it is written until the
   // rows are restored, and the column policy below reads column security alone
   if (source.readOnly.peek()) {
-    notify.warning(`${source.table}: deleted rows are read-only until they are restored`);
+    notify.warning(`${source.table}: ${source.readOnlyReason}`);
     return null;
   }
   const writable = source.access.peek().columnPolicy();
