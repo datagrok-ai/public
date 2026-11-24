@@ -4,7 +4,7 @@ import {Control, signal, computed, batch, untracked, ReadonlySignal, Signal, but
   icon, Filters, allowedActions, actionsMenu, iconButton, ButtonGroup, Breadcrumbs, Rows, Menu, LabelColumn, Reason,
   text} from '@datagrok-libraries/u2';
 import type {FilterGroup, IWidgetStatus, Action, RowView, Scope, IProperty} from '@datagrok-libraries/u2';
-import type {DomainSource} from '../core/domain-source.js';
+import {DomainSource} from '../core/domain-source.js';
 import {capital, nounOf, emsBackends} from '../core/domain-backend.js';
 import type {DomainTableInfoLike} from '../core/domain-backend.js';
 import {SharedSession, confirmDiscard} from '../core/session.js';
@@ -396,8 +396,9 @@ export class DomainApp extends Control {
       const count = saved === null || this._count.value === '' ? this._count.value : `${saved} · ${this._count.value}`;
       // what a bulk action would act on, beside the count — the platform grid's own convention
       const selected = entity ? 0 : this.listSource.selection.value.length;
-      const problem = source !== null && source.error.value !== undefined ?
-        DomainErrors.message(source.error.value, source) : null;
+      const failed = source?.error.value !== undefined ? source :
+        this.session.sources.value.find((s) => DomainErrors.codeOf(s.error.value) === DomainSource.REFUSED);
+      const problem = failed == null ? null : DomainErrors.message(failed.error.value, failed);
       // the rows answer the filter that was applied, not the one in the box: while that one is
       // invalid they are shown stale, and a refusal of the old one is not the news
       if (!entity && this.list.stale.value && !dirty)
@@ -489,7 +490,7 @@ export class DomainApp extends Control {
     if (this._ribbon !== undefined)
       return this._ribbon;
     const singular = nounOf(this.table.info, true);
-    const blocked = computed(() => DomainTable.noCreate(this.listSource));
+    const blocked = computed(() => DomainTable.noCreate(this.listSource, this._options.defaults));
     const add = new Control(this.build(() =>
       iconButton('plus', () => void this.create(), {tooltip: `New ${singular}`, disabled: blocked})));
     add.root.dataset.u2 = 'new-button';
@@ -515,7 +516,8 @@ export class DomainApp extends Control {
     reload.effect(() => {
       const source = this._page.value === 'entity' ? this._entitySource.value : this.listSource;
       const polled = this._page.value === 'entity' || this.table.table.support.probe;
-      reload.root.hidden = polled && !this.stale.value && source?.access.value.can('view') !== false;
+      const refused = this.session.sources.value.some((s) => DomainSource.isForbidden(s.error.value));
+      reload.root.hidden = polled && !this.stale.value && !refused && source?.access.value.can('view') !== false;
     });
     const search = domains.search(this.listSource);
     const sort = this._sortMenu();
@@ -643,9 +645,11 @@ export class DomainApp extends Control {
    * page is {@link stale}. Through the gate: a reload drops whatever is pending. */
   async refresh(): Promise<boolean> {
     const source = this._page.peek() === 'entity' ? this._entitySource.peek() : this.listSource;
-    if (source !== null && this.session.isDirty.peek())
+    if (source === null)
+      return false;
+    if (this.session.isDirty.peek())
       await this.session.reloadAccess();
-    if (source === null || !await confirmDiscard(this.session, {action: 'reload the rows'}))
+    if (!await confirmDiscard(this.session, {action: 'reload the rows'}))
       return false;
     // the platform caches the access, and a grant made by another session never invalidates it
     emsBackends.domain?.dropAccess?.();
@@ -654,16 +658,21 @@ export class DomainApp extends Control {
     else if (await this._outdated()) {
       DomainTable.forget(this.table.address.split('.')[0]);
       await DomainViews.rebuild(this);
-    } else
+    } else {
       await source.refresh();
+      if (source === this._entitySource.peek())
+        this._fillPanes(source);
+    }
     return true;
   }
 
   // the handle is as old as the view: columns shared or added since are not in it
   private async _outdated(): Promise<boolean> {
+    if (!DomainApp._views.has(this))
+      return false;
     const fresh = await emsBackends.domain?.table(this.table.address).catch(() => undefined);
     const names = (table: {properties: IProperty[]}) => table.properties.map((p) => p.name).sort().join();
-    return fresh !== undefined && DomainApp._views.has(this) && names(fresh) !== names(this.table);
+    return fresh !== undefined && names(fresh) !== names(this.table);
   }
 
   /** Keeps the page's columns while the session has pending changes; `rebuild` runs once it is clean. */
@@ -1134,13 +1143,8 @@ export class DomainApp extends Control {
         const rows = source.rows.items.value;
         if (source.state.value !== 'ready')
           return;
-        if (source.total.value === 0 && !source.access.value.can('view') && this._panes.length > 0) {
-          for (const pane of this._panes)
-            pane.dispose();
-          this._panes = [];
-          this.panes.replaceChildren();
-          return;
-        }
+        if (!draft)
+          this.panes.hidden = source.total.value === 0 && !source.access.value.can('view');
         if (rows.length > 0 && source.currentRow.peek() === null)
           source.currentRow.value = rows[0];
         else if (source.total.value === 0 && !rechecked && source.access.peek().can('view')) {
@@ -1149,14 +1153,10 @@ export class DomainApp extends Control {
           void source.reloadAccess();
         }
       });
-      const {children, history, include, exclude} = this._options;
+      const {include, exclude} = this._options;
       const form = this.build(() => new DomainForm(source, {system: 'footer', include, exclude,
         labelColumn: this.labelColumn, empty: `${capital(nounOf(this.table.info, true))} "${entity}" was not found.`}));
-      this._panes = this.build(() => [
-        ...(children === false ? [] : [domains.children(source, children === true ? undefined : children)]),
-        ...(history === false || !this.table.table.support.audit ? [] :
-          [domains.history(source, undefined, {include, exclude})]),
-      ]);
+      this._fillPanes(source);
       this._formHost.replaceChildren(form.root);
       if (draft) {
         const why = div([], 'u2-domain-form-empty');
@@ -1166,12 +1166,11 @@ export class DomainApp extends Control {
             why.replaceChildren();
           else
             why.replaceChildren(span(reason, 'u2-domain-form-hint'));
-          form.root.hidden = reason !== null;
+          form.root.hidden = this.panes.hidden = reason !== null;
           why.hidden = reason === null;
         });
         this._formHost.append(why);
       }
-      this.panes.replaceChildren(...this._panes.map((pane) => pane.root));
       batch(() => {
         this._entitySource.value = source;
         this._form.value = form;
@@ -1181,6 +1180,18 @@ export class DomainApp extends Control {
       this._entity.value = page === 'entity' ? entity : null;
       this._page.value = page;
     });
+  }
+
+  private _fillPanes(source: DomainSource): void {
+    const {children, history, include, exclude} = this._options;
+    for (const pane of this._panes)
+      pane.dispose();
+    this._panes = this.build(() => [
+      ...(children === false ? [] : [domains.children(source, children === true ? undefined : children)]),
+      ...(history === false || !this.table.table.support.audit ? [] :
+        [domains.history(source, undefined, {include, exclude})]),
+    ]);
+    this.panes.replaceChildren(...this._panes.map((pane) => pane.root));
   }
 
   private _close(): void {
@@ -1197,6 +1208,7 @@ export class DomainApp extends Control {
     source?.dispose();
     this._formHost.replaceChildren();
     this.panes.replaceChildren();
+    this.panes.hidden = false;
   }
 
   private _source(options: Parameters<DomainTable['source']>[0]): DomainSource {

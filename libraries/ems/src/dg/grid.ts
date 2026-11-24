@@ -100,10 +100,11 @@ export class DomainGrid extends Control {
       const row = source.rows.byKey(String(item.grid.dataFrame.get('id', item.tableRowIndex!)));
       for (const action of row === undefined ? [] : DomainList.stagedDelete(source, row)) {
         menu.item(action.text, () => {
-          const caption = this._captionOf(row!);
+          const said = action.text !== 'Delete' || Rows.isDraft(row!) ? null :
+            `${this._captionOf(row!)} will be deleted when you save; Discard brings it back`;
           void action.run();
-          if (action.text === 'Delete')
-            notify.info(`${caption} will be deleted when you save; Discard brings it back`);
+          if (said !== null)
+            notify.info(said);
         });
       }
     });

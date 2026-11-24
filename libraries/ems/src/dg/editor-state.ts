@@ -3,6 +3,7 @@ import {signal, computed, ReadonlySignal, Emitter, FrameRows} from '@datagrok-li
 import {sameJson, MemoryEditState} from '../core/edit-state.js';
 import type {EditSaved, EditState} from '../core/edit-state.js';
 import type {DataFrameLike} from '@datagrok-libraries/u2';
+import type {DomainTableLike} from '../core/domain-backend.js';
 
 /** `EditState` over the js-api `DomainFrameEditor`: the editor stays the single writer of the frame, and its
  * `onChanged` is the one signal the mirrored state follows. Keys are what `FrameRows` uses. */
@@ -25,7 +26,7 @@ export class EditorEditState implements EditState {
   private _index: Map<string, number> | undefined;
   private readonly _refused = new Map<string, Map<string, string>>();
 
-  constructor(readonly editor: DG.DomainFrameEditor) {
+  constructor(readonly editor: DG.DomainFrameEditor, readonly table?: DomainTableLike) {
     const dirty = signal(editor.isDirty);
     const count = signal(editor.changeCount);
     const saving = signal(editor.isSaving);

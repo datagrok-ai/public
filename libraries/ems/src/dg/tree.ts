@@ -188,11 +188,10 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     const first = !this._read;
     const was = this.tree.selectedNode.peek();
     const row = was?.data ?? null;
-    // the selection is a list index: rows landing above it would move it to another node
-    if (!first)
-      this._held.value = {row: this._kept.peek() ?? row};
     if (first)
       this._loading.value = true;
+    else // the selection is a list index: rows landing above it would move it to another node
+      this._held.value = {row: this._kept.peek() ?? row};
     this._error.value = null;
     try {
       const table = await this._ready;
@@ -209,10 +208,8 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
       else if (this._kept.peek() !== null || this._picked !== null) {
         await this._reopen();
         const kept = this._kept.peek();
-        if (kept !== null && this._picked === null && !this._pending(false)) {
-          this._kept.value = null;
-          await this._toParent(kept, `${table.renderer.caption(kept)} was deleted`);
-        }
+        if (kept !== null && this._picked === null)
+          await this._reselect(kept);
       } else if (first || was === null)
         await this._clear();
       else {
@@ -234,6 +231,8 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
       }
     } catch (e) {
       this._error.value = DomainErrors.message(e);
+      if (this.tree.selectedNode.peek() === null)
+        this._kept.value ??= this._held.peek()?.row ?? null;
     } finally {
       this._held.value = null;
       this._loading.value = false;
@@ -265,11 +264,12 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     const table = this._table!;
     const [now] = await table.table.query({filter: {property: 'id', operator: '=', value: row.id}, limit: 1});
     if (now !== undefined) {
-      const ancestors = table.table.ancestors;
-      const path = ancestors === undefined ? [] : (await ancestors.call(table.table, row.id)).map((a) => a.id);
-      await this.tree.expandPath([...path, row.id]);
-      if (this.tree.selectedNode.peek()?.id === row.id)
+      await this._expand(row.id);
+      if (this.tree.selectedNode.peek()?.id === row.id) {
+        if (this._kept.peek() !== null)
+          this._kept.value = this._notice.value = null;
         return;
+      }
     }
     const caption = table.renderer.caption(row);
     if (now === undefined && this._pending(false)) {
@@ -287,7 +287,7 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     if (this._held.peek() === null || this._refreshing === undefined)
       return;
     this._picked = {row};
-    this._kept.value = null;
+    this._kept.value = this._notice.value = null;
     this._held.value = {row};
   }
 
@@ -303,14 +303,12 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     const parent = (row as Record<string, unknown>)[table.info.parentColumn!];
     if (typeof parent === 'string' && parent !== '') {
       const [up] = await table.table.query({filter: {property: 'id', operator: '=', value: parent}, limit: 1});
-      if (up !== undefined) {
-        const path = table.table.ancestors === undefined ? [] :
-          (await table.table.ancestors(parent)).map((a) => a.id);
-        await this.tree.expandPath([...path, parent]);
-      }
+      if (up !== undefined)
+        await this._expand(parent);
     }
-    if (this.tree.selectedNode.peek()?.id !== parent)
+    if (this.tree.selectedNode.peek()?.id !== (parent ?? ALL))
       await this._clear();
+    this._kept.value = null;
     this._noticeAt = this.tree.selectedNode.peek()?.data?.id ?? null;
     this._notice.value = gone;
   }
@@ -324,12 +322,16 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
       throw new DomainBackendError('unsupported',
         `${handle.address}: the backend cannot answer a row's ancestors`);
     }
-    const path = await table.ancestors(id);
-    await this.tree.expandPath([...path.map((a) => a.id), id]);
+    await this._expand(id, table);
     // `expandPath` walks down from the roots and stops where a step is missing — which is exactly
     // what a chain truncated at an ancestor the caller cannot see looks like from here
     if (this.tree.selectedNode.peek()?.data?.id !== id)
       this._error.value = `${id} is not reachable from here — an ancestor is not visible to you`;
+  }
+
+  private async _expand(id: string, table = this._table!.table): Promise<void> {
+    const path = await table.ancestors?.(id) ?? [];
+    await this.tree.expandPath([...path.map((a) => a.id), id]);
   }
 
   /** Every action that applies to the node's row and that the caller may run on it: Open, the
