@@ -512,7 +512,8 @@ export class DomainApp extends Control {
     });
     const more = this._actionsMenu();
     // the status bar is text: the way to act on "Data changed" is here, and only while it stands
-    const reload = new Control(button('Refresh', () => void this.refresh()));
+    const reload = new Control(button('Refresh',
+      () => void this.refresh().catch((e) => DomainErrors.report(e))));
     reload.root.dataset.u2 = 'refresh-button';
     reload.effect(() => {
       const source = this._page.value === 'entity' ? this._entitySource.value : this.listSource;
