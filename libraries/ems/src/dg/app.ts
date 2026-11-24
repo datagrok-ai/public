@@ -660,7 +660,7 @@ export class DomainApp extends Control {
       await DomainViews.rebuild(this);
     } else {
       await source.refresh();
-      if (source === this._entitySource.peek())
+      if (source === this._entitySource.peek() && this.session.sources.peek().every((s) => s.pending().length === 0))
         this._fillPanes(source);
     }
     return true;

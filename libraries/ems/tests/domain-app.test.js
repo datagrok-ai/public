@@ -7,7 +7,7 @@ import {layout} from '@datagrok-libraries/u2/tests/layout.mjs';
 import {backends, Scope, Rows, notify, allowedActions, Control} from '@datagrok-libraries/u2';
 import {Usage} from 'datagrok-api/u2core';
 import {SharedSession} from '../src/core/session.js';
-import {backend} from './domain-fixtures.mjs';
+import {backend, holdFrames} from './domain-fixtures.mjs';
 import {byKind} from '@datagrok-libraries/u2/testing';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
@@ -1918,8 +1918,16 @@ scoped('a user who reaches rows only through row grants sees them: picker, child
   await flush();
   await flush();
   assert.equal(byKind(b, 'new-button')[0].closest('[hidden]'), null, 'the first child can be added');
+  const gate = holdFrames(emsBackends.domain, 'grit.project');
+  gate.hold = true;
+  const refreshing = b.refresh();
+  await flush();
   fire(byKind(b, 'new-button')[0], 'click');
   await flush();
+  gate.release();
+  await refreshing;
+  await flush();
+  assert.equal(b.session.isDirty.value, true, 'a child row added while Refresh reads is kept');
   const child = b.session.sources.value.find((s) => s.table === 'grit.issue');
   child.pending()[0].title = 'Fresh';
   child.refuse('Column "project_id" references a deleted row in "project" ("p1")');
