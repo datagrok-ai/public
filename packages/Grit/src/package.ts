@@ -69,6 +69,7 @@ domains.configure<IssueRow>('grit.issue', async (issues) => {
   issues.actions.add({name: 'Assign to me', icon: 'user', requires: 'edit',
     when: (r) => r.assignee !== me(), run: (r) => { r.assignee = me(); }});
   issues.actions.add({name: 'Close', icon: 'check', requires: 'edit',
+    disabledFor: (r) => r.assignee ? null : 'Assign before closing',
     when: (r) => closedId !== null && r.status_id !== closedId, run: (r) => { r.status_id = closedId!; }});
   issues.validators.add('status_id', (v, r) =>
     closedId !== null && v === closedId && !r.assignee ? 'Assign before closing' : null);

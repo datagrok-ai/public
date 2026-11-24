@@ -121,7 +121,7 @@ scoped('actions: Open on saved rows through the handler, Delete under the row\'s
   emsBackends.domain = backend({rows: {issue: rows, project: ROWS.project.map((r) => ({...r}))}});
   const {table, src} = await issues();
   table.actions.add({name: 'Escalate', icon: 'arrow-up', requires: 'edit', when: (r) => r.title !== 'Naproxen',
-    run: (r) => r.title = `${r.title}!`});
+    disabledFor: (r) => r.done ? 'Already done' : null, run: (r) => r.title = `${r.title}!`});
   const list = testOwner().build(() => domains.list(src, {actions: [{name: 'Copy id', run: () => {}}]}));
   assert.deepEqual(names(list, src.rows.byKey('i1')), ['Open', 'Escalate', 'Copy id', 'Delete']);
   assert.deepEqual(names(list, src.rows.byKey('i2')), ['Open', 'Escalate', 'Copy id'], 'no ~can_delete');
@@ -130,6 +130,8 @@ scoped('actions: Open on saved rows through the handler, Delete under the row\'s
   assert.deepEqual(names(list, draft), ['Escalate', 'Copy id', 'Delete'], 'a draft has no address to open');
   list.actionsFor(src.rows.byKey('i1')).find((a) => a.text === 'Escalate').run();
   assert.equal(src.rows.byKey('i1').title, 'Aspirin!', 'bound to the row');
+  assert.deepEqual(['i1', 'i2'].map((id) => list.actionsFor(src.rows.byKey(id)).find((a) => a.text === 'Escalate')
+    .disabled), ['Already done', null], 'a reason per row');
   list.actionsFor(src.rows.byKey('i1')).find((a) => a.text === 'Open').run();
   await flush();
   assert.equal(DG.DomainObjectHandler.opened.length, 1);

@@ -54,6 +54,8 @@ export interface DomainAction<TRow extends DomainRowLike = DomainRowLike> {
   icon?: string;
   requires?: Capability;
   disabled?: Reason;
+  /** Why it is off for this one row, when it is. */
+  disabledFor?(row: RowView<TRow>): Reason;
   when?(row: RowView<TRow>): boolean;
   run(row: RowView<TRow>): void;
 }
@@ -93,7 +95,8 @@ export class ActionRegistry<TRow extends DomainRowLike = DomainRowLike> {
 
   static bind<T extends DomainRowLike>(actions: readonly DomainAction<T>[], row: RowView<T>): Action[] {
     return actions.filter((a) => a.when === undefined || a.when(row)).map((a): Action =>
-      ({text: a.name, icon: a.icon, requires: a.requires, disabled: a.disabled, run: () => a.run(row)}));
+      ({text: a.name, icon: a.icon, requires: a.requires, run: () => a.run(row),
+        disabled: a.disabledFor === undefined ? a.disabled : a.disabledFor(row)}));
   }
 }
 
