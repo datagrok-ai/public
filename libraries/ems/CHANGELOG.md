@@ -5,7 +5,7 @@
 * Lists: Fixed Load more skipping, repeating or mixing rows after a save, a filter change or a peer's write
 * Lists: Fixed a search, filter or sort changed during a save or over unsaved edits not being applied
 * Lists: Fixed the current row and the selection being lost on save, refresh or switching to the table view
-* Lists: Fixed sort keys with spaces or a `prop.` prefix being dropped, and sorting by unsortable columns
+* Lists: Fixed sort keys with spaces or a `prop.` prefix being dropped, and links sorting by a reference or id
 * Lists: Fixed a long card title wrapping and hiding the card's second line; it now ends with an ellipsis
 * Live refresh: Fixed a list, tree or aggregation missing a peer's write or rename, or dropping unsaved edits
 * Live refresh: Refresh is always offered on a table that is not polled for changes
@@ -20,7 +20,7 @@
 * Forms: Fixed validation of multi-column constraints and tightened rules; a stale reference is marked
 * Children: Added Delete to a child grid's row menu; New is off under a deleted parent
 * Import: Fixed previews and reports for refused batches, files over 1,000 rows and files with nothing new
-* Import: Fixed matching by formatted keys and by names, and updates without access to a required column
+* Import: Fixed links by formatted keys, auto-mapped key or name columns, updates without a required column
 * Import: Fixed dates shown as raw GMT text
 * Properties: Fixed concurrent edits dropping columns, user columns shown locked and pages keeping old columns
 * Trees: Fixed a node picked during a refresh being lost, and the parent picker offering a row's own subtree

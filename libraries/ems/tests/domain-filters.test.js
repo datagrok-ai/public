@@ -457,6 +457,9 @@ scoped('a search saved in this tab keeps the ones another tab saved since this o
     };
     await SavedSearches.save('grit.issue', 'Delta', {q: '', search: 'delta', sort: ''});
     assert.deepEqual(Object.keys(server), ['Alpha', 'Beta', 'Gamma', 'Delta'], 'kept when the read fails');
+    dapi.userDataStorage.get = async () => ({Alpha: server.Alpha});
+    await SavedSearches.save('grit.issue', 'Epsilon', {q: '', search: 'epsilon', sort: ''});
+    assert.deepEqual(Object.keys(server), ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon'], 'kept when a put failed');
   } finally {
     userSettings.flush = flushed;
     dapi.userDataStorage.get = get;

@@ -438,15 +438,14 @@ class ImportFlow {
       const sent = ImportFlow._sent(plan);
       if (this._table.table.validate !== undefined) {
         const key = JSON.stringify([mapping, options]);
-        if (this._checked?.key !== key) {
-          const scanned = sent.slice(0, PREVIEW_ROWS).map((i) => plan[i].payload!);
-          this._checked = {key, report: this._table.table.validate(scanned, options)};
-        }
+        const scanned = sent.slice(0, PREVIEW_ROWS);
+        const payloads = scanned.map((i) => plan[i].payload!);
+        if (this._checked?.key !== key)
+          this._checked = {key, report: this._table.table.validate(payloads, options)};
         report = await this._checked.report;
         if (ImportFlow._refused(report)) {
           refusal = ImportFlow._refusalText(report);
-          const scanned = sent.slice(0, PREVIEW_ROWS);
-          const judged = await this._attributed(report.rows, scanned.map((i) => plan[i].payload!));
+          const judged = await this._attributed(report.rows, payloads);
           notes = ImportFlow._refusalNotes(judged.notes, scanned);
           report = ImportFlow._predicted(judged.rows, scanned.length);
         }
@@ -503,8 +502,8 @@ class ImportFlow {
       host.append(span(`${showing}.`, 'u2-domain-import-summary'));
     if (refusal !== null) {
       host.append(...notes.map((note) => span(note, 'u2-domain-import-problem')));
-      this._previewBlock.value = `The server refuses the whole batch — ${refusal}. Nothing would be imported ` +
-        'until that is fixed.';
+      this._previewBlock.value = notes.length > 0 ? 'Nothing would be imported until that is fixed.' :
+        `The server refuses the whole batch — ${refusal}. Nothing would be imported until that is fixed.`;
       return;
     }
     const valid = sent.length > PREVIEW_ROWS ? null : report.willInsert + report.willUpdate;
@@ -537,7 +536,7 @@ class ImportFlow {
       rows: refused.map((r) => ({index: r.index, predicted: 'error', errors: r.errors}))};
   }
 
-  // the server pins a failed CHECK on the batch's first row, so the constraint is judged per row here
+  // the server pins a refusal of the whole statement on the batch's first row: a CHECK is judged per row here
   private async _attributed(rows: DomainBatchReportLike['rows'], payloads: Record<string, unknown>[]):
     Promise<{rows: DomainBatchReportLike['rows'], notes: {message: string, at: number[]}[]}> {
     type Row = DomainBatchReportLike['rows'][number];
@@ -550,21 +549,18 @@ class ImportFlow {
       out.set(index, row);
     };
     for (const row of rows) {
-      if (!out.has(row.index))
-        out.set(row.index, {...row, errors: []});
       for (const error of row.errors ?? []) {
-        if (error.code !== 'check') {
+        if (error.code !== 'check' && (row.status !== undefined || row.id != null)) {
           add(row.index, error, row);
           continue;
         }
-        const at = await this._breaking(error.constraint, payloads) ?? [];
-        notes.push({message: error.message, at});
+        const at = error.code === 'check' ? await this._breaking(error.constraint, payloads) ?? [] : [];
+        notes.push({message: this._describe([error]), at});
         for (const index of at)
           add(index, error, row);
       }
     }
-    return {rows: [...out.values()].filter((r) => r.errors!.length > 0 || r.status !== undefined)
-      .sort((a, b) => a.index - b.index), notes};
+    return {rows: [...out.values()].sort((a, b) => a.index - b.index), notes};
   }
 
   private async _breaking(name: string | undefined, payloads: Record<string, unknown>[]): Promise<number[] | null> {
@@ -587,8 +583,7 @@ class ImportFlow {
     return notes.map(({message, at}) => {
       const shown = at.slice(0, 10).map((i) => (sent[i] + 1).toLocaleString()).join(', ');
       const more = at.length > 10 ? ` and ${(at.length - 10).toLocaleString()} more` : '';
-      return `The server refuses the whole batch — ${message}` + (at.length === 0 ?
-        '; it does not say which row, and no row here breaks it.' :
+      return `The server refuses the whole batch — ${message}` + (at.length === 0 ? '; it does not say which row.' :
         ` (${at.length === 1 ? 'row' : 'rows'} ${shown}${more}).`);
     });
   }
@@ -913,19 +908,21 @@ class ImportFlow {
     const target = hit((a) => a === want) ?? hit((a) => a.startsWith(want) || want.startsWith(a)) ??
       hit((a) => a.includes(want) || want.includes(a)) ?? (typed.length === 1 ? typed[0].name! : SKIP);
     const link = this._links.get(target);
-    if (link === undefined || ImportFlow._ids(column))
+    const all = (test: (value: string) => boolean) => {
+      for (let i = 0; i < column.length; i++) {
+        if (!column.isNone(i) && !test(text(column.get(i))))
+          return false;
+      }
+      return true;
+    };
+    const named = link !== undefined && plain(link.prop.name!) === want && all((v) => !/\s/.test(v.trim()));
+    if (link === undefined || named || all((v) => UUID.test(v)))
       return target;
     const info = link.target.info;
-    const by = [info.nameColumn, info.businessKey[0]].find((f) => link.fields.some((l) => l.prop.name === f));
-    return by === undefined ? target : `${target}.${by}`;
-  }
-
-  private static _ids(column: DG.Column): boolean {
-    for (let i = 0; i < column.length; i++) {
-      if (!column.isNone(i) && !UUID.test(text(column.get(i))))
-        return false;
-    }
-    return true;
+    const [key, name] = [info.businessKey[0], info.nameColumn].map((f) => link.fields.find((l) => l.prop.name === f));
+    const by = key !== undefined && info.businessKey.length === 1 && all((v) => ImportLinks.keyLike(key, v)) ? key :
+      name ?? key;
+    return by === undefined ? target : `${target}.${by.prop.name}`;
   }
 
   private _mapping(): Map<string, string> {
@@ -1050,7 +1047,7 @@ class ImportFlow {
     }
     const outcomes = this._outcomes(itemized, plan, failed);
     try {
-      saved = await this._rowsById([...new Set(outcomes.map((o) => o.id).filter((id): id is string => id !== null))]);
+      saved = await this._rowsBy('id', outcomes.map((o) => o.id).filter((id) => id !== null));
     } catch (e) {
       this._report.append(span(`The keys could not be read: ${DomainErrors.message(e)}`, 'u2-domain-import-problem'));
     }
@@ -1148,33 +1145,23 @@ class ImportFlow {
     if (key.length !== 1)
       return report;
     const value = (index: number) => plan[index].payload![key[0]];
-    const ids = await this._idsByKey(key[0], missing.map(value).filter((v) => v !== null && v !== undefined));
+    const rows = await this._rowsBy(key[0], missing.map(value).filter((v) => v !== null && v !== undefined));
     const found = missing.flatMap((index) => {
-      const id = ids.get(String(value(index)));
-      return id === undefined ? [] : [{index, id, status, ...(status === 'duplicate' ? {existingId: id} : {})}];
+      const row = rows.get(String(value(index)));
+      const id = String(row?.id);
+      return row === undefined ? [] : [{index, id, status, ...(status === 'duplicate' ? {existingId: id} : {})}];
     });
     return {...report, rows: [...report.rows, ...found]};
   }
 
-  private async _idsByKey(column: string, values: unknown[]): Promise<Map<string, string>> {
-    const ids = new Map<string, string>();
+  private async _rowsBy(column: string, values: unknown[]): Promise<Map<string, RowView>> {
+    const rows = new Map<string, RowView>();
     const unique = [...new Set(values)];
     for (let at = 0; at < unique.length; at += KEY_CHUNK) {
       const chunk = unique.slice(at, at + KEY_CHUNK);
       const filter = {property: column, operator: '=', value: chunk};
       for (const row of await this._table.table.query({filter, limit: chunk.length}))
-        ids.set(String(row[column]), String(row.id));
-    }
-    return ids;
-  }
-
-  private async _rowsById(ids: string[]): Promise<Map<string, RowView>> {
-    const rows = new Map<string, RowView>();
-    for (let at = 0; at < ids.length; at += KEY_CHUNK) {
-      const chunk = ids.slice(at, at + KEY_CHUNK);
-      const filter = {property: 'id', operator: '=', value: chunk};
-      for (const row of await this._table.table.query({filter, limit: chunk.length}))
-        rows.set(String(row.id), row as RowView);
+        rows.set(String(row[column]), row as RowView);
     }
     return rows;
   }

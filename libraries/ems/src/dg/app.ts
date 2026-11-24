@@ -1068,7 +1068,8 @@ export class DomainApp extends Control {
     const q = normalized(params.get('q') ?? '', this.listSource.schema);
     const search = params.get('search') ?? '';
     const trash = this._mode.peek() === 'trash';
-    const sort = trash ? this.listSource.sort.peek() : this._sortable(params.get('sort') ?? this._options.sort ?? '');
+    const sort = trash ? this.listSource.sort.peek() :
+      sortable(params.get('sort') ?? this._options.sort ?? '', this.table.properties);
     const current = this.listSource.query.peek();
     // already on the list, the gate `goTo` skipped: the query is changing under pending changes
     if ((typeof current === 'string' ? current : Filters.format(current)) === q &&
@@ -1082,11 +1083,6 @@ export class DomainApp extends Control {
       this.listSource.sort.value = sort;
     });
     return true;
-  }
-
-  // the server refuses the whole read for a sort column the caller may not read
-  private _sortable(sort: string): string {
-    return sortable(sort, this.table.properties);
   }
 
   // `draft` is the create page: an entity of "new" without it is the row so keyed

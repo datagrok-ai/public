@@ -1,8 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import {batch, computed, iconButton, signal, Dialog, Filters, Menu, TextInput, notify} from '@datagrok-libraries/u2';
-import type {Signal, FilterProperty, FilterSchema} from '@datagrok-libraries/u2';
+import type {Signal, FilterProperty, FilterSchema, IProperty} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
 import {confirmDiscard} from '../core/session.js';
+import {DomainTable} from './facade.js';
 
 export interface DomainSearch {
   q: string;
@@ -13,17 +14,16 @@ export interface DomainSearch {
 
 const RECENT = 'ems-recent-searches';
 const savedKey = (table: string) => `ems-searches|${table}`;
-const same = (a: DomainSearch, b: DomainSearch) => a.q === b.q && a.search === b.search && a.sort === b.sort;
+const same = (a: DomainSearch, b: DomainSearch, schema: {properties: readonly FilterProperty[]} = {properties: []}) =>
+  normalized(a.q, schema) === normalized(b.q, schema) && a.search === b.search && a.sort === b.sort;
 const label = (s: DomainSearch) => [s.q, s.search && `Search "${s.search}"`].filter((x) => x).join(' · ');
-/** grok.userSettings keeps writes in memory until its 10 s sync: an explicit save is sent now. */
-const persist = () => void grok.userSettings.flush();
 let writes = Promise.resolve();
 /** grok.userSettings writes a whole group from this tab's copy, which another tab may have added to since:
  * a write is made over the server's copy (this tab's where the read fails), one write at a time. */
 function write(group: string, change: () => void): Promise<void> {
   const run = writes.then(async () => {
     await grok.dapi.userDataStorage.get(group, true)
-      .then((server) => grok.userSettings.put(group, server ?? {})).catch(() => {});
+      .then((server) => grok.userSettings.put(group, {...server, ...grok.userSettings.get(group)})).catch(() => {});
     change();
     SavedSearches.changed.value++;
     await grok.userSettings.flush();
@@ -32,9 +32,9 @@ function write(group: string, change: () => void): Promise<void> {
   return run;
 }
 
-/** The keys of `sort` over columns the table describes: the server refuses a read that names any other. */
-export function sortable(sort: string, properties: readonly {name?: string}[]): string {
-  const columns = new Set(properties.map((p) => p.name));
+/** The keys of `sort` over columns the list can be ordered by: the server refuses a read that names an unknown one. */
+export function sortable(sort: string, properties: readonly IProperty[]): string {
+  const columns = new Set(properties.filter(DomainTable.isSortable).map((p) => p.name));
   return sort.split(',').map((key) => key.trim())
     .filter((key) => key !== '' && columns.has(key.replace(/^!/, '').replace(/^prop\./, ''))).join(',');
 }
@@ -85,7 +85,7 @@ export class SavedSearches {
 
   static clearRecent(table: string): void {
     grok.userSettings.delete(RECENT, table);
-    persist();
+    void grok.userSettings.flush();
   }
 
   static current(source: DomainSource): Signal<string | null> {
@@ -100,7 +100,8 @@ export class SavedSearches {
     SavedSearches.changed.value;
     const name = SavedSearches.current(source).value;
     const saved = name === null ? undefined : SavedSearches.saved(source.table).get(name);
-    return saved === undefined ? null : same(saved, SavedSearches.of(source)) ? name : `${name} (edited)`;
+    return saved === undefined ? null : same(saved, SavedSearches.of(source), source.schema) ? name :
+      `${name} (edited)`;
   }
 
   static apply(source: DomainSource, search: DomainSearch): void {
@@ -136,7 +137,7 @@ export class SavedSearches {
       current.value = null;
       return;
     }
-    const match = [...SavedSearches.saved(source.table)].find(([, s]) => same(s, search));
+    const match = [...SavedSearches.saved(source.table)].find(([, s]) => same(s, search, source.schema));
     if (match !== undefined)
       current.value = match[0];
     SavedSearches.record(source.table, search);

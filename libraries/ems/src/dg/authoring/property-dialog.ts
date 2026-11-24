@@ -178,13 +178,12 @@ export class PropertyDialog {
   private static _consent(plan: DG.DomainApplyPlan, autoNumbered: number, constraints: number): string {
     const values = plan.drops.columns.reduce((n, d) => n + (d.nonNullValues ?? 0), 0);
     const rows = plan.drops.tables.reduce((n, t) => n + (t.liveRows ?? 0), 0);
-    const uncounted = (n: number, total: number): number => total > 0 ? 0 : n;
     const parts = [
       ...(values > 0 ? [`delete ${plural(values, 'stored value', 'stored values')}`] : []),
       ...(rows > 0 ? [`delete ${plural(rows, 'row', 'rows')}`] : []),
       ...([
-        {n: uncounted(plan.drops.columns.length, values), verb: 'drop', one: 'column', many: 'columns'},
-        {n: uncounted(plan.drops.tables.length, rows), verb: 'drop', one: 'table', many: 'tables'},
+        {n: plan.drops.columns.filter((d) => !d.nonNullValues).length, verb: 'drop', one: 'column', many: 'columns'},
+        {n: plan.drops.tables.filter((t) => !t.liveRows).length, verb: 'drop', one: 'table', many: 'tables'},
         {n: plan.typeChanges?.length ?? 0, verb: 'change the type of', one: 'column', many: 'columns'},
         {n: plan.uniqueDrops?.length ?? 0, verb: 'drop', one: 'unique constraint', many: 'unique constraints'},
         {n: autoNumbered, verb: 'change the auto-numbering of', one: 'column', many: 'columns'},
