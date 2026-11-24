@@ -465,9 +465,12 @@ export class DomainFrameEditor implements IFrameEditor {
 
   /** Why [column] cannot be written on a persisted row, in the table's own vocabulary. */
   private _fieldRefusal(column: string): string {
-    return this.access.fields[column] === 'immutable'
-      ? `${this._captionOf(column)} cannot change once the row exists`
+    return this.access.fields[column] === 'immutable' ? this._frozenText(column)
       : `${this._captionOf(column)} is read-only`;
+  }
+
+  private _frozenText(column: string): string {
+    return `${this._captionOf(column)} cannot change once the row exists`;
   }
 
   /** {@link IFrameEditor}: an edit the HOST refused ({@link refusalOf} said why) — reported on
@@ -1319,7 +1322,8 @@ export class DomainFrameEditor implements IFrameEditor {
     let mapped = false;
     for (const columnError of errors)
       if (columnError.column != null && this._df.columns.contains(columnError.column)) {
-        const message = columnError.code === 'unique' ? duplicate : columnError.message;
+        const message = columnError.code === 'unique' ? duplicate
+          : columnError.code === 'immutable' ? this._frozenText(columnError.column) : columnError.message;
         this._setError(row, columnError.column, {message: message, kind: 'error'});
         mapped = true;
       }
@@ -1340,6 +1344,10 @@ export class DomainFrameEditor implements IFrameEditor {
     if (e instanceof DomainRestrictError)
       return typeof e.body['column'] === 'string' ? this._deletedParentRefusal(e, failing)
         : this.restrictRefusal(e);
+    const frozen = e instanceof DomainValidationError
+      ? e.rows[0]?.errors?.find((x) => x.code === 'immutable')?.column : undefined;
+    if (frozen != null)
+      return this._frozenText(frozen);
     const named = this._displayOf(failing.row);
     const noun = this._info.singularName.toLowerCase();
     if (e instanceof DomainNotFoundError && failing.op.op === 'update')

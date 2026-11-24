@@ -155,6 +155,17 @@ test('a reference to a deleted parent is refused on its cell, by the column capt
   assert.equal(ed.errorsOf(0).location_id.kind, 'conflict');
 });
 
+test('a write-once column the server refuses to change is named by its caption', async () => {
+  const {ed} = editor('', null);
+  ed._propByName.set('name', {friendlyName: 'Structure'});
+  const e = new DG.DomainValidationError('Validation failed', 409, {error: 'validation', rows: [{index: 0,
+    errors: [{column: 'name', code: 'immutable', message: 'Column "name" is write-once and already has a different value'}]}]});
+  const message = await ed.refusalFor(e, {op: {op: 'update'}, row: 0});
+  assert.equal(message, 'Structure cannot change once the row exists');
+  ed.mapValidationError(e, {op: {op: 'update'}, row: 0}, '');
+  assert.equal(ed.errorsOf(0).name.message, message);
+});
+
 test('a delete of a row someone else already deleted lands, and the rest of the batch is sent', async () => {
   const {ed} = editor('deleted', null);
   for (const [name, value] of [['id', 'r2'], ['name', 'Other'], ['version', 1], [DG.DOMAIN_DELETED_COLUMN, false],
