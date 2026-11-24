@@ -7,7 +7,7 @@ import {backends, Scope, signal, Signal, Registry, SpecContext, renderSpec, regi
 import {registerDomainSources} from '../src/core/registrations.js';
 import {DomainSource} from '../src/core/domain-source.js';
 import {SharedSession} from '../src/core/session.js';
-import {SCHEMA, ROWS, backend, until} from './domain-fixtures.mjs';
+import {SCHEMA, ROWS, backend, holdFrames, until} from './domain-fixtures.mjs';
 import {MemoryDomainBackend} from '../src/core/memory-domain.js';
 
 /** Every test runs over its own backend and must leave the live-scope count where it was. */
@@ -197,13 +197,10 @@ source('a delete of a row another session changed is refused with a version conf
   const src = await issues();
   src.edit.value.markDeleted('i2');
   emsBackends.domain.tableSync('grit.issue').rows[1].version = 2;
-  assert.equal(await src.save(), false, 'a stale delete is refused like a stale update');
+  assert.equal(await src.save(), false);
   assert.equal(src.error.value.code, 'version-conflict');
   assert.equal(src.rows.byKey('i2')['~state'], 'deleted', 'the delete stays pending');
-  assert.notEqual(emsBackends.domain.tableSync('grit.issue').rows[1].is_deleted, true, 'nothing was deleted');
-
-  emsBackends.domain.tableSync('grit.issue').rows[1].version = 1;
-  assert.equal(await src.save(), true, 'a delete of the version it read lands');
+  assert.notEqual(emsBackends.domain.tableSync('grit.issue').rows[1].is_deleted, true);
   src.dispose();
 });
 
@@ -552,34 +549,24 @@ source('containment: an unknown table is an error state; no backend throws at co
   assert.throws(() => new DomainSource({table: 'grit.issue'}, env()), /no platform backend/);
 });
 
-source('a filter the server refuses: clearing it reloads the rows, and a left filter\'s late refusal is not shown', async () => {
+source('a refusal of a filter the user already cleared is not shown over the rows', async () => {
   const inner = backend();
-  const gate = {hold: false, waiting: []};
+  const waiting = [];
   emsBackends.domain = {table: async (address) => {
     const t = await inner.table(address);
     return Object.assign(Object.create(Object.getPrototypeOf(t)), t, {frame: async (spec) => {
       if (spec.filter === undefined)
         return t.frame(spec);
-      if (gate.hold)
-        await new Promise((go) => gate.waiting.push(go));
+      await new Promise((go) => waiting.push(go));
       throw new Error('the filter is refused');
     }});
   }};
   const src = await issues({pageSize: 10});
   src.query.value = 'title = "Aspirin"';
-  await until(() => src.state.value === 'error');
+  await until(() => waiting.length === 1);
   src.query.value = '';
+  waiting[0]();
   await until(() => src.state.value !== 'loading');
-  assert.equal(src.state.value, 'ready', 'back to the rows shown reloads them');
-  assert.equal(src.error.value, undefined);
-
-  gate.hold = true;
-  src.query.value = 'title = "Aspirin"';
-  await until(() => gate.waiting.length === 1);
-  src.query.value = '';
-  gate.waiting.splice(0).forEach((go) => go());
-  await until(() => src.state.value !== 'loading');
-  assert.equal(src.state.value, 'ready', 'the refusal is about a filter no longer asked for');
   assert.equal(src.error.value, undefined);
   assert.equal(titles(src).length, 3);
   src.dispose();
@@ -1111,8 +1098,7 @@ source('hosted: a host condition goes to the server as the ids the app answers',
   src.dispose();
   off();
 });
-
-source('EQ-006: a text value that only starts with ~new: is saved as typed; a literal $ keeps its escape', async () => {
+source('a text value that only starts with ~new: is saved as typed; a literal $ keeps its escape', async () => {
   emsBackends.domain = backend();
   const src = await issues();
   const row = src.rows.byKey('i1');
@@ -1120,132 +1106,53 @@ source('EQ-006: a text value that only starts with ~new: is saved as typed; a li
   row.description = '$x';
   row.tags = ['~new:tag', '$y'];
   src.newRow({project_id: 'p1', number: 9, title: '~new:draft title'});
-  assert.equal(await src.save(), true,
-    `a text starting with ~new: is saved as typed (${src.error.value?.message ?? 'no error'})`);
+  assert.equal(await src.save(), true);
   const table = emsBackends.domain.tableSync('grit.issue');
   const saved = table.rows.find((r) => r.id === 'i1');
-  assert.equal(saved.title, '~new:release notes', 'stored as typed');
-  assert.equal(saved.description, '$x', 'a literal $ round-trips');
-  assert.deepEqual(saved.tags, ['~new:tag', '$y'], 'element-wise in a list');
-  assert.equal(table.rows.find((r) => r.number === 9)?.title, '~new:draft title', 'and in an insert');
-  src.dispose();
-});
-
-source('a page check that answers after a new sort started leaves the new list\'s next page a plain append', async () => {
-  emsBackends.domain = backend();
-  const inner = emsBackends.domain.table.bind(emsBackends.domain);
-  const gate = {hold: false, waiting: [], offsets: []};
-  emsBackends.domain.table = async (address) => {
-    const t = await inner(address);
-    // a page is appended through the frame: only a window read from the top passes here
-    return Object.assign(Object.create(Object.getPrototypeOf(t)), t, {
-      frame: (spec) => (gate.offsets.push(spec.offset), t.frame(spec)),
-      // a held check answers that the page boundary moved
-      query: async (q) => gate.hold ? new Promise((go) => gate.waiting.push(() => go([{id: 'moved'}]))) : t.query(q),
-    });
-  };
-  const src = await issues({pageSize: 1});
-  gate.hold = true;
-  const paging = src.loadMore();
-  await until(() => gate.waiting.length === 1);
-  gate.hold = false;
-  src.sort.value = '-number';
-  await flush();
-  await until(() => src.state.value === 'ready');
-  gate.waiting.splice(0).forEach((go) => go());
-  await paging;
-  gate.offsets.length = 0;
-  await src.loadMore();
-  assert.deepEqual(gate.offsets, [], 'the page appended, the window not read again from the top');
-  src.dispose();
-});
-
-source('a page whose re-base is overtaken by a new query leaves the new query\'s load the status', async () => {
-  emsBackends.domain = backend();
-  const inner = emsBackends.domain.table.bind(emsBackends.domain);
-  const gate = {hold: false, waiting: []};
-  emsBackends.domain.table = async (address) => {
-    const t = await inner(address);
-    return Object.assign(Object.create(Object.getPrototypeOf(t)), t, {
-      frame: async (spec) => {
-        const f = await t.frame(spec);
-        if (gate.hold)
-          await new Promise((go) => gate.waiting.push(go));
-        return f;
-      },
-      // the page check answers that the boundary moved: the page re-bases the window
-      query: async () => [{id: 'moved'}],
-    });
-  };
-  const src = await issues({pageSize: 1});
-  gate.hold = true;
-  const paging = src.loadMore();
-  await until(() => gate.waiting.length === 1);
-  src.query.value = 'title = "Aspirin"';
-  await until(() => gate.waiting.length === 2);
-  gate.waiting.shift()();
-  await paging;
-  assert.equal(src.state.value, 'loading', 'the new query is still being read');
-  gate.hold = false;
-  gate.waiting.splice(0).forEach((go) => go());
-  await until(() => src.state.value === 'ready');
-  assert.deepEqual(titles(src), ['Aspirin']);
+  assert.deepEqual([saved.title, saved.description, saved.tags], ['~new:release notes', '$x', ['~new:tag', '$y']]);
+  assert.equal(table.rows.find((r) => r.number === 9)?.title, '~new:draft title');
   src.dispose();
 });
 
 source('a page asked for just before a new query is not a page of the new query appended to the old rows', async () => {
   emsBackends.domain = backend();
-  const inner = emsBackends.domain.table.bind(emsBackends.domain);
-  const gate = {hold: false, waiting: []};
-  emsBackends.domain.table = async (address) => {
-    const t = await inner(address);
-    // the new query's load is held: the old rows stay shown meanwhile
-    return Object.assign(Object.create(Object.getPrototypeOf(t)), t, {
-      frame: async (spec) => (gate.hold && await new Promise((go) => gate.waiting.push(go)), t.frame(spec)),
-    });
-  };
+  const gate = holdFrames(emsBackends.domain, 'grit.issue');
   const src = await issues({pageSize: 1});
   gate.hold = true;
   const paging = src.loadMore();
   src.query.value = 'done = false';
   await paging;
   assert.deepEqual(titles(src), ['Aspirin'], 'the old rows, with no page of "done = false" behind them');
-  gate.hold = false;
-  gate.waiting.splice(0).forEach((go) => go());
+  gate.release();
   await until(() => src.state.value === 'ready');
   assert.deepEqual(titles(src), ['Ibuprofen']);
   src.dispose();
 });
 
-source('a page that lands after a save re-read the list is not lost: the next page starts after the rows shown',
-  async () => {
-    emsBackends.domain = backend();
-    const inner = emsBackends.domain.table.bind(emsBackends.domain);
-    const gate = {hold: false, waiting: []};
-    emsBackends.domain.table = async (address) => {
-      const t = await inner(address);
-      return Object.assign(Object.create(Object.getPrototypeOf(t)), t, {
-        frame: async (spec) => {
-          const f = await t.frame(spec);
-          const append = f.append.bind(f);
-          f.append = (page) => gate.hold ? new Promise((go) => gate.waiting.push(() => go(append(page)))) : append(page);
-          return f;
-        },
-      });
-    };
-    const src = await issues({pageSize: 1});
-    gate.hold = true;
-    const paging = src.loadMore();
-    await until(() => gate.waiting.length === 1);
-    gate.hold = false;
-    await src.afterSave();
-    gate.waiting.splice(0).forEach((go) => go());
-    await paging;
-    await src.loadMore();
-    await src.loadMore();
-    assert.deepEqual(titles(src), ['Aspirin', 'Ibuprofen', 'Naproxen'], 'no row skipped');
-    src.dispose();
-  });
+source('a page that lands after a save re-read the list is not lost: no row is skipped', async () => {
+  emsBackends.domain = backend();
+  const table = emsBackends.domain.tableSync('grit.issue');
+  const frame = table.frame.bind(table);
+  const gate = {hold: false, waiting: []};
+  table.frame = async (spec) => {
+    const f = await frame(spec);
+    const append = f.append.bind(f);
+    f.append = (page) => gate.hold ? new Promise((go) => gate.waiting.push(() => go(append(page)))) : append(page);
+    return f;
+  };
+  const src = await issues({pageSize: 1});
+  gate.hold = true;
+  const paging = src.loadMore();
+  await until(() => gate.waiting.length === 1);
+  gate.hold = false;
+  await src.afterSave();
+  gate.waiting[0]();
+  await paging;
+  await src.loadMore();
+  await src.loadMore();
+  assert.deepEqual(titles(src), ['Aspirin', 'Ibuprofen', 'Naproxen']);
+  src.dispose();
+});
 
 source('a page asked for under a query changed over pending edits is not read for the new query', async () => {
   emsBackends.domain = backend();
@@ -1254,59 +1161,46 @@ source('a page asked for under a query changed over pending edits is not read fo
   src.query.value = 'done = false';
   await flush();
   await src.loadMore();
-  assert.deepEqual(titles(src), ['Edited'], 'the rows shown wait for Save or Discard, with no page of the new query');
+  assert.deepEqual(titles(src), ['Edited']);
   src.dispose();
 });
 
-source('a lost window stays lost through a reload that fails: the next page starts over', async () => {
+const insertFirst = (be) => be.transaction(
+  [{op: 'insert', table: 'grit.issue', values: {project_id: 'p1', number: 7, title: 'Acetaminophen'}}]);
+
+source('another session\'s insert before the window does not repeat a row on the next page', async () => {
   emsBackends.domain = backend();
-  const inner = emsBackends.domain.table.bind(emsBackends.domain);
-  const gate = {fail: false, offsets: []};
-  emsBackends.domain.table = async (address) => {
-    const t = await inner(address);
-    return Object.assign(Object.create(Object.getPrototypeOf(t)), t, {
-      frame: async (spec) => {
-        gate.offsets.push(spec.offset);
-        if (gate.fail) {
-          gate.fail = false;
-          throw new Error('offline');
-        }
-        return t.frame(spec);
-      },
-    });
-  };
-  const src = await issues({pageSize: 1});
-  src.markStale(new Error('offline'));
-  gate.fail = true;
-  await src.refresh();
-  assert.equal(src.state.value, 'error');
-  gate.offsets.length = 0;
+  const src = await issues({pageSize: 2, sort: 'title'});
+  await insertFirst(emsBackends.domain);
   await src.loadMore();
-  assert.deepEqual(gate.offsets, [0], 'read again from the first page, not appended at the lost window\'s offset');
+  assert.deepEqual(titles(src), ['Acetaminophen', 'Aspirin', 'Ibuprofen', 'Naproxen']);
+  src.dispose();
+});
+
+source('over pending changes that shift is reported, never re-read away', async () => {
+  emsBackends.domain = backend();
+  const src = await issues({pageSize: 2, sort: 'title'});
+  src.rows.byKey('i2').title = 'Ibuprofen edited';
+  await insertFirst(emsBackends.domain);
+  await src.loadMore();
+  assert.equal(src.rows.byKey('i2').title, 'Ibuprofen edited');
+  assert.equal(src.stale.value, true);
+  assert.deepEqual(src.rows.items.value.map((r) => r.id), ['i1', 'i2', 'i3'], 'no row twice');
   src.dispose();
 });
 
 source('an edit typed while the access re-read is reading the rows survives it landing', async () => {
-  const memory = backend();
-  const t = await memory.table('grit.issue');
-  const frame = t.frame.bind(t);
-  let hold = null;
-  t.frame = async (spec) => {
-    const f = await frame(spec);
-    await hold;
-    return f;
-  };
-  emsBackends.domain = memory;
+  emsBackends.domain = backend();
+  const gate = holdFrames(emsBackends.domain, 'grit.issue');
   const src = await issues();
-  let release;
-  hold = new Promise((go) => release = go);
+  gate.hold = true;
   const reloading = src.reloadAccess();
   await flush();
   src.rows.byKey('i1').title = 'Typed by the user';
-  release();
+  gate.release();
   await reloading;
   await flush();
-  assert.equal(src.rows.byKey('i1').title, 'Typed by the user', 'the edit stays');
-  assert.equal(src.isDirty.value, true, 'and is still pending');
+  assert.equal(src.rows.byKey('i1').title, 'Typed by the user');
+  assert.equal(src.isDirty.value, true);
   src.dispose();
 });

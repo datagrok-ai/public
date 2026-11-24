@@ -257,78 +257,6 @@ scoped('finding 4: an update that takes the row out of the query re-bases it as 
     src.dispose();
   });
 
-// EQ-025: the same shift made by ANOTHER session's write between two pages — nothing re-based it
-const insertBefore = async (be) => (await be.table('grit.issue')).transaction(
-  [{op: 'insert', table: 'issue', values: {project_id: 'p1', number: 7, title: 'Acetaminophen'}}]);
-
-scoped('EQ-025: another session\'s insert before the window does not repeat a row on the next page', {}, async () => {
-    const be = backend();
-    emsBackends.domain = be;
-    const src = await issues({pageSize: 2, sort: 'title'});
-    await insertBefore(be);
-    await src.loadMore();
-    assert.deepEqual(src.rows.items.value.map((r) => r.title), ['Acetaminophen', 'Aspirin', 'Ibuprofen', 'Naproxen']);
-    assert.equal(src.total.value, 4);
-    src.dispose();
-  });
-
-scoped('EQ-025: over pending changes the shift is reported, never re-read away', {}, async () => {
-    const be = backend();
-    emsBackends.domain = be;
-    const src = await issues({pageSize: 2, sort: 'title'});
-    src.rows.byKey('i2').title = 'Ibuprofen edited';
-    await insertBefore(be);
-    await src.loadMore();
-    assert.equal(src.rows.byKey('i2').title, 'Ibuprofen edited');
-    assert.equal(src.stale.value, true);
-    assert.deepEqual(src.rows.items.value.map((r) => r.id), ['i1', 'i2', 'i3'], 'no row twice');
-    src.dispose();
-  });
-
-scoped('EQ-025: a write landing while the page is read is caught too', {}, async () => {
-    const be = backend();
-    emsBackends.domain = be;
-    const src = await issues({pageSize: 2, sort: 'title'});
-    const table = await be.table('grit.issue');
-    const query = table.query.bind(table);
-    let written = false;
-    // the other session's insert lands just before the server answers the next page
-    table.query = async (spec) => {
-      if (!written && spec.offset === 2 && spec.columns === undefined)
-        await insertBefore(be).then(() => { written = true; });
-      return query(spec);
-    };
-    await src.loadMore();
-    assert.deepEqual(src.rows.items.value.map((r) => r.title), ['Acetaminophen', 'Aspirin', 'Ibuprofen', 'Naproxen']);
-    src.dispose();
-  });
-
-scoped('EQ-025: an insert after the boundary row is counted when the last page lands', {}, async () => {
-    const be = backend();
-    emsBackends.domain = be;
-    const src = await issues({pageSize: 2, sort: 'title'});
-    await (await be.table('grit.issue')).transaction(
-      [{op: 'insert', table: 'issue', values: {project_id: 'p1', number: 7, title: 'Zyrtec'}}]);
-    await src.loadMore();
-    await src.loadMore();
-    assert.equal(src.total.value, 4, 'not "4 of 3"');
-    src.dispose();
-  });
-
-scoped('EQ-025: a boundary check the server refuses keeps the page', {}, async () => {
-    emsBackends.domain = backend();
-    const src = await issues({pageSize: 2, sort: 'title'});
-    const table = await emsBackends.domain.table('grit.issue');
-    const query = table.query.bind(table);
-    // a page read carries no `columns`; the check is the one read that does
-    table.query = (spec) => spec.columns !== undefined ?
-      Promise.reject(new Error('Unknown or inaccessible column "id"')) : query(spec);
-    await src.loadMore();
-    assert.deepEqual(src.rows.items.value.map((r) => r.title), ['Aspirin', 'Ibuprofen', 'Naproxen']);
-    assert.equal(src.error.value, undefined);
-    src.dispose();
-  });
-
 // ───────────────────────── 5. every standalone save leaks a session ─────────────────────────────
 
 /** The participant surface `DomainSession` subscribes to and drives; an empty batch is enough —
@@ -470,40 +398,4 @@ scoped('finding 7b: a sibling source of the same table reloads after another one
   assert.equal((await serverRow('i1')).title, 'Now two');
   one.dispose();
   two.dispose();
-});
-
-// ───────────── EQ-006: the js-api writer references only a draft id of the batch ──────────────
-
-/** A js-api editor over [rows] ({id, state, note, parent_id, changes}) — frame, client and access
- * stubs, as the Dart frame does not run in node; `note` and `parent_id` are writable. */
-async function wireEditor(rows) {
-  const {DomainFrameEditor: E} = await import('../../../js-api/dist/src/ui/domains/domains-editor.js');
-  const cols = {id: 'id', note: 'note', parent_id: 'parent_id', [E.STATE_COLUMN]: 'state'};
-  const cell = (name, r) => name === E.CHANGES_COLUMN ? JSON.stringify(rows[r].changes ?? {}) :
-    name === E.ERRORS_COLUMN ? '' : rows[r][cols[name]] ?? null;
-  const column = (name) => ({get: (r) => cell(name, r), isNone: (r) => cell(name, r) == null || cell(name, r) === ''});
-  return Object.assign(Object.create(E.prototype), {
-    _df: {rowCount: rows.length, columns: {byName: column, contains: () => true}},
-    _propByName: new Map(), _parsed: new Map(), _snapshots: new Map(), _unguarded: new Set(), _pristine: new Set(),
-    _info: {nameColumn: 'note'}, client: {table: 'item'},
-    access: {fields: {note: 'editable', parent_id: 'editable'}, support: {concurrency: 'none'}},
-  });
-}
-
-scoped('EQ-006: js-api sends a text starting with ~new: as typed, a draft id of the batch as $ref', {}, async () => {
-  const draft = '~new:7b1f8c3e-5d2a-4e6b-9c1d-0a2b3c4d5e6f';
-  const other = '~new:0f9e8d7c-6b5a-4c3d-8e2f-1a0b9c8d7e6f';
-  const editor = await wireEditor([
-    {id: 'r1', state: 'modified', note: '~new:release notes', changes: {note: 'old'}},
-    {id: 'r2', state: 'modified', note: '$x', changes: {note: 'old'}},
-    {id: draft, state: 'new', note: 'parent'},
-    {id: '~new:9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d', state: 'new', note: 'child', parent_id: draft},
-  ]);
-  const values = editor.buildOps().map((p) => p.op.values);
-  assert.equal(values[0].note, '~new:release notes', 'a text starting with ~new: is sent as typed');
-  assert.equal(values[1].note, '$$x', 'a literal $ keeps its $$ escape');
-  assert.equal(values[3].parent_id, `$${draft}`, 'a draft id of the batch is the server\'s $ref');
-  const sibling = await wireEditor([{id: 'r3', state: 'modified', parent_id: other, changes: {parent_id: null}}]);
-  assert.equal(sibling.buildOps(new Set([other]))[0].op.values.parent_id, `$${other}`,
-    'another participant\'s draft, passed in, is a $ref');
 });

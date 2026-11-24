@@ -48,13 +48,13 @@ function type(input, text) {
   return el;
 }
 
-// EQ-071: a platform int column wraps what it cannot hold (3000000000 is stored as -1294967296)
+// a platform int column wraps what it cannot hold (3000000000 is stored as -1294967296)
 smoke('an int input without bounds is held to the int32 range', () => {
   const input = mount(new NumberInput({label: 'Count', mode: 'int'}));
   type(input, '3000000000');
-  assert.equal(input.validity.value, 'Value must be at most 2147483647', 'an int column wraps 3000000000; refuse it');
+  assert.equal(input.validity.value, 'Value must be at most 2147483647');
   type(input, '2147483647');
-  assert.equal(input.validity.value, null, 'the largest int is still accepted');
+  assert.equal(input.validity.value, null);
   input.dispose();
 });
 
@@ -291,7 +291,7 @@ smoke('P74: a bound signal holding undefined builds and shows an empty field; st
   input.dispose();
 });
 
-// EQ-070: the display text is rounded; reading it back on blur rounded the stored value
+// the display text is rounded: reading it back on blur would round the stored value
 smoke('format: focus and blur without an edit keep the full-precision value and fire no change', () => {
   let changes = 0;
   const input = mount(new NumberInput({format: (v) => v.toFixed(2), value: 1.23456, onChanged: () => changes++}));
@@ -299,7 +299,7 @@ smoke('format: focus and blur without an edit keep the full-precision value and 
   fire(editor(input), 'focus');
   fire(editor(input), 'blur');
   assert.equal(input.peek(), 1.23456, 'the stored value is not rounded to the display text');
-  assert.equal(changes, 0, 'no change fired');
+  assert.equal(changes, 0);
   input.dispose();
 });
 

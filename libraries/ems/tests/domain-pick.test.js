@@ -359,7 +359,7 @@ scoped('DomainPick.bind: a bound filter is a tree, an empty sibling leaves the n
 });
 
 scoped('a key search never ORs a searchable column the access hides: the server would refuse the read', async () => {
-  // the registry describes `secret` (searchable); this caller's access leaves it out
+  // the registry describes `secret` as searchable; this caller's access leaves it out
   const grok = await import('datagrok-api/grok');
   const {TYPE} = await import('datagrok-api/u2core');
   const {Property} = await import('@datagrok-libraries/u2/tests/platform-doubles.mjs');

@@ -97,7 +97,7 @@ source('a restore of a deleted row another session changed is refused with a ver
   trash.stageRestore(['i2']);
   await flush();
   emsBackends.domain.tableSync('grit.issue').rows[1].version = 5;
-  assert.equal(await trash.save(), false, 'a stale restore is refused like a stale update');
+  assert.equal(await trash.save(), false);
   assert.equal(trash.error.value.code, 'version-conflict');
   assert.equal(emsBackends.domain.tableSync('grit.issue').rows[1].is_deleted, true, 'still in the trash');
   trash.dispose();

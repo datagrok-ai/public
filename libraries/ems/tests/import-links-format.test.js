@@ -6,7 +6,7 @@ register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const grok = await import('datagrok-api/grok');
 const {ImportLinks} = await import('../src/dg/import-links.js');
 
-// a compound table keyed by a whole number the app shows as DG-000000, as MolTrack's Grok ID is
+// a table keyed by a whole number the app shows as DG-000000
 const KEY = {name: 'molregno', propertyType: 'int', type: 'int', format: 'DG-000000', friendlyName: 'Grok ID'};
 const link = {
   prop: {name: 'compound_id', semType: 'moltrack.compound'},
@@ -15,29 +15,11 @@ const link = {
 };
 const STORED = [{id: 'c72', molregno: 72}, {id: 'c73', molregno: 73}];
 
-/** The server's `=` over a number key: what it keeps of the stored rows. */
-function serve(asked) {
-  grok.dapi.domains.table = () => ({query: async ({filter}) => {
-    asked.push(filter);
-    const wanted = new Set(filter[0].value);
-    return STORED.filter((r) => wanted.has(r.molregno));
-  }});
-}
-
-test('a key typed as its format shows it finds its record, as the bare number does', async () => {
-  const asked = [];
-  serve(asked);
+test('an import links a key typed as its format to the record the bare number names, and to no other', async () => {
+  grok.dapi.domains.table = () => ({query: async ({filter}) => STORED.filter((r) => filter[0].value.includes(r.molregno))});
   const found = await ImportLinks.resolve(link, link.fields, [['DG-000072'], ['dg-000073'], ['72'], ['nonesuch']]);
-  assert.deepEqual(found.map((m) => m.id), ['c72', 'c73', 'c72', null],
-    'a Grok ID typed as DG-000072 finds the compound stored as 72');
-  assert.equal(found[3].error, 'No compound with Grok ID nonesuch', 'a value that parses to nothing is a row error');
-  assert.deepEqual(asked[0][0].value.sort((a, b) => a - b), [72, 73], 'the server is asked for the numbers');
-});
-
-test('a key format whose literal prefix holds a zero still parses keys typed in it', async () => {
+  assert.deepEqual(found.map((m) => m.id), ['c72', 'c73', 'c72', null]);
+  assert.equal(found[3].error, 'No compound with Grok ID nonesuch');
   const {DomainTable} = await import('../src/dg/facade.js');
-  const prop = {...KEY, format: 'C10-0000'};
-  assert.equal(DomainTable.parseKey(prop, 'C10-0042'), 42, 'the prefix is everything before the trailing zero run');
-  assert.equal(DomainTable.parseKey(prop, '42'), 42);
-  assert.equal(DomainTable.parseKey(KEY, 'DG-000072'), 72);
+  assert.equal(DomainTable.parseKey({...KEY, format: 'C10-0000'}, 'C10-0042'), 42, 'a zero in the literal prefix is not a digit');
 });

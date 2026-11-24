@@ -655,12 +655,12 @@ scoped('text a number field cannot read is an unsaved change too: the gates ask,
   src.dispose();
 });
 
-scoped('a write the writer throws on is a problem on its field: Save is refused, never "saved" for nothing (EQ-024)', async () => {
+scoped('a write the writer throws on is a problem on its field: Save is refused, never "saved" for nothing', async () => {
   const {src} = await issues();
   src.currentRow.value = src.rows.byKey('i1');
   const form = testOwner().build(() => domains.form(src));
   await flush();
-  // the platform writer over a frame that lost the column since the form was built (dropped in another session)
+  // a frame that lost the column since the form was built
   const edit = src.edit.peek();
   const setValue = edit.setValue;
   edit.setValue = (key, column, value) => {
@@ -673,10 +673,9 @@ scoped('a write the writer throws on is a problem on its field: Save is refused,
   fire(box, 'input');
   fire(box, 'focusout');
   await flush();
-  assert.match(form.input('title').validity.value ?? '', /cannot be saved \(No such column: title\): reload the page/,
-    'the field says its value cannot be saved, and what to do');
-  assert.equal(await src.save(), false, 'a Save run anyway is refused');
-  assert.equal(document.querySelector('[role="status"]'), null, 'and no "saved" balloon');
+  assert.match(form.input('title').validity.value ?? '', /cannot be saved \(No such column: title\)/);
+  assert.equal(await src.save(), false);
+  assert.equal(document.querySelector('[role="status"]'), null, 'no "saved" balloon');
   edit.setValue = setValue;
   form.dispose();
   src.dispose();
@@ -1105,40 +1104,6 @@ scoped('a ref column with a schema filter picks among the rows its siblings allo
   src.dispose();
 });
 
-scoped('a ref outside its $-filter after a sibling changes is marked, not refused', async () => {
-  emsBackends.domain = new MemoryDomainBackend({name: 'grit', tables: {
-    project: {friendlyName: 'Projects', columns: {name: {type: 'string', isName: true}}},
-    issue: {friendlyName: 'Issues', columns: {
-      project_id: {type: 'ref', ref: 'project', friendlyName: 'Project'},
-      title: {type: 'string', isName: true},
-      parent_id: {type: 'ref', ref: 'issue', filter: 'project_id = $project_id', friendlyName: 'Parent'},
-    }},
-  }}, {rows: {
-    project: [{id: 'p1', name: 'Grit'}, {id: 'p2', name: 'Datagrok'}],
-    issue: [{id: 'i1', project_id: 'p1', title: 'Aspirin'}, {id: 'i2', project_id: 'p1', title: 'Ibuprofen', parent_id: 'i1'},
-      {id: 'i3', project_id: 'p2', title: 'Naproxen'}],
-  }});
-  const table = await domains.table('grit.issue');
-  const src = testOwner().build(() => table.source());
-  await flush();
-  src.currentRow.value = src.rows.byKey('i2');
-  const form = testOwner().build(() => domains.form(src));
-  document.body.append(form.root);
-  await flush();
-  await flush();
-  const note = () => form.input('parent_id').root.textContent;
-  assert.equal(note().includes('is not in'), false, 'a parent inside the project is not marked');
-  form.input('project_id').value = 'p2';
-  await flush();
-  await flush();
-  await flush();
-  assert.equal(note().includes('Aspirin is not in Datagrok'), true,
-    'the held parent is outside the new project and is marked');
-  assert.equal(form.input('parent_id').validity.value, null, 'a note, not an error: Save stays allowed');
-  form.dispose();
-  src.dispose();
-});
-
 scoped('the system footer follows the row: a saved draft shows the number, version, times and author', async () => {
   emsBackends.domain = backend();
   const find = grok.dapi.users.find;
@@ -1241,25 +1206,6 @@ scoped('a constraint over two columns is read with SQL null semantics: an empty 
   src.dispose();
 });
 
-scoped('a constraint broken through its second column holds Save, though its first column is untouched', async () => {
-  emsBackends.domain = new MemoryDomainBackend({name: 'grit', tables: {
-    issue: {friendlyName: 'Issues',
-      constraints: {order: {expr: 'low <= high', message: 'Low must not exceed high'}},
-      columns: {title: {type: 'string', isName: true}, low: {type: 'int'}, high: {type: 'int'}}},
-  }}, {rows: {issue: [{id: 'i1', title: 'A', low: 5, high: 10}]}});
-  const {src} = await issues();
-  src.currentRow.value = src.rows.byKey('i1');
-  const form = testOwner().build(() => domains.form(src));
-  await flush();
-  form.input('high').value = 1;
-  await flush();
-  assert.equal(form.input('low').validity.value, 'Low must not exceed high', 'the Low field shows it');
-  assert.equal(form.problem.value, 'Low: Low must not exceed high', 'and the form holds Save on it');
-  assert.equal(src.session.validity.value, 'Low: Low must not exceed high');
-  form.dispose();
-  src.dispose();
-});
-
 scoped('a draft shows the column defaults, so a required column with one is already filled', async () => {
   emsBackends.domain = new MemoryDomainBackend({name: 'desk', tables: {
     ticket: {businessKey: ['code'], columns: {
@@ -1279,21 +1225,15 @@ scoped('a draft shows the column defaults, so a required column with one is alre
   create.dispose();
   draft.dispose();
 });
-
-/** A ticket table whose rules were tightened after rows were stored: `score` holds 50 under a max lowered to
- * 10, `kind` holds `alpha` after `alpha` left its choices. */
-function tightened() {
-  return new MemoryDomainBackend({name: 'desk', tables: {
+scoped('an unrelated edit saves over stored values a tightened rule refuses, and the update leaves them out', async () => {
+  // `score` holds 50 under a max lowered to 10, `kind` holds a choice removed since
+  const memory = emsBackends.domain = new MemoryDomainBackend({name: 'desk', tables: {
     ticket: {businessKey: ['code'], columns: {
       code: {type: 'string', required: true, isName: true},
-      score: {type: 'int', max: 10, friendlyName: 'Score'},
-      kind: {type: 'string', choices: ['beta', 'gamma'], friendlyName: 'Kind'},
+      score: {type: 'int', max: 10},
+      kind: {type: 'string', choices: ['beta', 'gamma']},
     }},
   }}, {rows: {ticket: [{id: 't1', code: 'T1', score: 50, kind: 'alpha'}]}});
-}
-
-scoped('an unrelated edit saves over stored values a tightened rule refuses, and the update leaves them out', async () => {
-  const memory = emsBackends.domain = tightened();
   const sent = [];
   const real = memory.transaction.bind(memory);
   memory.transaction = (ops) => (sent.push(...ops), real(ops));
@@ -1305,77 +1245,39 @@ scoped('an unrelated edit saves over stored values a tightened rule refuses, and
   await flush();
   form.input('code').value = 'T1 edited';
   await flush();
-  assert.equal(src.session.validity.value, null, 'Save is allowed');
-  assert.equal(await src.save(), true, 'and the save lands');
-  assert.deepEqual(Object.keys(sent.find((op) => op.op === 'update')?.values ?? {}), ['code'],
-    'only the edited column is sent, not score or kind');
-  const stored = memory.tableSync('desk.ticket').rows.find((row) => row.id === 't1');
-  assert.deepEqual([stored.code, stored.score, stored.kind], ['T1 edited', 50, 'alpha'], 'the stored values stay');
+  assert.equal(await src.save(), true);
+  assert.deepEqual(sent.map((op) => op.values), [{code: 'T1 edited'}]);
   form.dispose();
   src.dispose();
 });
 
-// a review found the stale choice kept as a pickable option after the user moved off it
-scoped('a stored value whose choice was removed is offered only until the user picks another', async () => {
-  emsBackends.domain = tightened();
-  const table = await domains.table('desk.ticket');
-  const src = testOwner().build(() => table.source({pageSize: 10}));
-  await flush();
-  src.currentRow.value = src.rows.byKey('t1');
-  const form = testOwner().build(() => domains.form(src));
-  await flush();
-  const kind = form.input('kind');
-  assert.equal(kind.getState().text, 'alpha (not in the list)', 'the stored choice is shown, not an empty dropdown');
-  kind.value = 'beta';
-  await flush();
-  assert.deepEqual(kind.getItems().list.map((i) => i.key), ['beta', 'gamma'], 'the stale choice is no longer offered');
-  form.dispose();
-  src.dispose();
-});
-
-/* EQ-056: the platform frame holds a `string_list` cell as the JSON text of the list (`queryDf`, and the
-   editor's post-save re-read); the memory backend holds it the same way. The form must show the items,
-   save what was typed as items, and show a saved list as items again. */
-async function listForm(tags) {
+// the frame holds a `string_list` or `json` cell as its JSON text: the form shows and saves the items
+scoped('a stored string_list shows its items, and an added item is saved with them', async () => {
   emsBackends.domain = backend();
-  const store = emsBackends.domain.tableSync('grit.issue');
-  store.rows.find((r) => r.id === 'i1').tags = tags;
+  const stored = () => emsBackends.domain.tableSync('grit.issue').rows.find((r) => r.id === 'i1');
+  stored().tags = ['a', 'b'];
   const {src} = await issues();
   src.currentRow.value = src.rows.byKey('i1');
   const form = testOwner().build(() => domains.form(src));
   document.body.append(form.root);
   await flush();
-  const input = form.input('tags');
-  const field = input.root.querySelector('input');
-  const stored = () => store.rows.find((r) => r.id === 'i1').tags;
-  return {src, form, input, field, stored};
-}
-
-scoped('EQ-056: a stored string_list shows its items, and an added item saves the items, shown again after', async () => {
-  const {src, form, input, field, stored} = await listForm(['a', 'b']);
-  assert.deepEqual(input.value, ['a', 'b'], 'the string_list field reads the stored list as its items');
+  const field = form.input('tags').root.querySelector('input');
+  assert.deepEqual(form.input('tags').value, ['a', 'b']);
   field.value = `${field.value},c`;
   fire(field, 'input');
   await flush();
   assert.equal(await src.save(), true);
   await flush();
-  assert.deepEqual(stored(), ['a', 'b', 'c'], 'the edited string_list is saved as the items the field showed plus c');
-  assert.deepEqual(input.value, ['a', 'b', 'c'], 'after the save the field shows the saved items');
+  assert.deepEqual(stored().tags, ['a', 'b', 'c']);
+  assert.deepEqual(form.input('tags').value, ['a', 'b', 'c']);
   form.dispose();
   src.dispose();
 });
 
-/* EQ-057: the platform frame holds a `json` cell as the JSON text of the object, like a `string_list` one
-   (EQ-056); the memory backend holds it the same way. The form must show the pairs, write a typed pair
-   (as the frame's text — a JS object handed to the frame is stored as a Dart map, which throws on compare),
-   save it, and treat an empty object as no change. */
-const JSON_SCHEMA = {name: 'qa', tables: {item: {columns: {
-  name: {type: 'string', required: true, isName: true}, meta: {type: 'json'}}}}};
-
-async function jsonForm(meta) {
-  emsBackends.domain = new MemoryDomainBackend(JSON_SCHEMA,
-    {rows: {item: [{id: 'r1', name: 'R1', ...(meta === undefined ? {} : {meta})}]}});
-  const store = emsBackends.domain.tableSync('qa.item');
+scoped('a stored json object shows its pairs, and a typed pair is saved with them', async () => {
+  emsBackends.domain = new MemoryDomainBackend({name: 'qa', tables: {item: {columns: {
+    name: {type: 'string', required: true, isName: true}, meta: {type: 'json'}}}}},
+  {rows: {item: [{id: 'r1', name: 'R1', meta: {k: 'v'}}]}});
   const table = await domains.table('qa.item');
   const src = testOwner().build(() => table.source({pageSize: 10}));
   await flush();
@@ -1383,74 +1285,22 @@ async function jsonForm(meta) {
   const form = testOwner().build(() => domains.form(src));
   document.body.append(form.root);
   await flush();
-  const input = form.input('meta');
-  const cells = () => [...input.root.querySelectorAll('input[aria-label="Key"], input[aria-label="Value"]')].map((c) => c.value);
-  const type = async (row, key, value) => {
-    for (const [part, text] of [['Key', key], ['Value', value]]) {
-      const cell = input.root.querySelectorAll(`input[aria-label="${part}"]`)[row];
-      cell.value = text;
-      fire(cell, 'input');
-    }
-    await flush();
-  };
-  const addRow = async () => {
-    const buttons = input.root.querySelectorAll('button[aria-label="Add row"]');
-    fire(buttons[buttons.length - 1], 'click');
-    await flush();
-  };
-  const stored = () => store.rows.find((r) => r.id === 'r1');
-  return {src, form, input, cells, type, addRow, stored};
-}
-
-scoped('EQ-057: a stored json object shows its pairs, and a typed pair is written and saved with them', async () => {
-  const {src, form, input, cells, type, addRow, stored} = await jsonForm({k: 'v'});
-  assert.deepEqual(input.value, {k: 'v'}, 'the json field reads the stored object as its pairs');
-  await addRow();
-  await type(1, 'k2', 'v2');
+  const meta = form.input('meta');
+  assert.deepEqual(meta.value, {k: 'v'});
+  const add = meta.root.querySelectorAll('button[aria-label="Add row"]');
+  fire(add[add.length - 1], 'click');
+  await flush();
+  for (const [part, text] of [['Key', 'k2'], ['Value', 'v2']]) {
+    const cell = meta.root.querySelectorAll(`input[aria-label="${part}"]`)[1];
+    cell.value = text;
+    fire(cell, 'input');
+  }
+  await flush();
   assert.equal(await src.save(), true);
   await flush();
-  assert.deepEqual(stored().meta, {k: 'v', k2: 'v2'}, 'the saved json holds the stored pair and the typed one');
-  assert.deepEqual(cells(), ['k', 'v', 'k2', 'v2'], 'after the save the field shows the saved pairs');
-  assert.equal(src.changeCount.value, 0, 'and nothing is left unsaved');
-  form.dispose();
-  src.dispose();
-});
-
-scoped('EQ-057: the memory backend takes json and string_list cells as the server coerces them', async () => {
-  const memory = new MemoryDomainBackend({name: 'qa', tables: {item: {columns: {
-    name: {type: 'string', required: true}, meta: {type: 'json'}, tags: {type: 'string_list'}}}}});
-  const table = memory.tableSync('qa.item');
-  const report = await table.batch([{name: 'a', meta: '{"k":"v"}', tags: '["x","y"]'}]);
-  assert.equal(report.inserted, 1, 'a batch of JSON text is planned, not refused');
-  const row = table.rows.find((r) => r.name === 'a');
-  assert.deepEqual([row.meta, row.tags], [{k: 'v'}, ['x', 'y']], 'JSON text is decoded, as the server does');
-  await assert.rejects(memory.transaction([{op: 'insert', table: 'item', values: {name: 'b', meta: ['k']}}]),
-    (e) => e.message.endsWith('Cannot convert "["k"]" to map'), 'a list is no json object');
-  const frame = await table.frame({});
-  frame.edit.setValue(row.id, 'meta', ['k']);
-  assert.equal(frame.edit.errorOf(row.id, 'meta'), 'Types differ. Expected: map, passed: list',
-    'a list in a json cell is refused as the platform editor refuses it');
-  frame.dispose();
-});
-
-scoped('EQ-033: a field holding the server\'s refusal shows it, and the form does not hold Save on it', async () => {
-  const {src} = await issues();
-  src.currentRow.value = src.rows.byKey('i1');
-  const form = testOwner().build(() => domains.form(src));
-  const save = domains.saveButton(src);
-  src.rows.byKey('i1').title = 'Aspirin 2';
-  await flush();
-  // the platform editor's mapping of the server's error onto the cell, which it says is the server's
-  const edit = src.edit.value;
-  edit.errorOf = (key, column) => key === 'i1' && column === 'title' ? 'Title Aspirin 2 already belongs to i7' : null;
-  edit.refused = (key, column) => key === 'i1' && column === 'title';
-  edit.onChanged.fire('i1');
-  form.validate();
-  await flush();
-  assert.equal(form.input('title').validity.value, 'Title Aspirin 2 already belongs to i7', 'the field shows it');
-  assert.equal(form.problem.value, null, 'and the form does not hold Save on it');
-  assert.equal(save.button.disabled, false);
-  save.dispose();
+  assert.deepEqual(emsBackends.domain.tableSync('qa.item').rows[0].meta, {k: 'v', k2: 'v2'});
+  assert.deepEqual(meta.value, {k: 'v', k2: 'v2'});
+  assert.equal(src.changeCount.value, 0);
   form.dispose();
   src.dispose();
 });

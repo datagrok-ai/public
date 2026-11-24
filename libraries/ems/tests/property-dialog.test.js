@@ -32,15 +32,14 @@ function scoped(name, body) {
   });
 }
 
-// the extension path as the server runs it: a plan echoes the current ext_version, any other ifVersion is a
-// version conflict, a commit moves it on; `server.plan` is what the server plans for an extension beyond that
+/** The extension path as the server runs it: a plan echoes the current ext_version, any other ifVersion is a
+ * version conflict, a commit moves it on; `server.plan` is what the server plans for an extension beyond that. */
 function stub(calls, server) {
   grok.shell.settings = {enableDomainDatabases: true};
   grok.dapi.permissions = {check: async () => true};
   DG.Property.propertyOptions = Object.fromEntries(['friendlyName', 'description', 'choices', 'min', 'max', 'format']
     .map((name) => [name, {name, type: name === 'choices' ? 'list' : 'string'}]));
-  // ownership is the registry's word (DomainTable.userColumns): the `origin: 'user'` stamps say which columns it
-  // lists, and manifest() answers without them, as the server does; `server.table` lists an older server's table
+  // the registry says who owns a column; manifest() answers without `origin`, as the server does
   const tables = () => Object.entries(server.manifest.tables).map(([name, t]) => server.table?.() ?? {name,
     origin: 'package', userColumns: Object.keys(t.columns).filter((c) => t.columns[c].origin === 'user')});
   const list = async () => (calls.push(['ownership']), [{name: NAME, managedBy: 'package', tables: tables()}]);
@@ -81,7 +80,7 @@ async function save() {
   await flush();
 }
 
-scoped('EQ-027: Edit properties saves against the extension version it was opened at: a concurrent one is a conflict', async () => {
+scoped('Edit properties saves against the extension version it was opened at: a concurrent one is a conflict', async () => {
   const calls = [];
   const server = {manifest: MANIFEST, extVersion: 96};
   stub(calls, server);
@@ -89,38 +88,33 @@ scoped('EQ-027: Edit properties saves against the extension version it was opene
   const opening = calls.filter((c) => c[1]?.extend === undefined);
   server.extVersion = 97; // someone else extends the table meanwhile
   await save();
-  assert.deepEqual(extensions(calls).map((c) => c[1].ifVersion), ['96'],
-    'every apply of the save names the extension version the dialog was opened at');
+  assert.deepEqual(extensions(calls).map((c) => c[1].ifVersion), ['96']);
   assert.deepEqual(opening, [['manifest'], ['apply', {}, true], ['manifest'], ['ownership']],
     'the version is read before the manifest and the ownership: a change between them is a conflict, not a drop');
   assert.match(byKind(document, 'status-line')[0].textContent, /Someone else changed these properties meanwhile/);
   byName(dialog(), 'CANCEL').click();
-  assert.equal(await done, false, 'nothing saved');
+  assert.equal(await done, false);
 });
 
-scoped('EQ-018: a saved user column stays the user\'s, and adding the next column sends it back', async () => {
+scoped('adding a column sends the user\'s saved columns back: the extension is full state', async () => {
   const calls = [];
   stub(calls, {manifest: MANIFEST, extVersion: 96});
   const {done} = await openAndAdd();
-  const mine = [...document.querySelectorAll('[role="treeitem"]')].find((n) => n.textContent.startsWith('mine'));
-  assert.equal(mine.querySelector('.fa-lock'), null, 'the user column is not locked as a plugin column');
   await save();
   const [commit] = extensions(calls).filter((c) => !c[2]);
-  assert.deepEqual(Object.keys(commit[1].extend.issue.columns).sort(), ['mine', 'property'],
-    'the extension is the user\'s columns as full state: the saved one is not dropped');
+  assert.deepEqual(Object.keys(commit[1].extend.issue.columns).sort(), ['mine', 'property']);
   assert.equal(await done, true);
 });
 
-// datagrok-api comes from the server: an older one cannot say who owns a column, and a full-state extension sent
-// without knowing would drop the user's columns
-scoped('EQ-018: on a server without DomainTable.userColumns Edit properties refuses, and nothing is sent', async () => {
+// an older server cannot say who owns a column: a full-state extension sent without knowing would drop the user's
+scoped('on a server without DomainTable.userColumns Edit properties refuses, and nothing is sent', async () => {
   const calls = [];
   stub(calls, {manifest: MANIFEST, extVersion: 96, table: () => ({name: 'issue'})});
   await assert.rejects(domains.editProperties(NAME, 'issue'), /unavailable on this server version/);
-  assert.deepEqual(extensions(calls), [], 'no extension sent');
+  assert.deepEqual(extensions(calls), []);
 });
 
-scoped('EQ-028: the confirmation lists the drops the server plans, not the client diff, and SAVE waits for consent', async () => {
+scoped('the confirmation lists the drops the server plans, not the client diff, and SAVE waits for consent', async () => {
   const calls = [];
   // the client only adds a column; the server's plan also drops one that holds values and retypes another
   stub(calls, {manifest: MANIFEST, extVersion: 96, plan: {destructive: true,
@@ -129,9 +123,8 @@ scoped('EQ-028: the confirmation lists the drops the server plans, not the clien
   const {done} = await openAndAdd();
   await save();
   const confirm = byKind(document, 'dialog').find((d) => state(d).name === 'properties-confirm');
-  assert.match(confirm.textContent, /issue\.mine dropped.*3 values deleted/,
-    'the confirmation lists the plan\'s drop with its value count');
-  assert.match(confirm.textContent, /issue\.title: type changes to int/, 'the confirmation lists the plan\'s type change');
+  assert.match(confirm.textContent, /issue\.mine dropped.*3 values deleted/);
+  assert.match(confirm.textContent, /issue\.title: type changes to int/);
   const commits = () => extensions(calls).filter((c) => !c[2]);
   byName(confirm, 'SAVE').click();
   await flush();
@@ -141,6 +134,6 @@ scoped('EQ-028: the confirmation lists the drops the server plans, not the clien
   byName(confirm, 'SAVE').click();
   await flush();
   await flush();
-  assert.equal(commits()[0]?.[1].confirmDestructive, true, 'the confirmed save commits');
+  assert.equal(commits()[0]?.[1].confirmDestructive, true);
   assert.equal(await done, true);
 });

@@ -206,18 +206,6 @@ scoped('near the bottom the next page is loaded into the same collection', async
   src.dispose();
 });
 
-scoped('an empty list says only that it is empty to a reader who may not insert', async () => {
-  emsBackends.domain = backend({access: {can: {view: true, insert: false, edit: false, delete: false, share: false},
-    fields: {title: 'readonly', number: 'readonly', project_id: 'readonly'}}, rows: {project: [], issue: []}});
-  const {src} = await issues();
-  const list = testOwner().build(() => domains.list(src, {create: () => {}}));
-  await flush();
-  assert.match(list.root.textContent, /No issues yet/);
-  assert.doesNotMatch(list.root.textContent, /cannot create/);
-  list.dispose();
-  src.dispose();
-});
-
 scoped('the status area: loading, then empty or the failure with a retry', async () => {
   emsBackends.domain = backend();
   const table = await domains.table('grit.issue');

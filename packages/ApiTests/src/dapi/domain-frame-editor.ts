@@ -605,7 +605,7 @@ category('Dapi: domain frame editor', () => {
     }
   });
 
-  test('EQ-060: a stale restore, RELOAD: the trashed row is re-read and the restore dropped', async () => {
+  test('a stale restore, RELOAD: the trashed row is re-read and the restore dropped', async () => {
     const prefix = `fe-409-del-${stamp()}`;
     const id = (await seed(prefix, 1))[0];
     const original = (DG.DomainObjectHandler as any).showConflictDialog;

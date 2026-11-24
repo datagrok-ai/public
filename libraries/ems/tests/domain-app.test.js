@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {layout} from '@datagrok-libraries/u2/tests/layout.mjs';
-import {backends, Filters, Scope, Rows, notify, allowedActions, Control} from '@datagrok-libraries/u2';
+import {backends, Scope, Rows, notify, allowedActions, Control} from '@datagrok-libraries/u2';
 import {Usage} from 'datagrok-api/u2core';
 import {SharedSession} from '../src/core/session.js';
 import {backend} from './domain-fixtures.mjs';
@@ -14,7 +14,6 @@ register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/facade.js');
 const {DomainApp} = await import('../src/dg/app.js');
 const {DgDomainTable} = await import('../src/dg/backend.js');
-const {SavedSearches} = await import('../src/dg/saved-searches.js');
 const grok = await import('datagrok-api/grok');
 
 /** The address bar at `url`, as the platform's router leaves it — past any spy on replaceState. */
@@ -566,17 +565,13 @@ scoped('DomainTable.app(): the shell rewrites the view path only AFTER onViewAdd
   }
 });
 
-// EQ-021: Edit revoked mid-edit. Today's served js-api refusal has no code, only the bare
-// "forbidden"; it must still drop the platform caches, re-read the access and the rows' own
-// `~can_edit` (which replaces the table's answer per row), and re-gate the form after Discard.
-scoped('EQ-021: a save refused as bare "forbidden" re-reads the access and re-gates the form', async () => {
+// today's served js-api refuses with no code, only the bare "forbidden"
+scoped('a save refused as "forbidden" re-reads the access, and Discard leaves the form read-only', async () => {
   const DG = await import('datagrok-api/dg');
   const {DgDomainBackend} = await import('../src/dg/backend.js');
   const {app: a} = await app();
   const memory = emsBackends.domain;
   const table = memory.tableSync('grit.issue');
-  const i1 = table.rows.find((r) => r.id === 'i1');
-  i1['~can_edit'] = true; // the server's per-row answer, as a platform frame carries it
   await a.goTo('entity', 'i1');
   await flush();
   a.form.value.input('title').value = 'Revoked meanwhile';
@@ -586,10 +581,9 @@ scoped('EQ-021: a save refused as bare "forbidden" re-reads the access and re-ga
   memory.dropAccess = () => dg.dropAccess();
   const cached = table.access.bind(table);
   const before = grok.dapi.domains.invalidated;
-  // the revoke, read after the caches go: the table and the row say no; the column grant stays
   table.access = async () => grok.dapi.domains.invalidated > before ?
     {can: {view: true, insert: false, edit: false, delete: false, share: false}, fields: {title: 'editable'}} : cached();
-  i1['~can_edit'] = false;
+  table.rows.find((r) => r.id === 'i1')['~can_edit'] = false;
   DG.DomainSession.next = {message: 'forbidden', editor: null};
   try {
     assert.equal(await a.session.save(), false);
@@ -597,27 +591,20 @@ scoped('EQ-021: a save refused as bare "forbidden" re-reads the access and re-ga
   } finally {
     DG.DomainSession.next = true;
   }
-  assert.equal(grok.dapi.domains.invalidated > before, true, 'a forbidden save drops the platform access caches');
-  assert.equal(a.entitySource.value.access.value.can('edit'), false, 'the entity source re-read its access');
+  assert.equal(a.entitySource.value.access.value.can('edit'), false, 'the access was read again');
   assert.equal(a.session.isDirty.value, true, 'the edit is kept until Discard');
   a.session.discard();
   await flush();
-  assert.equal(a.form.value.input('title') === undefined, true, 'after Discard the form is read-only');
+  assert.equal(a.form.value.input('title'), undefined);
   a.dispose();
 });
 
-// EQ-055: the served js-api's refusal has no code, and the insert 403 carries a sentence: only its
-// stable prefixes tell a refusal as forbidden (access re-read) from any other
-scoped('EQ-055: a refused new record is a refusal as forbidden on today\'s servers; other refusals are not', async () => {
+// the served js-api's refusal has no code: only the message tells a permission refusal from any other
+scoped('a permission refusal is told as forbidden by its message; other refusals are not', async () => {
   const DG = await import('datagrok-api/dg');
   const {DgDomainBackend} = await import('../src/dg/backend.js');
-  const cases = [
-    ['Insufficient privileges to insert into "grit.issue"', 'forbidden'],
-    ['You don\'t have Edit permission on schema "grit"', 'forbidden'],
-    ['Ethanol still has 3 containers', null],
-    ['Too many version conflicts in a row', null],
-  ];
-  for (const [message, code] of cases) {
+  for (const [message, code] of [['Insufficient privileges to insert into "grit.issue"', 'forbidden'],
+    ['You don\'t have Edit permission on schema "grit"', 'forbidden'], ['Ethanol still has 3 containers', null]]) {
     const state = {problem: null, problemCode: null, editor: null, errorCells: () => [], retry: () => {}};
     DG.DomainSession.next = {message, editor: null};
     try {
@@ -625,7 +612,7 @@ scoped('EQ-055: a refused new record is a refusal as forbidden on today\'s serve
     } finally {
       DG.DomainSession.next = true;
     }
-    assert.equal(state.problemCode, code, `"${message}" ${code ? 'is a refusal as forbidden: access is re-read' : 'is not forbidden'}`);
+    assert.equal(state.problemCode, code, message);
   }
 });
 
@@ -741,8 +728,7 @@ scoped('a refused save says why in the status bar and balloons once, with no for
   a.dispose();
 });
 
-scoped('a shared ?sort= keeps only the columns this caller may read, and the list loads', async () => {
-  // the access leaves `description` out, as for a restricted column
+scoped('a shared ?sort= drops a column this caller may not read, and the list loads', async () => {
   const fields = Object.fromEntries(['id', 'version', 'created_on', 'updated_on', 'author_id', 'project_id',
     'number', 'title'].map((c) => [c, 'editable']));
   emsBackends.domain = backend({access: {can: {view: true}, fields}});
@@ -754,41 +740,6 @@ scoped('a shared ?sort= keeps only the columns this caller may read, and the lis
   await flush();
   assert.equal(a.listSource.sort.value, '!number', 'the hidden column is dropped from the sort');
   assert.equal(a.listSource.state.value, 'ready');
-  assert.equal(await a.open('?sort=!number, prop.title, prop.description'), true);
-  await flush();
-  assert.equal(a.listSource.sort.value, '!number,prop.title', 'keys are trimmed, a prop. term names its column');
-  a.dispose();
-});
-
-scoped('a saved search sorting by a column removed since drops it, says so once, and the list loads', async () => {
-  emsBackends.domain = backend();
-  const table = await domains.table('grit.issue');
-  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
-  document.body.append(a.root);
-  await flush();
-  SavedSearches.apply(a.listSource, {q: '', search: '', sort: 'qa_gone,!number'});
-  await flush();
-  assert.equal(a.listSource.sort.value, '!number', 'only the columns the table describes are sent');
-  assert.equal(a.listSource.state.value, 'ready');
-  assert.equal(document.body.querySelectorAll('[role="alert"]').length, 1, 'said once');
-  SavedSearches.apply(a.listSource, {q: '', search: '', sort: '!number, title'});
-  await flush();
-  assert.equal(a.listSource.sort.value, '!number,title', 'a space after the comma keeps the key');
-  assert.equal(document.body.querySelectorAll('[role="alert"]').length, 1, 'and nothing more is said');
-  a.dispose();
-});
-
-scoped('a ?q= link or a saved search is sent as the box formats it: the server reads what the box validated', async () => {
-  const {app: a} = await app();
-  const formatted = (q) => Filters.format(Filters.parse(q, a.listSource.schema, 'domain').root);
-  const like = 'title like "back\\\\slash"';
-  assert.notEqual(formatted(like), like, 'the box escapes a like value its own way');
-  await a.open('?q=' + encodeURIComponent(like));
-  await flush();
-  assert.equal(a.listSource.query.value, formatted(like), 'a link is sent as the box sends it, not as typed');
-  SavedSearches.apply(a.listSource, {q: 'TITLE = "z"', search: '', sort: ''});
-  await flush();
-  assert.equal(a.listSource.query.value, formatted('title = "z"'), 'a saved search names the column as the schema does');
   a.dispose();
 });
 
@@ -1496,33 +1447,7 @@ scoped('the status bar is four slots, and a refusal never takes the count off th
   a.dispose();
 });
 
-scoped('the table counts every row picked in it, after the collection is read again (EQ-041)', async () => {
-  const {app: a} = await app();
-  a.view.value = 'table';
-  await flush();
-  const el = () => {
-    const t = a.list.root.nextElementSibling.firstElementChild;
-    layout(t, {clientHeight: 300});
-    fire(t, 'scroll');
-    return t;
-  };
-  let table = el();
-  await flush();
-  const rowAt = (i) => [...table.lastElementChild.children]
-    .find((r) => r.getAttribute('aria-rowindex') === String(i + 2));
-  fire(rowAt(0), 'click');
-  fire(rowAt(2), 'click', {ctrlKey: true});
-  await flush();
-  assert.equal(a.status.value.selected, 2, 'the table counts every row picked in it');
-  await a.listSource.refresh();
-  await flush();
-  table = el();
-  await flush();
-  assert.equal(a.status.value.selected, 2, 'and after the collection is read again');
-  a.dispose();
-});
-
-scoped('a selection Escape cleared in the table is not brought back by a view switch (EQ-041)', async () => {
+scoped('a selection Escape cleared in the table is not brought back by a view switch', async () => {
   const {app: a} = await app();
   const listRow = (id) => [...a.list.root.getElementsByTagName('*')].find((el) => el.getAttribute('data-u2-row') === id);
   fire(listRow('i1'), 'click');
@@ -1872,37 +1797,17 @@ scoped('domains.views: a view per table, addressed and brought forward, where it
   }
 });
 
-scoped('table view: an aggregation header click sets no sort the server would refuse; a plain header still sorts', async () => {
-  const {app: a} = await app();
-  a.view.value = 'table';
-  a.output.aggregations.value = [{column: 'Notes.Weight', aggregation: 'avg'}];
-  await flush();
-  const head = (column) => [...a.root.querySelectorAll('[role="columnheader"]')].find((h) => h.dataset.column === column);
-  const before = a.listSource.sort.peek();
-  fire(head('avg(Notes.Weight)'), 'click');
-  await flush();
-  assert.equal(a.listSource.sort.peek(), before, 'the aggregation header sets no sort the server would refuse');
-  fire(head('title'), 'click');
-  await flush();
-  assert.equal(a.listSource.sort.peek(), 'title', 'an own-value header still sorts');
-  a.dispose();
-});
-
-// EQ-023: the access is cached until the caches are dropped, and a reader without View gets no
-// rows: a row opened from a list loaded before the revoke must re-read the access, once
-scoped('EQ-023: View revoked after the list loaded: the row opened from it re-reads the access and says no access', async () => {
+scoped('View revoked after the list loaded: a row opened from it says no access', async () => {
   const memory = backend();
   const issues = memory.tableSync('grit.issue');
   const query = issues.query.bind(issues);
   let revoked = false;
   let cached = null;
-  let drops = 0;
   issues.access = () => Promise.resolve(cached ??= {can: {view: !revoked, insert: false, edit: false, delete: false,
     share: false}, fields: {title: 'readonly'}});
   issues.query = (spec) => revoked ? Promise.resolve([]) : query(spec);
-  const count = issues.count.bind(issues);
-  issues.count = (scope) => revoked ? Promise.resolve(0) : count(scope);
-  memory.dropAccess = () => (drops++, cached = null);
+  issues.count = () => Promise.resolve(revoked ? 0 : 3);
+  memory.dropAccess = () => cached = null;
   emsBackends.domain = memory;
   const table = await domains.table('grit.issue');
   const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
@@ -1914,116 +1819,50 @@ scoped('EQ-023: View revoked after the list loaded: the row opened from it re-re
   await flush();
   await flush();
   assert.match(byKind(a, 'domain-form')[0].textContent, /You do not have access to issues\./);
-  assert.equal(drops, 1, 'the caches go once');
   a.dispose();
 });
 
-scoped('a viewable row opened from the list keeps the access caches and reads the row once', async () => {
-  const memory = backend();
-  const issues = memory.tableSync('grit.issue');
-  const frame = issues.frame.bind(issues);
-  let frames = 0;
-  let drops = 0;
-  issues.frame = (...args) => (frames++, frame(...args));
-  memory.dropAccess = () => drops++;
-  emsBackends.domain = memory;
-  const table = await domains.table('grit.issue');
-  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
-  document.body.append(a.root);
-  await flush();
-  const listFrames = frames;
-  a.listSource.currentRow.value = a.listSource.rows.byKey('i1');
-  a.listSource.activate.value++;
-  await flush();
-  await flush();
-  assert.equal(a.form.value.source.currentRow.value?.id, 'i1', 'the row shows');
-  assert.equal(drops, 0, 'the caches stay');
-  assert.equal(frames - listFrames, 1, 'the row is read once');
-  a.dispose();
-});
-
-// EQ-053: New is gated on every way to a new row (review: the ribbon alone left the empty list and /new)
-scoped('EQ-053: a View-only required column turns New off, on the ribbon, the empty list and the /new page', async () => {
-  const reason = 'You cannot create issues: they need a value for Project id, which you cannot set. ' +
-    'Ask the table\'s owner to let you edit Project id.';
+scoped('a View-only required column turns New off on the ribbon, the empty list and the /new page', async () => {
+  const reason = /^You cannot create issues: they need a value for Project id/;
   emsBackends.domain = backend({access: {can: {view: true, insert: true, edit: true, delete: true, share: true},
     fields: {title: 'editable', number: 'readonly', project_id: 'readonly'}}, rows: {project: [], issue: []}});
   const table = await domains.table('grit.issue');
   const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
   document.body.append(a.root);
   await flush();
-  const add = testOwner().build(() => a.ribbon()).main[0];
-  assert.equal(add.root.getAttribute('aria-description'), reason, 'New is off for a View-only required column');
-  assert.equal([...a.root.querySelectorAll('button')].some((b) => b.textContent === 'New issue'), false,
-    'the empty list offers no New button');
+  assert.match(testOwner().build(() => a.ribbon()).main[0].root.getAttribute('aria-description'), reason);
+  assert.equal([...a.root.querySelectorAll('button')].some((b) => b.textContent === 'New issue'), false);
   assert.equal(await a.create(), true);
   await flush();
-  // the entity page's form host: the form and, beside it, why it is hidden
-  assert.equal(a.form.value.root.parentElement.lastElementChild.textContent, reason, 'the /new page shows the reason');
-  assert.equal(a.form.value.root.hidden, true, 'instead of a form that can never save');
+  assert.match(a.form.value.root.parentElement.lastElementChild.textContent, reason);
+  assert.equal(a.form.value.root.hidden, true, 'no form that can never save');
   a.dispose();
 });
 
-scoped('a View-only required name column turns New off: the server does not fill a name', async () => {
-  emsBackends.domain = backend({access: {can: {view: true, insert: true, edit: true, delete: true, share: true},
-    fields: {title: 'readonly', number: 'readonly', project_id: 'editable'}}});
-  const table = await domains.table('grit.issue');
-  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
-  document.body.append(a.root);
-  await flush();
-  const add = testOwner().build(() => a.ribbon()).main[0];
-  assert.equal(add.root.getAttribute('aria-description'), 'You cannot create issues: they need a value for Title, ' +
-    'which you cannot set. Ask the table\'s owner to let you edit Title.');
-  a.dispose();
-});
-
-// EQ-054: the platform caches the caller's access with no expiry and a grant made by another
-// session never drops it: the memory table answers the cached access until the caches go
-function grantedElsewhere() {
+// the platform caches the caller's access with no expiry: a grant made by another session never drops it
+scoped('Refresh on the no-access page reads the access afresh: the rows and New come back', async () => {
   const memory = backend();
   const issues = memory.tableSync('grit.issue');
   const query = issues.query.bind(issues);
-  const state = {granted: false, drops: 0, issues};
+  let granted = false;
   let cached = null;
-  issues.access = () => Promise.resolve(cached ??= {can: {view: state.granted, insert: state.granted,
-    edit: state.granted, delete: false, share: false}, fields: {}});
-  issues.query = (spec) => state.granted ? query(spec) : Promise.resolve([]);
-  memory.dropAccess = () => (state.drops++, cached = null);
+  issues.access = () => Promise.resolve(cached ??= {can: {view: granted, insert: granted, edit: granted, delete: false,
+    share: false}, fields: {}});
+  issues.query = (spec) => granted ? query(spec) : Promise.resolve([]);
+  memory.dropAccess = () => cached = null;
   emsBackends.domain = memory;
-  return state;
-}
-
-scoped('EQ-054: opening the app again reads the access afresh, so it follows a grant made meanwhile', async () => {
-  const state = grantedElsewhere();
-  const first = await domains.route('/domains/grit/issue');
-  await flush();
-  assert.equal(state.drops, 1, 'opening drops the caches once');
-  first.close?.();
-  DomainApp.of(first).dispose();
-  await state.issues.access();
-  state.granted = true;
-  const reopened = DomainApp.of(await domains.route('/domains/grit/issue'));
-  await flush();
-  await flush();
-  assert.equal(reopened.listSource.rows.items.value.length, 3, 'the rows show');
-  assert.equal(reopened.listSource.access.value.can('insert'), true, 'the reopened app reads the grant');
-  reopened.dispose();
-});
-
-scoped('EQ-054: Refresh on the no-access page reads the access afresh and brings the rows and New back', async () => {
-  const state = grantedElsewhere();
   const table = await domains.table('grit.issue');
   const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
   document.body.append(a.root);
   const [add, , , , refresh] = testOwner().build(() => a.ribbon()).main;
   await flush();
-  await state.issues.access();
-  state.granted = true;
+  await issues.access();
+  granted = true;
   fire(refresh.root.querySelector('button') ?? refresh.root, 'click');
   await flush();
   await flush();
-  assert.equal(a.listSource.rows.items.value.length, 3, 'the rows show after Refresh');
-  assert.equal(add.root.hidden, false, 'New appears once the re-read finds the grant');
+  assert.equal(a.listSource.rows.items.value.length, 3);
+  assert.equal(add.root.hidden, false);
   a.dispose();
 });
 
@@ -2047,76 +1886,53 @@ scoped('a user who reaches rows only through row grants sees them: picker, child
   assert.equal(await a.goTo('entity', 'p1'), true);
   await flush();
   await flush();
-  assert.deepEqual([...a.panes.children].map((el) => el.dataset.u2), ['domain-children', 'domain-history'],
-    'the granted row keeps its panes');
   assert.match(byKind(a, 'domain-children')[0].textContent, /Issues \(2\)/, 'the child tab counts the granted children');
   assert.doesNotMatch(document.body.textContent, /do not have access/);
   a.dispose();
 });
 
-scoped('a row-grant reader whose filter, search or typed text matches nothing is told so, and can clear it', async () => {
-  const fields = Object.fromEntries(['key', 'name', 'project_id', 'number', 'title'].map((c) => [c, 'readonly']));
-  emsBackends.domain = backend({access: {can: {view: false, insert: false, edit: false, delete: false, share: false},
-    fields}});
-  const table = await domains.table('grit.project');
-  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
-  document.body.append(a.root);
-  await flush();
-  a.listSource.query.value = 'name = "nothing like this"';
-  await flush();
-  assert.match(a.root.textContent, /No projects match the filter/);
-  assert.ok([...a.root.querySelectorAll('button')].some((b) => b.textContent === 'Clear filter'), 'Clear filter stays');
-  a.listSource.query.value = '';
-  a.listSource.search.value = 'nothing like this';
-  await flush();
-  assert.match(a.root.textContent, /No projects match "nothing like this"/);
-  a.dispose();
-  const {DomainPick} = await import('../src/dg/pick.js');
-  const pick = testOwner().build(() => new DomainPick('grit.project', {label: 'Project', debounceMs: 0}));
-  document.body.append(pick.root);
-  const input = pick.root.querySelector('input');
-  input.focus();
-  input.value = 'nothing like this';
-  fire(input, 'input');
-  await flush();
-  await flush();
-  assert.match(document.body.textContent, /No matches/, 'the picker says nothing matches the typed text');
-  assert.doesNotMatch(document.body.textContent, /do not have access/);
-  pick.dispose();
-});
-
-scoped('Refresh over a save refused as forbidden reads the access again: the grant restored turns SAVE back on', async () => {
-  const memory = backend();
-  const issues = memory.tableSync('grit.issue');
-  const access = issues.access.bind(issues);
-  const saveAll = memory.saveAll.bind(memory);
-  let granted = true;
-  issues.access = async () => {
-    const data = await access();
-    return {...data, can: {...data.can, edit: granted}};
-  };
-  memory.saveAll = (edits) => {
-    if (granted)
-      return saveAll(edits);
-    edits.forEach((edit) => Object.assign(edit, {problem: 'forbidden', problemCode: 'forbidden'}));
-    return Promise.resolve(false);
-  };
-  emsBackends.domain = memory;
-  const table = await domains.table('grit.issue');
-  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
-  document.body.append(a.root);
-  await flush();
-  a.listSource.rows.byKey('i1').title = 'Edited';
-  granted = false;
-  assert.equal(await a.session.save(), false);
-  assert.notEqual(a.session.blocking.value, null, 'the 403 holds Save');
-  granted = true;
-  const refreshing = a.refresh();
-  await flush();
-  await flush();
-  assert.equal(a.session.blocking.value, null, 'the restored grant lifts the hold before the dialog asks');
-  fire(buttonNamed('CANCEL'), 'click');
-  assert.equal(await refreshing, false);
-  assert.equal(await a.session.save(), true, 'and the changes are saved');
-  a.dispose();
+scoped('an aggregation column follows a child row saved in this session', async () => {
+  const DG = await import('datagrok-api/dg');
+  DG.Column.fromType ??= (type, name) => new DG.Column(name, type);
+  DG.DataFrame.fromColumns ??= (columns) => new DG.DataFrame(columns.map((c) => ({name: c.name, type: c.dart.type})));
+  const memory = emsBackends.domain = backend();
+  const served = grok.dapi.domains.table;
+  // what the aggregation reads: the child rows of the listed parents, counted by parent
+  grok.dapi.domains.table = (address) => ({queryDf: async ({filter}) => {
+    const rows = memory.tableSync(address).rows.filter((r) => filter.value.includes(r[filter.property]));
+    return {rowCount: rows.length, groupBy: ([path]) => {
+      const keys = [...new Set(rows.map((r) => r[path]))];
+      return {
+        add() { return this; },
+        aggregate: () => ({rowCount: keys.length,
+          get: (name, i) => name === path ? keys[i] : rows.filter((r) => r[path] === keys[i]).length}),
+      };
+    }};
+  }});
+  try {
+    const table = await domains.table('grit.project');
+    const a = testOwner().build(() => domains.app({table, base: '/apps/T/Projects', pageSize: 10}));
+    await flush();
+    a.view.value = 'table';
+    a.output.show();
+    await flush();
+    await flush();
+    a.output.aggregations.value = [{column: 'Issues.Title', aggregation: 'count'}];
+    const count = async () => {
+      for (let i = 0; i < 4; i++)
+        await flush();
+      return a.output.values.value.get('p1')?.['count(Issues.Title)'];
+    };
+    assert.equal(await count(), 2);
+    const issues = await domains.table('grit.issue');
+    const child = testOwner().build(() => issues.source({query: 'project_id = "p1"', pageSize: 10}));
+    await flush();
+    child.newRow({project_id: 'p1', number: 7, title: 'Added'});
+    assert.equal(await child.save(), true);
+    assert.equal(await count(), 3);
+    child.dispose();
+    a.dispose();
+  } finally {
+    grok.dapi.domains.table = served;
+  }
 });

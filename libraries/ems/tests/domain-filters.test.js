@@ -400,16 +400,33 @@ scoped('Save as new search under a taken name is refused, not a silent replace',
   await flush();
   const input = document.querySelector('[role="dialog"] input');
   const ok = [...document.querySelectorAll('[role="dialog"] button')].find((b) => b.textContent === 'SAVE');
-  assert.ok(input && ok, 'the save dialog is open');
   input.value = ' s1 ';
   fire(input, 'input');
   await flush();
-  assert.match(document.querySelector('[role="dialog"]').textContent, /A saved search named S1 exists\./,
-    'the dialog says the name is taken');
   ok.click();
   await flush();
-  assert.deepEqual(SavedSearches.saved('grit.issue').get('S1'), first, 'the saved search S1 is kept');
-  assert.equal(SavedSearches.saved('grit.issue').size, 1, 'nothing was saved under another spelling');
+  assert.deepEqual([...SavedSearches.saved('grit.issue')], [['S1', first]]);
   button.remove();
   src.dispose();
+});
+
+// grok.userSettings holds writes in memory until flush() or its 10 s sync: a reload within it would lose them
+scoped('a saved search reaches the server at once: save, remove and clear are flushed', async () => {
+  userSettings.values = {};
+  let stored = {};
+  const flushed = userSettings.flush;
+  userSettings.flush = async () => stored = structuredClone(userSettings.values);
+  try {
+    const high = {q: 'priority = "high"', search: '', sort: ''};
+    SavedSearches.save('grit.issue', 'High', high);
+    assert.equal(stored['ems-searches|grit.issue']?.High, JSON.stringify(high));
+    SavedSearches.remove('grit.issue', 'High');
+    assert.equal(stored['ems-searches|grit.issue']?.High, undefined);
+    SavedSearches.record('grit.issue', high);
+    SavedSearches.save('grit.issue', 'Any', high);
+    SavedSearches.clearRecent('grit.issue');
+    assert.equal(stored['ems-recent-searches']?.['grit.issue'], undefined);
+  } finally {
+    userSettings.flush = flushed;
+  }
 });

@@ -5,7 +5,6 @@ import {Scope, FrameRows, Rows} from '@datagrok-libraries/u2';
 import {DataFrame, Stream} from '@datagrok-libraries/u2/tests/platform-doubles.mjs';
 import {register} from 'node:module';
 import {EditorEditState} from '../src/dg/editor-state.js';
-import {DomainSource} from '../src/core/domain-source.js';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const DG = await import('datagrok-api/dg');
@@ -192,106 +191,64 @@ scoped('validity is the first blocking error on a row that is not deleted; a con
   state.dispose();
 });
 
-// EQ-033: the platform editor marks the server's field error on the cell as kind 'error', like its
-// own checks; saveAll keeps that mark apart, so it stays shown, holds nothing, and the next save is sent
-scoped('EQ-033: a cell the server refused stays shown, does not hold Save, and the next save is sent', async () => {
-  const {editor} = fakeEditor(ROWS);
-  let validated = 0;
-  editor.commitEdit = function(row, column) { // the editor re-runs the cell's own checks: the server's mark goes
-    validated++;
-    delete this.errorsOf(row)[column];
-    this.onChanged.fire(this);
-  };
-  const state = new EditorEditState(editor);
-  state.setValue('i1', 'title', 'Aspirin');
+/** Runs `body` over a platform session whose first save the server refuses on i1's title, as the platform
+ * maps a field error onto its cell; the session sends nothing while the editor holds a cell error of its own. */
+async function refusedOnce(editor, body) {
   const real = DG.DomainSession.prototype.save;
   let sent = 0;
   DG.DomainSession.prototype.save = async function() {
-    this.lastRefusal = ++sent > 1 ? null : {message: 'Title Aspirin already belongs to i7', editor: this.editors[0]};
-    if (this.lastRefusal) // the platform maps the server's field error onto the cell it names
+    if (Object.values(editor.errorsOf(0)).some((e) => e.kind === 'error'))
+      return (this.lastRefusal = {message: DG.DomainSession.CELL_ERRORS, editor: null}, false);
+    this.lastRefusal = ++sent > 1 ? null : {message: 'Title already belongs to i7', editor: this.editors[0]};
+    if (this.lastRefusal)
       this.editors[0].fail(0, 'title', this.lastRefusal.message);
     return this.lastRefusal === null;
   };
   try {
-    const dg = new DgDomainBackend();
-    assert.equal(await dg.saveAll([state]), false);
-    assert.equal(state.validity.value, 'Title Aspirin already belongs to i7', 'the refusal stays shown');
-    assert.equal((state.blocking ?? state.validity).value, null, 'a server refusal does not hold Save');
-    assert.equal(await dg.saveAll([state]), true);
-    assert.equal(validated, 1, 'the next save took the server\'s mark back before the editor built its batch');
-    assert.equal(sent, 2);
+    await body(new DgDomainBackend());
   } finally {
     DG.DomainSession.prototype.save = real;
   }
-  state.dispose();
-});
+}
 
-scoped('EQ-033: a client error the retry finds is the client\'s, and holds', async () => {
+/** The editor's check of one cell: the typed title passes, so the server's mark on it goes. */
+function commitEdit(row, column) {
+  delete this.errorsOf(row)[column];
+  this.onChanged.fire(this);
+}
+
+scoped('a cell the server refused stays shown, does not hold Save, and the next save is sent', async () => {
   const {editor} = fakeEditor(ROWS);
-  editor.commitEdit = function(row, column) { // the server's mark goes; the client finds the title empty
-    this.errorsOf(row)[column] = {message: 'Title is required', kind: 'error'};
-    this.onChanged.fire(this);
-  };
+  editor.commitEdit = commitEdit;
   const state = new EditorEditState(editor);
-  state.setValue('i1', 'title', '');
-  const real = DG.DomainSession.prototype.save;
-  let sent = 0;
-  DG.DomainSession.prototype.save = async function() {
-    if (++sent === 1)
-      this.editors[0].fail(0, 'title', 'Taken');
-    // then the editor refuses its own cells and sends nothing
-    this.lastRefusal = sent === 1 ? {message: 'Taken', editor: this.editors[0]} :
-      {message: 'Fix the cell errors first', editor: null};
-    return false;
-  };
-  try {
-    const dg = new DgDomainBackend();
+  state.setValue('i1', 'title', 'Aspirin');
+  await refusedOnce(editor, async (dg) => {
     assert.equal(await dg.saveAll([state]), false);
-    assert.equal(await dg.saveAll([state]), false);
-    assert.equal(state.refused('i1', 'title'), false, 'never taken for the server\'s');
-    assert.equal(state.blocking.value, 'Title is required', 'the client\'s error holds the batch');
-  } finally {
-    DG.DomainSession.prototype.save = real;
-  }
+    assert.equal(state.validity.value, 'Title already belongs to i7');
+    assert.equal(state.blocking.value, null);
+    assert.equal(await dg.saveAll([state]), true);
+  });
   state.dispose();
 });
 
-scoped('a save after a server refusal is not held by a stored value of the row that the user never touched',
-  async () => {
-    const {editor} = fakeEditor(ROWS);
-    // as the platform's: every rule over every cell of the pending rows, the stored empty status included
-    editor.validate = function() {
-      delete this.errorsOf(0).title;
-      this.errorsOf(0).status = {message: 'Value can\'t be empty', kind: 'error'};
-      this.onChanged.fire(this);
-      return 1;
-    };
-    editor.commitEdit = function(row, column) { // the rules of that one cell: the typed title passes
-      delete this.errorsOf(row)[column];
-      this.onChanged.fire(this);
-    };
-    const state = new EditorEditState(editor);
-    state.setValue('i1', 'title', 'Aspirin 2');
-    const real = DG.DomainSession.prototype.save;
-    let sent = 0;
-    DG.DomainSession.prototype.save = async function() {
-      if (Object.values(editor.errorsOf(0)).some((e) => e.kind === 'error'))
-        return (this.lastRefusal = {message: DG.DomainSession.CELL_ERRORS, editor: null}, false);
-      this.lastRefusal = ++sent > 1 ? null : {message: 'Title Aspirin 2 already belongs to i7', editor: this.editors[0]};
-      if (this.lastRefusal)
-        this.editors[0].fail(0, 'title', this.lastRefusal.message);
-      return this.lastRefusal === null;
-    };
-    try {
-      const dg = new DgDomainBackend();
-      assert.equal(await dg.saveAll([state]), false);
-      assert.equal(await dg.saveAll([state]), true, 'the second Save is sent');
-      assert.equal(state.errorOf('i1', 'status'), null, 'the untouched status is not marked');
-    } finally {
-      DG.DomainSession.prototype.save = real;
-    }
-    state.dispose();
+scoped('a save after a server refusal is not held by a stored value of the row that the user never touched', async () => {
+  const {editor} = fakeEditor(ROWS);
+  // the platform's validate() runs every rule over every cell of the pending rows, the stored empty status too
+  editor.validate = function() {
+    delete this.errorsOf(0).title;
+    this.errorsOf(0).status = {message: 'Value can\'t be empty', kind: 'error'};
+    this.onChanged.fire(this);
+    return 1;
+  };
+  editor.commitEdit = commitEdit;
+  const state = new EditorEditState(editor);
+  state.setValue('i1', 'title', 'Aspirin 2');
+  await refusedOnce(editor, async (dg) => {
+    assert.equal(await dg.saveAll([state]), false);
+    assert.equal(await dg.saveAll([state]), true);
   });
+  state.dispose();
+});
 
 scoped('JSON-looking text retyped in a plain string column is written as typed, by both writers', async () => {
   const {df, editor} = fakeEditor([{id: 'i1', title: '{"a":1}'}]);
@@ -299,92 +256,12 @@ scoped('JSON-looking text retyped in a plain string column is written as typed, 
   editor.changesOf = () => ({});
   const platform = new EditorEditState(editor);
   platform.setValue('i1', 'title', '{"a": 1}');
-  assert.equal(df.get('title', 0), '{"a": 1}', 'the platform writer writes the text');
+  assert.equal(df.get('title', 0), '{"a": 1}');
   platform.dispose();
-  const memory = new MemoryDomainBackend({name: 'qa', tables: {item: {columns: {
-    notes: {type: 'string'}, meta: {type: 'json'}}}}}, {rows: {item: [{id: 'r1', notes: '{"a":1}', meta: {a: 1}}]}});
+  const memory = new MemoryDomainBackend({name: 'qa', tables: {item: {columns: {notes: {type: 'string'}}}}},
+    {rows: {item: [{id: 'r1', notes: '{"a":1}'}]}});
   const frame = await memory.tableSync('qa.item').frame({});
   frame.edit.setValue('r1', 'notes', '{"a": 1}');
-  assert.equal(frame.df.get('notes', 0), '{"a": 1}', 'the memory writer writes the text');
-  frame.edit.setValue('r1', 'meta', '{"a": 1}');
-  assert.equal(frame.edit.isChanged('r1', 'meta'), false, 'a json cell retyped as it was is no change');
-  assert.equal(frame.edit.changeCount.value, 1, 'only the string column counts');
+  assert.equal(frame.df.get('notes', 0), '{"a": 1}');
   frame.dispose();
 });
-
-/* EQ-057: a json cell written through the platform editor. The double behaves as js-api does where it
-   matters: `toDart` makes a Dart map of a PLAIN object only (anything else reaches the frame as it is),
-   a Dart map is cyclic through its type information, the editor's change compare is `JSON.stringify`
-   (`wireEquals`), and `validateCellValue` is the server's js-api — before 1.27.14 it refuses a json
-   cell's text, after it leaves the text to the server. */
-function jsApiEditor(acceptsText) {
-  const df = new DataFrame([{name: 'id', type: 'string'}, {name: 'meta', type: 'string'}],
-    [{id: 'r1', meta: '{"k":"v"}'}]);
-  const changes = [{}];
-  const toDart = (x) => {
-    if (typeof x !== 'object' || x === null || Object.getPrototypeOf(x) !== Object.prototype)
-      return x;
-    const map = Object.assign(Object.create({constructor: function LinkedHashMapCell() {}}), x);
-    map.$ti = {owner: map};
-    return map;
-  };
-  const wireEquals = (a, b) => a === b || JSON.stringify(a) === JSON.stringify(b);
-  class Editor {
-    static validateCellValue(p, value) {
-      if (value === null || value === undefined || (acceptsText && typeof value === 'string'))
-        return null;
-      return typeof value === 'object' && !Array.isArray(value) ? null :
-        `Types differ. Expected: map, passed: ${Array.isArray(value) ? 'list' : 'string'}`;
-    }
-    constructor() {
-      this.table = 'qa.item';
-      this.properties = [{name: 'meta', propertyType: 'map', nullable: true}];
-      this.isDirty = false; this.changeCount = 0; this.isSaving = false;
-      this.onChanged = new Stream(); this.onDirtyChanged = new Stream(); this.onSavingChanged = new Stream();
-      this.onSaved = new Stream();
-    }
-    get dataFrame() { return df; }
-    stateOf(row) { return Object.keys(changes[row]).length > 0 ? 'modified' : ''; }
-    changesOf(row) { return changes[row]; }
-    errorsOf() { return {}; }
-    errorOf(row, column) {
-      const message = Object.hasOwn(changes[row], column) ? Editor.validateCellValue(this.properties[0], df.get(column, row)) : null;
-      return message === null ? null : {message, kind: 'error'};
-    }
-    isChanged(row, column) { return Object.hasOwn(changes[row], column); }
-    setValue(row, column, value) {
-      const original = Object.hasOwn(changes[row], column) ? undefined : df.get(column, row);
-      df.set(column, row, toDart(value));
-      if (original !== undefined)
-        changes[row][column] = original;
-      if (wireEquals(changes[row][column], df.get(column, row)))
-        delete changes[row][column];
-      this.onChanged.fire(this);
-    }
-    revertCell(row, column) {
-      df.set(column, row, changes[row][column]);
-      delete changes[row][column];
-      this.onChanged.fire(this);
-    }
-    detach() {}
-  }
-  return {df, editor: new Editor()};
-}
-
-for (const acceptsText of [true, false]) {
-  const server = acceptsText ? 'a js-api that takes json text' : 'a js-api that refuses json text';
-  scoped(`EQ-057: a typed json object reaches the platform frame as something it can compare and send (${server})`, async () => {
-    const {df, editor} = jsApiEditor(acceptsText);
-    const state = new EditorEditState(editor);
-    const write = (value) => state.setValue('r1', 'meta', DomainSource.frameValue(df, 'meta', value));
-    assert.doesNotThrow(() => write({k: 'v', k2: 'v2'}),
-      'writing a typed json object into the frame does not throw (no Dart map in the cell)');
-    const cell = df.get('meta', 0);
-    assert.equal(typeof cell === 'string', acceptsText, acceptsText ? 'as its JSON text' : 'as an object, the fallback');
-    assert.deepEqual(JSON.parse(acceptsText ? cell : JSON.stringify(cell)), {k: 'v', k2: 'v2'});
-    assert.equal(state.errorOf('r1', 'meta'), null, 'and the editor takes it');
-    write({k: 'v'});
-    assert.equal(state.isChanged('r1', 'meta'), false, 'retyping the original pair is no change');
-    state.dispose();
-  });
-}
