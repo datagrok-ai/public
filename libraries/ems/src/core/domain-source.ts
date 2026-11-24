@@ -1231,10 +1231,11 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
         return;
       this._failures = 0;
       const before = this._probed;
-      this._probed = now;
-      if (before === undefined || (before.count === now.count && before.last === now.last))
-        return;
-      await this._behind();
+      // the baseline moves only with the rows: a source left stale compares again once it is clean
+      if (before === undefined)
+        this._probed = now;
+      else if (before.count !== now.count || before.last !== now.last)
+        await this._behind();
     } catch {
       // the baseline stands: the next good probe compares against the last pair that WAS answered,
       // so a change made during an outage is still seen
