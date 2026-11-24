@@ -439,6 +439,7 @@ scoped('a search saved in this tab keeps the ones another tab saved since this o
   try {
     await SavedSearches.save('grit.issue', 'Beta', {q: '', search: 'beta', sort: ''});
     assert.deepEqual(Object.keys(userSettings.values['ems-searches|grit.issue']), ['Alpha', 'Beta']);
+    userSettings.values = {};
     await SavedSearches.remove('grit.issue', 'Beta');
     assert.deepEqual(Object.keys(userSettings.values['ems-searches|grit.issue']), ['Alpha']);
   } finally {

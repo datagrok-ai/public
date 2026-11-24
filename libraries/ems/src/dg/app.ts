@@ -555,7 +555,6 @@ export class DomainApp extends Control {
       this.list.root.after(view.root);
       return () => {
         view.root.remove();
-        view.dispose();
         shown = null;
       };
     });
