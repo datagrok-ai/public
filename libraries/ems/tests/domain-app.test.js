@@ -1566,7 +1566,7 @@ scoped('live by default (R-b): an app polls unless it is told not to', async () 
     document.body.append(a.root);
     await flush();
     assert.equal(a.listSource.live.value, true, 'no `live` option is `live: true`');
-    assert.equal(ticks.length, 1, 'and the poll is armed');
+    assert.equal(ticks.length, 2, 'and the poll is armed: the rows, and the project table shared by every source');
     assert.equal(probes.length, 1, 'the load took the baseline');
     ticks[0]();
     await flush();
@@ -1574,7 +1574,7 @@ scoped('live by default (R-b): an app polls unless it is told not to', async () 
     b = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10, live: false}));
     await flush();
     assert.equal(b.listSource.live.value, false, 'and `live: false` still turns it off');
-    assert.equal(ticks.length, 1, 'nothing armed for it');
+    assert.equal(ticks.length, 2, 'nothing armed for it');
   } finally {
     globalThis.setInterval = saved;
     issues.probe = probe;

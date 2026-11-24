@@ -1,5 +1,5 @@
-import {signal, computed, batch, Signal, ReadonlySignal, Component, Access, plural, Filters, requireBackend, subBind,
-  Rows, FrameRows} from '@datagrok-libraries/u2';
+import {signal, computed, batch, untracked, Signal, ReadonlySignal, Component, Access, plural, Filters, requireBackend,
+  subBind, Rows, FrameRows} from '@datagrok-libraries/u2';
 import type {AccessData, Capability, FilterCondition, FilterGroup, FilterNode, FilterProperty, FilterScalar,
   FilterSchema, DomainRowLike, RowsLike, RowValues, RowView, DataFrameLike, BindProp, BindSource, ComponentEnv,
   ComponentStart} from '@datagrok-libraries/u2';
@@ -69,6 +69,75 @@ export interface UnwrittenEdits {
   values: Readonly<Record<string, unknown>>;
 }
 
+type Watched = {moved: Set<() => void>, last?: DomainProbeLike, leave?: () => void};
+
+// one probe of a watched table per poll, however many sources watch it; it goes with its last watcher
+class SharedProbe {
+  static readonly all = new Map<string, SharedProbe>();
+  private readonly _watchers = new Map<(now: DomainProbeLike) => void, number>();
+  private _last: DomainProbeLike | undefined;
+  private _table: Promise<DomainTableLike> | undefined;
+  private _probing: Promise<void> | undefined;
+  private _timer: ReturnType<typeof setInterval> | undefined;
+  private _ms = 0;
+
+  private constructor(private readonly _address: string, private readonly _backend: DomainBackend) {}
+
+  static join(address: string, backend: DomainBackend, ms: number, seen: (now: DomainProbeLike) => void): () => void {
+    let shared = SharedProbe.all.get(address);
+    if (shared === undefined)
+      SharedProbe.all.set(address, shared = new SharedProbe(address, backend));
+    const fresh = shared._watchers.size > 0 ? shared._last : undefined;
+    shared._watchers.set(seen, ms);
+    shared._arm();
+    if (fresh !== undefined)
+      seen(fresh);
+    else
+      void shared.probe();
+    return () => {
+      if (!shared._watchers.delete(seen))
+        return;
+      if (shared._watchers.size > 0)
+        shared._arm();
+      else {
+        clearInterval(shared._timer);
+        SharedProbe.all.delete(address);
+      }
+    };
+  }
+
+  probe(): Promise<void> {
+    return this._probing ??= this._read().finally(() => this._probing = undefined);
+  }
+
+  private async _read(): Promise<void> {
+    try {
+      const table = await (this._table ??= this._backend.table(this._address));
+      if (table.probe === undefined)
+        return;
+      const now = await table.probe({});
+      this._last = now;
+      for (const seen of [...this._watchers.keys()])
+        seen(now);
+    } catch {
+      this._table = undefined;
+    }
+  }
+
+  private _arm(): void {
+    const ms = Math.min(...this._watchers.values());
+    if (ms === this._ms)
+      return;
+    clearInterval(this._timer);
+    this._ms = ms;
+    this._timer = setInterval(() => {
+      if (typeof document === 'undefined' || !document.hidden)
+        void this.probe();
+    }, ms);
+    (this._timer as {unref?(): void}).unref?.();
+  }
+}
+
 const NO_ENV: ComponentEnv = {designTime: false, subBinds: {}, resolve: () => null};
 const NO_INFO: DomainTableInfoLike = {nameColumn: null, singularName: '', pluralName: '', businessKey: [],
   rowAddress: 'businessKey', searchableColumns: [], constraints: [], refFilters: {}, permissions: [], childTables: []};
@@ -110,6 +179,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   readonly deleted: Signal<DomainDeletedMode>;
   /** Whether the collection follows the server — see {@link DomainSourceOptions.live}. */
   readonly live: Signal<boolean>;
+  /** Holds the poll while nothing shows the rows (a list behind an open record); lifting it probes at once. */
+  readonly paused = signal(false);
   /** The rows the source holds are no longer the server's: a live probe saw the collection move
    * while this session had changes of its own to protect. Cleared by the next load. */
   readonly stale: ReadonlySignal<boolean>;
@@ -182,8 +253,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private readonly _captionOption: string[] | undefined;
   private _table: DomainTableLike | undefined;
   private _ready: Promise<DomainTableLike> | undefined;
-  private readonly _watched = new Map<string, {moved: Set<() => void>, table?: Promise<DomainTableLike>,
-    last?: DomainProbeLike}>();
+  private readonly _watched = new Map<string, Watched>();
   private _frame: DomainFrameLike | undefined;
   private _schema: DomainSchema = {properties: [], info: NO_INFO};
   private _unwire: (() => void) | undefined;
@@ -377,16 +447,29 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
         (this._shownFor === undefined || this._readFor() !== this._shownFor))
         void this.refresh();
     });
+    let held = false;
     this.effect(() => {
       this._stopPolling();
       this._failures = 0;
-      if (this.live.value) {
+      const polling = this.live.value && !this.paused.value;
+      untracked(() => {
+        for (const [address, entry] of this._watched) {
+          if (polling)
+            this._join(address, entry);
+          else
+            this._leave(entry);
+        }
+      });
+      if (polling) {
         this._timer = setInterval(() => void this._probe(), this._liveMs);
         // a Node timer keeps the process alive; a browser timer id ignores this
         (this._timer as {unref?(): void}).unref?.();
+        if (held)
+          void this._probe();
       }
+      held = this.live.value && this.paused.value;
     });
-    this.own(() => this._stopPolling());
+    this.own(() => this._halt());
   }
 
   get schema(): DomainSchema {
@@ -864,14 +947,16 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     let entry = this._watched.get(address);
     if (entry === undefined) {
       this._watched.set(address, entry = {moved: new Set()});
-      if (this.live.peek())
-        void this._probeWatched(address, entry);
+      if (this.live.peek() && !this.paused.peek())
+        this._join(address, entry);
     }
     entry.moved.add(moved);
     return () => {
       entry!.moved.delete(moved);
-      if (entry!.moved.size === 0 && this._watched.get(address) === entry)
+      if (entry!.moved.size === 0 && this._watched.get(address) === entry) {
+        this._leave(entry!);
         this._watched.delete(address);
+      }
     };
   }
 
@@ -899,9 +984,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       if (entry === undefined)
         continue;
       entry.last = undefined;
-      void source._probeWatched(this.table, entry);
       source._notify(this.table, entry);
     }
+    void SharedProbe.all.get(this.table)?.probe();
     if (!this._noRows && this._table !== undefined) {
       const total = await this._count(this._table);
       if (gen === this._gen)
@@ -1235,7 +1320,6 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this._probing = true;
     const gen = this._gen;
     try {
-      await Promise.all([...this._watched].map(([address, entry]) => this._probeWatched(address, entry)));
       if (table.probe === undefined || this._noRows || gen !== this._gen)
         return;
       await this._serve();
@@ -1253,26 +1337,29 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       // the baseline stands: the next good probe compares against the last pair that WAS answered,
       // so a change made during an outage is still seen
       if (++this._failures >= DomainSource.liveFailures)
-        this._stopPolling();
+        this._halt();
     } finally {
       this._probing = false;
     }
   }
 
-  private async _probeWatched(address: string, entry: {moved: Set<() => void>, table?: Promise<DomainTableLike>,
-    last?: DomainProbeLike}): Promise<void> {
-    try {
-      const table = await (entry.table ??= this._backend.table(address));
-      if (table.probe === undefined)
-        return;
-      const now = await table.probe({});
-      const before = entry.last;
-      entry.last = now;
-      if (before !== undefined && (before.count !== now.count || before.last !== now.last))
-        this._notify(address, entry);
-    } catch {
-      entry.table = undefined;
-    }
+  private _join(address: string, entry: Watched): void {
+    entry.leave ??= SharedProbe.join(address, this._backend, this._liveMs, (now) => this._seen(address, entry, now));
+  }
+
+  private _leave(entry: Watched): void {
+    entry.leave?.();
+    entry.leave = undefined;
+  }
+
+  // mid write-back the batch moves the tables itself: the next poll compares with the baseline still standing
+  private _seen(address: string, entry: Watched, now: DomainProbeLike): void {
+    if (this.isSaving.peek())
+      return;
+    const before = entry.last;
+    entry.last = now;
+    if (before !== undefined && (before.count !== now.count || before.last !== now.last))
+      this._notify(address, entry);
   }
 
   // the rows carry the captions of a watched table they reference
@@ -1310,6 +1397,12 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     } catch {
       return undefined;
     }
+  }
+
+  private _halt(): void {
+    this._stopPolling();
+    for (const entry of this._watched.values())
+      this._leave(entry);
   }
 
   private _stopPolling(): void {

@@ -229,6 +229,7 @@ export class DomainApp extends Control {
       defaults: _options.defaults,
       live: _options.live ?? true, liveMs: _options.liveMs});
     this.own(() => this.listSource.dispose());
+    this.effect(() => this.listSource.paused.value = this._page.value === 'entity');
     this.list = this.build(() => new DomainList(this.listSource, {mode: _options.mode,
       itemHeight: _options.itemHeight, create: () => void this.create(),
       active: computed(() => this.view.value !== 'table')}));

@@ -87,7 +87,7 @@ scoped('the load takes the baseline, the first probe compares; a moved pair relo
 
   await tick();
   assert.equal(be.probes.length, 4, 'TWO calls per interval, the rows and the project table, not a page of rows');
-  assert.deepEqual(Object.keys(be.probes[3]).sort(), ['filter'], 'the one read scope, the default trash mode left off');
+  assert.deepEqual(Object.keys(be.probes[2]).sort(), ['filter'], 'the one read scope, the default trash mode left off');
   assert.equal(src.stale.value, false);
 
   const issue = await be.backend.table('grit.issue');
@@ -279,11 +279,11 @@ scoped('live is a signal: turning it off stops the timer, turning it on starts o
   src.live.value = true;
   await flush();
   await tick();
-  assert.equal(be.probes.length, 2, 'the rows and the project table');
+  assert.equal(be.probes.length, 3, 'the project table\'s baseline, then a poll of the rows and the project table');
   src.live.value = false;
   await flush();
   await tick(2);
-  assert.equal(be.probes.length, 2);
+  assert.equal(be.probes.length, 3);
   src.dispose();
 });
 
@@ -625,7 +625,7 @@ scoped('a peer\'s rename of a referenced row reaches the rows within a poll, one
   const be = counted();
   const src = await started(be);
   await tick();
-  assert.deepEqual(be.probes.slice(-2), [{}, {filter: undefined}], 'the project table, then the rows');
+  assert.deepEqual(be.probes.slice(-2), [{filter: undefined}, {}], 'the rows, then the project table');
   await peerUpdate(be, 'project', 'p1', {name: 'Renamed'});
   await tick();
   assert.equal(src.rows.byKey('i1')['~caption_project_id'], 'Renamed');
@@ -676,6 +676,9 @@ scoped('an open record follows a peer: reloaded while clean, stale over an edit,
     assert.equal(await app.goTo('entity', 'i1'), true);
     await flush();
     const title = () => app.form.value.input('title');
+    const idle = be.probes.length;
+    await tick();
+    assert.equal(be.probes.length - idle, 2, 'the record and its project table; the list behind it waits');
     await peerUpdate(be, 'issue', 'i1', {title: 'Theirs'});
     await tick();
     await flush();
