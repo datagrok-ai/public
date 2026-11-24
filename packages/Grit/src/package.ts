@@ -84,11 +84,13 @@ function priorityBadge(r: RowView<IssueRow>): HTMLElement[] {
   return name === null ? [] : [badge(name, {variant: priorityVariants[name] ?? 'default'})];
 }
 
+export const openIssues = 'status_id.name != "closed" or status_id = null';
+
 /** The Issues app: the platform ribbon plus the Mine / Open presets, and a key for each action. */
 export const issuesOptions: DomainViewOptions = {mode: 'cards', itemHeight: 48, children: {tables: ['comment']},
   shortcuts: {'m': 'Assign to me', 'c': 'Close'},
   ribbon: (base, app) => ({...base,
-    presets: [app.presets(['Mine', 'assignee = $me'], ['Open', 'status_id.name != "closed"'])]}),
+    presets: [app.presets(['Mine', 'assignee = $me'], ['Open', openIssues])]}),
 };
 
 /** A view per Grit table — the issues where they were, at `/apps/Grit/Issues`. Grit's one app answers everything

@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Issues: Fixed the Open preset leaving out issues without a status, so a new issue vanished from it
 * Issues: Fixed a failed read of the `closed` status leaving the page without Assign to me, Close and the closing rule; the next issue table now asks again
 * Issues: Cards show the status on their second line
 * Issues: The closing rule, actions and card apply wherever an issue is edited, including a project's Issues tab and bulk edit
