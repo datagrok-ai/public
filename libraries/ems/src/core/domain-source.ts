@@ -616,9 +616,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     return restored;
   }
 
-  /** Lifts a 403's hold where the access now grants what the pending rows need. */
+  /** Lifts a 403's hold: the next Save asks the server again. */
   releaseForbidden(): void {
-    if (this._held403() && this._grants(this._access.peek())) {
+    if (this._held403()) {
       batch(() => {
         this._error.value = undefined;
         this._problemRow.value = null;

@@ -747,6 +747,27 @@ scoped('a save refused as forbidden holds Save and Ctrl+S through a child edit, 
   }
 });
 
+scoped('a forbidden hold ends when a source of the batch turns clean, and when the user reloads the access', async () => {
+  const out = refusing((edits) => holds(edits, 'i1', (r) => r.title !== 'Aspirin') && forbid(edits));
+  const session = new SharedSession();
+  const {projects, issues} = await pair(session);
+  projects.rows.byKey('p1').name = 'Grit 2';
+  issues.rows.byKey('i1').title = 'Aspirin 100';
+  assert.equal(await session.save(), false);
+  issues.rows.byKey('i1').title = 'Aspirin';
+  await flush();
+  assert.equal(await session.save(), true, 'the project edit alone');
+  issues.rows.byKey('i1').title = 'Aspirin 100';
+  assert.equal(await session.save(), false);
+  assert.equal(await session.save(), false);
+  assert.equal(out.sent, 3, 'held, not sent again');
+  await session.reloadAccess();
+  assert.equal(await session.save(), false);
+  assert.equal(out.sent, 4, 'the server is asked again');
+  projects.dispose();
+  issues.dispose();
+});
+
 scoped('a save refused as forbidden is sent once a re-read of the access finds the grant restored', async () => {
   let granted = true;
   const {memory} = refusing((edits) => !granted && forbid(edits));
