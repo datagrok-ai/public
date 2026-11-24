@@ -313,8 +313,10 @@ export class DomainApp extends Control {
       const trash = this.trash.value;
       const entity = this._page.value === 'entity';
       this.breadcrumbs.root.hidden = !entity && !trash;
+      // the view's own name where an app named it ("Location list")
+      const root = DomainApp._views.get(this)?.name || title;
       if (trash) {
-        this.breadcrumbs.setItems([title, 'Trash']);
+        this.breadcrumbs.setItems([root, 'Trash']);
         return;
       }
       const source = this._entitySource.value;
@@ -326,7 +328,7 @@ export class DomainApp extends Control {
       const asked = this._entity.peek();
       const caption = row !== null ? this._caption(source!, row) : source?.state.value !== 'ready' || source.isDraft ||
         asked === null ? '…' : DomainAddress.ID.test(asked) ? capital(nounOf(this.table.info, true)) : asked;
-      this.breadcrumbs.setItems([title, ...(row === null ? [] : ancestors.value.map((a) => a.name)), caption]);
+      this.breadcrumbs.setItems([root, ...(row === null ? [] : ancestors.value.map((a) => a.name)), caption]);
     });
     // the entity page over a draft: once saved, the page is the row's
     this.effect(() => {
