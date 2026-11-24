@@ -446,7 +446,7 @@ scoped('spec round trip: a form and a list bound through `$.issues.source` over 
 scoped('a readonly reference shows the target\'s name, not its uuid — off the frame, and after a refresh', async () => {
   await counting(async (lookups) => {
     emsBackends.domain = backend({access: {can: CAN,
-      fields: {title: 'editable', project_id: 'readonly', reporter: 'readonly'}}});
+      fields: {title: 'editable', project_id: 'readonly', reporter: 'readonly', name: 'readonly'}}});
     const {src} = await issues();
     src.currentRow.value = src.rows.byKey('i1');
     const form = testOwner().build(() => domains.form(src));

@@ -34,12 +34,16 @@ export interface DomainTableInfoLike {
   hiddenRequired?: number;
 }
 
-/** A table's `info` narrowed to the columns `readable` keeps. */
+/** A table's `info` narrowed to the columns `readable` keeps: a name or parent column the caller cannot read is
+ * none, and a business key with a part of it unreadable is no key (the rest of it would address several rows). */
 export function readableInfo<T extends DomainTableInfoLike>(info: T, columns: readonly IProperty[],
   readable: (name: string) => boolean): T {
   const hidden = columns.filter((p) => !readable(p.name!) && p.nullable === false &&
     (p.defaultValue ?? null) === null).length;
-  return {...info, searchableColumns: info.searchableColumns.filter(readable),
+  const kept = (name: string | null | undefined) => name != null && readable(name) ? name : null;
+  return {...info, searchableColumns: info.searchableColumns.filter(readable), nameColumn: kept(info.nameColumn),
+    businessKey: info.businessKey.every(readable) ? info.businessKey : [],
+    ...(info.parentColumn === undefined ? {} : {parentColumn: kept(info.parentColumn)}),
     ...(hidden > 0 ? {hiddenRequired: hidden} : {})};
 }
 

@@ -145,6 +145,20 @@ scoped('the name column falls back to the business key, then to the id', async (
   assert.deepEqual(await DomainPick.search('x.blob', ''), [{id: 'b1', name: 'b1'}]);
 });
 
+scoped('a name column the user cannot read is neither asked for nor shown: the picker goes by the key', async () => {
+  emsBackends.domain = new MemoryDomainBackend({name: 'x', tables: {vendor: {businessKey: ['code'],
+    columns: {code: {type: 'string', required: true}, name: {type: 'string', isName: true}}}}},
+  {rows: {vendor: [{id: 'v1', code: 'AB', name: 'Secret'}]}, access: {can: {view: true}, fields: {code: 'readonly'}}});
+  const table = emsBackends.domain.tableSync('x.vendor');
+  const query = table.query.bind(table);
+  const sent = [];
+  table.query = (spec) => (sent.push(JSON.stringify(spec)), query(spec));
+  assert.deepEqual(await DomainPick.search('x.vendor', ''), [{id: 'v1', name: 'AB'}]);
+  assert.deepEqual(await DomainPick.search('x.vendor', 'Secret'), []);
+  assert.deepEqual(await DomainPick.resolve('x.vendor', 'v1'), {id: 'v1', name: 'AB'});
+  assert.equal(sent.length > 0 && !sent.some((spec) => spec.includes('name')), true);
+});
+
 scoped('DomainPick.filter: the like condition, AND-ed with the extra filter as a tree', () => {
   assert.equal(DomainPick.filter('name', '  ', undefined), undefined);
   assert.deepEqual(DomainPick.filter('name', ' ab ', undefined),

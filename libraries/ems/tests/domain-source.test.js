@@ -1247,6 +1247,10 @@ source('a draft nothing was typed into survives every re-read of the rows it sit
   assert.equal(src.currentRow.value.id, draft.id, 'a reload');
   assert.equal(src.stale.value, true);
   assert.equal(src.isDirty.value, false);
+  src.currentRow.value = src.rows.byKey('i1');
+  await src.refresh();
+  assert.equal(src.rows.byKey(draft.id), undefined, 'left behind, it goes with the next reload');
+  assert.equal(src.stale.value, false);
   src.dispose();
   other.dispose();
 });

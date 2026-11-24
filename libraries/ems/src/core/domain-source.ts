@@ -224,7 +224,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this.deleted = signal<DomainDeletedMode>(options.deleted ?? 'exclude');
     this.live = signal(options.live ?? false);
     // a source that loads no rows has none to be behind
-    this.stale = this.isEmpty ? signal(false) : this._isStale;
+    this.stale = computed(() => this._isStale.value && !this.isEmpty && !DomainSource._namesDraft(this.query.value));
     this._liveMs = options.liveMs ?? DomainSource.liveMs;
     this.readOnly = computed(() => this.deleted.value !== 'exclude' || !this._writable.value);
     this._backend = requireBackend(this, emsBackends.domain, 'domain tables');
@@ -313,7 +313,10 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       this.session.isDirty.value;
       if (this.isDirty.value)
         return;
-      if (DomainSource.isForbidden(this._error.peek()) && this._state.peek() !== 'error') {
+      // a refused save does not outlive the changes it was about
+      const code = (this._error.peek() as {code?: unknown} | undefined)?.code;
+      if ((code === 'validation' || code === DomainSource.REFUSED || code === 'forbidden') &&
+        this._state.peek() !== 'error') {
         batch(() => {
           this._error.value = undefined;
           this._problemRow.value = null;
@@ -456,8 +459,11 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       const baseline = await this._baseline(table);
       if (gen !== this._gen)
         return;
-      const [frame, total] = await Promise.all([
-        table.frame(this._spec(0, window)), this._noRows ? 0 : this._count(table)]);
+      const reading = table.frame(this._spec(0, window));
+      const [frame, total] = await Promise.all([reading, this._noRows ? 0 : this._count(table)]).catch((e) => {
+        void reading.then((f) => f.dispose(), () => {});
+        throw e;
+      });
       if (gen !== this._gen) {
         frame.dispose();
         return;
@@ -523,6 +529,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       }
       if (readFor !== this._shownFor)
         this._shownFor = undefined;
+      else
+        this._probed = shown;
       batch(() => {
         this._error.value = e;
         this._state.value = 'error';
@@ -838,9 +846,12 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     return this._rows.pending() as RowView<TRow>[];
   }
 
-  // what a re-read would drop: a change, or a draft nothing was typed into yet
+  // what a re-read would drop: a change, or a draft nothing was typed into yet that the user is on
+  // or that a pending row of the session may refer to; one left behind goes with the re-read
   private _unsaved(): boolean {
-    return this.isDirty.peek() || this.pending().length > 0;
+    const current = this.currentRow.peek();
+    return this.isDirty.peek() || (this.pending().length > 0 &&
+      (this.session.isDirty.peek() || (current !== null && Rows.isDraft(current))));
   }
 
   /** Follows another table on this source's live probe; `moved` runs when it changed. Answers the unwatch. */
@@ -1231,7 +1242,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       // the baseline moves only with the rows: a source left stale compares again once it is clean
       if (before === undefined)
         this._probed = now;
-      else if (before.count !== now.count || before.last !== now.last)
+      else if (before.count !== now.count || before.last !== now.last || this._isStale.peek())
         await this._behind();
     } catch {
       // the baseline stands: the next good probe compares against the last pair that WAS answered,
