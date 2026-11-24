@@ -1224,12 +1224,15 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   // nothing is asked while the tab is hidden or mid write-back (the batch moves `updated_on` itself)
   private async _probe(): Promise<void> {
     const table = this._table;
-    if (table === undefined || table.probe === undefined || this._probing || this._noRows ||
+    if (table === undefined || this._probing ||
         this.isSaving.peek() || (typeof document !== 'undefined' && document.hidden))
       return;
     this._probing = true;
     const gen = this._gen;
     try {
+      await Promise.all([...this._watched].map(([address, entry]) => this._probeWatched(address, entry)));
+      if (table.probe === undefined || this._noRows || gen !== this._gen)
+        return;
       await this._serve();
       const now = await table.probe(this._scope());
       if (gen !== this._gen)
@@ -1237,7 +1240,6 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       this._failures = 0;
       const before = this._probed;
       this._probed = now;
-      await Promise.all([...this._watched].map(([address, entry]) => this._probeWatched(address, entry)));
       if (before === undefined || (before.count === now.count && before.last === now.last))
         return;
       await this._behind();

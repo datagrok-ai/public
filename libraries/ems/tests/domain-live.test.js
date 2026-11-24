@@ -706,3 +706,28 @@ scoped('a peer\'s rename of a referenced row reaches the rows through a table th
   unwatch();
   src.dispose();
 });
+
+scoped('a source that has nothing of its own to poll still polls the tables watched through it', async () => {
+  for (const [options, probe] of [[{empty: true}, true], [{}, false]]) {
+    const be = counted();
+    const inner = be.backend.table;
+    be.backend.table = async (address) => {
+      const t = await inner(address);
+      return address === 'grit.project' || probe ? t :
+        Object.assign(Object.create(Object.getPrototypeOf(t)), t, {probe: undefined});
+    };
+    emsBackends.domain = be.backend;
+    const src = testOwner().build(() =>
+      new DomainSource({table: 'grit.issue', live: true, liveMs: 1000, ...options}, env));
+    src.start();
+    await flush();
+    let moved = 0;
+    const unwatch = src.watch('grit.project', () => moved++);
+    await tick();
+    await peerUpdate(be, 'project', 'p1', {name: 'Renamed'});
+    await tick();
+    assert.equal(moved, 1, JSON.stringify(options));
+    unwatch();
+    src.dispose();
+  }
+});
