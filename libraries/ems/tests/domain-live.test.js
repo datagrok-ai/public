@@ -663,3 +663,42 @@ scoped('a source that has nothing of its own to poll still polls the tables watc
     src.dispose();
   }
 });
+
+scoped('an open record follows a peer: reloaded while clean, stale over an edit, deleted when they delete it',
+  async () => {
+    const be = counted();
+    emsBackends.domain = be.backend;
+    const table = await domains.table('grit.issue');
+    const app = testOwner().build(() => domains.app({table, base: '/apps/T/Issues', pageSize: 10, children: false,
+      liveMs: 1000}));
+    document.body.append(app.root);
+    await flush();
+    assert.equal(await app.goTo('entity', 'i1'), true);
+    await flush();
+    const title = () => app.form.value.input('title');
+    await peerUpdate(be, 'issue', 'i1', {title: 'Theirs'});
+    await tick();
+    await flush();
+    assert.equal(title().value, 'Theirs');
+
+    title().value = 'Mine';
+    await flush();
+    await peerUpdate(be, 'issue', 'i1', {weight: 3});
+    await tick();
+    assert.equal(app.stale.value, true);
+    assert.match(app.summary.value, /Data changed — Refresh/);
+    assert.equal(title().value, 'Mine');
+
+    app.session.discard();
+    await (await be.backend.table('grit.issue')).transaction([{op: 'delete', table: 'issue', id: 'i1'}]);
+    await tick();
+    await flush();
+    await flush();
+    assert.match(app.root.querySelector('[data-u2-part="entity-page"]').textContent, /Issue "Theirs" was deleted\./);
+    await app.goTo('list');
+    await flush();
+    const asked = be.probes.length;
+    app.dispose();
+    await tick(2);
+    assert.equal(be.probes.length, asked);
+  });

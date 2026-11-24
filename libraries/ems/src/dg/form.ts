@@ -198,11 +198,15 @@ export class DomainForm extends Control {
       const gone = deleted.value;
       untracked(() => this._show(current, gone ? access.narrow({edit: false}) : access, gone));
     });
-    // the editing state moves under the form — a discard, a save, another control's write
+    // the editing state moves under the form — a discard, a save, another control's write, a reload in place
+    let synced = false;
     this.effect(() => {
       const edit = source.edit.value;
       this._editSub?.unsubscribe();
       this._editSub = edit?.onChanged.subscribe(() => this._sync());
+      if (synced)
+        untracked(() => this._sync());
+      synced = edit !== undefined;
     });
   }
 

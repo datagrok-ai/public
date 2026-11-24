@@ -79,7 +79,7 @@ export interface DomainAppOptions {
   pageSize?: number;
   /** Whether the list follows the server (`DomainSourceOptions.live`), ON by default: it probes
    * the table every {@link liveMs} and reloads while the session is clean, marking the page
-   * {@link DomainApp.stale} while it is not. The entity page is one row and is not polled; its child tabs are. */
+   * {@link DomainApp.stale} while it is not. The entity page and its child tabs are polled the same way. */
   live?: boolean;
   liveMs?: number;
   mode?: DomainListMode;
@@ -1150,7 +1150,8 @@ export class DomainApp extends Control {
     this._close();
     if (page === 'entity' && entity !== null) {
       const source = this.build(() => draft ? this._source({draft: true, defaults: this._options.defaults}) :
-        this._source({query: query ?? Filters.group('and', [Filters.cond('id', '=', entity)]), pageSize: 1}));
+        this._source({query: query ?? Filters.group('and', [Filters.cond('id', '=', entity)]), pageSize: 1,
+          live: this._options.live ?? true, liveMs: this._options.liveMs}));
       let rechecked = draft;
       source.effect(() => {
         const rows = source.rows.items.value;
