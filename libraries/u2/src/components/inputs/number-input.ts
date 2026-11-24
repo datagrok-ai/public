@@ -254,7 +254,6 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
   }
 
   protected resetEditor(): void {
-    this._bad.value = null;
     this._show(this._format(this.peek()));
     this._syncSlider();
   }
@@ -282,6 +281,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
   private _show(text: string): void {
     this._input.value = text;
     this._written = text;
+    this._bad.value = null;
   }
 
   private _parse(text: string): number | null | undefined {

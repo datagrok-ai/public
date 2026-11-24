@@ -135,14 +135,17 @@ test('a draft added and then deleted is not a draft of the batch', () => {
 });
 
 test('a reference to a deleted parent is refused on its cell, by the column caption and without the id', async () => {
-  const {ed} = editor('modified', null);
+  const {ed} = editor('restored', null);
   ed._df.cols.location_id = ['p1'];
   ed._propByName.set('location_id', {friendlyName: 'Location'});
   const refusal = 'Column "location_id" references a deleted row in "location" ("p1")';
   const message = await ed.refusalFor(new DG.DomainRestrictError(refusal, 409,
-    {error: 'restrict', id: 'r1', column: 'location_id', table: 'location', message: refusal}), {op: {op: 'update'}, row: 0});
-  assert.equal(message, 'Location refers to a deleted location: restore it or pick another');
+    {error: 'restrict', id: 'r1', column: 'location_id', table: 'location', message: refusal}),
+    {op: {op: 'restore'}, row: 0});
+  assert.equal(message, 'Location refers to a deleted location: restore that location first');
   assert.equal(ed.errorsOf(0).location_id.message, message);
+  ed.unmarkRestored(0);
+  assert.equal(ed.errorOf(0, 'location_id'), null, 'an unstaged restore keeps no mark');
 });
 
 test('a delete of a row someone else already deleted lands, and the rest of the batch is sent', async () => {

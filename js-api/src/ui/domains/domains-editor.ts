@@ -1273,7 +1273,7 @@ export class DomainFrameEditor implements IFrameEditor {
     }
     for (const column of Object.keys(this.changesOf(row)))
       this._setError(row, column, {message: e.message, kind: 'conflict'});
-    if (kind != null)
+    if (kind != null && decision !== 'reload')
       balloon.warning(`${subject} changed since you read it: its ${kind} is still pending`);
     this._fire();
     return false;
@@ -1338,7 +1338,7 @@ export class DomainFrameEditor implements IFrameEditor {
     if (e instanceof DomainValidationError && e.isDuplicate)
       return this.duplicateRefusal(failing.row, e);
     if (e instanceof DomainRestrictError)
-      return typeof e.body['column'] === 'string' ? this._deletedParentRefusal(e, failing.row)
+      return typeof e.body['column'] === 'string' ? this._deletedParentRefusal(e, failing)
         : this.restrictRefusal(e);
     const named = this._displayOf(failing.row);
     const noun = this._info.singularName.toLowerCase();
@@ -1393,13 +1393,14 @@ export class DomainFrameEditor implements IFrameEditor {
       + ` remove or reassign ${count === 1 ? 'it' : 'them'} first`;
   }
 
-  /** "Location refers to a deleted location: restore it or pick another", on the cell as well. */
-  private _deletedParentRefusal(e: DomainError, row: number): string {
+  /** "Location refers to a deleted location: undo the deletion or pick another", on the cell as well. */
+  private _deletedParentRefusal(e: DomainError, failing: DomainPendingOp): string {
     const column = e.body['column'];
     const parent = `${e.body['table'] ?? 'row'}`.replace(/_/g, ' ');
-    const message = `${this._captionOf(column)} refers to a deleted ${parent}: restore it or pick another`;
+    const message = `${this._captionOf(column)} refers to a deleted ${parent}: `
+      + (failing.op.op === 'restore' ? `restore that ${parent} first` : 'undo the deletion or pick another');
     if (this._df.columns.contains(column)) {
-      this._setError(row, column, {message: message, kind: 'conflict'});
+      this._setError(failing.row, column, {message: message, kind: 'conflict'});
       this._fire();
     }
     return message;
@@ -1760,8 +1761,12 @@ export class DomainFrameEditor implements IFrameEditor {
         continue;
       // A deleted row carries no originals — there is nothing between '' and
       // 'restored' for it to go back to.
-      state.set(row, restored ? 'restored' : '', false);
-      this._recount(row);
+      if (restored) {
+        state.set(row, 'restored', false);
+        this._recount(row);
+      }
+      else
+        this._clearRowState(row);
     }
     this._fire();
   }

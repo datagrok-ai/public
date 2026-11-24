@@ -163,8 +163,7 @@ export class DomainSession implements IEditorHost {
    * reported). A value is a reference when it is the draft id of any editor's row. */
   buildOps(): DomainSessionPart[] | null {
     const parts: DomainSessionPart[] = [];
-    const drafts = new Set(this.editors.flatMap((editor) =>
-      typeof editor.draftIds === 'function' ? [...editor.draftIds()] : []));
+    const drafts = new Set(this.editors.flatMap((editor) => [...editor.draftIds()]));
     for (const editor of this.editors) {
       const pending = editor.prepareSave(drafts);
       if (pending == null)
