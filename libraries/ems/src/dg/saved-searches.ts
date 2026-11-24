@@ -23,7 +23,7 @@ let writes = Promise.resolve();
 function write(group: string, change: () => void): Promise<void> {
   const run = writes.then(async () => {
     await grok.dapi.userDataStorage.get(group, true)
-      .then((server) => grok.userSettings.put(group, server ?? {})).catch(() => {});
+      .then((server) => grok.userSettings.put(group, {...server, ...grok.userSettings.get(group)})).catch(() => {});
     change();
     SavedSearches.changed.value++;
     await grok.userSettings.flush();
