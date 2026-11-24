@@ -69,12 +69,14 @@ scoped('Refresh rebuilds the page when the table\'s columns changed meanwhile: a
   const {added, app, view, done} = await docked();
   const other = (await domains.table('grit.project')).app({path: '/apps/T/Projects'});
   try {
+    assert.equal(await app.goTo('entity', 'i2'), true);
     emsBackends.domain = reshaped((columns) => ({...columns, severity: {type: 'string'}}));
-    assert.equal(await app.refresh(), true);
+    assert.deepEqual(await Promise.all([app.refresh(), app.refresh()]), [true, true]);
     await flush();
     assert.equal(view.dart.closed, 1);
     assert.ok(DomainApp.of(added[0]).table.properties.some((p) => p.name === 'severity'));
-    assert.equal(added.length, 1, 'only this page is rebuilt');
+    assert.equal(added.length, 1, 'only this page is rebuilt, and once for two presses');
+    assert.equal(DomainApp.of(added[0]).entity.value, 'i2', 'at the row that was open');
     assert.ok(!other.dart.closed, 'another view of the schema stays open');
   } finally {
     DomainApp.of(other).dispose();

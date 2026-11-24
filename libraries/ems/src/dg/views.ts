@@ -40,6 +40,7 @@ export class DomainViews {
   // where each table's rows open: the views made over it last
   private static readonly _byTable = new Map<string, DomainViews>();
   private static _deleteSaved: {unsubscribe(): void} | undefined;
+  private static readonly _rebuilding = new WeakMap<DomainApp, Promise<void>>();
 
   constructor(private readonly _options: DomainViewsOptions) {
     for (const entry of _options.views)
@@ -108,18 +109,28 @@ export class DomainViews {
         const kept = new Set(fresh.properties.map((p) => p.name));
         removed.set(address, properties.filter((p) => !kept.has(p.name)));
       }
-      app.reshape(removed, () => DomainViews.rebuild(app));
+      if (DomainApp.live.has(app))
+        app.reshape(removed, () => DomainViews.rebuild(app));
     }
   }
 
-  /** Docks a new view of the app's table at the app's address and closes the old one. */
-  static async rebuild(app: DomainApp): Promise<void> {
+  static rebuild(app: DomainApp): Promise<void> {
+    let running = DomainViews._rebuilding.get(app);
+    if (running === undefined) {
+      running = DomainViews._rebuild(app).finally(() => DomainViews._rebuilding.delete(app));
+      DomainViews._rebuilding.set(app, running);
+    }
+    return running;
+  }
+
+  private static async _rebuild(app: DomainApp): Promise<void> {
     const old = DomainApp.viewOf(app);
     if (old === undefined)
       return;
-    const views = DomainViews._byTable.get(app.table.address);
-    const view = views !== undefined ? await views._new(app.path.peek().slice(views._options.path.length)) :
-      (await domains.table(app.table.address)).app({path: app.base});
+    const address = app.table.address;
+    const views = DomainViews._byTable.get(address);
+    const view = views !== undefined ? await views.view(address) : (await domains.table(address)).app({path: app.base});
+    void DomainApp.of(view)!.open(app.path.peek());
     grok.shell.addView(view);
     old.close();
   }
