@@ -233,13 +233,8 @@ scoped('a cell the server refused stays shown, does not hold Save, and the next 
 
 scoped('a save after a server refusal is not held by a stored value of the row that the user never touched', async () => {
   const {editor} = fakeEditor(ROWS);
-  // the platform's validate() runs every rule over every cell of the pending rows, the stored empty status too
-  editor.validate = function() {
-    delete this.errorsOf(0).title;
-    this.errorsOf(0).status = {message: 'Value can\'t be empty', kind: 'error'};
-    this.onChanged.fire(this);
-    return 1;
-  };
+  let validated = 0;
+  editor.validate = () => ++validated;
   editor.commitEdit = commitEdit;
   const state = new EditorEditState(editor);
   state.setValue('i1', 'title', 'Aspirin 2');
@@ -247,6 +242,7 @@ scoped('a save after a server refusal is not held by a stored value of the row t
     assert.equal(await dg.saveAll([state]), false);
     assert.equal(await dg.saveAll([state]), true);
   });
+  assert.equal(validated, 0, 'only the cell the server marked is checked again, not every cell of the row');
   state.dispose();
 });
 

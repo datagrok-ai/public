@@ -643,9 +643,11 @@ export class DomainApp extends Control {
    * page is {@link stale}. Through the gate: a reload drops whatever is pending. */
   async refresh(): Promise<boolean> {
     const source = this._page.peek() === 'entity' ? this._entitySource.peek() : this.listSource;
-    if (source !== null && this.session.isDirty.peek())
+    if (source === null)
+      return false;
+    if (this.session.isDirty.peek())
       await this.session.reloadAccess();
-    if (source === null || !await confirmDiscard(this.session, {action: 'reload the rows'}))
+    if (!await confirmDiscard(this.session, {action: 'reload the rows'}))
       return false;
     // the platform caches the access, and a grant made by another session never invalidates it
     emsBackends.domain?.dropAccess?.();
@@ -664,9 +666,11 @@ export class DomainApp extends Control {
 
   // the handle is as old as the view: columns shared or added since are not in it
   private async _outdated(): Promise<boolean> {
+    if (!DomainApp._views.has(this))
+      return false;
     const fresh = await emsBackends.domain?.table(this.table.address).catch(() => undefined);
     const names = (table: {properties: IProperty[]}) => table.properties.map((p) => p.name).sort().join();
-    return fresh !== undefined && DomainApp._views.has(this) && names(fresh) !== names(this.table);
+    return fresh !== undefined && names(fresh) !== names(this.table);
   }
 
   /** Keeps the page's columns while the session has pending changes; `rebuild` runs once it is clean. */

@@ -136,7 +136,7 @@ export class DomainList extends Control {
   actionsFor(row: RowView): Action[] {
     const source = this.source;
     const table = this._table;
-    if (DomainList.isStaged(row))
+    if (row[Rows.STATE] === 'restored' || row[Rows.STATE] === 'deleted' || Rows.isDeleted(row))
       return DomainList.stagedDelete(source, row);
     const extra = this._options.actions ?? [];
     const actions = table === undefined ? ActionRegistry.bind(extra, row) :
@@ -144,7 +144,6 @@ export class DomainList extends Control {
     return [...allowedActions(actions, {access: source.access.peek(), row}), ...DomainList.stagedDelete(source, row)];
   }
 
-  /** A row's staged delete, restore or undo; none where the row's own access denies `delete`. */
   static stagedDelete(source: DomainSource, row: RowView): Action[] {
     if (row[Rows.STATE] === 'restored')
       return [{text: 'Undo restore', icon: 'undo', run: () => source.unstageRestore([row.id])}];
@@ -154,10 +153,6 @@ export class DomainList extends Control {
       {text: 'Restore', icon: 'undo', requires: 'delete', run: () => source.stageRestore([row.id])} :
       DomainList.deleteAction(() => source.edit.peek()?.markDeleted(row.id));
     return allowedActions([run], {access: source.access.peek(), row});
-  }
-
-  static isStaged(row: RowView): boolean {
-    return row[Rows.STATE] === 'restored' || row[Rows.STATE] === 'deleted' || Rows.isDeleted(row);
   }
 
   static deleteAction(run: () => void): Action {

@@ -226,7 +226,6 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     return DomainTable._byRow.get(row);
   }
 
-  /** Whether the server can order the list by this column: not a reference and not the key. */
   static isSortable(prop: IProperty): boolean {
     return !DomainTable.isReference(prop) && prop.name !== 'id';
   }
