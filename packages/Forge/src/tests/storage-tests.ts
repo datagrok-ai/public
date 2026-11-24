@@ -42,6 +42,15 @@ async function tableExists(id: string): Promise<boolean> {
   return (await grok.dapi.tables.find(id)) != null;
 }
 
+/** The uploaded training copies of the model named [modelName]. */
+async function trainingCopiesOf(modelName: string): Promise<DG.TableInfo[]> {
+  const tables: DG.TableInfo[] = await grok.dapi.tables.filter(modelName).list();
+  return tables.filter((t) => t.friendlyName === trainingCopyName(modelName));
+}
+
+const modelCount = (id: string) => forgeDb.models.query().where('id', '=', id).count();
+
+// eslint-disable-next-line max-lines-per-function
 category('Storage', () => {
   test('forge tables are registered', async () => {
     expect(Array.isArray(await forgeDb.models.query({limit: 1})), true);
@@ -373,18 +382,8 @@ category('Storage', () => {
       }
     }
   });
-});
 
-/** The uploaded training copies of the model named [modelName]. */
-async function trainingCopiesOf(modelName: string): Promise<DG.TableInfo[]> {
-  const tables: DG.TableInfo[] = await grok.dapi.tables.filter(modelName).list();
-  return tables.filter((t) => t.friendlyName === trainingCopyName(modelName));
-}
-
-const modelCount = (id: string) => forgeDb.models.query().where('id', '=', id).count();
-
-// Saving through Forge:trainModel and saveTrainedModel, Forge:deleteModel, the schema.
-category('Storage', () => {
+  // Saving through Forge:trainModel and saveTrainedModel, Forge:deleteModel, the schema.
   test('the schema is the package\'s and a training run records its source', async () => {
     const manifest = await grok.dapi.domains.schema('forge').manifest();
     expect(manifest.version, schema.version);

@@ -35,7 +35,7 @@ const ACTIVITY_HEADERS: {[column: string]: string} = {
 const STATUS_TOOLTIPS: Record<ApplicationStatus, string> = {
   completed: 'Completed: the column was added.',
   failed: 'Failed: ',
-  cancelled: 'Cancelled: stopped between batches, no column added.',
+  cancelled: 'Cancelled: stopped before the last batch finished, no column added.',
 };
 const SOURCE_TOOLTIPS: Record<ApplicationSource, string> = {
   ui: 'The Apply dialog or the catalog.',

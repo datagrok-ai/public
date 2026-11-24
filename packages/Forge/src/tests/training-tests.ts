@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {awaitCheck, category, expect, expectArray, expectExceptionAsync, expectFloat, test}
+import {category, expect, expectArray, expectExceptionAsync, expectFloat, test}
   from '@datagrok-libraries/test/src/test';
 import {defaultHyperparameters, Engine, hyperparametersOf} from '../engines/engine';
 import {applicableEngines} from '../engines/applicable-engines';
@@ -27,12 +27,12 @@ import {bestThresholdOf, checkSelection, failedCheck, foldMasks, foldPrediction,
   TrainingResult, TrainingSelection, trainingEngines, trainModel, trainPredictionOf, validationSplit, withLateEngines}
   from '../training/train-model';
 import {QueuedTraining, TrainingQueue} from '../training/training-queue';
-import {cancelTaskBarEntry, CLASSIFIERS, columnNamed, columnsOf, deleteModelsNamed, deleteRunsOf, EDA_METHODS,
-  engineByName, expectMetrics, expectNoFrames, expectReleased, failingEngine, failsWith, framesSharing, GAP_ROWS,
-  IMPUTE, inDiscoveryOrder, IRIS, MEASUREMENTS, moleculeEngine, moleculeFrame, names, NO_OPTIONS, NO_PREPARATION_STEPS,
-  ONE_HOT_STEPS, openDemoTable, openIris, PREDICT_PROBABILITY, REGRESSORS, requestOf, runsOf, selectionOf,
-  SKIP_UNIQUE_STEPS, smilesColumn, stuckEngine, taskBarEntry, twoClassTable, twoSpeciesIris, valuesOf, withGaps,
-  xgboost}
+import {cancelAtGate, cancelOnceShown, CLASSIFIERS, columnNamed, columnsOf, deleteModelsNamed, deleteRunsOf, demoDemog,
+  EDA_METHODS, EngineGate, engineByName, expectMetrics, expectNoFrames, expectReleased, failingEngine, failsWith,
+  framesSharing, GAP_ROWS, IMPUTE, inDiscoveryOrder, IRIS, MEASUREMENTS, moleculeEngine, moleculeFrame, names,
+  NO_OPTIONS, NO_PREPARATION_STEPS, ONE_HOT_STEPS, openDemoTable, openIris, PREDICT_PROBABILITY, REGRESSORS, requestOf,
+  runsOf, selectionOf, SKIP_UNIQUE_STEPS, slowEngine, smilesColumn, stuckEngine, twoClassTable, twoSpeciesIris,
+  valuesOf, withEngine, withGaps, xgboost}
   from './test-data';
 
 const TIMEOUT = 60000;
@@ -125,6 +125,18 @@ async function irisRequest(features: string[], target: string): Promise<Training
   return requestOf(iris.clone(null, features), iris.getCol(target));
 }
 
+/** `forge-test-api-<time>` from the demo file [path] (no creation script). */
+const apiTable = (path: string = IRIS) => openDemoTable(path, 'api');
+
+/** 12 rows: `smiles` (Molecule) and `x` as the features, a numerical `y`. */
+function moleculeData(): {features: DG.Column[]; y: DG.Column} {
+  const {smiles, x, y} = moleculeFrame(12);
+  return {features: [smiles, x], y};
+}
+
+const MOLECULE_PROBLEM = 'XGBoost cannot learn from Molecule features. Uncheck: smiles.';
+
+// eslint-disable-next-line max-lines-per-function
 category('Training', () => {
   test('kFold is deterministic and balanced', async () => {
     const folds = kFold(103, 5, 42);
@@ -543,12 +555,14 @@ category('Training', () => {
     expect(ruled.problems.method.length, 0);
   }, {timeout: TIMEOUT});
 
-  test('checkSelection: SVM does not retrain live on 20000 rows', async () => {
+  test('checkSelection: SVM does not retrain live on more than 50 features', async () => {
     const engines = EngineRegistry.discover();
     const svm = engineByName(engines, 'SVM');
-    const demog = grok.data.demo.demog(20000);
-    const features = columnsOf(demog, ['age', 'height', 'weight']);
-    const check = await checkSelection(engineSelection(svm, features, demog.getCol('sex')), engines);
+    const rows = 100;
+    const features = Array.from({length: 51}, (_, k) =>
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, `f${k}`, valuesOf(rows, (i) => (i * (k + 3)) % 17)));
+    const target = DG.Column.fromStrings('label', Array.from({length: rows}, (_, i) => i % 2 === 0 ? 'a' : 'b'));
+    const check = await checkSelection(engineSelection(svm, features, target), engines);
     expect(check.engines.some((e) => e.name === 'SVM'), true, 'SVM is not listed');
     expect(check.problems.method.length, 0, check.problems.method.join(' '));
     expect(check.isInteractive, false);
@@ -609,10 +623,8 @@ category('Training', () => {
     expect(check.engines.some((e) => e.name === 'XGBoost'), true, 'XGBoost is not listed');
     expectArray(check.pending, []);
   }, {timeout: TIMEOUT});
-});
 
-// The preparation steps and Predict probability, and every method end to end (one category, split for its length).
-category('Training', () => {
+  // The preparation steps and Predict probability, and every method end to end.
   test('checkSelection: text and yes/no features need One-hot encoding, dates are refused', async () => {
     const values = Array.from({length: 12}, (_, i) => i + 1);
     const n = DG.Column.fromList(DG.COLUMN_TYPE.INT, 'n', values);
@@ -1166,10 +1178,8 @@ category('Training', () => {
       {mode: 'keep'}), engines);
     expect(check.problems.missingValues[0], needsRows('SVM'));
   }, {timeout: ENGINE_TIMEOUT});
-});
 
-// The Crux metrics (EDA's classificationReport) next to the TS ones.
-category('Training', () => {
+  // The Crux metrics (EDA's classificationReport) next to the TS ones.
   test('Crux report parity: the TS metrics equal the report\'s', async () => {
     const twoSpecies = await twoSpeciesIris();
     const binaryRequest = await requestOf(columnsOf(twoSpecies, MEASUREMENTS), twoSpecies.getCol('Species'));
@@ -1260,13 +1270,8 @@ category('Training', () => {
     expect(recutResult(regression, {predictProbability: true, threshold: 0.5}) === regression, true,
       'A regression was cut');
   }, {timeout: ENGINE_TIMEOUT});
-});
 
-/** `forge-test-api-<time>` from the demo file [path] (no creation script). */
-const apiTable = (path: string = IRIS) => openDemoTable(path, 'api');
-
-// Forge:trainModel: the API training, its checks, its run records and its registration.
-category('Training', () => {
+  // Forge:trainModel: the API training, its checks, its run records and its registration.
   test('runTrainModel with a target only trains as the view would and records an api run', async () => {
     const iris = await apiTable();
     try {
@@ -1476,15 +1481,13 @@ category('Training', () => {
   }, {timeout: TIMEOUT});
 
   test('runTrainModel: a cancel in the task bar records a cancelled run', async () => {
-    const demog = grok.data.demo.demog(100000);
-    demog.name = `forge-test-api-${Date.now()}`;
+    const demog = demoDemog(100);
+    const gate = new EngineGate();
     try {
       const training = runTrainModel({table: demog, target: 'sex', features: ['age', 'height', 'weight'],
-        method: 'XGBoost', hyperparameters: {iterations: 100, maxDepth: 20}});
-      const outcome = training.then(() => null, (e: unknown) => e);
-      await awaitCheck(() => taskBarEntry('Training XGBoost model') !== undefined, 'No task-bar entry', 10000);
-      cancelTaskBarEntry(taskBarEntry('Training XGBoost model'));
-      const error = await outcome;
+        method: 'XGBoost'}, withEngine(slowEngine(xgboost(), gate)));
+      const error = await cancelAtGate(gate, training, () => cancelOnceShown('Training XGBoost model', 20000))
+        .then(() => null, (e: unknown) => e);
       expect(error instanceof ForgeError && error.message === 'Training was cancelled.', true, String(error));
       const runs = await runsOf([demog]);
       expectArray(runs.map((r) => `${r.status} ${r.source}`), ['cancelled api']);
@@ -1737,18 +1740,8 @@ category('Training', () => {
     expectArray(func.inputs.find((p) => p.name === 'storage')?.choices ?? [], ['none', 'reference', 'copy']);
     expectArray(func.outputs.map((p) => `${p.name}: ${p.propertyType}`), ['result: object']);
   });
-});
 
-/** 12 rows: `smiles` (Molecule) and `x` as the features, a numerical `y`. */
-function moleculeData(): {features: DG.Column[]; y: DG.Column} {
-  const {smiles, x, y} = moleculeFrame(12);
-  return {features: [smiles, x], y};
-}
-
-const MOLECULE_PROBLEM = 'XGBoost cannot learn from Molecule features. Uncheck: smiles.';
-
-// Molecule features: a method that declares them (meta.mlsemtypes) gets them as they are, the others are not asked.
-category('Training', () => {
+  // Molecule features: a method that declares them (meta.mlsemtypes) gets them as they are, the others are not asked.
   test('a method that does not take molecules is not asked and names the feature', async () => {
     const {features, y} = moleculeData();
     const xgboostCalls = {count: 0};

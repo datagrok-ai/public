@@ -66,6 +66,7 @@ function compareRows(): CompareModelRow[] {
     metrics: {train: {accuracy: 1, f1: 1}, validation: {accuracy: 0.95, f1: 0.94}, positiveClass: 'setosa'}}];
 }
 
+// eslint-disable-next-line max-lines-per-function
 category('Catalog', () => {
   before(async () => {
     useTestGalleryStorage();
@@ -420,10 +421,7 @@ category('Catalog', () => {
       await forgeDb.models.delete(id);
     }
   });
-});
 
-// The API functions, on the fixtures of the category's before.
-category('Catalog', () => {
   test('listModels lists the models newest first and filters by task, method, name and target', async () => {
     const all = await listedIds({});
     expectArray(holds(all), [true, true]);
