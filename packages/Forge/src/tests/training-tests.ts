@@ -403,7 +403,7 @@ category('Training', () => {
     expectMetrics(second, first, 1e-9);
   }, {timeout: TIMEOUT});
 
-  test('checkSelection on iris: defaultFeatures excludes the row-number column and a text feature is reported',
+  test('checkSelection on iris: defaultFeatures takes the measurements and a text feature is reported',
     async () => {
       const iris = await grok.data.files.openTable(IRIS);
       expectArray(defaultFeatures(iris, iris.getCol('Species')).map((c) => c.name), MEASUREMENTS);

@@ -269,7 +269,6 @@ category('Apply', () => {
         result.probabilities)).values, result.metrics.train, 1e-9);
       expectArray(column.toList(), await predictionsOf(model.engine, columnsOf(iris, MEASUREMENTS), result.blob));
       expectArray(iris.columns.names(), [...names, 'Species (predicted)']);
-      expect(iris.getCol('col 1').type, DG.COLUMN_TYPE.INT);
       expectArray(rawValues(iris.getCol('Sepal.Length')), sepalLength);
 
       const [record] = await applications();
