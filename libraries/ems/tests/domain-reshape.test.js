@@ -67,13 +67,17 @@ function scoped(name, body) {
 
 scoped('Refresh rebuilds the page when the table\'s columns changed meanwhile: a newly shared column shows', async () => {
   const {added, app, view, done} = await docked();
+  const other = (await domains.table('grit.project')).app({path: '/apps/T/Projects'});
   try {
     emsBackends.domain = reshaped((columns) => ({...columns, severity: {type: 'string'}}));
     assert.equal(await app.refresh(), true);
     await flush();
     assert.equal(view.dart.closed, 1);
     assert.ok(DomainApp.of(added[0]).table.properties.some((p) => p.name === 'severity'));
+    assert.equal(added.length, 1, 'only this page is rebuilt');
+    assert.ok(!other.dart.closed, 'another view of the schema stays open');
   } finally {
+    DomainApp.of(other).dispose();
     done();
   }
 });
