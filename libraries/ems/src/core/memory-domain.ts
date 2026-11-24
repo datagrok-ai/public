@@ -80,6 +80,7 @@ const CORE_REF_SEM_TYPES: Record<string, string> = {user: 'User', group: 'Group'
 const IS_DELETED = 'is_deleted';
 
 const TEXT_OPERATORS = new Set(['like', '!like', 'starts', 'ends', 'matches', '!matches']);
+const TEXT = '::text';
 
 /** `DomainBackend` over a schema.json in memory, meaning what the server means: filters through the filter
  * feature's own `toMask`, a transaction ordered as the server orders it and landing on every table or none. */
@@ -839,15 +840,11 @@ export class MemoryTable implements DomainTableLike {
     let rows = this.rows;
     if (filter !== undefined && filter !== '') {
       const root = this._resolved(MemoryTable._tree(filter));
-      // a text operator reads any column as its text, as the server's `::text` cast does
-      const texts = new Set<string>();
-      Filters.walk(root, (n) => {
-        if (!Filters.isGroup(n) && TEXT_OPERATORS.has(n.operator))
-          texts.add(n.property);
-      });
-      const mask = await Filters.toMask(Filters.recordsFrame(this.rows, this._columns.map((p) =>
-        texts.has(p.name!) && p.propertyType !== 'string_list' ? {...p, propertyType: 'string', type: 'string'} : p)),
-      root);
+      const frame = Filters.recordsFrame(this.rows, this._columns);
+      const texts = Filters.recordsFrame(this.rows,
+        this._columns.map((p) => ({...p, propertyType: 'string', type: 'string'})));
+      const mask = await Filters.toMask({...frame, column: (name) => name.endsWith(TEXT) ?
+        texts.column(name.slice(0, -TEXT.length)) : frame.column(name)}, root);
       rows = rows.filter((_, i) => mask.get(i));
     }
     if (deleted !== 'include')
@@ -862,11 +859,14 @@ export class MemoryTable implements DomainTableLike {
     return rows;
   }
 
-  // `under` and `fuzzy` have no DataFrame form: a subtree becomes its ids, fuzzy the server's substring match
+  // `under` and `fuzzy` have no DataFrame form: a subtree becomes its ids, fuzzy the server's substring match;
+  // a text operator reads any column as its text, as the server's `::text` cast does
   private _resolved(root: FilterGroup): FilterGroup {
+    const cast = (name: string) => this._columns.some((p) => p.name === name && p.propertyType !== 'string_list');
     return {...root, nodes: root.nodes.map((node) => 'nodes' in node ? this._resolved(node) :
       node.operator === 'under' ? this._subtree(node) :
-        node.operator === 'fuzzy' ? {...node, operator: 'like'} : node)};
+        node.operator === 'fuzzy' ? {...node, operator: 'like'} :
+          TEXT_OPERATORS.has(node.operator) && cast(node.property) ? {...node, property: node.property + TEXT} : node)};
   }
 
   // walks the target's live rows, as the server does: a deleted branch truncates the subtree instead of leaking it
