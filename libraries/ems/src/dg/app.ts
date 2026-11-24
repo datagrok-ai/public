@@ -940,9 +940,10 @@ export class DomainApp extends Control {
     const row = source?.currentRow.peek() ?? null;
     if (source === null || row === null || Rows.isDraft(row))
       return [];
-    return allowedActions([...this.table.actions.for(row), DomainList.deleteAction(() => {
-      this._deleting = source;
-      source.edit.peek()?.markDeleted(row.id);
+    return allowedActions([...this.table.actions.for(row), DomainList.deleteAction(async () => {
+      await DomainList.confirmDelete(source, [row]);
+      if (row[Rows.STATE] === 'deleted')
+        this._deleting = source;
     })], {access: source.access.peek(), row}).map(({requires: _, ...action}) => action);
   }
 

@@ -2,7 +2,7 @@
 
 ## v.next
 
-* Delete: Asks first where a delete leaves rows of other tables unlinked ("2 containers without a location")
+* Delete: Asks first, in a list or on a record, where a delete leaves rows of other tables unlinked
 * Lists: Fixed Load more skipping, repeating or mixing rows after a save, a filter change or a peer's write
 * Lists: Fixed a search, filter or sort changed during a save or over unsaved edits not being applied
 * Lists: Fixed the current row and the selection being lost on save, refresh or switching to the table view

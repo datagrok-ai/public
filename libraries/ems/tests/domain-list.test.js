@@ -340,6 +340,15 @@ scoped('a delete that empties references on other rows says how many per table a
     assert.equal(src.rows.byKey('a')['~state'], 'deleted');
     list.dispose();
     src.dispose();
+    const app = testOwner().build(() => domains.app({table, base: '/apps/T/Locations'}));
+    await app.goTo('entity', 'a');
+    await flush();
+    app.menuActions().find((a) => a.text === 'Delete').run();
+    for (let i = 0; i < 4; i++)
+      await flush();
+    assert.match(document.body.textContent, /Deleting "Shelf A" leaves 2 locations and 2 containers/,
+      'the record page asks too');
+    app.dispose();
   } finally {
     grok.dapi.domains.schema = schema;
   }
