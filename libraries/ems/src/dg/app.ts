@@ -860,10 +860,14 @@ export class DomainApp extends Control {
       dirty[0].summary.value : this.session.summary.value;
   }
 
+  // a page is never titled with an id: a row named by ids alone is called by its noun
   private _caption(source: DomainSource, row: RowView): string {
     const current = source.current(row);
     const shown = this.table.renderer.caption(current);
-    return madeOfIds(this.table, current, shown) ? this.table.renderer.caption(row) : shown;
+    if (!madeOfIds(this.table, current, shown))
+      return shown;
+    const saved = this.table.renderer.caption(row);
+    return madeOfIds(this.table, row, saved) ? capital(nounOf(this.table.info, true)) : saved;
   }
 
   /** How a table is named in a view title, a breadcrumb root or a child tab: the display name

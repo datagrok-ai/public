@@ -392,6 +392,17 @@ scoped('a tree row\'s record names its saved ancestors, and follows a saved move
   a.dispose();
 });
 
+scoped('a record of a table without a name column is titled by its noun, never by its id', async () => {
+  emsBackends.domain = new MemoryDomainBackend({name: 'm', tables: {note: {singularName: 'Note',
+    columns: {body: {type: 'string'}}}}}, {rows: {note: [{id: '0bc69e58-1111-4222-8333-444455556666', body: 'x'}]}});
+  const table = await domains.table('m.note');
+  const a = testOwner().build(() => domains.app({table, base: BASE}));
+  await a.goTo('entity', '0bc69e58-1111-4222-8333-444455556666');
+  await flush();
+  assert.equal(crumbs(a).at(-1), 'Note');
+  a.dispose();
+});
+
 scoped('Delete over a pending edit turns the record read-only, with Undo', async () => {
   const {app: a} = await app();
   await a.goTo('entity', 'i1');
