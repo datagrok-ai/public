@@ -1340,7 +1340,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   // The server's default order ends with the id already
   private _order(): {sort?: string} {
     const sort = this.sort.peek();
-    return sort === '' ? {} : {sort: /(^|,)\s*!?id\s*$/.test(sort) ? sort : `${sort},id`};
+    const ordered = /(^|,)\s*!?id\s*(,|$)/.test(sort) || this._table?.support.systemColumns.includes('id') !== true;
+    return sort === '' ? {} : {sort: ordered ? sort : `${sort},id`};
   }
 
   private _readFor(): string {

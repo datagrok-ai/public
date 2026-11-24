@@ -44,6 +44,7 @@ export function readableInfo<T extends DomainTableInfoLike>(info: T, columns: re
   return {...info, searchableColumns: info.searchableColumns.filter(readable), nameColumn: kept(info.nameColumn),
     businessKey: info.businessKey.every(readable) ? info.businessKey : [],
     ...(info.parentColumn === undefined ? {} : {parentColumn: kept(info.parentColumn)}),
+    ...(info.parentColumn != null && !readable(info.parentColumn) ? {hierarchy: false} : {}),
     ...(hidden > 0 ? {hiddenRequired: hidden} : {})};
 }
 
