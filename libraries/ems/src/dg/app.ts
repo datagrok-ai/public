@@ -512,7 +512,8 @@ export class DomainApp extends Control {
     reload.root.dataset.u2 = 'refresh-button';
     reload.effect(() => {
       const source = this._page.value === 'entity' ? this._entitySource.value : this.listSource;
-      reload.root.hidden = !this.stale.value && source?.access.value.can('view') !== false;
+      const polled = this._page.value === 'entity' || this.table.table.support.probe;
+      reload.root.hidden = polled && !this.stale.value && source?.access.value.can('view') !== false;
     });
     const search = domains.search(this.listSource);
     const sort = this._sortMenu();
