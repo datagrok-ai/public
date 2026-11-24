@@ -23,6 +23,7 @@
 * Trees: Fixed the tree not following other sessions' changes, and losing a node picked during a refresh
 * Search: Fixed saved searches overwritten or lost on reload, and refused query text breaking the list
 * Bulk edit: Fixed a table that takes no writes being reported as deleted rows awaiting restore
+* Trash: Fixed a restore under a deleted parent not naming the row in the status bar or among several
 * [core#611](https://github.com/datagrok-ai/core/issues/611): Domain schemas: a named error code for an unknown group on grants — the binding dialog reads `unknown-group` instead of matching the message
 * History: Fixed "Show older" turning off with no reason while it loads; it now says "Loading older entries…"
 * u2-domain-pick: Fixed a pick bound to a read-only path rendering a spec error instead of a read-only input

@@ -395,7 +395,8 @@ export class DomainApp extends Control {
       const count = saved === null || this._count.value === '' ? this._count.value : `${saved} · ${this._count.value}`;
       // what a bulk action would act on, beside the count — the platform grid's own convention
       const selected = entity ? 0 : this.listSource.selection.value.length;
-      const problem = source !== null && source.error.value !== undefined ? source.summary.value : null;
+      const problem = source !== null && source.error.value !== undefined ?
+        DomainErrors.message(source.error.value, source) : null;
       // the rows answer the filter that was applied, not the one in the box: while that one is
       // invalid they are shown stale, and a refusal of the old one is not the news
       if (!entity && this.list.stale.value && !dirty)

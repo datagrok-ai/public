@@ -42,7 +42,8 @@ export class DomainErrors {
     if (writer === null)
       return `Cannot save: a reference points at a deleted ${target}. Restore the ${target} first.`;
     if (writer === undefined) {
-      const row = staged.length !== 1 ? null : DomainErrors._nameOf(source!, staged[0]);
+      const under = staged.filter((r) => parts[3] === undefined || String(r[column]) === parts[3]);
+      const row = under.length !== 1 ? null : DomainErrors._nameOf(source!, under[0]);
       return `Cannot restore${row === null ? '' : ` "${row}"`}: its ${target} was deleted too. ` +
         `Restore the ${target} first.`;
     }
