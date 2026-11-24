@@ -302,6 +302,14 @@ scoped('keyboard: Enter hands the row to the form through the source, Delete del
   fire(list.list.root, 'keydown', {key: 'Delete'});
   await flush();
   assert.equal(src.rows.byKey('i2')['~state'], 'deleted');
+  fire(rows[0], 'click');
+  fire(rows[2], 'click', {ctrlKey: true});
+  await flush();
+  fire(list.list.root, 'keydown', {key: 'Delete'});
+  for (let i = 0; i < 4; i++)
+    await flush();
+  assert.deepEqual(['i1', 'i3'].map((id) => src.rows.byKey(id)['~state']), ['deleted', 'deleted'],
+    'the key deletes the whole selection, as its menu does');
   list.dispose();
   src.dispose();
 });

@@ -67,7 +67,12 @@ export class DomainList extends Control {
       contextGroups: (row) => this._selected().length < 2 ? [] :
         [{text: this.renderer.caption(row), actions: this.actionsFor(row)}],
       onEnter: () => source.activate.value = source.activate.peek() + 1,
-      onDelete: (row) => this.actionsFor(row).find((a) => a.text === 'Delete')?.run(),
+      onDelete: (row) => {
+        const selected = this._selected();
+        const actions = selected.length > 1 && selected.includes(row) ? this.selectionActions(selected) :
+          this.actionsFor(row);
+        actions.find((a) => a.text === 'Delete')?.run();
+      },
     }));
     this.list.root.classList.add('u2-domain-list-rows', 'u2-list-no-ring');
     this.list.setItems(source.rows.items as ReadonlySignal<RowView[]>);
