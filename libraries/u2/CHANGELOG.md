@@ -5,6 +5,7 @@
 * Lists: Fixed a saved delete collapsing the multi-selection; `selectKeys` takes a lead row
 * Forms: Fixed map and list fields misreading a cell that holds JSON text; added `ObjectForm.fromJsonText`
 * NumberInput: Fixed a blur without typing rounding a formatted value
+* NumberInput: Fixed a blur dropping typed text equal to the last shown one; an int refuses -2147483648
 * DataTable: Added `DataTableColumn.sortable`
 * Filters: A datetime without a time zone is read as UTC, as the server reads it; added `Filters.instant`
 * Apps: Fixed browser Back cancelled over unsaved changes leaving the address bar on the page not opened
