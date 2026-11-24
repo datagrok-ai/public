@@ -62,6 +62,9 @@ export class DomainViews {
    * plain view for its path), and the open view answered again would be docked twice. */
   async open(address = ''): Promise<DG.ViewBase | null> {
     const {entry, rest} = this._route(address);
+    const segment = /^\/?([^/?]*)/.exec(address)![1];
+    if (segment !== '' && DomainViews._key(segment) !== DomainViews._key(this._segment(entry)))
+      grok.shell.warning(`This app has no ${segment} view: showing ${entry.name}`);
     return DomainApp.openAt(this.baseOf(entry.table), this._at(entry, rest)) === undefined ? this._new(address) : null;
   }
 
@@ -191,10 +194,14 @@ export class DomainViews {
     return entry.segment ?? entry.name.replace(/ /g, '');
   }
 
+  private static _key(segment: string): string {
+    return segment.replace(/ /g, '').toLowerCase();
+  }
+
   private _route(address: string): {entry: DomainViewEntry, rest: string} {
     const [, segment, rest] = /^\/?([^/?]*)(.*)$/.exec(address)!;
     const views = this._options.views;
-    const entry = views.find((v) => this._segment(v).toLowerCase() === segment.toLowerCase());
+    const entry = views.find((v) => DomainViews._key(this._segment(v)) === DomainViews._key(segment));
     return entry === undefined ? {entry: views[0], rest: address.startsWith('?') ? address : ''} : {entry, rest};
   }
 }

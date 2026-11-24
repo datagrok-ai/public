@@ -25,13 +25,14 @@ Editors.register({
   }}),
 });
 
-/** A view per stockroom table under the Stockroom app, the substances at its root. */
+/** A view per stockroom table under the Stockroom app, the substances at its root; `/apps/Stockroom/Locations` is the
+ * Locations app. */
 const views = domains.views({
-  path: '/apps/Stockroom/Stockroom',
+  path: '/apps/Stockroom',
   views: [
     {table: 'stockroom.substance', name: 'Substances', segment: ''},
     {table: 'stockroom.container', name: 'Containers', options: {sort: 'label'}},
-    {table: 'stockroom.location', name: 'Locations'},
+    {table: 'stockroom.location', name: 'Locations', segment: 'LocationList'},
     {table: 'stockroom.vendor', name: 'Vendors'},
     {table: 'stockroom.purchase_order', name: 'Purchase Orders'},
     {table: 'stockroom.sds_document', name: 'Safety Data Sheets'},
@@ -46,6 +47,7 @@ const views = domains.views({
 //description: Chemical stockroom on the GHS classification — the zero-code app over databases/stockroom/schema.json
 //tags: app
 //meta.icon: images/flask.svg
+//meta.url: /
 //input: string path {meta.url: true; optional: true}
 //output: view result
 export async function stockroomApp(path?: string): Promise<DG.ViewBase | null> {
