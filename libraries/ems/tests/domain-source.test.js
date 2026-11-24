@@ -1191,6 +1191,22 @@ source('over pending changes that shift is reported, never re-read away', async 
   src.dispose();
 });
 
+source('after a save whose re-read failed, the next page still arrives over a new edit', async () => {
+  emsBackends.domain = backend();
+  const src = await issues({pageSize: 1, sort: 'title'});
+  const table = emsBackends.domain.tableSync('grit.issue');
+  table.frame = async () => {
+    throw new Error('the server is away');
+  };
+  src.rows.byKey('i1').title = 'Aspirin 100';
+  assert.equal(await src.save(), true);
+  delete table.frame;
+  src.rows.byKey('i1').title = 'Aspirin 200';
+  await src.loadMore();
+  assert.deepEqual(titles(src), ['Aspirin 200', 'Ibuprofen']);
+  src.dispose();
+});
+
 source('a draft nothing was typed into survives every re-read of the rows it sits among, and stays current', async () => {
   emsBackends.domain = backend();
   const src = await issues({pageSize: 2, sort: 'title'});

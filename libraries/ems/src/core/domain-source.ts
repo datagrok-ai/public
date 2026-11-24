@@ -534,7 +534,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   /** Appends the next page into the same frame; pending changes stay. */
   async loadMore(): Promise<void> {
     const frame = this._frame;
-    if (frame === undefined || this._restart)
+    if (frame === undefined || (this._restart && !this._unsaved()))
       return this.refresh();
     if (this._done || this._state.peek() === 'loading' || this._readFor() !== this._shownFor)
       return;
