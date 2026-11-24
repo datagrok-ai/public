@@ -23,6 +23,7 @@
 * Forms: Fixed typing ignored in a short reference dropdown, so Enter picked its first row
 * Forms: A record deleted pending the save reads as such, read-only, with Undo
 * Forms: Fixed a row or a reference the user cannot see being named by its uuid
+* Forms: A row deleted by someone else says so after Discard or from a link, with Restore where allowed
 * Children: Added Delete to a child grid's row menu; New is off under a deleted parent
 * Import: Fixed previews and reports for refused batches, files over 1,000 rows and files with nothing new
 * Import: Fixed links by formatted keys, auto-mapped key or name columns, updates without a required column

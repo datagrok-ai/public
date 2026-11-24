@@ -145,6 +145,16 @@ scoped('open(path): ?entity= restores the entity page, ?q= the list under the qu
   await flush();
   assert.equal(a.breadcrumbs.root.textContent.includes(unseen) || a.root.textContent.includes(unseen), false,
     'an id the user cannot resolve is never shown');
+  await emsBackends.domain.transaction([{op: 'delete', table: 'grit.issue', id: 'i1'}]);
+  await a.open(`${BASE}?entity=i1`);
+  await flush();
+  await flush();
+  const restore = [...a.root.querySelectorAll('button')].find((b) => b.textContent === 'Restore');
+  assert.match(restore.parentElement.textContent, /^Issue "Aspirin" was deleted\./, 'a deleted row says so, with Restore');
+  fire(restore, 'click');
+  await flush();
+  await flush();
+  assert.equal(a.form.value.input('title').value, 'Aspirin');
   a.dispose();
 });
 

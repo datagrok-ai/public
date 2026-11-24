@@ -1168,8 +1168,9 @@ export class DomainApp extends Control {
       });
       const {children, history, include, exclude} = this._options;
       const noun = capital(nounOf(this.table.info, true));
-      const form = this.build(() => new DomainForm(source, {system: 'footer', include, exclude, labelColumn: this.labelColumn,
-        empty: `${noun}${DomainAddress.ID.test(entity) ? '' : ` "${entity}"`} was not found.`}));
+      const empty = `${noun}${DomainAddress.ID.test(entity) ? '' : ` "${entity}"`} was not found.`;
+      const form = this.build(() => new DomainForm(source, {system: 'footer', include, exclude,
+        labelColumn: this.labelColumn, empty}));
       this._panes = this.build(() => [
         ...(children === false ? [] : [domains.children(source, {live: this._options.live ?? true,
           liveMs: this._options.liveMs, ...(children === true ? {} : children)})]),
@@ -1190,7 +1191,8 @@ export class DomainApp extends Control {
           why.hidden = reason === null;
         });
         this._formHost.append(why);
-      }
+      } else if (this._hasTrash)
+        this._formHost.append(this._deletedNotice(source, form, noun));
       batch(() => {
         this._entitySource.value = source;
         this._form.value = form;
@@ -1200,6 +1202,45 @@ export class DomainApp extends Control {
       this._entity.value = page === 'entity' ? entity : null;
       this._page.value = page;
     });
+  }
+
+  // a row a peer deleted, opened by a link or left behind by Discard, says so and offers Restore
+  private _deletedNotice(source: DomainSource, form: DomainForm, noun: string): HTMLElement {
+    const notice = div([], 'u2-domain-form-empty');
+    notice.hidden = true;
+    let peerDeleted = false;
+    source.effect(() => {
+      if (DomainErrors.isNotFound(source.error.value) || source.edit.peek()?.problemCode === 'not-found')
+        peerDeleted = true;
+    });
+    source.subscribe(this.session.onDiscarded, () => {
+      if (peerDeleted)
+        void source.refresh().catch((e) => DomainErrors.report(e));
+      peerDeleted = false;
+    });
+    let gen = 0;
+    source.effect(() => {
+      const empty = source.state.value === 'ready' && source.rows.items.value.length === 0;
+      const mine = ++gen;
+      notice.hidden = true;
+      form.root.hidden = false;
+      if (!empty)
+        return;
+      const filter = Filters.toDomainTree(source.query.peek() as FilterGroup, {schema: source.schema});
+      void this.table.table.query({filter, deleted: 'only', limit: 1}).then(([row]) => {
+        if (mine !== gen || row === undefined)
+          return;
+        const name = this.table.renderer.caption(row as RowView);
+        const restore = button('Restore', () => void this.table.restore(row.id as string)
+          .then(() => source.refresh()).catch((e) => DomainErrors.report(e)));
+        restore.hidden = !source.access.peek().can('delete');
+        const named = madeOfIds(this.table, row as RowView, name) ? '' : ` "${name}"`;
+        notice.replaceChildren(span(`${noun}${named} was deleted.`, 'u2-domain-form-hint'), restore);
+        notice.hidden = false;
+        form.root.hidden = true;
+      }, () => undefined);
+    });
+    return notice;
   }
 
   private _close(): void {
