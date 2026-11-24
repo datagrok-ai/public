@@ -79,17 +79,11 @@ export class PropertyDialog {
       throw new Error(`${schema} is not a registered schema`);
     const ownership: ManifestOwnership = {};
     for (const t of entity.tables) {
-      let origin: unknown;
-      let userColumns: unknown;
-      try {
-        origin = t.origin;
-        userColumns = t.userColumns;
-      } catch {
-      }
+      const {origin, userColumns} = t;
       if ((origin !== 'package' && origin !== 'user') || !Array.isArray(userColumns) ||
         !userColumns.every((c) => typeof c === 'string'))
         throw new Error(PropertyDialog.UNSUPPORTED);
-      ownership[t.name] = {origin, userColumns: userColumns as string[]};
+      ownership[t.name] = {origin, userColumns};
     }
     return ownership;
   }

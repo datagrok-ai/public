@@ -269,6 +269,7 @@ async function sessionFake() {
     onChanged: new rxjs.Subject(), onDirtyChanged: new rxjs.Subject(),
     onSavingChanged: new rxjs.Subject(), onSaved: new rxjs.Subject(),
     prepareSave: () => [],
+    draftIds: () => new Set(),
     applyResults: () => ({inserted: 0, updated: 0, deleted: 0, assigned: {}}),
     writeBack: async () => {},
     setSaving() {}, discard() {},
