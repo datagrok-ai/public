@@ -99,7 +99,6 @@ export class SharedSession implements DomainSession {
     if (dirty.length === 0)
       return false;
     this._saving.value = true;
-    this._refusal = undefined;
     try {
       const batch = this._withReferenced(dirty);
       // what the batch DOES, read before it lands and empties the pending rows: a batch of deletes

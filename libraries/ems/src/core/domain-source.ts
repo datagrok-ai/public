@@ -564,7 +564,6 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       if (moved && this._unsaved())
         this._isStale.value = true;
       else if (moved) {
-        this._probed = undefined;
         const rebased = await this._rebase();
         if (gen !== this._gen)
           return;
@@ -959,7 +958,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this._loaded = frame.df.rowCount;
     this._last = DomainSource._lastOf(frame.df, this._loaded);
     this._moved = false;
-    this._done = this._noRows || this._loaded < window;
+    this._done = this._loaded < window;
     this._probed = baseline;
     this._wire(frame);
     batch(() => {
@@ -1336,7 +1335,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private _scope(): DomainReadScope {
     const query = this.query.peek();
     const q = this._served?.query === query ? this._served.as : query;
-    const search = this._searchable.peek() ? this.search.peek() : '';
+    const search = this.search.peek();
     const deleted = this.deleted.peek();
     return {filter: typeof q === 'string' ? (q === '' ? undefined : q) : Filters.toDomainTree(q),
       ...(search === '' ? {} : {search}), ...(deleted === 'exclude' ? {} : {deleted})};

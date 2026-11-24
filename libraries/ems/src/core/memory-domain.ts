@@ -291,8 +291,6 @@ export class MemoryDomainBackend implements DomainBackend {
         rows[at] = table.stamp({...rows[at], [IS_DELETED]: true}, (rows[at].version as number) + 1);
         results[index] = {id};
       } else if (op.op === 'restore') {
-        if (rows[at][IS_DELETED] !== true)
-          throw new DomainBackendError('not-found', `Operation ${index}: no deleted row "${id}"`);
         parentsLive(table, rows[at], Object.keys(table.refs));
         const row = table.stamp({...rows[at], [IS_DELETED]: false}, (rows[at].version as number) + 1);
         entry('undelete', id!, {...rows[at]}, {...row});
