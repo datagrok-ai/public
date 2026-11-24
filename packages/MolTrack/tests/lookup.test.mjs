@@ -1,7 +1,7 @@
 /* Headless regression test for the registered-structure lookup of MolTrack's import (EQ-065).
    Run: pnpm --dir packages/MolTrack run test:unit
    registration.ts is loaded as is; the platform modules it imports are replaced by a stub whose compounds table
-   answers like the server: a filter by `=` over a list, rows in no order unless `sort` names one, and a default
+   answers like the server: a filter by `=` over a list and by `>`, rows in no order unless `sort` names one, and a default
    limit of 100 when no limit is named. */
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
@@ -19,11 +19,11 @@ export const Chemistry = {}, MolTrackTables = {};
 export const moltrackDb = {compounds: {async query(spec) {
   const server = globalThis.__moltrackServer;
   server.calls.push(spec);
-  const values = new Set(spec.filter.value);
-  const hit = server.rows.filter((r) => values.has(r[spec.filter.property]));
+  const [{property, value}, after] = spec.filter;
+  const values = new Set(value);
+  const hit = server.rows.filter((r) => values.has(r[property]) && r.molregno > after.value);
   if (spec.sort === 'molregno') hit.sort((a, b) => a.molregno - b.molregno); else hit.reverse();
-  const at = spec.offset ?? 0;
-  return hit.slice(at, at + (spec.limit ?? ${SERVER_DEFAULT_LIMIT}));
+  return hit.slice(0, spec.limit ?? ${SERVER_DEFAULT_LIMIT});
 }}};`;
 const hook = `
 const STUB = ${JSON.stringify('data:text/javascript,' + encodeURIComponent(stub))};

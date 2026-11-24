@@ -28,8 +28,10 @@ if (await session.save()) {
   const itemId = parent.dataFrame.get('id', 0);
   const event = await events.get(child.dataFrame.get('id', 0));
   grok.shell.info(`item ${itemId}; the event points at ${event.item_id}`);
-} else
-  grok.shell.warning(`${session.lastRefusal.code}: ${session.lastRefusal.message}`);
+} else {
+  const {code, message} = session.lastRefusal;
+  grok.shell.warning(code == null ? message : `${code}: ${message}`);
+}
 session.dispose();
 
 await items.deleteWhere({property: 'sku', operator: '=', value: sku});

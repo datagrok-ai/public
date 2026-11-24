@@ -128,6 +128,23 @@ test('a text starting with ~new: is sent as typed, and only a draft id of the ba
   assert.deepEqual(plain([values[0].name, values[1].name, values[3].parent_id]), ['~new:release notes', '$$x', `$${draft}`]);
 });
 
+test('a draft added and then deleted is not a draft of the batch', () => {
+  const {ed} = editor('deleted', null);
+  ed._df.cols.id[0] = '~new:7b1f8c3e-5d2a-4e6b-9c1d-0a2b3c4d5e6f';
+  assert.equal(ed.draftIds().size, 0);
+});
+
+test('a reference to a deleted parent is refused on its cell, by the column caption and without the id', async () => {
+  const {ed} = editor('modified', null);
+  ed._df.cols.location_id = ['p1'];
+  ed._propByName.set('location_id', {friendlyName: 'Location'});
+  const refusal = 'Column "location_id" references a deleted row in "location" ("p1")';
+  const message = await ed.refusalFor(new DG.DomainRestrictError(refusal, 409,
+    {error: 'restrict', id: 'r1', column: 'location_id', table: 'location', message: refusal}), {op: {op: 'update'}, row: 0});
+  assert.equal(message, 'Location refers to a deleted location: restore it or pick another');
+  assert.equal(ed.errorsOf(0).location_id.message, message);
+});
+
 test('a delete of a row someone else already deleted lands, and the rest of the batch is sent', async () => {
   const {ed} = editor('deleted', null);
   for (const [name, value] of [['id', 'r2'], ['name', 'Other'], ['version', 1], [DG.DOMAIN_DELETED_COLUMN, false],

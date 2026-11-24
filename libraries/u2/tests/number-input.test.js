@@ -313,6 +313,12 @@ smoke('commitOn change: typing marks bad text at once but writes only on blur', 
   assert.equal(input.peek(), 2);
   fire(editor(input), 'blur');
   assert.equal(input.peek(), 9);
+  type(input, '7');
+  input.value = 7;
+  await flush();
+  type(input, '9');
+  fire(editor(input), 'blur');
+  assert.equal(input.peek(), 9, 'typed text is committed even when it matches what was last shown');
   input.dispose();
 });
 

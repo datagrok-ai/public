@@ -22,8 +22,9 @@ export interface NumberInputOptions extends InputOptions<number | null> {
 }
 
 const INT = /^-?\d+$/;
-/** The int32 range of the platform's `int` column: a frame column silently wraps a larger number. */
-const INT32_MIN = -2147483648;
+/** The range of the platform's `int` column: a frame column silently wraps a larger number, and
+ * -2147483648 is its null. */
+const INT32_MIN = -2147483647;
 const INT32_MAX = 2147483647;
 const FLOAT = /^-?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/;
 
@@ -61,7 +62,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
   private declare _slider: HTMLInputElement | null;
   /** Why the text in the field is no value, while it is not. */
   private declare _bad: Signal<string | null>;
-  private declare _written: string;
+  private declare _written: string | null;
 
   constructor(options: NumberInputOptions = {}) {
     super(options, null);
@@ -129,6 +130,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
       this._syncSlider();
     });
     this.scope.listen(input, 'input', () => {
+      this._written = null;
       const parsed = this._parse(input.value);
       this._bad.value = parsed !== undefined ? null :
         this._int && FLOAT.test(input.value.trim()) ? 'Must be a whole number' : 'Not a number';

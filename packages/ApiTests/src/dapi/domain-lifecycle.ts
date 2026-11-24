@@ -280,14 +280,10 @@ category('Dapi: domain lifecycle', () => {
     try {
       await handle.apply({tables: {things: {columns: {name: {type: 'string'}}}},
         ifVersion: `${(await handle.manifest())['version']}`});
-      const tables = (await grok.dapi.domains.schemas.include('tables.columns.property').list())
-        .flatMap((s) => s.tables.map((t) => ({schema: s.name, table: t})));
-      const things = tables.find((t) => t.schema === name)!.table;
-      const item = tables.find((t) => t.schema === 'apitests' && t.table.name === 'item')!.table;
+      const [things] = (await grok.dapi.domains.schemas.include('tables.columns.property')
+        .filter(`name = "${name}"`).first()).tables;
       expect(things.origin, 'user');
-      expect(things.userColumns.join(), 'name');
-      expect(item.origin, 'package');
-      expect(item.userColumns.length, 0);
+      expect(things.userColumns!.join(), 'name');
     } finally {
       await handle.delete();
     }

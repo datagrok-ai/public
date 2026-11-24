@@ -137,10 +137,10 @@ export function collectionSelection(source: SelectableCollection, rows: VirtualR
         const present = new Set(source.rows.items.peek().map((row) => row.id));
         const back = again.filter((id) => present.has(id));
         picked.value = back.length > 0;
-        if (back.length === 0)
-          KEPT.delete(source);
         if (back.length > 0)
           untracked(() => rows.selectKeys(back, source.currentRow.peek()?.id));
+        else
+          KEPT.delete(source);
       });
       return;
     }

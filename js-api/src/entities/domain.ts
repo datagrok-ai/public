@@ -54,11 +54,13 @@ export class DomainTable extends Entity {
   /** Whether writes leave an in-transaction audit trail. */
   get audit(): boolean { return api.grok_DomainTable_Get_Audit(this.dart); }
 
-  /** Who owns the table: `'package'` (deployed by the plugin) or `'user'`. */
-  get origin(): 'package' | 'user' { return api.grok_DomainTable_Get_Origin(this.dart); }
+  /** Who owns the table: `'package'` (deployed by the plugin) or `'user'`; undefined on a server
+   * that does not say. */
+  get origin(): 'package' | 'user' | undefined { return api.grok_DomainTable_Get_Origin?.(this.dart); }
 
-  /** The columns a user added to the table; needs `.include('tables.columns.property')`. */
-  get userColumns(): string[] { return toJs(api.grok_DomainTable_Get_UserColumns(this.dart)); }
+  /** The columns a user added to the table; needs `.include('tables.columns.property')`. Undefined
+   * on a server that does not say. */
+  get userColumns(): string[] | undefined { return toJs(api.grok_DomainTable_Get_UserColumns?.(this.dart)); }
 }
 
 
