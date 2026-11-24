@@ -465,6 +465,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       this._failures = 0;
       const polling = this.live.value && !this.paused.value;
       untracked(() => {
+        if (polling)
+          this._followOnce();
         for (const [address, entry] of this._watched) {
           if (polling)
             this._join(address, entry);
@@ -548,10 +550,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       if (gen !== this._gen)
         return;
       this._access.value = this._accessOf(data);
-      if (!this._following && !this.isEmpty) {
-        this._following = true;
-        void this._follow();
-      }
+      this._followOnce();
       await this._serve(true);
       if (gen !== this._gen)
         return;
@@ -1399,6 +1398,13 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   }
 
   // a rename where the captions come from moves the rows; a table seen only through row grants has no cheap probe
+  private _followOnce(): void {
+    if (this._following || this.isEmpty || !this.live.peek() || this._table === undefined)
+      return;
+    this._following = true;
+    void this._follow();
+  }
+
   // a column pinned to one row (a child tab's parent) is named by the page that holds that row
   private async _follow(): Promise<void> {
     const q = this.query.peek();

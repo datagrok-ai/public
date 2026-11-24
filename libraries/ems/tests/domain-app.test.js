@@ -1179,7 +1179,7 @@ scoped('Refresh is in the ribbon only while the page is stale, and reloads throu
   // the poll's own tick, taken by hand: the first one only records what the server looks like
   let tick;
   const saved = globalThis.setInterval;
-  globalThis.setInterval = (fn) => (tick = fn, 0);
+  globalThis.setInterval = (fn) => (tick ??= fn, 0);
   a.listSource.live.value = true;
   await flush();
   globalThis.setInterval = saved;
