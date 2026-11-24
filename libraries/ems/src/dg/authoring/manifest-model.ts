@@ -215,8 +215,7 @@ export interface ManifestPatch {
   dropTables?: string[];
 }
 
-/** Who owns what on a plugin schema, by table logical name: the registry's `origin` of each table and the
- * columns users added (`DomainTable.origin`, `DomainTable.userColumns`). The manifest never carries it. */
+/** Who owns what on a plugin schema, by table logical name; the manifest never carries it. */
 export type ManifestOwnership = Record<string, {origin: 'package' | 'user', userColumns: string[]}>;
 
 export interface ManifestModelOptions {
@@ -226,7 +225,7 @@ export interface ManifestModelOptions {
   /** Edit mode: the registered manifest, the immutable baseline the draft annotates and extends. */
   baseline?: ManifestJson;
   extend?: boolean;
-  /** Extend mode: the columns the user owns, and so may edit, remove and must send back with every extension. */
+  /** Extend mode: the columns the user owns. */
   ownership?: ManifestOwnership;
 }
 
@@ -1129,7 +1128,6 @@ export class ManifestModel {
     options: {registered: boolean, included: boolean, inventory?: InventoryTable}): void {
     const columns = new Map<string, ColumnState>();
     const keyByLogical = new Map<string, string>();
-    // a copy: edits change the model's declaration, never the baseline's
     for (const [name, {...c}] of Object.entries(decl?.columns ?? {})) {
       const columnRemote = c.column ?? name;
       keyByLogical.set(name, columnRemote);
@@ -1144,7 +1142,6 @@ export class ManifestModel {
     this._order.push(remote);
   }
 
-  // extend mode: whether the user added [column] to [table], the registry's word, never the manifest's
   private _userOwned(table: string, column: string): boolean {
     const owned = this._ownership[table]?.userColumns;
     return Array.isArray(owned) && owned.includes(column);

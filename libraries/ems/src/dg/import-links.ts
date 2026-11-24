@@ -38,15 +38,13 @@ export class ImportLinks {
     return DomainTable.isReference(prop) && prop.semType !== 'User' && prop.semType !== 'Group';
   }
 
-  /** The mapping's guidance for a column that takes ids; null for any other. */
   static idHint(prop: IProperty): string | null {
     const kind = prop.semType === 'User' ? 'user' : prop.semType === 'Group' ? 'group' : null;
     return kind === null ? null : `${DomainTable.captionOf(prop)} takes a ${kind} id (uuid), ` +
       `not a ${kind === 'user' ? 'login or name' : 'group name'}`;
   }
 
-  /** What is wrong with a value in a user or group column that is no id, in the wording of a row's error; null if it
-   * is one or the column is another. The server accepts the dashed uuid in either case, as sent, spaces refused. */
+  /** What is wrong with a non-id value in a user or group column, as a row's error; null otherwise. */
   static idProblem(prop: IProperty, value: unknown): string | null {
     const kind = prop.semType === 'User' ? 'user' : prop.semType === 'Group' ? 'group' : null;
     return kind === null || typeof value !== 'string' || value === '' || UUID.test(value) ? null :
@@ -73,7 +71,6 @@ export class ImportLinks {
   /** Per row of `values` (each row's values for `fields`, in order), the one record of `link` they find. */
   static async resolve(link: ImportLink, fields: LinkField[], values: unknown[][]): Promise<LinkMatch[]> {
     const keys = values.map((row) => row.map(ImportLinks._read));
-    // a whole-number key typed as its format shows it (DG-000072) is the number the record stores
     const sought = keys.map((key) => key.map((v, i) => ImportLinks._number(fields[i], v) ?? v));
     const named = sought.filter((key) => key.some((v) => v !== ''));
     const found = new Map<string, string[]>();
@@ -119,7 +116,6 @@ export class ImportLinks {
       values.flatMap((v) => ImportLinks._number(field, v) ?? []).map(Number) : values};
   }
 
-  // the number a whole-number field's value stands for, as a string; null when it is no such key
   private static _number(field: LinkField, value: string): string | null {
     const type = field.prop.propertyType ?? field.prop.type;
     if (type !== 'int' && type !== 'bigint')

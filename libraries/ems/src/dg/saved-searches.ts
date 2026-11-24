@@ -15,24 +15,17 @@ const RECENT = 'ems-recent-searches';
 const savedKey = (table: string) => `ems-searches|${table}`;
 const same = (a: DomainSearch, b: DomainSearch) => a.q === b.q && a.search === b.search && a.sort === b.sort;
 const label = (s: DomainSearch) => [s.q, s.search && `Search "${s.search}"`].filter((x) => x).join(' · ');
-/** grok.userSettings keeps writes in memory until its 10 s sync, so a reload or a closed tab right after an
- * explicit save, delete or clear would lose it: send them now. Recent searches, written on every list change,
- * are left to the periodic sync. */
+/** grok.userSettings keeps writes in memory until its 10 s sync: an explicit save is sent now. */
 const persist = () => void grok.userSettings.flush();
 
-/** The keys of `sort` over columns the table describes (a column the caller may not read, or one removed since, is
- * refused by the server for the whole read, so it is dropped and the rest of the order kept). Keys are trimmed, and a
- * `prop.<name>` key names the column `<name>`, as the server reads them. */
+/** The keys of `sort` over columns the table describes: the server refuses a read that names any other. */
 export function sortable(sort: string, properties: readonly {name?: string}[]): string {
   const columns = new Set(properties.map((p) => p.name));
   return sort.split(',').map((key) => key.trim())
     .filter((key) => key !== '' && columns.has(key.replace(/^!/, '').replace(/^prop\./, ''))).join(',');
 }
 
-/** The query text as the box reads it, in the form the box sends: a link's, a saved or a recent search's text goes
- * through the schema's grammar (case-insensitive and `[bracket]` names, its `like` escapes) and is written back
- * formatted, so the server parses what the box validated. Text the grammar or the schema refuses stays as it is: the
- * box shows its refusal and sends nothing. */
+/** The query text in the form the box sends, so the server parses what the box validated. */
 export function normalized(q: string, schema: {properties: readonly FilterProperty[]}): string {
   if (q.trim() === '' || schema.properties.length === 0)
     return q;
@@ -101,7 +94,6 @@ export class SavedSearches {
   }
 
   static apply(source: DomainSource, search: DomainSearch): void {
-    // a saved sort may name a column removed since: dropped, and said once, never written into the address
     const sort = sortable(search.sort, source.schema.properties);
     void confirmDiscard(source.session, {action: 'change the filter'}).then((ok) => {
       if (!ok)
@@ -170,7 +162,6 @@ export class SavedSearches {
 
   private static _saveDialog(source: DomainSource): void {
     const name = new TextInput({label: 'Name', value: label(SavedSearches.of(source)).slice(0, 40)});
-    // saving under a taken name would silently replace that search: refused until the name changes
     const clash = (value: string) => {
       const other = SavedSearches.taken(source.table, value);
       return other === null ? null : `A saved search named ${other} exists.`;

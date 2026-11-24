@@ -119,7 +119,6 @@ export class MemoryDomainBackend implements DomainBackend {
       return false;
     }
     const writers = edits as MemoryEditState[];
-    // a value is a reference when it is the draft id of any writer's row, as `DomainSession` builds it
     const drafts = new Set(writers.flatMap((edit) => [...edit.draftIds()]));
     const parts = writers.map((edit) => ({edit, pending: edit.buildOps(drafts)}));
     // every participant closed for the whole transaction, as the platform session closes its
@@ -235,8 +234,6 @@ export class MemoryDomainBackend implements DomainBackend {
     const audit: [MemoryTable, AuditLine][] = [];
     const tx = uuid4();
     const ts = new Date().toISOString();
-    // the server's live-parent rule (`_checkParentsLive`): a live row may not point at a row in the trash,
-    // read against this transaction's own copies, so a parent an earlier op deleted counts as deleted
     const parentsLive = (table: MemoryTable, row: Row, columns: string[]): void => {
       for (const column of columns) {
         const parentTable = this._tables.get(table.refs[column]);
@@ -357,12 +354,8 @@ export class MemoryTable implements DomainTableLike {
   static readonly maxPathDepth = 64;
 
   readonly address: string;
-  /** The columns the caller may read, as the seam describes them — {@link _columns} less the
-   * ones {@link access} hides, as `DgDomainTable` narrows the registry's. */
   readonly properties: IProperty[];
-  /** The table's info, its `searchableColumns` narrowed the same way. */
   readonly info: DomainTableInfoLike;
-  // every declared column and the system ones: what the "server" side of this table runs on
   private readonly _columns: IProperty[];
   private readonly _info: DomainTableInfoLike;
   readonly support: DomainSupportLike;
@@ -446,7 +439,6 @@ export class MemoryTable implements DomainTableLike {
     const offset = spec.offset ?? 0;
     rows = rows.slice(offset, spec.limit === undefined ? undefined : offset + spec.limit);
     return rows.map((row) => {
-      // as the server: `columns` picks among the declared columns, the system ones always ride along
       const out: Row = spec.columns ? Object.fromEntries([...SYSTEM.map(([c]) => c), ...spec.columns]
         .filter((c) => c in row).map((c) => [c, row[c]])) : {...row};
       // as the server off row mode: edit and delete are the table's answer, share is not
@@ -468,9 +460,6 @@ export class MemoryTable implements DomainTableLike {
     });
   }
 
-  // the server's `_query` refusal word for word: `columns` names declared columns the caller may see (a system
-  // column such as `id` is not one — it is always projected), an access column under `withAccess`, and the
-  // deleted mark under a `deleted` read
   private _checkColumns(spec: DomainQueryLike): void {
     for (const c of spec.columns ?? []) {
       const declared = !SYSTEM.some(([s]) => s === c) && this.properties.some((p) => p.name === c) &&
@@ -532,7 +521,6 @@ export class MemoryTable implements DomainTableLike {
     };
   }
 
-  // a queried row as the platform frame holds it (`MemoryEditState.frameCell`)
   private _frameRow(row: Row): Row {
     for (const prop of this.properties) {
       if (prop.name! in row)
@@ -634,7 +622,6 @@ export class MemoryTable implements DomainTableLike {
       updated: ops.filter((op) => op.op === 'update').length,
       skipped: duplicate.size,
       errorCount: errors.size,
-      // capped as the server caps it: errors, then duplicates, then updates, then inserts
       rows: [...failed,
         ...[...duplicate.entries()].sort(([a], [b]) => a - b).map(([index, existingId]) =>
           ({index, id: existingId, status: 'duplicate', ...(existingId === null ? {} : {existingId})})),
@@ -765,9 +752,7 @@ export class MemoryTable implements DomainTableLike {
     return chain.reverse();
   }
 
-  /** The schema's rules — required, choices, min, max — as the server's `_validateRow` refuses on: an update
-   * (`patch`) over the columns it sends alone, so a stored value a rule tightened since refuses does not
-   * block an edit of another column. */
+  /** The schema's rules as the server refuses on them; an update is checked over the columns it sends alone. */
   check(row: Row, index: number, columns?: string[]): void {
     for (const prop of this._columns) {
       if (columns !== undefined && !columns.includes(prop.name!))
@@ -778,10 +763,7 @@ export class MemoryTable implements DomainTableLike {
     }
   }
 
-  /** A written value as the server coerces it (`DomainBatchLoader._coerceCell`), for the cells the
-   * frame holds as text: `''` is none; a `string_list` is a list of scalars, given as one or as its
-   * JSON text, its items made text; a `json` cell is an object, given as one or as its JSON text —
-   * anything else is refused as the server words it. */
+  /** A written value as the server coerces it, for the cells the frame holds as text. */
   decode(column: string, value: unknown, index: number): unknown {
     const prop = this.properties.find((p) => p.name === column);
     if (prop === undefined || !MemoryEditState.isTextCell(prop) || value === null || value === undefined)
@@ -791,7 +773,6 @@ export class MemoryTable implements DomainTableLike {
     const type = prop.propertyType ?? prop.type;
     let decoded: unknown;
     try {
-      // what reaches the server is the value's JSON, never the object a frame held
       decoded = JSON.parse(typeof value === 'string' ? value : JSON.stringify(value));
     } catch {
       decoded = undefined;

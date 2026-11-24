@@ -151,8 +151,6 @@ export function openImport(table: DomainTable, options: DomainImportOptions = {}
     notify.warning(`There is no column of ${table.address} you may write.`);
     return Promise.resolve(null);
   }
-  // a required column with no default that the caller cannot write and the import does not derive fails every new
-  // row; Add or update still updates the matched rows without it, as long as it can match them by their key
   const stuck = DomainTable.unsettable(table.properties, table.info, table.access, derived);
   const updates = table.table.support.batch.upsert && !stuck.some((p) => table.info.businessKey.includes(p.name!));
   if ((stuck.length > 0 || table.info.hiddenRequired) && !updates) {
@@ -193,7 +191,6 @@ class ImportFlow {
   // '' while the dry run runs, a reason where all-or-nothing would abort
   private readonly _previewBlock = signal<string | null>(null);
   private readonly _importText = signal('Import');
-  // the commit's batch-level notes on a whole-batch refusal
   private _refusal: string[] = [];
   private readonly _aborted = signal(false);
   private _linked: {frame: DG.DataFrame, key: string, matches: Promise<Map<string, LinkMatch[]>>} | undefined;
@@ -427,7 +424,6 @@ class ImportFlow {
     host.replaceChildren(status);
     let plan: Planned[];
     let report: DomainBatchValidationLike | null = null;
-    // the server refused the dry run whole: what it says, and the batch-level notes on it
     let refusal: string | null = null;
     let notes: string[] = [];
     try {
@@ -464,12 +460,10 @@ class ImportFlow {
     if (owner.scope.isDisposed)
       return;
     const sent = ImportFlow._sent(plan);
-    // a row found as it is lands nothing, yet has its key written back: that alone is worth the commit
     const keys = this._writeBack?.peek() !== true ? 0 :
       plan.filter((p) => p.payload === null && p.verdict.existing !== undefined).length +
       (report?.rows.filter((r) => r.predicted === 'skip' && r.existingId !== undefined).length ?? 0);
     const writeKeys = `Write back ${plural(keys, 'key', 'keys')}`;
-    // no row to send: nothing could land, whatever the storage says about a dry run
     if (report === null) {
       if (sent.length === 0 && keys > 0)
         this._importText.value = writeKeys;
@@ -503,7 +497,6 @@ class ImportFlow {
       host.append(span(`${showing}.`, 'u2-domain-import-summary'));
     if (refusal !== null) {
       host.append(...notes.map((note) => span(note, 'u2-domain-import-problem')));
-      // the commit runs the same statement and is refused the same way, all or nothing or not
       this._previewBlock.value = `The server refuses the whole batch — ${refusal}. Nothing would be imported ` +
         'until that is fixed.';
       return;
@@ -514,8 +507,6 @@ class ImportFlow {
     // the counts are what the batch WOULD do row by row; all-or-nothing makes one bad row the
     // verdict on all of them
     this._previewBlock.value = options.allOrNothing !== false && errors > 0 ? this._abortReason(errors, valid) :
-      // rows past the preview cap are unjudged and still count; within it, nothing to add or update lands nothing
-      // (a dry run counts updates as `willUpdate`, merges included: a storage that merges answers no dry run)
       sent.length <= PREVIEW_ROWS && valid === 0 && keys === 0 ? ImportFlow._nothing(errors) : null;
   }
 
@@ -524,8 +515,7 @@ class ImportFlow {
       'and no row is valid' : 'no row would be added or updated'}.`;
   }
 
-  // a batch the server refuses whole (a table CHECK fails the statement) answers even a dry run with the commit's
-  // refusal, which the js-api client resolves: `error` set, no counts, rows with `errors` and no `status`/`predicted`
+  // a batch the server refuses whole answers even a dry run with `error` set and no counts
   private static _refused(answer: DomainBatchValidationLike | DomainBatchReportLike): answer is DomainBatchReportLike {
     return (answer as DomainBatchValidationLike).validateOnly !== true;
   }
@@ -535,24 +525,19 @@ class ImportFlow {
     return messages.length > 0 ? messages.join('; ') : refusal.error ?? 'no reason given';
   }
 
-  // a refused dry run as the preview reads one: each placed error under its row, nothing to add or update
   private static _predicted(rows: DomainBatchReportLike['rows'], rowCount: number): DomainBatchValidationLike {
     const refused = rows.filter((r) => r.errors?.length);
     return {validateOnly: true, rowCount, willInsert: 0, willUpdate: 0, willSkip: 0, errorCount: refused.length,
       rows: refused.map((r) => ({index: r.index, predicted: 'error', errors: r.errors}))};
   }
 
-  // the server pins a CHECK that fails a set-based write on the batch's first row, so that row is no
-  // answer: a grammar constraint is judged here on every payload row and its error put on the rows that break it.
-  // One that cannot be judged, or that no row here breaks (an update's stored columns, a server default), stays on
-  // the batch as a note. Any other error stays on the row the server named
+  // the server pins a failed CHECK on the batch's first row, so the constraint is judged per row here
   private async _attributed(rows: DomainBatchReportLike['rows'], payloads: Record<string, unknown>[]):
     Promise<{rows: DomainBatchReportLike['rows'], notes: {message: string, at: number[]}[]}> {
     type Row = DomainBatchReportLike['rows'][number];
     const out = new Map<number, Row>();
     const notes: {message: string, at: number[]}[] = [];
     const add = (index: number, error: DomainImportError, from: Row) => {
-      // a moved error's row is a refusal's row too: no status
       const row: Row = out.get(index) ?? (index === from.index ? {...from, errors: []} :
         {index, id: null, errors: []} as unknown as Row);
       row.errors!.push(error);
@@ -576,7 +561,6 @@ class ImportFlow {
       .sort((a, b) => a.index - b.index), notes};
   }
 
-  // the payload rows a grammar constraint refuses, as Postgres reads a CHECK; null where it cannot be judged here
   private async _breaking(name: string | undefined, payloads: Record<string, unknown>[]): Promise<number[] | null> {
     const declared = this._table.info.constraints.find((c) => c.name === name);
     if (declared === undefined)
@@ -589,12 +573,10 @@ class ImportFlow {
       const admitted = await Filters.toCheckMask(Filters.recordsFrame(payloads, properties), root);
       return payloads.flatMap((_, i) => admitted.get(i) ? [] : [i]);
     } catch {
-      // as the form: an expression a frame cannot evaluate is the server's to judge
       return null;
     }
   }
 
-  // `sent` maps a payload row to its source row
   private static _refusalNotes(notes: {message: string, at: number[]}[], sent: number[]): string[] {
     return notes.map(({message, at}) => {
       const shown = at.slice(0, 10).map((i) => (sent[i] + 1).toLocaleString()).join(', ');
@@ -773,7 +755,6 @@ class ImportFlow {
 
   private _validate(row: Record<string, unknown>): string | null {
     const validators = this._table.validators;
-    // a user or group column takes ids: the server's "Cannot convert" does not say so
     for (const prop of this._targets) {
       const problem = ImportLinks.idProblem(prop, row[prop.name!]);
       if (problem !== null)
@@ -925,8 +906,6 @@ class ImportFlow {
     const typed = column.semType ? this._targets.filter((p) => p.semType === column.semType) : [];
     const target = hit((a) => a === want) ?? hit((a) => a.startsWith(want) || want.startsWith(a)) ??
       hit((a) => a.includes(want) || want.includes(a)) ?? (typed.length === 1 ? typed[0].name! : SKIP);
-    // a reference's caption ("substance") over values that are no ids ("Ethanol") names the records: find them by
-    // their name or key
     const link = this._links.get(target);
     if (link === undefined || ImportFlow._ids(column))
       return target;
@@ -1071,7 +1050,6 @@ class ImportFlow {
     }
     for (const row of outcomes)
       row.key = row.id === null || !saved.has(row.id) ? '' : this._keyOf(saved.get(row.id)!);
-    // what the server's capped report leaves out and nothing could recover is said, never left blank
     const unitemized = failed ?
       Math.max(0, errorCount - report.rows.filter(ImportFlow._isError).length) :
       outcomes.filter((o) => o.kind === '').length;
@@ -1083,7 +1061,6 @@ class ImportFlow {
     if (!this._wizard.scope.isDisposed)
       this._report.append(this._rowsTable(this._wizard, 'report', outcomes, this._reportColumns(saved)));
     const column = this._keyColumn();
-    // a column of keys no row has is no write-back: rows found as they are carry theirs, as landed ones do
     const keyed = outcomes.some((o) => o.key !== '');
     if (!failed && keyed && column !== null && this._writeBack?.peek()) {
       if (frame.columns.names().includes(column))
@@ -1097,7 +1074,6 @@ class ImportFlow {
     if (failed) {
       const refused = report.rows.filter((r) => ImportFlow._isError(r) && plan[r.index].payload !== null).length;
       const valid = ImportFlow._sent(plan).length - refused;
-      // a statement the server refuses whole is refused all or nothing or not
       if (this._allOrNothing?.peek() && valid > 0 && this._refusal.length === 0) {
         this._report.append(span(`Uncheck "All or nothing" to import the ${plural(valid, 'valid row', 'valid rows')} ` +
           'and skip the rest.', 'u2-domain-import-summary'));
@@ -1112,7 +1088,6 @@ class ImportFlow {
       notify.info(`Imported: ${counts.map(([words]) => words).join(', ')}`);
   }
 
-  // a refusal's rows carry `errors` and no `status`
   private static _isError(row: DomainBatchReportLike['rows'][number]): boolean {
     return row.status === 'error' || (row.errors?.length ?? 0) > 0;
   }
@@ -1143,17 +1118,13 @@ class ImportFlow {
     return outcomes;
   }
 
-  // the server itemizes at most 1,000 rows (errors, duplicates, updates, inserts) and counts them all: a row it
-  // leaves out takes the one kind the counts leave over, and its id from the row its business key names now. The
-  // batch stays one call: splitting it would let an all-or-nothing import commit part of the file, and change which
-  // of two rows with one key wins. More than one kind left over, or no one-column key in the rows: it stays unknown
+  // the server itemizes at most 1,000 rows; splitting the batch would let an all-or-nothing import land in part
   private async _itemized(report: DomainBatchReportLike, plan: Planned[]): Promise<DomainBatchReportLike> {
     const listed = new Set(report.rows.map((r) => r.index));
     const missing = plan.flatMap((p, i) => p.payload === null || listed.has(i) ? [] : [i]);
     const key = this._table.info.businessKey;
     if (report.error !== undefined || missing.length === 0)
       return report;
-    // the totals count what the plan kept out too (`_merged`): the server's own are what is left
     const sent = report.rows.filter((r) => plan[r.index].payload !== null);
     const keptErrors = plan.filter((p) => p.payload === null && p.verdict.error !== undefined).length;
     const keptSkips = plan.filter((p) => p.payload === null).length - keptErrors;
@@ -1179,7 +1150,6 @@ class ImportFlow {
     return {...report, rows: [...report.rows, ...found]};
   }
 
-  // the live row each key names, by id
   private async _idsByKey(column: string, values: unknown[]): Promise<Map<string, string>> {
     const ids = new Map<string, string>();
     const unique = [...new Set(values)];

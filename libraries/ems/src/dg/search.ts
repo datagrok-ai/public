@@ -33,7 +33,6 @@ export class DomainSearch extends TextInput {
     this.effect(() => {
       source.state.value;
       const columns = DomainSearch.columns(source);
-      // a backend refuses a search on a table with no searchable column: the box says so instead of breaking the list
       const reason = source.searchable.value ? null : 'Nothing to search in this table';
       this.disabled = reason;
       box.title = reason ?? (columns.length === 0 ? '' : `Finds the ${nounOf(source.schema.info)} whose ` +

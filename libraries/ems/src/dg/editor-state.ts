@@ -23,9 +23,6 @@ export class EditorEditState implements EditState {
   // bumped on every editor change: the validity walk runs when it is read, not per keystroke
   private readonly _version = signal(0);
   private _index: Map<string, number> | undefined;
-  // the cells the server's last refusal marked (row key → column → what it said): shown as any
-  // cell error, yet not the client's verdict — the platform marks them `kind: 'error'` as it does
-  // its own validation, and only an edit of that cell would take them back
   private readonly _refused = new Map<string, Map<string, string>>();
 
   constructor(readonly editor: DG.DomainFrameEditor) {
@@ -99,8 +96,6 @@ export class EditorEditState implements EditState {
     return message !== undefined && message === this.errorOf(key, column);
   }
 
-  /** Every blocking cell error standing now, by row key and column: what {@link markRefused}
-   * compares against. */
   errorCells(): Map<string, Map<string, string>> {
     const found = new Map<string, Map<string, string>>();
     const df = this.df;
@@ -119,9 +114,7 @@ export class EditorEditState implements EditState {
     return found;
   }
 
-  /** After a save the server refused: the cell errors that were not there when the save began
-   * ([before], from {@link errorCells}) are the server's, mapped onto the cells it named, and are
-   * kept apart from the client's verdict. An error the client had already found is never one. */
+  /** After a refused save: the cell errors that were not in [before] are the server's. */
   markRefused(before: Map<string, Map<string, string>>): void {
     this._refused.clear();
     for (const [key, cells] of this.errorCells()) {
@@ -137,10 +130,7 @@ export class EditorEditState implements EditState {
     this._version.value = this._version.peek() + 1;
   }
 
-  /** Before a save: the server's marks still standing are dropped, so the editor sends the batch
-   * and the server decides again — re-marking what it still refuses. Each marked cell's own checks
-   * run again, and take the mark back where they find nothing; `validate()` would check every cell
-   * of the pending rows, and mark an untouched stored value that never holds Save. */
+  /** Before a save: drops the server's marks, so the server decides again. */
   retry(): void {
     const marked = [...this._refused].flatMap(([key, cells]) => [...cells.keys()].map((column) => ({key, column})));
     this._refused.clear();
@@ -148,7 +138,6 @@ export class EditorEditState implements EditState {
       const at = this.indexOf(key);
       if (at < 0)
         continue;
-      // a cell with no pending value has no original to track it by: written as it stands, it is clean again
       if (this.editor.isChanged(at, column))
         this.editor.commitEdit(at, column);
       else
@@ -156,8 +145,6 @@ export class EditorEditState implements EditState {
     }
   }
 
-  /** A json or string_list value retyped as the row had it is the cell reverted, not a write the editor
-   * compares by its text (another key order is another text). */
   setValue(key: string, column: string, value: unknown): void {
     const at = this.indexOf(key);
     if (at < 0)
@@ -175,16 +162,11 @@ export class EditorEditState implements EditState {
     editor.setValue(at, column, EditorEditState.legacyJson(editor, column, value));
   }
 
-  /** Fallback for a server whose js-api refuses a `json` cell written as its JSON text ("Types differ.
-   * Expected: map, passed: string" — datagrok-api 1.27.13 and earlier): the object as a {@link JsonCell}.
-   * A plain object would be stored as a Dart map, which the editor's change compare throws on.
-   * datagrok-api after 1.27.13 takes the text (`validateCellValue` leaves it to the server), and
-   * then this hands the text on as it is; drop it once no supported server ships the older one. */
+  /** Fallback for datagrok-api 1.27.13 and earlier, which refuses a `json` cell given as its JSON text. */
   static legacyJson(editor: DG.DomainFrameEditor, column: string, value: unknown): unknown {
     if (typeof value !== 'string' || value === '')
       return value;
     const prop = editor.properties?.find((p) => p.name === column);
-    // the editor's own class: the platform's, whichever js-api the server ships
     const check = (editor.constructor as typeof DG.DomainFrameEditor).validateCellValue;
     if (prop?.propertyType !== 'map' || typeof check !== 'function' || check(prop, value) === null)
       return value;
@@ -253,7 +235,6 @@ export class EditorEditState implements EditState {
     this.editor.detach();
   }
 
-  // what the editor's own save refuses on; `client`: the server's marks left out
   private _validity(client: boolean): string | null {
     const editor = this.editor;
     const df = this.df;
@@ -271,8 +252,6 @@ export class EditorEditState implements EditState {
     return null;
   }
 
-  // a mark the editor has since taken back or replaced is no longer the server's: an equal
-  // sentence the client finds later blocks
   private _prune(): void {
     for (const [key, cells] of this._refused) {
       for (const [column, message] of cells) {
@@ -285,11 +264,7 @@ export class EditorEditState implements EditState {
   }
 }
 
-/** A `json` cell's object for an editor that refuses its text ({@link EditorEditState.legacyJson}):
- * not a plain object, so js-api `toDart` hands it to the frame as it is instead of making a Dart
- * map of it; its own keys are the pairs and it serializes as them, so the editor's change compare
- * and the transaction see the object. Relies on that `toDart` rule and on a string column storing
- * the object unconverted — hence only a fallback. */
+/** Not a plain object, so js-api `toDart` hands it to the frame as is instead of making a Dart map. */
 export class JsonCell {
   constructor(value: Record<string, unknown>) {
     Object.assign(this, value);

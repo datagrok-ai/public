@@ -56,8 +56,7 @@ export class PropertyDialog {
     return new Set(Object.keys(tables).filter((t) => tables[t].extensible === true));
   }
 
-  // manifest() has no ext_version, a dry-run plan does; read the token FIRST, then the manifest and the ownership,
-  // so a change landing between the reads is a conflict and a reload, never an overwrite or a dropped column
+  // the token is read FIRST, so a change landing between the reads is a conflict, never an overwrite
   private static async _baseline(handle: DG.DomainSchemaClient): Promise<{manifest: ManifestJson,
     ownership: ManifestOwnership}> {
     const {extVersion} = await handle.apply({}, {dryRun: true});
@@ -72,9 +71,7 @@ export class PropertyDialog {
     return {manifest: {...manifest, extVersion: String(extVersion)}, ownership};
   }
 
-  // who owns each column, from the registry: the manifest never says, and a column read as the plugin's is left
-  // out of the full-state extension, which the server takes as dropping it with its values. A server whose API
-  // cannot say (older than DomainTable.userColumns) is refused: a patch with unknown ownership is never sent
+  // a column read as the plugin's is left out of the full-state extension, which the server takes as a drop
   private static async _ownership(schema: string): Promise<ManifestOwnership> {
     const entity = (await grok.dapi.domains.schemas.include('tables.columns.property').list())
       .find((s) => s.name === schema);
@@ -88,7 +85,6 @@ export class PropertyDialog {
         origin = t.origin;
         userColumns = t.userColumns;
       } catch {
-        // a js-api that declares the getters over a client that does not register them
       }
       if ((origin !== 'package' && origin !== 'user') || !Array.isArray(userColumns) ||
         !userColumns.every((c) => typeof c === 'string'))
@@ -129,16 +125,12 @@ export class PropertyDialog {
     return true;
   }
 
-  // built from the server's plan, not from the client's diff: every destructive entry the plan holds (what the
-  // server counts as destructive: drops, type, unique, auto-number and business-key changes, constraint drops) is
-  // listed unless a change of the user's already says it, and named in the checkbox a destructive plan always needs,
-  // since SAVE sends confirmDestructive for the whole plan, entries the client never meant included
+  // built from the server's plan, not the client's diff: SAVE confirms the whole plan
   private static _confirm(changes: ManifestChange[], plan: DG.DomainApplyPlan): Promise<boolean> {
     const counted = (n: number | undefined, one: string, many: string): HTMLElement[] =>
       n !== undefined && n > 0 ? [span(`${plural(n, one, many)} deleted`, 'u2-binding-change-note')] : [];
     const removed = (table: string, column?: string): ManifestChange | undefined =>
       changes.find((c) => c.removes && c.table === table && c.column === column);
-    // a type, unique or auto-number change the user made reads as their edit of that column's declaration
     const edited = (table: string, column: string): boolean => changes.some((c) => c.table === table &&
       c.column === column && (c.id.endsWith(':decl') || c.id.endsWith(':ref')));
     const line = (text: string, notes: HTMLElement[] = []): HTMLElement =>
@@ -147,7 +139,6 @@ export class PropertyDialog {
     const constraints = Object.entries(plan.constraintDrops as {[table: string]: string[]} | null ?? {});
     const autoNumbered = Object.entries(plan.autoNumberChanges ?? {})
       .flatMap(([table, cs]) => cs.map((column) => ({table, column})));
-    // what a removal of the user's deletes, from the plan's counts
     const lost = (c: ManifestChange): HTMLElement[] => !c.removes ? [] : c.column === undefined ?
       counted(tables.find((t) => t.name === c.table)?.liveRows, 'row', 'rows') :
       counted(columns.find((d) => d.table === c.table && d.column === c.column)?.nonNullValues, 'value', 'values');
@@ -184,7 +175,6 @@ export class PropertyDialog {
     });
   }
 
-  // the checkbox names everything the plan destroys, so ticking it is consent to all of it
   private static _consent(plan: DG.DomainApplyPlan, autoNumbered: number, constraints: number): string {
     const values = plan.drops.columns.reduce((n, d) => n + (d.nonNullValues ?? 0), 0);
     const rows = plan.drops.tables.reduce((n, t) => n + (t.liveRows ?? 0), 0);

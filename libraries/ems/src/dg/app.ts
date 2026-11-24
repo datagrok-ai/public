@@ -32,8 +32,6 @@ export type DomainAppMode = 'live' | 'trash';
 /** What the status bar says while a live source is behind the server ({@link DomainApp.refresh}). */
 const STALE = 'Data changed — Refresh';
 
-/** What it says while Edit properties… changed the table's columns under pending changes
- * ({@link DomainApp.reshape}). */
 const RESHAPED = 'Properties changed: save or discard to reload';
 
 /** Below this width the ribbon has no room for the presets. */
@@ -191,7 +189,6 @@ export class DomainApp extends Control {
   private readonly _presets: Action[] = [];
   private readonly _sync: ViewSync;
   private _opening: {address: string, done: Promise<boolean>} | undefined;
-  // the columns Edit properties… dropped under pending changes, and how the page is rebuilt once they are settled
   private readonly _reshaped: Signal<{removed: ReadonlyMap<string, IProperty[]>, rebuild: () => Promise<void>} | null> =
     signal(null);
   private _settling: Promise<void> | null = null;
@@ -405,9 +402,7 @@ export class DomainApp extends Control {
         return {count, selected, notice: null, problem: this._filterProblem.value ?? 'Filter not applied'};
       // a live source saw the collection move while this session had changes to protect: what is
       // pending still matters, and so does that the rows under it are no longer the server's
-      // the page's columns are not the table's any more: say so before what the rows did
       if (this._reshaped.value !== null)
-        // clean and still marked: the rebuild failed (its balloon said why), and Refresh tries it again
         return {count, selected, notice: pending === null ? STALE : `${pending} — ${RESHAPED}`, problem};
       if (source !== null && source.stale.value)
         return {count, selected, notice: pending === null ? STALE : `${pending} — ${STALE}`, problem};
@@ -492,7 +487,6 @@ export class DomainApp extends Control {
     if (this._ribbon !== undefined)
       return this._ribbon;
     const singular = nounOf(this.table.info, true);
-    // a required column the caller cannot set makes every Save fail: say so before they type
     const blocked = computed(() => DomainTable.noCreate(this.listSource));
     const add = new Control(this.build(() =>
       iconButton('plus', () => void this.create(), {tooltip: `New ${singular}`, disabled: blocked})));
@@ -507,7 +501,6 @@ export class DomainApp extends Control {
     const pristine = () => !this.session.isDirty.value && this._page.value === 'entity' &&
       DomainApp._isDraft(this._entitySource.value, this._entitySource.value?.currentRow.value ?? null);
     const discard = domains.discardButton(this.session, {leave: {when: pristine, run: () => void this.goTo('list')}});
-    // nothing on a read-only page is saved — the trash until a restore is staged — nor on one the caller may not view
     save.effect(() => {
       const source = this._page.value === 'entity' ? this._entitySource.value : this.listSource;
       save.root.hidden = discard.root.hidden = !this.session.isDirty.value &&
@@ -517,7 +510,6 @@ export class DomainApp extends Control {
     // the status bar is text: the way to act on "Data changed" is here, and only while it stands
     const reload = new Control(button('Refresh', () => void this.refresh()));
     reload.root.dataset.u2 = 'refresh-button';
-    // a reader denied View is offered it too: the grant that would let them in reaches no page by itself
     reload.effect(() => {
       const source = this._page.value === 'entity' ? this._entitySource.value : this.listSource;
       reload.root.hidden = !this.stale.value && source?.access.value.can('view') !== false;
@@ -647,14 +639,11 @@ export class DomainApp extends Control {
    * page is {@link stale}. Through the gate: a reload drops whatever is pending. */
   async refresh(): Promise<boolean> {
     const source = this._page.peek() === 'entity' ? this._entitySource.peek() : this.listSource;
-    // over pending changes the access is read first: a grant restored since a refused save lets them be saved,
-    // from the dialog below or from Save
     if (source !== null && this.session.isDirty.peek())
       await this.session.reloadAccess();
     if (source === null || !await confirmDiscard(this.session, {action: 'reload the rows'}))
       return false;
-    // the access is read again too, once: the platform caches it until told otherwise, and a grant made by
-    // another session never tells
+    // the platform caches the access, and a grant made by another session never invalidates it
     emsBackends.domain?.dropAccess?.();
     if (this._reshaped.peek() !== null)
       await this._settle();
@@ -663,16 +652,13 @@ export class DomainApp extends Control {
     return true;
   }
 
-  /** Edit properties… changed the tables' columns while the session has changes the page cannot carry over: the
-   * page keeps its columns, says so and is {@link stale}, and `rebuild` runs once the session is saved or
-   * discarded. `removed` holds the columns each table (`<schema>.<table>`: the app's own, its children tabs') lost:
-   * a pending change to one of them is never sent — Save refuses it by name. */
+  /** Keeps the page's columns while the session has pending changes; `rebuild` runs once it is clean. */
   reshape(removed: ReadonlyMap<string, IProperty[]>, rebuild: () => Promise<void>): void {
     const first = this._reshaped.peek() === null;
     this._reshaped.value = {removed, rebuild};
     if (!first)
       return;
-    // not onSaved / onDiscarded alone: an edit undone by hand, or a save that reloaded over a conflict, cleans it too
+    // not onSaved / onDiscarded alone: an edit undone by hand cleans the session too
     this.effect(() => {
       if (!this.session.isDirty.value && !this.session.isSaving.value)
         untracked(() => void this._settle());
@@ -684,8 +670,6 @@ export class DomainApp extends Control {
           continue;
         guarded.add(source);
         const problem = computed(() => {
-          // a draft is one change however many cells it holds: clearing its value in a removed column moves
-          // no count, only the rows
           source.changeCount.value;
           source.rows.items.value;
           return this._removedChange(source, this._reshaped.value?.removed.get(source.table) ?? []);
@@ -695,7 +679,6 @@ export class DomainApp extends Control {
     });
   }
 
-  // a column dropped under a pending change: Discard drops every change, so undoing this one alone is said first
   private _removedChange(source: DomainSource, removed: IProperty[]): string | null {
     const edit = source.edit.peek();
     for (const row of source.pending()) {
@@ -708,8 +691,6 @@ export class DomainApp extends Control {
     return null;
   }
 
-  // once the session is clean, the page is rebuilt over the table's new columns — once
-  // the mark goes once the rebuild landed, so a failed one leaves the page stale; one rebuild at a time
   private _settle(): Promise<void> {
     const reshaped = this._reshaped.peek();
     if (reshaped === null || this.session.isDirty.peek())
@@ -815,7 +796,6 @@ export class DomainApp extends Control {
   private _caption(source: DomainSource, row: RowView): string {
     const current = source.current(row);
     const shown = this.table.renderer.caption(current);
-    // an emptied name leaves a saved row nameless (a blank, or ids): it keeps the name the row holds
     return madeOfIds(this.table, current, shown) ? this.table.renderer.caption(row) : shown;
   }
 
@@ -923,8 +903,6 @@ export class DomainApp extends Control {
     const row = source?.currentRow.peek() ?? null;
     if (source === null || row === null || Rows.isDraft(row))
       return [];
-    // answered for this row, as the list answers it: the ⋯ menu's table-level filter must not ask
-    // again, as a row-mode table's table-level edit/delete are false negatives
     return allowedActions([...this.table.actions.for(row), DomainList.deleteAction(() => {
       this._deleting = source;
       source.edit.peek()?.markDeleted(row.id);
@@ -1085,8 +1063,7 @@ export class DomainApp extends Control {
     return true;
   }
 
-  // a shared `?sort=` may name a column this caller may not read (the table does not describe it):
-  // the server refuses the whole read for it, so it is dropped and the rest of the order kept
+  // the server refuses the whole read for a sort column the caller may not read
   private _sortable(sort: string): string {
     return sortable(sort, this.table.properties);
   }
@@ -1135,16 +1112,11 @@ export class DomainApp extends Control {
     if (page === 'entity' && entity !== null) {
       const source = this.build(() => draft ? this._source({draft: true, defaults: this._options.defaults}) :
         this._source({query: query ?? Filters.group('and', [Filters.cond('id', '=', entity)]), pageSize: 1}));
-      // a source of one has no list to make its row current; no row where View still reads true may be a
-      // revoke the cached access has not seen (the server answers a reader without View with no rows):
-      // the caches go once and the access is read again, so the page says no access instead of not found
       let rechecked = draft;
       source.effect(() => {
         const rows = source.rows.items.value;
         if (source.state.value !== 'ready')
           return;
-        // a row the caller may not view has no history or children to show: the form says so. View is table-wide
-        // only, so a row read through its own grant keeps them; the total lands with the state, the rows after it
         if (source.total.value === 0 && !source.access.value.can('view') && this._panes.length > 0) {
           for (const pane of this._panes)
             pane.dispose();
@@ -1169,7 +1141,6 @@ export class DomainApp extends Control {
           [domains.history(source, undefined, {include, exclude})]),
       ]);
       this._formHost.replaceChildren(form.root);
-      // a new row that can never be saved shows why instead of the form
       if (draft) {
         const why = div([], 'u2-domain-form-empty');
         source.effect(() => {

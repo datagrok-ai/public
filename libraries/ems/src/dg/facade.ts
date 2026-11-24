@@ -206,9 +206,7 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     return capital(prop.friendlyName ?? (prop.name ?? '').replace(/_/g, ' '));
   }
 
-  /** The number a whole-number key stands for as typed: a bare number, or the key as its property's `format` shows
-   * it (`DG-000072` under `DG-000000`: the text before the trailing zero run, then the digits). Null when it is
-   * neither. */
+  /** The number a whole-number key stands for as typed, bare or in its property's `format`; null otherwise. */
   static parseKey(prop: IProperty, typed: string): number | null {
     const format = prop.format ?? '';
     const prefix = format.replace(/0+$/, '');
@@ -228,9 +226,7 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     return DomainTable._byRow.get(row);
   }
 
-  /** Whether the server can order the list by this column: its own value, not a reference (which would sort by
-   * the referenced ids, not the names it shows) and not the key. The Sort by menu and the table's headers offer
-   * only these. */
+  /** Whether the server can order the list by this column: not a reference and not the key. */
   static isSortable(prop: {name?: string, ref?: string}): boolean {
     return prop.ref === undefined && prop.name !== 'id';
   }
@@ -242,15 +238,12 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     return semType === 'User' || semType === 'Group' || REF_ADDRESS.test(semType);
   }
 
-  /** Whether the server fills a draft's `prop` on save: it has a default, or it is the column the table
-   * numbers (an optional business-key part). The server never fills a name column: that one, and any other the
-   * caller may not write, stays empty. */
+  /** Whether the server fills a draft's `prop` on save. */
   static isAssignedOnSave(info: DomainTableInfoLike, prop: IProperty): boolean {
     return (prop.defaultValue ?? null) !== null || (prop.nullable !== false && info.businessKey.includes(prop.name!));
   }
 
-  /** The required columns a new row cannot get a value for from the caller: no default, nothing fills them, and
-   * the access hides them or leaves them read-only on a draft. Every Save would be refused for them. */
+  /** The required columns a new row cannot get a value for from the caller. */
   static unsettable(properties: readonly IProperty[], info: DomainTableInfoLike, access: Access,
     except: readonly string[] = []): IProperty[] {
     const draft = access.columnPolicy().forDraft();
@@ -259,8 +252,6 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
       !SYSTEM_COLUMNS.some(([name]) => name === p.name) && draft.field(p.name!) !== 'editable');
   }
 
-  /** {@link DomainErrors.noRequired} over `columns`, split by whether the access hides them or leaves them
-   * View-only. */
   static noRequired(info: DomainTableInfoLike, columns: readonly IProperty[], access: Access): string {
     const draft = access.columnPolicy().forDraft();
     const caption = (p: IProperty) => DomainTable.captionOf(p);
@@ -268,12 +259,8 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
       columns.filter((p) => draft.field(p.name!) !== 'hidden').map(caption), info.hiddenRequired);
   }
 
-  /** What every way into a new row (the ribbon, the empty list, `/new`, a children tab) says when the caller
-   * cannot create a savable row on `source`'s table; null while the table is loading, when they can, or when they
-   * may not insert at all (nothing offers them a new row). A column
-   * the source's defaults fill is not the caller's to set. */
+  /** Why the caller cannot create a savable row on `source`'s table; null when they can. */
   static noCreate(source: DomainSource): string | null {
-    // a reader without Insert gets every field readonly, so the reason would blame a column
     if (source.edit.value === undefined || !source.access.value.can('insert'))
       return null;
     const filled = Object.entries(source.defaults).filter(([, v]) => v !== undefined && v !== null).map(([k]) => k);
@@ -532,8 +519,7 @@ function nameCell<TRow extends DomainRowLike>(table: DomainTable<TRow>, row: Row
   return `${rowName(table, row, source)}: ${field}${problem}`;
 }
 
-/** The row's caption — or, where that names nothing (empty, or ids: the row's own, a reference's, a uuid), its
- * place among the source's rows: "Order line 2". A caption a person can read ("QAT070A-1") stays. */
+/** The row's caption or, where that names nothing, its place among the source's rows. */
 function rowName<TRow extends DomainRowLike>(table: DomainTable<TRow>, row: RowView<TRow>,
   source?: DomainSource<TRow>): string {
   const caption = table.renderer.caption(row);
@@ -545,9 +531,7 @@ function rowName<TRow extends DomainRowLike>(table: DomainTable<TRow>, row: RowV
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** Whether a caption names nothing: empty, exactly a uuid, or the row's id or its reference ids with only numbers
- * and separators around them ("<project id>-1"). "Sample A-1", a caption that merely contains a uuid and one made
- * of digits alone ("12345", "2024-05") name the row. */
+/** Whether a caption names nothing: empty, a uuid, or the row's ids with only numbers around them. */
 export function madeOfIds<TRow extends DomainRowLike>(table: DomainTable<TRow>, row: RowView<TRow>,
   caption: string): boolean {
   if (caption === '' || UUID.test(caption))

@@ -9,8 +9,7 @@ export interface DomainSession {
   readonly changeCount: ReadonlySignal<number>;
   /** The first blocking problem, null when the batch may be saved. */
   readonly validity: ReadonlySignal<string | null>;
-  /** Why Save is off: {@link validity} without the server's refusals, which stay shown while Save
-   * sends again. Absent: {@link validity}. */
+  /** Why Save is off; absent: {@link validity}. */
   readonly blocking?: ReadonlySignal<string | null>;
   readonly isSaving: ReadonlySignal<boolean>;
   /** A batch landed — the paired form returns the focus to its fields. */
@@ -22,8 +21,7 @@ export interface DomainSession {
   discard(): void;
   /** A source joins at construction; the unregister runs at its disposal. */
   add?(source: DomainSource): () => void;
-  /** A source's writer changed (an edit, a revert): a refusal the session raised over several
-   * sources is asked again whether its cause still holds. */
+  /** A source's writer changed (an edit, a revert). */
   changed?(source: DomainSource): void;
   /** The Save button of the page, when one registered — where Tab from a form's last field goes. */
   primaryButton?: HTMLElement;
@@ -59,11 +57,6 @@ export class SharedSession implements DomainSession {
 
   private readonly _sources = signal<readonly DomainSource[]>([]);
   private readonly _saving = signal(false);
-  // the refusal the last save copied onto every source it held back: any writer of the session
-  // changing (a child the batch did not hold among them) re-asks whether its cause still holds
-  // (the changed source in hand), and when it no longer does every copy still standing goes with
-  // it — a copy clears on its own source's change alone, and Save would stay off over a batch
-  // that is now saveable
   private _refusal: {copies: Map<DomainSource, unknown>, holds: (changed: DomainSource) => boolean} | undefined;
 
   constructor() {
@@ -121,8 +114,7 @@ export class SharedSession implements DomainSession {
       }
       if (this._overlapping(batch))
         return false;
-      // dirty, yet no row carries a change: what is held never reached the rows, and a batch
-      // without one writes nothing — refused as such, never announced as saved
+      // dirty, yet no row carries a change: refused, never announced as saved
       if (batch.every((s) => s.pending().length === 0)) {
         for (const source of dirty) {
           source.fail(new DomainBackendError('validation', 'Cannot save: the unsaved changes could not be ' +
@@ -135,8 +127,6 @@ export class SharedSession implements DomainSession {
       // must be about the id that parent was given. No prototype: what is read against this map is
       // any string a cell or a literal may hold, `constructor` among them
       const assigned: Record<string, string> = Object.create(null);
-      // what each source had pending, and how much of it the backend then wrote: the platform
-      // session's RELOAD drops the conflicting row's edits inside the save and retries the rest
       const before = new Map(batch.map((s) => [s, {changes: s.changeCount.peek(), rows: s.pending().length}]));
       const written = new Map<DomainSource, number>();
       const heard = batch.map((s) => s.edit.peek()!.onSaved.subscribe((r) => {
@@ -155,9 +145,6 @@ export class SharedSession implements DomainSession {
       } catch (e) {
         for (const source of batch)
           source.fail(e);
-        // the error names no source the client can tell: whichever source changes next, the
-        // batch is no longer the one refused, and the server decides again — but a 403 holds
-        // until the user lets go of the changes
         const forbidden = (e as {code?: unknown} | null)?.code === 'forbidden';
         this._raise(batch, () => forbidden);
         if (forbidden)
@@ -189,8 +176,6 @@ export class SharedSession implements DomainSession {
       } finally {
         SharedSession._hold(batch, false);
       }
-      // the changes that landed, not the ones the user asked for: a source that wrote nothing had
-      // its edits reloaded away; one that wrote part of its rows counts those rows
       const landing = batch.map((s) => {
         const was = before.get(s)!;
         const rows = written.get(s);
@@ -226,31 +211,21 @@ export class SharedSession implements DomainSession {
       source.edit.peek()?.setSaving(saving);
   }
 
-  /** Reads the caller's access again for every source, not just a batch: New and the ⋯ menu follow the
-   * list source. A grant restored since a refused save lifts that refusal's hold. */
   async reloadAccess(): Promise<void> {
-    // the snapshot every affordance was built from is stale: the caches go before anything re-reads
     emsBackends.domain?.dropAccess?.();
     const restored = await Promise.all(this._sources.peek().map((source) => source.reloadAccess()));
-    // the refusal was copied onto every source of the batch, and one whose own grant never moved (the
-    // parent of the child table the grant came back on) would hold Save alone
     if (restored.includes(true)) {
       for (const source of this._sources.peek())
         source.releaseForbidden();
     }
   }
 
-  /** What the status line says for a save the server refused as forbidden: its own sentence where
-   * it sent one (`Insufficient privileges to insert into "…"`), a plain one for a bare code, and
-   * what the user can still do. */
   static forbidden(message: string | null | undefined): string {
     const said = (message ?? '').trim().replace(/\.$/, '');
     return `${said === '' || said.toLowerCase() === 'forbidden' ? 'you do not have permission to make these changes' :
       said}. Discard the changes, or ask the table's owner for access`;
   }
 
-  // the platform editor reports the server's error itself and answers false: the summary still says they are
-  // stuck. Answers whether the refusal still holds after a change of the session's sources
   private static _refused(batch: readonly DomainSource[], forbidden = false): (changed: DomainSource) => boolean {
     // a refusal naming a column reaches that cell and is the source's validity; one about a whole
     // row (a delete a child's reference vetoes) reaches nothing, and the writer kept the sentence
@@ -258,12 +233,6 @@ export class SharedSession implements DomainSession {
       .find((v) => v != null) ?? 'the changes were refused';
     for (const source of batch)
       source.refuse(forbidden ? SharedSession.forbidden(problem) : problem, forbidden);
-    // the cause is known to sit in one source only when one cell alone says it: a change beside it
-    // leaves it as it was. A sentence about a row (a delete its children veto: the cause is in the
-    // children) or about the batch (on every source) may be answered by a change anywhere, and
-    // the server decides again — a needless second refusal, never a Save that stays off
-    // a 403 is about access, not a value: it holds until the user lets go of the changes, and
-    // a resend would only be refused again
     if (forbidden)
       return () => true;
     const cells = batch.filter((s) => s.validity.peek() !== null);
@@ -281,7 +250,6 @@ export class SharedSession implements DomainSession {
       return;
     this._refusal = undefined;
     for (const [holder, error] of refusal.copies) {
-      // a newer error (a load that failed, another refusal) is not this one's to take back
       if (holder.error.peek() === error) {
         batch(() => {
           holder.fail(undefined);
@@ -340,7 +308,6 @@ export class SharedSession implements DomainSession {
           ' — discard one of the two edits and save again';
         first.source.refuseRow(first.row.id, problem);
         source.refuseRow(row.id, problem);
-        // the cause is the row pending in both: it holds until one of them lets go of it
         const id = row.id;
         const pendingIn = (s: DomainSource) => s.pending().some((r) => r.id === id);
         this._raise([first.source, source], () => pendingIn(first.source) && pendingIn(source));

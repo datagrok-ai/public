@@ -91,8 +91,6 @@ export class DomainGrid extends Control {
       if (row !== undefined && !Rows.isDraft(row))
         open.run(row);
     });
-    // the platform's grid menu over a row (a cell or its header) takes the row's staged Delete, as a list row's;
-    // the editor hides a row marked deleted, so the balloon says where it went and what brings it back
     type GridMenu = {args?: {context?: DG.Grid, item?: DG.GridCell, menu?: DG.Menu}};
     this.subscribe(grok.events.onContextMenu, (e: GridMenu) => {
       const {context, item, menu} = e.args ?? {};

@@ -226,8 +226,7 @@ export class ManifestEditor extends Control {
     return {payload, changes, blockers: model.blockers.peek()};
   }
 
-  /** The extension apply body: the user's columns as full state per table, guarded by the baseline's `extVersion` —
-   * without it a concurrent extension would be overwritten, its columns dropped, so there is no body. */
+  /** The extension apply body; none without the baseline's `extVersion`, which guards a concurrent extension. */
   extendPlan(): {payload: {ifVersion: string, extend: ExtendPatch}, changes: ManifestChange[]} {
     const ifVersion = this.model.extVersion;
     if (ifVersion === undefined)

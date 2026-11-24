@@ -7,9 +7,7 @@ export type RowState = '' | 'new' | 'modified' | 'deleted' | 'restored';
 /** What a landed batch answers: every draft id the writer stamped → the id the server gave. */
 export interface EditSaved {
   assigned: Record<string, string>;
-  /** Rows this writer's transaction wrote (inserts, updates, deletes). A backend that can drop
-   * pending changes inside a save (the platform session's RELOAD in the conflict dialog) says so
-   * here; absent, every pending row is taken as written. */
+  /** Rows this writer's transaction wrote; absent, every pending row is taken as written. */
   written?: number;
 }
 
@@ -20,9 +18,7 @@ export interface EditState {
   readonly changeCount: ReadonlySignal<number>;
   /** The first blocking problem, null when the batch may be saved. */
   readonly validity: ReadonlySignal<string | null>;
-  /** What keeps the batch from being sent: {@link validity} without the cells the server's last
-   * refusal marked — those stay shown, and a retry goes to the server, which decides again.
-   * Absent: {@link validity}. */
+  /** What keeps the batch from being sent; absent: {@link validity}. */
   readonly blocking?: ReadonlySignal<string | null>;
   /** Whether the cell's error is the server's last refusal rather than the client's verdict. */
   refused?(key: string, column: string): boolean;
@@ -30,8 +26,7 @@ export interface EditState {
   /** Why the last save was refused, where the refusal named no column and so reached no cell — a
    * delete a child's reference vetoes, say. Null until a save is refused that way. */
   problem?: string | null;
-  /** The server's error code of the last refusal, where the backend knows one — `'forbidden'` says
-   * the access the affordances were built from is stale. */
+  /** The server's error code of the last refusal, where the backend knows one. */
   problemCode?: string | null;
   /** The key of the row that changed, null for a change touching several. */
   readonly onChanged: ObservableLike<string | null>;
@@ -69,16 +64,13 @@ export interface EditState {
 
 type Row = Record<string, unknown>;
 
-/** Whether two cells hold the same JSON value — text (a frame's `string_list` / `json` cell) or not:
- * a value retyped as it was is no change, however its text is spelled (key order, spacing). */
+/** Whether two cells hold the same JSON value, however its text is spelled. */
 export function sameJson(a: unknown, b: unknown): boolean {
   const x = jsonOf(a);
   const y = jsonOf(b);
   return x !== undefined && y !== undefined && jsonEqual(x, y);
 }
 
-// a JSON value's plain form — undefined for text that is no JSON list or object, and for an object
-// that has none (a Dart map is cyclic through its type information)
 function jsonOf(v: unknown): unknown {
   if (typeof v === 'string' && !/^\s*[[{]/.test(v) || typeof v !== 'string' && (typeof v !== 'object' || v === null))
     return undefined;
@@ -179,7 +171,6 @@ export class MemoryEditState implements EditState {
       return;
     const state = row[Rows.STATE] as RowState | undefined;
     const prop = this._table.properties.find((p) => p.name === column);
-    // as the dg writer: a json or string_list value retyped as the row had it reverts the cell, whatever its text
     if (state !== 'new' && typeof value === 'string' && prop !== undefined && MemoryEditState.isTextCell(prop)) {
       const originals = this._originals.get(row);
       const original = originals?.has(column) ? originals.get(column) : row[column];
@@ -309,10 +300,8 @@ export class MemoryEditState implements EditState {
   }
 
   /** The batch in row order, as the js-api editor builds it: an insert names itself with its
-   * draft id, a value that is a draft id of the batch — of `drafts`, by default this writer's own
-   * (`draftIds`); `saveAll` passes every writer's — becomes the `$` reference the server resolves,
-   * a literal leading `$` is escaped, and any other text, `~new:…` included, is sent as typed;
-   * `id` is never sent. */
+   * draft id, a value that is a draft id of `drafts` (by default this writer's own) becomes the `$` reference
+   * the server resolves, a literal leading `$` is escaped; `id` is never sent. */
   buildOps(drafts: ReadonlySet<string> = this.draftIds()): MemoryPendingOp[] {
     const table = this._table.address;
     const pending: MemoryPendingOp[] = [];
@@ -343,7 +332,6 @@ export class MemoryEditState implements EditState {
     return pending;
   }
 
-  /** The id of every draft row of the frame — the drafts its batch may reference. */
   draftIds(): Set<string> {
     return new Set(this.df.rows.map((row) => row.id)
       .filter((id): id is string => typeof id === 'string' && Rows.isDraft(id)));
@@ -365,7 +353,6 @@ export class MemoryEditState implements EditState {
         Object.assign(row, results[i]);
         if (op.op === 'restore' && Rows.DELETED in row)
           row[Rows.DELETED] = false;
-        // the platform editor's post-save re-read writes a list cell back as its JSON text
         for (const prop of this._table.properties)
           row[prop.name!] = MemoryEditState.frameCell(prop, row[prop.name!]);
       }
@@ -414,22 +401,17 @@ export class MemoryEditState implements EditState {
     return null;
   }
 
-  /** A stored value as the platform frame holds it: `queryDf` and the post-save re-read give a
-   * `string_list` or `json` cell as the JSON text of the list or object, in a string column. */
+  /** A stored value as the platform frame holds it: a list or an object as its JSON text. */
   static frameCell(prop: IProperty, value: unknown): unknown {
     return MemoryEditState.isTextCell(prop) && typeof value === 'object' && value !== null && !(value instanceof Date) ?
       JSON.stringify(value) : value;
   }
 
-  /** Whether the frame holds `prop` as text where the store holds a list or an object — see
-   * {@link frameCell}. */
   static isTextCell(prop: IProperty): boolean {
     const type = prop.propertyType ?? prop.type;
     return type === 'string_list' || type === 'map';
   }
 
-  // js-api `validateCellValue` on a `json` cell: an object or its JSON text (left to the server);
-  // a list or a scalar is refused, spelled as the platform types it
   private static _typeProblem(prop: IProperty, value: unknown): string | null {
     if ((prop.propertyType ?? prop.type) !== 'map' || value === null || value === undefined ||
         typeof value === 'string' || (typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)))

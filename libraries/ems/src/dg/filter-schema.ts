@@ -9,9 +9,8 @@ import {DgDomainTable} from './backend.js';
 const VALUES_LIMIT = 50;
 const REF_ADDRESS = /^\w+\.\w+$/;
 
-/** The registry's row properties of `'<schema>.<table>'` the caller may read, narrowed as the
- * {@link DgDomainTable} handle is; a ref column's semType is its target address. Values come
- * from the table's `categories` facet under the typed text — on a
+/** The registry's row properties of `'<schema>.<table>'` the caller may read; a ref column's semType is its
+ * target address. Values come from the table's `categories` facet under the typed text — on a
  * `'basic'` backend (`support.filters`) for string and ref columns only, the ones it searches. */
 export async function domainFilterSchema(address: string): Promise<FilterSchema> {
   const registry = grok.dapi.domains.registry;

@@ -5,11 +5,8 @@ import type {NotifyHandle, RowView} from '@datagrok-libraries/u2';
 import {DomainSource} from '../core/domain-source.js';
 import {DgDomainBackend} from './backend.js';
 
-/** How both backends word the veto on a row that would be live under a deleted parent: a restore, an insert or
- * a reference moved onto it. Matched by its shape, whatever the code says: over the platform it arrives as the
- * session's refusal text (code `'refused'`), and the sentence is the only thing both paths share. */
-// the parent's id follows where the backend gives it (an insert's or an update's veto); an older server's restore
-// veto ends at the table
+/** The deleted-parent veto, matched by its sentence: the two backends share nothing else. */
+// an older server's restore veto ends at the table, without the parent's id
 const RESTRICT_PARENT = /Column "(.+?)" references a deleted row in "(.+?)"(?: \("(.+?)"\))?/;
 
 /** What a domain control says when the source reports a failure. Over the platform the js-api editor never
@@ -49,7 +46,6 @@ export class DomainErrors {
       return `Cannot restore${row === null ? '' : ` "${row}"`}: its ${target} was deleted too. ` +
         `Restore the ${target} first.`;
     }
-    // a new row, or a reference moved: the parent is the way forward, so it is named as the user knows it
     const child = DomainErrors._nameOf(writer.source, writer.row);
     const subject = `Cannot save${child === null ? '' : ` "${child}"`}: its ${target}`;
     const parent = DomainErrors._held(String(writer.row[column]));
@@ -62,7 +58,6 @@ export class DomainErrors {
       `${subject}${quoted} was deleted. Restore the ${target} first.`;
   }
 
-  // the row naming `parentId`; without it (an older server) the one whose parent is known deleted, null if ambiguous
   private static _writer(source: DomainSource | undefined, column: string, parentId: string | undefined):
     {source: DomainSource, row: RowView} | null | undefined {
     if (source === undefined)
@@ -86,7 +81,6 @@ export class DomainErrors {
     return dead.length === 1 ? dead[0] : null;
   }
 
-  // the row a live source of this page holds under `id`
   private static _held(id: string): {source: DomainSource, row: RowView} | undefined {
     for (const source of DomainSource.live) {
       const row = source.rows.byKey(id);
@@ -96,18 +90,13 @@ export class DomainErrors {
     return undefined;
   }
 
-  // the renderer's caption: "New <noun>" for a draft with no name; a saved row's bare id names nothing, so null
   private static _nameOf(source: DomainSource, row: RowView): string | null {
     const name = source.schema.info.nameColumn;
     const caption = source.caption?.(row) ?? String((name == null ? null : row[name]) ?? '');
     return caption === '' || caption === row.id ? null : caption;
   }
 
-  /** What a page over `source` says in place of its empty or not-found state when the table denies the caller
-   * View: the server answers such a reader's reads with no rows, by design, so only the access tells "no access"
-   * from "nothing there". Null while the caller may view, or holds rows: View is table-wide, and a row-mode
-   * table still answers the rows granted one by one. Null too once a search, or a user's filter (`filtered`: a
-   * child tab's link or a row page's id is the page's own), narrowed the read: granted rows may just not match. */
+  /** What a page says in place of its empty state when the table denies the caller View; null otherwise. */
   static noView(source: DomainSource, filtered = false): string | null {
     if (source.access.value.can('view') || source.rows.items.value.length > 0 || filtered ||
       source.search.value !== '')
@@ -115,21 +104,15 @@ export class DomainErrors {
     return DomainErrors.noAccess(source.schema.info);
   }
 
-  /** The no-View wording for a table whose access is known without a source (a picker's target). */
   static noAccess(info: Parameters<typeof nounOf>[0]): string {
     return `You do not have access to ${nounOf(info)}. Ask the table's owner to share it with you.`;
   }
 
-  /** The wording for a child tab whose FK to the parent is a column the caller cannot read: the server refuses
-   * every read and write through that column, so the tab cannot show or add the children. */
   static noLink(child: Parameters<typeof nounOf>[0], parent: Parameters<typeof nounOf>[0]): string {
     return `You do not have access to ${nounOf(child)}: you cannot see how ${nounOf(child)} link to this ` +
       `${nounOf(parent, true)}. Ask the table's owner to share the link column with you.`;
   }
 
-  /** The wording for creating on a table with required columns the caller cannot set: every Save would be refused.
-   * A hidden column is asked to be shared, a View-only one to be made editable; a column the caller may not
-   * read (`unseen` of them) is counted, never named. */
   static noRequired(info: Parameters<typeof nounOf>[0], hidden: readonly string[],
     viewOnly: readonly string[], unseen = 0): string {
     const names = [...hidden, ...viewOnly,

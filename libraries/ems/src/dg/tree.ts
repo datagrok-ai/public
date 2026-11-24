@@ -19,11 +19,7 @@ export interface DomainTreeOptions<TRow extends DomainRowLike = DomainRowLike> {
   allNode?: string;
   /** How many children one request reads (default 500); a larger level is read in pages. */
   pageSize?: number;
-  /** A live source the tree rides: its probe follows the tree's table too ({@link DomainSource.watch}),
-   * and a peer's rename, insert, move or delete there — or a save in this browser — reads the open
-   * tree again. Without it the tree is read once, and again only on {@link DomainTree.refresh}. While the
-   * source or its session holds pending changes, a selected node a peer deleted stays `selected` (marked
-   * deleted) instead of handing the source to its parent; it moves on once they are saved or discarded. */
+  /** A live source whose probe follows the tree's table too: a change there reads the open tree again. */
   follow?: {watch(address: string, moved: () => void): () => void, isDirty?: ReadonlySignal<boolean>,
     session?: {isDirty: ReadonlySignal<boolean>}};
 }
@@ -49,15 +45,12 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
 
   private readonly _error = signal<string | null>(null);
   private readonly _notice = signal<string | null>(null);
-  // the selection a refresh is re-finding: `selected` stays on it while the rows below shift
   private readonly _held = signal<{row: RowView<TRow> | null} | null>(null);
-  // the node the user picked while a refresh held the selection: placed last, over the row the refresh re-found
   private _picked: {row: RowView<TRow> | null} | null = null;
   private _read = false;
   private _refreshing: Promise<void> | undefined;
   private _again = false;
   private _noticeAt: string | null = null;
-  // the selected row a peer deleted while `follow` had pending changes: still `selected`, so nothing rebinds
   private readonly _kept = signal<RowView<TRow> | null>(null);
   private readonly _loading = signal(true);
   private readonly _status = div([], 'u2-domain-tree-status');
@@ -119,7 +112,6 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
       this._pick(null);
       void this._clear();
     }, {capture: true});
-    // the list has moved its selection by now: what is selected is the user's pick
     this.scope.listen(this.root, 'click', (e) => {
       const node = this.tree.nodeForRow(e.target);
       if (node !== null && node.id === this.tree.selectedNode.peek()?.id)
@@ -142,14 +134,12 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
       else
         this._status.replaceChildren();
     });
-    // the notice is about the node a refresh picked instead; picking another one retires it
     this.effect(() => {
       const id = this.selected.value?.id ?? null;
       if (this._held.peek() === null && this._notice.peek() !== null && id !== this._noticeAt)
         this._notice.value = null;
     });
     const follow = _options.follow;
-    // a kept row leaves once the pending changes are saved or discarded — or at once when the user picks a node
     this.effect(() => {
       const kept = this._kept.value;
       if (kept === null)
@@ -178,9 +168,7 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     return this._table?.info.parentColumn ?? null;
   }
 
-  /** Reads the roots again, and every branch that is open, keeping the selection on its row: a renamed
-   * or moved row stays selected where it now is, a deleted one gives way to its parent (or to
-   * nothing) with a {@link notice}. Calls made while one runs are one more read after it. */
+  /** Reads the roots and every open branch again, keeping the selection on its row. */
   refresh(): Promise<void> {
     if (this._refreshing !== undefined) {
       this._again = true;
@@ -200,8 +188,7 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     const first = !this._read;
     const was = this.tree.selectedNode.peek();
     const row = was?.data ?? null;
-    // the selection is a list index: rows that land above it would move it to another node; a kept row
-    // has no node, and is what `selected` is
+    // the selection is a list index: rows landing above it would move it to another node
     if (!first)
       this._held.value = {row: this._kept.peek() ?? row};
     if (first)
@@ -225,7 +212,6 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
         await this._clear();
       else {
         await this._reopen();
-        // the index still points where the row was: placed afresh, so a row that left is not found "there"
         this.tree.clearSelection();
         if (row === null)
           await this.tree.expandPath([was.id]);
@@ -249,9 +235,6 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     }
   }
 
-  // every open branch read again under the new roots before the selection is placed, parents first, so no
-  // answer lands above it afterwards: `expandPath` to an id no node has awaits the tree's own reads. One read
-  // per open branch, one after another, per change the probe sees; changes during a refresh make one more
   private async _reopen(): Promise<void> {
     const done = new Set<string>();
     for (;;) {
@@ -273,8 +256,6 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     }
   }
 
-  // the row selected before the refresh, found again: where it now is, or its parent when a peer deleted it
-  // (two to four reads, on top of `_reopen`'s one per open branch: a tree's refresh costs what it shows)
   private async _reselect(row: RowView<TRow>): Promise<void> {
     const table = this._table!;
     const [now] = await table.table.query({filter: {property: 'id', operator: '=', value: row.id}, limit: 1});
@@ -287,7 +268,6 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     }
     const caption = table.renderer.caption(row);
     if (now === undefined && this._pending(false)) {
-      // as a list keeps its rows over pending edits and says "Data changed": what is bound to the row stays
       this.tree.clearSelection();
       this._kept.value = row;
       this._noticeAt = row.id;
@@ -298,7 +278,6 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
       now === undefined ? `${caption} was deleted` : `${caption} is no longer reachable from here`);
   }
 
-  // `selected` follows a pick at once, so what is bound to it does not wait for the re-read
   private _pick(row: RowView<TRow> | null): void {
     if (this._held.peek() === null || this._refreshing === undefined)
       return;

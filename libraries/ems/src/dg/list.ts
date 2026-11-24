@@ -23,8 +23,7 @@ export interface DomainListOptions {
   empty?: string;
   /** What an empty, unfiltered list offers as its primary action. */
   create?: () => void;
-  /** False while another control (the table view) shows the same source: this list then leaves the
-   * source's current row and selection to it. */
+  /** False while another control shows the same source and owns its current row and selection. */
   active?: ReadonlySignal<boolean>;
 }
 
@@ -145,9 +144,7 @@ export class DomainList extends Control {
     return [...allowedActions(actions, {access: source.access.peek(), row}), ...DomainList.stagedDelete(source, row)];
   }
 
-  /** A row's delete as the session stages it, landing with the Save — none where the row's own access denies
-   * `delete`: a row staged for restore offers Undo restore, one marked deleted Restore, one already in the trash
-   * Restore (staged), any other row Delete. */
+  /** A row's staged delete, restore or undo; none where the row's own access denies `delete`. */
   static stagedDelete(source: DomainSource, row: RowView): Action[] {
     if (row[Rows.STATE] === 'restored')
       return [{text: 'Undo restore', icon: 'undo', run: () => source.unstageRestore([row.id])}];
@@ -159,7 +156,6 @@ export class DomainList extends Control {
     return allowedActions([run], {access: source.access.peek(), row});
   }
 
-  /** Whether the row is deleted or about to change its deleted state: it offers {@link stagedDelete} alone. */
   static isStaged(row: RowView): boolean {
     return row[Rows.STATE] === 'restored' || row[Rows.STATE] === 'deleted' || Rows.isDeleted(row);
   }

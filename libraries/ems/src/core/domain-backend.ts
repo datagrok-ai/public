@@ -30,13 +30,11 @@ export interface DomainTableInfoLike {
   hierarchy?: boolean;
   /** That self-referencing column, when the table is a hierarchy. */
   parentColumn?: string | null;
-  /** How many required columns with no default the caller may not read. The handle describes the
-   * readable columns only ({@link readableInfo}), so this count is all a New gate knows of the rest. */
+  /** How many required columns with no default the caller may not read. */
   hiddenRequired?: number;
 }
 
-/** A table's `info` as this caller reads it: the registry describes every column, a restricted one
- * too, and the handle narrows its answers to the ones `readable` keeps. */
+/** A table's `info` narrowed to the columns `readable` keeps. */
 export function readableInfo<T extends DomainTableInfoLike>(info: T, columns: readonly IProperty[],
   readable: (name: string) => boolean): T {
   const hidden = columns.filter((p) => !readable(p.name!) && p.nullable === false &&
@@ -148,8 +146,7 @@ export interface DomainProbeLike {
  * schema or `'<schema>.<table>'`; an insert may name itself with `ref`, and any op's value
  * `'$<ref>'` — earlier or later in the batch — is replaced by that row's id. */
 export interface DomainTransactionOpLike {
-  /** A `restore` carries `id` (and `expectedVersion`) and undoes a landed soft delete — the Delete
-   * grant, not a new one. */
+  /** A `restore` carries `id` and undoes a landed soft delete, under the Delete grant. */
   op: 'insert' | 'update' | 'delete' | 'restore';
   table: string;
   ref?: string;
@@ -239,9 +236,7 @@ export interface AuditEntryLike {
 export interface DomainFrameLike {
   df: DataFrameLike;
   edit: EditState;
-  /** Answers the number of rows the server answered for `spec` — the offset the next page starts at.
-   * A row whose id the frame already holds is not appended again (another session's write shifted
-   * the page), so fewer rows may land than are counted. */
+  /** Answers how many rows the server answered for `spec`: the offset the next page starts at. */
   append(spec: DomainQueryLike): Promise<number>;
   dispose(): void;
 }
@@ -249,9 +244,7 @@ export interface DomainFrameLike {
 export interface DomainTableLike {
   /** `'<schema>.<table>'`. */
   address: string;
-  /** The columns the CALLER may read, system columns included: a column its access hides
-   * ({@link access} leaves it out of `fields`) is not described here, nor among
-   * `info.searchableColumns` — so no control can offer it to show, sort, search or filter by. */
+  /** The columns the caller may read, system columns included. */
   properties: IProperty[];
   info: DomainTableInfoLike;
   /** What the table can do at all — declared, never guessed; see {@link DomainSupportLike}. */
@@ -310,8 +303,7 @@ export interface DomainBackend {
    * backend throws its `DomainBackendError`; the platform answers false after its own dialogs
    * (the js-api `DomainSession` owns the conflict and validation loop). */
   saveAll(edits: EditState[]): Promise<boolean>;
-  /** Drops every cached access snapshot the backend keeps — the session calls it after a 403,
-   * before its sources re-read their access. A backend without caches has none. */
+  /** Drops every cached access snapshot the backend keeps. */
   dropAccess?(): void;
 }
 

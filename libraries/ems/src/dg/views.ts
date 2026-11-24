@@ -79,7 +79,6 @@ export class DomainViews {
   /** A new view of a table's list, not docked. */
   async view(table: string): Promise<DG.ViewBase> {
     const entry = this._entry(table);
-    // opening is when the caller's access is read afresh: a grant made elsewhere meanwhile is not behind the cache
     emsBackends.domain?.dropAccess?.();
     const handle = await (this._options.handle ?? domains.table)(table);
     const view = handle.app({...entry.options, name: entry.name, path: this.baseOf(table)});
@@ -87,9 +86,7 @@ export class DomainViews {
     return view;
   }
 
-  /** Every open view of the schema's tables rebuilt over its new columns (Edit properties… saved). A view whose
-   * session has unsaved changes is not rebuilt under them: it is marked ({@link DomainApp.reshape}) and rebuilt once
-   * they are saved or discarded. */
+  /** Rebuilds every open view of the schema's tables; one with unsaved changes once they are saved or discarded. */
   static async reload(schema: string): Promise<void> {
     DomainTable.forget(schema);
     for (const app of [...DomainApp.live]) {
@@ -99,7 +96,6 @@ export class DomainViews {
         await DomainViews._rebuild(app);
         continue;
       }
-      // per table of the schema the page shows — its own, and its children tabs' — the columns it lost
       const shown = new Map<string, IProperty[]>([[app.table.address, app.table.properties]]);
       for (const source of app.session.sources.peek()) {
         if (source.table.startsWith(`${schema}.`) && !shown.has(source.table))
@@ -116,7 +112,6 @@ export class DomainViews {
     }
   }
 
-  // a new view of the app's table at the app's address, in place of the app's own
   private static async _rebuild(app: DomainApp): Promise<void> {
     const old = DomainApp.viewOf(app);
     if (old === undefined)

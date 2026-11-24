@@ -22,7 +22,6 @@ export async function route(address: string): Promise<DG.ViewBase | null> {
   const open = DomainApp.openAt(DomainApp.baseOf(`${schema}.${table}`), rest);
   if (open !== undefined)
     return open;
-  // opening is when the caller's access is read afresh: a grant made elsewhere meanwhile is not behind the cache
   emsBackends.domain?.dropAccess?.();
   // the platform's own view opens instead; an unknown table is no failure worth logging
   const handle = await domains.table(`${schema}.${table}`).catch((e) => {

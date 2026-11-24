@@ -66,8 +66,7 @@ export class DomainForm extends Control {
   private static readonly _parsed = new WeakMap<DomainTable, Constraint[]>();
   private _constraints: Constraint[] = [];
   private readonly _violations = new Map<string, string>();
-  // per field of a saved record, whether it holds its stored value unedited: an update sends only edited
-  // columns and the server checks only those, so such a value a tightened rule refuses holds no Save off
+  // an update sends only edited columns: an unedited stored value a tightened rule refuses holds no Save off
   private readonly _stored = new Map<Input<any>, ReadonlySignal<boolean>>();
   private readonly _violationsVersion = signal(0);
   private _attached = new Set<string>();
@@ -92,7 +91,6 @@ export class DomainForm extends Control {
     this.problem = computed(() => {
       for (const input of this._form.value?.inputs ?? []) {
         const message = input.validity.value;
-        // the server's mark on the field stays shown in it, and is not the form's to hold Save on
         if (message !== null && !this._refused(input.name, message) && !this._stored.get(input)?.value) {
           const caption = capital(input.label);
           return message === EMPTY ? `${caption} is required` : `${caption}: ${message}`;
@@ -105,8 +103,7 @@ export class DomainForm extends Control {
           continue;
         if (!this._attached.has(c.name))
           return message;
-        // the stored-value exemption is for the field's own rule: a constraint is a CHECK over the whole
-        // row, broken through whichever of its columns was edited
+        // a constraint is a CHECK over the whole row: the stored-value exemption does not apply
         const input = this._form.value!.input(c.columns[0])!;
         if (this._stored.get(input)?.value)
           return `${capital(input.label)}: ${message}`;
@@ -216,7 +213,6 @@ export class DomainForm extends Control {
     return this._form.peek()?.input(name);
   }
 
-  // the field's verdict is the cell error the server's last refusal put there
   private _refused(name: string | undefined, message: string): boolean {
     const target = this._form.peek()?.target as RowView | undefined;
     const edit = this.source.edit.value;
@@ -329,8 +325,6 @@ export class DomainForm extends Control {
       const extra: Partial<DomainPickOptions> = {filter, params: () => row, siblings: source.schema};
       overrides = {...overrides, [name]: {...overrides?.[name], ...extra}};
     }
-    // a draft's empty readonly field is filled by the save only where the server fills it (a default, a generated
-    // column); one the caller may not write stays empty and says nothing
     for (const prop of draft ? source.schema.properties : []) {
       if (!DomainTable.isReference(prop) && DomainTable.isAssignedOnSave(source.schema.info, prop))
         overrides = {...overrides, [prop.name!]: {emptyText: 'assigned on save', ...overrides?.[prop.name!]}};
@@ -364,8 +358,6 @@ export class DomainForm extends Control {
       const kind = kindOf(source.schema.properties.find((p) => p.name === name)!);
       input.addValidator((value) => (ObjectForm.same(value, ObjectForm.coerce(kind, row[name])) ?
         source.edit.peek()?.errorOf(row.id, name) : null) ?? table?.validators.check(name, value, row) ?? null);
-      // a value the writer threw on (a column the table no longer has) never reaches the row, so no
-      // Save could send it: the field says so and holds Save off, instead of counting a change
       input.addValidator((value) => {
         const failed = source.unapplied(row.id, name);
         return failed !== null && ObjectForm.same(value, failed.value) ?
@@ -398,9 +390,6 @@ export class DomainForm extends Control {
     return form;
   }
 
-  // a saved record's stored value that a rule tightened since refuses (a max lowered under it, its choice
-  // removed) says why on its field at once: the touch rule spares a new record's empty fields, not a stored
-  // value. A choice no longer listed stays shown and marked while the field holds it; picked away, it goes
   private static _markStored(input: Input<any>, stored: ReadonlySignal<boolean>): void {
     if (input instanceof ChoiceInput) {
       const stale = input.peek();
@@ -423,8 +412,7 @@ export class DomainForm extends Control {
     });
   }
 
-  // a ref whose schema filter names other fields (`site = $site`) is checked against them on load and when one
-  // changes; a held value the filter would not offer gets a note, never an error: filters only narrow the picker
+  // a held value the filter would not offer gets a note, never an error: filters only narrow the picker
   private _noteOutsideFilters(form: ObjectForm, row: RowView, table: DomainTable | undefined): void {
     for (const [name, filter] of Object.entries(table?.info.refFilters ?? {})) {
       const input = form.input(name);

@@ -149,8 +149,6 @@ export class DomainChildren extends Control {
       (code !== 'validation' && code !== DomainSource.REFUSED) ? null : DomainErrors.message(error, source);
   }
 
-  // null unless the link to the parent is a column the caller cannot read; a table without View is told only by
-  // its read, since rows granted one by one still answer
   private _denied(entry: ChildEntry): string | null {
     return entry.table.access.field(entry.fk) !== 'hidden' ? null :
       DomainErrors.noLink(entry.table.info, this.parent.schema.info);
@@ -202,7 +200,6 @@ export class DomainChildren extends Control {
       const pending = scope = new Scope();
       pending.build(() => untracked(() => {
         const draft = Rows.isDraft(row);
-        // a tab that cannot be shown asks nothing: the server refuses a read through a column the caller cannot see
         const denied = this._denied(entry);
         const child = entry.table.source({query: draft || denied !== null ? '' : `${entry.fk} = "${row.id}"`,
           defaults: denied !== null ? {} : {[entry.fk]: row.id}, session: this.parent.session,
@@ -220,7 +217,6 @@ export class DomainChildren extends Control {
         // a child saved under a parent the same Save deletes would land live under a row in the trash
         const add = domains.newButton(child, {}, {disabled: () => {
           this.parent.changeCount.value;
-          // the rows too: one field edited and the row deleted are each one change
           this.parent.rows.items.value;
           return this.parent.currentRow.value?.[Rows.STATE] !== 'deleted' ? null :
             `This ${nounOf(this.parent.schema.info, true)} is deleted on Save: ` +
@@ -229,7 +225,6 @@ export class DomainChildren extends Control {
         // a list's form takes the focus itself; the grid needs it handed over once the button's own click has refocused it
         if (grid !== null)
           add.root.addEventListener('click', () => queueMicrotask(() => grid.grid.root.focus()));
-        // the button's own hidden is newButton's, gated on insert: a tab with nothing to show hides around it
         const toolbar = divH([add.root], 'u2-domain-children-toolbar');
         pane.replaceChildren(toolbar, body, empty);
         pending.effect(() => {

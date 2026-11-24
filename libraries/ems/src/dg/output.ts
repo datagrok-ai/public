@@ -13,7 +13,7 @@ import {DomainErrors} from './errors.js';
 const LIMIT = 100000;
 
 /** Where an aggregated field lives: its table, the column naming the list's row (`batch_id.compound_id` one table
- * away), the field, and every table a write to which moves the value (the one between, for a grandchild). */
+ * away), the field, and every table a write to which moves the value. */
 interface Linked {
   address: string;
   path: string;
@@ -137,8 +137,6 @@ export function domainOutput(source: DomainSource, table: DomainTable, exclude: 
           if (shown.value)
             fetch(ids(), aggregations.value).catch((e) => DomainErrors.report(e));
         });
-        // the values live in the tables aggregated, not in the rows: a write there (a save here, a peer's write
-        // the list's live probe sees) asks again — one watch per table, however many aggregations read it
         const watching: Map<string, () => void> = new Map();
         const moved = () => {
           if (shown.peek())
