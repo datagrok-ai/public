@@ -398,7 +398,7 @@ export class DomainApp extends Control {
       // what a bulk action would act on, beside the count — the platform grid's own convention
       const selected = entity ? 0 : this.listSource.selection.value.length;
       const failed = source?.error.value !== undefined ? source :
-        this.session.sources.value.find((s) => DomainErrors.codeOf(s.error.value) === DomainSource.REFUSED);
+        this.session.sources.value.find((s) => s.error.value !== undefined && s.state.value !== 'error');
       const problem = failed == null ? null : DomainErrors.message(failed.error.value, failed);
       // the rows answer the filter that was applied, not the one in the box: while that one is
       // invalid they are shown stale, and a refusal of the old one is not the news
