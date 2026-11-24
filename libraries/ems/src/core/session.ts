@@ -99,7 +99,6 @@ export class SharedSession implements DomainSession {
     if (dirty.length === 0)
       return false;
     this._saving.value = true;
-    this._refusal = undefined;
     try {
       const batch = this._withReferenced(dirty);
       // what the batch DOES, read before it lands and empties the pending rows: a batch of deletes
@@ -138,16 +137,16 @@ export class SharedSession implements DomainSession {
           const forbidden = batch.some((s) => s.edit.peek()?.problemCode === 'forbidden');
           this._raise(batch, SharedSession._refused(batch, forbidden));
           if (forbidden)
-            await this.reloadAccess();
+            await this.reloadAccess(false);
           return false;
         }
       } catch (e) {
         for (const source of batch)
           source.fail(e);
         const forbidden = (e as {code?: unknown} | null)?.code === 'forbidden';
-        this._raise(batch, () => forbidden);
+        this._raise(batch, forbidden ? SharedSession._untilClean(batch) : () => false);
         if (forbidden)
-          await this.reloadAccess();
+          await this.reloadAccess(false);
         return false;
       } finally {
         for (const sub of heard)
@@ -210,10 +209,12 @@ export class SharedSession implements DomainSession {
       source.edit.peek()?.setSaving(saving);
   }
 
-  async reloadAccess(): Promise<void> {
+  /** Reads every source's access again. The user's Refresh lifts a 403's hold, so the next Save asks the
+   * server; the re-read a refused save makes (`release` false) lifts it only where a grant came back. */
+  async reloadAccess(release = true): Promise<void> {
     emsBackends.domain?.dropAccess?.();
     const restored = await Promise.all(this._sources.peek().map((source) => source.reloadAccess()));
-    if (restored.includes(true)) {
+    if (release || restored.includes(true)) {
       for (const source of this._sources.peek())
         source.releaseForbidden();
     }
@@ -233,10 +234,15 @@ export class SharedSession implements DomainSession {
     for (const source of batch)
       source.refuse(forbidden ? SharedSession.forbidden(problem) : problem, forbidden);
     if (forbidden)
-      return () => true;
+      return SharedSession._untilClean(batch);
     const cells = batch.filter((s) => s.validity.peek() !== null);
     const origin = cells.length === 1 ? cells[0] : undefined;
     return (changed) => origin !== undefined && changed !== origin;
+  }
+
+  // a 403 is about what the batch asks for: it stands until a source of the batch has nothing left to send
+  private static _untilClean(batch: readonly DomainSource[]): (changed: DomainSource) => boolean {
+    return (changed) => !batch.includes(changed) || changed.isDirty.peek();
   }
 
   private _raise(sources: readonly DomainSource[], holds: (changed: DomainSource) => boolean): void {

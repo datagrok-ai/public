@@ -198,7 +198,6 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   // the caller of `rebind` re-reads; a refresh here would drop the frame the batch just landed in
   private _rebinding = false;
   private _regate = false;
-  private _regated: AccessData | undefined;
   private readonly _liveMs: number;
   private _timer: ReturnType<typeof setInterval> | undefined;
   private _probed: {count: number, last: string | null} | undefined;
@@ -224,7 +223,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this.sort = signal(options.sort ?? '');
     this.deleted = signal<DomainDeletedMode>(options.deleted ?? 'exclude');
     this.live = signal(options.live ?? false);
-    this.stale = this._isStale;
+    // a source that loads no rows has none to be behind
+    this.stale = this.isEmpty ? signal(false) : this._isStale;
     this._liveMs = options.liveMs ?? DomainSource.liveMs;
     this.readOnly = computed(() => this.deleted.value !== 'exclude' || !this._writable.value);
     this._backend = requireBackend(this, emsBackends.domain, 'domain tables');
@@ -462,7 +462,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
         frame.dispose();
         return;
       }
-      if (this.isDirty.peek() || (keepOverSession && this.session.isDirty.peek())) {
+      if (this.isDirty.peek() || (shownFrame !== undefined && this._unsaved()) ||
+        (keepOverSession && this.session.isDirty.peek())) {
         frame.dispose();
         this._probed = shown;
         batch(() => {
@@ -532,7 +533,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   /** Appends the next page into the same frame; pending changes stay. */
   async loadMore(): Promise<void> {
     const frame = this._frame;
-    if (frame === undefined || this._restart)
+    if (frame === undefined || (this._restart && !this._unsaved()))
       return this.refresh();
     if (this._done || this._state.peek() === 'loading' || this._readFor() !== this._shownFor)
       return;
@@ -560,14 +561,13 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
         return;
       this._moved = shifted;
       const moved = this._moved;
-      if (moved && this.isDirty.peek())
+      if (moved && this._unsaved())
         this._isStale.value = true;
       else if (moved) {
-        this._probed = undefined;
         const rebased = await this._rebase();
         if (gen !== this._gen)
           return;
-        if (!rebased && this.isDirty.peek())
+        if (!rebased && this._unsaved())
           this._isStale.value = true;
       }
       if ((moved || this._done) && this._table !== undefined) {
@@ -608,15 +608,14 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
         this.releaseForbidden();
     });
     this._regate = true;
-    this._regated = data;
-    if (!this.isDirty.peek())
+    if (!this._unsaved())
       await this._rebuildWriter();
     return restored;
   }
 
-  /** Lifts a 403's hold where the access now grants what the pending rows need. */
+  /** Lifts a 403's hold: the next Save asks the server again. */
   releaseForbidden(): void {
-    if (this._held403() && this._grants(this._access.peek())) {
+    if (this._held403()) {
       batch(() => {
         this._error.value = undefined;
         this._problemRow.value = null;
@@ -639,7 +638,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private async _rebuildWriter(): Promise<void> {
     this._regate = false;
     try {
-      if (!await this._rebase() && this.isDirty.peek()) {
+      if (!await this._rebase() && this._unsaved()) {
         this._regate = true;
         return;
       }
@@ -650,10 +649,11 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this._publishRegated();
   }
 
+  // the same grants as a new object: what was built over the old rows' `~can_*` is built again
   private _publishRegated(): void {
     this._regate = false;
-    if (this._regated !== undefined && !this.scope.isDisposed)
-      this._access.value = Access.from(this._regated);
+    if (!this.scope.isDisposed)
+      this._access.value = this._access.peek().narrow({});
   }
 
   /** Stages the restore of soft-deleted rows into the session's unit of work — they are pending
@@ -838,6 +838,11 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     return this._rows.pending() as RowView<TRow>[];
   }
 
+  // what a re-read would drop: a change, or a draft nothing was typed into yet
+  private _unsaved(): boolean {
+    return this.isDirty.peek() || this.pending().length > 0;
+  }
+
   /** Follows another table on this source's live probe; `moved` runs when it changed. Answers the unwatch. */
   watch(address: string, moved: () => void): () => void {
     let entry = this._watched.get(address);
@@ -868,7 +873,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     for (const source of DomainSource.live) {
       if (source === this || source.table !== this.table)
         continue;
-      if (source.isDirty.peek() || source.session.isDirty.peek())
+      if (source._unsaved() || source.session.isDirty.peek())
         source._isStale.value = true;
       else
         source.refresh().catch((e) => source.fail(e));
@@ -929,7 +934,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     // read BEFORE the window, as a load does
     const baseline = await this._baseline(table);
     const replacement = await table.frame(this._spec(0, window));
-    if (gen !== this._gen || this.isDirty.peek()) {
+    if (gen !== this._gen || this._unsaved()) {
       replacement.dispose();
       return false;
     }
@@ -953,7 +958,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this._loaded = frame.df.rowCount;
     this._last = DomainSource._lastOf(frame.df, this._loaded);
     this._moved = false;
-    this._done = this._noRows || this._loaded < window;
+    this._done = this._loaded < window;
     this._probed = baseline;
     this._wire(frame);
     batch(() => {
@@ -1038,7 +1043,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   revert(): void {
     this._unapplied.value = new Map();
     this._edit.peek()?.discard();
-    if (this._regate && !this.isDirty.peek())
+    if (this._regate && !this._unsaved())
       void this._rebuildWriter();
   }
 
@@ -1128,6 +1133,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   }
 
   private _wire(frame: DomainFrameLike): void {
+    // what the last writer refused is not this one's verdict
+    this._unapplied.value = new Map();
     const bump = () => this._version.value = this._version.peek() + 1;
     const subs = [
       // the editor removes saved deletes and re-keys saved drafts without a frame event: the
@@ -1224,10 +1231,11 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
         return;
       this._failures = 0;
       const before = this._probed;
-      this._probed = now;
-      if (before === undefined || (before.count === now.count && before.last === now.last))
-        return;
-      await this._behind();
+      // the baseline moves only with the rows: a source left stale compares again once it is clean
+      if (before === undefined)
+        this._probed = now;
+      else if (before.count !== now.count || before.last !== now.last)
+        await this._behind();
     } catch {
       // the baseline stands: the next good probe compares against the last pair that WAS answered,
       // so a change made during an outage is still seen
@@ -1263,7 +1271,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   }
 
   private async _behind(): Promise<void> {
-    if (this.isDirty.peek() || this.session.isDirty.peek() || this.isSaving.peek())
+    if (this._unsaved() || this.session.isDirty.peek() || this.isSaving.peek())
       this._isStale.value = true;
     else
       await this.refresh();
@@ -1329,7 +1337,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private _scope(): DomainReadScope {
     const query = this.query.peek();
     const q = this._served?.query === query ? this._served.as : query;
-    const search = this._searchable.peek() ? this.search.peek() : '';
+    const search = this.search.peek();
     const deleted = this.deleted.peek();
     return {filter: typeof q === 'string' ? (q === '' ? undefined : q) : Filters.toDomainTree(q),
       ...(search === '' ? {} : {search}), ...(deleted === 'exclude' ? {} : {deleted})};

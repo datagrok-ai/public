@@ -1191,6 +1191,44 @@ source('over pending changes that shift is reported, never re-read away', async 
   src.dispose();
 });
 
+source('after a save whose re-read failed, the next page still arrives over a new edit', async () => {
+  emsBackends.domain = backend();
+  const src = await issues({pageSize: 1, sort: 'title'});
+  const table = emsBackends.domain.tableSync('grit.issue');
+  table.frame = async () => {
+    throw new Error('the server is away');
+  };
+  src.rows.byKey('i1').title = 'Aspirin 100';
+  assert.equal(await src.save(), true);
+  delete table.frame;
+  src.rows.byKey('i1').title = 'Aspirin 200';
+  await src.loadMore();
+  assert.deepEqual(titles(src), ['Aspirin 200', 'Ibuprofen']);
+  src.dispose();
+});
+
+source('a draft nothing was typed into survives every re-read of the rows it sits among, and stays current', async () => {
+  emsBackends.domain = backend();
+  const src = await issues({pageSize: 2, sort: 'title'});
+  const other = await issues();
+  const draft = src.newRow({}, {pristine: true});
+  await insertFirst(emsBackends.domain);
+  await src.loadMore();
+  assert.equal(src.currentRow.value.id, draft.id, 'a page that shifted');
+  other.rows.byKey('i1').title = 'Saved elsewhere';
+  assert.equal(await other.save(), true);
+  await flush();
+  assert.equal(src.currentRow.value.id, draft.id, 'another source\'s save');
+  await src.reloadAccess();
+  assert.equal(src.currentRow.value.id, draft.id, 'the access re-read');
+  await src.refresh();
+  assert.equal(src.currentRow.value.id, draft.id, 'a reload');
+  assert.equal(src.stale.value, true);
+  assert.equal(src.isDirty.value, false);
+  src.dispose();
+  other.dispose();
+});
+
 source('an edit typed while the access re-read is reading the rows survives it landing', async () => {
   emsBackends.domain = backend();
   const gate = holdFrames(emsBackends.domain, 'grit.issue');

@@ -183,6 +183,22 @@ scoped('a session with unsaved changes is marked stale instead, and a reload cle
   src.dispose();
 });
 
+scoped('a source left stale over pending changes reloads on the next poll after they are gone', async () => {
+  const be = counted();
+  const src = await started(be);
+  src.rows.byKey('i1').title = 'Mine';
+  const issue = await be.backend.table('grit.issue');
+  await issue.transaction([{op: 'insert', table: 'issue', values: {project_id: 'p1', number: 8, title: 'Theirs'}}]);
+  await tick();
+  assert.equal(src.stale.value, true);
+  src.discard();
+  await tick();
+  await flush();
+  assert.equal(src.rows.items.value.length, 4);
+  assert.equal(src.stale.value, false);
+  src.dispose();
+});
+
 scoped('a save clears the stale mark: the re-base has just read the collection again', async () => {
   const be = counted();
   const src = await started(be);
