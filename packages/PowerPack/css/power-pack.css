@@ -376,6 +376,11 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
     margin-left: 16px;
 }
 
+/* the strip starts with the platform's search icon: a second magnifier next to it reads as a duplicate */
+.tab-handle-list-container > .power-pack-welcome-search > .fa-search {
+    display: none;
+}
+
 .d4-ribbon:has(.power-pack-welcome-search) > .d4-ribbon-spacer {
     flex-grow: 0;
 }
