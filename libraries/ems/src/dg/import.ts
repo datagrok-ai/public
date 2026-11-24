@@ -549,6 +549,8 @@ class ImportFlow {
       out.set(index, row);
     };
     for (const row of rows) {
+      if (row.status !== undefined && !out.has(row.index))
+        out.set(row.index, {...row, errors: []});
       for (const error of row.errors ?? []) {
         if (error.code !== 'check' && (row.status !== undefined || row.id != null)) {
           add(row.index, error, row);
