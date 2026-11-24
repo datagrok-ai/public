@@ -85,13 +85,6 @@ function _targets(source: DomainSource): BulkTarget[] {
   ];
 }
 
-/** On a filtered list, a selection of just the clicked row means the filter. */
-function _preferred(source: DomainSource, targets: BulkTarget[]): BulkTarget {
-  const selection = source.selection.peek();
-  const clicked = selection.length === 1 && selection[0].id === source.currentRow.peek()?.id;
-  return (clicked ? targets.find((t) => t.kind === MATCHING) : undefined) ?? targets[0];
-}
-
 function _open(source: DomainSource, props: IProperty[], required: Set<string>, targets: BulkTarget[],
   resolve: (n: number | null) => void): void {
   const handle = DomainTable.of(source)!;
@@ -102,7 +95,7 @@ function _open(source: DomainSource, props: IProperty[], required: Set<string>, 
 
   const header = div([], 'u2-domain-bulk-header');
   form.root.prepend(header);
-  const target = _applyTo(dialog, form, header, targets, _preferred(source, targets));
+  const target = _applyTo(dialog, form, header, targets);
   const picker = dialog.build(() => new MultiSelect({label: 'Change', name: 'fields', items: [],
     placeholder: 'Choose the fields to change', fill: true}));
   form.add(picker, header);
@@ -172,14 +165,14 @@ function _open(source: DomainSource, props: IProperty[], required: Set<string>, 
 }
 
 /** "Apply to": plain text where there is one target, a choice where there are two. */
-function _applyTo(dialog: Dialog, form: ObjectForm, header: HTMLElement, targets: BulkTarget[],
-  preferred: BulkTarget): ReadonlySignal<BulkTarget> {
+function _applyTo(dialog: Dialog, form: ObjectForm, header: HTMLElement, targets: BulkTarget[]):
+  ReadonlySignal<BulkTarget> {
   if (targets.length === 1) {
     header.append(ObjectForm.readonlyField('Apply to', 'target', targets[0].label).row);
     return signal(targets[0]);
   }
   const radio = dialog.build(() => new RadioInput({label: 'Apply to', name: 'target',
-    items: targets.map((t) => t.label), value: preferred.label, nullable: false}));
+    items: targets.map((t) => t.label), value: targets[0].label, nullable: false}));
   form.add(radio, header);
   return computed(() => targets.find((t) => t.label === radio.value) ?? targets[0]);
 }
