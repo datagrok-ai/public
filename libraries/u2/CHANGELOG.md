@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Typeahead: A dropdown's Enter takes the one row its search leaves, as shown highlighted
 * Typeahead: Fixed an arrow press before Escape making Enter take a row after reopening
 * Lists: Fixed a saved delete collapsing the multi-selection; `selectKeys` takes a lead row
 * Forms: Fixed map and list fields misreading a cell that holds JSON text; added `ObjectForm.fromJsonText`

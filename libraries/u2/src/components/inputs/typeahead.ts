@@ -173,7 +173,8 @@ export class TypeAhead<T> extends Control {
       if (view.kind !== 'ready')
         return;
       const exact = this._exact(view.items);
-      this._commit(exact >= 0 || this.explicitEnter ? exact : 0, document.activeElement === input);
+      this._commit(exact >= 0 || !this.explicitEnter ? Math.max(exact, 0) : this._lone(view.items),
+        document.activeElement === input);
     });
 
     bindValue(input, this._text, {owner: this.scope});
@@ -288,7 +289,7 @@ export class TypeAhead<T> extends Control {
         if (this.selected.peek() !== null && this._list.activeIndex.peek() < 0)
           this._dismiss();
         else if (this._view.peek().kind === 'ready') {
-          this._commit(this.explicitEnter && !this._moved ? this._exact(this._items.peek()) :
+          this._commit(this.explicitEnter && !this._moved ? this._lone(this._items.peek()) :
             this._list.activeIndex.peek());
         } else if (this._view.peek().kind === 'loading' || this._view.peek().kind === 'idle')
           this._pendingPick = true;
@@ -381,6 +382,12 @@ export class TypeAhead<T> extends Control {
   private _refresh(): void {
     if (this._source && this._text.peek().length >= this._minChars)
       this._source.query(this._text.peek());
+  }
+
+  // the row named exactly as typed, else the one row left; -1 when the choice is not the user's yet
+  private _lone(items: T[]): number {
+    const exact = this._exact(items);
+    return exact >= 0 || items.length !== 1 ? exact : 0;
   }
 
   // the one row whose text is what was typed; -1 for none or several

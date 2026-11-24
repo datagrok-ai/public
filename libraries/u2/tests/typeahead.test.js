@@ -116,23 +116,29 @@ smoke('keyboard: ArrowDown/Enter picks the active option and fills the input', a
   typeahead.dispose();
 });
 
-smoke('a dropdown takes only a row moved to or named exactly; an IME Enter and an Enter over no rows take nothing',
+smoke('a dropdown takes a row moved to, named exactly or left alone; an IME Enter or no rows take nothing',
   async () => {
     const typeahead = users();
     typeahead.explicitEnter = true;
     const input = typeahead.root.querySelector('input');
     input.focus();
-    type(input, 'bau');
+    type(input, 'a');
     await flush();
     fire(input, 'keydown', {key: 'Enter', isComposing: true});
     fire(input, 'keydown', {key: 'Enter'});
-    assert.equal(typeahead.selected.value, null, 'the highlighted first row is not taken');
+    assert.equal(typeahead.selected.value, null, 'the highlighted first of several rows is not taken');
     fire(input, 'keydown', {key: 'ArrowDown'});
     fire(input, 'keydown', {key: 'Escape'});
     fire(input, 'keydown', {key: 'ArrowDown'});
     await flush();
     fire(input, 'keydown', {key: 'Enter'});
     assert.equal(typeahead.selected.value, null, 'a move made before Escape does not count once reopened');
+    type(input, 'chen');
+    await flush();
+    fire(input, 'keydown', {key: 'Enter', isComposing: true});
+    assert.equal(typeahead.selected.value, null, 'an IME Enter takes nothing');
+    fire(input, 'keydown', {key: 'Enter'});
+    assert.equal(typeahead.selected.value, USERS[2], 'the one row left is the one shown highlighted');
     type(input, 'bruno bauer');
     await flush();
     fire(input, 'keydown', {key: 'Enter'});
