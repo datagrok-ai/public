@@ -7,7 +7,7 @@ import * as rxjs from 'rxjs';
 
 import {CombinedAISearchAssistant} from './search/combined-search';
 import {fireAIPanelToggleEvent, getAIAbortSubscription, fireBeforeUserPromptEvent,
-  fireAfterUserPromptEvent, UserPromptEventArgs, createStyledMarkdown, tryMarkdown, plainTextEl, isEnterKey,
+  fireAfterUserPromptEvent, UserPromptEventArgs, createStyledMarkdown, tryMarkdown, plainTextEl,
   SHORTCUT_HINT, copyToClipboard} from '../utils';
 import {AIPanel, StreamingPanel} from './panel';
 import {AIWindowManager} from './ai-window';
@@ -201,7 +201,7 @@ export function setupSearchUI() {
     }
 
     searchInput.addEventListener('keyup', (event: KeyboardEvent) => {
-      if (isEnterKey(event) && searchInput.value?.trim()) {
+      if (event.key === 'Enter' && searchInput.value?.trim()) {
         event.preventDefault();
         setTimeout(() => aiCombinedSearch(searchInput.value), 400); // timeout needed to allow other enter handlers to run first
       }

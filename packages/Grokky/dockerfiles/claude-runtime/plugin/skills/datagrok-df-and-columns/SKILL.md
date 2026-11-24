@@ -9,6 +9,20 @@ Use the `DG.DataFrame` / `DG.Column` js-api via the `datagrok_exec` tool.
 Globals available in the code: `grok`, `ui`, `DG`, `view`, `t` (the current
 `DG.DataFrame`, when `view.type === 'TableView'`).
 
+**Changing a table that is open in a view** must leave an undo step (see `datagrok-undo`). Use the tool when
+it covers the change, otherwise make the change in a script inside the matching `undoable` helper, as every
+example below does:
+
+| Change | Tool | In a script |
+|---|---|---|
+| add a column | `table_add_column` (per-row value or formula) | add it, then `undoable.columnAdded(col)` |
+| overwrite values | `table_set_values` | `await undoable.changeValues(col, () => ...)` |
+| rename, format, units, semType, default color coding | `table_edit_column` | `await undoable.editColumn(col, () => ...)` |
+| custom colors, description, friendly name, other tags | — | `await undoable.editColumn(col, () => ...)` |
+| remove columns | `table_remove_columns` | `undoable.removeColumns(t, names)` |
+
+A table the script built itself and has not opened needs none of this: change it directly.
+
 For **formula-driven** columns (recompute on source change), use
 `datagrok-calc-column`. Row filtering / selection lives in `datagrok-filtering`
 and `datagrok-selection`.
@@ -27,8 +41,8 @@ and `datagrok-selection`.
 | Add column from values                       | `t.columns.add(DG.Column.fromList(type, name, values))`         |
 | Virtual column (compute-on-demand)           | `t.columns.addNewVirtual(name, i => ..., type)`                 |
 | Collision-free name                          | `t.columns.getUnusedName(name)`                                 |
-| Remove a column                              | `t.columns.remove(name)` (string, index, or `Column`)           |
-| Rename                                       | `col.name = 'new'`                                              |
+| Remove columns of the open table (undoable)  | tool `table_remove_columns`                                     |
+| Rename                                       | tool `table_edit_column`; in a script `col.name = 'new'` inside `undoable.editColumn` |
 | Clone DataFrame (full)                       | `t.clone()`                                                     |
 | Clone filtered rows                          | `t.clone(t.filter)`                                             |
 | Clone column subset                          | `t.clone(null, ['a', 'b'])`                                     |
@@ -193,6 +207,7 @@ const col = t.columns.addNewFloat('Ki');
 col.semType = DG.SEMTYPE.Ki;
 col.meta.units = 'nM';
 col.meta.format = '0.00';
+undoable.columnAdded(col);
 return ui.divText(`Added ${col.name} (${col.type})`);
 ```
 
@@ -201,6 +216,7 @@ return ui.divText(`Added ${col.name} (${col.type})`);
 const values = [1.2, 3.4, null, 5.6];
 const col = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'score', values);
 t.columns.add(col);
+undoable.columnAdded(col);
 return ui.divText(`Added ${col.name}`);
 ```
 
@@ -210,6 +226,7 @@ return ui.divText(`Added ${col.name}`);
 const labels = t.columns.addNewVirtual('Label',
   (i) => `${t.get('compound', i)}@${t.get('target', i)}`,
   DG.TYPE.STRING);
+undoable.columnAdded(labels);
 return ui.divText(`Added virtual column ${labels.name}`);
 ```
 
@@ -217,36 +234,35 @@ return ui.divText(`Added virtual column ${labels.name}`);
 // Avoid name collisions explicitly.
 const name = t.columns.getUnusedName('Ki');  // returns 'Ki' or 'Ki (1)' etc.
 const col = t.columns.addNewFloat(name);
+undoable.columnAdded(col);
 return ui.divText(`Final name: ${col.name}`);
 ```
 
 ## Removing & renaming
 
-```js
-// Remove one column. Accepts string, index, or Column instance.
-t.columns.remove('temp');
-```
+Columns of an open table are removed with the `table_remove_columns` tool, so that Ctrl+Z brings them back
+(see `datagrok-undo`); inside a script:
 
 ```js
-// Remove several. Loop — no bulk remove call exists.
-for (const name of ['_tmp1', '_tmp2', 'temp3'])
-  if (t.columns.contains(name))
-    t.columns.remove(name);
+undoable.removeColumns(t, ['_tmp1', '_tmp2', 'temp3'].filter((name) => t.columns.contains(name)));
 ```
+
+`t.columns.remove(name)` (string, index, or `Column`) is for a table that is not open in a view.
 
 To target **calculated columns**, check `col.meta.formula`:
 
 ```js
 // Drop every calculated column.
 const names = t.columns.toList().filter((c) => c.meta.formula != null).map((c) => c.name);
-for (const n of names) t.columns.remove(n);
+undoable.removeColumns(t, names);
 return ui.divText(`Removed: ${names.join(', ') || '(none)'}`);
 ```
 
-Rename: assign `col.name` directly.
+Rename: the `table_edit_column` tool, or in a script:
 
 ```js
-t.getCol('pIC50').name = 'pIC50_old';
+const col = t.getCol('pIC50');
+await undoable.editColumn(col, () => col.name = 'pIC50_old');
 ```
 
 ## Setting column metadata
@@ -276,20 +292,24 @@ Assign `null` to a `col.meta.*` accessor to **clear** the underlying tag.
 ```js
 // Set several metadata fields at once.
 const col = t.getCol('Ki');
-col.semType = DG.SEMTYPE.Ki;
-col.meta.units = 'nM';
-col.meta.format = '0.00';
-col.meta.description = null;  // null clears
+await undoable.editColumn(col, () => {
+  col.semType = DG.SEMTYPE.Ki;
+  col.meta.units = 'nM';
+  col.meta.format = '0.00';
+  col.meta.description = null;  // null clears
+});
 ```
 
 ```js
 // Clear all custom (user-facing) metadata. Do NOT call col.tags.clear() —
 // that also nukes system tags like .color-coding-type.
 const col = t.getCol('activity');
-col.meta.friendlyName = null;
-col.meta.units = null;
-col.meta.format = null;
-col.meta.description = null;
+await undoable.editColumn(col, () => {
+  col.meta.friendlyName = null;
+  col.meta.units = null;
+  col.meta.format = null;
+  col.meta.description = null;
+});
 ```
 
 ## Color coding
@@ -298,21 +318,24 @@ When the user doesn't name specific colors or rules, call the setter with
 **no arguments** — the platform's default scheme applies. Never invent a
 palette the user didn't ask for.
 
-Lives under `col.meta.colors`. Four shapes:
+Lives under `col.meta.colors`. The default scheme of each shape is also `table_edit_column {colorCoding}`; a
+script runs the setter inside `undoable.editColumn`. Four shapes:
 
 ### Linear (numeric only)
 
 ```js
 // Default: no palette — the platform's standard linear scheme is used.
-t.getCol('weight').meta.colors.setLinear();
+const col = t.getCol('weight');
+await undoable.editColumn(col, () => col.meta.colors.setLinear());
 ```
 
 ```js
 // User asked for red → yellow → green, with min/max pinned.
-t.getCol('age').meta.colors.setLinear(
+const col = t.getCol('age');
+await undoable.editColumn(col, () => col.meta.colors.setLinear(
   ['#ff0000', '#ffff00', '#00ff00'],
   {min: 19, max: 70},
-);
+));
 ```
 
 Hex strings and ARGB integers both work in `range`. Optional `belowMinColor`
@@ -325,37 +348,42 @@ throw; guard with `col.isNumerical` if uncertain.
 
 ```js
 // Default: no map — every category gets a color from the platform palette.
-t.getCol('race').meta.colors.setCategorical();
+const col = t.getCol('race');
+await undoable.editColumn(col, () => col.meta.colors.setCategorical());
 ```
 
 ```js
 // User asked for specific colors per category.
-t.getCol('race').meta.colors.setCategorical(
+const col = t.getCol('race');
+await undoable.editColumn(col, () => col.meta.colors.setCategorical(
   {'Asian': '#0000FF', 'Black': '#FF0000'},
   {fallbackColor: '#CCCCCC'},
-);
+));
 ```
 
 ### Conditional (range-based rules)
 
 ```js
 // Default: no rules — the platform bins the values into 4 ranges automatically.
-t.getCol('height').meta.colors.setConditional();
+const col = t.getCol('height');
+await undoable.editColumn(col, () => col.meta.colors.setConditional());
 ```
 
 ```js
 // User specified the thresholds. '20-170' means "value in the range 20..170".
 // '<100' / '>50' also work.
-t.getCol('height').meta.colors.setConditional({
+const col = t.getCol('height');
+await undoable.editColumn(col, () => col.meta.colors.setConditional({
   '20-170': '#00FF00',
   '170-190': '#220505',
-});
+}));
 ```
 
 ### Off
 
 ```js
-t.getCol('activity').meta.colors.setDisabled();
+const col = t.getCol('activity');
+await undoable.editColumn(col, () => col.meta.colors.setDisabled());
 ```
 
 > **Trap.** Don't use `col.setTag('.color-coding-type', ...)` to enable /
@@ -371,6 +399,7 @@ already-allocated column.
 ```js
 const col = t.columns.addNewInt('rowSquared');
 col.init((i) => i * i);
+undoable.columnAdded(col);
 ```
 
 For hot paths, mutate values with `notify=false` and call
@@ -379,9 +408,11 @@ For hot paths, mutate values with `notify=false` and call
 ```js
 const src = t.getCol('input');
 const dst = t.getCol('output');
-for (let i = 0; i < t.rowCount; i++)
-  dst.set(i, src.get(i) * 2, false);
-dst.fireValuesChanged();
+await undoable.changeValues(dst, () => {
+  for (let i = 0; i < t.rowCount; i++)
+    dst.set(i, src.get(i) * 2, false);
+  dst.fireValuesChanged();
+});
 ```
 
 ## Constants — cite, never invent
@@ -419,3 +450,5 @@ dst.fireValuesChanged();
     Use `t.getCol(name)` — it throws on missing.
 12. **`col.tags.clear()` to "reset metadata".** Nukes system tags too (color
     coding, choices, etc). Clear specific `col.meta.*` fields with `null`.
+13. **Changing an open table directly** (`t.columns.remove`, `col.name = ...`, `col.init(...)`, a `col.meta.*`
+    write outside a helper). Ctrl+Z cannot take it back. Use the `table_*` tool or the `undoable` helper.

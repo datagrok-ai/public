@@ -3,6 +3,7 @@
 ## v.next
 
 * Search: The AI wand finds the home page's search box when PowerPack places it in the top row (no tabs)
+* Grokky: Ctrl+Z undoes the columns, rows, values and viewers a request added, removed or changed
 * [public#4650](https://github.com/datagrok-ai/public/issues/4650): Fixed the AI panel rendering replies as trusted HTML, so scripts in a reply ran
 * Grokky: The chat keeps a reading width in a wide panel: replies on white, your prompt in a bubble that fits its text
 * Grokky: Fixed "Speech recognition error: aborted" in the console when voice input stops

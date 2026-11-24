@@ -34,7 +34,7 @@ overwritten the moment any UI filter re-runs. The panel is always enough.
 | Clear all filters                                     | `view.getFiltersGroup(...).setActive(false)` (or `t.filter.setAll(true)`)           |
 | Invert                                                | `t.filter.invert()`                                                                 |
 | New table of the currently-visible rows               | `t.clone(t.filter)`                                                                 |
-| Destructively drop rows (gone for good)               | `t.rows.removeWhereIdx((i) => pred(i))`                                             |
+| Remove rows (undoable, see `datagrok-undo`)           | tool `table_remove_rows`, `where`: `pred(i)`                                      |
 
 ## Reading filter state
 
@@ -142,12 +142,13 @@ t.filter.invert();
 |---------------------------------------------|-----------------------------------------------------------------|--------------|
 | "filter to X" / "show only X" / "hide ..."  | `view.getFiltersGroup({createDefaultFilters:true}).updateOrAdd({type, column, ...})` (the matching widget) | no — hide-only |
 | "give me a new table of just the filtered rows" | `t.clone(t.filter)`                                         | no — clones the DF |
-| "remove rows where X" / "drop rows where X" | `t.rows.removeWhereIdx((i) => pred(i))`                         | **yes** — rows gone |
-| "remove rows where X is missing"            | `t.rows.removeWhereIdx((i) => t.getCol('X').isNone(i))` — a missing value is neither `null` nor `NaN`, so test it with `isNone` | **yes** |
-| "delete the currently-hidden rows"          | `t.rows.removeWhereIdx((i) => !t.filter.get(i))`                | **yes** |
+| "remove rows where X" / "drop rows where X" | tool `table_remove_rows`, `where`: `pred(i)` | **yes** — rows removed |
+| "remove rows where X is missing"            | tool `table_remove_rows`, `where`: `t.getCol('X').isNone(i)` — a missing value is neither `null` nor `NaN`, so test it with `isNone` | **yes** |
+| "delete the currently-hidden rows"          | tool `table_remove_rows`, `where`: `!t.filter.get(i)` | **yes** |
 
 "Filter" / "show only" / "hide" is a **hide-only** (reversible) operation → the
-Filters panel. `removeWhereIdx` deletes rows for good. If the user says "remove"
+Filters panel. The `table_remove_rows` tool records the removal for Ctrl+Z (`t.rows.removeWhereIdx` does not,
+so do not use it on an open table). If the user says "remove"
 or "delete", **confirm intent** when "filter" might be what they meant.
 
 `t.clone(filter, columns?, withSelection?)` clones the visible rows. Pass an
@@ -175,7 +176,7 @@ auto-cleans those on detach. In `datagrok_exec` code, push onto
 3. **Passing SMILES / SMARTS as raw `molBlock` to a `SUBSTRUCTURE` filter** —
    RDKit silently returns zero matches. Convert via
    `DG.chem.convert(query, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock)`.
-4. **`t.rows.removeWhereIdx(...)` when the user said "filter"** — destructive.
+4. **Removing rows when the user said "filter"** — destructive.
    Use the Filters panel for non-destructive "hide" intent.
 5. **`t.clone(t.filter)` to "filter the DF"** when the user wanted rows hidden —
    allocates a new DF for nothing. Reach for it only when they actually want a

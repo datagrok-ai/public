@@ -9,6 +9,10 @@ Add, configure, find, and close viewers on a `DG.TableView` via the
 `datagrok_exec` tool. Globals injected by the runtime: `grok`, `ui`, `DG`,
 `view`, `t` (the current `DG.DataFrame`, when the view is a `TableView`).
 
+A viewer is added with the `table_add_viewer` tool (`{type, options}`) or, in a script, with
+`undoable.addViewer(view, type, options)` in place of `view.addViewer(type, options)`: both record the undo step
+(see `datagrok-undo`). Changing a viewer's properties and closing a viewer are not undoable.
+
 ## Quick reference
 
 | Need                                 | Call                                                                  |

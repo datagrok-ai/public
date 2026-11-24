@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 // @ts-ignore .... idk why it does not like it
 import '../../css/ai.css';
-import {dartLike, fireAIAbortEvent, createStyledMarkdown, tryMarkdown, plainTextEl, isEnterKey,
+import {dartLike, fireAIAbortEvent, createStyledMarkdown, tryMarkdown, plainTextEl,
   copyToClipboard} from '../utils';
 import {buildWorkspaceContext, executeSingleBlock} from '../claude/exec-blocks';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
@@ -231,7 +231,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         (this._promptHistoryIndex !== null || (up && this.textArea.selectionEnd === 0)) &&
         this.navigatePromptHistory(up ? -1 : 1))
         event.preventDefault();
-      if (isEnterKey(event) && (!event.ctrlKey && !event.metaKey)) {
+      if (event.key === 'Enter' && (!event.ctrlKey && !event.metaKey)) {
         event.preventDefault();
         event.stopImmediatePropagation();
         this.handleRun();
