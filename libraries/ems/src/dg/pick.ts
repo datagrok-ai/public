@@ -31,6 +31,8 @@ export interface DomainPickOptions extends InputOptions<string | null> {
   params?: () => Record<string, unknown>;
   /** The schema the `$name`s belong to — the hint's captions. */
   siblings?: FilterSchema;
+  /** A row of a hierarchy table whose subtree is not offered: the row a parent is being picked for. */
+  notUnder?: string;
   placeholder?: string;
   /** Row presentation; the caption over its detail by default. */
   renderer?: ObjectRenderer<PickItem>;
@@ -47,7 +49,7 @@ export class DomainPick extends PickInput<PickItem> {
   private static readonly _plural = new Map<string, string>();
 
   constructor(readonly table: string, options: DomainPickOptions = {}) {
-    const {filter, params, siblings, placeholder, renderer, limit, debounceMs, ...rest} = options;
+    const {filter, params, siblings, notUnder, placeholder, renderer, limit, debounceMs, ...rest} = options;
     const listItem = renderer?.listItem?.bind(renderer);
     let unbound: string[] = [];
     let more = false;
@@ -63,10 +65,14 @@ export class DomainPick extends PickInput<PickItem> {
             unbound = bound.unbound;
             if (unbound.length > 0)
               return [];
-            const page = await DomainPick.page(table, query, {filter: bound.filter, limit});
+            const t = await DomainPick.table(table);
+            const outside = notUnder === undefined ? undefined : {property: 'id', operator: '!=', value:
+              (await t.query({filter: {property: 'id', operator: 'under', value: notUnder}, limit: 1000}))
+                .map((row) => row.id)};
+            const page = await DomainPick.page(table, query, {limit, filter: outside === undefined ? bound.filter :
+              bound.filter === undefined ? outside : [outside, 'and', bound.filter]});
             more = page.more;
             // the server answers a reader without View with no rows: only the access tells it from an empty table
-            const t = await DomainPick.table(table);
             denied = page.items.length === 0 && query.trim() === '' && (await t.access()).can.view === false ?
               DomainErrors.noAccess(t.info) : null;
             if (denied !== null)

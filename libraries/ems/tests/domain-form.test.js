@@ -940,7 +940,7 @@ scoped('a refused save names the field by its caption; the verdicts are shown', 
   const form = testOwner().build(() => domains.form(draft));
   const save = domains.saveButton(draft);
   await flush();
-  draft.currentRow.value.number = 2;
+  draft.currentRow.value.number = 9;
   await flush();
   assert.equal(form.problem.value, 'Title is required');
   assert.equal(save.button.getAttribute('aria-disabled'), 'true', 'Save is off, its tooltip saying why');
@@ -1301,6 +1301,24 @@ scoped('a stored json object shows its pairs, and a typed pair is saved with the
   assert.deepEqual(emsBackends.domain.tableSync('qa.item').rows[0].meta, {k: 'v', k2: 'v2'});
   assert.deepEqual(meta.value, {k: 'v', k2: 'v2'});
   assert.equal(src.changeCount.value, 0);
+  form.dispose();
+  src.dispose();
+});
+
+scoped('a hierarchy row is not offered itself or its subtree as its parent', async () => {
+  emsBackends.domain = (await import('./domain-fixtures.mjs')).hierarchyBackend();
+  const table = await domains.table('stock.location');
+  const src = testOwner().build(() => table.source({pageSize: 10}));
+  await flush();
+  src.currentRow.value = src.rows.byKey('l2');
+  const form = testOwner().build(() => domains.form(src, {overrides: {parent_id: {debounceMs: 0}}}));
+  document.body.append(form.root);
+  await flush();
+  form.input('parent_id').root.querySelector('input').focus();
+  await flush();
+  await flush();
+  assert.deepEqual([...document.body.querySelectorAll('[role="option"]')].map((el) => el.textContent),
+    ['Site', 'Other site']);
   form.dispose();
   src.dispose();
 });

@@ -31,6 +31,7 @@ const views = domains.views({
   views: [
     {table: 'stockroom.substance', name: 'Substances', segment: ''},
     {table: 'stockroom.container', name: 'Containers', options: {sort: 'label'}},
+    {table: 'stockroom.location', name: 'Locations'},
     {table: 'stockroom.vendor', name: 'Vendors'},
     {table: 'stockroom.purchase_order', name: 'Purchase Orders'},
     {table: 'stockroom.sds_document', name: 'Safety Data Sheets'},

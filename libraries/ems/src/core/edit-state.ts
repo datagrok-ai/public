@@ -319,6 +319,11 @@ export class MemoryEditState implements EditState {
           if (row[name] != null)
             values[name] = MemoryEditState._reference(row[name], drafts);
         }
+        // the platform frame holds no empty bool, so its editor always sends one
+        for (const prop of this._table.properties) {
+          if (prop.propertyType === 'bool' && writable.includes(prop.name!))
+            values[prop.name!] ??= false;
+        }
         pending.push({row, op: {op: 'insert', table, ref: String(row.id), values}});
       } else if (state === 'modified') {
         for (const name of this._originals.get(row)?.keys() ?? []) {

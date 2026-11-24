@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Locations: Fixed Open on a tree node opening nothing; it opens the location's page in the Stockroom app
 * Locations: Fixed the tree never showing another session's rename, insert, move or delete of a location
 * Locations: The containers' source is built under an owner the view disposes, so the view no longer fails with a u2 `owner-missing` error where u2 is strict (dev, tests)
 * Locations: Added New container to a location's context menu

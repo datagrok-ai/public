@@ -6,6 +6,7 @@
 * Lists: Fixed a search, filter or sort changed during a save or over unsaved edits not being applied
 * Lists: Fixed the current row and the selection being lost on save, refresh or switching to the table view
 * Lists: Fixed sort keys with spaces or a `prop.` prefix being dropped, and sorting by unsortable columns
+* Lists: Fixed a long card title wrapping and hiding the card's second line; it now ends with an ellipsis
 * Live refresh: Fixed a peer's write going unnoticed, discarding unsaved edits or leaving stale aggregations
 * Live refresh: Refresh is always offered on a table that is not polled for changes
 * Live refresh: Fixed a table beside a tree keeping a referenced row's old name after a peer renamed it
@@ -25,6 +26,7 @@
 * Properties: Fixed concurrent edits dropping columns, user columns shown locked and pages keeping old columns
 * Trees: Fixed the tree not following other sessions' changes, and losing a node picked during a refresh
 * Trash: Fixed a `?trash=1` link showing live rows as deleted on a table that has no trash
+* Trees: Fixed the parent picker offering a row itself or its descendants, which dropped it from the tree
 * Search: Fixed saved searches overwritten or lost on reload, and refused query text breaking the list
 * Filters: Fixed a datetime without a time zone selecting different rows from a link and from the box
 * Search: Fixed a search saved or removed in one browser tab erasing the ones saved in another
