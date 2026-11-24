@@ -13,6 +13,7 @@
 * Save: Fixed a stale delete or restore overwriting another session's change: it is now a version conflict
 * Save: Fixed "saved" announced for changes a conflict reload dropped, and refusals naming a row by its ids
 * Permissions: Fixed access granted or revoked while the app is open not reaching it
+* Permissions: Fixed Refresh not showing columns shared with the user since the page was opened
 * Permissions: Fixed users without View told a table is empty, and row-grant users told they have no access
 * Permissions: Fixed New offered where no save can succeed, and hidden columns offered in sort and filters
 * Forms: Fixed `json` and `string_list` fields showing and saving mangled values on the platform

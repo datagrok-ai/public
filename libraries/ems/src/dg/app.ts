@@ -22,6 +22,7 @@ import {DgDomainTable} from './backend.js';
 import {DomainDataTable} from './grid.js';
 import {domainOutput, outputKey} from './output.js';
 import {PropertyDialog} from './authoring/property-dialog.js';
+import {DomainViews} from './views.js';
 import {ViewSync} from '@datagrok-libraries/u2/dg';
 import type {ViewState} from '@datagrok-libraries/u2/dg';
 
@@ -650,9 +651,18 @@ export class DomainApp extends Control {
     emsBackends.domain?.dropAccess?.();
     if (this._reshaped.peek() !== null)
       await this._settle();
+    else if (await this._outdated())
+      await DomainViews.reload(this.table.address.split('.')[0]);
     else
       await source.refresh();
     return true;
+  }
+
+  // the handle is as old as the view: columns shared or added since are not in it
+  private async _outdated(): Promise<boolean> {
+    const fresh = await emsBackends.domain?.table(this.table.address).catch(() => undefined);
+    const names = (table: {properties: IProperty[]}) => table.properties.map((p) => p.name).sort().join();
+    return fresh !== undefined && DomainApp._views.has(this) && names(fresh) !== names(this.table);
   }
 
   /** Keeps the page's columns while the session has pending changes; `rebuild` runs once it is clean. */

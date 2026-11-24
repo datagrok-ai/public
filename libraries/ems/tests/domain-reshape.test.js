@@ -169,3 +169,16 @@ scoped('reshaped: a rebuild that fails says why, and Refresh tries again', async
     done();
   }
 });
+
+scoped('Refresh rebuilds the page when the table\'s columns changed meanwhile: a newly shared column shows', async () => {
+  const {added, app, view, done} = await docked();
+  try {
+    emsBackends.domain = reshaped((columns) => ({...columns, severity: {type: 'string'}}));
+    assert.equal(await app.refresh(), true);
+    await flush();
+    assert.equal(view.dart.closed, 1);
+    assert.ok(DomainApp.of(added[0]).table.properties.some((p) => p.name === 'severity'));
+  } finally {
+    done();
+  }
+});
