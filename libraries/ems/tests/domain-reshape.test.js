@@ -91,16 +91,38 @@ scoped('a pending change to a column Edit properties… removed is never sent; D
     await flush();
     const memory = emsBackends.domain;
     const read = memory.table.bind(memory);
-    let release;
-    const held = new Promise((resolve) => release = resolve);
-    memory.table = (address) => held.then(() => read(address));
-    const refreshing = app.refresh();
-    app.session.sources.value.find((s) => s.table === 'grit.issue').newRow({title: 'Typed meanwhile'});
-    memory.table = read;
-    release();
-    assert.equal(await refreshing, true);
+    const refreshedOver = async (meanwhile) => {
+      let release;
+      const held = new Promise((resolve) => release = resolve);
+      memory.table = (address) => held.then(() => read(address));
+      const refreshing = app.refresh();
+      await meanwhile();
+      memory.table = read;
+      release();
+      assert.equal(await refreshing, true);
+      await flush();
+    };
+    await refreshedOver(() => app.session.sources.value.find((s) => s.table === 'grit.issue').newRow({title: 'Typed'}));
     assert.equal(app.session.changeCount.value, 1, 'a row added while Refresh was reading is not rebuilt away');
     app.session.discard();
+    await flush();
+    const box = () => app.form.value.input('name').root.querySelector('input');
+    await refreshedOver(() => {
+      box().value = '';
+      fire(box(), 'input');
+      fire(box(), 'focusout');
+      return flush();
+    });
+    assert.equal(box().value, '', 'nor is a field emptied meanwhile');
+    app.session.discard();
+    await flush();
+    await refreshedOver(() => app.goTo('entity', 'p2'));
+    await flush();
+    assert.deepEqual([app.entity.value, app.entitySource.value.currentRow.value?.id, app.path.value],
+      ['p2', 'p2', '/apps/T/Projects?entity=p2'], 'the row opened meanwhile is the one shown');
+    await refreshedOver(() => app.goTo('list'));
+    assert.deepEqual([app.page.value, app.entitySource.value], ['list', null], 'and so is the list');
+    assert.equal(await app.goTo('entity', 'p1'), true);
     await flush();
     app.session.sources.value.find((s) => s.table === 'grit.issue').rows.byKey('i1').priority = 'low';
     await flush();

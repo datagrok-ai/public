@@ -666,10 +666,10 @@ export class DomainApp extends Control {
     else if (await this._outdated()) {
       DomainTable.forget(this.table.address.split('.')[0]);
       await DomainViews.rebuild(this);
-    } else if (this.scope.isDisposed || source !== shown())
+    } else if (this.scope.isDisposed || source !== shown() ||
+      (source !== this.listSource && this.session.isDirty.peek()))
       return true;
-    else if (source === this.listSource || this.session.isDirty.peek() ||
-      this.session.sources.peek().some((s) => s.pending().length > 0))
+    else if (source === this.listSource || this.session.sources.peek().some((s) => s.pending().length > 0))
       await source.refresh();
     else
       this._show('entity', this._entity.peek(), source.isDraft ? null : source.query.peek() as FilterGroup);
