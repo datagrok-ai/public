@@ -373,6 +373,20 @@ scoped('New, saved, then deleted from its own page: back to the list once, with 
     }
   });
 
+scoped('Delete over a pending edit turns the record read-only, with Undo', async () => {
+  const {app: a} = await app();
+  await a.goTo('entity', 'i1');
+  await flush();
+  a.form.value.input('title').value = 'Pending';
+  await flush();
+  a.menuActions().find((x) => x.text === 'Delete').run();
+  await flush();
+  await flush();
+  assert.equal(a.form.value.input('title'), undefined);
+  assert.match(a.form.value.root.textContent, /will be deleted on save/);
+  a.dispose();
+});
+
 scoped('New: a refused save then Discard lands on the list too', async () => {
   const {app: a} = await app();
   const ribbon = testOwner().build(() => a.ribbon()).main;

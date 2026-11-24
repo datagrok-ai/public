@@ -78,6 +78,7 @@ export class DomainForm extends Control {
   private readonly _captions = new Map<string, {id: string, caption: string, address?: string}>();
   private _returnTo: string | undefined;
   private _editSub: {unsubscribe(): void} | undefined;
+  private readonly _changed = signal(0);
   private readonly _subs: {unsubscribe(): void}[];
 
   constructor(target: DomainFormTarget, private readonly _options: DomainFormOptions = {}) {
@@ -188,8 +189,10 @@ export class DomainForm extends Control {
       this._shown?.dispose();
       this._editSub?.unsubscribe();
     });
+    // a delete over a pending edit keeps the change count: the writer's own tick is what moves
     const deleted = computed(() => {
       source.changeCount.value;
+      this._changed.value;
       return this.row.value?.[Rows.STATE] === 'deleted';
     });
     this.effect(() => {
@@ -203,7 +206,10 @@ export class DomainForm extends Control {
     this.effect(() => {
       const edit = source.edit.value;
       this._editSub?.unsubscribe();
-      this._editSub = edit?.onChanged.subscribe(() => this._sync());
+      this._editSub = edit?.onChanged.subscribe(() => {
+        this._sync();
+        this._changed.value++;
+      });
       if (synced)
         untracked(() => this._sync());
       synced = edit !== undefined;
