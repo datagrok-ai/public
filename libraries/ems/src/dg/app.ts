@@ -246,11 +246,35 @@ export class DomainApp extends Control {
     });
 
     const title = DomainApp.titleOf(table.info);
+    // a row of a hierarchy is named under its ancestors, each crumb a way to that row
+    const ancestors = signal<{id: string, name: string}[]>([]);
     this.breadcrumbs = this.build(() => new Breadcrumbs({items: [title], onClick: (index) => {
       // in the trash the root crumb reads "Issues › Trash" and is the way back out of it
+      const up = this.trash.peek() ? undefined : ancestors.peek()[index - 1];
       if (index === 0)
         void (this.trash.peek() ? this.setTrash(false) : this.goTo('list'));
+      else if (up !== undefined)
+        void this.goTo('entity', up.id);
     }}));
+    let path = '';
+    this.effect(() => {
+      const source = this._entitySource.value;
+      source?.rows.items.value;
+      const row = source?.currentRow.value ?? null;
+      const parent = table.info.hierarchy ? table.info.parentColumn : null;
+      const key = row === null || Rows.isDraft(row) || !parent || table.table.ancestors === undefined ? '' :
+        `${row.id}/${row[parent] ?? ''}`;
+      if (key === path)
+        return;
+      path = key;
+      ancestors.value = [];
+      if (key !== '') {
+        void table.table.ancestors!(row!.id).then((chain) => {
+          if (path === key)
+            ancestors.value = chain;
+        }, () => undefined);
+      }
+    });
     this._formHost = div([], 'u2-domain-app-form u2-form-fill');
     this.panes = div([], 'u2-domain-app-panes');
     this.panes.dataset.u2Part = 'panes';
@@ -301,7 +325,7 @@ export class DomainApp extends Control {
       const asked = this._entity.peek();
       const caption = row !== null ? this._caption(source!, row) : source?.state.value !== 'ready' || source.isDraft ||
         asked === null ? '…' : DomainAddress.ID.test(asked) ? capital(nounOf(this.table.info, true)) : asked;
-      this.breadcrumbs.setItems([title, caption]);
+      this.breadcrumbs.setItems([title, ...(row === null ? [] : ancestors.value.map((a) => a.name)), caption]);
     });
     // the entity page over a draft: once saved, the page is the row's
     this.effect(() => {
