@@ -165,7 +165,7 @@ name; only the columns the caller may write are offered), **preview** (the schem
 the first 1,000 rows — the commit judges the rest — plus the blocking problems: no source, nothing
 mapped, two columns mapped to one target, an unmapped upsert key, a missing required column) and **report** (the server's, which
 is the authority). Only the MAPPED columns are posted, under their target names — a skipped or
-renamed source column never reaches the server; the source frame only gains the written-back key column.
+renamed source column never reaches the server; the source frame only gets the key column, replacing one so named.
 
 ## Rules the controls follow (so the app does not re-implement them)
 
