@@ -206,6 +206,12 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     return capital(prop.friendlyName ?? (prop.name ?? '').replace(/_/g, ' '));
   }
 
+  /** `message` under `caption`, unless it starts with it ("CAS must look like 50-78-2"). */
+  static named(caption: string, message: string): string {
+    return message.slice(0, caption.length).toLowerCase() === caption.toLowerCase() &&
+      !/^\w/.test(message.slice(caption.length)) ? message : `${caption}: ${message}`;
+  }
+
   /** The number a whole-number key stands for as typed, bare or in its property's `format`; null otherwise. */
   static parseKey(prop: IProperty, typed: string): number | null {
     const format = prop.format ?? '';
@@ -513,9 +519,7 @@ export function firstProblem<TRow extends DomainRowLike>(table: DomainTable<TRow
 function nameCell<TRow extends DomainRowLike>(table: DomainTable<TRow>, row: RowView<TRow>, column: string,
   problem: string, source?: DomainSource<TRow>): string {
   const caption = DomainTable.captionOf(table.properties.find((p) => p.name === column) ?? {name: column});
-  // "CAS must look like 50-78-2" names its field already
-  const field = problem.toLowerCase().startsWith(caption.toLowerCase()) ? '' : `${caption}: `;
-  return `${rowName(table, row, source)}: ${field}${problem}`;
+  return `${rowName(table, row, source)}: ${DomainTable.named(caption, problem)}`;
 }
 
 /** The row's caption or, where that names nothing, its place among the source's rows. */

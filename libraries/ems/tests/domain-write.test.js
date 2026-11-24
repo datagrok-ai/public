@@ -134,6 +134,13 @@ scoped('the table validators refuse a save no form ever saw', async () => {
   assert.equal(await source.save(), true);
   assert.equal(emsBackends.domain.tableSync('grit.issue').rows.find((r) => r.id === 'i2').priority, 'high');
   off();
+  const retired = table.validators.add('priority', (value) => value === 'low' ? 'Priority "low" is retired' : null);
+  row.priority = 'low';
+  await flush();
+  assert.equal(await source.save(), false);
+  assert.equal(source.error.value.message, 'Cannot save: Ibuprofen: Priority "low" is retired',
+    'a message naming its field is not prefixed again');
+  retired();
   source.dispose();
 });
 

@@ -93,8 +93,7 @@ export class DomainForm extends Control {
         const message = input.validity.value;
         if (message !== null && !this._refused(input.name, message) && !this._stored.get(input)?.value) {
           const caption = capital(input.label);
-          const named = message.startsWith(caption) && !/^\w/.test(message.slice(caption.length));
-          return message === EMPTY ? `${caption} is required` : named ? message : `${caption}: ${message}`;
+          return message === EMPTY ? `${caption} is required` : DomainTable.named(caption, message);
         }
       }
       this._violationsVersion.value;
@@ -107,7 +106,7 @@ export class DomainForm extends Control {
         // a constraint is a CHECK over the whole row: the stored-value exemption does not apply
         const input = this._form.value!.input(c.columns[0])!;
         if (this._stored.get(input)?.value)
-          return `${capital(input.label)}: ${message}`;
+          return DomainTable.named(capital(input.label), message);
       }
       return null;
     });
