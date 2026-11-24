@@ -1370,8 +1370,9 @@ export class DomainFrameEditor implements IFrameEditor {
     const self = `${this._wire(row, 'id') ?? ''}`;
     const id = `${e?.rows?.[0]?.id ?? ''}`;
     const owner = id !== '' && id !== self ? await this._nameOf(id) : await this._keyHolder(key, values, self);
-    return owner == null ? this._duplicateText()
-      : `${key.map((c) => this._captionOf(c)).join(', ')} ${values.join(', ')} already belongs to ${owner}`;
+    const said = `${key.map((c) => this._captionOf(c)).join(', ')} ${values.join(', ')}`;
+    return owner == null ? this._duplicateText() :
+      owner === values.join(', ') ? `${said} is already used` : `${said} already belongs to ${owner}`;
   }
 
   /** "Ethanol still has 3 containers; remove or reassign them first": the server names the child
