@@ -7,7 +7,7 @@ import {layout} from '@datagrok-libraries/u2/tests/layout.mjs';
 import {backends, Scope, Rows, notify, allowedActions, Control} from '@datagrok-libraries/u2';
 import {Usage} from 'datagrok-api/u2core';
 import {SharedSession} from '../src/core/session.js';
-import {backend} from './domain-fixtures.mjs';
+import {backend, hierarchyBackend} from './domain-fixtures.mjs';
 import {MemoryDomainBackend} from '../src/core/memory-domain.js';
 import {byKind} from '@datagrok-libraries/u2/testing';
 
@@ -372,6 +372,24 @@ scoped('New, saved, then deleted from its own page: back to the list once, with 
       a.dispose();
     }
   });
+
+scoped('a tree row\'s record names its saved ancestors, and follows a saved move', async () => {
+  emsBackends.domain = hierarchyBackend();
+  const table = await domains.table('stock.location');
+  const a = testOwner().build(() => domains.app({table, base: BASE}));
+  await a.goTo('entity', 'l4');
+  await flush();
+  await flush();
+  assert.deepEqual(crumbs(a).slice(1), ['Site', 'Room', 'Shelf', 'Box']);
+  a.entitySource.value.currentRow.value.parent_id = 'l9';
+  await flush();
+  assert.deepEqual(crumbs(a).slice(1), ['Site', 'Room', 'Shelf', 'Box'], 'unsaved, the server\'s chain stands');
+  assert.equal(await a.session.save(), true);
+  await flush();
+  await flush();
+  assert.deepEqual(crumbs(a).slice(1), ['Other site', 'Box']);
+  a.dispose();
+});
 
 scoped('Delete over a pending edit turns the record read-only, with Undo', async () => {
   const {app: a} = await app();

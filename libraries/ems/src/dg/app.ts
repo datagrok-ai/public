@@ -176,6 +176,7 @@ export class DomainApp extends Control {
   readonly output: ReturnType<typeof domainOutput>;
 
   private readonly _mode = signal<DomainAppMode>('live');
+  private readonly _lineage = signal(0);
   private readonly _count = signal('');
   private readonly _filterProblem = signal<string | null>(null);
   private readonly _base: Signal<string>;
@@ -256,21 +257,21 @@ export class DomainApp extends Control {
       else if (up !== undefined)
         void this.goTo('entity', up.id);
     }}));
-    let path = '';
+    // the server's chain, so asked again once a move is saved or a peer moves the table
+    this.subscribe(this.session.onSaved, () => this._lineage.value++);
+    let asked = 0;
+    let shownFor: string | null = null;
     this.effect(() => {
-      const source = this._entitySource.value;
-      source?.rows.items.value;
-      const row = source?.currentRow.value ?? null;
-      const parent = table.info.hierarchy ? table.info.parentColumn : null;
-      const key = row === null || Rows.isDraft(row) || !parent || table.table.ancestors === undefined ? '' :
-        `${row.id}/${row[parent] ?? ''}`;
-      if (key === path)
-        return;
-      path = key;
-      ancestors.value = [];
-      if (key !== '') {
-        void table.table.ancestors!(row!.id).then((chain) => {
-          if (path === key)
+      this._lineage.value;
+      const row = this._entitySource.value?.currentRow.value ?? null;
+      const mine = ++asked;
+      const id = row === null || Rows.isDraft(row) || !table.info.hierarchy ? null : row.id;
+      if (id !== shownFor)
+        ancestors.value = [];
+      shownFor = id;
+      if (id !== null && table.table.ancestors !== undefined) {
+        void table.table.ancestors(id).then((chain) => {
+          if (mine === asked)
             ancestors.value = chain;
         }, () => undefined);
       }
@@ -1170,6 +1171,8 @@ export class DomainApp extends Control {
       const source = this.build(() => draft ? this._source({draft: true, defaults: this._options.defaults}) :
         this._source({query: query ?? Filters.group('and', [Filters.cond('id', '=', entity)]), pageSize: 1,
           live: this._options.live ?? true, liveMs: this._options.liveMs}));
+      if (this.table.info.hierarchy)
+        source.own(source.watch(this.table.address, () => this._lineage.value++));
       let rechecked = draft;
       source.effect(() => {
         const rows = source.rows.items.value;
