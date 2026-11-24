@@ -17,6 +17,7 @@ const {DomainErrors} = await import('../src/dg/errors.js');
 const {allowedActions} = await import('@datagrok-libraries/u2');
 const {registerDomainComponents} = await import('../src/dg/registrations.js');
 const DG = await import('datagrok-api/dg');
+const grok = await import('datagrok-api/grok');
 
 function scoped(name, body) {
   test(name, async () => {
@@ -303,6 +304,45 @@ scoped('keyboard: Enter hands the row to the form through the source, Delete del
   assert.equal(src.rows.byKey('i2')['~state'], 'deleted');
   list.dispose();
   src.dispose();
+});
+
+scoped('a delete that empties references on other rows says how many per table and asks first', async () => {
+  const columns = {location: {parent_id: {onDelete: 'setnull'}}, container: {location_id: {onDelete: 'setnull'}},
+    label: {location_id: {onDelete: 'restrict'}}};
+  emsBackends.domain = new MemoryDomainBackend({name: 'stock', tables: {
+    location: {columns: {name: {type: 'string', isName: true}, parent_id: {type: 'ref', ref: 'location'}}},
+    container: {columns: {location_id: {type: 'ref', ref: 'location'}}},
+    label: {columns: {location_id: {type: 'ref', ref: 'location'}}},
+  }}, {rows: {location: [{id: 'a', name: 'Shelf A'}, {id: 'b', name: 'Box', parent_id: 'a'},
+    {id: 'c', name: 'Tray', parent_id: 'a'}, {id: 'd', name: 'Empty'}],
+  container: [{location_id: 'a'}, {location_id: 'a'}, {location_id: 'b'}], label: [{location_id: 'a'}]}});
+  const schema = grok.dapi.domains.schema;
+  grok.dapi.domains.schema = () => ({manifest: async () => ({tables: Object.fromEntries(Object.entries(columns)
+    .map(([table, refs]) => [table, {columns: refs}]))})});
+  try {
+    const table = await domains.table('stock.location');
+    const src = testOwner().build(() => table.source({pageSize: 10}));
+    await flush();
+    const list = testOwner().build(() => domains.list(src));
+    const remove = async (id) => {
+      list.actionsFor(src.rows.byKey(id)).find((a) => a.text === 'Delete').run();
+      for (let i = 0; i < 4; i++)
+        await flush();
+    };
+    await remove('d');
+    assert.equal(document.body.textContent, '', 'nothing refers to it');
+    assert.equal(src.rows.byKey('d')['~state'], 'deleted');
+    await remove('a');
+    assert.match(document.body.textContent,
+      /Deleting "Shelf A" leaves 2 locations and 2 containers without a location\. Delete anyway\?/);
+    fire([...document.querySelectorAll('button')].find((b) => b.textContent === 'Delete'), 'click');
+    await flush();
+    assert.equal(src.rows.byKey('a')['~state'], 'deleted');
+    list.dispose();
+    src.dispose();
+  } finally {
+    grok.dapi.domains.schema = schema;
+  }
 });
 
 scoped('a list over a source with a current row keeps it', async () => {
