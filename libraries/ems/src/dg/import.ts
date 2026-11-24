@@ -919,8 +919,9 @@ class ImportFlow {
     const rest = want.slice(want.indexOf(ref) + ref.length);
     const info = link.target.info;
     const field = (name?: string | null) => link.fields.find((f) => f.prop.name === name);
-    const by = rest === '' ? field(info.nameColumn) ?? field(info.businessKey[0]) :
-      link.fields.find((f) => names(f.prop).includes(rest));
+    const bare = want === ref && !/[^\x20-\x7e]/.test(column.name);
+    const by = rest !== '' ? link.fields.find((f) => names(f.prop).includes(rest)) :
+      bare ? field(info.nameColumn) ?? field(info.businessKey[0]) : undefined;
     return by === undefined ? target : `${target}.${by.prop.name}`;
   }
 

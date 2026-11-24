@@ -640,7 +640,7 @@ scoped('a dry run the server refuses whole over a CHECK puts it on the rows that
 // a name mapped to the id column would be refused row by row; an id mapped to the name would find nothing
 scoped('a reference column auto-maps by its header: to the name, to the key where it says so, to the id', async () => {
   for (const [column, value, target] of [['project', 'GRIT', 'project_id.name'], ['project', P1, 'project_id'],
-    ['Project id name', '1', 'project_id.name'], ['Project id key', 'GRIT', 'project_id.key'], ['Project id monkey', 'GRIT', 'project_id'], ['id', '1', 'project_id'],
+    ['Project id name', '1', 'project_id.name'], ['Project id key', 'GRIT', 'project_id.key'], ['Project id monkey', 'GRIT', 'project_id'], ['id', '1', 'project_id'], ['Old project id', 'GRIT', 'project_id'],
     ['project_id', 'p1', 'project_id']]) {
     const {running} = await opened(backend(), frame([column, 'title'], [{[column]: value, title: 'A'}]));
     await toMapping();
