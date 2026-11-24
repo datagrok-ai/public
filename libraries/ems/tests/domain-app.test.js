@@ -1917,6 +1917,15 @@ scoped('a user who reaches rows only through row grants sees them: picker, child
   await flush();
   await flush();
   assert.equal(byKind(b, 'new-button')[0].closest('[hidden]'), null, 'the first child can be added');
+  fire(byKind(b, 'new-button')[0], 'click');
+  await flush();
+  const child = b.session.sources.value.find((s) => s.table === 'grit.issue');
+  child.pending()[0].title = 'Fresh';
+  child.refuse('Column "project_id" references a deleted row in "project" ("p1")');
+  assert.equal(b.status.value.problem, 'Cannot save "Fresh": its project "Grit" was deleted. Restore the project first.',
+    'a child tab\'s refusal reaches the status bar');
+  b.session.discard();
+  await flush();
   await b.goTo('list');
   assert.equal(await b.create(), true);
   await flush();

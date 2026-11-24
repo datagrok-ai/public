@@ -4,7 +4,7 @@ import {Control, signal, computed, batch, untracked, ReadonlySignal, Signal, but
   icon, Filters, allowedActions, actionsMenu, iconButton, ButtonGroup, Breadcrumbs, Rows, Menu, LabelColumn, Reason,
   text} from '@datagrok-libraries/u2';
 import type {FilterGroup, IWidgetStatus, Action, RowView, Scope, IProperty} from '@datagrok-libraries/u2';
-import type {DomainSource} from '../core/domain-source.js';
+import {DomainSource} from '../core/domain-source.js';
 import {capital, nounOf, emsBackends} from '../core/domain-backend.js';
 import type {DomainTableInfoLike} from '../core/domain-backend.js';
 import {SharedSession, confirmDiscard} from '../core/session.js';
@@ -396,8 +396,9 @@ export class DomainApp extends Control {
       const count = saved === null || this._count.value === '' ? this._count.value : `${saved} · ${this._count.value}`;
       // what a bulk action would act on, beside the count — the platform grid's own convention
       const selected = entity ? 0 : this.listSource.selection.value.length;
-      const problem = source !== null && source.error.value !== undefined ?
-        DomainErrors.message(source.error.value, source) : null;
+      const failed = source?.error.value !== undefined ? source :
+        this.session.sources.value.find((s) => DomainErrors.codeOf(s.error.value) === DomainSource.REFUSED);
+      const problem = failed == null ? null : DomainErrors.message(failed.error.value, failed);
       // the rows answer the filter that was applied, not the one in the box: while that one is
       // invalid they are shown stale, and a refusal of the old one is not the news
       if (!entity && this.list.stale.value && !dirty)
