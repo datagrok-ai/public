@@ -175,6 +175,12 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
     gap: 6px;
 }
 
+/* a long row wraps instead of scrolling the tab sideways */
+.power-pack-activity-widget-row > span {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
 .power-pack-activity-widget-row:hover {
     background-color: #f9f9f9 !important;
 }
