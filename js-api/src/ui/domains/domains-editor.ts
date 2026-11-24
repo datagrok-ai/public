@@ -26,8 +26,8 @@ import {IDartApi} from '../../api/grok_api.g';
 import {COLUMN_TYPE, ColumnType, TYPE} from '../../const';
 import {DomainRegistryClient, DomainTableClient} from '../../dapi';
 import {Column, DataFrame} from '../../dataframe';
-import {DomainAccess, DomainConditionTree, DomainError, DomainNotFoundError, DomainQuerySpec, DomainRestrictError,
-  DomainTableInfo, DomainTransactionOp, DomainValidationError, DomainVersionConflictError,
+import {DomainAccess, DomainConditionTree, DomainError, DomainForbiddenError, DomainNotFoundError, DomainQuerySpec,
+  DomainRestrictError, DomainTableInfo, DomainTransactionOp, DomainValidationError, DomainVersionConflictError,
   DOMAIN_ACCESS_COLUMNS, DOMAIN_DELETED_COLUMN} from '../../domains';
 import {DomainObjectHandler} from '../../domains-ui';
 import {Property} from '../../entities/property';
@@ -1337,9 +1337,14 @@ export class DomainFrameEditor implements IFrameEditor {
       return this.duplicateRefusal(failing.row, e);
     if (e instanceof DomainRestrictError)
       return this.restrictRefusal(e);
+    const named = this._displayOf(failing.row);
+    const noun = this._info.singularName.toLowerCase();
     if (e instanceof DomainNotFoundError && failing.op.op === 'update')
-      return `${this._displayOf(failing.row) ?? `This ${this._info.singularName.toLowerCase()}`} was deleted by`
-        + ' someone else: discard your changes to it';
+      return `${named ?? `This ${noun}`} was deleted by someone else: discard your changes to it`;
+    if (e instanceof DomainForbiddenError && `${e.message}`.toLowerCase() === 'forbidden') {
+      const verb = {insert: 'add', update: 'change', delete: 'delete', restore: 'restore'}[failing.op.op];
+      return `You do not have permission to ${verb} ${named ?? `this ${noun}`}`;
+    }
     return `${e?.message ?? e}`;
   }
 
