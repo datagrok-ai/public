@@ -838,9 +838,12 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     return this._rows.pending() as RowView<TRow>[];
   }
 
-  // what a re-read would drop: a change, or a draft nothing was typed into yet
+  // what a re-read would drop: a change, or a draft nothing was typed into yet that the user is on
+  // or that a pending row of the session may refer to; one left behind goes with the re-read
   private _unsaved(): boolean {
-    return this.isDirty.peek() || this.pending().length > 0;
+    const current = this.currentRow.peek();
+    return this.isDirty.peek() || (this.pending().length > 0 &&
+      (this.session.isDirty.peek() || (current !== null && Rows.isDraft(current))));
   }
 
   /** Follows another table on this source's live probe; `moved` runs when it changed. Answers the unwatch. */
