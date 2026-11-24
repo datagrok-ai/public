@@ -32,6 +32,8 @@ export interface DomainTableInfoLike {
   parentColumn?: string | null;
   /** How many required columns with no default the caller may not read. */
   hiddenRequired?: number;
+  /** The caller may not read the name column or a business-key column. */
+  hiddenName?: true;
 }
 
 /** A table's `info` narrowed to the columns `readable` keeps: a name or parent column the caller cannot read is
@@ -45,7 +47,8 @@ export function readableInfo<T extends DomainTableInfoLike>(info: T, columns: re
     businessKey: info.businessKey.every(readable) ? info.businessKey : [],
     ...(info.parentColumn === undefined ? {} : {parentColumn: kept(info.parentColumn)}),
     ...(info.parentColumn != null && !readable(info.parentColumn) ? {hierarchy: false} : {}),
-    ...(hidden > 0 ? {hiddenRequired: hidden} : {})};
+    ...(hidden > 0 ? {hiddenRequired: hidden} : {}),
+    ...([info.nameColumn, ...info.businessKey].some((c) => c != null && !readable(c)) ? {hiddenName: true} : {})};
 }
 
 /** Which rows a query answers: the live ones (the default), the live and the soft-deleted, or

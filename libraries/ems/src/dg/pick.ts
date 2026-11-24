@@ -155,7 +155,8 @@ export class DomainPick extends PickInput<PickItem> {
   /** The item behind an id; a draft id is the draft's caption from the live source holding it,
    * no query issued; an id the table does not answer is shown as itself. A table with an app caption
    * reads the row; otherwise a backend that declares `resolveNames` answers it there — over the
-   * platform the registry's resolver, batched and cached; every other backend reads the row. */
+   * platform the registry's resolver, batched and cached, which asks for the name column even where the
+   * caller cannot read it; every other backend reads the row. */
   static async resolve(table: string, id: string): Promise<PickItem> {
     const draft = Rows.isDraft(id) ? DomainSource.draftOf(id) : undefined;
     if (draft !== undefined) {
@@ -165,11 +166,11 @@ export class DomainPick extends PickInput<PickItem> {
     }
     const caption = await DomainPick.host?.caption(table) ?? null;
     const backend = emsBackends.domain;
-    if (caption === null && backend?.resolveNames !== undefined) {
+    const t = await DomainPick.table(table);
+    if (caption === null && backend?.resolveNames !== undefined && t.info.hiddenName === undefined) {
       const name = (await backend.resolveNames(table, [id]))[id];
       return {id, name: name || id};
     }
-    const t = await DomainPick.table(table);
     const [row] = await t.query({filter: {property: 'id', operator: '=', value: id}, limit: 1});
     return row === undefined ? {id, name: id} : DomainPick.item(row, t.info, caption);
   }

@@ -97,7 +97,7 @@ scoped('a written id resolves to its name; an unknown id shows itself', async ()
 scoped('a backend that declares resolveNames answers an id there: one call, no query', async () => {
   const calls = [];
   emsBackends.domain = {
-    table: () => assert.fail('the resolver path reads no row'),
+    table: () => Promise.resolve({info: {}, query: () => assert.fail('the resolver path reads no row')}),
     saveAll: () => Promise.resolve(true),
     resolveNames: (table, ids) => {
       calls.push({table, ids: [...ids]});
@@ -153,6 +153,7 @@ scoped('a name column the user cannot read is neither asked for nor shown: the p
   const query = table.query.bind(table);
   const sent = [];
   table.query = (spec) => (sent.push(JSON.stringify(spec)), query(spec));
+  emsBackends.domain.resolveNames = () => (sent.push(JSON.stringify({columns: ['name', 'code']})), Promise.resolve({}));
   assert.deepEqual(await DomainPick.search('x.vendor', ''), [{id: 'v1', name: 'AB'}]);
   assert.deepEqual(await DomainPick.search('x.vendor', 'Secret'), []);
   assert.deepEqual(await DomainPick.resolve('x.vendor', 'v1'), {id: 'v1', name: 'AB'});
