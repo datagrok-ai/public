@@ -578,5 +578,6 @@ test('as the platform: a taken business key is refused, a leading $ in a bulk va
 
   const titles = async (filter) => (await be.tableSync('grit.issue').query({filter})).map((r) => r.title);
   assert.deepEqual(await titles('number like "%1%"'), ['Aspirin', 'Naproxen']);
+  assert.deepEqual(await titles('number like "%2%" or number < 2'), ['Aspirin', 'Ibuprofen', 'Naproxen']);
   assert.deepEqual(await titles('title fuzzy "SPIR"'), ['Aspirin']);
 });

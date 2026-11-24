@@ -93,7 +93,7 @@ export class DomainViews {
       if (!app.table.address.startsWith(`${schema}.`) || DomainApp.viewOf(app) === undefined)
         continue;
       if (!app.session.isDirty.peek()) {
-        await DomainViews._rebuild(app);
+        await DomainViews.rebuild(app);
         continue;
       }
       const shown = new Map<string, IProperty[]>([[app.table.address, app.table.properties]]);
@@ -108,11 +108,12 @@ export class DomainViews {
         const kept = new Set(fresh.properties.map((p) => p.name));
         removed.set(address, properties.filter((p) => !kept.has(p.name)));
       }
-      app.reshape(removed, () => DomainViews._rebuild(app));
+      app.reshape(removed, () => DomainViews.rebuild(app));
     }
   }
 
-  private static async _rebuild(app: DomainApp): Promise<void> {
+  /** Docks a new view of the app's table at the app's address and closes the old one. */
+  static async rebuild(app: DomainApp): Promise<void> {
     const old = DomainApp.viewOf(app);
     if (old === undefined)
       return;

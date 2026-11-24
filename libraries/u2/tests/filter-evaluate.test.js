@@ -345,11 +345,15 @@ test('a datetime without a zone is UTC in the text and in the mask, whatever the
   process.env.TZ = 'Europe/Kyiv';
   try {
     const schema = {properties: [{name: 'd', type: TYPE.DATE_TIME}]};
-    for (const text of ['2026-09-01T00:00:00', '2026-09-01 00:00', '2026-09-01']) {
+    for (const text of ['2026-09-01T00:00:00', '2026-09-01 00:00', '2026-09-01', '2026-09-01T02:00:00+02:00',
+      '2026-08-31T19:00:00.000-05:00']) {
       assert.equal(Filters.format(Filters.parse(`d = "${text}"`, schema).root), 'd = "2026-09-01T00:00:00.000Z"');
       assert.deepEqual(await rows([Filters.cond('d', '=', text)]), [0]);
     }
   } finally {
-    process.env.TZ = zone;
+    if (zone === undefined)
+      delete process.env.TZ;
+    else
+      process.env.TZ = zone;
   }
 });

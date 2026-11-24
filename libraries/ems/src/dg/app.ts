@@ -651,9 +651,10 @@ export class DomainApp extends Control {
     emsBackends.domain?.dropAccess?.();
     if (this._reshaped.peek() !== null)
       await this._settle();
-    else if (await this._outdated())
-      await DomainViews.reload(this.table.address.split('.')[0]);
-    else
+    else if (await this._outdated()) {
+      DomainTable.forget(this.table.address.split('.')[0]);
+      await DomainViews.rebuild(this);
+    } else
       await source.refresh();
     return true;
   }

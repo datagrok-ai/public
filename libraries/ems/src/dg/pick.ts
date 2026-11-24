@@ -54,6 +54,7 @@ export class DomainPick extends PickInput<PickItem> {
     let unbound: string[] = [];
     let more = false;
     let denied: string | null = null;
+    let subtree: unknown[] | undefined;
     const caption = (name: string) => siblings?.properties.find((p) => p.name === name)?.friendlyName ?? name;
     const host = DomainPick.host;
     super({
@@ -66,9 +67,11 @@ export class DomainPick extends PickInput<PickItem> {
             if (unbound.length > 0)
               return [];
             const t = await DomainPick.table(table);
-            const outside = notUnder === undefined ? undefined : {property: 'id', operator: '!=', value:
-              (await t.query({filter: {property: 'id', operator: 'under', value: notUnder}, limit: 1000}))
-                .map((row) => row.id)};
+            if (notUnder !== undefined) {
+              subtree ??= (await t.query({filter: {property: 'id', operator: 'under', value: notUnder}, columns: [],
+                limit: 1000})).map((row) => row.id);
+            }
+            const outside = subtree === undefined ? undefined : {property: 'id', operator: '!=', value: subtree};
             const page = await DomainPick.page(table, query, {limit, filter: outside === undefined ? bound.filter :
               bound.filter === undefined ? outside : [outside, 'and', bound.filter]});
             more = page.more;
@@ -105,6 +108,10 @@ export class DomainPick extends PickInput<PickItem> {
       },
     });
     this.root.dataset.u2 = 'domain-pick';
+    this.effect(() => {
+      if (!this.typeAhead.isOpen.value)
+        subtree = undefined;
+    });
     // a short lookup (a status, a priority) reads as a dropdown
     void DomainPick.isShort(table).then((short) => {
       if (short && !this.scope.isDisposed)
