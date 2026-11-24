@@ -232,7 +232,7 @@ export class DomainChildren extends Control {
           const blocked = denied ?? (ready ? DomainErrors.noView(child) : null);
           const none = blocked !== null || (ready && child.rows.items.value.length === 0);
           empty.textContent = blocked ?? `No ${entry.label.toLowerCase()}.`;
-          toolbar.hidden = blocked !== null;
+          toolbar.hidden = denied !== null || blocked !== null && !child.access.value.can('insert');
           empty.hidden = !none;
           body.hidden = none;
           state.blank.value = none;

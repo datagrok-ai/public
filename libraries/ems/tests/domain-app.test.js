@@ -1852,6 +1852,7 @@ scoped('Refresh on the no-access page reads the access afresh: the rows and New 
   issues.access = () => Promise.resolve(cached ??= {can: {view: granted, insert: granted, edit: granted, delete: false,
     share: false}, fields: {}});
   issues.query = (spec) => granted ? query(spec) : Promise.resolve([]);
+  issues.count = () => Promise.resolve(granted ? 3 : 0);
   memory.dropAccess = () => cached = null;
   emsBackends.domain = memory;
   const table = await domains.table('grit.issue');
@@ -1867,6 +1868,18 @@ scoped('Refresh on the no-access page reads the access afresh: the rows and New 
   await flush();
   assert.equal(a.listSource.rows.items.value.length, 3);
   assert.equal(add.root.hidden, false);
+  granted = false;
+  cached = null;
+  await a.goTo('entity', 'i1');
+  await flush();
+  await flush();
+  const [pane] = a.panes.children;
+  assert.equal(a.panes.hidden, true);
+  granted = true;
+  assert.equal(await a.refresh(), true);
+  await flush();
+  assert.equal(a.panes.hidden, false, 'the row\'s panes come back with it');
+  assert.notEqual(a.panes.children[0], pane, 'built again: a child tab reads the access as it is now');
   a.dispose();
 });
 
@@ -1893,6 +1906,22 @@ scoped('a user who reaches rows only through row grants sees them: picker, child
   assert.match(byKind(a, 'domain-children')[0].textContent, /Issues \(2\)/, 'the child tab counts the granted children');
   assert.doesNotMatch(document.body.textContent, /do not have access/);
   a.dispose();
+  emsBackends.domain = backend({access: {can: {view: false, insert: true, edit: true, delete: false, share: false},
+    fields: Object.fromEntries(Object.keys(fields).map((c) => [c, 'editable']))},
+  rows: {project: [{id: 'p1', key: 'GRIT', name: 'Grit'}], issue: []}});
+  const projects = await domains.table('grit.project');
+  const b = testOwner().build(() => domains.app({table: projects, base: BASE, pageSize: 10, children: {mode: 'list'}}));
+  document.body.append(b.root);
+  await flush();
+  assert.equal(await b.goTo('entity', 'p1'), true);
+  await flush();
+  await flush();
+  assert.equal(byKind(b, 'new-button')[0].closest('[hidden]'), null, 'the first child can be added');
+  await b.goTo('list');
+  assert.equal(await b.create(), true);
+  await flush();
+  assert.equal(b.panes.children.length > 0 && !b.panes.hidden, true, 'a draft keeps its panes');
+  b.dispose();
 });
 
 scoped('an aggregation column follows a child row saved in this session', async () => {

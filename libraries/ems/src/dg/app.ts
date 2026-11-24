@@ -654,8 +654,11 @@ export class DomainApp extends Control {
     else if (await this._outdated()) {
       DomainTable.forget(this.table.address.split('.')[0]);
       await DomainViews.rebuild(this);
-    } else
+    } else {
       await source.refresh();
+      if (source === this._entitySource.peek())
+        this._fillPanes(source);
+    }
     return true;
   }
 
@@ -1138,13 +1141,8 @@ export class DomainApp extends Control {
         const rows = source.rows.items.value;
         if (source.state.value !== 'ready')
           return;
-        if (source.total.value === 0 && !source.access.value.can('view') && this._panes.length > 0) {
-          for (const pane of this._panes)
-            pane.dispose();
-          this._panes = [];
-          this.panes.replaceChildren();
-          return;
-        }
+        if (!draft)
+          this.panes.hidden = source.total.value === 0 && !source.access.value.can('view');
         if (rows.length > 0 && source.currentRow.peek() === null)
           source.currentRow.value = rows[0];
         else if (source.total.value === 0 && !rechecked && source.access.peek().can('view')) {
@@ -1153,14 +1151,10 @@ export class DomainApp extends Control {
           void source.reloadAccess();
         }
       });
-      const {children, history, include, exclude} = this._options;
+      const {include, exclude} = this._options;
       const form = this.build(() => new DomainForm(source, {system: 'footer', include, exclude,
         labelColumn: this.labelColumn, empty: `${capital(nounOf(this.table.info, true))} "${entity}" was not found.`}));
-      this._panes = this.build(() => [
-        ...(children === false ? [] : [domains.children(source, children === true ? undefined : children)]),
-        ...(history === false || !this.table.table.support.audit ? [] :
-          [domains.history(source, undefined, {include, exclude})]),
-      ]);
+      this._fillPanes(source);
       this._formHost.replaceChildren(form.root);
       if (draft) {
         const why = div([], 'u2-domain-form-empty');
@@ -1170,12 +1164,11 @@ export class DomainApp extends Control {
             why.replaceChildren();
           else
             why.replaceChildren(span(reason, 'u2-domain-form-hint'));
-          form.root.hidden = reason !== null;
+          form.root.hidden = this.panes.hidden = reason !== null;
           why.hidden = reason === null;
         });
         this._formHost.append(why);
       }
-      this.panes.replaceChildren(...this._panes.map((pane) => pane.root));
       batch(() => {
         this._entitySource.value = source;
         this._form.value = form;
@@ -1185,6 +1178,18 @@ export class DomainApp extends Control {
       this._entity.value = page === 'entity' ? entity : null;
       this._page.value = page;
     });
+  }
+
+  private _fillPanes(source: DomainSource): void {
+    const {children, history, include, exclude} = this._options;
+    for (const pane of this._panes)
+      pane.dispose();
+    this._panes = this.build(() => [
+      ...(children === false ? [] : [domains.children(source, children === true ? undefined : children)]),
+      ...(history === false || !this.table.table.support.audit ? [] :
+        [domains.history(source, undefined, {include, exclude})]),
+    ]);
+    this.panes.replaceChildren(...this._panes.map((pane) => pane.root));
   }
 
   private _close(): void {
@@ -1201,6 +1206,7 @@ export class DomainApp extends Control {
     source?.dispose();
     this._formHost.replaceChildren();
     this.panes.replaceChildren();
+    this.panes.hidden = false;
   }
 
   private _source(options: Parameters<DomainTable['source']>[0]): DomainSource {
