@@ -17,7 +17,7 @@ const priorityColors: {[key: string]: string} = {
 };
 const typeColor = '#6c5fc7';
 
-/** id → name maps of the small lookup tables (status/priority/issue_type). Render
+/** id → name maps of the small lookup tables (status/priority/issue_type), and id → key of the projects. Render
  * methods are synchronous, so {@link warmLookups} is kicked off at package init and
  * badges appear once the maps are in (rows arrive over the network anyway). */
 let lookupNames: Map<string, string> | null = null;
@@ -25,8 +25,11 @@ let lookupsLoading: Promise<Map<string, string>> | null = null;
 
 export function warmLookups(): Promise<Map<string, string>> {
   return lookupsLoading ??= Promise
-    .all([gritDb.statuses.query({}), gritDb.priorities.query({}), gritDb.issueTypes.query({})])
-    .then((tables) => lookupNames = new Map(tables.flat().map((r) => [r.id, r.name])));
+    .all([gritDb.statuses.query({}), gritDb.priorities.query({}), gritDb.issueTypes.query({}),
+      gritDb.projects.query({})])
+    .then(([statuses, priorities, types, projects]) => lookupNames = new Map([
+      ...[...statuses, ...priorities, ...types].map((r): [string, string] => [r.id, r.name]),
+      ...projects.map((p): [string, string] => [p.id, p.key])]));
 }
 
 export function lookupName(id?: string): string | null {
