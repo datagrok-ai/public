@@ -22,8 +22,7 @@ export interface DataTableColumn<T> {
    * narrow for the columns scrolls sideways instead of drawing them one letter wide. */
   width?: string;
   align?: 'left' | 'right' | 'center';
-  /** Whether a click on the header sorts by this column; true by default. A column the owner cannot order by (a value
-   * computed on the client) is `false`: its header takes no click, shows no arrow and is not drawn as sortable. */
+  /** Whether a click on the header sorts by this column; true by default. */
   sortable?: boolean;
   /** A string becomes the cell text, an element its content; `cell` is the pooled cell element,
    * reset before each call — set `title` and extra classes on it. The item's own `name` value by

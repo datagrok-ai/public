@@ -19,8 +19,7 @@ export interface SelectableCollection {
   readonly selection?: ReadonlySignal<readonly RowView[]>;
 }
 
-/** The keys a source's user picked, kept past the control that held them: a table rebuilt over a
- * collection that was read again (its columns changed) takes over what the one it replaces kept. */
+/** The keys a source's user picked, kept past the control that held them. */
 const KEPT = new WeakMap<object, string[]>();
 
 /** Binds `rows` (any `VirtualRows`) to `source` inside `owner`'s scope, and answers nothing: the
@@ -36,9 +35,7 @@ const KEPT = new WeakMap<object, string[]>();
 export function collectionSelection(source: SelectableCollection, rows: VirtualRows<RowView>,
   options: {owner: Control, active?: ReadonlySignal<boolean>}): void {
   const owner = options.owner;
-  // two controls over one source (a list and a table that takes its place) must not both write:
-  // the one out of view leaves the lead, the frame's selection and the source alone, and adopts
-  // them again when it is shown
+  // two controls over one source must not both write: the one out of view leaves the source alone
   const active = options.active ?? signal(true);
   // the list's selection and the source's current row are one thing, written in either direction —
   // seeded from the row that is current already, so the first effect does not clear it
@@ -52,8 +49,7 @@ export function collectionSelection(source: SelectableCollection, rows: VirtualR
     if (row?.id !== source.currentRow.peek()?.id)
       source.currentRow.value = row;
   });
-  // the row the lead sat on: when it leaves the collection (a saved delete) the source hands the
-  // current row on, and that move is not the user's — the rows they picked stay picked
+  // the source moving the current row off a row that left is not the user's pick: the selection stays
   let leadId = current?.id ?? null;
   const picked = signal(false);
   owner.effect(() => {
@@ -106,13 +102,10 @@ export function collectionSelection(source: SelectableCollection, rows: VirtualR
       live = false;
       return;
     }
-    // shown (again): the rows the frame has selected are the ones to show selected
     const fresh = !live;
     live = true;
     const frames = fresh ? untracked(() => (source.selection?.peek() ?? []).map((r) => r.id)) : [];
     const taken = frames.length > 0 || !fresh ? frames : KEPT.get(source) ?? [];
-    // shown again with nothing picked anywhere (Escape cleared it in the other control): what this
-    // control still shows selected is stale, and it falls back to the lead alone
     if (fresh && own && taken.length === 0) {
       kept = [];
       picked.value = false;

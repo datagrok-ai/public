@@ -613,7 +613,6 @@ export class ObjectForm extends Form {
           return value;
         if (value === null || value === undefined || value === '')
           return [];
-        // a DG string column holds a list as its JSON text (a domain frame's `string_list`)
         const parsed = ObjectForm.fromJsonText(value);
         return Array.isArray(parsed) ? parsed.map((item) => item === null ? '' : String(item)) :
           ListInput.parse(String(value));
@@ -621,7 +620,6 @@ export class ObjectForm extends Form {
       case 'map': {
         if (typeof value === 'object' && value !== null && !Array.isArray(value))
           return value;
-        // a DG string column holds an object as its JSON text (a domain frame's `json`)
         const parsed = ObjectForm.fromJsonText(value);
         return ObjectForm._isRecord(parsed) ? parsed : {};
       }
@@ -633,8 +631,7 @@ export class ObjectForm extends Form {
     }
   }
 
-  /** A cell holding JSON text — how a DG string column carries a list or an object — as the value
-   * it encodes; `undefined` for anything that is not the text of a JSON array or object. */
+  /** A cell holding the JSON text of an array or object, as that value; `undefined` otherwise. */
   static fromJsonText(value: unknown): unknown {
     if (typeof value !== 'string' || !/^\s*[[{]/.test(value))
       return undefined;
@@ -648,14 +645,11 @@ export class ObjectForm extends Form {
   /** Identity for echo suppression. `Object.is` decides the scalars, but {@link coerce} builds a
    * fresh `Date`, list or record on every read of an empty or foreign-shaped value, so identity
    * alone would report an edit — and fire `onChanged` — the moment the field is constructed. Lists
-   * and plain objects (a JSON value, re-parsed from a cell's text on every read) compare by value,
-   * nested ones too and cycles included; any other object (a Dart-backed wrapper, a `FileInfo`)
-   * by identity of its own keys' values, never walked into. */
+   * and plain objects compare by value, any other object by identity of its own keys' values. */
   static same(a: unknown, b: unknown): boolean {
     return ObjectForm._sameValue(a, b, new Map());
   }
 
-  // `seen`: the pairs being compared further up — met again, a cycle, which decides nothing
   private static _sameValue(a: unknown, b: unknown, seen: Map<object, Set<object>>): boolean {
     if (Object.is(a, b))
       return true;

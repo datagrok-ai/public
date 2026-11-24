@@ -22,8 +22,7 @@ export interface NumberInputOptions extends InputOptions<number | null> {
 }
 
 const INT = /^-?\d+$/;
-/** The 32-bit range of the platform's `int` column, which an int input holds itself to when it has
- * no tighter bound: a frame column wraps a larger number silently (3000000000 becomes -1294967296). */
+/** The int32 range of the platform's `int` column: a frame column silently wraps a larger number. */
 const INT32_MIN = -2147483648;
 const INT32_MAX = 2147483647;
 const FLOAT = /^-?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/;
@@ -62,7 +61,6 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
   private declare _slider: HTMLInputElement | null;
   /** Why the text in the field is no value, while it is not. */
   private declare _bad: Signal<string | null>;
-  // the text this input last wrote into the field; a blur over the same text is no edit
   private declare _written: string;
 
   constructor(options: NumberInputOptions = {}) {
@@ -263,8 +261,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
     return this._bad.value !== null;
   }
 
-  // only text the user changed is an edit: a blur over the displayed text (rounded by a `format`)
-  // must not parse it back over the full-precision value
+  // a blur over the displayed text must not parse a `format`-rounded value back
   private _commit(): void {
     if (this._input.value === this._written)
       return;
@@ -292,7 +289,6 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
     return (this._int ? INT : FLOAT).test(trimmed) ? Number(trimmed) : undefined;
   }
 
-  // the declared bounds; an int input is never wider than the int32 range
   private _bounds(): {min: number | undefined, max: number | undefined} {
     const {min, max} = this.options;
     return this._int ? {min: Math.max(min ?? INT32_MIN, INT32_MIN), max: Math.min(max ?? INT32_MAX, INT32_MAX)} :
