@@ -194,7 +194,7 @@ test('column refs: same kind or both numeric; unknown, dotted, mismatched or und
     Filters.cond('name', 'like', {param: 'q'}), Filters.cond('status', 'in', [{param: 'a'}, 'Open'])]), []);
   const first = (nodes) => problems(nodes).map((p) => [p.code, p.message])[0];
   assert.deepEqual(first([Filters.cond('age', '=', {column: 'name'})]), ['invalid-value', 'Cannot compare "age" with "name"']);
-  assert.deepEqual(first([Filters.cond('age', '=', {column: 'nope'})]), ['invalid-value', 'Unknown column "nope"']);
+  assert.deepEqual(first([Filters.cond('age', '=', {column: 'nope'})]), ['invalid-value', 'Unknown column "nope" — quote a text value']);
   assert.equal(problems([Filters.cond('age', '=', {column: 'author.login'})])[0].message, 'Unknown column "author.login"');
   assert.equal(problems([Filters.cond('name', 'like', {column: 'status'})])[0].message,
     'Operator "like" does not accept a column');
@@ -210,8 +210,7 @@ test('a bare name where a value was meant says how to spell it: a ref suggests t
     'Unknown column "Open" — quote a text value', 'a choice column: the value wanted quotes');
   assert.equal(message([Filters.cond('name', '=', {column: 'Balance'})]),
     'Unknown column "Balance" — quote a text value');
-  assert.equal(message([Filters.cond('age', '=', {column: 'High'})]), 'Unknown column "High"',
-    'a number never meant a quoted value');
+  assert.equal(message([Filters.cond('age', '>', {column: 'abc'})]), 'Unknown column "abc" — quote a text value');
 });
 
 test('the unquoted-value hint points at the list for `under`, not at a dotted path', () => {

@@ -8,6 +8,7 @@ import {backends, Scope, Rows, notify, allowedActions, Control} from '@datagrok-
 import {Usage} from 'datagrok-api/u2core';
 import {SharedSession} from '../src/core/session.js';
 import {backend} from './domain-fixtures.mjs';
+import {MemoryDomainBackend} from '../src/core/memory-domain.js';
 import {byKind} from '@datagrok-libraries/u2/testing';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
@@ -2027,6 +2028,50 @@ scoped('an aggregation column follows a child row saved in this session', async 
     assert.equal(await child.save(), true);
     assert.equal(await count(), 3);
     child.dispose();
+    a.dispose();
+  } finally {
+    grok.dapi.domains.table = served;
+  }
+});
+
+scoped('a sum of quantities says its unit, or "mixed units" where the units differ', async () => {
+  const DG = await import('datagrok-api/dg');
+  DG.Column.fromType ??= (type, name) => new DG.Column(name, type);
+  DG.DataFrame.fromColumns ??= (columns) => new DG.DataFrame(columns.map((c) => ({name: c.name, type: c.dart.type})));
+  const memory = emsBackends.domain = new MemoryDomainBackend({name: 'stock', tables: {
+    location: {columns: {name: {type: 'string', isName: true}}},
+    container: {friendlyName: 'Containers', columns: {location_id: {type: 'ref', ref: 'location'},
+      quantity: {type: 'float'}, unit: {type: 'string'}}},
+  }}, {rows: {location: [{id: 'l1', name: 'Shelf A'}, {id: 'l2', name: 'Shelf B'}], container: [
+    {id: 'c1', location_id: 'l1', quantity: 0.6, unit: 'L'}, {id: 'c2', location_id: 'l1', quantity: 500, unit: 'g'},
+    {id: 'c3', location_id: 'l2', quantity: 2, unit: 'kg'}, {id: 'c4', location_id: 'l2', quantity: 3, unit: 'kg'}]}});
+  const served = grok.dapi.domains.table;
+  const reduce = {sum: (v) => v.reduce((a, b) => a + b, 0), unique: (v) => new Set(v).size, first: (v) => v[0]};
+  grok.dapi.domains.table = (address) => ({queryDf: async ({filter}) => {
+    const rows = memory.tableSync(address).rows.filter((r) => filter.value.includes(r[filter.property]));
+    return {rowCount: rows.length, groupBy: ([path]) => {
+      const keys = [...new Set(rows.map((r) => r[path]))];
+      const out = {};
+      return {
+        add(agg, column, name) { out[name] = [agg, column]; return this; },
+        aggregate: () => ({rowCount: keys.length, get: (name, i) => name === path ? keys[i] :
+          reduce[out[name][0]](rows.filter((r) => r[path] === keys[i]).map((r) => r[out[name][1]]))}),
+      };
+    }};
+  }});
+  try {
+    const table = await domains.table('stock.location');
+    const a = testOwner().build(() => domains.app({table, base: '/apps/T/Locations', pageSize: 10}));
+    await flush();
+    a.view.value = 'table';
+    a.output.show();
+    await flush();
+    await flush();
+    a.output.aggregations.value = [{column: 'Containers.Quantity', aggregation: 'sum'}];
+    for (let i = 0; i < 4; i++)
+      await flush();
+    const sum = (id) => a.output.values.value.get(id)?.['sum(Containers.Quantity)'];
+    assert.deepEqual([sum('l1'), sum('l2')], ['mixed units', '5 kg']);
     a.dispose();
   } finally {
     grok.dapi.domains.table = served;

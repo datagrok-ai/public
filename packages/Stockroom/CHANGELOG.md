@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Locations: The tree app is named Stockroom locations, and Stockroom › Locations, the flat list, Location list
 * Stockroom: `/apps/Stockroom` opens the app, and an address naming no view says so before it shows the substances
 * Locations: Fixed Open on a tree node opening nothing; it opens the location's page in the Stockroom app
 * Locations: Fixed the tree never showing another session's rename, insert, move or delete of a location
