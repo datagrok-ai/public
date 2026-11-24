@@ -18,7 +18,7 @@ const TEST_CUSTOM_VIEW = 'Compute2:TestCustomView';
 class CountingView extends CustomFunctionView {
   counts = {beforeSave: 0, afterSave: 0, afterLoad: 0};
 
-  buildIO() {
+  buildIO(): HTMLElement {
     return ui.div();
   }
 
@@ -32,6 +32,19 @@ class CountingView extends CustomFunctionView {
 
   async onAfterLoadRun() {
     this.counts.afterLoad++;
+  }
+}
+
+class ContentView extends CountingView {
+  content?: HTMLElement;
+
+  constructor(private makeContent: () => HTMLElement) {
+    super(DAY_CALCULATION);
+  }
+
+  buildIO() {
+    this.content = this.makeContent();
+    return this.content;
   }
 }
 
@@ -292,6 +305,23 @@ category('Custom function view', () => {
     view.exportEnabled = true;
     expect(exportIcon(view)!.classList.contains('d4-disabled'), false);
   }));
+
+  const contents = [['div', () => ui.div()], ['box', () => ui.splitH([ui.box(), ui.box()])]] as const;
+  for (const [kind, makeContent] of contents) {
+    test(`A ${kind} content fills the view`, async () => {
+      const view = new ContentView(makeContent);
+      await view.isReady.pipe(filter((ready) => ready), take(1)).toPromise();
+      grok.shell.addView(view);
+      try {
+        const root = view.root.getBoundingClientRect();
+        const content = view.content!.getBoundingClientRect();
+        expect(Math.round(content.width), Math.round(root.width));
+        expect(Math.round(content.height), Math.round(root.height));
+      } finally {
+        closeView(view);
+      }
+    });
+  }
 
   test('Without exports there is no Export icon', async () => {
     const view = await newView();

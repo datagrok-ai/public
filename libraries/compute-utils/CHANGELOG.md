@@ -7,6 +7,7 @@
 * Custom function view: The view no longer opens a run from the page link; the editor hosting it does, as for RFV (breaking for views opened without Compute2's editor)
 * Custom function view: `exports`, a list of named exports that each return a `DG.FileInfo`, replaces `exportConfig` (breaking); the Export icon runs the first one and `exportEnabled` turns them off
 * Custom function view: A new call starts with the function's default input values
+* Custom function view: Fixed the content of `buildIO()` not filling the view: a div took its content's width, a box was 400×300
 * RTD: A workflow custom export can be `preferred`, which lists it first in the Export menu
 * RTD: A step's viewers hook from its script that can't be made no longer fails the workflow config; `loadViewersHook` makes a function's hook, or warns and returns none
 * Export: Fixed the Excel report failing with "0 is out of bounds" on a table with no columns; its sheet is left empty

@@ -154,10 +154,7 @@ export abstract class CustomFunctionView extends DG.ViewBase {
 
   public build(): void {
     ui.empty(this.root);
-    const rootItem = ui.div([
-      this.buildIO(),
-    ], {style: {width: '100%', height: '100%', display: 'flex'}});
-    this.root.appendChild(rootItem);
+    this.root.appendChild(this.buildIO());
 
     this.buildRibbonMenu();
     this.buildRibbonPanels();
