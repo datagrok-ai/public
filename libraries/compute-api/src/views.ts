@@ -11,6 +11,8 @@ import type {
 
 // a custom view subclasses it, so the class itself comes along, not only its type
 export {CustomFunctionView} from '@datagrok-libraries/compute-utils/function-views/src/custom-function-view';
+export {HistoryInput, historyInput} from '@datagrok-libraries/compute-utils/function-views/src/history-input';
+export type {HistoryInputOptions} from '@datagrok-libraries/compute-utils/function-views/src/history-input';
 
 export type ComputationView = ComputationViewType;
 export type RichFunctionView = RichFunctionViewType;

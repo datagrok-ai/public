@@ -50,13 +50,14 @@ export type * from '@datagrok-libraries/compute-utils/reactive-tree-driver/index
 export {isFuncCallState, isStaticPipelineState, isDynamicPipelineState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/index';
 
 import {
-  ComputationView, RichFunctionView, PipelineView, CustomFunctionView,
+  ComputationView, RichFunctionView, PipelineView, CustomFunctionView, HistoryInput, historyInput,
   createCompView, createRFV, createPipeline,
 } from './src/views';
 export {
-  ComputationView, RichFunctionView, PipelineView, CustomFunctionView,
+  ComputationView, RichFunctionView, PipelineView, CustomFunctionView, HistoryInput, historyInput,
   createCompView, createRFV, createPipeline,
 };
+export type {HistoryInputOptions} from './src/views';
 
 export async function initComputeApi() {
   const initFunc = DG.Func.find({package: 'Compute', name: 'init'})[0];

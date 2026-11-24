@@ -81,6 +81,20 @@ export namespace funcs {
   }
 
   /**
+   * Picks a saved run of a function in the run browser; returns it loaded, or null when cancelled.
+   */
+  export async function openRunDialog(func: any ): Promise<any> {
+    return await grok.functions.call('Compute2:OpenRunDialog', { func });
+  }
+
+  /**
+   * Asks where and under which name to save a run; returns {metadata, target}, or null when cancelled.
+   */
+  export async function saveRunDialog(call: any ): Promise<any> {
+    return await grok.functions.call('Compute2:SaveRunDialog', { call });
+  }
+
+  /**
    * The exports of a function's runs as its Export menu lists them, [{id, name}]; the first is default.
    */
   export async function callExports(func: any ): Promise<any> {

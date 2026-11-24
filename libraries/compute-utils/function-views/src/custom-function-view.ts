@@ -7,15 +7,16 @@ import {historyUtils} from '../../history-utils';
 import type {RunMetadata, SaveTarget} from '../../history-utils/src/history-utils';
 import {initNewCall} from '../../reactive-tree-driver/src/runtime/funccall-utils';
 
-/** The Save and Open dialogs a host gives the view; each resolves null when the user cancels. */
-export interface RunStorageHost {
-  // where and under which name to save a run
-  saveDialog: (call: DG.FuncCall) => Promise<{metadata: RunMetadata, target: SaveTarget} | null>;
-  // a saved run of the function, loaded with its inputs and outputs
-  openDialog: (func: DG.Func) => Promise<DG.FuncCall | null>;
-  // the function that opens this view, recorded on saved runs so that they open here again
-  customView?: string;
-}
+/** Whether Compute2, which has the Save and Open dialogs, is installed. */
+export const hasRunDialogs = () => DG.Func.find({package: 'Compute2', name: 'OpenRunDialog'}).length > 0;
+
+/** Compute2's Open dialog: a saved run of the function, loaded with its inputs and outputs, or null. */
+export const openRunDialog = (func: DG.Func): Promise<DG.FuncCall | null> =>
+  grok.functions.call('Compute2:OpenRunDialog', {func});
+
+/** Compute2's Save dialog: where and under which name to save the run, or null. */
+const saveRunDialog = (call: DG.FuncCall): Promise<{metadata: RunMetadata, target: SaveTarget} | null> =>
+  grok.functions.call('Compute2:SaveRunDialog', {call});
 
 /** An item of the view's Export menu; the file it returns is downloaded under its own name. */
 export interface ViewExport {
@@ -28,20 +29,10 @@ export abstract class CustomFunctionView extends DG.ViewBase {
 
   public funcCall?: DG.FuncCall;
 
-  private _runStorage?: RunStorageHost;
-
   private _exportEnabled = true;
 
-  /** Set by the host that provides the Save and Open dialogs; without it the view has no History and Save buttons. */
-  get runStorage(): RunStorageHost | undefined {
-    return this._runStorage;
-  }
-
-  set runStorage(host: RunStorageHost | undefined) {
-    this._runStorage = host;
-    if (this.funcCall)
-      this.buildRibbonPanels();
-  }
+  /** The function that opens this view, recorded on saved runs so that they open here again; set by the editor. */
+  public customView?: string;
 
   /** The Export menu; the ribbon's Export icon runs the first one. */
   exports: ViewExport[] = [];
@@ -106,8 +97,8 @@ export abstract class CustomFunctionView extends DG.ViewBase {
     await this.onBeforeSaveRun(callCopy);
 
     if (callCopy.id) callCopy.newId();
-    if (this.runStorage?.customView)
-      callCopy.options[CUSTOM_VIEW_OPTION] = this.runStorage.customView;
+    if (this.customView)
+      callCopy.options[CUSTOM_VIEW_OPTION] = this.customView;
 
     const savedCall = await historyUtils.saveRun(callCopy, {metadata, target});
     const loadedCall = await historyUtils.loadRun(savedCall.id);
@@ -120,7 +111,7 @@ export abstract class CustomFunctionView extends DG.ViewBase {
 
   public async saveRunWithDialog(currentFuncCall: DG.FuncCall): Promise<DG.FuncCall | null> {
     try {
-      const result = await this.runStorage?.saveDialog(currentFuncCall);
+      const result = await saveRunDialog(currentFuncCall);
       return result ? await this.saveRun(currentFuncCall, result.metadata, result.target) : null;
     } catch (e: any) {
       grok.shell.error(`Couldn't save the run: ${e?.message ?? e}`);
@@ -128,10 +119,10 @@ export abstract class CustomFunctionView extends DG.ViewBase {
     }
   }
 
-  /** Opens a saved run picked in the host's Open dialog. */
+  /** Opens a saved run picked in Compute2's Open dialog. */
   public async openRunWithDialog(): Promise<DG.FuncCall | null> {
     try {
-      const run = await this.runStorage?.openDialog(DG.Func.byName(this.funcNqName));
+      const run = await openRunDialog(DG.Func.byName(this.funcNqName));
       if (!run)
         return null;
       this.linkFunccall(run);
@@ -169,7 +160,7 @@ export abstract class CustomFunctionView extends DG.ViewBase {
     }, this.exports[0]?.name);
     exportButton.classList.toggle('d4-disabled', !this.exportEnabled);
     const newRibbonPanels: HTMLElement[][] =
-      [[...(this.runStorage ? [historyButton, saveButton] : []), ...(this.exports.length > 0 ? [exportButton] : [])]];
+      [[...(hasRunDialogs() ? [historyButton, saveButton] : []), ...(this.exports.length > 0 ? [exportButton] : [])]];
     this.setRibbonPanels(newRibbonPanels);
     return newRibbonPanels;
   }
