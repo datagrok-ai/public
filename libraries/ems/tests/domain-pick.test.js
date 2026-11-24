@@ -262,6 +262,14 @@ scoped('opened on focus, Enter alone commits the highlighted first candidate', a
   await flush();
   assert.equal(pick.value, 'p2', 'Datagrok, the first by name');
   assert.equal(input.value, 'Datagrok');
+  pick.asDropdown();
+  assert.equal(input.readOnly, false);
+  type(input, 'grit');
+  await flush();
+  await flush();
+  fire(input, 'keydown', {key: 'Enter'});
+  await flush();
+  assert.equal(pick.value, 'p1', 'a dropdown filters by what is typed: Enter picks it, not the first row');
   pick.dispose();
 });
 
