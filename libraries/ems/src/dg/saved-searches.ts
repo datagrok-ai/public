@@ -1,8 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import {batch, computed, iconButton, signal, Dialog, Filters, Menu, TextInput, notify} from '@datagrok-libraries/u2';
-import type {Signal, FilterProperty, FilterSchema} from '@datagrok-libraries/u2';
+import type {Signal, FilterProperty, FilterSchema, IProperty} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
 import {confirmDiscard} from '../core/session.js';
+import {DomainTable} from './facade.js';
 
 export interface DomainSearch {
   q: string;
@@ -33,9 +34,9 @@ function write(group: string, change: () => void): Promise<void> {
   return run;
 }
 
-/** The keys of `sort` over columns the table describes: the server refuses a read that names any other. */
-export function sortable(sort: string, properties: readonly {name?: string}[]): string {
-  const columns = new Set(properties.map((p) => p.name));
+/** The keys of `sort` over columns the list can be ordered by: the server refuses a read that names an unknown one. */
+export function sortable(sort: string, properties: readonly IProperty[]): string {
+  const columns = new Set(properties.filter(DomainTable.isSortable).map((p) => p.name));
   return sort.split(',').map((key) => key.trim())
     .filter((key) => key !== '' && columns.has(key.replace(/^!/, '').replace(/^prop\./, ''))).join(',');
 }
