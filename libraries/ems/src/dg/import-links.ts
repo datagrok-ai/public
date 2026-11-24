@@ -121,7 +121,7 @@ export class ImportLinks {
     if (type !== 'int' && type !== 'bigint')
       return null;
     const n = /^-\d+$/.test(value) ? Number(value) : DomainTable.parseKey(field.prop, value);
-    return n === null ? null : String(n);
+    return n === null || !Number.isSafeInteger(n) ? null : String(n);
   }
 
   // a value as the file and the record both spell it: a date as its day
