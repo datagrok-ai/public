@@ -296,9 +296,10 @@ export class DomainApp extends Control {
       // them) move under it without `currentRow` changing, so the caption follows the rows tick
       source?.rows.items.value;
       const row = source?.currentRow.value ?? null;
-      // a row the table does not have is named by the address that asked for it
-      const caption = row !== null ? this._caption(source!, row) :
-        source?.state.value === 'ready' && !source.isDraft ? this._entity.peek() ?? '…' : '…';
+      // a row the table does not have is named by the address that asked for it, an id by the noun
+      const asked = this._entity.peek();
+      const caption = row !== null ? this._caption(source!, row) : source?.state.value !== 'ready' || source.isDraft ||
+        asked === null ? '…' : DomainAddress.ID.test(asked) ? capital(nounOf(this.table.info, true)) : asked;
       this.breadcrumbs.setItems([title, caption]);
     });
     // the entity page over a draft: once saved, the page is the row's
@@ -1166,8 +1167,9 @@ export class DomainApp extends Control {
         }
       });
       const {children, history, include, exclude} = this._options;
-      const form = this.build(() => new DomainForm(source, {system: 'footer', include, exclude,
-        labelColumn: this.labelColumn, empty: `${capital(nounOf(this.table.info, true))} "${entity}" was not found.`}));
+      const noun = capital(nounOf(this.table.info, true));
+      const form = this.build(() => new DomainForm(source, {system: 'footer', include, exclude, labelColumn: this.labelColumn,
+        empty: `${noun}${DomainAddress.ID.test(entity) ? '' : ` "${entity}"`} was not found.`}));
       this._panes = this.build(() => [
         ...(children === false ? [] : [domains.children(source, {live: this._options.live ?? true,
           liveMs: this._options.liveMs, ...(children === true ? {} : children)})]),

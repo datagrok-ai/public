@@ -451,13 +451,15 @@ export class DomainForm extends Control {
               (await target.query({filter: [{property: 'id', operator: '=', value: held}, 'and', bound.filter],
                 limit: 1})).length === 0) {
             const caption = async (p: IProperty | undefined, v: unknown) => {
-              const known = p !== undefined && DomainTable.isReference(p) ?
-                await DomainForm.captionOf(p, String(v)).catch(() => null) : null;
-              return known ?? text(v);
+              if (p === undefined || !DomainTable.isReference(p))
+                return text(v);
+              const known = await DomainForm.captionOf(p, String(v)).catch(() => null);
+              return known !== null && known !== String(v) ? known :
+                `a ${DomainTable.captionOf(p).toLowerCase()} you cannot see`;
             };
             const where = await Promise.all(params.map((field) =>
               caption(this.source.schema.properties.find((p) => p.name === field), values[field])));
-            message = `${await caption(prop, held)} is not in ${where.join(', ')}`;
+            message = capital(`${await caption(prop, held)} is not in ${where.join(', ')}`);
           }
         } catch {
           message = '';

@@ -140,6 +140,11 @@ scoped('open(path): ?entity= restores the entity page, ?q= the list under the qu
   await a.open(`${BASE}?entity=nope`);
   await flush();
   assert.match(a.form.value.root.querySelector('[data-u2-part="empty"]').textContent, /not found/);
+  const unseen = '0bc69e58-1111-4222-8333-444455556666';
+  await a.open(`${BASE}?entity=${unseen}`);
+  await flush();
+  assert.equal(a.breadcrumbs.root.textContent.includes(unseen) || a.root.textContent.includes(unseen), false,
+    'an id the user cannot resolve is never shown');
   a.dispose();
 });
 
