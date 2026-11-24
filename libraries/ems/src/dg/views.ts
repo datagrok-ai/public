@@ -93,10 +93,10 @@ export class DomainViews {
     for (const app of [...DomainApp.live]) {
       if (!app.table.address.startsWith(`${schema}.`) || DomainApp.viewOf(app) === undefined)
         continue;
-      if (!app.session.isDirty.peek()) {
+      if (!app.session.isDirty.peek())
         await DomainViews.rebuild(app);
+      if (!app.session.isDirty.peek())
         continue;
-      }
       const shown = new Map<string, IProperty[]>([[app.table.address, app.table.properties]]);
       for (const source of app.session.sources.peek()) {
         if (source.table.startsWith(`${schema}.`) && !shown.has(source.table))
