@@ -1187,17 +1187,14 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this._selection.value = rows;
   }
 
-  // with ties on the sort the server may answer another id, and the window is re-read needlessly
   private async _shifted(count: number, id: string | null): Promise<boolean> {
     const table = this._table;
     if (table === undefined || id === null || count === 0 || this._noRows)
       return false;
-    const sort = this.sort.peek();
     let rows: Record<string, unknown>[];
     try {
       // `columns: []`: the system columns alone
-      rows = await table.query({...this._scope(), ...(sort === '' ? {} : {sort}),
-        columns: [], limit: 1, offset: count - 1});
+      rows = await table.query({...this._scope(), ...this._order(), columns: [], limit: 1, offset: count - 1});
     } catch {
       return false;
     }
@@ -1311,9 +1308,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       return {limit: 0, offset, withAccess: this.withAccess,
         ...(deleted === 'exclude' ? {} : {deleted})};
     }
-    const sort = this.sort.peek();
     const captions = this._captions();
-    return {...this._scope(), ...(sort === '' ? {} : {sort}),
+    return {...this._scope(), ...this._order(),
       limit: this.isEmpty ? 0 : limit, offset, withAccess: this.withAccess,
       ...(captions.length === 0 ? {} : {captions})};
   }
@@ -1327,6 +1323,13 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     const refs = this._schema.properties.filter((p) => REF_ADDRESS.test(p.semType ?? '') &&
       access.field(p.name!) !== 'hidden').map((p) => p.name!);
     return listed === undefined ? refs : listed.filter((name) => refs.includes(name));
+  }
+
+  // rows a sort leaves tied come back in any order, another one on each read: the id settles it.
+  // The server's default order ends with the id already
+  private _order(): {sort?: string} {
+    const sort = this.sort.peek();
+    return sort === '' ? {} : {sort: /(^|,)\s*!?id\s*$/.test(sort) ? sort : `${sort},id`};
   }
 
   private _readFor(): string {
