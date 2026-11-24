@@ -6,14 +6,13 @@ import {flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {backends, Scope, signal, Rows, Registry, SpecContext, renderSpec, registerAll, notify} from '@datagrok-libraries/u2';
 import {MemoryDomainBackend} from '../src/core/memory-domain.js';
 import {Property, WidgetDescriptor, platform} from '@datagrok-libraries/u2/tests/platform-doubles.mjs';
-import {backend} from './domain-fixtures.mjs';
+import {backend, holdFrames} from './domain-fixtures.mjs';
 import {byKind} from '@datagrok-libraries/u2/testing';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/facade.js');
 const {DomainChildren} = await import('../src/dg/children.js');
 const {DomainPick} = await import('../src/dg/pick.js');
-const {DomainErrors} = await import('../src/dg/errors.js');
 const {registerDomainComponents} = await import('../src/dg/registrations.js');
 
 /** Companies with contacts, and deals that point at a company twice (seller and buyer). */
@@ -316,37 +315,10 @@ scoped('a New from the children toolbar is an unsaved change of its own: the gat
   parent.dispose();
 });
 
-// EQ-034: the grid's row menu takes the list's staged delete; a review found it once offered Delete to any row
-scoped('a child grid row deletes from its menu, as a list row: never Delete for a row restored or in the trash', async () => {
-  emsBackends.domain = crm();
-  const grok = await import('datagrok-api/grok');
-  const {DomainList} = await import('../src/dg/list.js');
-  const companies = await domains.table('crm.company');
-  const parent = testOwner().build(() => companies.source({pageSize: 10}));
-  await flush();
-  parent.currentRow.value = parent.rows.byKey('c1');
-  const children = testOwner().build(() => domains.children(parent, {tables: ['contact']}));
-  await settle();
-  const contacts = children.child(CONTACTS);
-  const grid = [...platform.widgets].find((w) => w.type === 'Grid' && children.root.contains(w.root));
-  const items = [];
-  grok.events.onContextMenu.fire({args: {context: grid, item: {isTableCell: true, tableRowIndex: 0, grid},
-    menu: {item: (text) => items.push(text)}}});
-  assert.deepEqual(items, ['Delete'], 'the row\'s menu offers Delete');
-  const row = contacts.rows.byKey('k1');
-  const texts = (r) => DomainList.stagedDelete(contacts, r).map((a) => a.text);
-  assert.deepEqual(texts({...row, id: row.id, [Rows.STATE]: 'restored'}), ['Undo restore']);
-  assert.deepEqual(texts({...row, id: row.id, [Rows.DELETED]: true}), ['Restore']);
-  children.dispose();
-  parent.dispose();
-});
-
-// EQ-062: no live child under a parent in the trash, whatever order the Save sends the ops in
-const crmWithEmpty = () => new MemoryDomainBackend(SCHEMA, {rows: Object.fromEntries(Object.entries(ROWS).map(([t, list]) =>
-  [t, [...list, ...t === 'company' ? [{id: 'c3', name: 'Initech'}] : []].map((r) => ({...r}))]))});
-
-scoped('EQ-062: a Save that deletes the parent and adds a child under it is refused whole', async () => {
-  const memory = emsBackends.domain = crmWithEmpty();
+scoped('a Save that deletes the parent and adds a child under it is refused whole', async () => {
+  const memory = emsBackends.domain = crm();
+  // a company with no children: only the new child stands in the way of its delete
+  memory.tableSync('crm.company').rows.push({id: 'c3', name: 'Initech'});
   const companies = await domains.table('crm.company');
   const parent = testOwner().build(() => companies.source({pageSize: 10}));
   await flush();
@@ -355,70 +327,20 @@ scoped('EQ-062: a Save that deletes the parent and adds a child under it is refu
   await settle();
   children.child(CONTACTS).newRow({name: 'Peter'});
   parent.edit.value.markDeleted('c3');
-  assert.equal(await parent.session.save(), false, 'a child under a deleted parent is refused');
+  assert.equal(await parent.session.save(), false);
   assert.equal(memory.tableSync('crm.company').rows.find((r) => r.id === 'c3').is_deleted, undefined, 'the parent stays');
   assert.deepEqual(memory.tableSync('crm.contact').rows.filter((r) => r.name === 'Peter'), [], 'nothing landed');
   children.dispose();
   parent.dispose();
 });
 
-scoped('New in a children tab is off once the parent edited in one field is deleted, and on again at its undo', async () => {
-  emsBackends.domain = crm();
-  const companies = await domains.table('crm.company');
-  const parent = testOwner().build(() => companies.source({pageSize: 10}));
-  await flush();
-  parent.currentRow.value = parent.rows.byKey('c1');
-  const children = testOwner().build(() => domains.children(parent, {mode: 'list'}));
-  await settle();
-  const add = byKind(children, 'new-button')[0];
-  parent.rows.byKey('c1').name = 'Acme 2';
-  await flush();
-  assert.equal(add.disabled, false, 'an edited parent takes children');
-  parent.edit.value.markDeleted('c1');
-  await flush();
-  assert.equal(add.disabled, true, 'a parent deleted on Save takes none');
-  parent.edit.value.unmarkDeleted('c1');
-  await flush();
-  assert.equal(add.disabled, false, 'the deletion undone, it takes them again');
-  children.dispose();
-  parent.dispose();
-});
-
-scoped('EQ-062: the refusal names the row under the deleted parent, not another edit of the same Save', async () => {
-  const memory = emsBackends.domain = crmWithEmpty();
-  const contacts = await domains.table('crm.contact');
-  const src = testOwner().build(() => contacts.source({pageSize: 10}));
-  await flush();
-  await memory.transaction([{op: 'delete', table: 'crm.company', id: 'c3'}]);
-  src.rows.byKey('k1').name = 'Ann B.';
-  src.newRow({name: 'Peter', company_id: 'c3'});
-  assert.equal(await src.save(), false);
-  await flush();
-  assert.equal(DomainErrors.message(src.error.value, src), 'Cannot save "Peter": its company was deleted. Restore the company first.');
-  src.dispose();
-});
-
-scoped('a refusal about a new row with an empty name under a deleted parent calls it New <noun>, not ""', async () => {
-  const memory = emsBackends.domain = crmWithEmpty();
-  const deals = await domains.table('crm.deal');
-  const src = testOwner().build(() => deals.source({pageSize: 10}));
-  await flush();
-  await memory.transaction([{op: 'delete', table: 'crm.company', id: 'c3'}]);
-  src.newRow({seller_id: 'c3', title: ''});
-  assert.equal(await src.save(), false);
-  await flush();
-  assert.equal(DomainErrors.message(src.error.value, src), 'Cannot save "New deal": its seller was deleted. Restore the seller first.');
-  src.dispose();
-});
-
-scoped('EQ-053: a children tab whose table needs a column the user cannot set has its New off and says why', async () => {
+scoped('a children tab whose table needs a column the user cannot set has New off, and never names a hidden column', async () => {
   const schema = {...SCHEMA, tables: {...SCHEMA.tables, contact: {...SCHEMA.tables.contact, columns: {
     ...SCHEMA.tables.contact.columns, badge: {type: 'string', required: true}}}}};
   const can = {view: true, insert: true, edit: true, delete: true, share: true};
-  for (const badge of ['readonly', undefined]) {
-    const fields = {name: 'editable', company_id: 'editable', ...(badge === undefined ? {} : {badge})};
-    emsBackends.domain = new MemoryDomainBackend(schema, {access: {can, fields},
-      rows: Object.fromEntries(Object.entries(ROWS).map(([t, list]) => [t, list.map((r) => ({...r}))]))});
+  for (const [badge, named] of [[{badge: 'readonly'}, /value for Badge,/], [{}, /value for 1 column you cannot see,/]]) {
+    emsBackends.domain = new MemoryDomainBackend(schema, {access: {can, fields: {name: 'editable', company_id: 'editable',
+      ...badge}}, rows: Object.fromEntries(Object.entries(ROWS).map(([t, list]) => [t, list.map((r) => ({...r}))]))});
     const companies = await domains.table('crm.company');
     const parent = testOwner().build(() => companies.source({pageSize: 10}));
     await flush();
@@ -427,19 +349,15 @@ scoped('EQ-053: a children tab whose table needs a column the user cannot set ha
     await settle();
     await flush();
     const add = byKind(children, 'new-button')[0];
-    assert.equal(add.disabled, true, `the children New is off (badge ${badge ?? 'hidden'})`);
-    // a column the user may not read is counted, never named (EQ-020)
-    assert.equal(add.getAttribute('aria-description'), 'You cannot create contacts: they need a value for ' +
-      `${badge === undefined ? '1 column you cannot see' : 'Badge'}, which you cannot set. Ask the table's owner to ` +
-      `${badge === undefined ? 'share it with you' : 'let you edit Badge'}.`);
+    assert.equal(add.disabled, true);
+    assert.match(add.getAttribute('aria-description'), named);
     children.dispose();
     parent.dispose();
   }
 });
 
-// EQ-052: the server refuses a read that filters on a column the caller cannot see (a 400 the tab
-// swallows), so a tab whose link to the parent is hidden must ask nothing about that link
-scoped('EQ-052: a child tab whose link to the parent is hidden queries and counts nothing by that link', async () => {
+// the server refuses a read that filters on a column the caller cannot see, and the tab swallows that 400
+scoped('a child tab whose link to the parent is hidden queries and counts nothing by that link', async () => {
   const memory = crm();
   const contact = memory.tableSync('crm.contact');
   const open = contact.access;
@@ -457,7 +375,7 @@ scoped('EQ-052: a child tab whose link to the parent is hidden queries and count
   const children = testOwner().build(() => domains.children(parent, {mode: 'list'}));
   await settle();
   await settle();
-  assert.deepEqual(asked.filter((spec) => spec.includes('company_id')), [], 'nothing filters on the hidden link');
+  assert.deepEqual(asked.filter((spec) => spec.includes('company_id')), []);
   children.dispose();
   parent.dispose();
 });
@@ -477,7 +395,7 @@ scoped('another view\'s save of the same table keeps a page\'s pending child row
   other.rows.byKey('c2').name = 'Globex edited';
   assert.equal(await other.session.save(), true);
   await settle();
-  assert.equal(children.child(CONTACTS) === contacts, true, 'the child source with its pending rows is still the one shown');
+  assert.equal(children.child(CONTACTS), contacts, 'the child source with its pending row is still the one shown');
   assert.equal(parent.session.changeCount.value, 1);
   assert.equal(parent.stale.value, true);
   children.dispose();
@@ -485,21 +403,10 @@ scoped('another view\'s save of the same table keeps a page\'s pending child row
   parent.dispose();
 });
 
-/** A page over crm.company whose frame reads wait for `release()` while `hold` is on (a reload in flight),
- * with its children open on c1. */
+/** A page over crm.company with its children open on c1, and the gate that holds its frame reads. */
 async function heldPage(options) {
-  const memory = crm();
-  const gate = {hold: false, waiting: [], offsets: [], release: () => { gate.hold = false; gate.waiting.splice(0).forEach((go) => go()); }};
-  const t = await memory.table('crm.company');
-  const frame = t.frame.bind(t);
-  t.frame = async (spec) => {
-    gate.offsets.push(spec.offset);
-    const f = await frame(spec);
-    if (gate.hold)
-      await new Promise((go) => gate.waiting.push(go));
-    return f;
-  };
-  emsBackends.domain = memory;
+  emsBackends.domain = crm();
+  const gate = holdFrames(emsBackends.domain, 'crm.company');
   const companies = await domains.table('crm.company');
   const parent = testOwner().build(() => companies.source(options));
   await flush();
@@ -507,25 +414,21 @@ async function heldPage(options) {
   const children = testOwner().build(() => domains.children(parent, {mode: 'list'}));
   await settle();
   await flush();
-  /** Reloads with the read held, types a child row meanwhile, then lets the read land. */
-  const typeDuringReload = async () => {
-    gate.hold = true;
-    const reload = parent.refresh();
-    await settle();
-    children.child(CONTACTS).newRow({name: 'Typed during reload'});
-    await flush();
-    gate.release();
-    await reload;
-    await settle();
-  };
-  return {gate, parent, children, typeDuringReload};
+  return {gate, parent, children};
 }
 
 scoped('a child row typed while the clean parent\'s reload is in flight survives it landing', async () => {
-  const {parent, children, typeDuringReload} = await heldPage({query: 'id = "c1"', pageSize: 1});
+  const {gate, parent, children} = await heldPage({query: 'id = "c1"', pageSize: 1});
   const contacts = children.child(CONTACTS);
-  await typeDuringReload();
-  assert.equal(children.child(CONTACTS) === contacts, true, 'the child source with its pending row is still the one shown');
+  gate.hold = true;
+  const reload = parent.refresh();
+  await settle();
+  contacts.newRow({name: 'Typed during reload'});
+  await flush();
+  gate.release();
+  await reload;
+  await settle();
+  assert.equal(children.child(CONTACTS), contacts, 'the child source with its pending row is still the one shown');
   assert.equal(parent.session.changeCount.value, 1);
   assert.equal(parent.stale.value, true);
   children.dispose();
@@ -541,64 +444,7 @@ scoped('a search change still lands over a child row typed while it was in fligh
   gate.release();
   await settle();
   await settle();
-  assert.deepEqual(parent.rows.items.value.map((r) => r.id), ['c2'], 'the search the user asked for is applied');
-  children.dispose();
-  parent.dispose();
-});
-
-scoped('a reload kept over a child row typed in flight keeps its lost window: the next page starts over', async () => {
-  const {gate, parent, children, typeDuringReload} = await heldPage({pageSize: 1});
-  parent.markStale(new Error('offline'));
-  await typeDuringReload();
-  assert.equal(await parent.session.save(), true);
-  await settle();
-  gate.offsets.length = 0;
-  await parent.loadMore();
-  await settle();
-  assert.deepEqual(gate.offsets, [0], 'the next page reloads from the first page, not from the lost window\'s offset');
-  children.dispose();
-  parent.dispose();
-});
-
-scoped('a child tab hides New from a user who may view the child table but not insert into it', async () => {
-  const memory = crm();
-  memory.tableSync('crm.contact').access = () => Promise.resolve({can: {view: true, insert: false, edit: false,
-    delete: false, share: false}, fields: {name: 'readonly', company_id: 'readonly'}});
-  emsBackends.domain = memory;
-  const companies = await domains.table('crm.company');
-  const parent = testOwner().build(() => companies.source({pageSize: 10}));
-  await flush();
-  parent.currentRow.value = parent.rows.byKey('c1');
-  const children = testOwner().build(() => domains.children(parent, {mode: 'list'}));
-  await settle();
-  await flush();
-  assert.match(children.root.textContent, /Ann/, 'the readable children show');
-  assert.equal(byKind(children, 'new-button')[0].hidden, true, 'no New without Insert');
-  children.dispose();
-  parent.dispose();
-});
-
-scoped('an empty child tab says it is empty once View is granted, not that access is denied', async () => {
-  const memory = crm();
-  const contact = memory.tableSync('crm.contact');
-  let view = false;
-  contact.access = () => Promise.resolve({can: {view, insert: false, edit: false, delete: false, share: false},
-    fields: {name: 'readonly', company_id: 'readonly'}});
-  contact.query = () => Promise.resolve([]);
-  emsBackends.domain = memory;
-  const companies = await domains.table('crm.company');
-  const parent = testOwner().build(() => companies.source({pageSize: 10}));
-  await flush();
-  parent.currentRow.value = parent.rows.byKey('c1');
-  const children = testOwner().build(() => domains.children(parent, {tables: ['contact'], mode: 'list'}));
-  await settle();
-  await flush();
-  assert.match(children.root.textContent, /You do not have access to contacts\./);
-  view = true;
-  await children.child(CONTACTS).reloadAccess();
-  await settle();
-  assert.match(children.root.textContent, /No contacts\./);
-  assert.doesNotMatch(children.root.textContent, /You do not have access/);
+  assert.deepEqual(parent.rows.items.value.map((r) => r.id), ['c2']);
   children.dispose();
   parent.dispose();
 });

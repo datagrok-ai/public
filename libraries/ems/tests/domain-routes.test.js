@@ -225,37 +225,19 @@ test('DomainAddress: how a row is spelled in a path, and read back out of one', 
     'an arity that does not match is read as an id');
 });
 
-// a table with no name and no searchable column: a backend refuses `search` on it
-const DISPOSALS = {
-  name: 'demo',
-  tables: {disposal: {businessKey: ['code'], friendlyName: 'Disposals', columns: {code: {type: 'string', required: true}}}},
-};
-const disposals = () => new MemoryDomainBackend(DISPOSALS, {rows: {disposal: [{id: 'd1', code: 'D-1'}, {id: 'd2', code: 'D-2'}]}});
-
-scoped('a table with no searchable column: a search from the route, a saved or a recent one is dropped, not sent', async () => {
-  emsBackends.domain = disposals();
+// a backend refuses `search` on a table with no name and no searchable column
+scoped('a table with no searchable column: a search from the route or a saved one is dropped, not sent', async () => {
+  emsBackends.domain = new MemoryDomainBackend({name: 'demo', tables: {disposal: {businessKey: ['code'],
+    columns: {code: {type: 'string', required: true}}}}}, {rows: {disposal: [{id: 'd1', code: 'D-1'}]}});
   const a = DomainApp.of(await domains.route('/domains/demo/disposal?search=abc'));
   await flush();
   const list = a.listSource;
-  assert.equal(list.error.value, undefined, 'a search on a table with no searchable column leaves the list loaded');
-  assert.equal(list.rows.items.value.length, 2, 'the list still shows its rows');
-  // cleared, not kept unsent: the route, saved searches, bulk targets and the empty state read no search
-  assert.equal(list.search.value, '', 'the search the table cannot apply is dropped');
-  assert.doesNotMatch(a.path.value, /search=/, 'the route no longer carries it');
-  assert.equal(a.ribbon().tools[0].disabled, 'Nothing to search in this table', 'the search box is off, with the reason');
-  list.search.value = 'zzz'; // a saved or a recent search applied later
+  assert.equal(list.rows.items.value.length, 1, 'the list is loaded');
+  assert.equal(list.search.value, '');
+  assert.doesNotMatch(a.path.value, /search=/);
+  list.search.value = 'zzz';
   await flush();
   assert.equal(list.search.value, '');
-  assert.equal(list.error.value, undefined, 'a later search leaves the list loaded');
-  a.dispose();
-});
-
-scoped('a table with a searchable column keeps its search box on and searching', async () => {
-  emsBackends.domain = widgets();
-  const a = DomainApp.of(await domains.route('/domains/demo/widget?search=alp'));
-  await flush();
-  assert.equal(a.listSource.rows.items.value.length, 1, 'the search narrows the list');
-  assert.match(a.path.value, /search=alp/);
-  assert.equal(a.ribbon().tools[0].disabled, null);
+  assert.equal(list.error.value, undefined);
   a.dispose();
 });

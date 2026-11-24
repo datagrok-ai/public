@@ -90,3 +90,21 @@ export async function until(cond, cap = 2000) {
     await new Promise((r) => setTimeout(r, 5));
   await flush();
 }
+
+/** Makes the frame reads of `address` wait for `release()` while `hold` is on: a read in flight. */
+export function holdFrames(backend, address) {
+  const gate = {hold: false, waiting: [], frames: 0, release: () => {
+    gate.hold = false;
+    gate.waiting.splice(0).forEach((go) => go());
+  }};
+  const table = backend.tableSync(address);
+  const frame = table.frame.bind(table);
+  table.frame = async (spec) => {
+    gate.frames++;
+    const f = await frame(spec);
+    if (gate.hold)
+      await new Promise((go) => gate.waiting.push(go));
+    return f;
+  };
+  return gate;
+}
