@@ -8,6 +8,7 @@ import type {DomainQueryLike} from '../core/domain-backend.js';
 import {ObjectForm, propertyForm} from '@datagrok-libraries/u2/dg';
 import {DomainTable, firstProblem} from './facade.js';
 import {DomainErrors} from './errors.js';
+import {hierarchyCycle} from './backend.js';
 
 export interface DomainBulkEditOptions {
   /** The columns offered, in this order; every column the caller may write by default. */
@@ -213,6 +214,13 @@ async function _run(source: DomainSource, form: ObjectForm, columns: string[], s
   const refused = await _check(source, handle, filter, written, selection);
   if (refused !== null)
     throw new Error(refused);
+  const parent = source.schema.info.parentColumn;
+  if (parent != null && parent in written) {
+    const rows = selection ? source.selection.peek() : await handle.table.query({filter, limit: MAX_ROWS});
+    const cycle = await hierarchyCycle(handle.table, rows.map((row) => row.id), written[parent]);
+    if (cycle !== null)
+      throw new Error(cycle);
+  }
   const report = await handle.table.updateWhere!(filter, written, {limit: MAX_ROWS}).catch((e) => {
     throw new Error(DomainErrors.message(e));
   });

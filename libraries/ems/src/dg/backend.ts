@@ -5,7 +5,7 @@ import type {IProperty, DataFrameLike} from '@datagrok-libraries/u2';
 import type {AuditEntryLike, DomainBackend, DomainBatchReportLike, DomainDeletedMode, DomainFrameLike, DomainProbeLike,
   DomainQueryLike, DomainReadScope, DomainSupportLike, DomainTableInfoLike, DomainTableLike, DomainTransactionOpLike,
   DomainTransactionResultLike} from '../core/domain-backend.js';
-import {emsBackends, DomainBackendError, isUnscoped, readableInfo} from '../core/domain-backend.js';
+import {emsBackends, DomainBackendError, isUnscoped, nounOf, readableInfo} from '../core/domain-backend.js';
 import type {EditState} from '../core/edit-state.js';
 import {EditorEditState} from './editor-state.js';
 
@@ -24,6 +24,16 @@ const SYSTEM_SHAPES = {
 
 export const SYSTEM_COLUMNS: readonly (readonly [name: string, type: string, caption: string])[] =
   Object.entries(SYSTEM_SHAPES).map(([name, [type, caption]]) => [name, type, caption]);
+
+/** Why `parent` cannot become the parent of the rows `ids`: it is one of them, or under one. */
+export async function hierarchyCycle(table: DomainTableLike, ids: readonly unknown[], parent: unknown):
+  Promise<string | null> {
+  if (typeof parent !== 'string' || table.ancestors === undefined)
+    return null;
+  const chain = [parent, ...(await table.ancestors(parent)).map((a) => a.id)];
+  return chain.some((id) => ids.includes(id)) ?
+    `Cannot move a ${nounOf(table.info, true)} under itself or one of its descendants` : null;
+}
 
 /** Fills `emsBackends.domain` at dg import over `grok.dapi.domains`; its `frame()` makes `DomainSource` a frame
  * host: `queryDf` for the rows, the js-api `DomainFrameEditor` over them as the single writer. */
@@ -76,6 +86,17 @@ export class DgDomainBackend implements DomainBackend {
       state.problem = null;
       state.problemCode = null;
       state.retry?.();
+    }
+    for (const state of states) {
+      const {editor, df, table} = state;
+      const column = table?.info.parentColumn;
+      for (let i = 0; column != null && i < df.rowCount; i++) {
+        if (editor.stateOf(i) !== 'modified' || !editor.isChanged(i, column))
+          continue;
+        state.problem = await hierarchyCycle(table!, [df.get('id', i)], df.get(column, i));
+        if (state.problem !== null)
+          return false;
+      }
     }
     const before = states.map((state) => state.errorCells?.());
     const session = new DG.DomainSession(states.map((e) => e.editor), {quiet: true});
@@ -242,7 +263,7 @@ export class DgDomainTable implements DomainTableLike {
     // same upper bound `DomainSource.access` publishes, so it and the controls agree.
     const editor = await DG.DomainFrameEditor.attach(df, this.client,
       {query, access: DgDomainTable.narrowed(access, spec.deleted, this.support.transaction), quiet: true});
-    const edit = new EditorEditState(editor);
+    const edit = new EditorEditState(editor, this);
     return {
       df: df as unknown as DataFrameLike,
       edit,
