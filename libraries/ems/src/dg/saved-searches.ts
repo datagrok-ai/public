@@ -17,8 +17,6 @@ const savedKey = (table: string) => `ems-searches|${table}`;
 const same = (a: DomainSearch, b: DomainSearch, schema: {properties: readonly FilterProperty[]} = {properties: []}) =>
   normalized(a.q, schema) === normalized(b.q, schema) && a.search === b.search && a.sort === b.sort;
 const label = (s: DomainSearch) => [s.q, s.search && `Search "${s.search}"`].filter((x) => x).join(' · ');
-/** grok.userSettings keeps writes in memory until its 10 s sync: an explicit save is sent now. */
-const persist = () => void grok.userSettings.flush();
 let writes = Promise.resolve();
 /** grok.userSettings writes a whole group from this tab's copy, which another tab may have added to since:
  * a write is made over the server's copy (this tab's where the read fails), one write at a time. */
@@ -87,7 +85,7 @@ export class SavedSearches {
 
   static clearRecent(table: string): void {
     grok.userSettings.delete(RECENT, table);
-    persist();
+    void grok.userSettings.flush();
   }
 
   static current(source: DomainSource): Signal<string | null> {
