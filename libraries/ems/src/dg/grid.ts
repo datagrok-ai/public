@@ -56,6 +56,7 @@ export class DomainGrid extends Control {
     this.grid = this.build(() =>
       viewers.grid(source.df as unknown as ReadonlySignal<DG.DataFrame | undefined>, _options.look));
     this.root.append(this.grid.root);
+    this.own(source.holdReload(() => this.grid.root.querySelector('[name="cell-editor"]') !== null));
     if (_options.look?.colHeaderHeight === undefined)
       this.grid.setOptions({colHeaderHeight: HEADER_HEIGHT});
     // the editor follows the source's writer: attached over each frame the source loads, released

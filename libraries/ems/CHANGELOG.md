@@ -13,6 +13,7 @@
 * Live refresh: Child tabs follow a peer's writes, and say "Data changed — Refresh" over unsaved changes
 * Live refresh: An open record follows a peer's edit or delete; over unsaved edits it says "Data changed"
 * Live refresh: Lists, child tabs and records show a peer's rename of a referenced row, such as a project
+* Live refresh: Fixed a reload closing a grid cell being edited or losing the focus and typing in a record
 * Save: Fixed Save staying off after a refused save or a cancelled conflict; Refresh waits for a save
 * Save: Fixed a stale delete or restore overwriting another session's change: it is now a version conflict
 * Save: Fixed "saved" announced for changes a conflict reload dropped, and refusals naming a row by its ids
@@ -25,7 +26,8 @@
 * Forms: Fixed validation of multi-column constraints and tightened rules; a stale reference is marked
 * Forms: Fixed typing ignored in a short reference dropdown, so Enter picked its first row
 * Forms: A record deleted pending the save reads as such, read-only, with Undo
-* Forms: A record of a tree table names its ancestors in the breadcrumb, each one a way to it
+* Forms: A record of a tree table names its ancestors in the breadcrumb, and follows a saved move
+* Forms: Fixed a record deleted over a pending edit staying editable
 * Forms: Fixed a row or a reference the user cannot see being named by its uuid
 * Forms: A row deleted by someone else says so after Discard or from a link, with Restore where allowed
 * Children: Added Delete to a child grid's row menu; New is off under a deleted parent

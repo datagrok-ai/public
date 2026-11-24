@@ -109,6 +109,26 @@ scoped('over a memory source: the frame is the grid\'s; the memory writer is not
   src.dispose();
 });
 
+scoped('an open cell editor holds a reload off: the rows stay and the source is marked stale', async () => {
+  emsBackends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const src = testOwner().build(() => table.source({pageSize: 10}));
+  const grid = testOwner().build(() => domains.grid(src));
+  await flush();
+  const editor = document.createElement('input');
+  editor.setAttribute('name', 'cell-editor');
+  grid.grid.root.append(editor);
+  await emsBackends.domain.transaction([{op: 'update', table: 'grit.issue', id: 'i1', values: {title: 'Theirs'}}]);
+  await src.refresh();
+  assert.equal(src.rows.byKey('i1').title, 'Aspirin');
+  assert.equal(src.stale.value, true);
+  editor.remove();
+  await src.refresh();
+  assert.equal(src.rows.byKey('i1').title, 'Theirs');
+  grid.dispose();
+  src.dispose();
+});
+
 scoped('the js-api editor is attached with the source\'s edit state, decorated first, re-attached per frame, released with it', async () => {
   const inner = editorBackend(backend());
   emsBackends.domain = inner;

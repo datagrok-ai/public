@@ -196,8 +196,8 @@ export class DomainChildren extends Control {
       const state = this._tabStates.get(entry.id)!;
       state.current.value = undefined;
       if (row === null) {
-        pane.replaceChildren(span(`Select a ${nounOf(this.parent.schema.info, true)}.`,
-          'u2-domain-children-hint'));
+        const noun = nounOf(this.parent.schema.info, true);
+        pane.replaceChildren(span(`Select ${/^[aeiou]/.test(noun) ? 'an' : 'a'} ${noun}.`, 'u2-domain-children-hint'));
         state.blank.value = true;
         return;
       }

@@ -78,6 +78,9 @@ export class DomainForm extends Control {
   private readonly _captions = new Map<string, {id: string, caption: string, address?: string}>();
   private _returnTo: string | undefined;
   private _editSub: {unsubscribe(): void} | undefined;
+  private readonly _changed = signal(0);
+  // the `~caption_<col>` each picker was shown with: a reload in place that moved one renames the pick
+  private readonly _projected = new Map<string, unknown>();
   private readonly _subs: {unsubscribe(): void}[];
 
   constructor(target: DomainFormTarget, private readonly _options: DomainFormOptions = {}) {
@@ -188,8 +191,10 @@ export class DomainForm extends Control {
       this._shown?.dispose();
       this._editSub?.unsubscribe();
     });
+    // a delete over a pending edit keeps the change count: the writer's own tick is what moves
     const deleted = computed(() => {
       source.changeCount.value;
+      this._changed.value;
       return this.row.value?.[Rows.STATE] === 'deleted';
     });
     this.effect(() => {
@@ -203,7 +208,10 @@ export class DomainForm extends Control {
     this.effect(() => {
       const edit = source.edit.value;
       this._editSub?.unsubscribe();
-      this._editSub = edit?.onChanged.subscribe(() => this._sync());
+      this._editSub = edit?.onChanged.subscribe(() => {
+        this._sync();
+        this._changed.value++;
+      });
       if (synced)
         untracked(() => this._sync());
       synced = edit !== undefined;
@@ -305,6 +313,11 @@ export class DomainForm extends Control {
       }
       const form = this._build(row, access);
       this._form.value = form;
+      this._projected.clear();
+      for (const prop of form.properties) {
+        if (form.input(prop.name!) instanceof DomainPick)
+          this._projected.set(prop.name!, row[Rows.caption(prop.name!)]);
+      }
       const system = this._options.system === 'footer' ? this._footer(row) : null;
       this._system = system;
       const note = deleted ? [div([`${capital(nounOf(this.source.schema.info, true))} will be deleted on save `,
@@ -638,6 +651,8 @@ export class DomainForm extends Control {
     form.refresh();
     for (const input of form.inputs)
       input.revalidate();
+    for (const name of this._projected.keys())
+      this._renamed(form.input(name) as DomainPick, name, row);
     this._markChanged(form, row);
     if (this._system !== null) {
       const system = this._footer(row);
@@ -651,6 +666,21 @@ export class DomainForm extends Control {
     // a refresh re-reads the uuid into the text row; the caption resolved for it is put back
     this._applyCaptions(row);
     this._checkConstraints();
+  }
+
+  private _renamed(input: DomainPick, name: string, row: RowView): void {
+    const caption = row[Rows.caption(name)];
+    const id = input.peek();
+    if (caption === this._projected.get(name) || typeof caption !== 'string' || id === null || id === '')
+      return;
+    this._projected.set(name, caption);
+    const address = input.table;
+    void (DomainPick.host?.caption(address) ?? Promise.resolve(null)).then(async (dressed) => {
+      const item = dressed === null ? {...input.typeAhead.selected.peek() ?? {id}, id, name: caption} :
+        await DomainPick.resolve(address, id);
+      if (input.peek() === id)
+        input.typeAhead.selected.value = item;
+    }, () => undefined);
   }
 
   /** The table's grammar constraints, parsed once against the schema; one that does not parse

@@ -255,6 +255,38 @@ scoped('a probe that fails keeps the baseline, and a run of failures stops the t
   src.dispose();
 });
 
+scoped('a watched table whose probe keeps failing is dropped after the same run of failures', async () => {
+  const be = counted();
+  const inner = be.backend.table;
+  be.backend.table = async (address) => {
+    const t = await inner(address);
+    return address !== 'grit.project' ? t : Object.assign(Object.create(Object.getPrototypeOf(t)), t,
+      {probe: (spec) => (be.probes.push(spec), Promise.reject(new Error('forbidden')))});
+  };
+  const src = await started(be);
+  await tick(DomainSource.liveFailures + 3);
+  assert.equal(be.probes.filter((p) => !('filter' in p)).length, DomainSource.liveFailures);
+  src.dispose();
+});
+
+scoped('two backends watching one table address each ask their own', async () => {
+  const one = counted();
+  const two = counted();
+  const open = async (be) => {
+    emsBackends.domain = be.backend;
+    const src = testOwner().build(() => new DomainSource({table: 'grit.issue', live: true, liveMs: 1000}, env));
+    src.start();
+    await flush();
+    return src;
+  };
+  const a = await open(one);
+  const b = await open(two);
+  await tick();
+  assert.equal(two.probes.filter((p) => !('filter' in p)).length, 2, 'its baseline and its poll');
+  a.dispose();
+  b.dispose();
+});
+
 scoped('nothing is asked while the tab is hidden, and nothing after dispose', async () => {
   const be = counted();
   const src = await started(be);
@@ -639,6 +671,14 @@ scoped('a peer\'s rename of a referenced row reaches the rows within a poll, one
   src.dispose();
 });
 
+scoped('a source pinned to one referenced row, as a child tab is, leaves that table to the row\'s page', async () => {
+  const be = counted();
+  const src = await started(be, {query: 'project_id = "p1"'});
+  await tick();
+  assert.equal(be.probes.length, 2, 'the baseline and one poll, both of the rows');
+  src.dispose();
+});
+
 scoped('a source that has nothing of its own to poll still polls the tables watched through it', async () => {
   for (const [options, probe] of [[{empty: true}, true], [{}, false]]) {
     const be = counted();
@@ -679,10 +719,16 @@ scoped('an open record follows a peer: reloaded while clean, stale over an edit,
     const idle = be.probes.length;
     await tick();
     assert.equal(be.probes.length - idle, 2, 'the record and its project table; the list behind it waits');
+    const shown = title();
     await peerUpdate(be, 'issue', 'i1', {title: 'Theirs'});
     await tick();
     await flush();
     assert.equal(title().value, 'Theirs');
+    assert.equal(title(), shown, 'refreshed in place, so the focus and a half-typed value stay');
+    await peerUpdate(be, 'project', 'p1', {name: 'Renamed'});
+    await tick();
+    await flush();
+    assert.equal(app.form.value.input('project_id').typeAhead.selected.value.name, 'Renamed');
 
     title().value = 'Mine';
     await flush();

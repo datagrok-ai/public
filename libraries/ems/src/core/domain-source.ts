@@ -73,27 +73,31 @@ type Watched = {moved: Set<() => void>, last?: DomainProbeLike, leave?: () => vo
 
 // one probe of a watched table per poll, however many sources watch it; it goes with its last watcher
 class SharedProbe {
-  static readonly all = new Map<string, SharedProbe>();
+  private static readonly _all = new WeakMap<DomainBackend, Map<string, SharedProbe>>();
   private readonly _watchers = new Map<(now: DomainProbeLike) => void, number>();
-  private _last: DomainProbeLike | undefined;
   private _table: Promise<DomainTableLike> | undefined;
   private _probing: Promise<void> | undefined;
   private _timer: ReturnType<typeof setInterval> | undefined;
   private _ms = 0;
+  private _failures = 0;
 
   private constructor(private readonly _address: string, private readonly _backend: DomainBackend) {}
 
+  static of(backend: DomainBackend, address: string): SharedProbe | undefined {
+    return SharedProbe._all.get(backend)?.get(address);
+  }
+
   static join(address: string, backend: DomainBackend, ms: number, seen: (now: DomainProbeLike) => void): () => void {
-    let shared = SharedProbe.all.get(address);
+    let tables = SharedProbe._all.get(backend);
+    if (tables === undefined)
+      SharedProbe._all.set(backend, tables = new Map());
+    let shared = tables.get(address);
     if (shared === undefined)
-      SharedProbe.all.set(address, shared = new SharedProbe(address, backend));
-    const fresh = shared._watchers.size > 0 ? shared._last : undefined;
+      tables.set(address, shared = new SharedProbe(address, backend));
     shared._watchers.set(seen, ms);
     shared._arm();
-    if (fresh !== undefined)
-      seen(fresh);
-    else
-      void shared.probe();
+    // asked afresh: a result older than the newcomer's rows would read as a move
+    void shared.probe();
     return () => {
       if (!shared._watchers.delete(seen))
         return;
@@ -101,7 +105,7 @@ class SharedProbe {
         shared._arm();
       else {
         clearInterval(shared._timer);
-        SharedProbe.all.delete(address);
+        tables.delete(address);
       }
     };
   }
@@ -116,11 +120,16 @@ class SharedProbe {
       if (table.probe === undefined)
         return;
       const now = await table.probe({});
-      this._last = now;
+      this._failures = 0;
       for (const seen of [...this._watchers.keys()])
         seen(now);
     } catch {
       this._table = undefined;
+      // a table the caller lost access to: the next watcher to join tries again
+      if (++this._failures >= DomainSource.liveFailures) {
+        clearInterval(this._timer);
+        this._ms = 0;
+      }
     }
   }
 
@@ -130,6 +139,7 @@ class SharedProbe {
       return;
     clearInterval(this._timer);
     this._ms = ms;
+    this._failures = 0;
     this._timer = setInterval(() => {
       if (typeof document === 'undefined' || !document.hidden)
         void this.probe();
@@ -247,6 +257,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private readonly _rows: FrameRows;
   private readonly _columns = new Map<string, Signal<unknown>>();
   private readonly _guards = new Set<() => string | null>();
+  private readonly _editing = new Set<() => boolean>();
   private readonly _problems = signal<readonly ReadonlySignal<string | null>[]>([]);
   private readonly _unwritten = signal<readonly ReadonlySignal<UnwrittenEdits | null>[]>([]);
   private readonly _unapplied = signal<ReadonlyMap<string, {value: unknown, message: string}>>(new Map());
@@ -274,6 +285,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private _probing = false;
   private _following = false;
   private _failures = 0;
+  private _accessKey = '';
   // `as`: the query with every host condition replaced by the id list `hosted` gave
   private _served: {query: string | FilterGroup, as: string | FilterGroup} | undefined;
   private _serving: AbortController | undefined;
@@ -453,6 +465,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       this._failures = 0;
       const polling = this.live.value && !this.paused.value;
       untracked(() => {
+        if (polling)
+          this._followOnce();
         for (const [address, entry] of this._watched) {
           if (polling)
             this._join(address, entry);
@@ -535,11 +549,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       const data = await table.access();
       if (gen !== this._gen)
         return;
-      this._access.value = Access.from(data);
-      if (!this._following && !this.isEmpty) {
-        this._following = true;
-        void this._follow();
-      }
+      this._access.value = this._accessOf(data);
+      this._followOnce();
       await this._serve(true);
       if (gen !== this._gen)
         return;
@@ -561,7 +572,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
         frame.dispose();
         this._probed = shown;
         batch(() => {
-          if (!this.isDirty.peek())
+          if (!this.isDirty.peek() || shownFrame !== undefined)
             this._isStale.value = true;
           this._state.value = 'ready';
         });
@@ -696,7 +707,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     if (this.scope.isDisposed)
       return false;
     const before = this._access.peek();
-    const access = Access.from(data);
+    const access = this._accessOf(data);
     const restored = this._held403() && this._grants(access) && !this._grants(before);
     batch(() => {
       this._access.value = access;
@@ -938,8 +949,15 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   // or that a pending row of the session may refer to; one left behind goes with the re-read
   private _unsaved(): boolean {
     const current = this.currentRow.peek();
-    return this.isDirty.peek() || (this.pending().length > 0 &&
+    return this.isDirty.peek() || [...this._editing].some((editing) => editing()) || (this.pending().length > 0 &&
       (this.session.isDirty.peek() || (current !== null && Rows.isDraft(current))));
+  }
+
+  /** A control mid-edit on a value no row holds yet (an open cell editor): a reload waits, marking the source
+   * stale. Answers the release. */
+  holdReload(editing: () => boolean): () => void {
+    this._editing.add(editing);
+    return () => this._editing.delete(editing);
   }
 
   /** Follows another table on this source's live probe; `moved` runs when it changed. Answers the unwatch. */
@@ -986,7 +1004,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       entry.last = undefined;
       source._notify(this.table, entry);
     }
-    void SharedProbe.all.get(this.table)?.probe();
+    void SharedProbe.of(this._backend, this.table)?.probe();
     if (!this._noRows && this._table !== undefined) {
       const total = await this._count(this._table);
       if (gen === this._gen)
@@ -1343,6 +1361,15 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     }
   }
 
+  // equal grants keep the one Access: a form rebuilt over a new one would drop the focus and what is typed
+  private _accessOf(data: AccessData): Access {
+    const key = JSON.stringify(data);
+    if (key === this._accessKey)
+      return this._access.peek();
+    this._accessKey = key;
+    return Access.from(data);
+  }
+
   private _join(address: string, entry: Watched): void {
     entry.leave ??= SharedProbe.join(address, this._backend, this._liveMs, (now) => this._seen(address, entry, now));
   }
@@ -1371,8 +1398,20 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   }
 
   // a rename where the captions come from moves the rows; a table seen only through row grants has no cheap probe
+  private _followOnce(): void {
+    if (this._following || this.isEmpty || !this.live.peek() || this._table === undefined)
+      return;
+    this._following = true;
+    void this._follow();
+  }
+
+  // a column pinned to one row (a child tab's parent) is named by the page that holds that row
   private async _follow(): Promise<void> {
-    const columns = this._captionColumns();
+    const q = this.query.peek();
+    const tree = typeof q === 'string' ? Filters.parse(q).root : q;
+    const pinned = tree.op !== 'and' || tree.not === true ? [] :
+      tree.nodes.flatMap((n) => !Filters.isGroup(n) && n.operator === '=' ? [n.property] : []);
+    const columns = this._captionColumns().filter((name) => !pinned.includes(name));
     const tables = new Set(this._schema.properties.filter((p) => columns.includes(p.name) && p.ref !== this.table)
       .map((p) => p.ref!));
     for (const address of tables) {
