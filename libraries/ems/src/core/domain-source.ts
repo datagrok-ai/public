@@ -1133,6 +1133,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   }
 
   private _wire(frame: DomainFrameLike): void {
+    // what the last writer refused is not this one's verdict
+    this._unapplied.value = new Map();
     const bump = () => this._version.value = this._version.peek() + 1;
     const subs = [
       // the editor removes saved deletes and re-keys saved drafts without a frame event: the
