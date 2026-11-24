@@ -1843,6 +1843,24 @@ scoped('domains.views: Back and Forward inside a view reach the app func, which 
   }
 });
 
+scoped('a package\'s main app hands its own address\'s ?entity= to the view under it', async () => {
+  emsBackends.domain = backend();
+  grok.shell.addView = (view) => view;
+  const address = location.href;
+  const views = domains.views({path: '/apps/C/C', views: [{table: 'grit.issue', name: 'Issues', segment: ''}]});
+  try {
+    setAddress('/apps/C?entity=i2');
+    const view = await views.open('');
+    await flush();
+    assert.equal(DomainApp.of(view).entity.value, 'i2');
+  } finally {
+    delete grok.shell.addView;
+    setAddress(address);
+    for (const app of [...DomainApp.live])
+      app.dispose();
+  }
+});
+
 // the last test: the views it makes stay registered for the process
 scoped('domains.views: a view per table, addressed and brought forward, where its rows open, an item each', async () => {
   emsBackends.domain = backend();

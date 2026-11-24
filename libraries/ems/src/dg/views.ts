@@ -176,7 +176,11 @@ export class DomainViews {
 
   // the router hands over the path alone: where the address bar is this view's, its query is replayed from there
   private _at(entry: DomainViewEntry, rest: string): string {
-    const own = window.location.pathname.toLowerCase().endsWith(this.baseOf(entry.table).toLowerCase());
+    // a package's main app answers at `/apps/<Package>` for views that live under `/apps/<Package>/<Package>`
+    const base = this.baseOf(entry.table);
+    const short = base.replace(this._options.path, this._options.path.replace(/(\/[^/]+)\1$/i, '$1'));
+    const path = window.location.pathname.toLowerCase();
+    const own = path.endsWith(base.toLowerCase()) || path.endsWith(short.toLowerCase());
     return rest || (own ? `${window.location.pathname}${window.location.search}` : '');
   }
 
