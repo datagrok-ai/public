@@ -664,8 +664,6 @@ export class DomainApp extends Control {
     if (this._reshaped.peek() !== null)
       await this._settle();
     else if (await this._outdated()) {
-      if (this.session.isDirty.peek())
-        return true;
       DomainTable.forget(this.table.address.split('.')[0]);
       await DomainViews.rebuild(this);
     } else if (this.scope.isDisposed || source !== shown() ||
@@ -733,7 +731,8 @@ export class DomainApp extends Control {
     if (reshaped === null || this.session.isDirty.peek())
       return Promise.resolve();
     return this._settling ??= reshaped.rebuild().then(() => {
-      this._reshaped.value = null;
+      if (!this.session.isDirty.peek())
+        this._reshaped.value = null;
     }, (e: unknown) => void DomainErrors.report(e)).finally(() => this._settling = null);
   }
 

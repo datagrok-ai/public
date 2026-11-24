@@ -130,6 +130,10 @@ export class DomainViews {
     const address = app.table.address;
     const views = DomainViews._byTable.get(address);
     const view = views !== undefined ? await views.view(address) : (await domains.table(address)).app({path: app.base});
+    if (DomainApp.viewOf(app) !== old || app.session.isDirty.peek()) {
+      DomainApp.of(view)!.dispose();
+      return;
+    }
     void DomainApp.of(view)!.open(app.path.peek());
     grok.shell.addView(view);
     old.close();
