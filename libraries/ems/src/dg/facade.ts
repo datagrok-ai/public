@@ -262,8 +262,7 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
   static noCreate(source: DomainSource): string | null {
     if (source.edit.value === undefined || !source.access.value.can('insert'))
       return null;
-    const filled = Object.entries(source.defaults).filter(([, v]) => v !== undefined && v !== null).map(([k]) => k);
-    const columns = DomainTable.unsettable(source.schema.properties, source.schema.info, source.access.value, filled);
+    const columns = DomainTable.unsettable(source.schema.properties, source.schema.info, source.access.value);
     return columns.length === 0 && !source.schema.info.hiddenRequired ? null :
       DomainTable.noRequired(source.schema.info, columns, source.access.value);
   }
