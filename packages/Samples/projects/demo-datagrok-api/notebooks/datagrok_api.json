@@ -34,7 +34,8 @@
           "dashboard_id = api.tables.create_dashboard('Customers', table_id)['ID']\n",
           "\n",
           "# Share dashboard with all users\n",
-          "api.shares.share(dashboard_id, 'All users')"
+          "for access in ['View', 'Table.ReadData', 'Edit']:\n",
+          "    api.shares.share(dashboard_id, 'All users', access=access)"
         ]
       }
     ],
