@@ -690,15 +690,11 @@ function readJsonBody(argv: any, entity: string): any {
 async function handleSharesAdd(dapi: NodeDapi, rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
   const [entity, ...groupArgs] = rest;
   if (!entity || !groupArgs.length) {
-    printError(new Error('Usage: grok s shares add <entity-id-or-name> <group>[,<group>...] [--access View|Edit]'));
+    printError(new Error('Usage: grok s shares add <entity-id-or-name> <group>[,<group>...] [--access Use|Full|<permission>]'));
     return false;
   }
   const groups = groupArgs.flatMap((g) => g.split(',')).map((g) => g.trim()).filter(Boolean).join(',');
   const access = typeof argv.access === 'string' ? argv.access : 'View';
-  if (access !== 'View' && access !== 'Edit') {
-    printError(new Error(`Invalid --access '${access}'. Use 'View' or 'Edit'.`));
-    return false;
-  }
   const result = await dapi.shares.share(entity, groups, access);
   printOutput(result, output);
   if (result?.status === 'failed') process.exitCode = 1;
@@ -972,7 +968,7 @@ Special commands:
   grok s healthcheck [--module <name>]                Check server + per-module health
   grok s status                                       Server build, uptime, DB pool and HTTP connections
                                                       (/info/server); admins also see requests in flight
-  grok s shares add <entity> <group>[,<group>...] [--access View|Edit]
+  grok s shares add <entity> <group>[,<group>...] [--access Use|Full|<permission>]
                                                       Share an entity with one or more groups
   grok s shares list <entity-id-or-name>              List who an entity is shared with
   grok s users save --json user.json                  Create or update a user from a JSON file
