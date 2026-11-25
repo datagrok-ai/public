@@ -94,6 +94,20 @@ export async function ReportFuncCallExcel(funcCall: DG.FuncCall, validationState
   return await PackageFunctions.ReportFuncCallExcel(funcCall, validationState, consistencyState, viewersHook, metaState, isOutputOutdated);
 }
 
+//description: Picks a saved run of a function in the run browser; returns it loaded, or null when cancelled.
+//input: func func 
+//output: funccall result
+export function OpenRunDialog(func: any) {
+  return PackageFunctions.OpenRunDialog(func);
+}
+
+//description: Asks where and under which name to save a run; returns {metadata, target}, or null when cancelled.
+//input: funccall call 
+//output: object result
+export function SaveRunDialog(call: DG.FuncCall) {
+  return PackageFunctions.SaveRunDialog(call);
+}
+
 //description: The exports of a function's runs as its Export menu lists them, [{id, name}]; the first is default.
 //input: func func 
 //output: object result

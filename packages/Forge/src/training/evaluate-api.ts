@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {apiMapping, APPLY_COLUMNS, loadedModelOf} from '../apply/apply-model';
+import {Engine} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
 import {ForgeError} from '../forge-error';
 import {ClassValues, MetricValues} from '../metrics/metrics';
@@ -42,10 +43,11 @@ export interface EvaluateModelResult {
 
 /** The body of `Forge:evaluateModel`: Run Evaluation without the view. The model is measured on [table], by default
  * on the data it keeps a reference to or a copy of; the features are mapped as `Forge:applyModel` maps them. Nothing
- * is added to the table and nothing is recorded. */
-export async function runEvaluateModel(input: EvaluateModelInput): Promise<EvaluateModelResult> {
+ * is added to the table and nothing is recorded. [discovered] replaces the installed methods (a test's stub). */
+export async function runEvaluateModel(input: EvaluateModelInput, discovered?: Engine[]):
+  Promise<EvaluateModelResult> {
   const row = await findModelRow(input.model, EVALUATE_COLUMNS);
-  const model = loadedModelOf(row, EngineRegistry.discover());
+  const model = loadedModelOf(row, discovered ?? EngineRegistry.discover());
   const table = input.table ?? await storedTrainingTable(row);
   if (table === null)
     throw new ForgeError('The model keeps no training data. Pass a table with the actual values.');

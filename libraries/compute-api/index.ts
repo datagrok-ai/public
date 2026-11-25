@@ -28,8 +28,18 @@ declare global {
 
       deepCopy: typeof deepCopy,
     },
+    // set once Compute2 is loaded, as by its editors
+    compute2: {
+      CustomFunctionView: typeof CustomFunctionViewClass,
+      historyInput: typeof historyInputFunc,
+    },
   }
 }
+
+import type {CustomFunctionView as CustomFunctionViewClass} from
+  '@datagrok-libraries/compute-utils/function-views/src/custom-function-view';
+import type {historyInput as historyInputFunc} from
+  '@datagrok-libraries/compute-utils/function-views/src/history-input';
 
 import * as UiUtils from './src/ui-utils';
 export {UiUtils};
@@ -50,13 +60,14 @@ export type * from '@datagrok-libraries/compute-utils/reactive-tree-driver/index
 export {isFuncCallState, isStaticPipelineState, isDynamicPipelineState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/index';
 
 import {
-  ComputationView, RichFunctionView, PipelineView, CustomFunctionView,
+  ComputationView, RichFunctionView, PipelineView, CustomFunctionView, HistoryInput, historyInput,
   createCompView, createRFV, createPipeline,
 } from './src/views';
 export {
-  ComputationView, RichFunctionView, PipelineView, CustomFunctionView,
+  ComputationView, RichFunctionView, PipelineView, CustomFunctionView, HistoryInput, historyInput,
   createCompView, createRFV, createPipeline,
 };
+export type {HistoryInputOptions} from './src/views';
 
 export async function initComputeApi() {
   const initFunc = DG.Func.find({package: 'Compute', name: 'init'})[0];
@@ -96,6 +107,18 @@ export async function saveWorkflowRun(
 export async function loadWorkflowRun(id: string): Promise<LoadedRun> {
   const loadFunc = DG.Func.find({package: 'Compute2', name: 'LoadWorkflowRun'})[0];
   const call = loadFunc.prepare({id});
+  await call.call();
+  return call.getOutputParamValue();
+}
+
+/** Opens a saved run in its view: a workflow run in the Tree Wizard, a single function run in its editor. */
+export async function openWorkflowRun(id: string): Promise<void> {
+  await DG.Func.find({package: 'Compute2', name: 'OpenWorkflowRun'})[0].prepare({id}).call();
+}
+
+/** Picks a saved run of a function in Compute2's run browser; resolves to it loaded, or to null when cancelled. */
+export async function openRunDialog(func: DG.Func): Promise<DG.FuncCall | null> {
+  const call = DG.Func.find({package: 'Compute2', name: 'OpenRunDialog'})[0].prepare({func});
   await call.call();
   return call.getOutputParamValue();
 }

@@ -112,10 +112,17 @@ Predictive modeling (train, apply, catalog) behind the platform's `ML | Models` 
   'name = "X"'` matches the friendly name. A JS `ui.bind` row gets only **Properties...**: use `ui.contextActions(row)`.
 - A row reaches a Space only by the platform's drag of a model element (`ui.bind` / `ui.makeDraggable` with the row).
   Column inputs keep a removed column: the Train view drops it on `onColumnsRemoved`.
-- UI tests switch `TuneSettings.storage` to `Forge Tune tests` (and `Gallery.storage`) in the hooks loop at the end of
-  `ui-tests.ts`: a new UI category that opens a Train view or a Models view must be added there (or set both
-  in its own `before`, as `UI: Gallery`: a later `before` replaces an earlier one). The storage holds one key per method and `Find best` (the
-  Find best model block); a test that toggles its methods clears the storage in `finally`.
+- UI tests switch `TuneSettings.storage` to `Forge Tune tests` (and `Gallery.storage`) through `testStorageHooks()`
+  in `ui-tests.ts`: a UI category that opens a Train view or a Models view, or reads or writes their settings, calls it
+  (one `category` block per name: a later `before` replaces an earlier one, and the Test Manager runs `before` and
+  `after` around every test, so they stay light). The storage holds one key per method and `Find best` (the Find best
+  model block); a test that writes a key deletes it in `finally`.
+- Test layers: `grok test` keeps logic, form logic without a view, stub scenarios (`slowEngine`, `stuckEngine`, a
+  failing viewer), invariants (subscriptions, released frames), registration and API functions, numbers and
+  `restoreRun`; the user flows, the tooltips and the layout are BDD's (`bdd/`). UI tests never assert tooltip
+  texts, pixels or CSS, and wait for a state (`awaitTrained`, `retrain`: a change drops `lastTraining` at once,
+  `aria-busy` false; `waitUntil` with 20 s or more), never a fixed delay. Forge's `test()` declares `skipToCategory`,
+  `skipToTest`, `returnOnFail` and `exclude`, so the CLI retries a failed run on a fresh page.
 - Method `Auto` is a view state (`userChoice`), not an engine: `this.engine` stays the suggested method, and
   `Forge:trainModel` takes `method: 'auto'`; the winner's engine must reach both the selection and the request.
   Choosing it keeps `lastTraining` (`requestCheck(true)`): nothing retrains, the results stay.
@@ -135,8 +142,10 @@ Predictive modeling (train, apply, catalog) behind the platform's `ML | Models` 
   (`engines/check-method.ts`, tests named "Forge Check:") is temporary.
 - Test rows are `forge-test-*`, deleted in `finally`; `expect(x, undefined)` checks against `true`; close a Train view
   with `closeTrainView` (waits for `isTraining`); `openTable` records no creation script (use `openIrisFromFile`).
-- Tests keep SVM at 1000 rows or fewer (it always fits class probabilities): a small table (`twoClassTable`,
-  `spreadRows` in `src/tests/test-data.ts`) or the stub `slowEngine` where a test needs a slow method.
+- No test dataset has more than 10 000 rows, and SVM gets 1000 rows or fewer (it always fits class probabilities): a
+  small table (`twoClassTable` in `src/tests/test-data.ts`) or the stub `slowEngine` (with an `EngineGate`, a training or, with role
+  `'apply'`, an application stops at a known point; `cancelAtGate` cancels it there) where a test needs a slow or a
+  cancelled training, application or evaluation.
 
 ## Commands
 

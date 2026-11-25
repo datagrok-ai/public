@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 // @ts-ignore .... idk why it does not like it
 import '../../css/ai.css';
-import {dartLike, fireAIAbortEvent, createStyledMarkdown, tryMarkdown, plainTextEl, isEnterKey,
+import {dartLike, fireAIAbortEvent, createStyledMarkdown, codeCard, tryMarkdown, plainTextEl,
   copyToClipboard} from '../utils';
 import {buildWorkspaceContext, executeSingleBlock} from '../claude/exec-blocks';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
@@ -36,6 +36,13 @@ export interface AskUserQuestion {
 interface AskUserInput {
   questions: AskUserQuestion[];
 }
+
+interface QuestionSection {
+  strip: HTMLElement;
+  body: HTMLElement;
+}
+
+export type StripStyle = 'success' | 'muted';
 
 const actionButtionValues = {
   run: 'Run AI Prompt',
@@ -114,6 +121,7 @@ export interface StreamingPanel<T extends MessageType = MessageType> {
   appendUiMessage(content: string): void;
   clearStreaming(): void;
   showInputRequest(input: AskUserInput): void;
+  dismissQuestion(): void;
   restoredTranscript(): string;
   get rawRender(): boolean;
   get noPrompt(): boolean;
@@ -195,6 +203,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private _promptHistoryIndex: number | null = null;
   /** The unsubmitted draft saved when the user starts cycling, restored when they cycle back past the newest entry. */
   private _promptDraft: string = '';
+  private _dismissQuestion: (() => void) | null = null;
 
   get sessionId(): string { return this._sessionId; }
 
@@ -231,7 +240,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         (this._promptHistoryIndex !== null || (up && this.textArea.selectionEnd === 0)) &&
         this.navigatePromptHistory(up ? -1 : 1))
         event.preventDefault();
-      if (isEnterKey(event) && (!event.ctrlKey && !event.metaKey)) {
+      if (event.key === 'Enter' && (!event.ctrlKey && !event.metaKey)) {
         event.preventDefault();
         event.stopImmediatePropagation();
         this.handleRun();
@@ -292,7 +301,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this.inputControlsDiv = ui.divH([
       this.wandButton, this.micButton, this.rawRenderButton,
     ], 'd4-ai-panel-input-controls');
-    this.runButton.style.color = 'var(--blue-1)';
+    this.runButton.classList.add('grokky-send');
     const sessionControls = ui.divH([this.copyConversationButton, this.historyButton, this.newChatButton], 'd4-ai-panel-run-controls');
     sessionControls.style.marginLeft = 'auto';
     const messageControls = ui.divH([this.tryAgainButton, this.runButton], 'd4-ai-panel-run-controls');
@@ -476,7 +485,10 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   private buildExecIcons(markDown: HTMLElement, {codes, ranThisSession, view = this.view}: ExecInfo): HTMLElement[] {
-    const codeBlock = ui.divText(codes.map((c) => c.trim()).join('\n\n'), 'grokky-exec-code grokky-hidden');
+    const pre = ui.element('pre', 'grokky-exec-code');
+    pre.textContent = codes.map((c) => c.trim()).join('\n\n');
+    const codeBlock = codeCard(pre, 'JavaScript');
+    codeBlock.classList.add('grokky-hidden');
     markDown.appendChild(codeBlock);
 
     let state: ExecState = ranThisSession ? ExecState.ran : ExecState.idle;
@@ -616,13 +628,13 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     cancelHint.style.display = this.isRecognizing ? '' : 'none';
     this._voiceCancelHint = cancelHint;
     this.statusRepeats = 0;
+    this.dismissQuestion();
     this.setStatus('Thinking…');
     const loader = ui.divH([spinner, this.statusLabel, cancelHint], 'd4-ai-loader');
     ui.empty(this.statusBar);
     this.statusBar.appendChild(loader);
     this.runButton.classList.remove('fal', 'fa-paper-plane');
     this.runButton.classList.add('fas', 'fa-stop');
-    this.runButton.style.color = 'orangered';
     this.runButtonTooltip = actionButtionValues.stop;
     this.syncConversationButtons();
     return {
@@ -638,7 +650,6 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       endSession: () => {
         this.runButton.classList.remove('fas', 'fa-stop');
         this.runButton.classList.add('fal', 'fa-paper-plane');
-        this.runButton.style.color = 'var(--blue-1)';
         this.runButtonTooltip = actionButtionValues.run;
         this.syncConversationButtons();
         this._voiceCancelHint = null;
@@ -858,30 +869,54 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
 
   showInputRequest(input: AskUserInput): void {
     const questions = input.questions ?? [];
-    const choices = questions.map((q) => {
-      const items = q.options.map((o) => o.label);
-      return ui.input.choice(q.header ?? '', {items, value: items[0], nullable: false}) as DG.InputBase<string>;
+    const answers = questions.map((q) => q.options[0]?.label ?? '');
+    const sections = questions.map((q, i): QuestionSection => {
+      const pills: HTMLElement[] = q.options.map((o) => {
+        const pill = ui.divText(o.label, 'grokky-choice-card');
+        if (o.description)
+          ui.tooltip.bind(pill, o.description);
+        pill.onclick = () => {
+          answers[i] = o.label;
+          pills.forEach((p) => p.classList.toggle('grokky-choice-selected', p === pill));
+        };
+        return pill;
+      });
+      pills[0]?.classList.add('grokky-choice-selected');
+      return {
+        strip: ui.divH([ui.divText(q.question)], 'grokky-strip grokky-strip-question'),
+        body: ui.div([ui.divH(pills, 'grokky-choice-row')], 'grokky-confirm-body'),
+      };
     });
-    const answerPrompt = () => questions.length === 1 ? choices[0].value! :
-      questions.map((q, i) => `${q.question} ${choices[i].value}`).join('\n');
-    const lock = () => {
-      choices.forEach((c) => c.enabled = false);
-      submit.disabled = true;
-      submit.textContent = 'Submitted';
+    const close = (style: StripStyle, icon: string, answerText: (questionIdx: number) => string): void => {
+      this._dismissQuestion = null;
+      footer.remove();
+      sections.forEach((s, i) => {
+        s.body.remove();
+        s.strip.classList.replace('grokky-strip-question', `grokky-strip-${style}`);
+        s.strip.append(ui.divH([ui.iconFA(icon), ui.divText(answerText(i))], 'grokky-strip-answer'));
+      });
     };
-    const submit = ui.button('Submit', () => {
+    this.dismissQuestion();
+    this._dismissQuestion = () => close('muted', 'minus', () => 'Not answered');
+    const footer = ui.divH([ui.bigButton('Submit', () => {
       if (this.isBusy)
         return;
-      lock();
-      this._onRunRequest.next({prevMessages: this._messages, currentPrompt: {prompt: answerPrompt(), isAnswer: true} as K});
+      close('success', 'check', (i) => answers[i]);
+      const prompt = questions.length === 1 ? answers[0] :
+        questions.map((q, i) => `${q.question} ${answers[i]}`).join('\n');
+      this._onRunRequest.next({prevMessages: this._messages, currentPrompt: {prompt, isAnswer: true} as K});
       this.textArea.focus();
-    }) as HTMLButtonElement;
+    })], 'grokky-question-footer');
 
-    const form = ui.divV([...questions.map((q, i) => ui.divV([ui.divText(q.question), choices[i].root])), submit]);
-    form.addEventListener('change', () => this.textArea.focus());
+    const card = ui.divV([...sections.flatMap((s) => [s.strip, s.body]), footer],
+      'grokky-confirm-card grokky-question-card');
     this.ensureResponseBlock();
-    this._aiMessagesAccordionPane!.appendChild(ui.divV([form], 'd4-ai-assistant-response-container'));
+    this._aiMessagesAccordionPane!.appendChild(ui.divV([card], 'd4-ai-assistant-response-container'));
     this.outputArea.scrollTop = this.outputArea.scrollHeight;
+  }
+
+  dismissQuestion(): void {
+    this._dismissQuestion?.();
   }
 
   private tryAgain() {

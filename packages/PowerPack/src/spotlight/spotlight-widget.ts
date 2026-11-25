@@ -6,7 +6,7 @@ import {queries} from '../package-api';
 import {_package} from '../package';
 import {LearningWidget} from '../widgets/learning-widget';
 import {WorkspaceTab} from './workspace-tab';
-import {isSpotlightEntity} from './entity-kinds';
+import {hasHandler, isSpotlightEntity} from './entity-kinds';
 import {clearWorkspacePreview} from './preview-host';
 import {openDefaultTabOnce, spotlightTabContent, spotlightTabFunctions} from './package-tabs';
 
@@ -293,7 +293,7 @@ export class SpotlightWidget extends DG.Widget {
     for (const c of parsedCandidates) {
       const user = byIdMap.get(c.userId);
       const ent = byIdMap.get(c.entityId);
-      if (!(user instanceof DG.User) || !ent || ent instanceof DG.User)
+      if (!(user instanceof DG.User) || !hasHandler(ent) || ent instanceof DG.User)
         continue;
       this.sharedNotifications.push(c.notification);
       this.sharedUsers.push(user);

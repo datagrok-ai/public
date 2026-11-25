@@ -23,6 +23,7 @@ User documentation: [Cheminformatics](../../../help/datagrok/solutions/domains/c
 | `src/constants.ts`                                       | Enums, tags, configuration constants                   |
 | `src/scripts-api.ts`                                     | Namespace wrapper for calling package functions        |
 | `src/demo/demo.ts`                                       | Demo entry points (overview, MMPA, similarity, scaffold, etc.) |
+| `src/demo/sar-matrix-tour.ts`                            | The guided tour of the two SAR Matrix demos: its cards, their texts and anchors |
 | `src/rendering/rdkit-cell-renderer.ts`                   | RDKit-based grid cell renderer with LRU caching        |
 | `src/rendering/rdkit-reaction-renderer.ts`               | Reaction rendering — multi-step routes, branched/convergent paths via `BRANCH_DELIMITER` and `parseMultiStepReaction` |
 | `src/rendering/render-molecule.ts`                       | High-level molecule rendering helper                   |

@@ -7,16 +7,16 @@ import * as rxjs from 'rxjs';
 
 import {CombinedAISearchAssistant} from './search/combined-search';
 import {fireAIPanelToggleEvent, getAIAbortSubscription, fireBeforeUserPromptEvent,
-  fireAfterUserPromptEvent, UserPromptEventArgs, createStyledMarkdown, tryMarkdown, plainTextEl, isEnterKey,
+  fireAfterUserPromptEvent, UserPromptEventArgs, createStyledMarkdown, tryMarkdown, plainTextEl,
   SHORTCUT_HINT, copyToClipboard} from '../utils';
-import {AIPanel, StreamingPanel} from './panel';
+import {AIPanel, StreamingPanel, StripStyle} from './panel';
 import {AIWindowManager} from './ai-window';
 import {ClaudeRuntimeClient, ErrorEvent, FinalEvent, ToolActivityEvent} from '../claude/runtime-client';
 import {executeSingleBlock, runVerification, renderEntityRefList} from '../claude/exec-blocks';
 import {sendChatTurn} from '../claude/queue-task';
 import {UsageLimiter} from './usage-limiter';
 import {viewFunctionTools, NO_VIEW_TOOLS} from './view-tools';
-import {resolveScopes, showSuggestionsMenu} from './prompt-suggestions';
+import {resolveScopes, showSuggestionsMenu, SearchProvider} from './prompt-suggestions';
 import {AiFeature} from '../claude/ai-feature';
 
 interface ExecutionPlan {
@@ -50,6 +50,33 @@ interface StreamingOpts {
   onFinal: (evt: FinalEvent, host: HTMLElement) => void | Promise<void>;
 }
 
+interface ConfirmInput {
+  action?: string;
+  name?: string;
+  owner?: string;
+  created?: string;
+  details?: string;
+}
+
+type ConfirmOutcome = 'confirmed' | 'cancelled' | 'unanswered';
+
+interface ConfirmCard {
+  root: HTMLElement;
+  close: (outcome: ConfirmOutcome) => void;
+}
+
+const CONFIRM_OUTCOMES: Record<ConfirmOutcome, {style: StripStyle, icon: string, text: string}> = {
+  confirmed: {style: 'success', icon: 'check', text: 'Confirmed'},
+  cancelled: {style: 'muted', icon: 'times', text: 'Cancelled'},
+  unanswered: {style: 'muted', icon: 'minus', text: 'Not answered'},
+};
+
+enum Status {
+  None = '',
+  Tool = 'tool',
+  Writing = 'writing',
+  Revising = 'revising',
+}
 
 export const RENDERED_EVENT = 'grokky-rendered';
 
@@ -111,7 +138,7 @@ async function streamingWidget(prompt: string, opts: StreamingOpts): Promise<DG.
     stopListening();
   });
 
-  client.send(sessionId, prompt, {logPrompt: prompt, outputSchema: opts.outputSchema});
+  client.send(sessionId, prompt, {logPrompt: prompt, outputSchema: opts.outputSchema, systemPromptMode: 'search'});
   return widget;
 }
 
@@ -182,13 +209,16 @@ export function setupSearchUI() {
     const parent: HTMLElement = searchInput.parentElement!;
     const wandIcon = ui.iconFA('magic', async (e) => {
       const scopes = await resolveScopes('powerSearch');
-      showSuggestionsMenu(scopes, (s) => {
+      showSuggestionsMenu(scopes, (s, provider) => {
         const prompt = s.prompt ?? '';
         searchInput.value = prompt;
         searchInput.dispatchEvent(new Event('input', {bubbles: true}));
         // PowerPack's input handler debounces 500ms and then calls ui.empty(host) on power-pack-search-host;
         // wait past that so the AI loader/result isn't wiped immediately after we prepend it.
-        setTimeout(() => aiCombinedSearch(prompt), 600);
+        setTimeout(() => {
+          CombinedAISearchAssistant.instance.resetSearchUI();
+          aiCombinedSearch(prompt, provider);
+        }, 600);
       }, e);
     }, 'Prompt suggestions');
     wandIcon.classList.add('grokky-search-wand');
@@ -201,7 +231,7 @@ export function setupSearchUI() {
     }
 
     searchInput.addEventListener('keyup', (event: KeyboardEvent) => {
-      if (isEnterKey(event) && searchInput.value?.trim()) {
+      if (event.key === 'Enter' && searchInput.value?.trim()) {
         event.preventDefault();
         setTimeout(() => aiCombinedSearch(searchInput.value), 400); // timeout needed to allow other enter handlers to run first
       }
@@ -223,10 +253,10 @@ export function setupSearchUI() {
   }, 1000);
 }
 
-export async function aiCombinedSearch(prompt: string) {
+export async function aiCombinedSearch(prompt: string, provider?: SearchProvider) {
   // hide the menu
   document.querySelector('.d4-menu-popup')?.remove();
-  await CombinedAISearchAssistant.instance.searchUI(prompt);
+  await CombinedAISearchAssistant.instance.searchUI(prompt, provider);
 }
 
 // Called by the core query editor to decide whether to show its AI toggle icon.
@@ -300,17 +330,20 @@ export async function runPromptWithLifecycle(
     fireAfterUserPromptEvent({prompt, context: view, handled: false});
 }
 
-function buildConfirmCard(input: any, resolve: (confirmed: boolean) => void): HTMLElement {
-  const answer = (confirmed: boolean) => {
-    const [style, icon, text] = confirmed ? ['success', 'check', 'Confirmed'] : ['muted', 'times', 'Cancelled'];
+function buildConfirmCard(input: ConfirmInput, onClose: (outcome: ConfirmOutcome) => void): ConfirmCard {
+  const close = (outcome: ConfirmOutcome): void => {
+    const {style, icon, text} = CONFIRM_OUTCOMES[outcome];
     buttons.remove();
     strip.classList.replace('grokky-strip-danger', `grokky-strip-${style}`);
     strip.append(ui.divH([ui.iconFA(icon), ui.divText(text)], 'grokky-strip-answer'));
-    resolve(confirmed);
+    onClose(outcome);
   };
   const strip = ui.divH([ui.divText(input.action ?? 'Confirm action')], 'grokky-strip grokky-strip-danger');
-  const buttons = ui.divH([ui.bigButton('OK', () => answer(true)), ui.button('CANCEL', () => answer(false))]);
-  return ui.divV([
+  const buttons = ui.divH([
+    ui.bigButton('OK', () => close('confirmed')),
+    ui.button('CANCEL', () => close('cancelled')),
+  ]);
+  const root = ui.divV([
     strip,
     ui.divV([
       ui.tableFromMap({
@@ -322,6 +355,7 @@ function buildConfirmCard(input: any, resolve: (confirmed: boolean) => void): HT
       buttons,
     ], 'grokky-confirm-body'),
   ], 'grokky-confirm-card');
+  return {root, close};
 }
 
 async function runClaudeStreaming(
@@ -339,13 +373,6 @@ async function runClaudeStreaming(
   }
 }
 
-enum Status {
-  None = '',
-  Tool = 'tool',
-  Writing = 'writing',
-  Revising = 'revising',
-}
-
 async function streamOnce(
   panel: StreamingPanel, userPrompt: string, view: DG.ViewBase,
   systemPromptMode: string | undefined,
@@ -360,7 +387,11 @@ async function streamOnce(
     const execCodes: string[] = [];
     let preRevisionExecCodes: string[] | null = null;
     const subs: {unsubscribe: () => void}[] = [];
-    const cleanup = () => subs.forEach((s) => s.unsubscribe());
+    let dismissConfirm: (() => void) | null = null;
+    const cleanup = () => {
+      subs.forEach((s) => s.unsubscribe());
+      dismissConfirm?.();
+    };
     let resentAfterReset = false;
 
     const forSession = <T extends {sessionId: string}>(
@@ -464,7 +495,8 @@ async function streamOnce(
 
       forSession(client.onAborted, async () => {
         panel.clearStreaming();
-        chatSession.session.addUiMessage('Processing aborted by user', false, {system: true});
+        panel.dismissQuestion();
+        chatSession.session.addUiMessage('Stopped', false, {system: true});
         cleanup();
         resolve();
       });
@@ -507,11 +539,16 @@ async function streamOnce(
         }
         // datagrok_confirm: render the approval card and hold the round-trip until a button is clicked.
         if (evt.toolName === 'datagrok_confirm') {
-          const confirmed = await new Promise<boolean>((resolve) => {
-            panel.appendStreamedElement(buildConfirmCard(evt.input ?? {}, resolve));
+          const outcome = await new Promise<ConfirmOutcome>((resolve) => {
+            const card = buildConfirmCard(evt.input ?? {}, resolve);
+            dismissConfirm = () => card.close('unanswered');
+            panel.appendStreamedElement(card.root);
           });
+          dismissConfirm = null;
+          if (outcome === 'unanswered')
+            return;
           segmentStart = accumulated.length;
-          client.respondToInput(sessionId, evt.requestId, {confirmed});
+          client.respondToInput(sessionId, evt.requestId, {confirmed: outcome === 'confirmed'});
           return;
         }
         // datagrok_show_entities: render entity cards immediately, no user interaction needed.

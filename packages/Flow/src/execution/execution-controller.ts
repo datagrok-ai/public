@@ -13,6 +13,7 @@ import {graphicsElement} from './value-inspector';
 import {emitScript, ScriptSettings, EmitOptions} from '../compiler/script-emitter';
 import {validateGraph} from '../compiler/validator';
 import {sliceUpTo, sliceDownFrom} from '../compiler/graph-compiler';
+import {topologicalSort} from '../compiler/topological-sort';
 import {ValueSummary} from './execution-state';
 import {FlowNode, isExecKey, nodeMissingRequirements, inlinePreviewEnabled,
   INLINE_HOSTED_DATA_KEY} from '../rete/scheme';
@@ -284,15 +285,16 @@ export class ExecutionController {
   }
 
   /** No missing requirements and every connected input fed by a captured live
-   *  value; a node with no connected inputs (Open File) qualifies. */
-  private readyForLiveRun(nodeId: string): boolean {
+   *  value or by a node of the same run (`runSet`); a node with no connected
+   *  inputs (Open File) qualifies. */
+  private readyForLiveRun(nodeId: string, runSet?: Set<string>): boolean {
     const node = this.flow.getNodeById(nodeId);
     if (!node) return false;
     if (nodeMissingRequirements(node, (k) => this.flow.isInputConnected(nodeId, k)).length > 0) return false;
     for (const key of Object.keys(node.inputs)) {
       if (isExecKey(key)) continue;
       const src = this.flow.getInputSource(nodeId, key);
-      if (src && !this.hasLiveValue(src.node.id, src.outputKey)) return false;
+      if (src && !runSet?.has(src.node.id) && !this.hasLiveValue(src.node.id, src.outputKey)) return false;
     }
     return true;
   }
@@ -326,11 +328,14 @@ export class ExecutionController {
     if (validateGraph(this.flow).some((e) => e.severity === 'error')) return 'skipped';
 
     const runSet = new Set<string>();
-    for (const id of liveIds) {
+    // Upstream first: an edit drops the captured values of all it affects, so a
+    // live node behind another one is ready only once that one is in the run.
+    for (const id of topologicalSort(this.flow)) {
+      if (!liveIds.has(id)) continue;
       const node = this.flow.getNodeById(id);
       // An input node would emit `//input:` headers → a dialog; never live-run.
       if (!node || node.dgNodeType === 'input') continue;
-      if (this.readyForLiveRun(id)) runSet.add(id);
+      if (this.readyForLiveRun(id, runSet)) runSet.add(id);
     }
     if (runSet.size === 0) return 'skipped';
 
@@ -490,8 +495,15 @@ export class ExecutionController {
       const {values, missing} = this.configuredInputValues(func);
       const fc = func.prepare(values);
       this.currentCall = fc;
-      // The rejection is the same failure already surfaced via the node-error events.
-      const startCall = (): void => {void fc.call(undefined, undefined, {processed: true}).catch(() => {})};
+      const startCall = (): void => {
+        void fc.call(undefined, undefined, {processed: true}).catch((err: unknown) => {
+          // A failed node has reported itself and ended the run; a script that could not start reports nothing.
+          if (this.state.runId !== runId || !this.state.isRunning) return;
+          if (!this.runIsBackground)
+            grok.shell.error(`Run failed: ${normalizeErrorMessage(err instanceof Error ? err.message : String(err))}`);
+          this.abortPendingRun();
+        });
+      };
       if (func.inputs.length === 0 || missing.length === 0)
         startCall();
       else {

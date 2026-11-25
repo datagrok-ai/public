@@ -58,7 +58,9 @@ class SharesClient:
         groups : str or list of (str or Group)
             Comma-separated list of group/user names, or a list of names/Group instances.
         access : str
-            Either 'View' or 'Edit'
+            'Use' grants View and use (View plus reading the data: what a dashboard needs to open);
+            'Full' grants every permission. Any other value names one permission to grant alone:
+            'View', 'Edit', 'Delete', 'Share', 'Table.ReadData', 'DataQuery.Execute', ...
         '''
 
         if isinstance(id, Model):

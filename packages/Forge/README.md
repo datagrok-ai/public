@@ -658,7 +658,7 @@ probability** also adds, right after it, the probability columns `P(<target> = <
 when taken), tagged the same way: for two classes the positive class's only (`P(SEX = F)`), for more one per class
 (`P(Species = setosa)`, ...); hover a column's header for `Probability that <target> is <class>, predicted by <model
 name>` (the column's description). A model saved without it adds none. A progress bar in the task bar shows the
-batches; cancel it there to stop before the next batch. A balloon names the new columns (`Added the columns "SEX
+batches; cancel it there to stop the application, also during its last batch: no column is added. A balloon names the new columns (`Added the columns "SEX
 (predicted)", "P(SEX = F)" to demog.`) and the
 number of skipped rows. Every application, completed, failed or cancelled, is recorded with the model.
 

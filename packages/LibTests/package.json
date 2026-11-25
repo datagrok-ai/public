@@ -39,7 +39,8 @@
   "category": "Development",
   "grok": {
     "testDependencies": [
-      "@datagrok/webcomponents"
+      "@datagrok/webcomponents",
+      "@datagrok/compute2"
     ]
   },
   "repository": {

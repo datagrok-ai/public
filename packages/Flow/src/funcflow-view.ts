@@ -75,6 +75,9 @@ export class FuncFlowView extends DG.ViewBase {
   private autorunIcon: HTMLElement | null = null;
   private saveButton: HTMLButtonElement | null = null;
   private savedSnapshot: string | null = null;
+  /** The canvas as it was loaded or saved, null while it loads: the user's changes are measured against it. Unlike
+   *  `savedSnapshot`, set for an opened template or imported file too, which no saved script matches. */
+  private cleanSnapshot: string | null = null;
   private platformSubs: {unsubscribe(): void}[] = [];
   private autoPinHandler: (() => void) | null = null;
   private canvasContainer!: HTMLElement;
@@ -99,11 +102,11 @@ export class FuncFlowView extends DG.ViewBase {
 
   private readonly tableInfos: DG.TableInfo[];
 
-  private flowSettings: FlowSettings = {
-    scriptName: 'My flow',
-    scriptDescription: '',
-    tags: ['funcflow'],
-  };
+  private static newSettings(): FlowSettings {
+    return {scriptName: 'My flow', scriptDescription: '', tags: ['funcflow']};
+  }
+
+  private flowSettings = FuncFlowView.newSettings();
 
   protected override afterPersist(): void {
     grok.shell.windows.showToolbox = false;
@@ -119,6 +122,12 @@ export class FuncFlowView extends DG.ViewBase {
   /** The view type a project reopens this view by: the name of the `flowView` view function. */
   static readonly TYPE = 'flowView';
   override get type(): string { return FuncFlowView.TYPE; }
+
+  /** What the platform asks about when the user closes the view. */
+  override get unsavedWork(): DG.UnsavedWork | null {
+    return this.hasUnsavedChanges() ?
+      {changes: ['Edited the flow'], saveLink: 'save the flow', save: () => this.saveChanges()} : null;
+  }
 
   /** The state a project restores and has not finished restoring yet; saving meanwhile keeps it. */
   private restoring: object | null = null;
@@ -221,7 +230,12 @@ export class FuncFlowView extends DG.ViewBase {
     this.initUI();
     this.setupRibbon();
     this.setupStatusBar();
-    this.addStatusProvider('flow', () => ({values: {'parameter edits': this.parameterEdits}}));
+    this.addStatusProvider('flow', () => ({values: {
+      'parameter edits': this.parameterEdits,
+      'nodes': this.flow?.getNodeCount() ?? 0,
+      'computed tables': this.outputViews?.getTabs().filter((t) => t.df != null).length ?? 0,
+      'unsaved changes': this.hasUnsavedChanges(),
+    }}));
 
     this.toolbox = this.functionBrowser.root;
     grok.shell.windows.showToolbox = true;
@@ -735,7 +749,10 @@ export class FuncFlowView extends DG.ViewBase {
     const fileName = path.split('/').pop() || path;
     const label = `${base}: ${fileName}`;
     if (node.label === label) return;
+    const clean = !this.hasUnsavedChanges();
     node.label = label;
+    // A title the editor stamps by itself is no change of the user's.
+    if (clean) this.cleanSnapshot = this.currentSnapshot();
     void this.flow.updateNode(node.id);
   }
 
@@ -1122,6 +1139,7 @@ export class FuncFlowView extends DG.ViewBase {
   }
 
   private async openRecentFlow(f: DG.Script): Promise<void> {
+    if (!await this.confirmReplace()) return;
     try {
       // Re-find by id so the body is guaranteed present, not a lean listing row.
       const full = await grok.dapi.scripts.find(f.id);
@@ -1217,9 +1235,11 @@ export class FuncFlowView extends DG.ViewBase {
   }
 
   private async loadTemplate(file: string): Promise<void> {
+    if (!await this.confirmReplace()) return;
     try {
       const json = await _package.files.readAsText(file);
       await this.loadFromJson(json);
+      this.unbind();
       this.hideStartPanel();
       grok.shell.info(`Opened template: ${file.replace(/\.flow$/i, '')}`);
     } catch (e: any) {
@@ -1439,8 +1459,43 @@ export class FuncFlowView extends DG.ViewBase {
    *  already lives on the server / a fresh empty flow). Pass the snapshot
    *  taken when the payload was built so mid-save edits stay "unsaved". */
   private markSaved(snapshot?: string): void {
-    this.savedSnapshot = snapshot ?? this.currentSnapshot();
+    this.savedSnapshot = this.cleanSnapshot = snapshot ?? this.currentSnapshot();
     this.updateSaveButtonState();
+  }
+
+  /** An empty canvas has nothing to save. */
+  private hasUnsavedChanges(): boolean {
+    return this.cleanSnapshot !== null && (this.flow?.getNodeCount() ?? 0) > 0 &&
+      this.currentSnapshot() !== this.cleanSnapshot;
+  }
+
+  /** Saves a saved flow in place, another one through its save dialog.
+   *  @returns whether the changes are saved. */
+  private async saveChanges(): Promise<boolean> {
+    if (this.tableInfos.length > 0)
+      return this.saveCreationScriptsDialog();
+    return this.boundScript?.id && await this.scriptExistsOnServer(this.boundScript.id) ?
+      this.saveToServer() : this.saveDialog();
+  }
+
+  /** Asks before another flow replaces unsaved changes.
+   *  @returns false to keep the canvas: the user cancelled, or the changes were not saved. */
+  private async confirmReplace(): Promise<boolean> {
+    if (!this.hasUnsavedChanges())
+      return true;
+    const answer = await new Promise<'save' | 'discard' | null>((resolve) => {
+      const dlg = ui.dialog({title: 'Unsaved changes'})
+        .add(ui.divText(`"${this.name}" has changes that are not saved.`))
+        .addButton('Discard', () => {
+          resolve('discard');
+          dlg.close();
+        })
+        .onOK(() => resolve('save'));
+      dlg.onClose.subscribe(() => resolve(null));
+      dlg.show();
+      dlg.getButton('OK').textContent = 'Save';
+    });
+    return answer === 'discard' || (answer === 'save' && await this.saveChanges());
   }
 
   /** Whether Save is available, and its tooltip. The button is the gateway to
@@ -1580,10 +1635,19 @@ export class FuncFlowView extends DG.ViewBase {
 
   // ---------- file actions ----------
 
-  private async newFlow(): Promise<void> {
-    await this.flow.clear();
+  /** The canvas no longer shows the saved flow: a save must not overwrite that flow or its dashboard. */
+  private unbind(): void {
     this.boundScript = null;
     this.dashboardProjectId = null;
+  }
+
+  private async newFlow(): Promise<void> {
+    if (!await this.confirmReplace()) return;
+    await this.flow.clear();
+    this.unbind();
+    // what asks about its changes, and the Save dialog, must not name the flow it replaced
+    this.flowSettings = {...FuncFlowView.newSettings(), ...(this.flowSettings.autorun ? {autorun: true} : {})};
+    this.name = 'Flow';
     this.propertyPanel.clear();
     this.updateStatusBar();
     this.updateStartPanelVisibility();
@@ -1597,8 +1661,9 @@ export class FuncFlowView extends DG.ViewBase {
       open: async (file) => {
         try {
           const doc = await loadFlowFromFile(file);
+          if (!await this.confirmReplace()) return;
           await this.loadFromDoc(doc);
-          this.boundScript = null; // an imported file is a new, unsaved flow
+          this.unbind(); // an imported file is a new, unsaved flow
           grok.shell.info(`Loaded flow: ${doc.name}`);
         } catch (e: any) {
           grok.shell.error(`Failed to load flow: ${e.message}`);
@@ -1685,8 +1750,9 @@ export class FuncFlowView extends DG.ViewBase {
    *  dashboard section below. A bound entity is updated in place (Save As
    *  forces a new one via `asNew`). The dashboard section is run-aware: no
    *  computed outputs → a Run button; outputs → the table list + a "Create
-   *  dashboard" toggle that opens the core Save-project dialog after saving. */
-  private async saveDialog(opts: {asNew?: boolean} = {}): Promise<void> {
+   *  dashboard" toggle that opens the core Save-project dialog after saving.
+   *  @returns whether the flow was saved, once both dialogs are done. */
+  private async saveDialog(opts: {asNew?: boolean} = {}): Promise<boolean> {
     const nameInput = ui.input.string('Name', {value: this.flowSettings.scriptName,
       tooltipText: 'The flow is saved as a platform script entity under this name'});
     const descInput = ui.input.textArea('Description', {value: this.flowSettings.scriptDescription,
@@ -1849,6 +1915,35 @@ export class FuncFlowView extends DG.ViewBase {
     refreshDash();
     this.saveDialogRunEnd = (success) => refreshDash({failed: !success, ranOnce: true});
 
+    const save = async (name: string): Promise<boolean> => {
+      this.flowSettings.scriptName = name;
+      this.flowSettings.scriptDescription = descInput.value;
+      // Update the bound entity in place; Save As (or a stale/deleted binding —
+      // e.g. a template id `find` can't resolve) creates a new one. A new
+      // script also gets a new dashboard.
+      if (opts.asNew || !(this.boundScript?.id && await this.scriptExistsOnServer(this.boundScript.id)))
+        this.unbind();
+      // A failed save must not go on to share/publish a stale entity.
+      if (!await this.saveToServer()) return false;
+      const saved = this.boundScript as DG.Script | null;
+      if (targetSpace && saved?.id) {
+        try {
+          await grok.dapi.spaces.id(targetSpace.id).addEntity(saved.id, false);
+          // The flow is now called by the space's name: the published tables must carry that one.
+          this.boundScript = (await grok.dapi.scripts.find(saved.id).catch(() => null)) ?? saved;
+          grok.shell.info(`Added to space "${targetSpace.friendlyName}"`);
+        } catch (e: any) {
+          grok.shell.error(`Could not add to space: ${e?.message ?? e}`);
+        }
+      }
+      if (saved != null && publishInput.value === true && computedTabs().length > 0)
+        await this.openDashboardDialog(dashMode === 'new');
+      return true;
+    };
+
+    let accepted = false;
+    let done!: (saved: boolean) => void;
+    const result = new Promise<boolean>((resolve) => done = resolve);
     const dlg = ui.dialog({title: 'Save Flow'})
       .add(ui.divV([nameInput.root, warningDiv, descInput.root,
         spaceRow, pickerHost, dashHost]))
@@ -1862,34 +1957,18 @@ export class FuncFlowView extends DG.ViewBase {
           grok.shell.warning('Wait for the run to finish');
           return;
         }
-        this.flowSettings.scriptName = name;
-        this.flowSettings.scriptDescription = descInput.value;
-        // Update the bound entity in place; Save As (or a stale/deleted binding —
-        // e.g. a template id `find` can't resolve) creates a new one. A new
-        // script also gets a new dashboard.
-        if (opts.asNew || !(this.boundScript?.id && await this.scriptExistsOnServer(this.boundScript.id))) {
-          this.boundScript = null;
-          this.dashboardProjectId = null;
-        }
-        // A failed save must not go on to share/publish a stale entity.
-        if (!await this.saveToServer()) return;
-        const saved = this.boundScript as DG.Script | null;
-        if (targetSpace && saved?.id) {
-          try {
-            await grok.dapi.spaces.id(targetSpace.id).addEntity(saved.id, false);
-            grok.shell.info(`Added to space "${targetSpace.friendlyName}"`);
-          } catch (e: any) {
-            grok.shell.error(`Could not add to space: ${e?.message ?? e}`);
-          }
-        }
-        if (saved != null && publishInput.value === true && computedTabs().length > 0) {
-          if (dashMode === 'new') this.dashboardProjectId = null;
-          await this.openDashboardDialog();
+        accepted = true;
+        let saved = false;
+        try {
+          saved = await save(name);
+        } finally {
+          done(saved);
         }
       });
     dlg.onClose.subscribe(() => {
       this.saveDialogRunEnd = null;
       if (warnTimer != null) clearTimeout(warnTimer);
+      if (!accepted) done(false);
     });
     dlg.show({width: 500});
     // Validate before close: empty names never reach the OK handler.
@@ -1919,6 +1998,7 @@ export class FuncFlowView extends DG.ViewBase {
         } catch {/* advisory only */}
       })();
     }
+    return result;
   }
 
   /** Pick a flow entity from the server and open it in this view. */
@@ -1941,7 +2021,7 @@ export class FuncFlowView extends DG.ViewBase {
       .add(input.root)
       .onOK(async () => {
         const picked = byLabel.get(input.value ?? '');
-        if (!picked) return;
+        if (!picked || !await this.confirmReplace()) return;
         // Re-find by id so the body is guaranteed present, not a lean listing row.
         const full = await grok.dapi.scripts.find(picked.id);
         void this.bindScript(full ?? picked);
@@ -2031,9 +2111,9 @@ export class FuncFlowView extends DG.ViewBase {
    *  (`DG.Project.showSaveDialog`). Tabs never opened this session ship their
    *  stored layout as a view state string (a layout saved with the flow
    *  applies even without visiting the tab). A previously published project is
-   *  passed back so re-publishing UPDATES it; the binding persists in the
-   *  flow (saved silently right after, since the script was just saved). */
-  private async openDashboardDialog(): Promise<void> {
+   *  passed back so re-publishing UPDATES it, unless `asNew`; the binding persists
+   *  in the flow (saved silently right after, since the script was just saved). */
+  private async openDashboardDialog(asNew = false): Promise<void> {
     const tabs = this.outputViews?.getTabs().filter((t) => t.df != null) ?? [];
     if (tabs.length === 0) return;
     await this.ensureBoundScriptQualified();
@@ -2046,7 +2126,7 @@ export class FuncFlowView extends DG.ViewBase {
         layouts: tabs.map((t) => t.tv != null ? null : layoutsByParam[t.paramName] ?? null),
         name: this.flowSettings.scriptName,
         description: this.flowSettings.scriptDescription,
-        project: this.dashboardProjectId ?? undefined,
+        project: asNew ? undefined : this.dashboardProjectId ?? undefined,
       });
       if (saved?.id && saved.id !== this.dashboardProjectId) {
         this.dashboardProjectId = saved.id;
@@ -2225,8 +2305,8 @@ export class FuncFlowView extends DG.ViewBase {
    *  horizontal tab, and on Save write it back to the table via
    *  `TableInfo.saveCreationScript`. Only available when the view was opened with
    *  `tableInfos` (the `creationScriptEditor` entry point). */
-  private async saveCreationScriptsDialog(): Promise<void> {
-    if (!this.flow || this.tableInfos.length === 0) return;
+  private async saveCreationScriptsDialog(): Promise<boolean> {
+    if (!this.flow || this.tableInfos.length === 0) return false;
 
     // Creation scripts outlive the session — pending local files must be on
     // the server before the emitted script can reference them.
@@ -2234,9 +2314,10 @@ export class FuncFlowView extends DG.ViewBase {
       await this.persistPendingUploads();
     } catch (e: any) {
       grok.shell.error(e?.message ?? String(e));
-      return;
+      return false;
     }
 
+    const snapshot = this.currentSnapshot();
     // The variable name a table is referenced by in the script — its
     // `.VariableName` tag, matching the SetVar/anchor names the emitter splits on
     // (falls back to the table's display name).
@@ -2248,7 +2329,7 @@ export class FuncFlowView extends DG.ViewBase {
       result = emitCreationScriptsForTables(this.flow, varNames);
     } catch (e: any) {
       grok.shell.error(`Creation script generation failed: ${e.message}`);
-      return;
+      return false;
     }
     const {tables, warnings} = result;
 
@@ -2285,18 +2366,26 @@ export class FuncFlowView extends DG.ViewBase {
     }
     blocks.push(tabs.root);
 
-    const dlg = ui.dialog({title: 'Save Creation Scripts'})
-      .add(ui.divV(blocks))
-      .onOK(async () => {
-        try {
-          await Promise.all(this.tableInfos.map((ti, i) => ti.saveCreationScript(tables[i].script)));
-          grok.shell.info(`Saved creation script for ${this.tableInfos.length} table(s)`);
-        } catch (e: any) {
-          grok.shell.error(`Failed to save creation scripts: ${e.message}`);
-        }
-      });
-    dlg.getButton('OK').textContent = 'Save';
-    dlg.show({width: 760, height: 560});
+    return new Promise((resolve) => {
+      let accepted = false;
+      const dlg = ui.dialog({title: 'Save Creation Scripts'})
+        .add(ui.divV(blocks))
+        .onOK(async () => {
+          accepted = true;
+          try {
+            await Promise.all(this.tableInfos.map((ti, i) => ti.saveCreationScript(tables[i].script)));
+            this.cleanSnapshot = snapshot;
+            grok.shell.info(`Saved creation script for ${this.tableInfos.length} table(s)`);
+            resolve(true);
+          } catch (e: any) {
+            grok.shell.error(`Failed to save creation scripts: ${e.message}`);
+            resolve(false);
+          }
+        });
+      dlg.onClose.subscribe(() => {if (!accepted) resolve(false);});
+      dlg.getButton('OK').textContent = 'Save';
+      dlg.show({width: 760, height: 560});
+    });
   }
 
   private exportAsJs(): void {
@@ -2321,13 +2410,15 @@ export class FuncFlowView extends DG.ViewBase {
    *  loads (a double-clicked recent-flow row) would merge both graphs. */
   async loadFromDoc(doc: FuncFlowDocument): Promise<void> {
     this.unrestored = null;
-    const run = this.loadChain.then(() => this.doLoadFromDoc(doc));
+    const run = this.loadChain.then(() => this.doLoadFromDoc(doc))
+      .finally(() => this.cleanSnapshot = this.currentSnapshot());
     this.loadChain = run.catch(() => {});
     return run;
   }
 
   private async doLoadFromDoc(doc: FuncFlowDocument): Promise<void> {
     await this.editorReady;
+    this.cleanSnapshot = null;
     await deserializeFlow(doc, this.flow);
     if (doc.metadata?.settings) this.flowSettings = doc.metadata.settings;
     // A flow saved with autorun on reopens live (and vice versa).
@@ -2382,6 +2473,7 @@ export class FuncFlowView extends DG.ViewBase {
     // Same serialization as loadFromDoc — this path also clears + re-adds.
     const run = this.loadChain.then(async () => {
       await this.editorReady;
+      this.cleanSnapshot = null;
       try {
         await this.flow.clear();
         const result = await buildFlowFromCreationScript(this.flow, script);
@@ -2394,6 +2486,7 @@ export class FuncFlowView extends DG.ViewBase {
       } catch (e: any) {
         grok.shell.error(`Creation script import failed: ${e?.message ?? e}`);
       }
+      this.cleanSnapshot = this.currentSnapshot();
     });
     this.loadChain = run.catch(() => {});
     return run;
@@ -2431,20 +2524,15 @@ export class FuncFlowView extends DG.ViewBase {
           grok.shell.warning('Creation script is empty');
           return;
         }
-        // Importing clears the canvas — and is not undoable. A non-empty flow
-        // deserves a confirmation before it is silently replaced.
-        const nodeCount = this.flow?.getNodes().length ?? 0;
-        if (nodeCount > 0) {
-          ui.dialog({title: 'Replace current flow?'})
-            .add(ui.divText(`Importing replaces the current flow (${nodeCount} ` +
-              `node${nodeCount === 1 ? '' : 's'}). This cannot be undone.`))
-            .onOK(() => void this.loadFromCreationScript(script))
-            .show();
-          return;
-        }
-        void this.loadFromCreationScript(script);
+        void this.importCreationScript(script);
       })
       .show({width: 560, height: 420});
+  }
+
+  private async importCreationScript(script: string): Promise<void> {
+    if (!await this.confirmReplace()) return;
+    this.unbind();
+    await this.loadFromCreationScript(script);
   }
 
   /** Plain-language description of the whole flow: each disjoint pipeline shown

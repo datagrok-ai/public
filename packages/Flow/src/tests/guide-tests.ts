@@ -139,6 +139,37 @@ category('Flow: guide', () => {
     }
   });
 
+  test('highlighting a dialog keeps its background; a small target is filled', async () => {
+    const runner = new GuideRunner();
+    const box = (w: number, h: number): HTMLElement => {
+      const el = ui.div([], {style: {position: 'fixed', left: '20px', top: '20px', width: `${w}px`, height: `${h}px`,
+        backgroundColor: 'rgb(255, 255, 255)'}});
+      document.body.appendChild(el);
+      return el;
+    };
+    const dialog = box(500, 300);
+    const button = box(80, 24);
+    const guide = {
+      id: 'highlight-test', kind: 'question', title: 'Highlight', summary: '',
+      steps: [{title: 'Two targets', text: '', highlights: () => [dialog, button]}],
+    } as Guide;
+    try {
+      const p = runner.run(guide, fakeHost());
+      expect(await until(() => dialog.classList.contains('ff-guide-target-large') &&
+        button.classList.contains('ff-guide-target')), true, 'both are highlighted');
+      expect(getComputedStyle(dialog).backgroundColor, 'rgb(255, 255, 255)', 'the dialog stays readable');
+      expect(getComputedStyle(dialog).outlineStyle, 'solid', 'and is outlined');
+      expect(getComputedStyle(button).backgroundColor, 'rgba(255, 162, 74, 0.35)');
+      runner.stop();
+      await p;
+    } finally {
+      runner.stop();
+      dialog.remove();
+      button.remove();
+      document.querySelectorAll('[data-testid="ff-guide-card"]').forEach((e) => e.remove());
+    }
+  });
+
   test('a step that resolves instantly leaves no lingering highlight', async () => {
     const runner = new GuideRunner();
     const target = document.createElement('div');

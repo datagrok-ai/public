@@ -395,7 +395,13 @@ function sampled(dim: SpaceDimension, u: number): number | string | boolean {
   return dim.step === undefined ? v : Math.min(high, Math.round((v - low) / dim.step) * dim.step + low);
 }
 
-/** With at least {@link HOLD_OUT_MIN_ROWS} rows, `clamp(round(0.2 n), 100, 2000)` of [request]'s n rows held out before
+/** The rows a search holds out of [rows]: `clamp(round(0.2 n), 100, 2000)`. */
+export function searchHoldOutRows(rows: number): number {
+  const [fewest, most] = HOLD_OUT_ROWS;
+  return Math.min(most, Math.max(fewest, Math.round(HOLD_OUT_FRACTION * rows)));
+}
+
+/** With at least {@link HOLD_OUT_MIN_ROWS} rows, {@link searchHoldOutRows} of [request]'s rows held out before
  * a search: the first ones of the rows shuffled by `seed + 1`, for a classification each class's share of them (the
  * largest remainders round up, so the total is exact); the search request holds the other rows, with the whole
  * table's preparation. Below that, the request as it is and no hold out. */
@@ -403,8 +409,7 @@ export function holdOutSplit(request: TrainingRequest, seed: number): {search: T
   const rows = request.target.length;
   if (rows < HOLD_OUT_MIN_ROWS)
     return {search: request};
-  const [fewest, most] = HOLD_OUT_ROWS;
-  const testRows = Math.min(most, Math.max(fewest, Math.round(HOLD_OUT_FRACTION * rows)));
+  const testRows = searchHoldOutRows(rows);
   const {prepared} = request;
   const order = shuffledRows(rows, seed + 1);
   const isTest = DG.BitSet.create(rows);

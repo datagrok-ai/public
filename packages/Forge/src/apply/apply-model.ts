@@ -236,20 +236,25 @@ function probabilityName(table: DG.DataFrame, target: string, cls: string): stri
 }
 
 /** One engine call on [features] themselves ([rowCount] rows) when they fit a batch; otherwise one call per batch of
- * rows, with a pause for the event loop at most every YIELD_MS, so a cancel and the progress repaint get through. */
+ * rows, with a pause for the event loop at most every YIELD_MS, so a cancel and the progress repaint get through.
+ * The cancel is checked before and after every call, so a cancel during the last one stops the application too. */
 async function predictInBatches(engine: Engine, features: DG.Column[], rowCount: number, blob: Uint8Array,
   batchSize: number, progress?: LoopProgress): Promise<EnginePrediction> {
   let yieldedAt = Date.now();
+  const checkCanceled = (): void => {
+    if (progress?.canceled)
+      throw new ForgeError('Application was cancelled.');
+  };
   const predictBatch = async (start: number): Promise<EnginePrediction> => {
     if (Date.now() - yieldedAt >= YIELD_MS) {
       await yieldToEventLoop();
       yieldedAt = Date.now();
     }
-    if (progress?.canceled)
-      throw new ForgeError('Application was cancelled.');
+    checkCanceled();
     const end = Math.min(start + batchSize, rowCount);
     const batch = rowCount <= batchSize ? features : rowCopy(features, rowRange(rowCount, start, end));
     const prediction = await apply(engine, batch, blob);
+    checkCanceled();
     progress?.update(100 * end / rowCount, `Rows ${start + 1}-${end} of ${rowCount}`);
     return prediction;
   };

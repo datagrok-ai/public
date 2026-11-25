@@ -425,14 +425,6 @@
   border: 2px solid var(--blue-1);
 }
 
-.chem-demo-button-pushed {
-  background: var(--blue-2)!important
-}
-
-.chem-demo-chembl-id-selected {
-  border-bottom: 2px solid var(--blue-2)!important
-}
-
 .chem-mcs-button {
   font-size: 12px!important;
   margin-left: 0px!important;
@@ -705,13 +697,6 @@
   font-size: 17px;
   padding-top: 3px;
   padding-left: 2px;
-}
-
-.chem-mmpa-add-tab-header-button {
-  position: absolute;
-  padding-left: 3px;
-  padding-top: 2px;
-  visibility: hidden;
 }
 
 .chem-mmpa-fragments-filters-icon {

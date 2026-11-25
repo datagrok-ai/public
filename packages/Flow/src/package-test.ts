@@ -45,6 +45,7 @@ import './tests/toolbox-tabs-tests';
 import './tests/input-value-tests';
 import './tests/property-input-tests';
 import './tests/slot-visibility-tests';
+import './tests/unsaved-changes-tests';
 
 export let _package = new DG.Package();
 export { tests };

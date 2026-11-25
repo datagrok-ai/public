@@ -6,6 +6,15 @@
     padding-top: 4px;
 }
 
+/* with the search in the top row, nothing above the Spotlight needs the room */
+.ui-panel.power-pack-welcome-view.power-pack-search-on-top {
+    padding-top: 0;
+}
+
+.power-pack-search-on-top .power-pack-activity-widget-content.ui-panel {
+    padding-top: 4px;
+}
+
 .power-pack-view-host {
     flex: 1;
     overflow: hidden;
@@ -114,6 +123,12 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
     contain: size;
 }
 
+/* a scrolled list fades out under the widget's top edge instead of being cut right at it */
+.power-pack-activity-widget-content .d4-tab-vertical > .d4-tab-content:has(.power-pack-activity-widget-notifications-tab,
+    .power-pack-activity-widget-favorites-tab, .power-pack-activity-widget-activity-tab) {
+    mask-image: linear-gradient(transparent, black 10px);
+}
+
 /* starts the scrollbar below the widget's remove icon */
 .power-pack-activity-widget-content .d4-tab-host.d4-tab-vertical .d4-tab-content::-webkit-scrollbar-track:vertical {
     margin-top: 14px;
@@ -166,6 +181,12 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
     gap: 6px;
 }
 
+/* a long row wraps instead of scrolling the tab sideways */
+.power-pack-activity-widget-row > span {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
 .power-pack-activity-widget-row:hover {
     background-color: #f9f9f9 !important;
 }
@@ -210,11 +231,6 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
     max-width: 150px;
 }
 
-.power-pack-activity-widget-spotlight-column-admin-row {
-    max-width: 170px;
-    display: inline-block !important;
-}
-
 .power-pack-activity-widget-spotlight-column-header {
     margin: 0 0 8px 18px;
 }
@@ -251,26 +267,6 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
 
 .power-pack-activity-widget-activity-tab {
     margin-top: 4px;
-}
-
-.power-pack-activity-widget-activity-list {
-    display: block !important;
-    width: 100%;
-}
-
-.power-pack-activity-widget-activity-list > .grok-ellipsis {
-    display: none;
-}
-
-.power-pack-activity-widget-see-more {
-    display: inline-block;
-    margin: 8px 0 4px 12px;
-}
-
-.power-pack-widget-header {
-    height: 20px;
-    font-size: 16px;
-    color: grey;
 }
 
 .power-pack-widget-content {
@@ -334,6 +330,15 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
     height: initial;
 }
 
+/* A view outside the workspace is not a flex column, so its dock area would keep the pixel height of the first layout */
+.power-pack-widget-content .grok-table-view {
+    min-height: 0;
+}
+
+.power-pack-widget-content .grok-table-view > .d4-root {
+    height: 100% !important;
+}
+
 .power-pack-search-host iframe {
     border: none;
 }
@@ -369,6 +374,11 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
     min-width: 0;
     order: 1;
     margin-left: 16px;
+}
+
+/* the strip starts with the platform's search icon: a second magnifier next to it reads as a duplicate */
+.tab-handle-list-container > .power-pack-welcome-search > .fa-search {
+    display: none;
 }
 
 .d4-ribbon:has(.power-pack-welcome-search) > .d4-ribbon-spacer {
@@ -1472,13 +1482,6 @@ body.dartium .power-pack-widgets-host.ui-div {
     align-items: center;
     justify-content: center;
     min-height: 120px;
-}
-
-.pp-workspace-empty-hint {
-    color: var(--text-color-light);
-    font-style: italic;
-    font-size: 13px;
-    margin: 8px 0;
 }
 
 /* Pencil edit icon on section headers */

@@ -8,12 +8,15 @@
 * Formula Lines: Fixed the OK button being enabled while another item is invalid, and staying disabled after the invalid item is removed
 * Formula Lines: Fixed an error on changing the preview's axis while the formula of the line is incomplete
 * Formula Lines: Fixed an error on opening the dialog for a table
+* [public#4668](https://github.com/datagrok-ai/public/issues/4668): Spotlight: Fixed the Recent and Shared with me lists failing with "Cannot read properties of null" when they held an entity the platform cannot show, such as a saved filter; such entities are left out
+* core#1765: Detectors: Declared the column types the semantic type detectors check, so the platform no longer calls them for other columns
 * Spotlight: Packages can add tabs: a function with `meta.role: spotlightTab` that returns a widget becomes a tab after the built-in ones, named by its friendly name; `meta.spotlightDefault: true` opens the Spotlight on it the first time it appears, after which the tab the user last picked is kept. What a tab finds goes to the preview below the Spotlight, as the Workspace tab's previews do, through `PowerPack:showSpotlightPreview(content, title)`
 * [public#4640](https://github.com/datagrok-ai/public/issues/4640): Spotlight: Fixed the Interactive Tutorials links doing nothing; a new user's empty workspace shows the getting-started columns across the full width; headers sit further from their items than the items from each other; empty tabs' messages line up with the tab names
-* Search: The home page's search moves into the otherwise empty top row, leaving more room below: the view's ribbon without tabs, the tab strip while Home is the only tab; the page has less padding on top
+* Search: The home page's search moves into a row that is there anyway, leaving more room below: the tab strip while Home is the only tab, otherwise the view's ribbon; the page has less padding on top
 * Spotlight: The home page's Spotlight widget is as tall as its tabs, longer tabs scroll
 * Spotlight: Added the `showTipOfTheDay` setting to hide the tip of the day on the home page
 * Search: Fixed Ctrl+Space not showing suggestions in an empty search box or after reopening the home page; the "Use Ctrl+Space" hint shows only once you type
+* Search: Fixed a table result taking only the top of its widget on the home page; it fills the widget and follows its size
 * Search: Fixed missing PDB structure images: RCSB moved them to `cdn.rcsb.org/images/structures/pdb/`
 * [core#1507](https://github.com/datagrok-ai/core/issues/1507): Fixed Down arrow in the Space row's search not moving to the first matching space
 * Spotlight: Fixed notifications staying bold after being clicked, and the Notifications tab showing the oldest notifications instead of the newest

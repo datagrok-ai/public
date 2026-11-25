@@ -460,6 +460,85 @@ category('Flow: validator', () => {
     }
   });
 
+  test('a reserved word is not a valid input or output name', async () => {
+    const e = makeEditor();
+    try {
+      const nodes = [await addNode(e.flow, 'Inputs/String Input'), await addNode(e.flow, 'Outputs/Value Output', 240, 0)];
+      await e.flow.addConnectionByKeys(nodes[0].id, 'value', nodes[1].id, 'value');
+      for (const node of nodes) {
+        const own = node.properties['paramName'];
+        for (const name of ['class', 'default', 'let', 'await', 'grok']) {
+          node.properties['paramName'] = name;
+          const error = validateGraph(e.flow).find((r) => r.severity === 'error' && r.nodeId === node.id);
+          expect(error?.message.startsWith(`'${name}' is a reserved word, not a valid ${node.dgNodeType} name`), true,
+            `${node.label} named ${name}: ${error?.message}`);
+        }
+        // reserved in strict mode only, or not at all: a script can have them
+        for (const name of ['className', 'package', 'static', 'of']) {
+          node.properties['paramName'] = name;
+          expect(validateGraph(e.flow).some((r) => r.severity === 'error'), false, `${node.label} named ${name}`);
+        }
+        node.properties['paramName'] = own;
+      }
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('a step or a SetVar named after a reserved word leaves the script valid', async () => {
+    const e = makeEditor();
+    try {
+      const c = await addNode(e.flow, 'Constants/String');
+      const out = await addNode(e.flow, 'Outputs/Value Output', 240, 0);
+      await e.flow.addConnectionByKeys(c.id, 'value', out.id, 'value');
+      const setVarFunc = DG.Func.find({name: 'SetVar'})[0];
+      const sv = await addNode(e.flow, ensureFuncNodeType(setVarFunc), 240, 120);
+      await e.flow.addConnectionByKeys(c.id, 'value', sv.id, 'value');
+      for (const name of ['class', 'new', 'grok', 'result']) {
+        c.label = name;
+        sv.inputValues['variableName'] = name === 'result' ? 'stored' : name;
+        for (const options of [undefined, {instrumented: true, runId: 'reserved-names'}]) {
+          const script = emitScript(e.flow, SETTINGS, options);
+          let error = '';
+          try {
+            new Function(`return async () => {\n${script}\n};`);
+          } catch (x) {
+            error = String(x);
+          }
+          expect(error, '', `titled "${name}"${options ? ', instrumented' : ''}`);
+          expect(script.includes(`//output: string ${sv.inputValues['variableName']}`), name === 'result',
+            `a SetVar "${sv.inputValues['variableName']}" as an output`);
+        }
+      }
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('a run whose script cannot start says so and ends', async () => {
+    const e = makeEditor();
+    try {
+      const c = await addNode(e.flow, 'Constants/String');
+      const out = await addNode(e.flow, 'Outputs/Value Output', 240, 0);
+      out.properties['paramName'] = 'class';
+      await e.flow.addConnectionByKeys(c.id, 'value', out.id, 'value');
+      const ctrl = new ExecutionController(e.flow);
+      let ended: boolean | null = null;
+      ctrl.onRunEnd = (success) => ended = success;
+      // the data preview of a node runs its slice without validating the graph
+      ctrl.previewNodeData(out.id, SETTINGS);
+      expect(await until(() => ended !== null, 10000), true, 'the run reported its end');
+      expect(ended, false);
+      expect(ctrl.state.isRunning, false);
+      const balloon = (): HTMLElement | undefined => (Array.from(document.querySelectorAll('.d4-balloon')) as HTMLElement[])
+        .find((b) => (b.textContent ?? '').includes('Run failed:'));
+      expect(await until(() => balloon() != null), true, 'and what stopped it');
+      balloon()?.remove();
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
   test('duplicate variable names across outputs and SetVars are errors', async () => {
     const e = makeEditor();
     try {

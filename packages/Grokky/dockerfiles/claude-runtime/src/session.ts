@@ -209,9 +209,9 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
         console.warn('handleMessage: failed to sync user files:', e.message));
     }
 
-    const mode = data.systemPromptMode === 'bash' || data.systemPromptMode === 'none' ?
-      data.systemPromptMode : 'datagrok';
-    const fullPromptTurn = mode === 'datagrok';
+    const mode = data.systemPromptMode === 'bash' || data.systemPromptMode === 'none' ||
+      data.systemPromptMode === 'search' ? data.systemPromptMode : 'datagrok';
+    const fullPromptTurn = mode === 'datagrok' || mode === 'search';
     // The visible answer stays until `final` says whether the hidden revision replaces it.
     const onGateBlock = () => {
       if (!isRevising(sid)) {
@@ -221,7 +221,7 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
       }
     };
     const gates = data.gates ?? {};
-    verifier = fullPromptTurn && gates.verify !== false ? new Verifier(onGateBlock) : undefined;
+    verifier = mode === 'datagrok' && gates.verify !== false ? new Verifier(onGateBlock) : undefined;
     turnText.delete(sid); // fresh answer buffer — the gate must judge THIS turn's text only
     groundingGate = fullPromptTurn && gates.grounding !== false && !data.outputSchema &&
       !isSmallTalk(data.message ?? '') ?
@@ -231,7 +231,7 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
       sessionKey: sid, text: message, images: data.images, systemPrompt: buildSystemPrompt(mode),
       effort: fullPromptTurn ? 'high' : undefined,
       cwd: userDir || WORKSPACE, userDir, resumeExpected: data.resumeExpected,
-      outputSchema: data.outputSchema, clientTools: data.clientTools,
+      outputSchema: data.outputSchema, clientTools: data.clientTools, browserTools: mode !== 'search',
       datagrokMcp: mcpUrl ? {url: mcpUrl, headers: {
         ...(data.apiKey ? {'x-user-api-key': data.apiKey, 'Authorization': data.apiKey} : {}),
         ...(apiUrl ? {'x-datagrok-api-url': apiUrl} : {}),

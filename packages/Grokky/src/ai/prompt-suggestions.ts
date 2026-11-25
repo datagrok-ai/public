@@ -6,6 +6,7 @@ import {_package} from '../package';
 
 type Scope = 'column' | 'view' | 'global';
 type Context = 'powerSearch' | 'panel';
+export type SearchProvider = 'Help' | 'Execute' | 'Query';
 
 export interface Suggestion {
   label?: string;
@@ -27,6 +28,7 @@ export interface Block {
   icon?: string;
   color?: string;
   requires?: string[];
+  provider?: SearchProvider;
   suggestions: Suggestion[];
 }
 
@@ -146,14 +148,14 @@ export async function resolveScopes(context: Context, view: DG.ViewBase | null =
 
 export function showSuggestionsMenu(
   scopes: Block[],
-  onSelect: (s: Suggestion) => void,
+  onSelect: (s: Suggestion, provider?: SearchProvider) => void,
   causedBy?: MouseEvent,
 ): void {
   const menu = DG.Menu.popup();
   for (const s of scopes) {
     const group = menu.group(s.label);
     for (const sg of s.suggestions)
-      group.item(sg.label ?? sg.prompt ?? '', () => onSelect(sg));
+      group.item(sg.label ?? sg.prompt ?? '', () => onSelect(sg, s.provider));
   }
   menu.show(causedBy ? {causedBy} : undefined);
 }

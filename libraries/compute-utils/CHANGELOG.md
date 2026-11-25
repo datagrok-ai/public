@@ -2,11 +2,13 @@
 
 ## v.next
 
+* Custom function view: Added `HistoryInput`, an input for a saved run of a model, picked in Compute2's Open dialog
 * [core#1407](https://github.com/datagrok-ai/core/issues/1407): Fitting: Fixed the loss table built from an untyped empty array when no extrema are found
 * Export: The Excel report renders all charts at once and captures each as soon as it is drawn instead of after a fixed 1 s delay, several times faster; fixed charts being squashed vertically
 * Custom function view: The view no longer opens a run from the page link; the editor hosting it does, as for RFV (breaking for views opened without Compute2's editor)
 * Custom function view: `exports`, a list of named exports that each return a `DG.FileInfo`, replaces `exportConfig` (breaking); the Export icon runs the first one and `exportEnabled` turns them off
 * Custom function view: A new call starts with the function's default input values
+* Custom function view: Fixed the content of `buildIO()` not filling the view: a div took its content's width, a box was 400×300
 * RTD: A workflow custom export can be `preferred`, which lists it first in the Export menu
 * RTD: A step's viewers hook from its script that can't be made no longer fails the workflow config; `loadViewersHook` makes a function's hook, or warns and returns none
 * Export: Fixed the Excel report failing with "0 is out of bounds" on a table with no columns; its sheet is left empty
@@ -23,7 +25,7 @@
 * History utils: `saveRun` takes a run name, description and tags (saved as `friendlyName`; a description or tags left out stay as they are) and a target space with the runs it replaces; added `listMyRuns`, `listSpace`, `listSpaceRuns`, `findNameConflict`, `isNamedSpaceItem`, `isRunOf`, `linkRun`, `unlinkRun`, `canEditRunDetails`, `getRunMetadata` and `getRunName`; a save with options fires `RUN_SAVED_EVENT` on the platform's event bus
 * History utils: Saves record the run's author and save time in `options.createdById` and `options.createdAt`; Edit details and delete keep them, and My runs lists runs by that author; workflow saves mark their step runs with `options.nestedEntity` (`saveRun`'s `nested` option), and My runs leaves them out
 * RTD: `ItemMetadata` saves the title as the run name and takes a save `target`; `isFavorite` was removed from it and from `MetaCallInfo`, and the driver no longer reads or writes the old favorites
-* Custom function view: `runStorage` gives the view the Save and Open dialogs and replaces the history panel (`showHistory` and `historyRoot` were removed); without it the view has no History and Save buttons; a host's `customView` is saved on the run as `options.customView`, and `listMyRuns` lists such runs under that function too
+* Custom function view: The Save and Open dialogs come from Compute2 (`Compute2:SaveRunDialog` and `Compute2:OpenRunDialog`) and replace the history panel (`showHistory` and `historyRoot` were removed); without Compute2 the view has no History and Save buttons; the editor's `customView` is saved on the run as `options.customView`, and `listMyRuns` lists such runs under that function too
 * Old history dialogs, grid helpers and history column constants moved to `old-components`, along with `historyUtils.pullRuns` and `historyUtils.pullRunsByName`, which are now the root exports `pullRuns` and `pullRunsByName`; `historyUtils.loadChildRuns` was removed (only the old pipeline view used it)
 * RTD: Fixed steps running before their validators or data links finished: a link counts as running, and locks tree mutations, from the moment its inputs change until its handler finishes, including the debounce wait, the batch and an async handler; while the tree is locked (init, runs, mutations, headless runs), validators skip their debounce
 * RTD: Added headless runs: `runWorkflow` (by provider) and `runWorkflowConfig` create a workflow from an instance config and, unless a step ready to run has validation errors, run every step that can run; the result state is an instance config tree with each step's values, status, run error, validations and consistency and each workflow's validations, plus a summary; `saveWorkflowRun` and `saveWorkflowConfig` save a result state as a new run, the way Duplicate builds a copy

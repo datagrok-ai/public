@@ -29,6 +29,7 @@ import {InputValueControl} from './nodes/input-value-control';
 import {PROPERTY_INPUT_TYPE, adoptInputProperty, applyPropertyInputShape} from './nodes/input-nodes';
 import {effectiveFuncInputs} from '../utils/func-input-overrides';
 import {getSlotColor, getSlotLetter} from '../types/type-map';
+import {isReservedName} from '../utils/naming';
 import {tid, setTid} from '../utils/test-ids';
 import {FlowAnnotation, AnnotationDoc, ANNOTATION_COLORS, ANNOTATION_TITLE_SIZES} from './annotation';
 import {
@@ -1123,7 +1124,7 @@ export class FlowEditor {
 
   private uniqueOutputParamName(outputKey: string): string {
     let base = outputKey.replace(/__pt$/, '').replace(/[^a-zA-Z0-9_]/g, '');
-    if (!/^[a-zA-Z_]/.test(base)) base = 'result';
+    if (!/^[a-zA-Z_]/.test(base) || isReservedName(base)) base = 'result';
     const taken = new Set(this.editor.getNodes()
       .filter((n) => n.dgNodeType === 'output')
       .map((n) => String(n.properties['paramName'] ?? '')));

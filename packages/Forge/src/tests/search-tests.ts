@@ -16,8 +16,8 @@ import {bestCandidates, bestSearch, bestSearchPlan, canContinue, chooseLeader, C
   COST_RANK, costRankOf, defaultUncheckReason, drawnPoints, failedSearchMessage,
   FLOAT_DIGITS, FROM_BELOW_TO, holdOutSplit, isInsideSpace, Leader, leadersOf, MAX_FAILED_WITHOUT_COMPLETE,
   NO_PROGRESS, PARALLEL_FITS, rangeProblem, requestFingerprint, runSearch, SearchCandidate, SearchChoice,
-  searchableEngines, SearchPlan, searchPlanOf, SearchRecord, searchRecordFrom, searchRecordOf, SearchSpace,
-  searchSpaceOf, SearchState, SearchStrategy, Trial, trialPoints, tuneCandidate, tuneSearch,
+  searchableEngines, searchHoldOutRows, SearchPlan, searchPlanOf, SearchRecord, searchRecordFrom, searchRecordOf,
+  SearchSpace, searchSpaceOf, SearchState, SearchStrategy, Trial, trialPoints, tuneCandidate, tuneSearch,
   tuneSearchPlan, userSpace}
   from '../training/search';
 import {TrainingRequest, trainModel} from '../training/train-model';
@@ -135,6 +135,9 @@ async function bestPlan(table: 'cars' | 'iris', names: string[], metric: MetricI
 const CARS_METHODS = ['XGBoost', 'Linear Regression', 'PLS Regression'];
 const HALVING_METHODS = ['Softmax', 'LDA', 'Decision Tree', 'k-Nearest Neighbors', 'XGBoost', 'Hist Gradient Boosting',
   'Extra Trees', 'Random Forest'];
+const EQUAL_METHODS = ['Softmax', 'LDA', 'Decision Tree', 'k-Nearest Neighbors'];
+const countsOf = (plan: SearchPlan, trials: Trial[]) =>
+  plan.candidates.map((_, k) => trials.filter((t) => t.candidate === k).length);
 
 /** The candidates successive halving with [topK] gives [trials] in turn (every candidate completing its first trial
  * and none exhausted): each round's candidates, 2^round trials each in turn, the best (by its best complete score so
@@ -168,6 +171,7 @@ const RECORD: SearchRecord = {mode: 'tune', metric: 'accuracy', budgetSeconds: 6
   leaders: [{method: 'XGBoost', hyperparameters: {iterations: 20, eta: 0.3, booster: 'gbtree', on: true}, score: 0.95,
     se: 0.01, foldScores: [0.9, 1, 0.95, 0.95, 0.95], trials: 3, chosen: true}]};
 
+// eslint-disable-next-line max-lines-per-function
 category('Search', () => {
   test('holdOutSplit holds out a stratified part above 500 rows and nothing below', async () => {
     const iris = await grok.data.files.openTable(IRIS);
@@ -192,13 +196,20 @@ category('Search', () => {
     expect(holdOutSplit(request, 2).search.keptRows?.toBinaryString() !== search.keptRows?.toBinaryString(), true,
       'Another seed holds out the same rows');
 
+    // At 10,000 rows the cap of 2000 and a fifth coincide; the searchHoldOutRows test proves the cap.
     for (const isRegression of [false, true]) {
-      const large = await twoClassRequest(10999, isRegression);
+      const large = await twoClassRequest(10000, isRegression);
       const split = holdOutSplit(large, 1);
-      expect(split.holdOut?.rows, 2000, `${isRegression ? 'regression' : 'classification'} on 10,999 rows`);
-      expect(split.search.target.length, 8999);
+      expect(split.holdOut?.rows, 2000, `${isRegression ? 'regression' : 'classification'} on 10,000 rows`);
+      expect(split.search.target.length, 8000);
     }
   }, {timeout: TIMEOUT});
+
+  test('searchHoldOutRows holds out a fifth of the rows, at least 100 and at most 2000', async () => {
+    const counts = [400, 500, 600, 9990, 9997, 9998, 10000, 10002, 10003, 12000, 1000000];
+    expectArray(counts.map((n) => searchHoldOutRows(n)), [100, 100, 120, 1998, 1999, 2000, 2000, 2000, 2000, 2000,
+      2000]);
+  });
 
   test('trainModel measures metrics.test on the held out rows and keeps search', async () => {
     const {search, holdOut} = holdOutSplit(await twoClassRequest(), 1);
@@ -618,10 +629,8 @@ category('Search', () => {
     console.log(`Search: parallelism ${PARALLEL_FITS}, ${Math.round(sequential.outcome.elapsedMs)} ms sequential, ` +
       `${Math.round(parallel.outcome.elapsedMs)} ms parallel`);
   }, {timeout: TIMEOUT});
-});
 
-// Find best model: the candidates, the executor over several methods and the record.
-category('Search', () => {
+  // Find best model: the candidates, the executor over several methods and the record.
   test('bestCandidates sorts by cost rank, keeps a malformed space as a note, carries the probability input on ' +
     'and refuses an empty list', async () => {
     const discovery = EngineRegistry.discover();
@@ -908,14 +917,8 @@ category('Search', () => {
     }
     expect(error.startsWith('The search cannot be continued'), true, error);
   }, {timeout: TIMEOUT});
-});
 
-// Find best model's equal split and the one limit.
-category('Search', () => {
-  const EQUAL_METHODS = ['Softmax', 'LDA', 'Decision Tree', 'k-Nearest Neighbors'];
-  const countsOf = (plan: SearchPlan, trials: Trial[]) =>
-    plan.candidates.map((_, k) => trials.filter((t) => t.candidate === k).length);
-
+  // Find best model's equal split and the one limit.
   test('An equal split by trials gives each method its share in cost order, the remainder to the first, the ' +
     'defaults first', async () => {
     const plan = {...await bestPlan('iris', HALVING_METHODS, 'accuracy', 5, 19, undefined, 'equal'), parallelism: 1};

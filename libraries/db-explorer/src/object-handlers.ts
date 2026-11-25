@@ -59,7 +59,7 @@ export class DBExplorerObjectHandler extends DG.ObjectHandler {
   }
 
   renderInnerCard(x: DBValueObject) {
-    return ui.wait(async () => {
+    const wait = ui.wait(async () => {
       return await this.renderer.renderTable(
         x.schemaName,
         x.table,
@@ -68,6 +68,9 @@ export class DBExplorerObjectHandler extends DG.ObjectHandler {
         this.options.joinOptions
       );
     });
+    // the loader is positioned absolutely, so a card sized by its content would cut it while the value loads
+    wait.style.minWidth = wait.style.minHeight = '40px';
+    return wait;
   }
 
   renderCard(x: DBValueObject, _context?: any): HTMLElement {

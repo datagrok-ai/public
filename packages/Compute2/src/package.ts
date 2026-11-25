@@ -17,7 +17,7 @@ import type {PipelineConfiguration, ViewersHook} from
 import type {IRuntimePipelineMutationController} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/RuntimeControllers';
 import './tailwind.css';
 import {CustomFunctionView} from '@datagrok-libraries/compute-utils/function-views/src/custom-function-view';
-import {attachRunStorage} from './components/RunStorage/custom-function-view-runs';
+import {openRunDialog, saveRunDialog} from './components/RunStorage/run-dialogs';
 import {browseRuns} from './components/RunStorage/run-browser-dialog';
 import {setVueAppOptions} from './utils';
 import {openRunComparison} from './components/RunComparison/comparison-views';
@@ -59,6 +59,9 @@ declare global {
 export * from './package.g';
 import {_package, isRoleOnlyModelFilter} from './package-instance';
 export {_package} from './package-instance';
+// the one copy every package's custom views and history inputs use, as window.compute2
+export {CustomFunctionView};
+export {historyInput} from '@datagrok-libraries/compute-utils/function-views/src/history-input';
 
 let initRunned = false;
 let startUriLoaded = false;
@@ -170,7 +173,7 @@ export class PackageFunctions {
     setViewHierarchyData(call, view);
 
     await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
-    const detach = attachRunStorage(view, call.func);
+    view.customView = call.func.nqName;
     // as in RFVApp: a programmatic open passes the id via call.aux, deep links via the start URL
     const runId = call.aux.initialRunId ??
       (globalThis.initialURLHandled ? null : new URL(grok.shell.startUri).searchParams.get('id'));
@@ -179,14 +182,6 @@ export class PackageFunctions {
       await view.loadRun(runId)
         .catch((e) => grok.shell.error(`Couldn't open the run: ${e?.message ?? e}`));
     }
-
-    grok.events.onViewRemoved.pipe(
-      filter((closedView) => {
-        return closedView === (view as any);
-      }),
-      take(1),
-    ).subscribe(() => detach());
-
     return view;
   }
 
@@ -346,6 +341,24 @@ export class PackageFunctions {
       validation: validationState, consistency: consistencyState,
       completed: isOutputOutdated == null ? undefined : !isOutputOutdated,
     });
+  }
+
+  @grok.decorators.func({
+    name: 'OpenRunDialog',
+    description: 'Picks a saved run of a function in the run browser; returns it loaded, or null when cancelled.',
+    outputs: [{type: 'funccall', name: 'result'}],
+  })
+  static OpenRunDialog(@grok.decorators.param({type: 'func'}) func: DG.Func) {
+    return openRunDialog(func);
+  }
+
+  @grok.decorators.func({
+    name: 'SaveRunDialog',
+    description: 'Asks where and under which name to save a run; returns {metadata, target}, or null when cancelled.',
+    outputs: [{type: 'object', name: 'result'}],
+  })
+  static SaveRunDialog(@grok.decorators.param({type: 'funccall'}) call: DG.FuncCall) {
+    return saveRunDialog(call);
   }
 
   @grok.decorators.func({

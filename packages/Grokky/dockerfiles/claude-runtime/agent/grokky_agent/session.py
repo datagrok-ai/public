@@ -32,7 +32,7 @@ PROVIDER_MESSAGE = re.compile(r"""['"]message['"]: (?:'((?:[^'\\]|\\.)*)'|"((?:[
 # api_request_error's reason when the provider's safety filter stops an answer; its message is the cut-off answer.
 SAFETY_FILTER = 'content_policy_blocked'
 SAFETY_FILTER_MESSAGE = "The model provider's safety filter stopped this answer. Try rewording the request."
-BASE_TOOLSETS = ['file', 'terminal', 'skills', 'web', browser_tools.TOOLSET]
+BASE_TOOLSETS = ['file', 'terminal', 'skills', 'web']
 # The connection test's call: no system prompt, no tools, a reply of a word or two. Hermes may call again after an
 # empty reply, which a limit of one would refuse and report as the provider's error.
 RETRY_STRUCTURED = ('Your reply did not match the required JSON schema: {}. '
@@ -146,6 +146,7 @@ class Session:
         self.latest: Turn | None = None
         self.view_tools: list[str] = []
         self.view_specs: list[hermes.ToolSpec] = []
+        self.browser_tools = True
         self.mcp: McpServer | None = None
         # The stored session this process reloads, until a turn has restored it.
         self.restore: str | None = None
@@ -334,6 +335,8 @@ class Session:
             agent = self.agent
         hermes.set_terminal_cwd(self.key, cmd['cwd'])
         changed = self._set_view_tools(browser_tools.view_tool_specs(cmd.get('clientTools')))
+        changed = cmd['browserTools'] != self.browser_tools or changed
+        self.browser_tools = cmd['browserTools']
         changed = self._set_mcp(cmd.get('datagrokMcp')) or changed
         if changed:
             agent.enabled_toolsets = self._toolsets()
@@ -342,7 +345,8 @@ class Session:
         return agent
 
     def _toolsets(self) -> list[str]:
-        return BASE_TOOLSETS + ([browser_tools.VIEW_TOOLSET] if self.view_tools else []) + \
+        return BASE_TOOLSETS + ([browser_tools.TOOLSET] if self.browser_tools else []) + \
+            ([browser_tools.VIEW_TOOLSET] if self.view_tools else []) + \
             ([f'mcp-{MCP_SERVER}'] if self.mcp else [])
 
     def _set_view_tools(self, specs: list[hermes.ToolSpec]) -> bool:

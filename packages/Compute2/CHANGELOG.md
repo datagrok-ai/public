@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Custom function view: Added `OpenRunDialog` and `SaveRunDialog`, the Open and Save run dialogs, which custom function views and `historyInput` call; the editor no longer gives the view its dialogs
+* Custom function view: Packages get `CustomFunctionView` and `historyInput` from `window.compute2`, so every custom view runs Compute2's one version
 * [core#1407](https://github.com/datagrok-ai/core/issues/1407): Run comparison: Fixed date, time and big integer columns compared as platform objects instead of by their values
 * Custom function view: The editor opens a run from the page link, as RFV does; a run that fails to load shows the error and the view keeps a new call
 * Model Hub: The context panel shows a Launch button, the model's details (type, package, location, status, required groups, versions) and a My runs pane with my last runs and Show all, which opens Browse runs for the model; the Dev pane has only the model's name to copy

@@ -16,7 +16,8 @@ Feature: Closing a table that other open tables depend on
   one of two views of a table (the table stays open), for a dependent closed before its source, or for
   Close All, which closes everything at once. Close others asks once for everything it closes, and not
   at all when it closes a source together with all its dependents. The table's Close command and the
-  simple mode's close icon ask the same way as the tab's close button.
+  simple mode's close icon ask the same way as the tab's close button. A closed view is offered back
+  for a few seconds by an Undo link in the status bar, which also restores the table's link.
 
   Every table is opened through the API (cars, and its first 10 rows as cars10); the pivot is
   published through the toolbox. Only the two-project scenario saves anything: its projects are
@@ -93,6 +94,21 @@ Feature: Closing a table that other open tables depend on
     And user clicks on CLOSE button in "Close cars?" dialog
     Then the "Close cars?" dialog should close
     And "cars" view tab should be absent
+
+  Scenario: Undo in the status bar brings a closed view back with its link
+    Given simple mode is off
+    And user opens cars dataset
+    And user opens cars dataset keeping the first 10 rows as "cars10"
+    And tables "cars10" and "cars" are linked on "model"
+    When user closes "cars" view tab
+    And user clicks on CLOSE button in "Close cars?" dialog
+    Then "cars" view tab should be absent
+    And the status bar should offer to undo "Closed cars"
+    When user clicks Undo in the status bar
+    Then "cars" view tab should be visible
+    And the status bar should offer no undo
+    When user makes row 3 of table "cars10" current
+    Then 1 rows of table "cars" should pass the filter
 
   Scenario: A table a viewer of another view is bound to asks before it closes
     Given simple mode is off

@@ -568,6 +568,34 @@ category('Flow: autorun', () => {
     }
   });
 
+  test('a live node fed by another live node reruns with it; one behind a node that is not live waits', async () => {
+    registerBuiltinNodes();
+    const e = makeEditor();
+    try {
+      const {a, b, c} = await makeChain(e);
+      const ctrl = new ExecutionController(e.flow);
+      const done = (...ids: string[]): Promise<boolean> => until(() => !ctrl.state.isRunning &&
+        ids.every((id) => status(ctrl, id) === NodeExecStatus.completed), 8000);
+      expect(ctrl.runAutorun(new Set(), SETTINGS), 'started');
+      expect(await done(a, b, c), true, 'setup: everything ran');
+
+      ctrl.applyGraphEdit({kind: 'params-changed', nodeId: b});
+      const aBefore = ctrl.state.getNodeState(a);
+      // c first: the order the edit reported them in must not matter
+      expect(ctrl.runLiveNodes(new Set([c, b]), SETTINGS), 'started');
+      expect(await done(b, c), true, 'the edited node and the live node it feeds both ran');
+      expect(ctrl.state.getNodeState(a) === aBefore, true, 'upstream was not re-run');
+
+      ctrl.applyGraphEdit({kind: 'params-changed', nodeId: a});
+      expect(ctrl.runLiveNodes(new Set([a, c]), SETTINGS), 'started');
+      expect(await done(a), true);
+      expect(status(ctrl, b), NodeExecStatus.stale, 'b is not live: nothing runs uninvited');
+      expect(status(ctrl, c), NodeExecStatus.stale, 'c has no value to read from b');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
   test('a live func with a blank required string param never live-runs', async () => {
     const typeName = funcTypeName('OpenFile');
     if (!typeName) return;

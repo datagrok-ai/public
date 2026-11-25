@@ -807,9 +807,10 @@ A point already tried is skipped; `MAX_DUPLICATES` (20) in a row exhaust the can
 space finite: a float range narrower than its rounding, `[0.1, 0.1001]`, draws one value).
 
 **Hold out.** `holdOutSplit(request, seed)`: with at least `HOLD_OUT_MIN_ROWS` (500) prepared rows,
-exactly `testRows = clamp(round(0.2 n), 100, 2000)` rows become `HoldOut {columns, target, rows, fraction}`: the first
-ones of the rows shuffled by `seed + 1` (`shuffledRows`); for a classification each class (`classGroups`) gives its
-first `share * testRows` rows, the quotas floored and the largest remainders rounded up so they sum to `testRows`
+exactly `searchHoldOutRows(n)` = `clamp(round(0.2 n), 100, 2000)` rows, `testRows`, become
+`HoldOut {columns, target, rows, fraction}`: the first `testRows` of the rows shuffled by `seed + 1` (`shuffledRows`);
+for a classification each class (`classGroups`) gives its first `share * testRows` rows, the quotas floored and the
+largest remainders rounded up so they sum to `testRows`
 (each class within one row of its share) (clones of the prepared columns and target); the
 search request holds masked clones of the rest with the whole table's preparation (`oneHotCategories`, options) and
 `keptRows` mapped to the table's rows (`maskedKeptRows`), so the results' viewers still link to the table. Below 500
@@ -1778,8 +1779,9 @@ missing-value settings. `applyAndRecord(request, source, progress?)`:
    categories, or the applied data's for a model without the record; without steps the columns themselves are used.
 5. Reads the blob and calls the engine's `apply`: once on the columns themselves when they fit one batch, otherwise
    once per batch of rows (a copy each, of a range mask built from a word array), the results written into one column
-   (numerical predictions through their raw data). Before every call a cancelled progress
-   indicator stops it ("Application was cancelled."); after every call the progress shows "Rows a-b of n". At most
+   (numerical predictions through their raw data). Before and after every call a cancelled progress
+   indicator stops it ("Application was cancelled."), so a cancel during the only or the last call stops it too;
+   after every call the progress shows "Rows a-b of n". At most
    every 50 ms the loop gives the event loop a turn (`yieldToEventLoop`), so a click on the cancel and the progress
    repaint get through: fast engine calls resume as microtasks and would otherwise hold the page to the last batch.
 6. `replayPostprocessing(raw, options, probabilities)` (see "Preparation"): `binary-classification` (a model of the
@@ -2091,7 +2093,8 @@ version}` after the write. `Forge:deleteModel` fires it too: the panel showing t
 `training/evaluate-api.ts`) is Run Evaluation without the view:
 
 1. `findModelRow` reads the `EVALUATE_COLUMNS` (`APPLY_COLUMNS` plus `metrics`, `dataset_ref`, `dataset_table_id`),
-   `loadedModelOf` loads it (its refusals as for `applyModel`).
+   `loadedModelOf` loads it (its refusals as for `applyModel`) with the discovered methods, or with a test's stubs
+   passed as `runEvaluateModel(input, discovered)`.
 2. The table: the given one, else `storedTrainingTable` (the reference, else the copy; not added to the workspace),
    else "The model keeps no training data. Pass a table with the actual values."
 3. The target: the column named `target`, by default `target_name` (an empty text counts as not given); none: "The
@@ -2290,7 +2293,7 @@ count from `feature_count`, and the card and the tooltip read `features` and `op
 |---|---|
 | **Details** (open) | The description, then **Author**, **Created**, **Updated**, **Table** (`<table> (<rows> rows)`), **Data storage** (`None` / `Reference` / `Copy`), **Data source** (a reference: its `path`, else its query `name`, else `a script`), **Data copy** (a copy: `ui.render` of the uploaded `TableInfo`, `missing` when `grok.dapi.tables.find` gives none), **Last run** (the newest application's time, with ` (failed)` / ` (cancelled)` when it did not complete; `Never` when none), **Applications** (the count), **Features**, **Target**, **Method**, **Task**, **Applicable to** (the open tables it fits; left out when none), then **Tags**: every change is written with `writeModelInfo` (`ui/save-model-dialog.ts`, shared with Edit model; tags only), one write at a time, each against the version the previous one returned, so quick changes are no conflict; a model changed elsewhere meanwhile asks with the platform's conflict dialog to reload (Details is rebuilt from a fresh read) or overwrite |
 | **Performance** | `MetricsTable` of the stored metrics (`storedSummary`; the Train view's grid: Metric / Train / Validation, the findings marked in red, and its bullet list of rows, validation, seed with the copy icon, positive class); "No metrics were recorded for this model." without metrics; then the button **Run Evaluation** (`runEvaluation`, see "Run Evaluation"; tooltip `Apply the model to its training data, or to an open table, and show how well it predicts.`) when the model's blob is Forge's own (`ownBlob`), so a row made by hand has none |
-| **Activity** | `N application(s)` and a grid of the newest applications (up to 100): **When**, **Who** (login, the authors read with one `grok.dapi.getEntities`, `loginsOf`; empty for a deleted user), **Table**, **Rows**, **Prediction column**, **Status**, **Source**, **Duration (ms)**, with a tooltip per header, the time with seconds on **When**, the meaning on **Status** (`Completed: the column was added.`, `Failed: <error>`, `Cancelled: stopped between batches, no column added.`) and on **Source** (`The Apply dialog or the catalog.`, `A script, through Forge:applyModel.`); "Not applied yet." without one |
+| **Activity** | `N application(s)` and a grid of the newest applications (up to 100): **When**, **Who** (login, the authors read with one `grok.dapi.getEntities`, `loginsOf`; empty for a deleted user), **Table**, **Rows**, **Prediction column**, **Status**, **Source**, **Duration (ms)**, with a tooltip per header, the time with seconds on **When**, the meaning on **Status** (`Completed: the column was added.`, `Failed: <error>`, `Cancelled: stopped before the last batch finished, no column added.`) and on **Source** (`The Apply dialog or the catalog.`, `A script, through Forge:applyModel.`); "Not applied yet." without one |
 | **Sharing** | The groups the model was shared with (**Can view**, **Can edit**) or "Not shared yet. Only its author and administrators can see this model.", the button **Share...** (`DG.DomainObjectHandler.shareRow`: the platform's sharing dialog; its one `try/catch` reports a refusal before the dialog opens), and "Sharing a model needs the Share permission on this model; ask an administrator." for a user without Share on the row (`~can_share`; only for such a user is a refused read of the shares expected, and it leaves the groups out) |
 | **History** | The platform's audit pane (`DG.DomainObjectHandler.auditPane`): one line per change of the row (user, time, `insert` / `promote` / `update`), newest first |
 
@@ -2403,7 +2406,7 @@ The core hides the earlier tool's table pane **Models**, its **Predicted By** ro
 **MLFlow** node and its other panes whether or not Forge is installed; models of the earlier tool are shown without
 commands. `ML | Models` and the Browse node exist only with Forge (the commands register after the package functions
 load). Renaming one of these functions or its inputs silently removes the entry point, or breaks `grok.ml.applyModel`;
-`ui-tests.ts` ("the core's entry points exist without a menu of their own") pins them. Publishing or removing Forge
+`ui-tests.ts` ("the core's entry points exist; Forge has no menu, app or view function of its own") pins them. Publishing or removing Forge
 takes effect in a session after a page reload.
 
 ## Sharing
@@ -2475,7 +2478,7 @@ Applying lists every visible model, up to 10000 (those that fit first), instead 
 the feature rows in place under a **Columns** summary instead of a sub-dialog, checks every mapped column's kind
 before the engine (the API too, which used to check presence only), suggests close names only within a distance
 threshold instead of always assigning a column, makes every check a validator with **OK** unavailable until all pass,
-skips or imputes rows with missing values at application, checks for a cancel before every batch, records every
+skips or imputes rows with missing values at application, checks for a cancel before and after every batch, records every
 application, and names the prediction column with Forge's own `<target> (predicted)`, tagged `predictive.model` with the model id
 (the built-in tool wrote the model's markup there).
 
@@ -2633,6 +2636,19 @@ page (with their folders and copies), its tables' training runs through `grok s 
 by the exact names and ids it deleted. A step that claims a training waits for a new `data-forge-run-id` and asks the
 server whether that id is the table's newest run, with the method and the settings the step chose; a claim that
 nothing trained reads once the view is settled (`aria-busy` not true).
+
+The package tests (`src/package-test.ts`, `grok test`) cover what a user flow cannot check: the logic areas
+(`Engines`, `Metrics`, `Training`, `Search`, `Preparation`, `Storage`, `Apply`, `Catalog`; the temporary `Forge Check:`
+tests add blocks without hooks to `Engines`, `Training` and `Apply`), one `category` block per name in a file, and in
+the `UI*` categories the form logic without a view (`ValidationInputs`, `PreparationInputs`,
+`FindSettings`, `TuneSettings.load`, `MetricsTable`, `buildShown` / `markCurves`), the scenarios that need a stub method
+(`slowEngine` with a gate, `stuckEngine`, a failing viewer), invariants (the old form's subscriptions dropped, the
+frames given back, one `ButtonGate` overlay), the registration of the core's entry points and `restoreRun` called
+directly. Every test keeps its datasets at 10 000 rows or fewer; the `UI*` tests assert values and states, never
+tooltip texts, pixels or CSS, and wait for the readiness above (a training: a new `lastTraining` with `aria-busy`
+false), never for a fixed time. The
+user flows, the tooltips and the layout are the BDD features'. `test()` takes `skipToCategory`, `skipToTest`,
+`returnOnFail` and `exclude`, so `grok test` retries a failed run on a fresh page from the failed test.
 
 ## EMS schema `forge`
 

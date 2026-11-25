@@ -86,6 +86,9 @@ category('WebComponentsVue: InputForm', () => {
       funcCall: call,
       callMeta: {c: new BehaviorSubject({hidden: true})},
       hiddenInputs: new Set(['a']),
+      skipInit: true,
+      skipLogic: true,
+      skipTableAutoFill: true,
     }));
     try {
       await h.awaitForm('c');

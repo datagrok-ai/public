@@ -9,6 +9,10 @@ Use `t.columns.addNewCalculated(name, formula, type?)` in `datagrok_exec` code
 to add a formula-driven column. The formula stays attached to the column,
 so edits to source columns trigger automatic recompute.
 
+On a table open in a view, add the column with the `table_add_column` tool (`{name, formula}`), which records
+the undo step; a script that calls `addNewCalculated` itself ends with `undoable.columnAdded(col)` on the column
+it returned (see `datagrok-undo`).
+
 Do **not** use `t.columns.addNewFloat('LipE')` plus a manual `for` loop — that
 produces a static column with no formula and no recompute.
 

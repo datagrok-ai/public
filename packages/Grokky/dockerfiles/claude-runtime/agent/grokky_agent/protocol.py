@@ -50,6 +50,7 @@ class TurnCommand(TypedDict):
     userDir: NotRequired[str]
     outputSchema: NotRequired[JsonObject]
     clientTools: NotRequired[list[ClientTool]]
+    browserTools: bool
     datagrokMcp: NotRequired[McpServer]
     limits: Limits
     restore: NotRequired[str]

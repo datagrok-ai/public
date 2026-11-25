@@ -2,7 +2,7 @@ import type {ProviderCredentials} from './credentials';
 
 // Browser ↔ runtime WebSocket protocol
 
-export type PromptMode = 'datagrok' | 'bash' | 'none';
+export type PromptMode = 'datagrok' | 'search' | 'bash' | 'none';
 
 export interface ImageAttachment {
   mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
@@ -101,6 +101,7 @@ export interface AgentTurnRequest {
   resumeExpected?: boolean;
   outputSchema?: object;
   clientTools?: ClientToolDef[];
+  browserTools: boolean;
   /** The Datagrok MCP server, reached with the user's key in these headers. */
   datagrokMcp?: {url: string; headers: Record<string, string>};
   limits: {maxTurns: number; maxBudgetUsd: number};

@@ -13,7 +13,7 @@ const likelyPNGColNames = ['image', 'png', 'thumbnail', 'img', 'glyph', 'icon', 
 /// <reference path="../../globals.d.ts" />
 class CurvesPackageDetectors extends DG.Package {
   //meta.role: semTypeDetector
-  //input: column col
+  //input: column col {type: string}
   //output: string semType
   detectXMLCurveChart(col) {
     if (DG.Detector.sampleCategories(col, (s) => s.startsWith('<chart>') && s.endsWith('</chart>'), 1)) {
@@ -26,7 +26,7 @@ class CurvesPackageDetectors extends DG.Package {
   }
 
   //meta.role: semTypeDetector
-  //input: column col
+  //input: column col {type: string}
   //output: string semType
   detectFit(col) {
     if (DG.Detector.sampleCategories(col, (s) => {
@@ -39,7 +39,7 @@ class CurvesPackageDetectors extends DG.Package {
   }
 
   //meta.role: semTypeDetector
-  //input: column col
+  //input: column col {type: string}
   //output: string semType
   detectPzfxCurveChart(col) {
     if (DG.Detector.sampleCategories(col, (s) => {
@@ -53,7 +53,7 @@ class CurvesPackageDetectors extends DG.Package {
   }
 
   //meta.role: semTypeDetector
-  //input: column col
+  //input: column col {type: string}
   //output: string semType
   detectCompactDoseResponse(col) {
     if (DG.Detector.sampleCategories(col, (s) => {

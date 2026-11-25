@@ -327,7 +327,7 @@ export async function deleteEntityViaContextMenu(page: Page, name: string): Prom
   await openCardContextMenu(page, name);
   await page.locator(`${CONTEXT_MENU} .d4-menu-item[d4-name="Delete"]`).first().click();
   // Optional confirmation dialog.
-  const yes = page.locator('.d4-dialog button[name="button-YES"], .d4-dialog .ui-btn').filter({ hasText: /^(YES|OK)$/i }).first();
+  const yes = page.locator('.d4-dialog button[name="button-YES"], .d4-dialog .ui-btn').filter({ hasText: /^(YES|OK|DELETE)$/i }).first();
   if (await yes.isVisible({ timeout: 3_000 }).catch(() => false)) await yes.click();
   await page.waitForTimeout(1200);
 }

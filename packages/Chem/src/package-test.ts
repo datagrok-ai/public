@@ -46,6 +46,7 @@ import './tests/projects-tests';
 import './tests/clone-layout-tests';
 import './tests/mmpa-tests';
 import './tests/sar-matrix-tests';
+import './tests/sar-matrix-tour-tests';
 import './tests/crux-analyses-tests';
 import './tests/crux-biopolymer-tests';
 import './tests/crux-trap-tests';

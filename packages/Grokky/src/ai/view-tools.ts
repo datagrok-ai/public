@@ -1,5 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import {TABLE_TOOL_DEFS, TABLE_TOOL_RUNNERS} from './table-tools';
 
 export interface ViewToolDef {
   name: string;
@@ -316,7 +317,7 @@ const VIEW_TOOL_DEFS: ViewToolDef[] = [
 
 /** Tool set declared to the runtime on every full-mode prompt. */
 export function viewFunctionTools(): CollectedViewTools {
-  const runners = new Map<string, (args: any) => any>();
+  const runners = new Map<string, (args: any) => any>(TABLE_TOOL_RUNNERS);
   runners.set('list_view_widgets', () => {
     const widgets = collectWidgets(grok.shell.v);
     return {
@@ -347,5 +348,5 @@ export function viewFunctionTools(): CollectedViewTools {
   });
   runners.set('get_view_function_result', invokeViewFunction);
   runners.set('call_view_function', invokeViewFunction);
-  return {defs: VIEW_TOOL_DEFS, runners};
+  return {defs: [...VIEW_TOOL_DEFS, ...TABLE_TOOL_DEFS], runners};
 }

@@ -2,7 +2,11 @@
 
 ## v.next
 
+* [public#4667](https://github.com/datagrok-ai/public/issues/4667): A wand suggestion opens in its own tab (Help, Execute or Query) without asking the model which one fits
+* Search: Help and Execute no longer wait on browser tools that the search bar never answers
+* AI panel: Restyled the chat. Blue-tint prompts, a bordered prompt box, code blocks with a header and Copy, questions as a card with clickable options, and search answers use the full width
 * Search: The AI wand finds the home page's search box when PowerPack places it in the top row (no tabs)
+* Grokky: Ctrl+Z undoes the columns, rows, values and viewers a request added, removed or changed
 * [public#4650](https://github.com/datagrok-ai/public/issues/4650): Fixed the AI panel rendering replies as trusted HTML, so scripts in a reply ran
 * Grokky: The chat keeps a reading width in a wide panel: replies on white, your prompt in a bubble that fits its text
 * Grokky: Fixed "Speech recognition error: aborted" in the console when voice input stops

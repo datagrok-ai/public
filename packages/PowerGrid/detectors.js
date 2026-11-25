@@ -35,7 +35,7 @@ class PowerGridPackageDetectors extends DG.Package {
   }
 
   //meta.role: semTypeDetector
-  //input: column col
+  //input: column col {type: string}
   //output: string semType
   detectSvg(col) {
     if (col.type === DG.COLUMN_TYPE.STRING &&
@@ -45,7 +45,7 @@ class PowerGridPackageDetectors extends DG.Package {
   }
 
   //meta.role: semTypeDetector
-  //input: column col
+  //input: column col {type: string}
   //output: string semType
   detectImageColumn(col) {
     if (DG.Detector.sampleCategories(col, (s) => PowerGridPackageDetectors.likelyImageUrl(s), 1))
@@ -53,7 +53,7 @@ class PowerGridPackageDetectors extends DG.Package {
   }
 
   //meta.role: semTypeDetector
-  //input: column col
+  //input: column col {type: byte_array}
   //output: string semType
   detectByteArrayColumn(col) {
     if (col.type !== DG.COLUMN_TYPE.BYTE_ARRAY)
@@ -72,7 +72,7 @@ class PowerGridPackageDetectors extends DG.Package {
   }
 
   //meta.role: semTypeDetector
-  //input: column col
+  //input: column col {type: string}
   //output: string semType
   detectRawPng(col) {
     if (col.type === DG.COLUMN_TYPE.STRING && DG.Detector.sampleCategories(col, (s) => {

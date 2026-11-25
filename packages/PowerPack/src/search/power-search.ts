@@ -311,8 +311,9 @@ export async function showSearchSuggestions(searchInput: HTMLInputElement): Prom
     any = true;
   }
   if (any) {
-    menu.show({element: searchInput.parentElement!, x: searchInput.offsetLeft,
-      y: searchInput.offsetTop + searchInput.offsetHeight});
+    const rect = searchInput.getBoundingClientRect();
+    menu.show({element: document.body, x: rect.x,
+      y: rect.y + rect.height});
   }
 }
 
@@ -416,7 +417,6 @@ export function createFuncTableViewWidget(sf: DG.Func, inputParams: Record<strin
   }));
   outWidget.addProperty('caption', DG.TYPE.STRING, sf.friendlyName ?? sf.name);
   outWidget.props.caption = sf.friendlyName ?? sf.name;
-  outWidget.root.style.minHeight = '500px';
   return widgetHost(outWidget);
 }
 
