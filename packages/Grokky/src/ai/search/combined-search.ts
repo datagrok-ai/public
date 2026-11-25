@@ -9,6 +9,7 @@ import {UsageLimiter} from '../usage-limiter';
 import {AIPanel} from '../panel';
 import {runPromptWithLifecycle, RENDERED_EVENT} from '../ui';
 import {AiFeature} from '../../claude/ai-feature';
+import {SearchProvider} from '../prompt-suggestions';
 
 interface AISearchFuncInfo {
   func: DG.Func;
@@ -52,8 +53,8 @@ export class CombinedAISearchAssistant {
     return this._instance;
   }
 
-  public async getResultWidget(prompt: string): Promise<DG.Widget | null> {
-    const functionOrder = await this.getRelevantFunctionOrder(prompt);
+  public async getResultWidget(prompt: string, provider?: SearchProvider): Promise<DG.Widget | null> {
+    const functionOrder = provider && this.functions[provider] ? [provider] : await this.getRelevantFunctionOrder(prompt);
     console.log(`Function order for execution: ${functionOrder.join(', ')}`);
     const remainingFunctions = Object.keys(this.functions).filter((fn) => !functionOrder.includes(fn));
     let moreBtn: HTMLButtonElement | null = null;
@@ -160,7 +161,7 @@ export class CombinedAISearchAssistant {
     this.lastUiprompt = '';
   }
 
-  public async searchUI(prompt: string) {
+  public async searchUI(prompt: string, provider?: SearchProvider) {
     if (this.lastUiprompt === prompt)
       return;
     this.lastUiprompt = prompt;
@@ -179,7 +180,7 @@ export class CombinedAISearchAssistant {
     const widgetDiv = ui.divV([loader], {style: {marginTop: '8px', marginBottom: '8px', alignItems: 'center', justifyContent: 'center', height: '100px'}});
     searchResultHost.prepend(widgetDiv);
     try {
-      const widgetResult = await this.getResultWidget(prompt);
+      const widgetResult = await this.getResultWidget(prompt, provider);
       if (!widgetResult)
         throw new Error('No result widget generated.');
       loader.remove();

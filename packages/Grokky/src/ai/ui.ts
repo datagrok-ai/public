@@ -16,7 +16,7 @@ import {executeSingleBlock, runVerification, renderEntityRefList} from '../claud
 import {sendChatTurn} from '../claude/queue-task';
 import {UsageLimiter} from './usage-limiter';
 import {viewFunctionTools, NO_VIEW_TOOLS} from './view-tools';
-import {resolveScopes, showSuggestionsMenu} from './prompt-suggestions';
+import {resolveScopes, showSuggestionsMenu, SearchProvider} from './prompt-suggestions';
 import {AiFeature} from '../claude/ai-feature';
 
 interface ExecutionPlan {
@@ -138,7 +138,7 @@ async function streamingWidget(prompt: string, opts: StreamingOpts): Promise<DG.
     stopListening();
   });
 
-  client.send(sessionId, prompt, {logPrompt: prompt, outputSchema: opts.outputSchema});
+  client.send(sessionId, prompt, {logPrompt: prompt, outputSchema: opts.outputSchema, systemPromptMode: 'search'});
   return widget;
 }
 
@@ -209,13 +209,16 @@ export function setupSearchUI() {
     const parent: HTMLElement = searchInput.parentElement!;
     const wandIcon = ui.iconFA('magic', async (e) => {
       const scopes = await resolveScopes('powerSearch');
-      showSuggestionsMenu(scopes, (s) => {
+      showSuggestionsMenu(scopes, (s, provider) => {
         const prompt = s.prompt ?? '';
         searchInput.value = prompt;
         searchInput.dispatchEvent(new Event('input', {bubbles: true}));
         // PowerPack's input handler debounces 500ms and then calls ui.empty(host) on power-pack-search-host;
         // wait past that so the AI loader/result isn't wiped immediately after we prepend it.
-        setTimeout(() => aiCombinedSearch(prompt), 600);
+        setTimeout(() => {
+          CombinedAISearchAssistant.instance.resetSearchUI();
+          aiCombinedSearch(prompt, provider);
+        }, 600);
       }, e);
     }, 'Prompt suggestions');
     wandIcon.classList.add('grokky-search-wand');
@@ -250,10 +253,10 @@ export function setupSearchUI() {
   }, 1000);
 }
 
-export async function aiCombinedSearch(prompt: string) {
+export async function aiCombinedSearch(prompt: string, provider?: SearchProvider) {
   // hide the menu
   document.querySelector('.d4-menu-popup')?.remove();
-  await CombinedAISearchAssistant.instance.searchUI(prompt);
+  await CombinedAISearchAssistant.instance.searchUI(prompt, provider);
 }
 
 // Called by the core query editor to decide whether to show its AI toggle icon.

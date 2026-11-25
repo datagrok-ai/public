@@ -117,7 +117,8 @@ export function runTurn(req: AgentTurnRequest): AsyncIterator<AgentEvent, undefi
     p.turns++;
     p.send({type: 'turn', text: req.text, images: req.images, systemPrompt: req.systemPrompt, effort: req.effort,
       cwd: req.cwd, userDir: req.userDir, outputSchema: req.outputSchema,
-      clientTools: req.clientTools, datagrokMcp: req.datagrokMcp, limits: req.limits, restore: p.restore});
+      clientTools: req.clientTools, browserTools: req.browserTools, datagrokMcp: req.datagrokMcp, limits: req.limits,
+      restore: p.restore});
     await settled;
   };
 

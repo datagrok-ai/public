@@ -20,6 +20,11 @@ test('the full prompt is the default for any other mode', () => {
   assert.equal(buildSystemPrompt(undefined), full);
 });
 
+test('the search prompt adds the no-browser-tools note to the full prompt', () => {
+  const full = buildSystemPrompt();
+  assert.match(buildSystemPrompt('search').replace(full, ''), /No browser tools this turn/);
+});
+
 test('the full prompt documents the domain MCP tools', () => {
   const full = buildSystemPrompt();
   for (const tool of ['datagrok_functions', 'datagrok_files', 'datagrok_projects',

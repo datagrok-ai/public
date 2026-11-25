@@ -89,7 +89,7 @@ Message types are defined in [`dockerfiles/claude-runtime/src/types.ts`](../dock
 
 | `type` | Purpose | Key fields |
 |--------|---------|------------|
-| `user_message` | Send a prompt, start or resume a session | `sessionId`, `message`, `images?`, `apiKey`, `mcpServerUrl`, `outputSchema?`, `systemPromptMode?` (`datagrok`/`bash`/`none`), `model?`, `clientTools?`, `gates?`, `resumeExpected?`, `taskId?` |
+| `user_message` | Send a prompt, start or resume a session | `sessionId`, `message`, `images?`, `apiKey`, `mcpServerUrl`, `outputSchema?`, `systemPromptMode?` (`datagrok`/`search`/`bash`/`none`), `model?`, `clientTools?`, `gates?`, `resumeExpected?`, `taskId?` |
 | `abort` | Cancel an in-progress query | `sessionId` |
 | `input_response` | Reply to an `input_request` (browser tool result or user answer) | `sessionId`, `requestId`, `value` |
 | `sync_user_files` | Trigger a skills/knowledge sync | `apiKey`, `mcpServerUrl`, `scope?`, `packageName?` |
@@ -283,6 +283,8 @@ MCP tools, their `op`; view tools and unknown tools read as their name.
 - `datagrok` (default): `DATAGROK_PROMPT`, the inlined `datagrok-exec` and `datagrok-entities` skill
   bodies, and an index of every skill in `plugin/skills/` (name and description) to load with
   `skill_view`.
+- `search`: the `datagrok` prompt plus a note that no browser tools are available. The agent runs without
+  them: nothing answers a browser call from the search bar's Help and Execute tabs.
 - `bash`: a short prompt to run the given command with the terminal tool and output only its stdout. Its
   text does not stream: the answer is the final message, since models remark before the tool call anyway.
 - `none`: no system prompt at all.

@@ -28,7 +28,6 @@
 | Which compounds are active against CHEMBL1827 |                |   |
 | Shigella bioactivity                          |                |   |
 | PK for LEVOFLOXACIN                           |                |   |
-| CHO assay data                                |                |   |
 | Northwind: sales by country                   |                |   |
 | CHEMBL: targets involving thrombi             |                |   |
 
@@ -71,7 +70,6 @@
 | Which compounds are active against CHEMBL1827 |                |   |
 | Shigella bioactivity                          |                |   |
 | PK for LEVOFLOXACIN                           |                |   |
-| CHO assay data                                |                |   |
 
 
 ## Visualizations

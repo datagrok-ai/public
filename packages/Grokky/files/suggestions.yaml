@@ -15,6 +15,9 @@
 #
 # requires: [Pkg, ...] on a block or a suggestion hides it unless every listed package has
 #   registered functions on this deployment. Omit for prompts served by core or the LLM itself.
+#
+# provider: Help | Execute | Query on a powerSearch block opens its suggestions in that search tab
+#   directly, without asking the model which tab fits.
 # =====================================================================================
 
 # ---------------------------------------------------------------------------- powerSearch
@@ -22,6 +25,7 @@
   scope: global
   key: function-chaining
   label: Function chaining
+  provider: Execute
   suggestions:
     - prompt: ADME properties for aspirin
       requires: [Admetica, Chem, Chembl]
@@ -39,6 +43,7 @@
   scope: global
   key: database-queries
   label: Database queries
+  provider: Query
   suggestions:
     - prompt: ADCs with IC50 above 400
       requires: [Biologics]
@@ -48,13 +53,12 @@
       requires: [Chembl]
     - prompt: PK for LEVOFLOXACIN
       requires: [Chembl]
-    - prompt: CHO assay data
-      requires: [Biologics]
 
 - context: powerSearch
   scope: global
   key: documentation
   label: Documentation
+  provider: Help
   suggestions:
     - label: UMAP on sequences — parameters
       prompt: How to perform UMAP on sequences and what parameters are available to tune?
