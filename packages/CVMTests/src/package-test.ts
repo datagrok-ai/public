@@ -4,8 +4,10 @@ import * as DG from 'datagrok-api/dg';
 import './shell/ml';
 import './scripts/scripts_tests';
 import './celery/celery_tests';
-import './celery/node_celery_tests';
+// The benchmark goes first: its cold-start case then times the worker container's real first
+// start, instead of stopping and restarting the one 'Celery: node worker' has just warmed up.
 import './celery/node_celery_benchmark';
+import './celery/node_celery_tests';
 import './docker/docker';
 import './files/files';
 // import './gui/dialogs'; To fix!

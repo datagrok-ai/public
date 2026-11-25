@@ -66,24 +66,27 @@ category('Dapi: sticky meta', () => {
   owner: 'aparamonov@datagrok.ai'
 });
 
-// Sticky meta keyed by a molecule: the platform canonicalizes the SMILES (Chem's canonicalizer) on write
-// and on read, so the values follow the molecule, not the string or the table that holds it. Read the
-// way the grid's "Sticky meta" columns read them (AddStickyPropertiesColumns).
-category('Dapi: sticky meta: molecules', () => {
+// Sticky meta keyed by a canonical form: the platform runs the key through the canonicalizer registered
+// for the entity type's semantic type, on write and on read, so the values follow the key, not its
+// spelling or the table that holds it. Read the way the grid's "Sticky meta" columns read them
+// (AddStickyPropertiesColumns). The semantic type, its detector (detectors.js) and its canonicalizer
+// (ApiTests:canonicalizeApiTestsKey: trimmed, lower case) are this package's own, as Chem's are for molecules.
+category('Dapi: sticky meta: canonical keys', () => {
   const name = `apitests-sm-${DG.Utils.randomString(6)}`;
   const typeName = `${name}-type`;
+  const semType = 'apitests-key';
+  const keyColumn = 'apitests_key';
   let schema: _DG.Schema;
 
-  function molecules(smiles: string[]): _DG.DataFrame {
-    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('smiles', smiles)]);
-    df.col('smiles')!.semType = DG.SEMTYPE.MOLECULE;
-    df.col('smiles')!.meta.units = DG.UNITS.Molecule.SMILES;
+  function keys(values: string[]): _DG.DataFrame {
+    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings(keyColumn, values)]);
+    df.col(keyColumn)!.semType = semType;
     return df;
   }
 
   async function valuesOf(df: _DG.DataFrame): Promise<string> {
     const before = df.columns.names();
-    await grok.functions.call('AddStickyPropertiesColumns', {table: df, column: df.col('smiles'),
+    await grok.functions.call('AddStickyPropertiesColumns', {table: df, column: df.col(keyColumn),
       entityTypeName: typeName, propertyIds: schema.properties.map(idOf)});
     const added = df.columns.toList().filter((c) => !before.includes(c.name));
     return added.map((c) => `${c.name}: ${c.toList().join(', ')}`).sort().join('; ');
@@ -92,10 +95,11 @@ category('Dapi: sticky meta: molecules', () => {
   const written = 'notes: excellent, good; rating: 5, 4';
 
   before(async () => {
-    await grok.dapi.stickyMeta.createSchema(name, [{name: typeName, matchBy: 'semtype=molecule'}],
+    expect(await grok.functions.call('ApiTests:canonicalizeApiTestsKey', {key: ' Compound-A '}), 'compound-a');
+    await grok.dapi.stickyMeta.createSchema(name, [{name: typeName, matchBy: `semtype=${semType}`}],
       [{name: 'rating', type: 'int'}, {name: 'notes', type: 'string'}]);
     schema = (await grok.dapi.stickyMeta.getSchemas()).find((s) => s.name === name)!;
-    await grok.dapi.stickyMeta.setAllValues(schema, molecules(['CC(=O)Oc1ccccc1C(=O)O', 'Oc1ccccc1']).col('smiles')!,
+    await grok.dapi.stickyMeta.setAllValues(schema, keys(['Compound-A', 'Compound-B']).col(keyColumn)!,
       DG.DataFrame.fromColumns([DG.Column.fromList('int', 'rating', [5, 4]),
         DG.Column.fromList('string', 'notes', ['excellent', 'good'])]));
   });
@@ -108,18 +112,18 @@ category('Dapi: sticky meta: molecules', () => {
   });
 
   test('A clone of the table shows the values', async () => {
-    expect(await valuesOf(molecules(['CC(=O)Oc1ccccc1C(=O)O', 'Oc1ccccc1']).clone()), written);
+    expect(await valuesOf(keys(['Compound-A', 'Compound-B']).clone()), written);
   });
 
   test('A table exported to CSV and read back shows the values', async () => {
-    const df = DG.DataFrame.fromCsv(molecules(['CC(=O)Oc1ccccc1C(=O)O', 'Oc1ccccc1']).toCsv());
+    const df = DG.DataFrame.fromCsv(keys(['Compound-A', 'Compound-B']).toCsv());
     await grok.data.detectSemanticTypes(df);
-    expect(df.col('smiles')!.semType, DG.SEMTYPE.MOLECULE);
+    expect(df.col(keyColumn)!.semType, semType);
     expect(await valuesOf(df), written);
   });
 
-  test('Another SMILES of the same molecule shows its values, another molecule none', async () => {
-    expect(await valuesOf(molecules(['OC(=O)c1ccccc1OC(C)=O', 'c1ccc(O)cc1'])), written);
-    expect(await valuesOf(molecules(['CCCCCCCC'])), 'notes: ; rating: ');
+  test('Another spelling of the same key shows its values, another key none', async () => {
+    expect(await valuesOf(keys([' COMPOUND-a', 'compound-b '])), written);
+    expect(await valuesOf(keys(['Compound-C'])), 'notes: ; rating: ');
   });
 }, {owner: 'aparamonov@datagrok.ai'});

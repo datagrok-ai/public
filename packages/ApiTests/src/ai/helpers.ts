@@ -102,6 +102,22 @@ export function subscribeAll(streams: Observable<any>[]): () => void {
   };
 }
 
+/** Loads [tv]'s own layout back with [patch] merged into the look of every viewer of [type]. */
+export function reloadLayoutWithLook(tv: DG.TableView, type: string, patch: {[k: string]: any}): DG.Viewer {
+  const json = JSON.parse(tv.saveLayout().toJson());
+  const walk = (o: any): void => {
+    if (o && typeof o === 'object') {
+      if (o.type === type && o.look)
+        Object.assign(o.look, patch);
+      for (const value of Object.values(o))
+        walk(value);
+    }
+  };
+  walk(json);
+  tv.loadLayout(DG.ViewLayout.fromJson(JSON.stringify(json)));
+  return Array.from(tv.viewers).find((v) => v.type === type)!;
+}
+
 export async function withTableView(df: DG.DataFrame, body: (tv: DG.TableView) => Promise<void> | void): Promise<void> {
   const tv = grok.shell.addTableView(df);
   try {

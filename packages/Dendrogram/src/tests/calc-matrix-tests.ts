@@ -24,7 +24,7 @@ const sequences2 = [
   'GATTT',
 ];
 const hNumbers = [1, 3, 5, 2];
-const hNumbers2 = [3, 5, 2, 2.4];
+const hNumbers2 = [3, 5, 2, 2];
 
 const DNADistances1 = [0.4, 0.6, 0.4, 0.6, 0.8, 0.8];
 const DNADistances2Cols = [

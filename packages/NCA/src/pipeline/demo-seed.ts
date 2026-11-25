@@ -125,6 +125,7 @@ function demoRecipe(m: PipelineMapping, pr: PipelineRules, src: DG.DataFrame, st
     ncaRules: pr.rules,
     acceptanceRSquared: DEMO_THRESHOLDS.acceptanceRSquared,
     groupByCols: [...study.groupBy],
+    ...(study.derived !== undefined ? {derived: study.derived} : {}),
     columns: study.infusion !== undefined ?
       {...base.columns, infusionSource: 'value', infusionDurationCol: null,
         infusionDurationScalar: study.infusion.hours} :

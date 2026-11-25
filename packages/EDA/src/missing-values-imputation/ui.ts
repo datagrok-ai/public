@@ -3,40 +3,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {TITLE, KNN_IMPUTER, ERROR_MSG, HINT, MAX_INPUT_NAME_LENGTH} from './ui-constants';
-import {SUPPORTED_COLUMN_TYPES, METRIC_TYPE, DISTANCE_TYPE, MetricInfo, DEFAULT, MIN_NEIGHBORS,
+import {SUPPORTED_COLUMN_TYPES, DISTANCE_TYPE, MetricInfo, DEFAULT, MIN_NEIGHBORS,
   impute, getMissingValsIndices, areThereFails, imputeFailed} from './knn-imputer';
-
-/** Setting of the feature metric inputs */
-type FeatureInputSettings = {
-  defaultWeight: number,
-  defaultMetric: METRIC_TYPE,
-  availableMetrics: METRIC_TYPE[],
-};
-
-/** Return default setting of the feature metric inputs */
-export function getFeatureInputSettings(type: DG.COLUMN_TYPE): FeatureInputSettings {
-  switch (type) {
-  case DG.COLUMN_TYPE.STRING:
-  case DG.COLUMN_TYPE.DATE_TIME:
-    return {
-      defaultWeight: DEFAULT.WEIGHT,
-      defaultMetric: METRIC_TYPE.ONE_HOT,
-      availableMetrics: [METRIC_TYPE.ONE_HOT],
-    };
-
-  case DG.COLUMN_TYPE.INT:
-  case DG.COLUMN_TYPE.FLOAT:
-  case DG.COLUMN_TYPE.QNUM:
-    return {
-      defaultWeight: DEFAULT.WEIGHT,
-      defaultMetric: METRIC_TYPE.DIFFERENCE,
-      availableMetrics: [METRIC_TYPE.DIFFERENCE, METRIC_TYPE.ONE_HOT],
-    };
-
-  default:
-    throw new Error(ERROR_MSG.UNSUPPORTED_COLUMN_TYPE);
-  }
-}
+import {getFeatureInputSettings} from './impute-columns';
 
 /** Run the KNN missing values imputer */
 export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {

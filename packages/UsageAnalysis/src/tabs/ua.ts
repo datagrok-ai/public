@@ -21,6 +21,8 @@ export class UaView extends DG.ViewBase {
   initialized: boolean = false;
   systemId: string = '00000000-0000-0000-0000-000000000000';
   rout?: string;
+  /** Settles once the tab's viewers exist; the tab's sub-view switches act on them. */
+  viewersReady?: Promise<void>;
   private _toolboxReady: Promise<void>;
   private _resolveToolbox!: () => void;
 

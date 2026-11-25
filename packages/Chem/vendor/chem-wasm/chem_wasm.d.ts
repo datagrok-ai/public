@@ -30,9 +30,94 @@ export class ChemMonomerLibrary {
      */
     constructor(json: string);
     /**
+     * `prepareToHelm()`: builds molecule → HELM's index of this library now (else on the first `toHelm`), once;
+     * returns its number of indexed forms.
+     */
+    prepareToHelm(): number;
+    /**
+     * `toHelm(molecules, options?)`: molecule → HELM per row (MOL blocks, SMILES or CXSMILES; null or '' an empty
+     * row): `{helms, errors, matched, inline, chem}` (module docs). A molecule that cannot be converted is its row's
+     * error; throws only where the options are wrong.
+     */
+    toHelm(molecules: (string | null)[], options?: string | null): {helms: (string | null)[], errors: (string | null)[], matched: Int32Array, inline: Int32Array, chem: Int32Array};
+    /**
      * The number of monomers (keys) read.
      */
     readonly size: number;
+}
+
+/**
+ * A reaction read once (module docs), with the canvas layouts last drawn: a repaint of the same box and options at
+ * any offset (a grid scrolling) draws it again without laying it out (Chem's grid, 2026-11-11: 0.7 ms a repaint).
+ * One a drawing (its options and `step`), its latest box's, [`CANVAS_KEPT`] at most: a route's picture and its step
+ * cards (`step`), drawn from one scheme, each repaint without a layout, and a cell drawn at a new size keeps one.
+ */
+export class ChemReactionScheme {
+    free(): void;
+    [Symbol.dispose](): void;
+    /**
+     * `describe()`: the scheme described, as JSON (`scheme::describe` with Crux's agent table: each step's
+     * molecules, balance, reaction centre, groups gained and lost, class and sentence; a route's shape), for the
+     * Reaction pane and the Reactions app.
+     */
+    describe(): string;
+    /**
+     * `draw_to_canvas(canvas, options)`: the reaction drawn on the canvas's 2D context in the box `width` x
+     * `height` at `offsetx`, `offsety` (the canvas's own size by default), through the molecules' command buffer.
+     */
+    draw_to_canvas(canvas: any, options_json: string): void;
+    /**
+     * `get_centre_counts()`: the bonds the picture colours as the reaction centre (the `centre` option on), by colour:
+     * `[made, broken, changed]`, green, red and blue (a bond changed in order counts on each side, as it is drawn; a
+     * wedged bond, drawn black, counts too). All 0 for an unmapped reaction. A host draws the colours' legend under a
+     * picture only when it has some (decision 8 of 2026-11-14).
+     */
+    get_centre_counts(): Int32Array;
+    /**
+     * `get_notes()`: a template's footnotes, one string each, as the picture words them when it draws them (the
+     * `footnotes` option): for the Reaction pane, where a cell drawn without them shows them (the owner,
+     * 2026-11-13: "when reaction is clicked, this info should be in context panel"). Empty for molecules.
+     */
+    get_notes(): string[];
+    /**
+     * `get_numbered_through()`: the scheme with one map number per atom through its steps ([`scheme::number_through`]:
+     * an atom keeps the number of the step that makes it in every step that uses it; decision 9 of 2026-11-14), as a
+     * step list ([`scheme::write_step_list`]: each molecule as canonical SMILES with its numbers). For a host that
+     * mapped a route's steps one by one (a mapper maps one reaction at a time); a value's own numbers are never
+     * changed unless the user maps.
+     */
+    get_numbered_through(): string;
+    /**
+     * `get_option_notes(options)`: what the options' lenient keys left out (a malformed `stepTexts` entry, text or
+     * run), one line each; empty when everything read. The drawing calls draw without it; a host logs these.
+     */
+    get_option_notes(options_json: string): string[];
+    /**
+     * `get_size(options)`: the scheme's natural size in px, `[width, height, percent]`, with these options: the size
+     * `get_svg` draws it at without `width` and `height` (which do nothing here), so a host sizes its box without
+     * reading the SVG's header. With `column`, the column's: its `width` and the height of its rows. `percent`: the
+     * bonds against `bondLength`, 100 unless the scheme was made smaller to fit (a column's piece wider than it).
+     */
+    get_size(options_json: string): Int32Array;
+    /**
+     * `get_steps()`: the scheme's steps in order, one string each, cut as the scheme's reader cut them (Chem's
+     * Reaction pane lists a route's steps with it, so that they match the chain drawn above them), each the value's
+     * own text and reaction text only (a mapper or a parser never gets `A>>B name`): one reaction, the value as
+     * given, its name left out ([`scheme::route::without_name`]; an RXN block whole); a step list, its parts as
+     * written (between `--**--`, else its lines), a part's name left out, a part that is a chain cut into its steps;
+     * a chain, its pieces by the restated-intermediate rule, so `A.B>>C>>C.D>>E` gives `A.B>>C` and `C.D>>E`, its
+     * caption left out. A route JSON or an RD file has no step text a host could read as one reaction: each of its
+     * steps is written as [`scheme::write_step_list`] writes a step, without its name.
+     */
+    get_steps(): string[];
+    /**
+     * `get_svg(options)`: the reaction as an SVG string.
+     */
+    get_svg(options_json: string): string;
+    /**
+     * `new ChemReactionScheme(text, notation)`: the reaction read (module docs).
+     */
+    constructor(text: string, notation: string);
 }
 
 /**
@@ -248,6 +333,31 @@ export class CollectionBuilder {
 }
 
 /**
+ * RDKit-js's `Log` (MinimalLib's `JSLog`, minilib.h:283-292, minilib.cpp:932-950): what
+ * [`set_log_capture`] / [`set_log_tee`] give, a buffer RDKit's error log writes to while it lives
+ * (`smi_compiler::rdgeneral::rdlog`; spike rdkit-error-log, decision `chem-wasm`).
+ */
+export class JSLog {
+    private constructor();
+    free(): void;
+    [Symbol.dispose](): void;
+    /**
+     * PORT(minilib.cpp:940): `clear_buffer()`.
+     */
+    clear_buffer(): void;
+    /**
+     * Embind's `delete()` (`~JSLog`, minilib.cpp:936): the log back as it was, free for another
+     * `set_log_capture` (the same as wasm-bindgen's `free()`).
+     */
+    delete(): void;
+    /**
+     * PORT(minilib.cpp:938): `get_buffer()`: the records since the log was set or last cleared, each
+     * `"[HH:MM:SS] "` (the local time) and RDKit's text.
+     */
+    get_buffer(): string;
+}
+
+/**
  * RDKit-js `JSMol`.
  */
 export class JSMol {
@@ -264,6 +374,18 @@ export class JSMol {
      * ([`perceived_again`]); `true`.
      */
     add_hs_in_place(): boolean;
+    /**
+     * Crux extension, no RDKit.js call (spikes query-read-match and drawn-query): the query a chemist means by a query
+     * drawn in a sketcher, in place: first [`rk::drawn_query::adjust_drawn_query`] (a drawn aromatic ring stays
+     * aromatic despite its query features; an H count counts drawn H atoms too; a NOT list is a heavy atom; the valence
+     * set on an atom is asked for; "unsaturated" is a double, triple or aromatic bond), then
+     * [`smi_compiler::query_mol::adjust_drawn_query`] (a plain single or double bond at an aromatic query atom whose
+     * ring is not drawn also matches an aromatic bond; an atom list holding H on one atom is that atom's implicit H or
+     * the list's other atoms), which reads the rings the first made aromatic as drawn aromatic. Datagrok's Chem calls
+     * it on the query its substructure search builds from a MOL block, after its rings are aromatized and its H merged;
+     * RDKit has no such step. `true` when the query changed.
+     */
+    adjust_drawn_query(): boolean;
     /**
      * PORT(common.h:894-904): `canonical_tautomer(details)` —
      * `TautomerEnumerator(params).canonicalize`.
@@ -357,8 +479,13 @@ export class JSMol {
     get_avalon_fp(details?: string | null): string;
     /**
      * PORT(SmartsWrite.cpp `MolToCXSmarts`): `get_cxsmarts(details)`: the SMARTS, then
-     * `getCXExtensions(mol, CX_ALL)` over the SMARTS writer's atom and bond output order: with a
+     * `getCXExtensions(mol, flags)` over the SMARTS writer's atom and bond output order: with a
      * conformer its coordinates and their wedges, and the link nodes, as `get_cxsmiles` writes them.
+     * `flags` are the details' `CX_*` keys as `get_cxsmiles` reads them (none: `CX_ALL`, RDKit-js's
+     * `get_cxsmarts`, which reads no `CX_*` key): a Crux extension (spike cxsmiles-fields, for the
+     * Sketcher app's query link, e.g. `{"CX_ALL_BUT_COORDS": true}`), RDKit's own extension writer
+     * with those flags, what `MolToCXSmiles(mol, params, flags)` writes after its SMILES.
+     * `restoreBondDirOption` is not read, as RDKit-js's `get_cxsmarts`.
      */
     get_cxsmarts(details?: string | null): string;
     /**
@@ -540,9 +667,12 @@ export class JSMol {
     neutralize(details?: string | null): boolean;
     /**
      * PORT(minilib.cpp `normalize_depiction`): RDKit's `normalizeDepiction(mol, -1,
-     * canonicalize, scaleFactor)` with MinimalLib's canonical transform (its build without
-     * Eigen: `depictor::CanonicalTransformBuild::PowerSolver`); the scale factor, or -1
-     * (nothing done). Throws where MinimalLib's does (no principal axis).
+     * canonicalize, scaleFactor)`; the scale factor, or -1 (nothing done). The canonical turn is
+     * the pinned RDKit's C++ build's (Eigen's exact axes, `depictor::CanonicalTransformBuild::
+     * Eigen`), not MinimalLib's: RDKit-js is built without Eigen, and its power solver's
+     * approximate axes shear some molecules (bond lengths 0.94 to 1.81 for 1.5 in a Datagrok
+     * grid cell, the owner's report 2026-11-12; decision `chem-wasm`). A deliberate departure
+     * from RDKit-js; the exact turn only moves, turns and scales, and never throws.
      */
     normalize_depiction(canonicalize?: number | null, scale_factor?: number | null): number;
     /**
@@ -883,6 +1013,12 @@ export class SimilarityResult {
 export function calcDescriptors(molecules: (string | null)[], names: string[]): string;
 
 /**
+ * `chemAgentTable()`: Crux's agent table as its JSON, the built-in entries as written (`{"<SMILES>": {"name",
+ * "place"}}`), for a host that offers agents by name (Chem's Add panel, decision 6: "a reagent-table name").
+ */
+export function chemAgentTable(): string;
+
+/**
  * `chemAlerts(molecules, catalogs, atoms)`: the JSON of each catalog's hits per molecule (module docs); throws on a
  * catalog other than Brenk and NIH.
  */
@@ -940,6 +1076,12 @@ export function chemGasteigerMap(molecule: string, contours: number, width?: num
 export function chemInchiInputs(molecules: (string | null)[]): (Uint8Array | null)[];
 
 /**
+ * `chemMapReaction(rxn, canonicalize)`: one reaction's atom maps as JSON, `{"mapped_rxn", "confidence"}` or
+ * `{"error"}` (module docs).
+ */
+export function chemMapReaction(rxn: string, canonicalize?: boolean | null): string;
+
+/**
  * `chemMarkStereoAbsolute(molblocks)`: each block with every specified stereocentre in one ABS group, as V3000 (Bio's
  * replacement of `OCL.fromMolfile(m).toMolfileV3().replace('STERAC1', 'STEABS')`); null where a block is null, not a
  * string, or not read.
@@ -976,9 +1118,26 @@ export function chemToV2000(molblock: string): string;
 /**
  * Which parts this build holds: `"core"`, `"heavy"`, `"core,heavy"`, ...; the one file Chem loads (feature `chem`)
  * is `"core,heavy,search,descriptors,scaffold-tree,inchi-input,chem-scripts,chem-conformers,chem-identifiers,chem-murcko,
- * chem-filter-catalogs,synthon-search,biopolymer"`.
+ * chem-filter-catalogs,synthon-search,biopolymer,rxn-map"`.
  */
 export function chemWasmModules(): string;
+
+/**
+ * `cruxTestTrap(panics)`: traps the module. `true`: a panic with [`TEST_TRAP_MESSAGE`], noted as any panic is (the
+ * hook installed first: the armed call may be an instance's first); `false`: an abort without a panic, nothing
+ * noted, as the allocation error handler ends a module. Only a test calls it (the glue's `cruxTestArmTrap`).
+ */
+export function cruxTestTrap(panics: boolean): void;
+
+/**
+ * `cruxTrapNoteLen()`: the note's length in bytes, 0 while nothing is noted.
+ */
+export function cruxTrapNoteLen(): number;
+
+/**
+ * `cruxTrapNotePtr()`: the address of the note's bytes in the module's memory (meaningful in a wasm32 module).
+ */
+export function cruxTrapNotePtr(): number;
 
 /**
  * `descriptorTree()`: the JSON of the container's `GET /chem/descriptors/tree`.
@@ -1060,7 +1219,10 @@ export function get_mol_copy(other: JSMol): JSMol;
 /**
  * PORT(common.h `qmol_from_input`): RDKit-js `get_qmol(input)`: a SMARTS (`SmartsToMol`) or
  * a MOL block read as a query (`MolBlockToMol(sanitize=false, removeHs=false)`, its query
- * atoms and bonds); `null` when it does not parse.
+ * atoms and bonds); `null` when it does not parse. PORT(SmilesParse.cpp:386-417
+ * `handleCXPartAndName`, CXSmilesOps.cpp:1553-1560): a SMARTS whose CXSMILES extension does not
+ * parse throws (`strictCXSMILES`; RDKit's `SmartsToMol` lets the exception out, MinimalLib's
+ * `get_qmol` does not catch it), as RDKit-js does (spike cxsmiles-fields).
  */
 export function get_qmol(input: string): JSMol | null;
 
@@ -1086,6 +1248,11 @@ export function get_rgd_text(cores: string[], details?: string | null): RGroupDe
  * input does not read.
  */
 export function get_rxn(input: string, details?: string | null): Reaction | undefined;
+
+/**
+ * Load the model from upstream's `pytorch_model.bin` bytes. Once per page; later calls are no-ops.
+ */
+export function initRxnMapper(bytes: Uint8Array): void;
 
 /**
  * PORT(jswrapper.cpp:156-212, 921-928): RDKit-js `molzip`, its three forms and Crux's one-molecule form (module
@@ -1114,15 +1281,17 @@ export function prefer_coordgen(prefer: boolean): void;
 export function scaffoldTree(smiles: string[], ring_cutoff: number, discharge: boolean): string;
 
 /**
- * RDKit-js `set_log_capture(logName)` / `set_log_tee(logName)`: Crux keeps no RDKit log (its
- * messages are not RDKit's), so these throw `not supported by Crux` rather than being undefined.
+ * PORT(minilib.cpp:947-950): RDKit-js `set_log_capture(logName)`: a [`JSLog`] whose buffer takes the
+ * log's records (in place of its destination); `null` for a name that is no log or a log another handle
+ * holds; throws `not supported by Crux` for the logs Crux does not keep ([`open_log`]).
  */
-export function set_log_capture(log_name: string): any;
+export function set_log_capture(log_name: string): JSLog | null;
 
 /**
- * See [`set_log_capture`].
+ * PORT(minilib.cpp:942-945): RDKit-js `set_log_tee(logName)`: as [`set_log_capture`], the records also
+ * going on to the log's destination; Crux's logs have none, so the buffer reads the same.
  */
-export function set_log_tee(log_name: string): any;
+export function set_log_tee(log_name: string): JSLog | null;
 
 /**
  * RDKit `SimilarityMaps.GetSimilarityMapForFingerprint(ref, probe, fp, draw2d)`
@@ -1144,7 +1313,8 @@ export function similarityMapWeights(reference: JSMol, probe: JSMol, options?: s
 export function standardize_smiles(smiles: string): string;
 
 /**
- * Panics as `Error`s with their message in the console (not a bare `unreachable`); `std::sort`'s ties as
+ * Panics noted with their message and place (`wasm_panic`, decision `wasm-trap-notes`: Chem reads the note after
+ * the trap and logs it); `std::sort`'s ties as
  * RDKit-js's (Emscripten's libc++: `smi_compiler::cxx_sort::StdSort::Libcxx`, spike chem-rdkit-gaps-2), the
  * calls that mirror a Python RDKit service excepted ([`PythonDefaults`]).
  */
@@ -1171,10 +1341,12 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
     readonly __wbg_chemmonomerlibrary_free: (a: number, b: number) => void;
+    readonly __wbg_chemreactionscheme_free: (a: number, b: number) => void;
     readonly __wbg_chemsmartsset_free: (a: number, b: number) => void;
     readonly __wbg_chemsynthonspace_free: (a: number, b: number) => void;
     readonly __wbg_collection_free: (a: number, b: number) => void;
     readonly __wbg_collectionbuilder_free: (a: number, b: number) => void;
+    readonly __wbg_jslog_free: (a: number, b: number) => void;
     readonly __wbg_jsmol_free: (a: number, b: number) => void;
     readonly __wbg_jsmollistlist_free: (a: number, b: number) => void;
     readonly __wbg_mollist_free: (a: number, b: number) => void;
@@ -1183,6 +1355,7 @@ export interface InitOutput {
     readonly __wbg_rgroupdecomposition_free: (a: number, b: number) => void;
     readonly __wbg_similarityresult_free: (a: number, b: number) => void;
     readonly calcDescriptors: (a: any, b: number, c: number) => [number, number];
+    readonly chemAgentTable: () => [number, number];
     readonly chemAlerts: (a: any, b: number, c: number, d: number) => [number, number, number, number];
     readonly chemCanonicalSmiles: (a: any) => [number, number, number, number];
     readonly chemConformers: (a: number, b: number, c: number, d: number) => [number, number, number, number];
@@ -1193,6 +1366,7 @@ export interface InitOutput {
     readonly chemFingerprints: (a: number, b: number, c: number, d: number, e: any, f: number) => [number, number, number];
     readonly chemGasteigerMap: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
     readonly chemInchiInputs: (a: any) => [number, number, number];
+    readonly chemMapReaction: (a: number, b: number, c: number) => [number, number, number, number];
     readonly chemMarkStereoAbsolute: (a: any) => any;
     readonly chemMurckoScaffolds: (a: any) => [number, number, number, number];
     readonly chemMutate: (a: number, b: number, c: number, d: number) => [number, number, number, number];
@@ -1204,7 +1378,19 @@ export interface InitOutput {
     readonly chemmonomerlibrary_assembleOne: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
     readonly chemmonomerlibrary_errors: (a: number) => [number, number];
     readonly chemmonomerlibrary_new: (a: number, b: number) => [number, number, number];
+    readonly chemmonomerlibrary_prepareToHelm: (a: number) => number;
     readonly chemmonomerlibrary_size: (a: number) => number;
+    readonly chemmonomerlibrary_toHelm: (a: number, b: any, c: number, d: number) => [number, number, number];
+    readonly chemreactionscheme_describe: (a: number) => [number, number];
+    readonly chemreactionscheme_draw_to_canvas: (a: number, b: any, c: number, d: number) => [number, number];
+    readonly chemreactionscheme_get_centre_counts: (a: number) => [number, number];
+    readonly chemreactionscheme_get_notes: (a: number) => [number, number];
+    readonly chemreactionscheme_get_numbered_through: (a: number) => [number, number];
+    readonly chemreactionscheme_get_option_notes: (a: number, b: number, c: number) => [number, number, number, number];
+    readonly chemreactionscheme_get_size: (a: number, b: number, c: number) => [number, number, number, number];
+    readonly chemreactionscheme_get_steps: (a: number) => [number, number];
+    readonly chemreactionscheme_get_svg: (a: number, b: number, c: number) => [number, number, number, number];
+    readonly chemreactionscheme_new: (a: number, b: number, c: number, d: number) => [number, number, number];
     readonly chemsmartsset_groups: (a: number) => number;
     readonly chemsmartsset_lastWork: (a: number) => [number, number];
     readonly chemsmartsset_match: (a: number, b: any) => [number, number, number];
@@ -1238,6 +1424,9 @@ export interface InitOutput {
     readonly collectionbuilder_finishSdf: (a: number) => number;
     readonly collectionbuilder_new: (a: number) => number;
     readonly collectionbuilder_setLenient: (a: number, b: number) => void;
+    readonly cruxTestTrap: (a: number) => void;
+    readonly cruxTrapNoteLen: () => number;
+    readonly cruxTrapNotePtr: () => number;
     readonly descriptorTree: () => [number, number];
     readonly enumerate_tautomer_smiles: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly getRGroupDecomposition: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number, number];
@@ -1248,13 +1437,18 @@ export interface InitOutput {
     readonly get_mcs_as_smarts: (a: number, b: number, c: number) => [number, number, number, number];
     readonly get_mol: (a: number, b: number, c: number, d: number) => [number, number, number];
     readonly get_mol_copy: (a: number) => number;
-    readonly get_qmol: (a: number, b: number) => any;
+    readonly get_qmol: (a: number, b: number) => [number, number, number];
     readonly get_rgd: (a: number, b: number, c: number) => [number, number, number];
     readonly get_rgd_smarts: (a: number, b: number, c: number, d: number) => [number, number, number];
     readonly get_rgd_text: (a: number, b: number, c: number, d: number) => [number, number, number];
     readonly get_rxn: (a: number, b: number, c: number, d: number) => number;
+    readonly initRxnMapper: (a: number, b: number) => [number, number];
+    readonly jslog_clear_buffer: (a: number) => void;
+    readonly jslog_delete: (a: number) => void;
+    readonly jslog_get_buffer: (a: number) => [number, number];
     readonly jsmol_add_hs: (a: number) => [number, number, number, number];
     readonly jsmol_add_hs_in_place: (a: number) => [number, number, number];
+    readonly jsmol_adjust_drawn_query: (a: number) => number;
     readonly jsmol_canonical_tautomer: (a: number, b: number, c: number) => [number, number, number];
     readonly jsmol_charge_parent: (a: number, b: number, c: number) => [number, number, number];
     readonly jsmol_cleanup: (a: number, b: number, c: number) => [number, number, number];
@@ -1420,3 +1614,19 @@ export function initSync(module: { module: SyncInitInput } | SyncInitInput): Ini
  * @returns {Promise<InitOutput>}
  */
 export default function __wbg_init (module_or_path?: { module_or_path: InitInput | Promise<InitInput> } | InitInput | Promise<InitInput>): Promise<InitOutput>;
+
+// crux-core tools/wasm_glue_fresh.mjs (decision wasm-trap-notes): a fresh instance after a trap.
+/** A new instance of this module from its compiled module, synchronously; objects of the old one become inert. Returns the new instance's exports. */
+export function freshInstance(): InitOutput;
+/** 0 for the first instance, one more for each fresh one. */
+export function instanceNumber(): number;
+/** The trap note of the current instance (a panic's message and place), read without calling into it; with nothing noted, what the trap `thrown` says (an abort without a panic: `ran out of memory (inferred ...)`); null when there is neither. */
+export function trapNote(thrown?: unknown): string | null;
+/** Tests: the `calls`-th engine call from now traps for real (through the module's `cruxTestTrap`): a panic, or with `panics` false an abort without one; 0 disarms. A fresh instance starts disarmed. */
+export function cruxTestArmTrap(calls: number, panics?: boolean): void;
+/** Moves `fresh`'s Rust value into `target`, an older object of the same class, which becomes the current instance's; `fresh` is left empty. */
+export function adoptInto<T extends object>(target: T, fresh: T): void;
+/** Where a throw in a free the browser's finalizer makes goes (null: it is thrown). */
+export function setTrapHook(hook: ((thrown: unknown) => void) | null): void;
+/** Each class's methods that change the object (`&mut self` or `self` in Rust), by JS name; a class not listed: take every method as changing. */
+export const cruxChanging: Readonly<Record<string, readonly string[]>>;

@@ -12,8 +12,10 @@ export interface FormulaLine {
   type?: string;
   title?: string;
   description?: string;
+  /** HTML color; `#rrggbbaa` sets the opacity. A band color without an alpha (`#rrggbb`) is drawn at 30%. */
   color?: string;
   visible?: boolean;
+  /** @deprecated Use the alpha of {@link color} (`#rrggbbaa`); when set, it scales that alpha. */
   opacity?: number;
   zIndex?: number;
   min?: number;
@@ -39,14 +41,19 @@ export interface AnnotationRegion {
   id?: string;
   type?: string;
   header?: string;
-  headerColor?: string;
-  fillColor?: string;
+  /** ARGB integer or HTML color. */
+  headerColor?: number | string;
+  /** Fill color with its alpha as the opacity: an ARGB integer or `#rrggbbaa`. */
+  fill?: number | string;
+  /** @deprecated Use {@link fill}. A fill saved before the alpha, drawn at {@link opacity} (30% when missing). */
+  fillColor?: number | string;
   outlineWidth?: number;
   outlineColor?: number;
   xMap?: string;
   yMap?: string;
   hidden?: boolean;
   description?: string;
+  /** @deprecated Use the alpha of {@link fill}. Opacity (0..100) of {@link fillColor}. */
   opacity?: number;
   isDataFrameRegion?: boolean;
   zIndex?: number;
@@ -149,6 +156,10 @@ export abstract class AnnotationRegionsHelper {
   // The place where Annotation Regions are saved must be defined in the descendant class.
   abstract get storage(): string;
   abstract set storage(value: string);
+
+  /** The ARGB color the viewers fill [region] with: {@link AnnotationRegion.fill} as is, or the deprecated
+   *  {@link AnnotationRegion.fillColor} at {@link AnnotationRegion.opacity} (30% when missing). */
+  static getFillColor(region: AnnotationRegion): number { return api.grok_AnnotationRegion_GetFillColor(region); }
 
   get items(): AnnotationRegion[] {
     let json = this.storage;

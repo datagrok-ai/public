@@ -230,6 +230,16 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     return JSON.parse(api.grok_Viewer_Serialize(this.dart, includeDefaults));
   }
 
+  /**
+   * Sets the opacity (0..100) of the markers: the alpha channel of the viewer's marker colors
+   * (scatter plot: filtered, selected, filtered out, missing value and whisker colors; line chart: `markerColor`).
+   * The box plot and the 3D scatter plot set their own `markerOpacity`; other viewers have no markers.
+   * To set the alpha of any other color, use `DG.Color.setAlpha`.
+   *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot */
+  setMarkerOpacity(opacity: number): void {
+    api.grok_Viewer_SetMarkerOpacity(this.dart, opacity);
+  }
+
   /** Viewer internals exposed for diagnostics and tests (canvas, overlay, and more), keyed by name. */
   getInfo(): { [index: string]: any } {
     return api.grok_Viewer_GetInfo(this.dart);

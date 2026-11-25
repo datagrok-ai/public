@@ -85,10 +85,6 @@ export function prepareExportEntries(call: DG.FuncCall, entries: DfExportEntry[]
   return cloned;
 }
 
-export const showProjectSaveDialog = (
-  tables: DG.DataFrame[], layouts: string[], name: string, description = '',
-): Promise<DG.Project | null> => DG.Project.showSaveDialog({tables, layouts, name, description});
-
 // The save dialog gets serialized layouts, not live views: detached view roots are not in
 // the document, so the dialog's thumbnail capture fails on them (zero-height canvas). The
 // view still must be attached to the shell while the layout is taken: a never-attached view
@@ -124,7 +120,9 @@ export async function saveCallToProject(call: DG.FuncCall, entries: DfExportEntr
   const layouts = cloned.map((entry) => captureTableLayout(entry.df, entry.viewers));
   const name = getRunName(call) || modelLabel(call.func);
   try {
-    const saved = await showProjectSaveDialog(cloned.map((e) => e.df), layouts, name, call.func.description ?? '');
+    const saved = await DG.Project.showSaveDialog({
+      tables: cloned.map((e) => e.df), layouts, name, description: call.func.description ?? '',
+    });
     if (saved?.id)
       grok.shell.info(`Project "${saved.friendlyName ?? name}" saved`);
   } catch (e: any) {

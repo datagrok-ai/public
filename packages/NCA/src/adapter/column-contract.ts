@@ -25,7 +25,7 @@
  *
  * - `string`  — subjectId (subjects may be string identifiers)
  * - `float64` — time, concentration, dose, body weight, LLOQ
- * - `int32`   — route code (RouteCode encoded as 0..5; see sci-comp `nca.RouteCode`)
+ * - `int32`   — route code (RouteCode encoded as 0..6; see sci-comp `nca.RouteCode`)
  * - `uint8`   — BLQ flag (0 measurable, 1 below LOQ)
  *
  * Interface v2.1 §2 also lists `'float32' | 'uint32'`; UC-01 doesn't need
@@ -94,7 +94,7 @@ export interface ColumnSpec<TRaw extends NumericRawArray | IntegerRawArray | Boo
  * supports a scalar fallback for `dose`, `route`, `lloq`):
  * - `dose` — per-row administered dose; falls back to the dialog's scalar
  *   when absent.
- * - `route` — per-row route code (`RouteCode` 0..5); falls back to the
+ * - `route` — per-row route code (`RouteCode` 0..6); falls back to the
  *   dialog's scalar.
  * - `bodyWeight` — per-subject body weight in kg, used for weight-normalised
  *   CL/Vz. Validator (Phase 3) enforces constancy within a subject.
@@ -245,7 +245,14 @@ export type ValidationCode =
   //    superposition over a non-uniform prior schedule). Always rejected — the
   //    SS=1 honor path would compute a wrong AUCτ on a non-uniform-τ history.
   | 'NONMEM_SS_UNSUPPORTED'
-  | 'NONMEM_SS_SUPERPOSITION_UNSUPPORTED';
+  | 'NONMEM_SS_SUPERPOSITION_UNSUPPORTED'
+  // Two blocking codes added by `nca-ip-route` F8 (UD-4, R2 N-1): one confirmed route cannot
+  // honestly cover subjects that need different routes.
+  //  - `NONMEM_ROUTE_UNRECOGNISED` — more than one distinct unrecognised explicit ROUTE value.
+  //  - `NONMEM_ROUTE_INFERENCE_MIXED` — the subjects whose route is inferred from RATE/CMT
+  //    infer more than one route.
+  | 'NONMEM_ROUTE_UNRECOGNISED'
+  | 'NONMEM_ROUTE_INFERENCE_MIXED';
 
 /**
  * Structured validation error. Returned as `ValidationError[]` by the

@@ -18,11 +18,16 @@ import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {parseMultiStepReaction} from '../rendering/rdkit-reaction-renderer';
 import {ChemicalEngine} from '../engine/chem-engine';
-import {inBothEngines, inEngine} from './engine-utils';
+import {expectFallback, expectNoFallback, inBothEngines, inEngine} from './engine-utils';
 import {lastReactionEngine, setCruxUnreadableReactantsForTests} from '../utils/reactions/reaction-engine';
-import {cruxFallbackCount} from '../engine/fallback';
+import {loadCrux} from '../engine/crux-module';
 
 // ── Helpers ─────────────────────────────────────────────────────────────────────
+
+/** The elements (atomic numbers) the bundled enumerator templates may name: H B C N O F Si P S Cl Se Br I. A template
+ * naming an element no enumerator chemistry uses is almost surely a typo, as [nHo+0] (holmium, meant [nH0+0]) was. A new
+ * template that really needs another element (Sn for a Stille coupling, Pd in a catalyst) extends this list. */
+const TEMPLATE_ELEMENTS = new Set([1, 5, 6, 7, 8, 9, 14, 15, 16, 17, 34, 35, 53]);
 
 async function loadCsv(name: string): Promise<DG.DataFrame> {
   let text: string;
@@ -151,6 +156,32 @@ category('Reaction Enumeration', () => {
     if (!chemCommonRdKit.moduleInitialized) {
       chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
       await chemCommonRdKit.initRdKitModuleLocal();
+    }
+  });
+
+  // ── the bundled templates ───────────────────────────────────────────────
+  test('templates: every bundled template parses in both engines and names only organic elements', async () => {
+    // "Thiazole-triazole tandem synthesis" wrote [nHo+0] for [nH0+0]: both engines read it, as aromatic nitrogen AND
+    // holmium, an atom nothing matches. Crux writes an element outside SMILES's organic subset as #<atomic number>, so
+    // a template atom naming an element outside TEMPLATE_ELEMENTS shows in Crux's writing of the template.
+    const templates = [
+      ...colAsStrings(await loadCsv('enumerations/reactions.csv'), 'reaction_smarts'),
+      ...colAsStrings(await loadCsv('enumerations/aa_reactions.csv'), 'reaction_smarts'),
+    ];
+    expect(templates.length, 117);
+    const rdkit = getRdKitModule();
+    for (const smarts of templates) {
+      const rxn = rdkit.get_rxn(smarts);
+      expect(!!rxn, true, `RDKit reads ${smarts}`);
+      rxn.delete();
+    }
+    const crux = await loadCrux('tests');
+    for (const smarts of templates) {
+      const rxn = crux.get_rxn(smarts);
+      expect(!!rxn, true, `Crux reads ${smarts}`);
+      const elements = [...rxn!.get_smarts().matchAll(/#(\d+)/g)].map((m) => Number(m[1]));
+      rxn!.delete();
+      expect(elements.filter((z) => !TEMPLATE_ELEMENTS.has(z)).join(', '), '', `the elements of ${smarts}`);
     }
   });
 
@@ -810,7 +841,11 @@ category('Reaction Enumeration', () => {
     });
     expect(rdkitMode.rows.length > 100, true, `RDKit mode: ${rdkitMode.rows.length} rows`);
     expectSameRows(cruxMode.rows, rdkitMode.rows, 'Crux mode vs RDKit mode');
-    expect(cruxMode.warnings.join('\n'), rdkitMode.warnings.join('\n'), 'the warnings');
+    // Crux mode's foot-gun warnings (an exclusion SMARTS that matched nothing, a template skipped as a route or for
+    // its agents: TRF-07, TPL-06, TPL-11) are its own; RDKit mode's words stay as they were
+    const footgun = (w: string): boolean => /^Exclusion SMARTS .* matched nothing/.test(w) ||
+      /^Template \d+ \(.*\) (?:is a route of|has agents over the arrow)/.test(w);
+    expect(cruxMode.warnings.filter((w) => !footgun(w)).join('\n'), rdkitMode.warnings.join('\n'), 'the warnings');
   }, {timeout: 120000});
 
   test('Crux mode: a building block only RDKit reads gives RDKit mode\'s rows, by RDKit', async () => {
@@ -822,10 +857,11 @@ category('Reaction Enumeration', () => {
     await inEngine(ChemicalEngine.Crux, async () => {
       setCruxUnreadableReactantsForTests([setup.buildingBlocks[0]]);
       try {
-        const fallbacks = cruxFallbackCount('reaction enumeration');
-        const cruxMode = await run();
+        // the run went to RDKit, once (kept off the platform's log: this fallback is the test's own; it was the
+        // session's one "Crux fallback: reaction enumeration" event, read as one of the end-to-end tests' below)
+        const {result: cruxMode, reason} = await expectFallback('reaction enumeration', run);
         expectSameRows(cruxMode.rows, rdkitMode.rows, `Crux mode, ${setup.buildingBlocks[0]} unreadable by Crux`);
-        expect(cruxFallbackCount('reaction enumeration'), fallbacks + 1, 'the run went to RDKit');
+        expect(reason, `Crux reads an input otherwise than RDKit: molecule ${setup.buildingBlocks[0]}`, 'why');
       } finally {
         setCruxUnreadableReactantsForTests(null);
       }
@@ -1116,9 +1152,10 @@ category('Reaction Enumeration', () => {
     config.products_specs.max_num_unsaturated_nonaromatic_bonds = -1;
     config.products_specs.only_these_atoms_allowed = [];
 
-    const {rows, warnings} = await enumerate({
-      rdkit, config, templates: [template], buildingBlocks, exclusionSmarts: [],
-    });
+    // on Crux in Crux mode, RDKit doing none of it: Crux reads CCN and the template's slots as RDKit does
+    const {rows, warnings} = await inEngine(ChemicalEngine.Crux, () => expectNoFallback(['reaction enumeration'],
+      () => enumerate({rdkit, config, templates: [template], buildingBlocks, exclusionSmarts: []})));
+    expect(lastReactionEngine(), ChemicalEngine.Crux, 'the enumeration\'s engine');
     expect(rows.length > 0, true,
       `Expected at least one product. Warnings (${warnings.length}): ${warnings.slice(0, 5).join(' | ')}`);
   }, {timeout: 60000});

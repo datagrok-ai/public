@@ -67,9 +67,11 @@ import type {
 import {evaluateAcceptance} from '../adapter/acceptance';
 import type {AcceptanceThresholds} from '../adapter/acceptance';
 import {numAt} from '../adapter/adapter-utils';
-import {classifyReviewUnits, profileMeasurability} from '../adapter/review-units';
+import {
+  classifyReviewUnits, profileMeasurability, compositeAccepted, compositeKeyAliases, sparseUnitKey,
+} from '../adapter/review-units';
 import type {CompositeUnitInput, ProfileUnitInput, ReviewUnit} from '../adapter/review-units';
-import {computeDecisionFingerprint} from '../adapter/fingerprint';
+import {computeDecisionFingerprint, legacyOtherRouteFingerprint} from '../adapter/fingerprint';
 import type {DecisionFingerprintInput} from '../adapter/fingerprint';
 import {
   ledgerMapOf, ledgerListOf, recordDecision, supersedeDecision, reconcileLedgers,
@@ -506,8 +508,12 @@ export class NcaController {
   /** Overrides dropped by the last {@link computeAll} because their point no longer exists
    *  or its concentration changed (AC-S2.1.3). Read-and-cleared by {@link consumeReconciled}. */
   private reconciled = 0;
-  /** Review-decision ledgers by unit key (F-S2.2). */
+  /** Review-decision ledgers by unit key (F-S2.2) — the STORED ledgers, which every write acts
+   *  on and which persist. Reads go through {@link effectiveLedgers}. */
   private ledgers = new Map<string, ReviewLedger>();
+  // Legacy composite key → current composite key (nca-ip-route F6), from the composite keys of
+  // the last sparse reconcile (`setCompositeKeys`).
+  private compositeAliases = new Map<string, string>();
 
   constructor(
     private df: DG.DataFrame,
@@ -694,6 +700,25 @@ export class NcaController {
     return this.profileByKey.get(subjectKey);
   }
 
+  /**
+   * AUC over [start, end] (hours, time after dose) of one subject's profile — sci-comp
+   * `nca.aucInterval` (PKNCA `aucint.last`) on the SAME extracted, unit-canonical inputs and
+   * BLQ rules the profile's NCA ran on (guardrail "one function, every caller"). NaN when the
+   * subject is unknown or extraction fails. tk-study-day-stratification F4 (AUC0–τ past tlast).
+   */
+  intervalAuc(subjectKey: string, start: number, end: number): number {
+    const index = this.profileByKey.get(subjectKey);
+    if (index === undefined) return NaN;
+    try {
+      const {inputs} = extractProfileInputs(this.df, index, this.contract, this.scalars);
+      return nca.aucInterval(inputs, this.rules, start, end).value;
+    } catch (e) {
+      // NaN reads as "AUC0–τ not available" downstream (the AUClast fallback label); keep the cause visible.
+      console.warn(`NcaController.intervalAuc(${subjectKey}): ${e instanceof Error ? e.message : String(e)}`);
+      return NaN;
+    }
+  }
+
   /** Recompute ONE subject in place (AC-1.2) — patches its results row, preserving
    *  frame identity; every other row is untouched. `auditAction` distinguishes a
    *  forward override (`'override-lambdaz'`) from a reset (`'reset-lambdaz'`, F-4). */
@@ -772,20 +797,52 @@ export class NcaController {
    *  compute to drop decisions the fit no longer supports. */
   setReviewLedgers(list: ReadonlyArray<ReviewLedger>): void {this.ledgers = ledgerMapOf(list);}
 
+  /** Record the CURRENT sparse composite unit keys (nca-ip-route F6): an IP composite whose legacy
+   *  `sparse:ROUTE=other|…` key no current composite owns reads that key's ledger. Called by
+   *  {@link reviewSnapshot} when composites are given and by the view's sparse reconcile. */
+  setCompositeKeys(keys: Iterable<string>): void {this.compositeAliases = compositeKeyAliases(keys);}
+
+  // The legacy key whose ledger a composite unit falls back to, when that ledger holds the current
+  // decision and the unit's own ledger does not (F6, read fallback); else null.
+  private legacyLedgerKeyOf(unitKey: string): string | null {
+    for (const [legacy, key] of this.compositeAliases) {
+      if (key !== unitKey) continue;
+      const own = this.ledgers.get(unitKey)?.current ?? null;
+      return own === null && (this.ledgers.get(legacy)?.current ?? null) !== null ? legacy : null;
+    }
+    return null;
+  }
+
+  // The read-only EFFECTIVE ledger view (F6): the stored ledgers, with each aliasable legacy-key
+  // composite ledger presented under its new key (and not under its own). Every READ — classify,
+  // `decisionFor`, `ledgerFor`, `excludedKeys` — goes through it; WRITES act on the stored ledgers,
+  // so no row is duplicated or re-keyed.
+  private effectiveLedgers(): Map<string, ReviewLedger> {
+    if (this.compositeAliases.size === 0) return this.ledgers;
+    const out = new Map(this.ledgers);
+    for (const [legacy, key] of this.compositeAliases) {
+      if (this.legacyLedgerKeyOf(key) === null) continue;
+      out.set(key, {...this.ledgers.get(legacy)!, unitKey: key});
+      out.delete(legacy);
+    }
+    return out;
+  }
+
   /** The current decision of one unit (valid after the last reconcile), or null. */
   decisionFor(unitKey: string): ReviewDecisionRecord | null {
-    return this.ledgers.get(unitKey)?.current ?? null;
+    return this.effectiveLedgers().get(unitKey)?.current ?? null;
   }
 
   /** The ledger of one unit (current + history), or undefined. */
-  ledgerFor(unitKey: string): ReviewLedger | undefined {return this.ledgers.get(unitKey);}
+  ledgerFor(unitKey: string): ReviewLedger | undefined {return this.effectiveLedgers().get(unitKey);}
 
   /** Results-row keys whose current decision is Exclude λz — the {@link reportableResults}
    *  input (AD-6). Valid decisions only: {@link reconcileDecisions} has already moved every
-   *  mismatched one to history. */
+   *  mismatched one to history. Read through the effective view, so an Exclude λz recorded under a
+   *  legacy composite key masks the composite that now carries the new key (F6, AC-6.7). */
   excludedKeys(): Set<string> {
     const out = new Set<string>();
-    for (const [k, l] of this.ledgers) if (l.current?.action === 'exclude') out.add(k);
+    for (const [k, l] of this.effectiveLedgers()) if (l.current?.action === 'exclude') out.add(k);
     return out;
   }
 
@@ -798,12 +855,17 @@ export class NcaController {
       action, reasons: [...reasons], user, ...(userId !== null ? {userId} : {}),
       at: new Date(this.nowFn()).toISOString(), fingerprint,
     };
+    // F6: a new decision on an IP composite replaces the decision it was showing from the legacy
+    // key — one current record across the two keys (AC-6.5).
+    const legacy = this.legacyLedgerKeyOf(unitKey);
+    if (legacy !== null) this.supersede(legacy, 'replaced');
     this.ledgers = recordDecision(this.ledgers, unitKey, rec);
     this.auditReview(unitKey, `review-${action}`, rec);
   }
 
-  /** The analyst's Reset: the current decision moves to history; the unit is `To review`. */
-  resetDecision(unitKey: string): void {this.supersede(unitKey, 'reset');}
+  /** The analyst's Reset: the current decision moves to history; the unit is `To review`. On an IP
+   *  composite showing its legacy-key decision (F6), the reset acts on that shown decision. */
+  resetDecision(unitKey: string): void {this.supersede(this.legacyLedgerKeyOf(unitKey) ?? unitKey, 'reset');}
 
   private supersede(unitKey: string, by: 'reset' | 'replaced'): void {
     const at = new Date(this.nowFn()).toISOString();
@@ -821,11 +883,11 @@ export class NcaController {
    *  the pass to a subset of units (the dense profiles reconcile before the aggregates read the
    *  exclusion set; the sparse composites reconcile after their panel computes). */
   reconcileDecisions(
-    fingerprints: ReadonlyMap<string, string>, inScope: (unitKey: string) => boolean = () => true,
+    accepted: ReadonlyMap<string, ReadonlyArray<string>>, inScope: (unitKey: string) => boolean = () => true,
   ): number {
     const at = new Date(this.nowFn()).toISOString();
     const before = this.ledgers;
-    const {map, resetKeys} = reconcileLedgers(this.ledgers, fingerprints, at, inScope);
+    const {map, resetKeys} = reconcileLedgers(this.ledgers, accepted, at, inScope);
     this.ledgers = map;
     for (const k of resetKeys)
       this.auditReview(k, 'review-auto-reset', {supersededBy: 'auto-reset', decision: before.get(k)?.current});
@@ -855,8 +917,10 @@ export class NcaController {
     viable: boolean;
     composites?: ReadonlyArray<CompositeUnitInput & {fingerprint: string}>;
     memberHashByProfile?: ReadonlyMap<string, string>;
-  }): {units: ReviewUnit[]; fingerprints: Map<string, string>} {
+  }): {units: ReviewUnit[]; fingerprints: Map<string, string>; accepted: Map<string, string[]>} {
     const fingerprints = new Map<string, string>();
+    /** Legacy `other`-route fingerprint aliases of IP dense profiles (F6). */
+    const legacyFps = new Map<string, string>();
     const results = this.results;
     const profiles: ProfileUnitInput[] = [];
     if (results !== null) {
@@ -906,17 +970,38 @@ export class NcaController {
           verdict: acceptance.verdict, flagCodes: acceptance.flagCodes, warnings,
         };
         fingerprints.set(key, computeDecisionFingerprint(fpIn));
+        const legacy = legacyOtherRouteFingerprint(fpIn);
+        if (legacy !== null) legacyFps.set(key, legacy);
       }
     }
-    for (const c of opts.composites ?? []) fingerprints.set(`sparse:${c.groupKey}`, c.fingerprint);
+    // Every accepted fingerprint per unit: the current one, the dense legacy alias, and the
+    // composite map (incl. an aliasable legacy key → its new key's fingerprint) from the ONE
+    // builder the view's sparse reconcile also calls.
+    const allAccepted = new Map<string, string[]>();
+    for (const [k, fp] of fingerprints) allAccepted.set(k, [fp, ...(legacyFps.has(k) ? [legacyFps.get(k)!] : [])]);
+    if (opts.composites !== undefined) {
+      const comp = compositeAccepted(opts.composites);
+      for (const [k, fps] of comp) allAccepted.set(k, fps);
+      this.setCompositeKeys(opts.composites.map((c) => sparseUnitKey(c.groupKey)));
+    }
+    for (const c of opts.composites ?? []) fingerprints.set(sparseUnitKey(c.groupKey), c.fingerprint);
     const units = classifyReviewUnits({
       profiles, viable: opts.viable, composites: opts.composites ?? [],
-      ledgers: this.ledgers, fingerprints,
+      ledgers: this.effectiveLedgers(), accepted: allAccepted,
     });
-    // Only units that NEED review may hold a decision; pass just those to reconcile.
+    // Only units that NEED review may hold a decision; pass just those to reconcile. `fingerprints`
+    // stays the CURRENT fingerprint per unit (what a new decision stores and the dry run compares);
+    // `accepted` adds the F6 aliases — a legacy composite key only when its new key needs review.
     const reviewFps = new Map<string, string>();
-    for (const u of units) if (u.need === 'review') reviewFps.set(u.key, fingerprints.get(u.key) ?? '');
-    return {units, fingerprints: reviewFps};
+    const accepted = new Map<string, string[]>();
+    const needsReview = new Set(units.filter((u) => u.need === 'review').map((u) => u.key));
+    for (const k of needsReview) {
+      reviewFps.set(k, fingerprints.get(k) ?? '');
+      accepted.set(k, allAccepted.get(k) ?? [fingerprints.get(k) ?? '']);
+    }
+    for (const [legacy, key] of this.compositeAliases)
+      if (needsReview.has(key) && allAccepted.has(legacy)) accepted.set(legacy, allAccepted.get(legacy)!);
+    return {units, fingerprints: reviewFps, accepted};
   }
 
   /** Per-subject REAL λz fit membership (source rows) — the single source for the

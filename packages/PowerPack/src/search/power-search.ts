@@ -289,7 +289,34 @@ export async function searchSuggestions(si: string): Promise<SearchSuggestion[]>
 }
 
 let _suggestionsMenu: DG.Menu | null = null;
-let _ctrlSpaceSubscribed = false;
+
+/** Shows the suggestions for the text of [searchInput] in a menu under it; an empty text lists all of them. */
+export async function showSearchSuggestions(searchInput: HTMLInputElement): Promise<void> {
+  const suggestions = await searchSuggestions(searchInput.value?.trim() ?? '');
+  _suggestionsMenu?.hide();
+  const menu = _suggestionsMenu = DG.Menu.popup();
+  let any = false;
+  for (const sug of suggestions) {
+    // an exact match of the text is not worth suggesting
+    if ((sug.value ?? sug.text) === searchInput.value)
+      continue;
+    menu.item(sug.text, () => {
+      if (sug.value) {
+        searchInput.value = sug.value;
+        searchInput.dispatchEvent(new Event('input', {bubbles: true}));
+      }
+      searchInput.focus();
+      sug.onValueEnter?.(searchInput.value, grok.shell.v);
+    }, sug.priority);
+    any = true;
+  }
+  if (any) {
+    const rect = searchInput.getBoundingClientRect();
+    menu.show({element: document.body, x: rect.x,
+      y: rect.y + rect.height});
+  }
+}
+
 async function searchProvidersSearch(s: string, host: HTMLDivElement, searchInput: HTMLInputElement, track: Track): Promise<void> {
   _suggestionsMenu?.hide();
   _suggestionsMenu = null;
@@ -297,49 +324,7 @@ async function searchProvidersSearch(s: string, host: HTMLDivElement, searchInpu
     return;
   _searchProvidersPromise ??= _getSearchProviders();
   await _searchProvidersPromise;
-
-  let showSuggestions = false;
-  const addSuggestion = (text: string, value?: string, priority?: number, onValueEnter?: (s: string, view?: DG.ViewBase) => void) => {
-    // make sure that its not an exact match, where it does not make sense to add it as a suggestion
-    if ((value ?? text) === searchInput.value)
-      return;
-    _suggestionsMenu!.item(text, () => {
-      if (value) {
-        searchInput.value = value;
-        searchInput.dispatchEvent(new Event('input', {bubbles: true})); // Trigger input event to update the view
-      }
-      searchInput.focus();
-      if (onValueEnter)
-        onValueEnter(searchInput.value, grok.shell.v);
-    }, priority);
-    showSuggestions = true;
-  };
-
-  // separate handler for suggestions
-  const processSuggestions = async () => {
-    const suggestions = await searchSuggestions(searchInput.value?.trim() ?? '');
-    _suggestionsMenu?.hide();
-    _suggestionsMenu = null;
-    _suggestionsMenu = DG.Menu.popup();
-    showSuggestions = false;
-    for (const sug of suggestions)
-      addSuggestion(sug.text, sug.value, sug.priority, sug.onValueEnter);
-    if (showSuggestions) {
-      _suggestionsMenu.show({element: searchInput.parentElement!, x: searchInput.offsetLeft,
-        y: searchInput.offsetTop + searchInput.offsetHeight});
-    }
-  };
-  await processSuggestions();
-  if (!_ctrlSpaceSubscribed) {
-    _ctrlSpaceSubscribed = true;
-    searchInput.addEventListener('keydown', (event) => {
-      if (event.ctrlKey && (event.key === ' ' || event.key === 'Spacebar')) {
-        event.preventDefault();
-        processSuggestions();
-      }
-    });
-  }
-
+  await showSearchSuggestions(searchInput);
 
   searchProviders.forEach((sp) => {
     if (!sp['home'])
@@ -432,7 +417,6 @@ export function createFuncTableViewWidget(sf: DG.Func, inputParams: Record<strin
   }));
   outWidget.addProperty('caption', DG.TYPE.STRING, sf.friendlyName ?? sf.name);
   outWidget.props.caption = sf.friendlyName ?? sf.name;
-  outWidget.root.style.minHeight = '500px';
   return widgetHost(outWidget);
 }
 

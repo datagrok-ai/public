@@ -43,7 +43,11 @@ import {nca} from '@datagrok-libraries/sci-comp';
 
 import type {ValidationError} from './column-contract';
 import {stringifyKey} from './adapter-utils';
-import {normalizeRouteString, DERIVED_ROUTE_CODE_COL} from './route-normalize';
+import {
+  normalizeRouteString, DERIVED_ROUTE_CODE_COL, IP_INFUSION_AS_SINGLE_DOSE, IP_INFUSION_MESSAGE,
+  durationNotUsedWarning,
+} from './route-normalize';
+import {ROUTE_CODE_TO_STRING, ROUTE_STRING_TO_CODE} from './profile-inputs';
 
 // ── Emitted (canonical) column names ───────────────────────────────────────
 /** Pseudo-subject key column (AD-8 — occasion-scoped, e.g. `"R001_Day28"`). */
@@ -158,6 +162,21 @@ export interface InferredRoute {
   readonly inferred: boolean;
   /** Infusion duration `AMT/RATE` when RATE>0 (AD-5), else null. */
   readonly infusionDuration: number | null;
+  /** The RATE/CMT inference itself when `inferred` (the code BEFORE a confirmed route
+   *  replaced it), else null — the confirm dialog preselects from it (F8, AC-8.5). */
+  readonly inferredCode: nca.RouteCode | null;
+}
+
+/** One distinct unrecognised explicit ROUTE value and the first source rows that hold it. */
+export interface UnrecognisedRouteValue {
+  readonly value: string;
+  /** 0-based source-row indices (≤ 3); show them with {@link formatSourceRows}. */
+  readonly rows: ReadonlyArray<number>;
+}
+
+/** Source rows as the grid numbers them (1-based): `row 10` / `rows 1, 19`. */
+export function formatSourceRows(rows: ReadonlyArray<number>): string {
+  return `${rows.length === 1 ? 'row' : 'rows'} ${rows.map((r) => r + 1).join(', ')}`;
 }
 
 /** Row-classification tally (returned for the pane's confirm panel + tests). */
@@ -186,6 +205,9 @@ export interface NormalizeEventResult {
   /** True iff ≥1 route was inferred (no explicit ROUTE column) and not confirmed
    *  — the mapping pane must block Compute (AD-5). */
   readonly routeConfirmRequired: boolean;
+  /** The distinct unrecognised explicit ROUTE values (at most one when there are no errors —
+   *  more than one blocks with `NONMEM_ROUTE_UNRECOGNISED`); the confirm dialog names them. */
+  readonly unrecognisedRouteValues: ReadonlyArray<UnrecognisedRouteValue>;
   /** Classification tally over the whole input. */
   readonly classificationCounts: ClassificationCounts;
 }
@@ -287,6 +309,8 @@ export function normalizeEventDrivenObservations(
   const warningsBySubject = new Map<string, nca.ParameterWarning[]>();
   const doseLadderBySubject = new Map<string, number[]>();
   const inferredRoutes: InferredRoute[] = [];
+  /** Distinct unrecognised explicit ROUTE values → their first (≤ 3) dose rows (F8). */
+  const unrecognised = new Map<string, number[]>();
   let cDose = 0; let cObs = 0; let cReset = 0; let cOther = 0; let cMissingDv = 0;
 
   const idCol = mustCol(df, ec.id);
@@ -450,7 +474,12 @@ export function normalizeEventDrivenObservations(
     // infer from RATE/CMT and flag for confirm. Uniform per subject (v1).
     const routeRes = resolveRoute(sid, realDoses, routeCol, opts.confirmedRoute ?? null, pushWarn);
     inferredRoutes.push({subjectKey: sid, code: routeRes.code, inferred: routeRes.inferred,
-      infusionDuration: routeRes.infusionDuration});
+      infusionDuration: routeRes.infusionDuration, inferredCode: routeRes.inferredCode});
+    if (routeRes.unrecognisedValue !== null) {
+      const rowsOf = unrecognised.get(routeRes.unrecognisedValue) ?? [];
+      if (rowsOf.length < 3) rowsOf.push(realDoses[0].row);
+      unrecognised.set(routeRes.unrecognisedValue, rowsOf);
+    }
 
     // Emit one output row per usable observation (anchored to its interval).
     for (const o of obs) {
@@ -506,6 +535,33 @@ export function normalizeEventDrivenObservations(
     df, ec, outSubject, outTad, outConc, outDose, outRoute, outInfusionDur,
     outOccasion, outObsRow, outDoseRow);
 
+  // F8 (UD-4, R2 N-1): ONE confirmed route is applied to every inferred subject, so it can
+  // honestly cover them only when they need one route. More than one distinct unrecognised
+  // explicit ROUTE value, or inferred subjects whose RATE/CMT inferences disagree, block —
+  // whether or not a route was confirmed (a saved confirmation cannot cover them either).
+  const unrecognisedRouteValues: UnrecognisedRouteValue[] =
+    [...unrecognised].map(([value, rows]) => ({value, rows}));
+  if (unrecognisedRouteValues.length > 1) {
+    errors.push({code: 'NONMEM_ROUTE_UNRECOGNISED', column: ec.route,
+      message: `ROUTE values ${unrecognisedRouteValues.map((u) => `'${u.value}' ` +
+        `(${formatSourceRows(u.rows)})`).join(', ')} are not recognised routes. Recode ROUTE to route ` +
+        `names (${Object.keys(ROUTE_STRING_TO_CODE).filter((k) => k !== 'other').join(', ')}).`});
+  }
+  const inferredBy = new Map<number, string[]>();
+  for (const r of inferredRoutes) {
+    if (!r.inferred || r.inferredCode === null) continue;
+    const subjects = inferredBy.get(r.inferredCode) ?? [];
+    subjects.push(r.subjectKey);
+    inferredBy.set(r.inferredCode, subjects);
+  }
+  if (inferredBy.size > 1) {
+    const list = (s: string[]): string => s.slice(0, 3).join(', ') + (s.length > 3 ? `, … (${s.length})` : '');
+    errors.push({code: 'NONMEM_ROUTE_INFERENCE_MIXED',
+      message: `The route is inferred from RATE/CMT and the subjects need different routes: ` +
+        [...inferredBy].map(([code, s]) => `${ROUTE_CODE_TO_STRING[code]} (subjects ${list(s)})`).join('; ') +
+        `. One confirmed route cannot cover them. Add an explicit ROUTE column with route names.`});
+  }
+
   const routeConfirmRequired = (opts.confirmedRoute ?? null) === null &&
     inferredRoutes.some((r) => r.inferred);
 
@@ -516,6 +572,7 @@ export function normalizeEventDrivenObservations(
     doseLadderBySubject,
     inferredRoutes,
     routeConfirmRequired,
+    unrecognisedRouteValues,
     classificationCounts: {dose: cDose, obs: cObs, reset: cReset, other: cOther, missingDv: cMissingDv},
   };
 }
@@ -647,6 +704,10 @@ interface RouteResolution {
   readonly code: nca.RouteCode;
   readonly inferred: boolean;
   readonly infusionDuration: number | null;
+  /** The RATE/CMT inference itself (before any confirmed route), when `inferred`. */
+  readonly inferredCode: nca.RouteCode | null;
+  /** The explicit ROUTE value that did not map (status `other` or `block`), else null. */
+  readonly unrecognisedValue: string | null;
 }
 
 /**
@@ -662,22 +723,34 @@ function resolveRoute(
   pushWarn: (key: string, w: nca.ParameterWarning) => void,
 ): RouteResolution {
   const firstDoseRow = realDoses.length > 0 ? realDoses[0].row : -1;
+  let unrecognisedValue: string | null = null;
 
   // Explicit ROUTE column wins (precedence). Tolerant string normalization.
   if (routeCol !== null && firstDoseRow >= 0 && !routeCol.isNone(firstDoseRow)) {
     const rate = realDoses[0].rate;
     const infusionPositive = Number.isFinite(rate) && rate > 0;
-    const res = normalizeRouteString(String(routeCol.get(firstDoseRow)), infusionPositive);
-    if (res.status === 'mapped')
-      return {code: res.code, inferred: false, infusionDuration: infusionDurFor(realDoses[0])};
-    if (res.status === 'other')
-      return {code: res.code, inferred: false, infusionDuration: null};
-    // block / empty → an explicit ROUTE value exists but is unmappable; fall
-    // through to RATE/CMT inference, but warn so the confirm gate does not
-    // falsely claim "no ROUTE column" (the scientist must know their value was
-    // unrecognised, not absent).
+    const raw = String(routeCol.get(firstDoseRow));
+    const res = normalizeRouteString(raw, infusionPositive);
+    if (res.status === 'mapped') {
+      if (res.ipInfusion)
+        pushWarn(sid, {code: IP_INFUSION_AS_SINGLE_DOSE, severity: 'warning', message: IP_INFUSION_MESSAGE});
+      else if (infusionPositive) {
+        // F3 (UD-2): RATE > 0 on an explicit extravascular route (zero-order absorption from a
+        // depot) — a real input the engine models as a single instantaneous dose.
+        const note = durationNotUsedWarning(res.code);
+        if (note !== null) pushWarn(sid, note);
+      }
+      return {code: res.code, inferred: false, infusionDuration: infusionDurFor(realDoses[0]),
+        inferredCode: null, unrecognisedValue: null};
+    }
+    // other / block / empty → an explicit ROUTE value exists but does not name a route
+    // (a number such as `1`, any unrecognised string, or an IV-adjacent unmappable one). It is
+    // never computed silently as `other` (nca-ip-route F8): fall through to RATE/CMT inference
+    // and the confirm gate, and warn naming the value so the gate does not claim "no ROUTE
+    // column". Integers are never read as route codes (`normalizeRouteString` has no numeric path).
+    if (res.status !== 'empty') unrecognisedValue = raw;
     pushWarn(sid, {code: NONMEM_ROUTE_INFERRED, severity: 'warning',
-      message: `Subject '${sid}': ROUTE value '${routeCol.get(firstDoseRow)}' is not a ` +
+      message: `Subject '${sid}': ROUTE value '${raw}' is not a ` +
         `recognised route; falling back to RATE/CMT inference. Confirm the route before Compute.`});
   }
 
@@ -700,13 +773,13 @@ function resolveRoute(
 
 
   if (confirmedRoute !== null)
-    return {code: confirmedRoute, inferred: true, infusionDuration};
+    return {code: confirmedRoute, inferred: true, infusionDuration, inferredCode: code, unrecognisedValue};
 
   pushWarn(sid, {code: NONMEM_ROUTE_INFERRED, severity: 'warning',
     message: `Subject '${sid}': route inferred from RATE/CMT (no explicit ROUTE ` +
       `column). Confirm the route before Compute — a wrong IV/extravascular label ` +
       `mislabels CL vs CL/F (~3-fold error at F≈30%).`});
-  return {code, inferred: true, infusionDuration};
+  return {code, inferred: true, infusionDuration, inferredCode: code, unrecognisedValue};
 }
 
 function infusionDurFor(d: DoseEvent): number | null {

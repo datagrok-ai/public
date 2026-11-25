@@ -2,11 +2,38 @@
 
 ## v.next
 
+* Usage widget: System shows how many services run and names only those that do not, instead of a list that scrolled inside the card; hovering it lists every service
+* core#1765: Detectors: Declared the column types the semantic type detectors check, so the platform no longer calls them for other columns
+* Release dashboard: Tickets read GitHub issues instead of Jira (needs the `githubToken` credential)
+* Test dashboards: Ticket verdicts read GitHub issues instead of Jira
+* Test dashboards: Fixed the Test Track tickets status column
+* Removed Jira ticket creation (the Jira connection, Create JIRA ticket, Test Track's Jira Tickets pane)
+* Reports: Added a Ticket column with the report's GitHub issue (needs the `githubToken` credential)
+
+## 2.7.2 (2026-11-17)
+
+* Release dashboard: The Stress alert compares speed (tests per second) and median test duration of the latest sweep with the best sweep that completed the full suite and with the latest release branch, and reports an incomplete sweep; the Stress tab charts speed next to the median duration
+* Release dashboard: Fixed the Stress tab and alert ordering builds by image build date, which several builds can share, instead of by when the sweep ran
+* Tests: Added `trellis-plot-scatter-labels.feature` (core#1644: a scatter plot in a trellis cell labels at most 20 selected rows, Never hides them, the full-screen cell labels as a standalone plot), read through the trellis's new `cell labels shown <cell>` and `full screen labels shown` readings
+* Tests: Added `edit-tooltip-guidance.feature` (the Edit Tooltip dialog's Use tooltip choices, hover help, status line and warnings, Design custom tooltip in the viewer's own mode, Remove/Reset group tooltip); the tooltip features read the dialog's new option labels "Table (shared)" and "<Viewer> only"
+* Release dashboard: Fixed the Stress chart placing builds by name instead of by date, which hid the latest run among older ones
+* Tests: Retired the known failures of [core#626](https://github.com/datagrok-ai/core/issues/626), [core#467](https://github.com/datagrok-ai/core/issues/467) and GROK-20535, fixed in the core; the routing scenario claims the core's 'Project "<name>" was not found'; the dock-layout feature closes the Dashboards panel it opens (left open, its SAVE beside every later table view's ribbon Save made "Save button" ambiguous); the app dashboard feature waits for Usage Analysis' toolbox before it picks a tab
+* Release dashboard: Fixed the Overview, Tests and Benchmarks showing no data: the per-build pivot relied on `first()` of string columns, which the dataframe pivot drops
+* Release dashboard: The Overview fills each card as soon as its own source answers instead of waiting for the slowest one, and logs a source that fails
+* Release dashboard: Stress summaries are cached per build, so the Stress card and tab no longer wait minutes for a 20-build aggregation
+* Release dashboard: The tests query returns only actual runs, Overview and Tests share one result, and the queries no longer run three times on open
+* Release dashboard: The Vulnerabilities card counts the platform's bleeding-edge images; plugin and tool images are shown as a separate figure
+* Metrics: Moved to the platform: Browse > Platform > Health > Metrics
+* Cloud Logs, Service Logs: Moved to the platform as one explorer with stored and live service logs: Browse > Platform > Health > Logs
+* [core#239](https://github.com/datagrok-ai/core/issues/239): Projects: The app is saved with a project and reopens on the same tab, sub-view and filters
+* Filters: Fixed the groups filter reaching the address bar and package links as `users`, so a shared link dropped it
+* [core#637](https://github.com/datagrok-ai/core/issues/637): Tests: Updated the line chart styling BDD scenario and the line chart and annotation region TestTrack specs to set opacity through the color alpha
+* [#3924](https://github.com/datagrok-ai/public/issues/3924): Tests: Added BDD features for category order: box plot, scatter plot (with molecules), line chart, bar chart, pie chart, 3D scatter plot, trellis plot, the order shared by all viewers and everyday workflows
 * Tests: Added BDD steps to the existing scenarios for closed bugs (a favorite opened once, Delete Project, column groups, toolbox search and Extract Rows, the script view's menu, a query address), viewer interactions (Sankey and Chord clicks, timelines under the Filter Panel, Globe, the confusion matrix tooltip, PC plot Save as PNG) and dialog cases a user meets (the Save dialog with its only table left out, an emptied name, a taken group name, Invite a Friend, the own account without Disable..., a Share dialog with nobody picked), and an Apps > Plates journey; checks that are not a gesture went to ApiTests, package and Dart tests, and each folder's MISSING.md says in one `Won't do` line what was left out
 * Metrics: Added data growth (Postgres tables and categories, storage by nature and location, GC deleted and pending, growth alerts)
 * Metrics: Added a drill-down from a route's error rate to its failed requests, their errors and log
 * Metrics: Removed the Share button; the Metrics app URL no longer repeats `/metrics`
-* Metrics, Reports, Service Logs, Cloud Logs: Moved from Browse > Platform > Admin to Platform > Observability, next to Alerts
+* Metrics, Reports, Service Logs, Cloud Logs: Moved from Browse > Platform > Admin to Platform > Health, next to Alerts
 * Cloud Logs: Opens on this instance's platform events of the last hour instead of an empty CloudWatch form; choosing CloudWatch loads its log groups
 * Cloud Logs: Fixed the Platform events source, which failed on every run
 * AI Usage: Added a dashboard of the assistant's requests: counters of requests, users, tokens and estimated cost, usage over time by model, usage by user and by group, filters, the requests grid, and a request's details, prompt, answer, tool calls and chat in the context panel

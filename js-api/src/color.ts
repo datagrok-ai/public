@@ -47,6 +47,11 @@ export class Color {
         return Color.argb(alpha, Color.r(color), Color.g(color), Color.b(color));
     }
 
+    /** Returns [color] opaque when it has no alpha (written as 0xRRGGBB), as viewers draw it; otherwise unchanged. */
+    static opaqueIfNoAlpha(color: number): number {
+        return Color.a(color) === 0 ? Color.setAlpha(color, 255) : color;
+    }
+
     /** Returns i-th categorical color (looping over the palette if needed) */
     static getCategoricalColor(i: number): number {
         return Color.categoricalPalette[i % Color.categoricalPalette.length];

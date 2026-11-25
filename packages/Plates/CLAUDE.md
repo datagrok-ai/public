@@ -43,6 +43,7 @@ Category: **Visualizations**. Contains a full CRUD app accessible via `Apps | Pl
 | `platesApp` | `@app` — main Plates application view |
 | `platesAppTreeBrowser` | `@appTreeBrowser` — populates the app tree (Create, Search plates/wells/analyses, Templates) |
 | `getPlateByBarcode` | Fetches a plate from DB by barcode |
+| `plateWidget` | A `PlateWidget` (detailed view) from a table of wells, for other packages: a `Plate` instance does not cross package bundles, a DataFrame does (PlateBundles calls it by name). `rows`/`cols` fix the size |
 | `createDummyPlateData` | Seeds demo data (templates + plates + analysis results) |
 
 **Exports**: `_package`, auto-generated wrappers from `package.g.ts`
@@ -63,7 +64,7 @@ Category: **Visualizations**. Contains a full CRUD app accessible via `Apps | Pl
 | Method | Input |
 |---|---|
 | `fromGridDataFrame(df, field?)` | 8×12 / 16×24 / 32×48 grid DataFrame (columns = plate columns) |
-| `fromTableByRow(df, options?)` | Tidy DataFrame with position column (e.g. "A1") or row/col columns |
+| `fromTableByRow(df, options?)` | Tidy DataFrame with position column (e.g. "A1") or row/col columns (0-based); `options.rows`/`cols` fix the size, else `sizeOf` takes the smallest standard plate holding the wells |
 | `fromDbDataFrame(df)` | Database query result (row, col, property_id, value columns) |
 | `fromCsv(csv, options?)` | CSV string in grid format |
 | `fromCsvTable(csv, field)` | CSV string parsed as grid DataFrame |
@@ -318,7 +319,7 @@ Main plate creation workflow:
 
 ---
 
-## Database Schema — `databases/plts/0000_init.sql`
+## Database Schema — `databases/plts/schema.json`
 
 PostgreSQL schema `plts` with forward-only migrations:
 
@@ -398,7 +399,7 @@ Tests using `@datagrok-libraries/test`:
 | Analysis registration | `src/plate/analyses/analysis-manager.ts` |
 | Database CRUD, search queries | `src/plates/plates-crud.ts` |
 | SQL query definitions | `queries/plates-crud.sql` |
-| DB schema | `databases/plts/0000_init.sql` |
+| DB schema | `databases/plts/schema.json` |
 | Search matchers (numeric, string) | `src/plates/matchers.ts` |
 | App tree, main view | `src/plates/plates-app.ts` |
 | Plate creation workflow | `src/plates/views/plates-create-view.ts` |

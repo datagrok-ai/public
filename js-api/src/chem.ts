@@ -20,7 +20,9 @@ const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) a
 
 declare let grok: any;
 
-export const DEFAULT_SKETCHER = 'OpenChemLib';
+/** The sketcher a molecule editor uses before Chem's init sets the session's ({@link chem.currentSketcherType}), and
+ * when the one asked for has no function: Crux (Chem's), as Chem's Sketcher setting's default. */
+export const DEFAULT_SKETCHER = 'Crux';
 export const WHITE_MOLBLOCK = `
   Datagrok empty molecule
 
@@ -160,6 +162,19 @@ export namespace chem {
   /** A molecule string and the notation it is in, as {@link SketcherBase.explicitMol} holds one. */
   type NotatedMolecule = NonNullable<SketcherBase['explicitMol']>;
 
+  /** Options of a {@link Sketcher} host: its constructor's third argument. */
+  export interface ISketcherOptions {
+    /** The sketcher this host shows, by its friendly name or function name (`'Crux'`, `'OpenChemLib'`, `'Ketcher'`),
+     * whatever the session's ({@link currentSketcherType}), which the host leaves as it is. A sketcher picked in the
+     * host's ≡ menu, or set through {@link Sketcher.sketcherType}, is the host's from then on; the menu's pick is also
+     * the session's, as in any host. Unset: the session's sketcher. */
+    sketcherType?: string;
+    /** Whether the host shows its input row above the sketcher: the molecule field (SMILES, MOLBLOCK, InChI, a ChEMBL
+     * id) and its ≡ menu (copy as, recent and favorite molecules, the choice of sketcher). False leaves the row out, and
+     * the sketcher takes the whole host. Default: true. */
+    showInput?: boolean;
+  }
+
   /** Molecule sketcher with pluggable implementations (OpenChemLib, Ketcher, Marvin, ...), inplace or as a
    * thumbnail that opens the sketcher in a dialog. Read the molecule with {@link getSmiles}, {@link getMolFile}
    * or {@link getSmarts}, set it with {@link setMolecule}, listen on {@link onChanged}.
@@ -232,8 +247,11 @@ export namespace chem {
     highlightInput: InputBase;
     filterOnChangeInput: InputBase;
 
-    /** Switches the sketcher implementation by name (one of the registered sketcher functions). */
+    /** Switches the sketcher implementation by name (one of the registered sketcher functions). A host given its own
+     * sketcher ({@link ISketcherOptions.sketcherType}) keeps this one from then on. */
     set sketcherType(type: string) {
+      if (this._ownSketcherType !== null)
+        this._ownSketcherType = type;
       this._setSketcherType(type);
     }
 
@@ -368,9 +386,13 @@ export namespace chem {
       return Sketcher.isEmptyMolfile(this.sketcher?.explicitMol?.value ?? this.getMolFile());
     }
 
-    /** Sets the molecule, supports either SMILES, SMARTS or MOLBLOCK formats */
+    /** Sets the molecule, supports either SMILES, SMARTS or MOLBLOCK formats. A substructure filter's sketcher takes a
+     * SMILES with a bracket H count only a query writes (`[NH2]c1ccccc1`, `[CH3]c`) as SMARTS, so that the H count stays
+     * the query's: set as SMILES it was dropped, and the filter searched any N on benzene (264 of mol1K's rows where
+     * `[NH2]c1ccccc1` finds 11). A SMILES whose brackets the notation needs (`[C@@H]`, `[nH]`, `[NH3+]`) stays a SMILES,
+     * as it is when pasted on the canvas. */
     setMolecule(molString: string, substructure: boolean = false): void {
-      if (substructure || isSmarts(molString))
+      if (substructure || isSmarts(molString) || (this._isSubstructureFilter && hasBracketHCount(molString)))
         this.setSmarts(molString);
       else if (isMolBlock(molString))
         this.setMolFile(molString);
@@ -428,11 +450,21 @@ export namespace chem {
       this.updateInvalidMoleculeWarning();
     }
 
-    /** Creates a sketcher. [mode]: inplace (default) or external, a thumbnail that opens the sketcher in a dialog; [validationFunc] returns an error message or null. */
-    constructor(mode?: SKETCHER_MODE, validationFunc?: (s: string) => string | null) {
+    /** Creates a sketcher host.
+     * @param mode  Inplace (default), or external: a thumbnail that opens the sketcher in a dialog.
+     * @param validationFunc  Returns an error message for a molecule set, or null; the host shows "Malformed molecule".
+     * @param options  The sketcher this host shows instead of the session's, and whether it shows its input row.
+     * @example
+     * // Crux, and nothing but Crux, filling the view, whatever sketcher the session uses
+     * const sketcher = new DG.chem.Sketcher(DG.chem.SKETCHER_MODE.INPLACE, undefined, {sketcherType: 'Crux', showInput: false});
+     * sketcher.setMolecule('c1ccccc1');
+     * grok.shell.newView('Crux', [sketcher.root]); */
+    constructor(mode?: SKETCHER_MODE, validationFunc?: (s: string) => string | null, options?: ISketcherOptions) {
       super(ui.div());
       if (mode)
         this._mode = mode;
+      this._ownSketcherType = options?.sketcherType ?? null;
+      this._showInput = options?.showInput ?? true;
       this.root.style.height = '100%';
       this.extSketcherCanvas.classList.add('chem-external-sketcher-canvas');
       this.clearSketcherButton = this.createClearSketcherButton(this.extSketcherCanvas);
@@ -725,15 +757,15 @@ export namespace chem {
       $(optionsIcon).addClass('d4-input-options');
       molInputDiv.append(ui.div([this.molInput, optionsIcon], 'grok-sketcher-input'));
       this.calculating = false;
-      this.sketcherType = currentSketcherType;
+      this.sketcherType = this._ownSketcherType ?? currentSketcherType;
 
       // A column that fills its parent: the input row takes its own height, the host what is left, and the
       // invalid-molecule warning, drawn over the sketcher, none (css/styles.css, .chem-inplace-sketcher). It replaces a
       // height of 90%, a fudge for the input row: in a box sized from outside (a resized dialog, a dialog shown with a
       // size) it left a margin under the sketcher, a tenth of the box less the row, and at 100% the row pushed the
-      // sketcher's bottom under the footer.
+      // sketcher's bottom under the footer. Without the input row (showInput: false) the host takes it all.
       this.inplaceSketcherDiv = ui.div([
-        molInputDiv,
+        ...(this._showInput ? [molInputDiv] : []),
         this.loader,
         this.host,
         this.invalidMoleculeWarning], 'chem-inplace-sketcher');
@@ -745,6 +777,10 @@ export namespace chem {
     private _sketcherChangeId = 0; 
     /** The sketcher this host shows, or is switching to: its options menu checks it. */
     private _sketcherType: string | null = null;
+    /** The sketcher this host shows whatever the session's ({@link ISketcherOptions.sketcherType}); null: the session's. */
+    private _ownSketcherType: string | null = null;
+    /** Whether the input row is shown ({@link ISketcherOptions.showInput}). */
+    private readonly _showInput: boolean = true;
     private _setSketcherType(sketcherType: string): void {
       this._sketcherType = sketcherType;
       const valuesSet = this._valuesSet;
@@ -785,7 +821,8 @@ export namespace chem {
         await ui.tools.waitForElementInDom(this.root);
         if (localChangeId !== this._sketcherChangeId)
           return;
-        if(currentSketcherType !== sketcherType) //in case sketcher type has been changed while previous sketcher was loading
+        // in case sketcher type has been changed while previous sketcher was loading: the session's, or this host's own
+        if ((this._ownSketcherType ?? currentSketcherType) !== sketcherType)
           return;
         const sketcher = await sketcherFunc!.apply();
         // A later switch began while the function applied (a package not in the browser's cache loads for seconds): the
@@ -817,7 +854,7 @@ export namespace chem {
           for (let callback of this.listeners)
             callback();
           if (sync && !Sketcher.isEmptyMolfile(molFile))
-            grok.shell.o = SemanticValue.fromValueType(molFile, SEMTYPE.MOLECULE, UNITS.Molecule.MOLBLOCK);
+            this._makeCurrent(molFile);
         });
         // a value set while the implementation initialized was only stored, and is newer than the one taken above, which
         // is set otherwise, as stored: with the setter of its notation, not guessed from the string; an empty one is not
@@ -848,6 +885,24 @@ export namespace chem {
           return {notation: 'smiles', value: this._smiles};
       }
       return {notation: this.molFileUnits === Notation.MolBlock ? 'molblock' : 'molblockV3000', value: this.getMolFile()};
+    }
+
+    /** The molblock this host last made the current object ({@link _makeCurrent}), or null. */
+    private _currentMolFile: string | null = null;
+
+    /** Makes the drawing `molFile` the current object. An object set as current is kept for a second against other
+     * changes (`grok.shell.o` freezes it); the host's next drawing replaces its own last one all the same: a second
+     * stroke within that second left the context panel on the drawing before it. Anything else made current since
+     * (a cell, a column) is replaced only as `grok.shell.o` replaces it. */
+    private _makeCurrent(molFile: string): void {
+      const o = grok.shell.o;
+      const own = this._currentMolFile !== null && o instanceof SemanticValue && o.semType === SEMTYPE.MOLECULE &&
+        o.value === this._currentMolFile;
+      if (own && o.value === molFile)
+        return;
+      grok.shell.setCurrentObject(SemanticValue.fromValueType(molFile, SEMTYPE.MOLECULE, UNITS.Molecule.MOLBLOCK),
+        true, own);
+      this._currentMolFile = molFile;
     }
 
     /** Sets a molecule with the setter of its notation. */
@@ -1131,6 +1186,18 @@ export namespace chem {
     funcCall.callSync();
     const resultBool = funcCall.getOutputParamValue();
     return resultBool;
+  }
+
+  /** Whether a one-line text has a bracket atom whose H count only a query would write: an aliphatic organic-subset
+   * element with an H count and nothing else (`[NH2]`, `[CH3]`, `[OH]`, `[NH]`), a bracket SMILES does not need. A bracket
+   * SMILES needs is a molecule's, not a query's: a stereo centre (`[C@@H]`), an aromatic N-H (`[nH]`), a charge
+   * (`[NH3+]`), an isotope (`[13CH3]`), an atom map (`[CH3:1]`); so is a bracket hydrogen (`[2H]`, `[H+]`) and an element
+   * whose symbol starts with H (`[Hg]`). RDKit writes no bracket a SMILES does not need, so a canonical SMILES copied from
+   * a table stays a molecule (pasted with its stereo it was read as SMARTS, every atom aromatic- or aliphatic-only, and
+   * Similar found nothing; reported 2026-11-23). */
+  function hasBracketHCount(s: string): boolean {
+    const text = s.trim();
+    return !/\s/.test(text) && /\[(?:Cl|Br|B|C|N|O|P|S|F|I)H\d*\]/.test(text);
   }
 
   export function isSmarts(s: string): boolean {

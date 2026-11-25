@@ -24,6 +24,8 @@ export {
   tlag,
 } from './derived';
 export {computeNca} from './compute-nca';
+export {aucInterval} from './auc-interval';
+export type {AucIntervalResult} from './auc-interval';
 export {
   aucLinearNaive,
   aucLogLinearNaive,
@@ -43,11 +45,12 @@ export {
   aumcLinearUpLogDownCompensated,
   aumcExtrapolateToInfinity,
 } from './aumc';
-export {sparseAuc, buildCompositeProfile} from './sparse';
+export {sparseAuc, buildCompositeProfile, compositeProfileArrays} from './sparse';
 export type {
   SparseInput,
   SparseAucOptions,
   SparseAucResult,
+  CompositeProfileArrays,
   SparseWarning,
   SparseWarningCode,
   SamplingTopology,

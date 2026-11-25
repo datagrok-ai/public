@@ -22,7 +22,7 @@
   "dependencies": {
     "@datagrok-libraries/bio": "workspace:^",
     "@datagrok-libraries/chem-meta": "workspace:^",
-    "@datagrok-libraries/hwe": "^1.1.1",
+    "@datagrok-libraries/hwe": "^1.1.3",
     "@datagrok-libraries/test": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",
     "cash-dom": "catalog:",

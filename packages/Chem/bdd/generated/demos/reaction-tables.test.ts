@@ -1,0 +1,135 @@
+/* eslint-disable max-len */
+/* eslint-disable comma-spacing */
+/* eslint-disable quotes */
+/* ---
+generated: features/demos/reaction-tables.feature
+generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
+--- */
+import {test} from '@playwright/test';
+import '../../bindings/crux.js';
+import '../../bindings/datasets.js';
+import '../../bindings/elements.js';
+import '../../bindings/reaction-export.js';
+import '../../bindings/reactions-app-text.js';
+import '../../bindings/sketcher-app.js';
+import '@datagrok-libraries/bdd/bindings/common/kinds';
+import '@datagrok-libraries/bdd/bindings/common/parameter-types';
+import '@datagrok-libraries/bdd/bindings/platform/datasets';
+import '@datagrok-libraries/bdd/bindings/platform/elements';
+import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
+import {engineGate} from '../../bindings/engine.js';
+import {pageEngine} from '../../bindings/footguns.js';
+import {labelsShown, paneSays, pointAtLabel, resizeDialog} from '../../bindings/reaction-demo.js';
+import {cellSides} from '../../bindings/reaction-editor.js';
+import {openProjectCsv} from '../../bindings/reactions.js';
+import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
+import {clickOn, expand, pressKeyIn, shouldBe, videoSays} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {makeRowCurrent} from '@datagrok-libraries/bdd/bindings/platform/columns';
+import {filterTo, filterToAnyOf, noneSelected} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {contextPanelClosed, contextPanelOpen, contextPanelShowsCurrentCell, simpleModeOff, toolboxPaneHidden} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {clickArea, doubleClickArea, dragAreaBy, hoverArea, noErrors} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {gridColumnWidth, gridRowHeight, gridShowsColumns} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
+import {el, feature} from '@datagrok-libraries/bdd/runtime';
+
+test.describe("Chemistry · Reactions in tables", () => {
+  const session = feature(test, "features/demos/reaction-tables.feature", import.meta.url);
+  test("Reaction cells, from SMILES and from ChemDraw", {tag: ["@guide", "@demo"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(18, "Given user is logged in", () => loggedIn(page));
+    await session.step(19, "And simple mode is off", () => simpleModeOff(page));
+    await session.step(20, "And the Chemical Engine is \"Crux\"", () => engineGate(page, "Crux"));
+    await session.step(21, "And user opens the \"../files/tests/reactions-crux.csv\" file of the project", () => openProjectCsv(page, "../files/tests/reactions-crux.csv"));
+    await session.step(22, "And the toolbox pane is hidden", () => toolboxPaneHidden(page));
+    await session.step(23, "And the context panel is closed", () => contextPanelClosed(page));
+    await session.step(24, "Given user filters rows where \"kind\" is one of \"route: enumeration, route: linear, route: convergent, route: one-pot\"", () => filterToAnyOf(page, "kind", "route: enumeration, route: linear, route: convergent, route: one-pot"));
+    await session.step(25, "And user makes row 1 current", () => makeRowCurrent(page, 1));
+    await session.step(26, "And the grid shows only the columns \"id, reaction\"", () => gridShowsColumns(page, "id, reaction"));
+    await session.step(27, "And the \"id\" column of the grid is 200 px wide", () => gridColumnWidth(page, "id", 200));
+    await session.step(28, "And the \"reaction\" column of the grid is 900 px wide", () => gridColumnWidth(page, "reaction", 900));
+    await session.step(29, "And the rows of the grid are 150 px tall", () => gridRowHeight(page, 150));
+    await session.step(30, "When the video says \"Reactions and routes, each drawn to fit its cell\"", () => videoSays(page, "Reactions and routes, each drawn to fit its cell"));
+    await session.step(31, "And user hovers over the \"cell 32 of reaction\" area of grid", () => hoverArea(page, "cell 32 of reaction", el("grid")));
+    await session.step(32, "And user hovers over the \"cell 35 of reaction\" area of grid", () => hoverArea(page, "cell 35 of reaction", el("grid")));
+    await session.step(33, "And user hovers over the \"cell 38 of reaction\" area of grid", () => hoverArea(page, "cell 38 of reaction", el("grid")));
+    await session.step(34, "Given user opens the \"../files/reactions-cdxml.csv\" file of the project", () => openProjectCsv(page, "../files/reactions-cdxml.csv"));
+    await session.step(35, "And the grid shows only the columns \"name, cdxml\"", () => gridShowsColumns(page, "name, cdxml"));
+    await session.step(36, "And the \"name\" column of the grid is 220 px wide", () => gridColumnWidth(page, "name", 220));
+    await session.step(37, "And the \"cdxml\" column of the grid is 420 px wide", () => gridColumnWidth(page, "cdxml", 420));
+    await session.step(38, "And the rows of the grid are 150 px tall", () => gridRowHeight(page, 150));
+    await session.step(39, "When the video says \"ChemDraw pages, cut to their reaction\"", () => videoSays(page, "ChemDraw pages, cut to their reaction"));
+    await session.step(40, "And user hovers over the \"cell 3 of cdxml\" area of grid", () => hoverArea(page, "cell 3 of cdxml", el("grid")));
+    await session.step(41, "And user hovers over the \"cell 4 of cdxml\" area of grid", () => hoverArea(page, "cell 4 of cdxml", el("grid")));
+    await session.step(42, "And user drags the \"column resizer cdxml\" area of grid by 560 pixels to the right", () => dragAreaBy(page, "column resizer cdxml", el("grid"), 560, "right"));
+    await session.step(43, "And user hovers over the \"cell 3 of cdxml\" area of grid", () => hoverArea(page, "cell 3 of cdxml", el("grid")));
+    await session.step(44, "And user hovers over the \"cell 4 of cdxml\" area of grid", () => hoverArea(page, "cell 4 of cdxml", el("grid")));
+    await session.step(45, "And user hovers over the \"cell 5 of cdxml\" area of grid", () => hoverArea(page, "cell 5 of cdxml", el("grid")));
+    await session.step(46, "Then no errors should have been logged", () => noErrors(page));
+  });
+  test("The reaction editor, from a cell", {tag: ["@guide", "@demo"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(51, "Given user is logged in", () => loggedIn(page));
+    await session.step(52, "And simple mode is off", () => simpleModeOff(page));
+    await session.step(53, "And the Chemical Engine is \"Crux\"", () => engineGate(page, "Crux"));
+    await session.step(54, "And user opens the \"fixtures/BDD-reactions-showcase.csv\" file of the project", () => openProjectCsv(page, "fixtures/BDD-reactions-showcase.csv"));
+    await session.step(55, "And the toolbox pane is hidden", () => toolboxPaneHidden(page));
+    await session.step(56, "And the context panel is closed", () => contextPanelClosed(page));
+    await session.step(57, "Given user filters rows where \"kind\" is \"reaction\"", () => filterTo(page, "kind", "reaction"));
+    await session.step(58, "And user makes row 20 current", () => makeRowCurrent(page, 20));
+    await session.step(59, "And the grid shows only the columns \"name, reaction\"", () => gridShowsColumns(page, "name, reaction"));
+    await session.step(60, "And the \"name\" column of the grid is 190 px wide", () => gridColumnWidth(page, "name", 190));
+    await session.step(61, "And the \"reaction\" column of the grid is 760 px wide", () => gridColumnWidth(page, "reaction", 760));
+    await session.step(62, "And the rows of the grid are 130 px tall", () => gridRowHeight(page, 130));
+    await session.step(63, "When the video says \"Double-click a reaction: the Crux reaction editor\"", () => videoSays(page, "Double-click a reaction: the Crux reaction editor"));
+    await session.step(64, "And user double-clicks on the \"cell 1 of reaction\" area of grid", () => doubleClickArea(page, "cell 1 of reaction", el("grid")));
+    await session.step(65, "Then reaction editor dialog should be visible", () => shouldBe(page, el("reaction editor dialog"), "visible"));
+    await session.step(66, "When user clicks on \"Full screen\" icon in reaction editor dialog", () => clickOn(page, el("\"Full screen\" icon in reaction editor dialog")));
+    await session.step(67, "And user clicks on \"Exit full screen\" icon in reaction editor dialog", () => clickOn(page, el("\"Exit full screen\" icon in reaction editor dialog")));
+    await session.step(68, "And the video says \"The drawing follows the dialog\"", () => videoSays(page, "The drawing follows the dialog"));
+    await session.step(69, "And user resizes reaction editor dialog by 260 and 0 pixels from its corner", () => resizeDialog(page, el("reaction editor dialog"), 260, 0));
+    await session.step(70, "And the video says \"A pyridine for the phenyl; OK writes it back\"", () => videoSays(page, "A pyridine for the phenyl; OK writes it back"));
+    await session.step(71, "And user clicks on crux nitrogen tool", () => clickOn(page, el("crux nitrogen tool")));
+    await session.step(72, "And user clicks on the \"atom 16\" area of crux sketcher widget", () => clickArea(page, "atom 16", el("crux sketcher widget")));
+    await session.step(73, "And user clicks on the \"atom 43\" area of crux sketcher widget", () => clickArea(page, "atom 43", el("crux sketcher widget")));
+    await session.step(74, "And user clicks on OK button in reaction editor dialog", () => clickOn(page, el("OK button in reaction editor dialog")));
+    await session.step(75, "Then reaction editor dialog should be absent", () => shouldBe(page, el("reaction editor dialog"), "absent"));
+    await session.step(76, "And the reaction in row 1 of \"reaction\" column should have the reactants \"CC(=O)c1ccc(Br)cc1.OB(O)c1ccncc1\" and the products \"CC(=O)c1ccc(-c2ccncc2)cc1\"", () => cellSides(page, 1, "reaction", "CC(=O)c1ccc(Br)cc1.OB(O)c1ccncc1", "CC(=O)c1ccc(-c2ccncc2)cc1"));
+    await session.step(77, "Given the Chemical Engine of this page is \"RDKit\"", () => pageEngine(page, "RDKit"));
+    await session.step(78, "When the video says \"RDKit mode: the same editor\"", () => videoSays(page, "RDKit mode: the same editor"));
+    await session.step(79, "And user double-clicks on the \"cell 2 of reaction\" area of grid", () => doubleClickArea(page, "cell 2 of reaction", el("grid")));
+    await session.step(80, "Then reaction editor dialog should be visible", () => shouldBe(page, el("reaction editor dialog"), "visible"));
+    await session.step(81, "When user clicks on CANCEL button in reaction editor dialog", () => clickOn(page, el("CANCEL button in reaction editor dialog")));
+    await session.step(82, "Then reaction editor dialog should be absent", () => shouldBe(page, el("reaction editor dialog"), "absent"));
+    await session.step(83, "And no errors should have been logged", () => noErrors(page));
+  });
+  test("A ChemDraw page, through the editor and back", {tag: ["@guide", "@demo"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(88, "Given user is logged in", () => loggedIn(page));
+    await session.step(89, "And simple mode is off", () => simpleModeOff(page));
+    await session.step(90, "And the Chemical Engine is \"Crux\"", () => engineGate(page, "Crux"));
+    await session.step(91, "And user opens the \"../files/reactions-cdxml.csv\" file of the project", () => openProjectCsv(page, "../files/reactions-cdxml.csv"));
+    await session.step(92, "And the toolbox pane is hidden", () => toolboxPaneHidden(page));
+    await session.step(93, "And the context panel is open", () => contextPanelOpen(page));
+    await session.step(94, "And the grid shows only the columns \"name, cdxml\"", () => gridShowsColumns(page, "name, cdxml"));
+    await session.step(95, "And the \"name\" column of the grid is 220 px wide", () => gridColumnWidth(page, "name", 220));
+    await session.step(96, "And the \"cdxml\" column of the grid is 520 px wide", () => gridColumnWidth(page, "cdxml", 520));
+    await session.step(97, "And the rows of the grid are 150 px tall", () => gridRowHeight(page, 150));
+    await session.step(98, "When the video says \"Molecules on no step are counted, not dropped silently\"", () => videoSays(page, "Molecules on no step are counted, not dropped silently"));
+    await session.step(99, "And user clicks on the \"cell 5 of cdxml\" area of grid", () => clickArea(page, "cell 5 of cdxml", el("grid")));
+    await session.step(100, "Then the context panel should show the current cell", () => contextPanelShowsCurrentCell(page));
+    await session.step(101, "When user expands \"Reaction\" section", () => expand(page, el("\"Reaction\" section")));
+    await session.step(102, "Then the Reaction pane should say \"2 molecules on no step were left out\"", () => paneSays(page, "2 molecules on no step were left out"));
+    await session.step(103, "When the video says \"Copied and pasted, the page keeps OTf and TBS\"", () => videoSays(page, "Copied and pasted, the page keeps OTf and TBS"));
+    await session.step(104, "And user double-clicks on the \"cell 5 of cdxml\" area of grid", () => doubleClickArea(page, "cell 5 of cdxml", el("grid")));
+    await session.step(105, "Then reaction editor dialog should be visible", () => shouldBe(page, el("reaction editor dialog"), "visible"));
+    await session.step(106, "When user presses Control+A in crux canvas", () => pressKeyIn(page, "Control+A", el("crux canvas")));
+    await session.step(107, "Then no rows should be selected", () => noneSelected(page));
+    await session.step(108, "When user presses Control+C in crux canvas", () => pressKeyIn(page, "Control+C", el("crux canvas")));
+    await session.step(109, "And user clicks on crux clear button", () => clickOn(page, el("crux clear button")));
+    await session.step(110, "And user presses Control+V in crux canvas", () => pressKeyIn(page, "Control+V", el("crux canvas")));
+    await session.step(111, "And user points at the label \"OTf\" in the sketcher", () => pointAtLabel(page, "OTf"));
+    await session.step(112, "And user points at the label \"TBS\" in the sketcher", () => pointAtLabel(page, "TBS"));
+    await session.step(113, "Then the sketcher should draw the labels \"OTf\" and \"TBS\"", () => labelsShown(page, "OTf", "TBS"));
+    await session.step(114, "When user clicks on CANCEL button in reaction editor dialog", () => clickOn(page, el("CANCEL button in reaction editor dialog")));
+    await session.step(115, "Then no errors should have been logged", () => noErrors(page));
+  });
+});

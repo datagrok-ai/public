@@ -7,6 +7,7 @@ import {ReactionResult, TwoComponentReactionResult} from './types';
 import {EngineReaction} from './reaction-engine';
 import {SALT_AND_WATER_FRAGMENTS} from './consts';
 import {convertMolNotationByEngine} from '../../engine/worker-jobs';
+import {ChemicalEngine, engineInEffect} from '../../engine/chem-engine';
 
 // ---- Salt / Water removal ----
 
@@ -24,11 +25,16 @@ export async function removeWaterAndSalts(mols: string[]): Promise<string[]> {
 
 // ---- Variable resolution ----
 
-/** Substitute ${variable} placeholders in a SMARTS string with provided values. */
+/** Substitute ${variable} placeholders in a SMARTS string with provided values: every occurrence in Crux mode (TPL-08:
+ * a variable used twice kept its second `${…}`, and the template read as no reaction); the first only in RDKit mode, as
+ * it always was. */
 export function resolveReactionVariables(smarts: string, variables: Record<string, any>): string {
+  const everyOccurrence = engineInEffect() === ChemicalEngine.Crux;
   let resolved = smarts;
-  for (const [key, value] of Object.entries(variables))
-    resolved = resolved.replace(`\${${key}}`, String(value));
+  for (const [key, value] of Object.entries(variables)) {
+    resolved = everyOccurrence ? resolved.replaceAll(`\${${key}}`, String(value)) :
+      resolved.replace(`\${${key}}`, String(value));
+  }
   return resolved;
 }
 
@@ -64,6 +70,17 @@ function firstProductSmiles(result: RDReactionResult): string | null {
 
 // ---- Core: run a single reaction on one molecule (either engine's module) ----
 
+/** The molecule `module` reads from `smiles`; throws, naming it, where it reads none, as Deprotect's reaction does
+ * (crux/jobs/reactions.ts): a null molecule handed on to the module failed there with the engine's own type error
+ * (Crux's glue: "expected instance of ..."). */
+function readMolecule(module: RDModule, smiles: string): RDMol {
+  const mol = module.get_mol(smiles);
+  if (mol && mol.is_valid())
+    return mol;
+  mol?.delete();
+  throw new Error(`no molecule read from ${smiles}`);
+}
+
 function runSingleReaction(
   rxn: RDReaction, module: RDModule, smiles: string, maxProducts: number = 2,
 ): string | null {
@@ -71,7 +88,7 @@ function runSingleReaction(
   let molList: MolList | null = null;
   let result: RDReactionResult | null = null;
   try {
-    mol = module.get_mol(smiles);
+    mol = readMolecule(module, smiles);
     molList = new module.MolList();
     molList.append(mol);
     result = rxn.run_reactants(molList, maxProducts);
@@ -93,8 +110,8 @@ function runTwoComponentSingle(
   let molList: MolList | null = null;
   let result: RDReactionResult | null = null;
   try {
-    mol1 = module.get_mol(smiles1);
-    mol2 = module.get_mol(smiles2);
+    mol1 = readMolecule(module, smiles1);
+    mol2 = readMolecule(module, smiles2);
     molList = new module.MolList();
     molList.append(mol1);
     molList.append(mol2);

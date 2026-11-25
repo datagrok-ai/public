@@ -18,28 +18,36 @@ DG.ObjectHandler.register(new IssueHandler());
 
 // Everything else works without a single line of custom code:
 const handler = new DG.DomainObjectHandler('grit.issue');
-const issue = (await grok.dapi.domains.table('grit.issue').query({limit: 1}))[0];
-if (issue == null)
-  throw new Error('grit.issue has no rows — create one first (/domains/grit/issue).');
-const row = await handler.getById(issue.id);                 // DG.DomainRow, one round trip
-// ...or, for rows a query already returned (a list rendering a thousand cards):
-const local = handler.rowFrom(issue);                        // same DomainRow, no round trip
+const issues = grok.dapi.domains.table('grit.issue');
+const projects = grok.dapi.domains.table('grit.project');
+// A scratch project and issue, so the sample runs on an empty tracker; both are deleted at the end
+const [project] = await projects.insert({key: `H${Date.now() % 1e9}`, name: 'Handler sample'});
+const [{id}] = await issues.insert({project_id: project.id, title: 'Handler sample issue'});
+try {
+  const issue = await issues.get(id);
+  const row = await handler.getById(issue.id);                 // DG.DomainRow, one round trip
+  // ...or, for rows a query already returned (a list rendering a thousand cards):
+  const local = handler.rowFrom(issue);                        // same DomainRow, no round trip
 
-const props = await handler.getProperties();                 // registry Property metadata
-const access = await handler.access();                       // server-truth {can, fields}
-const fresh = await grok.dapi.domains.table('grit.issue').get(issue.id, {withAccess: true}); // ~can_edit / ~can_delete / ~can_share
-const tabs = await handler.getDetailTabs(row);               // FK-inverted child tables
-const actions = await handler.getRibbonActions(row);         // only what this user may do
+  const props = await handler.getProperties();                 // registry Property metadata
+  const access = await handler.access();                       // server-truth {can, fields}
+  const fresh = await issues.get(id, {withAccess: true}); // ~can_edit / ~can_delete / ~can_share
+  const tabs = await handler.getDetailTabs(row);               // FK-inverted child tables
+  const actions = await handler.getRibbonActions(row);         // only what this user may do
 
-grok.shell.newView('grit.issue handler', [
-  ui.h2(handler.getCaption(local)),
-  handler.renderCard(row),
-  ui.tableFromMap({
-    'Columns': props.map((p) => p.name).join(', '),
-    'Editable': Object.keys(access.fields).filter((c) => access.fields[c] === 'editable').join(', ') || '(read-only)',
-    'Row access': DG.DOMAIN_ACCESS_COLUMNS.filter((k) => fresh[k]).join(', ') || '(none)',
-    'Detail tables': tabs.map((t) => t.table).join(', ') || '(none)',
-    'Actions': actions.map((a) => a.name).join(', '),
-  }),
-  await handler.renderEditor(row),                           // reflective form, writable columns only
-]);
+  grok.shell.newView('grit.issue handler', [
+    ui.h2(handler.getCaption(local)),
+    handler.renderCard(row),
+    ui.tableFromMap({
+      'Columns': props.map((p) => p.name).join(', '),
+      'Editable': Object.keys(access.fields).filter((c) => access.fields[c] === 'editable').join(', ') || '(read-only)',
+      'Row access': DG.DOMAIN_ACCESS_COLUMNS.filter((k) => fresh[k]).join(', ') || '(none)',
+      'Detail tables': tabs.map((t) => t.table).join(', ') || '(none)',
+      'Actions': actions.map((a) => a.name).join(', '),
+    }),
+    await handler.renderEditor(row),                           // reflective form, writable columns only
+  ]);
+} finally {
+  await issues.delete(id);
+  await projects.delete(project.id);
+}

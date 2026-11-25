@@ -99,6 +99,9 @@ export function helmRenderer(value: string): HTMLElement {
       editable: false,
     });
     helmInput.setStringValue(value);
+    // the platform puts a JS input's element into the input's own root one timer tick after the input is made
+    // (JsInputProxy, Timer.run): the drawing is taken out of it after that, or that move takes it back out of the card
+    await new Promise((resolve) => setTimeout(resolve));
     helmInput.getInput().addEventListener('click', () => {
       grok.shell.o = helmInput.getValue();
     });

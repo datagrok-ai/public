@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Tests: Cut about two minutes from the suite. `jsCvmCancel` now reports progress while it waits, so a cancel frees the single-task Node worker instead of leaving it asleep for the rest of the minute (the next test, `meta.server alias`, waited 55s for it), and `Cancellation` cancels on the first progress report instead of after a fixed 5s; the node worker benchmark runs before `Celery: node worker`, so its cold start is the container's first start; `Proxy WebSocket` runs before the test that stops its container; `Env: reuse existing environment` shares the pip-only environment
+* Tests: Gave `Files: OpenFile` `Open big csv` the 120s budget its sibling has for the same 574k-row file; it timed out at the 30s default on CI
 * Docker: Removed pip, setuptools and wheel from the cvmtests-docker-test1 and -test2 images and raised Werkzeug to 3.1.9, so they have no known CVEs
 * Tests: Raised the first `Celery: datagrok-celery-task` call to 15 min. On CI the cold start builds the worker image and overran the 300s budget, which timed out that case and took the other thirteen with it; the stand now allows 20 min for the container to reach STARTED
 * GROK-20642: Tests: `Docker`'s `Proxy WebSocket` now waits for the container to answer before opening the socket — `run(id, true)` returns when the platform marks it started, which is earlier than the app inside binding its port, so the proxy failed with `Connection refused, errno = 111` on a loaded stand

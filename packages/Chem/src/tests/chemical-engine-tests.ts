@@ -11,7 +11,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {after, waitUntil, before, category, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, waitUntil, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 import {ensureContainerRunning} from '@datagrok-libraries/test/src/test-container-utils';
 import {_package} from '../package-test';
 import {PackageFunctions, _package as chemPackage} from '../package';
@@ -19,9 +19,10 @@ import {RDKitCellRenderer} from '../rendering/rdkit-cell-renderer';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {ChemicalEngine, chemSetting, cruxReady, engineInEffect, isCruxRequested, onEngineSwitch, requestedEngine,
   setChemicalEngine} from '../engine/chem-engine';
-import {CRUX_WASM_FILE, cruxHeapBytes, cruxLoadFailed, cruxLoadRequests, cruxWasmUrl, holdCruxForTests, noteCruxError,
-  resetCruxLoaderForTests, setCruxFetchForTests, setCruxLoadFailureForTests, setCruxParseTrapForTests}
-  from '../engine/crux-module';
+import {CRUX_WASM_FILE, armCruxTrapForTests, cruxHeapBytes, cruxLoadFailed, cruxLoadRequests, cruxWasmUrl,
+  holdCruxForTests, noteCruxError, onCruxRecover, resetCruxLoaderForTests, setCruxFetchForTests,
+  loadCrux, setCruxLoadFailureForTests, cruxModuleSync} from '../engine/crux-module';
+import type {CruxRecovery} from '../crux/crux-recover';
 import {calculateDescriptors, forgetCruxTreeForTests, getDescriptorsTree, lastDescriptorTiming,
   setCruxDescriptorGapForTests, setDescriptorTimingForTests} from '../descriptors/descriptors-engine';
 import {cruxFallbackCount, cruxOrRdKitAsync} from '../engine/fallback';
@@ -34,10 +35,14 @@ import {FILTER_TYPES, chemGetDiversities, chemGetFingerprints, chemGetSimilariti
 import {alertsByEngine, fingerprintsByEngine, inchisByEngine, structuralAlertsByEngine} from '../engine/worker-jobs';
 import {RuleSet, runStructuralAlertsDetection} from '../panels/structural-alerts';
 import {PHARM_FAMILY_NAMES, PharmFamilySet, runPharmacophoreDetection} from '../panels/pharmacophore-features';
-import {CONTAINER_TIMEOUT, readDataframe} from './utils';
-import {expectNoFallback, inBothEngines, inEngine, withCruxUnreadable} from './engine-utils';
+import {CONTAINER_TIMEOUT, loadFileAsText, readDataframe} from './utils';
+import {compareValidation, CRUX_DEPARTURES} from './validation-parity';
+import {validationTextsByEngine} from '../engine/molecule-jobs';
+import {getMolSafe, validationText} from '../utils/mol-creation_rdkit';
+import {MOL1K_ROW_444, OWNER_PROPANE_QUERY, expectNoFallback, inBothEngines, inEngine, withCruxUnreadable}
+  from './engine-utils';
 import {isNoneValue} from '../crux/crux-api';
-import {ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG, SubstructureSearchType} from '../constants';
+import {ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG, FILTER_SCAFFOLD_TAG, SubstructureSearchType} from '../constants';
 import {calculatorMethodInfo} from '../widgets/biochem-properties-widget';
 import {convertNotationForColumn} from '../utils/convert-notation-utils';
 import {cruxInchi} from '../crux/crux-inchi';
@@ -53,15 +58,16 @@ import {TOXICITY_ALERTS_CRUX_FAILED, getToxicityAlertsColumns} from '../widgets/
 interface RendererInternals {
   _fetchMol(molString: string, scaffolds: {molecule: string, color?: string}[], molRegenerateCoords: boolean,
     scaffoldRegenerateCoords: boolean, details: object, alignByFirstSubstructure: boolean): {engine: ChemicalEngine,
-    molCtx: {mol: any}};
+    molCtx: {mol: any}, substruct: {atoms?: number[], bonds?: number[]}};
   _fetchRender(width: number, height: number, molString: string, scaffolds: {molecule: string, color?: string}[],
     molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean, alignByFirstSubstructure: boolean,
-    details?: object): ImageData;
+    details?: object, substructureObj?: object, renderOptions?: {[key: string]: any}): ImageData;
   cachedMoleculeCount: number;
   canvasReused: OffscreenCanvas;
   rendersCache: unknown;
   renderUncached(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, molString: string): void;
-  _molToSvg(molString: string, w: number, h: number): string | null;
+  _molToSvg(molString: string, w: number, h: number, scaffolds?: {molecule: string}[],
+    alignByFirstSubstructure?: boolean, engine?: ChemicalEngine, renderOpts?: {[key: string]: any}): string | null;
 }
 
 function newRenderer(): RendererInternals {
@@ -178,6 +184,9 @@ function descriptorDifferences(expected: DG.Column[], actual: DG.Column[]): stri
 }
 /** A ~600-atom peptide-like chain: a very large molecule for the grid. */
 const LARGE = 'N' + 'C(C)C(=O)N'.repeat(120) + 'CC(=O)O';
+/** More ink than a short wavy bond adds to a 200 x 100 drawing (mol1K row 381: 4 px) and less than an error
+ * cross (a few hundred px). */
+const WAVY_MARK_INK = 100;
 
 category('chemical engine', () => {
   before(async () => {
@@ -336,34 +345,114 @@ category('chemical engine', () => {
     expect(await cruxReady(), true, 'Crux back after the reset');
   }, {timeout: 60000 + CONTAINER_TIMEOUT});
 
-  test('a trap in a Crux call leaves RDKit for the session', async () => {
+  // A trap never switches Crux off, and a user is never asked to reload: the module recovers inside the call
+  // (crux/crux-recover.ts). The traps are crux-core's real test trap (the next engine call panics), not a stub.
+  test('a trap in a Crux call is recovered from: the call answers on a fresh instance, Crux stays on', async () => {
     await inEngine(ChemicalEngine.Crux, async () => {
+      noteCruxError(new Error('simulated: a molecule Crux refuses'));
+      expect(isCruxRequested(), true, 'an error other than a trap leaves Crux on');
+      const told: CruxRecovery[] = [];
+      const stop = onCruxRecover((r) => told.push(r));
       try {
-        noteCruxError(new Error('simulated: a molecule Crux refuses'));
-        expect(isCruxRequested(), true, 'an error other than a trap leaves Crux on');
-        noteCruxError(new WebAssembly.RuntimeError('simulated: unreachable'));
-        expect(isCruxRequested(), false, 'after a trap: RDKit');
-        expect(engineInEffect(), ChemicalEngine.RDKit);
-        expect(newRenderer()._fetchMol(ASPIRIN, [], false, false, {}, false).engine, ChemicalEngine.RDKit);
+        expect(armCruxTrapForTests(1), true, 'the main thread\'s module is loaded');
+        const info = newRenderer()._fetchMol(ASPIRIN, [], false, false, {}, false);
+        expect(info.engine, ChemicalEngine.Crux, 'Crux drew the molecule, on a fresh instance');
+        expect(isCruxRequested(), true, 'Crux stays on');
+        expect(engineInEffect(), ChemicalEngine.Crux);
+        await delay(0);
+        expect(told.length, 1, 'one recovery told');
+        expect(told[0].outcome, 'retried');
+        expect(/crux test trap/.test(told[0].note ?? ''), true, `the note names the panic: ${told[0].note}`);
+        expect(newRenderer()._fetchMol(ASPIRIN, [], false, false, {}, false).engine, ChemicalEngine.Crux,
+          'the next molecule: Crux');
       } finally {
-        resetCruxLoaderForTests(null); // the next session's Crux
+        stop?.();
       }
-      expect(await cruxReady(), true, 'Crux back after the reset');
     });
   });
 
-  test('a trap while Crux parses a molecule leaves RDKit for the session', async () => {
-    await inEngine(ChemicalEngine.Crux, async () => {
-      setCruxParseTrapForTests(true);
+  test('a Crux call that traps on a fresh instance too fails alone: RDKit draws that molecule, Crux stays on',
+    async () => await inEngine(ChemicalEngine.Crux, async () => {
+      const told: CruxRecovery[] = [];
+      const stop = onCruxRecover((r) => told.push(r));
       try {
+        // each of the renderer's three reads of it (getMolSafe: get_mol, get_mol unkekulized, get_qmol) traps on two
+        // instances, so Crux refuses all three: six armed instances
+        expect(armCruxTrapForTests(1, 6), true, 'the main thread\'s module is loaded');
         const info = newRenderer()._fetchMol(ASPIRIN, [], false, false, {}, false);
-        expect(isCruxRequested(), false, 'the trap in get_mol marked Crux failed');
-        expect(info.engine, ChemicalEngine.RDKit, 'RDKit drew the molecule');
+        expect(info.engine, ChemicalEngine.RDKit, 'RDKit drew the molecule Crux refused');
+        expect(isCruxRequested(), true, 'Crux stays on');
+        await delay(0);
+        expect(told.at(-1)?.outcome, 'refused');
+        expect(newRenderer()._fetchMol(ASPIRIN, [], false, false, {}, false).engine, ChemicalEngine.Crux,
+          'the next molecule: Crux');
       } finally {
-        setCruxParseTrapForTests(false);
-        resetCruxLoaderForTests(null); // the next session's Crux
+        stop?.();
       }
-      expect(await cruxReady(), true, 'Crux back after the reset');
+    }));
+
+  // The same in the workers (crux.worker.ts on crux/crux-recover.ts): a trap in a job is
+  // recovered inside it, the workers are kept, Crux stays on. crux-core's real test trap in every worker's module.
+  test('a trap in a Crux worker\'s job is recovered there: the job answers as without it, the workers are kept',
+    async () => {
+      await inEngine(ChemicalEngine.Crux, async () => {
+        const service = await getCruxService();
+        const calm = await service.scaffoldTree([ASPIRIN], 10, false);
+        const generation = service.generation;
+        await service.trapWorkersForTests(1);
+        try {
+          expect(await service.scaffoldTree([ASPIRIN], 10, false), calm, 'the tree, after a trap in its job');
+          expect(service.generation, generation, 'the workers were kept (no restart)');
+          expect(isCruxRequested(), true, 'Crux stays on');
+        } finally {
+          await service.trapWorkersForTests(0); // the workers the job did not go to: disarmed
+        }
+      });
+    });
+
+  test('a Crux worker\'s call that traps on a fresh instance too fails alone: the workers are kept', async () => {
+    await inEngine(ChemicalEngine.Crux, async () => {
+      const service = await getCruxService();
+      const generation = service.generation;
+      await service.trapWorkersForTests(1, 2);
+      let outcome = 'answered';
+      try {
+        await service.scaffoldTree([ASPIRIN], 10, false);
+      } catch (e: any) {
+        outcome = `refused: ${e?.message ?? e}`;
+      } finally {
+        await service.trapWorkersForTests(0);
+      }
+      expect(/reload|RuntimeError|unreachable/i.test(outcome), false, `a refusal, no trap's words: ${outcome}`);
+      expect(service.generation, generation, `the workers were kept (${outcome})`);
+      const tree = JSON.parse(await service.scaffoldTree([ASPIRIN], 10, false));
+      expect(Array.isArray(tree) && tree.length > 0, true, 'the next job answers');
+    });
+  });
+
+  test('a molecule that traps a Crux index build twice is searched by RDKit; the search is whole', async () => {
+    const source = (await readDataframe('smiles.csv')).col('canonical_smiles')!.toList();
+    // a column of its own, so that no index of it is held already
+    const fresh = () => {
+      const col = DG.Column.fromStrings('recover search', source);
+      col.semType = DG.SEMTYPE.MOLECULE;
+      return col;
+    };
+    setSubstructureSearchEngine(null);
+    const search = async (col: DG.Column) =>
+      ((await PackageFunctions.searchSubstructure(col, 'c1ccncc1', '')).get(0) as DG.BitSet).toString();
+    const rdkit = await inEngine(ChemicalEngine.RDKit, () => search(fresh()));
+    await inEngine(ChemicalEngine.Crux, async () => {
+      const service = await getCruxService();
+      const generation = service.generation;
+      await service.buildTrapForTests(3);
+      try {
+        expect(await search(fresh()), rdkit, 'the hits, row 3 of each segment searched by RDKit');
+      } finally {
+        await service.buildTrapForTests(-1);
+      }
+      expect(service.generation, generation, 'the workers were kept');
+      expect(await search(fresh()), rdkit, 'and with no trap');
     });
   });
 
@@ -446,6 +535,90 @@ category('chemical engine', () => {
     console.log(`chemical engine | inked pixels RDKit/Crux: ${results.join('; ')}`);
   });
 
+  test('the Rendering settings draw in both engines', async () => {
+    const draw = (molecule: string, options: {[key: string]: any}, scaffolds: {molecule: string}[] = []) =>
+      newRenderer()._fetchRender(300, 150, molecule, scaffolds, false, false, false, {}, undefined, options);
+    // a wavy bond and a crossed double bond, "AND enantiomer" over "and1": more ink with the setting on
+    const settings: [string, string][] = [['unspecifiedStereoIsUnknown', 'CC(O)CC=CC'],
+      ['simplifiedStereoGroupLabel', 'C[C@H](N)C(=O)O |&1:1|']];
+    for (const [option, molecule] of settings) {
+      const ink = await inBothEngines(async () => ({on: inked(draw(molecule, {[option]: true})),
+        off: inked(draw(molecule, {[option]: false}))}), {noFallback: ['rendering', 'drawing']});
+      for (const [engine, {on, off}] of Object.entries(ink))
+        expect(on > off, true, `${option} in ${engine}: ink ${on} on, ${off} off`);
+      expect(Math.abs(ink.crux.on - ink.rdkit.on) <= ink.rdkit.on / 3, true,
+        `${option}: ink ${ink.rdkit.on} RDKit, ${ink.crux.on} Crux`);
+    }
+    // a highlight without a color of its own (the substructure filter's) takes the Highlight color
+    const blue = (image: ImageData) => {
+      let n = 0;
+      for (let i = 0; i < image.data.length; i += 4)
+        n += image.data[i + 2] > 200 && image.data[i] < 100 && image.data[i + 1] < 100 && image.data[i + 3] > 200 ? 1 : 0;
+      return n;
+    };
+    const highlighted = await inBothEngines(async () => ({
+      inBlue: blue(draw(ASPIRIN, {highlightColour: [0, 0, 1, 1]}, [{molecule: 'c1ccccc1'}])),
+      inDefault: blue(draw(ASPIRIN, {}, [{molecule: 'c1ccccc1'}])),
+    }), {noFallback: ['rendering', 'drawing']});
+    for (const [engine, {inBlue, inDefault}] of Object.entries(highlighted))
+      expect(inBlue > 100 && inDefault === 0, true, `${engine}: ${inBlue} blue pixels, ${inDefault} in the default color`);
+  });
+
+  test('a molecule whose unspecified stereo RDKit cannot mark: RDKit draws it without the marks, Crux with them; ' +
+    'no error cross', async () => {
+    // mol1K.csv's row index 381 (the Chemical Space demo): the wavy bond its unspecified phosphorus gets lands on a
+    // P-O bond too short for one, and RDKit's MolDraw2D throws "too few segments": the canvas was crossed out and the
+    // SVG export threw, as for SequenceTranslator's oligonucleotide structures, so RDKit mode draws it without the
+    // marks. Crux's port draws the short wavy bond (crux-core's decision moldraw2d-wavy-short; the test below): a few
+    // pixels more ink with the marks (1363 against 1359 when measured), far from an error cross's few hundred
+    const molecule: string = (await readDataframe('mol1K.csv')).get('molecule', 381);
+    const draw = (unspecifiedStereoIsUnknown: boolean) => inked(newRenderer()._fetchRender(200, 100, molecule, [],
+      false, false, false, {}, undefined, {unspecifiedStereoIsUnknown}));
+    const ink = await inBothEngines(async () => ({on: draw(true), off: draw(false)}),
+      {noFallback: ['rendering', 'drawing']});
+    expect(ink.rdkit.on, ink.rdkit.off,
+      `rdkit: ${ink.rdkit.on} px with the stereo marked, ${ink.rdkit.off} px without: drawn without the marks`);
+    const {on, off} = ink.crux;
+    expect(on > off && on - off < WAVY_MARK_INK, true,
+      `crux: ${on} px with the stereo marked, ${off} px without: the wavy bond's few more, no error cross`);
+    const svg = await inBothEngines(async () => newRenderer()._molToSvg(molecule, 200, 100, [], false, undefined,
+      {unspecifiedStereoIsUnknown: true}) ?? '', {noFallback: ['drawing']});
+    for (const [engine, s] of Object.entries(svg))
+      expect(s.includes('</svg>'), true, `${engine}: an SVG`);
+  });
+
+  // The same molecule through the engine directly, with a grid's MOL block details in a short cell (150 x 60 and 120 x
+  // 60, device px 1: SequenceTranslator's rule grid): chem-wasm 3330cc1e6 threw "invariant violation: too few segments"
+  // on both paths (crux-core's moldraw2d fix, crates/moldraw2d/tests/data/mol1k_381.mol, came after it). Chem's own
+  // cell details never threw, and the renderer's fallback (drawn without the marks) stays.
+  test('mol1K row 381 draws with the wavy bond marked in a short cell, through the engine directly', async () => {
+    const molecule: string = (await readDataframe('mol1K.csv')).get('molecule', 381);
+    const crux = await loadCrux('tests');
+    const failures: string[] = [];
+    for (const [width, height] of [[150, 60], [120, 60], [200, 100]]) {
+      const options = JSON.stringify({width, height, useMolBlockWedging: true, wedgeBonds: false, addChiralHs: false,
+        unspecifiedStereoIsUnknown: true});
+      const mol = crux.get_mol(molecule, '{}')!;
+      try {
+        const canvas = ui.canvas(width, height);
+        try {
+          mol.draw_to_canvas_with_highlights(canvas, options);
+          expect(inked(canvas.getContext('2d')!.getImageData(0, 0, width, height)) > 0, true, `${width}x${height}`);
+        } catch (e) {
+          failures.push(`${width}x${height} canvas: ${e instanceof Error ? e.message : e}`);
+        }
+        try {
+          expect(mol.get_svg_with_highlights(options).includes('</svg>'), true, `${width}x${height}: an SVG`);
+        } catch (e) {
+          failures.push(`${width}x${height} SVG: ${e instanceof Error ? e.message : e}`);
+        }
+      } finally {
+        mol.delete();
+      }
+    }
+    expect(failures.length, 0, failures.join(' | '));
+  });
+
   test('canvasMol, drawMolecule and the SVG export draw with Crux', async () => {
     await inEngine(ChemicalEngine.Crux, () => expectNoFallback(['canvasMol', 'rendering', 'drawing'], async () => {
       const canvas = document.createElement('canvas');
@@ -494,15 +667,59 @@ category('chemical engine', () => {
       const before = rows.map(picture);
       col.setTag(ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG, benzene(0));
       const aligned = rows.map(picture);
-      expect(rows.filter((_, i) => sameImage(aligned[i], before[i])).join(','), '', 'rows a flat benzene leaves as they were');
-      // a structure whose benzene already lies as the scaffold's is not turned (RDKit 2026.03's alignment; HOST-063's
-      // first cell with a pointed benzene)
+      // a structure whose benzene already lies as the scaffold's is not turned: row 7's methoxy benzo ring (atoms 2-7)
+      // lies flat in the grid depiction (every vertex at 0 degrees mod 60), so among the scaffold's equally good matches
+      // Crux takes the face-up, least-turned one, no turn at all (Crux's rule for equally good matches; RDKit's tie had
+      // taken another equal match and moved its substituents)
+      expect(rows.filter((_, i) => sameImage(aligned[i], before[i])).join(','), '6',
+        'rows a flat benzene leaves as they were');
+      // the same with a pointed benzene (HOST-063's first cell): rows 1 and 2 draw every benzene ring pointed (each
+      // vertex at 30 degrees mod 60), so neither is turned (RDKit's tie had turned row 2)
       col.setTag(ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG, benzene(90));
       expect(sameImage(picture(0), before[0]), true, 'row 1 with a pointed benzene');
-      expect(sameImage(picture(1), before[1]), false, 'row 2 with a pointed benzene');
+      expect(sameImage(picture(1), before[1]), true, 'row 2 with a pointed benzene');
+      // rows 5 and 6 each draw a benzene ring pointed too (row 6's other ring at 18 degrees fits worse), so neither turns
+      expect([4, 5].filter((row) => !sameImage(picture(row), before[rows.indexOf(row)])).join(','), '',
+        'rows 5 and 6 with a pointed benzene');
       delete col.tags[ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG];
       const cleared = rows.map(picture);
       expect(rows.filter((_, i) => !sameImage(cleared[i], before[i])).join(','), '', 'rows not back without the scaffold');
+    }));
+  });
+
+  test('the filter\'s drawn query highlights and aligns the rows the filter passes, in Crux mode', async () => {
+    // the owner's report of 2026-11-20: the filter found 149 mol1K rows for this query by run20's drawn-query meanings
+    // and the renderer, reading the filter's molblock literally, highlighted none and aligned none; the owner's
+    // decision 1 (2026-11-20): in Crux mode the renderer highlights and aligns by the filter's query (getQueryMolSafe)
+    await inEngine(ChemicalEngine.Crux, () => expectNoFallback(['rendering', 'drawing'], async () => {
+      const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('smiles', [MOL1K_ROW_444])]);
+      const col = df.col('smiles')!;
+      col.semType = DG.SEMTYPE.MOLECULE;
+      const cell = DG.Viewer.grid(df).cell('smiles', 0);
+      const renderer = new RDKitCellRenderer(chemCommonRdKit.getRdKitModule());
+      const internals = renderer as unknown as RendererInternals;
+      /** The row as the grid draws it under the filter's tag: its engine and the atoms highlighted. */
+      const drawn = (align: boolean) => {
+        col.temp[FILTER_SCAFFOLD_TAG] = JSON.stringify([{molecule: OWNER_PROPANE_QUERY, isSuperstructure: false, align}]);
+        const info = renderer.getHighlightTagInfo(col.temp, cell);
+        expect(info.alignByFirstSubstructure, align, 'aligned by the filter\'s query');
+        const fetched = internals._fetchMol(MOL1K_ROW_444, info.scaffolds!, false, false, {},
+          info.alignByFirstSubstructure);
+        return {engine: fetched.engine, atoms: fetched.substruct.atoms?.length ?? 0};
+      };
+      try {
+        // aromatic C, CH2, aromatic C and a C beside it: every match highlighted (three, six atoms in all), by Crux;
+        // aligned, the match the row is laid out by (four atoms)
+        expect(JSON.stringify(drawn(false)), JSON.stringify({engine: ChemicalEngine.Crux, atoms: 6}), 'highlighted');
+        expect(JSON.stringify(drawn(true)), JSON.stringify({engine: ChemicalEngine.Crux, atoms: 4}),
+          'aligned and highlighted');
+        // the same molblock as a highlight scaffold of the column keeps its literal reading, the renderer's reading of
+        // the filter's query before: nothing matched
+        const literal = internals._fetchMol(MOL1K_ROW_444, [{molecule: OWNER_PROPANE_QUERY}], false, false, {}, false);
+        expect(literal.substruct.atoms?.length ?? 0, 0, 'a highlight scaffold, read literally');
+      } finally {
+        delete col.temp[FILTER_SCAFFOLD_TAG];
+      }
     }));
   });
 
@@ -1018,15 +1235,17 @@ category('chemical engine', () => {
     }));
   });
 
-  test('fingerprints and alerts: RDKit does a CXSMILES query and an alert SMARTS Crux cannot read', async () => {
-    const QUERY = '*c1ccccc1 |$Q_e;;;;;;$|'; // a query atom's label, which Crux's reader skips (its pattern bits differ)
+  test('fingerprints and alerts: Crux does a CXSMILES query, RDKit an alert SMARTS Crux cannot read', async () => {
+    const QUERY = '*c1ccccc1 |$Q_e;;;;;;$|'; // a query atom's label: Crux reads it as RDKit does (its query atom)
     const BENZENE = 'c1ccccc1';
     const molecules = [ASPIRIN, QUERY, 'CCN'];
     await inEngine(ChemicalEngine.Crux, async () => {
-      const crux = await fingerprintsByEngine(Fingerprint.Pattern, molecules, false);
+      const crux = await expectNoFallback(['fingerprints'], () =>
+        fingerprintsByEngine(Fingerprint.Pattern, molecules, false));
+      expect(crux.engine, ChemicalEngine.Crux, 'Crux computed them');
       const rdkit = await (await chemCommonRdKit.getRdKitService()).getFingerprints(Fingerprint.Pattern, molecules, false);
       expect(crux.fps.map((fp) => fp?.toString()).join('|'), rdkit.fps.map((fp) => fp?.toString()).join('|'),
-        'the CXSMILES query: RDKit\'s pattern fingerprint');
+        'the CXSMILES query: Crux\'s pattern fingerprint is RDKit\'s');
       // the SMARTS: one Crux reads nothing from
       const alerts = await withCruxUnreadable([BENZENE], () =>
         structuralAlertsByEngine({'PAINS': ['[Se]', BENZENE], 'LINT': ['[Se]']}, molecules));
@@ -1246,12 +1465,84 @@ category('chemical engine', () => {
   test('isSmiles and validateMolecule: Crux mode answers as RDKit mode', async () => {
     const strings = ['CCO', 'c1ccccc1O', 'C[C@H](N)C(=O)O', '[#6]~[#7]', 'c1cccc1', 'C1CC(', 'not a molecule', '',
       'C(C)(C)(C)(C)C', ...(await jobMolecules()).slice(-150, -100)];
-    const answers = async () => strings.map((s) => // (RDKit's log lines start with their time)
-      `${PackageFunctions.isSmiles(s)}|${PackageFunctions.validateMolecule(s)?.replace(/\[\d\d:\d\d:\d\d\] /g, '')}`);
-    const {rdkit, crux} = await inBothEngines(answers);
-    const differ = strings.flatMap((s, i) => rdkit[i] === crux[i] ? [] : [`${s.slice(0, 40)}: ${crux[i]} vs ${rdkit[i]}`]);
+    const answers = async () => strings.map((s) => [PackageFunctions.isSmiles(s), PackageFunctions.validateMolecule(s)]);
+    // validateMolecule's messages: Crux's (RDKit 2026.03's lines), the same as RDKit mode's but for the two versions'
+    // listed differences (validation-parity.ts)
+    const {rdkit, crux} = await inBothEngines(answers, {noFallback: ['validateMolecule']});
+    const differ = strings.flatMap((s, i) => rdkit[i][0] === crux[i][0] &&
+      compareValidation(rdkit[i][1] as string, crux[i][1] as string) !== null ? [] :
+      [`${s.slice(0, 40)}: ${JSON.stringify(crux[i])} vs ${JSON.stringify(rdkit[i])}`]);
     expect(differ.join('; '), '');
   });
+
+  test('validateMolecule and validateMolecules: Crux writes the messages alone, as RDKit but for the versions\' ' +
+    'differences', async () => {
+    // 302 strings of crux-core's validation corpus: every kind of message (parse errors with and without their
+    // position, valences, Kekulé, aromaticity, chirality, SMARTS, CXSMILES, MOL blocks valid and broken, assertions,
+    // blank, over-long); RDKit mode's messages are Chem's RDKit.js 2024.09's, Crux mode's RDKit 2026.03's: the file
+    // holds RDKit-js 2026.03.6's answer for each (rdkit2026) and which of getMolSafe's reads gave it a molecule
+    // (read2026: m, k without Kekulé, q the query, - none)
+    const corpus = JSON.parse(await loadFileAsText('tests/validation-corpus.json'));
+    const strings = corpus.strings as string[];
+    const rdkit2026 = corpus.rdkit2026 as string[];
+    const read2026 = corpus.read2026 as string[];
+    const perRow = async () => strings.map((s) => PackageFunctions.validateMolecule(s));
+    const {rdkit, crux} = await inBothEngines(perRow, {noFallback: ['validateMolecule']});
+    // Crux mode writes RDKit 2026.03.6's text exactly (but for the "[HH:MM:SS] " prefixes, the time) and reads as it,
+    // on every string (a CXSMILES with query features too: Crux reads every field of the extension), but for Crux's
+    // departures still open, listed in validation-parity.ts by what departs (and those must still depart: the list is
+    // what remains; none since crux-core e881b8e98)
+    const unprefixed = (m: string | null) => (m ?? '').replace(/^\[\d\d:\d\d:\d\d\] /gm, '');
+    const cruxReads = await inEngine(ChemicalEngine.Crux, async () => {
+      await cruxReady();
+      const cruxModule = cruxModuleSync()!;
+      return strings.map((s) => {
+        const {mol, kekulize, isQMol} = getMolSafe(s, {}, cruxModule);
+        mol?.delete();
+        return !mol ? '-' : isQMol ? 'q' : kekulize ? 'm' : 'k';
+      });
+    });
+    const not2026: string[] = [];
+    const stale: string[] = [];
+    strings.forEach((s, i) => {
+      const departs = CRUX_DEPARTURES.get(s)?.departs;
+      const sameMessage = unprefixed(crux[i]) === rdkit2026[i];
+      const sameRead = cruxReads[i] === read2026[i];
+      if (!sameMessage && departs !== 'message')
+        not2026.push(`${JSON.stringify(s.slice(0, 40))}: ${JSON.stringify(unprefixed(crux[i]).slice(0, 300))} vs RDKit 2026.03's ${JSON.stringify(rdkit2026[i].slice(0, 300))}`);
+      if (!sameRead && departs === undefined)
+        not2026.push(`${JSON.stringify(s.slice(0, 40))}: read ${cruxReads[i]} vs RDKit 2026.03's ${read2026[i]}`);
+      if ((departs === 'message' && sameMessage) || (departs === 'read' && sameRead))
+        stale.push(s.slice(0, 40));
+    });
+    expect(not2026.slice(0, 3).join('\n'), '', `Crux mode's messages and reads are RDKit 2026.03's (${not2026.length} differ)`);
+    expect(stale.join('; '), '', 'a listed departure of Crux that no longer departs: take it out of CRUX_DEPARTURES');
+    expect([...CRUX_DEPARTURES.keys()].every((s) => strings.includes(s)), true, 'every listed departure is in the file');
+    expect(crux.every((m) => !m || m === 'unknown error' || /^\[\d\d:\d\d:\d\d\] /.test(m)), true,
+      'each message starts with its time');
+    // RDKit mode against Crux mode: the same but for the two versions' listed differences
+    const kinds = new Map<string, number>();
+    const differ: string[] = [];
+    strings.forEach((s, i) => {
+      const kind = compareValidation(rdkit[i], crux[i], s);
+      if (kind === null)
+        differ.push(`${JSON.stringify(s.slice(0, 40))}: ${JSON.stringify(crux[i]?.slice(0, 300))} vs RDKit's ${JSON.stringify(rdkit[i]?.slice(0, 300))}`);
+      else
+        kinds.set(kind, (kinds.get(kind) ?? 0) + 1);
+    });
+    console.log(`validateMolecule parity: ${JSON.stringify(Object.fromEntries(kinds))}`);
+    expect(differ.slice(0, 3).join('\n'), '', `the same messages but for the listed differences (${differ.length} differ)`);
+    expect((kinds.get('same') ?? 0) > 50 && (kinds.get('normalised') ?? 0) > 50, true, 'both kinds are there');
+    expect(crux.filter((m) => m && m !== '').length > 150, true, 'most strings have a message');
+    // the column on the Crux workers alone (a CXSMILES with query features too), each row's text the main thread's
+    const plain = strings;
+    const {rdkit: rdkitColumn, crux: cruxColumn} = await inBothEngines(() => validationTextsByEngine(plain),
+      {noFallback: ['validateMolecules'], noRdkitPool: true});
+    const cruxTexts = plain.map((s) => validationText(crux[strings.indexOf(s)]));
+    const rdkitTexts = plain.map((s) => validationText(rdkit[strings.indexOf(s)]));
+    expect(cruxColumn.filter((t, i) => t !== cruxTexts[i]).length, 0, 'Crux mode: the column is validateMolecule\'s');
+    expect(rdkitColumn.filter((t, i) => t !== rdkitTexts[i]).length, 0, 'RDKit mode: the column is validateMolecule\'s');
+  }, {timeout: 300000});
 
   test('structural alerts and pharmacophores panels: Crux matches as RDKit', async () => {
     const all = (await jobMolecules()).filter((m) => m && m !== 'C1CC(');
@@ -1303,7 +1594,8 @@ category('chemical engine', () => {
       DG.chem.Notation.V3KMolBlock, DG.chem.Notation.Smarts, 'cxsmarts' as DG.chem.Notation];
     const all = () => Object.fromEntries(Object.entries(molecules).map(([what, m]) => [what, [
       ...targets.map((t) => PackageFunctions.convertMolNotation(m, DG.chem.Notation.Unknown, t)),
-      `${PackageFunctions.isSmiles(m)}|${PackageFunctions.validateMolecule(m)?.replace(/\[\d\d:\d\d:\d\d\] /g, '')}`]]));
+      `${PackageFunctions.isSmiles(m)}`, // (RDKit's log lines start with their time)
+      PackageFunctions.validateMolecule(m)?.replace(/^\[\d\d:\d\d:\d\d\] /gm, '') ?? '']]));
     /** Whether RDKit reads `smarts` as a query its molecule `m` matches (a SMARTS written by RDKit 2026.03 can differ from
      * 2024.09's, [CH3] as [#6] |^1:0| where 2024.09 wrote [#6H3], the same query on that molecule). */
     const matchesItself = (smarts: string, m: string) => {
@@ -1329,17 +1621,23 @@ category('chemical engine', () => {
     for (const what of Object.keys(molecules)) {
       crux[what].forEach((c: string, k: number) => {
         const r = rdkit[what][k];
-        const t = targets[k] ?? 'isSmiles|validateMolecule';
+        const t: string = targets[k] ?? ['isSmiles', 'validateMolecule'][k - targets.length];
         const query = t === DG.chem.Notation.Smarts || t === 'cxsmarts';
         const plain = (x: string) => x.replace(/ \|.*\|$/, ''); // a CXSMILES' molecule (its extension: below)
+        // RDKit 2026.03's SMARTS writer leaves out H counts 2024.09's wrote (`[#7H3]` as `[#7]` beside a dative bond):
+        // a CXSMARTS of a dative bond matches no molecule in either version (MolToCXSmarts writes it `-`)
+        const noHCounts = (x: string) => x.replace(/(\[[^\]]*?)H\d*(?![a-z])(?=[^\]]*\])/g, '$1');
+        // validateMolecule: Crux's messages (RDKit 2026.03's lines) but for the versions' differences (validation-parity.ts)
         const same = c === r || (k < targets.length && !query && rdkitCanonical(plain(c)) !== null &&
-          rdkitCanonical(plain(c)) === rdkitCanonical(plain(r))) || (query && matchesItself(c, molecules[what]));
+          rdkitCanonical(plain(c)) === rdkitCanonical(plain(r))) || (query && matchesItself(c, molecules[what])) ||
+          (query && noHCounts(c) === noHCounts(r)) ||
+          (t === 'validateMolecule' && compareValidation(r, c) !== null);
         if (!same)
           differences.push(`${what} -> ${t}: ${c.slice(0, 90)} vs RDKit's ${r.slice(0, 90)}`);
       });
     }
     expect(differences.join('\n'), '', 'the same molecules and answers');
-    // what RDKit reads and Crux skips goes to RDKit: the same strings
+    // CXSMILES query features, which Crux reads as RDKit (its writers RDKit 2026.03's): RDKit 2024.09's strings too
     for (const what of ['query label', 'ring bond count'])
       expect(JSON.stringify(crux[what]), JSON.stringify(rdkit[what]), what);
     expect(crux['AND group'][1].includes('&1:'), true, 'the AND group kept in CXSMILES');
@@ -1365,32 +1663,20 @@ category('chemical engine', () => {
     expect(other, 0, 'every other row a MOL block');
   }, {timeout: 300000});
 
-  test('break it: a trap in the panels and conversions leaves RDKit for the session', async () => {
+  test('break it: a trap in the panels and conversions is recovered from: each answers as without it', async () => {
     const molecule = 'CC(=O)Oc1ccccc1C(=O)O';
-    const rdkit = await inEngine(ChemicalEngine.RDKit, async () => [JSON.stringify(await getStructuralAlerts(molecule)),
-      PackageFunctions.convertMolNotation(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.MolBlock)]);
     await inEngine(ChemicalEngine.Crux, async () => {
-      setCruxParseTrapForTests(true);
-      try {
-        const alerts = JSON.stringify(await getStructuralAlerts(molecule));
-        expect(isCruxRequested(), false, 'the trap marked Crux failed');
-        expect(alerts, rdkit[0], 'RDKit\'s alerts');
-        expect(PackageFunctions.convertMolNotation(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.MolBlock), rdkit[1],
-          'RDKit\'s block');
-        expect(PackageFunctions.isSmiles(molecule), true);
-        expect(PackageFunctions.validateMolecule(molecule), '');
-        let error = '';
-        try {
-          await getToxicityAlertsColumns(DG.Column.fromStrings('m', [molecule]), ['Brenk']);
-        } catch (e: any) {
-          error = e.message;
-        }
-        expect(error, TOXICITY_ALERTS_CRUX_FAILED, 'toxicity alerts name the failure');
-      } finally {
-        setCruxParseTrapForTests(false);
-        resetCruxLoaderForTests(null); // the next session's Crux
-      }
-      expect(await cruxReady(), true, 'Crux back after the reset');
+      const calm = [JSON.stringify(await getStructuralAlerts(molecule)),
+        PackageFunctions.convertMolNotation(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.MolBlock)];
+      expect(armCruxTrapForTests(1), true, 'the main thread\'s module is loaded');
+      expect(JSON.stringify(await getStructuralAlerts(molecule)), calm[0], 'the alerts, after a trap in them');
+      expect(armCruxTrapForTests(1), true);
+      expect(PackageFunctions.convertMolNotation(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.MolBlock), calm[1],
+        'the block, after a trap in the conversion');
+      expect(armCruxTrapForTests(1), true);
+      expect(PackageFunctions.isSmiles(molecule), true);
+      expect(PackageFunctions.validateMolecule(molecule), '');
+      expect(isCruxRequested(), true, 'Crux stays on');
     });
   });
 

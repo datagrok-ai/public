@@ -817,8 +817,9 @@ export interface ServerMetrics {
     bySource: {[source: string]: number},
     top: ServerMetricsError[],
   },
-  /** `func_calls` by status: `queued` are waiting, `running` are executing. */
-  queue: {queued: number, running: number},
+  /** The messages of every RabbitMQ queue: `ready` are waiting for a worker, `unacknowledged` are taken and not
+   *  finished yet. Null when the server runs without a queue or the broker does not answer. */
+  queue: {messages: number, ready: number, unacknowledged: number} | null,
   /** Platform database statistics. */
   database: {
     /** `pg_database_size` of the platform database. */
@@ -2052,7 +2053,7 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
    * root first — what a breadcrumb renders in front of the row. The row ITSELF is not in the
    * list, so a root resolves to `[]`. Every level passes the View predicate, so a chain through
    * an ancestor the caller cannot see is TRUNCATED (the visible tail, no hole and no leak), and
-   * a non-hierarchy table rejects with a {@link DomainFilterError}. Depth is capped at 64. */
+   * a non-hierarchy table rejects with a {@link DomainUnsupportedError}. Depth is capped at 64. */
   pathTo(id: string): Promise<{id: string; name: string}[]> {
     return domainCall(api.grok_Dapi_Domains_PathTo(this.dart, this.schema, this.table, id));
   }

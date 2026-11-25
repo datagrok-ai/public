@@ -37,11 +37,12 @@ What a guide shows, and what the runtime guarantees (`grok-bdd guide` sets it up
   the way, then the leaf; the same for a context menu. A walk that lights only the bar means a
   runtime path did not report its stops: it calls `guide.hop` for each, as `pickTopMenu` and
   `pickMenuPath` do — fix the runtime, not the feature.
-- **A choice is shown being made**: a native select opens its list, the option is typed so the
-  list highlights it, Enter takes it; a column selector opens its picker, the name is typed into
-  its search short of its last letter (a complete unique name is taken on the spot) and the row
-  it leaves is clicked. Tests take the same steps through `selectOption` and Enter; only a guide
-  walks the list (`selectNative`, `typeInColumnGrid` in `src/runtime/gestures.ts`).
+- **A choice is shown being made**: a native select is pressed and its list opens with the current
+  option lit (the page draws the list: headless Chromium paints no open popup into its pictures), the
+  option lights as the pointer reaches it and is pressed; a column selector opens its picker, the name
+  is typed into its search short of its last letter (a complete unique name is taken on the spot) and
+  the row it leaves is clicked. Tests take `selectOption`, and type the name and press Enter; only a
+  guide walks the list (`selectNative`, `typeInColumnGrid` in `src/runtime/gestures.ts`).
 - **A control that shows only under the pointer is hovered in a step of its own.** A filter panel's
   +, a filter card's search icon and a viewer's title-bar icons appear only while the pointer is over
   their panel (a guide films without the test styles that keep them shown). A step's first picture is
@@ -189,13 +190,18 @@ scenario per clip, filmed with the same `grok-bdd guide <feature>` (the tag film
   (1.5×) for a close-up (a monomer highlight, a small dialog). Keep it 16:9.
 - **A title card** over the first page, blurred: the feature's name small above, the scenario's name, and
   the scenario's own description (the text under `Scenario:`; else the feature description's first
-  paragraph), all wrapped, never cut, for as long as they take to read (2.4–5.5 s). Write the description
+  paragraph), all wrapped, never cut, about three seconds (2.4–3.6 s by its words). Write the description
   as one or two sentences, 25 words at most.
-- **The shell with its sidebar only**: no Browse, Toolbox or Context Panel unless a step opens one, and no
-  unread-notification count.
-- **No caption strip, dimming or zoom**; every press still marked. A slightly quicker pace than a guide;
-  after each step the video rests as long as its change takes to take in (a ticked checkbox hardly at all,
-  a new view the longest, a tooltip long enough to read).
+- **The shell with its sidebar only**: no Browse, Toolbox or Context Panel unless a step opens one, no
+  unread-notification count, no Home widgets (Home is its search bar alone), no recently used viewers in Add
+  Viewer, no grid column tooltips, and no info balloons on film (they stay on the page for the checks; warnings
+  and errors are filmed).
+- **No caption strip, dimming or zoom**; every press still marked, and a key the step presses (Escape) or
+  holds through a click (Shift) shown as a key cap. A slightly quicker pace than a guide, but a menu's items
+  are read as the pointer walks them, each group opening as the pointer reaches it and the leaf lit before
+  the press; after each step the video rests as long as its change takes to take in (a ticked checkbox
+  hardly at all, a new view the longest, a tooltip long enough to read, a dialog long enough to read its
+  inputs), and the last page holds two seconds.
 - **Off camera**: every `Given` (and the `And`s after it) — wherever it stands in the scenario — and every
   check (`Then`) the feature did not caption. Write the set-up a person never watches as `Given` steps in
   the middle of the scenario where it is needed: `Given the "HELM" column of the grid is 600 px wide`,
@@ -203,12 +209,16 @@ scenario per clip, filmed with the same `grok-bdd guide <feature>` (the tag film
   pane is hidden`, `And the context panel is closed`, `And the notification balloons are closed`. A dialog
   the clip has already walked through once runs again as `Given` steps too. What an action leads to is shown as the page the
   steps after it settled on: an analysis that computes for seconds is cut to finished, its checks and the
-  column sizing after it included. So set-up that changes the page (another table, a dialog run again) follows
-  a note: a hover before it keeps its tooltip, and the note shows the page the set-up leads to.
+  column sizing after it included — the page as the action left it (a file opened raw, a viewer docked before the
+  set-up moved it) is never shown. So set-up that changes the page (another table, a dialog run again) follows
+  a note: a hover before it keeps its tooltip, the tooltip goes down before the set-up, and the note shows the
+  page the set-up leads to.
 - **Text only where it explains**: `When the video says "Mutation cliffs: one substitution, a large jump in
-  activity"` puts a line over the page (at the bottom, or the top while the steps after it point down
-  there) for as long as it takes to read, over the steps that follow; a `# caption:` on a step does the
-  same from that step. A clip with no note at all is fine; one note per idea, under ten words where possible.
+  activity"` puts a line over the page for as long as it takes to read, over the steps that follow — at the
+  bottom or the top, wherever it covers least of what the step before it and the steps it is read over act on,
+  point at and change; `When the video says "…" at the top` (or `at the bottom`) pins it where the clip needs it.
+  A note ends when a step brings another view. A `# caption:` on a step does the same from that step. A clip with
+  no note at all is fine; one note per idea, under ten words where possible.
 - **Review**: `review-sheet.png` (the last frame of every step, its start and length) and `timeline.json`
   next to `guide.mp4`. Read both, then single frames (`ffmpeg -ss <t> -i guide.mp4 -frames:v 1 x.png`) at
   the moments that matter: a tooltip that must show, a result after a long computation, the end.
@@ -219,6 +229,12 @@ scenario per clip, filmed with the same `grok-bdd guide <feature>` (the tag film
   slug>/` folder `grok-bdd guide` printed; each clip is also copied beside the reel as `NN - <scenario>.mp4`,
   and `<out>.md` lists them with where each starts. The set is listed in that order in
   `features/demos/INDEX.md` of the package that owns it (Bio's: the bioinformatics showcase, from four packages).
+
+- **A how-to clip** (`@guide @tutorial`, in `packages/Tutorials/bdd/features/howto/<NN-section>/`): a demo clip
+  that teaches, for the how-to playlists. The same shell, card and pace, plus an orange outline on what each step
+  presses over a lightly dimmed page, a moment's rest before the press, and notes that rise into place and wait to
+  be read. One idea per clip, as long as the idea needs; a note says what a thing is for, not "click X". The clip is
+  copied to `packages/Tutorials/videos/<NN-section>/<NN - Title>.mp4`, with its YouTube description beside it.
 
 What makes a good clip: one idea, 20–90 s; the data opened off camera unless opening it is the point (a
 file format: open the files from Browse); the window arranged off camera so the sequences and results are

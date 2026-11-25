@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
-import {awaitCheck, category, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, awaitCheck, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {historyUtils} from '@datagrok-libraries/compute-utils/history-utils/src/history-utils';
 import {
   getRunAuthorId, getRunCreated, getRunName, CREATED_BY_OPTION, CREATED_AT_OPTION, NESTED_ENTITY_OPTION,
@@ -25,7 +25,7 @@ import {
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/headless';
 
 export const DAY_CALCULATION = 'Bioreactorworkflowdemo:DayCalculation';
-const BIOREACTOR_WORKFLOW = 'Bioreactorworkflowdemo:BioreactorWorkflow';
+export const BIOREACTOR_WORKFLOW = 'Bioreactorworkflowdemo:BioreactorWorkflow';
 
 let counter = 0;
 export const uniqueName = (prefix: string) => `${prefix} ${Date.now()}-${counter++}`;
@@ -125,7 +125,23 @@ export async function withRunStorage(fn: (fixture: RunStorageFixture) => Promise
 
 const dayFunc = () => DG.Func.byName(DAY_CALCULATION);
 
+let shared: Promise<DG.Project> | undefined;
+/** One space for the category: creating and deleting a space takes about a second, so tests share it and look
+ * only at their own runs in it, by their unique names. */
+const sharedSpace = () => shared ??= grok.dapi.spaces.createRootSpace(uniqueName('Run storage shared'));
+/** The runs named after a unique name, or that name and a suffix. */
+const named = (runs: DG.FuncCall[], name: string) => runs.filter((run) => {
+  const runName = getRunName(run).toLowerCase();
+  return runName === name.toLowerCase() || runName.startsWith(`${name.toLowerCase()} `);
+});
+
 category('Run storage', () => {
+  after(async () => {
+    if (shared)
+      await grok.dapi.spaces.delete(await shared);
+    shared = undefined;
+  });
+
   test('Saving a run as listed keeps its inputs and outputs', () => withRunStorage(async (f) => {
     const name = uniqueName('Listed');
     const deleted = await f.save(await f.dayRun({called: true}), {metadata: {name: `${name} a`}});
@@ -179,7 +195,7 @@ category('Run storage', () => {
   }));
 
   test('Saving to a space links the run, and it shows in My runs too', () => withRunStorage(async (f) => {
-    const space = await f.space();
+    const space = await sharedSpace();
     const saved = await f.save(await f.dayRun({called: true}),
       {metadata: {name: uniqueName('Space run')}, target: {spaceId: space.id}});
     expect(ids(await spaceRuns(space, dayFunc())).includes(saved.id), true);
@@ -187,7 +203,7 @@ category('Run storage', () => {
   }));
 
   test('Replacing in a space swaps the link and keeps the old run', () => withRunStorage(async (f) => {
-    const space = await f.space();
+    const space = await sharedSpace();
     const name = uniqueName('Baseline');
     const old = await f.saveDayRun(name, space.id);
     const conflict = await historyUtils.findNameConflict(` ${name.toUpperCase()} `, space.id);
@@ -227,7 +243,7 @@ category('Run storage', () => {
   }));
 
   test('A soft delete keeps the space links', () => withRunStorage(async (f) => {
-    const space = await f.space();
+    const space = await sharedSpace();
     const saved = await f.saveDayRun(uniqueName('Soft delete'));
     await historyUtils.linkRun(saved.id, space.id);
     await historyUtils.deleteRun(await historyUtils.loadRun(saved.id));
@@ -236,7 +252,7 @@ category('Run storage', () => {
   }));
 
   test('Saving a run deleted from My runs creates a live run', () => withRunStorage(async (f) => {
-    const space = await f.space();
+    const space = await sharedSpace();
     const deleted = await f.saveDayRun(uniqueName('Deleted'), space.id);
     await historyUtils.deleteRun(await historyUtils.loadRun(deleted.id));
     const fromSpace = (await spaceRuns(space, dayFunc())).find((run) => run.id === deleted.id);
@@ -246,7 +262,7 @@ category('Run storage', () => {
   }));
 
   test('Removing a link keeps the run', () => withRunStorage(async (f) => {
-    const space = await f.space();
+    const space = await sharedSpace();
     const saved = await f.saveDayRun(uniqueName('Unlink'), space.id);
     await historyUtils.unlinkRun(saved.id, space.id);
     expect(ids(await spaceRuns(space, dayFunc())).includes(saved.id), false);
@@ -257,23 +273,24 @@ category('Run storage', () => {
   }));
 
   test('Add to space links the same run and keeps it in My runs', () => withRunStorage(async (f) => {
-    const space = await f.space();
-    const saved = await f.saveDayRun(uniqueName('Add to space'));
+    const space = await sharedSpace();
+    const name = uniqueName('Add to space');
+    const saved = await f.saveDayRun(name);
     await historyUtils.linkRun(saved.id, space.id);
-    expect(JSON.stringify(ids(await spaceRuns(space, dayFunc()))),
+    expect(JSON.stringify(ids(named(await spaceRuns(space, dayFunc()), name))),
       JSON.stringify([saved.id]));
     expect(ids(await historyUtils.listMyRuns(dayFunc())).includes(saved.id), true);
   }));
 
   test('Add to space can rename the run, keeping its author and time', () => withRunStorage(async (f) => {
-    const space = await f.space();
+    const space = await sharedSpace();
     const saved = await f.saveDayRun(uniqueName('Before'));
     const run = await historyUtils.shallowLoadRun(saved.id);
     const created = run.options[CREATED_AT_OPTION];
     const name = uniqueName('After');
     await addToSpace(run, space, name);
 
-    const linked = await spaceRuns(space, dayFunc());
+    const linked = named(await spaceRuns(space, dayFunc()), name);
     expect(JSON.stringify(ids(linked)), JSON.stringify([saved.id]));
     const loaded = await historyUtils.loadRun(saved.id);
     expect(getRunName(loaded), name);
@@ -284,36 +301,37 @@ category('Run storage', () => {
   }));
 
   test('The name check finds runs and other items in a space', () => withRunStorage(async (f) => {
-    const space = await f.space();
+    const space = await sharedSpace();
     const name = uniqueName('Feed schedule');
     const first = await f.saveDayRun(name, space.id);
     const second = await f.saveDayRun(name.toUpperCase(), space.id);
-    await grok.dapi.spaces.id(space.id).addSubspace('Sensor exports');
+    const folderName = uniqueName('Sensor exports');
+    await grok.dapi.spaces.id(space.id).addSubspace(folderName);
 
     const conflict = await historyUtils.findNameConflict(`  ${name.toLowerCase()} `, space.id);
     expect(JSON.stringify(ids(conflict.runs).sort()), JSON.stringify([first.id, second.id].sort()));
     expect(conflict.other == null, true);
-    const folder = await historyUtils.findNameConflict('SENSOR EXPORTS', space.id);
+    const folder = await historyUtils.findNameConflict(folderName.toUpperCase(), space.id);
     expect(folder.runs.length, 0);
     expect(folder.other?.entityType, 'Project');
 
     const replacement = await f.saveDayRun(name, space.id, conflict.runs);
-    expect(JSON.stringify(ids(await spaceRuns(space, dayFunc()))),
+    expect(JSON.stringify(ids(named(await spaceRuns(space, dayFunc()), name))),
       JSON.stringify([replacement.id]));
   }));
 
-  test('The name check skips the space\'s own storage connection', () => withRunStorage(async (f) => {
-    const space = await f.space();
+  test('The name check skips the space\'s own storage connection', async () => {
+    const space = await sharedSpace();
     const connection = (await historyUtils.listSpace(space.id)).items
       .find((item) => item.entityType === 'DataConnection');
     expect(connection != null, true, 'The space has no storage connection');
     const conflict = await historyUtils.findNameConflict(connection!.friendlyName || connection!.name, space.id);
     expect(conflict.other == null, true);
-  }));
+  });
 
   test('Adding several runs to a space adds, skips, replaces and blocks each by its name', () =>
     withRunStorage(async (f) => {
-      const space = await f.space();
+      const space = await sharedSpace();
       const call = await f.dayRun();
       const save = (name: string, spaceId?: string) => f.save(call, {metadata: {name}, target: {spaceId}});
       const name = uniqueName('Several');
@@ -344,13 +362,13 @@ category('Run storage', () => {
       const {added, failed} = await addRunsToSpace(space, plan);
       expect(failed.length, 0);
       expect(JSON.stringify(ids(added).sort()), JSON.stringify([fresh.id, takenAgain.id].sort()));
-      const linked = ids((await historyUtils.listSpace(space.id)).runs);
+      const linked = ids(named((await historyUtils.listSpace(space.id)).runs, name));
       expect(JSON.stringify(linked.sort()), JSON.stringify([already.id, fresh.id, takenAgain.id].sort()));
       expect((await historyUtils.shallowLoadRun(taken.id)) != null, true);
     }));
 
   test('The name check covers only the chosen space', () => withRunStorage(async (f) => {
-    const [spaceA, spaceB] = [await f.space(), await f.space()];
+    const [spaceA, spaceB] = [await sharedSpace(), await f.space()];
     const name = uniqueName('One space');
     await f.saveDayRun(name);
     const inA = await f.saveDayRun(name, spaceA.id);
@@ -368,30 +386,33 @@ category('Run storage', () => {
   });
 
   test('Listings of several models keep runs of those models only', () => withRunStorage(async (f) => {
-    const space = await f.space();
-    await grok.dapi.spaces.id(space.id).addSubspace('Not a run');
+    const space = await sharedSpace();
+    const name = uniqueName('Several models');
+    await grok.dapi.spaces.id(space.id).addSubspace(`${name} not a run`);
     const workflowFunc = DG.Func.byName(BIOREACTOR_WORKFLOW);
-    const day = await f.saveDayRun(uniqueName('Several models day'), space.id);
+    const day = await f.saveDayRun(`${name} day`, space.id);
     const workflow = await f.save(workflowFunc.prepare({}),
-      {metadata: {name: uniqueName('Several models workflow')}, target: {spaceId: space.id}});
+      {metadata: {name: `${name} workflow`}, target: {spaceId: space.id}});
     const both = [workflowFunc, dayFunc()];
 
-    expect(JSON.stringify(ids(await spaceRuns(space, both)).sort()), JSON.stringify([day.id, workflow.id].sort()));
-    expect(JSON.stringify(ids(await spaceRuns(space, [workflowFunc]))), JSON.stringify([workflow.id]));
+    expect(JSON.stringify(ids(named(await spaceRuns(space, both), name)).sort()),
+      JSON.stringify([day.id, workflow.id].sort()));
+    expect(JSON.stringify(ids(named(await spaceRuns(space, [workflowFunc]), name))), JSON.stringify([workflow.id]));
     const mine = ids(await listMyModelRuns(both));
     expect(mine.includes(day.id) && mine.includes(workflow.id), true);
     expect(ids(await listMyModelRuns([workflowFunc])).includes(day.id), false);
   }));
 
   test('Listings keep runs of the model only', () => withRunStorage(async (f) => {
-    const space = await f.space();
-    const day = await f.saveDayRun(uniqueName('Day'), space.id);
+    const space = await sharedSpace();
+    const name = uniqueName('One model');
+    const day = await f.saveDayRun(`${name} day`, space.id);
     const workflowCall = DG.Func.byName(BIOREACTOR_WORKFLOW).prepare({});
     const workflow = await f.save(workflowCall,
-      {metadata: {name: uniqueName('Workflow')}, target: {spaceId: space.id}});
+      {metadata: {name: `${name} workflow`}, target: {spaceId: space.id}});
 
-    expect(JSON.stringify(ids(await spaceRuns(space, dayFunc()))), JSON.stringify([day.id]));
-    expect(JSON.stringify(ids(await spaceRuns(space, DG.Func.byName(BIOREACTOR_WORKFLOW)))),
+    expect(JSON.stringify(ids(named(await spaceRuns(space, dayFunc()), name))), JSON.stringify([day.id]));
+    expect(JSON.stringify(ids(named(await spaceRuns(space, DG.Func.byName(BIOREACTOR_WORKFLOW)), name))),
       JSON.stringify([workflow.id]));
     const mine = await historyUtils.listMyRuns(dayFunc());
     expect(mine.every((run) => run.func.name === dayFunc().name &&
@@ -408,8 +429,8 @@ category('Run storage', () => {
     expect(ids((await grok.dapi.entities.getFavorites()) as DG.FuncCall[]).includes(run.id), false);
   }));
 
-  test('A workflow saved to a space links only its own run', () => withRunStorage(async (f) => {
-    const space = await f.space();
+  test('A workflow saved to a space links only its own run', async () => {
+    const space = await sharedSpace();
     const result = await runWorkflow(BIOREACTOR_WORKFLOW, '1.0');
     const name = uniqueName('Bioreactor workflow');
     const run = await saveWorkflowRun(BIOREACTOR_WORKFLOW, '1.0', result.state,
@@ -423,11 +444,12 @@ category('Run storage', () => {
       expect(stepIds.length > 0, true);
       expect(run.friendlyName, name);
       const {runs} = await historyUtils.listSpace(space.id);
-      expect(JSON.stringify(ids(runs)), JSON.stringify([run.id]));
+      expect(JSON.stringify(ids(named(runs, name))), JSON.stringify([run.id]));
+      expect(runs.some((linked) => stepIds.includes(linked.id)), false);
     } finally {
       await deleteSavedWorkflow(run.id);
     }
-  }));
+  });
 
   test('A save records who saved the run and when', () => withRunStorage(async (f) => {
     const before = Date.now();
@@ -495,7 +517,7 @@ category('Run storage', () => {
   }));
 
   test('A run by someone else in an editable space keeps its author when renamed', () => withRunStorage(async (f) => {
-    const space = await f.space();
+    const space = await sharedSpace();
     const saved = await f.saveDayRun(uniqueName('Theirs'), space.id);
     const run = await historyUtils.shallowLoadRun(saved.id);
     run.options[CREATED_BY_OPTION] = SOMEONE_ELSE;
@@ -572,7 +594,7 @@ category('Run storage', () => {
     }));
 
   test('Space runs get their authors, older runs their platform author', () => withRunStorage(async (f) => {
-    const space = await f.space();
+    const space = await sharedSpace();
     const name = uniqueName('Space author');
     const mine = await f.saveDayRun(`${name} mine`, space.id);
     const legacy = await f.saveLegacyRun(`${name} legacy`);
@@ -581,7 +603,7 @@ category('Run storage', () => {
     unknown.options[CREATED_BY_OPTION] = SOMEONE_ELSE;
     await historyUtils.updateRunMeta(unknown);
 
-    const listed = await spaceRuns(space, dayFunc());
+    const listed = named(await spaceRuns(space, dayFunc()), name);
     expect(listed.length, 3);
     const authors = await loadRunAuthors(listed);
     const me = DG.User.current();
@@ -615,7 +637,7 @@ category('Run storage', () => {
 
   test('Add to space under a new name renames the saved run, not the one it was given', () =>
     withRunStorage(async (f) => {
-      const space = await f.space();
+      const space = await sharedSpace();
       const name = uniqueName('Listed name');
       const given = await historyUtils.shallowLoadRun((await f.saveDayRun(name)).id);
       const renamed = uniqueName('Name in space');
@@ -626,23 +648,24 @@ category('Run storage', () => {
     }));
 
   test('Add to space replaces runs of the same name, never the run itself', () => withRunStorage(async (f) => {
-    const space = await f.space();
+    const space = await sharedSpace();
     const name = uniqueName('Replaced by add');
     const old = await f.saveDayRun(name, space.id);
     const run = await f.saveDayRun(name);
     await addToSpace(run, space, name, [old, run]);
-    expect(JSON.stringify(ids(await spaceRuns(space))), JSON.stringify([run.id]));
+    expect(JSON.stringify(ids(named(await spaceRuns(space), name))), JSON.stringify([run.id]));
   }));
 
   test('Space listings are newest first', () => withRunStorage(async (f) => {
-    const space = await f.space();
-    const first = await f.saveDayRun(uniqueName('Older'), space.id);
-    const second = await f.saveDayRun(uniqueName('Newer'), space.id);
-    expect(JSON.stringify(ids(await spaceRuns(space, dayFunc()))), JSON.stringify([second.id, first.id]));
+    const space = await sharedSpace();
+    const name = uniqueName('Order');
+    const first = await f.saveDayRun(`${name} older`, space.id);
+    const second = await f.saveDayRun(`${name} newer`, space.id);
+    expect(JSON.stringify(ids(named(await spaceRuns(space, dayFunc()), name))), JSON.stringify([second.id, first.id]));
   }));
 
   test('Deleting a run saved before the author option records its platform author', () => withRunStorage(async (f) => {
-    const space = await f.space();
+    const space = await sharedSpace();
     const legacy = await f.saveLegacyRun(uniqueName('Legacy delete'));
     await historyUtils.linkRun(legacy.id, space.id);
     // space listings come without the platform author, so the delete has to look it up
@@ -675,7 +698,7 @@ category('Run storage', () => {
   }));
 
   test('Edit details refuses a name taken in the space and saves another', () => withRunStorage(async (f) => {
-    const space = await f.space();
+    const space = await sharedSpace();
     const taken = uniqueName('Taken');
     await f.saveDayRun(taken, space.id);
     const saved = await f.saveDayRun(uniqueName('Edited'), space.id);

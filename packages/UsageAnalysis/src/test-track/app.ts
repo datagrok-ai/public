@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 
-import { colors, CRITICALFAIL, MINORFAIL, BLOCKFAIL, getIcon, getStatusIcon, PASSED, SKIPPED, Status, errorSeverityLevels, errorSeverityLevelJiraNames, TicketPriorityLevel as ticketPriorityLevel } from './utils';
+import { colors, CRITICALFAIL, MINORFAIL, BLOCKFAIL, getIcon, getStatusIcon, PASSED, SKIPPED, Status, errorSeverityLevels } from './utils';
 import { _package } from '../package';
 import { Subscription } from 'rxjs';
 import { testSchema } from '../test-analysis/sticky-meta-initialization';
@@ -861,69 +861,10 @@ export class TestTrack extends DG.ViewBase {
     dialog.root.classList.add('tt-dialog', 'tt-reason-dialog');
     const value = edit ? (node.value.fullReason) || '' : '';
 
-    const ticketSummary = ui.input.string('Summary');
-    const ticketDescription = ui.input.textArea('Description');
-    const createTicketBtn = ui.button('Create Ticket', () => {
-      createTicketBtn.disabled = true;
-      let errorLabel = 'CriticalError';
-      if (errorTypeSelector.value === BLOCKFAIL)
-        errorLabel = 'Blocker'
-      if (errorTypeSelector.value === MINORFAIL)
-        errorLabel = 'MinorError'
-      console.log(ticketPriorityLevel[errorLabel]);
-      console.log(errorTypeSelector.value);
-      grok.functions.call('UsageAnalysis:JiraCreateIssue', {
-        'createRequest': JSON.stringify({
-          'fields': {
-            'project': {
-              'key': 'GROK',
-            },
-            'summary': (ticketSummary?.value || '').toString(),
-            'description': `Test Track\n Test Case: ${node.value.path.replace(/:\s[^:]+$/, '')} \n${(ticketDescription?.value ?? '').toString()}`,
-            'issuetype': {
-              'name': 'Bug',
-            },
-            'labels': [
-              'TestTrack'
-            ],
-            'priority': {
-              'name': ticketPriorityLevel[errorTypeSelector.value]
-            },
-            'customfield_10439': this.testingName
-          },
-        }),
-        'updateHistory': false,
-      }).then((t) => {
-        var ticketResult = JSON.parse(t.stringResult)
-        console.log(t);
-        window.open(this.jiraBaseUrl + ticketResult.key, "_blank");
-        ticketSummary.value = '';
-        ticketDescription.value = '';
-        if (textInput.value.length > 0)
-          textInput.value = `${textInput.value}\n`;
-        textInput.value = `${textInput.value}${ticketResult.key}`;
-        createTicketBtn.disabled = false;
-      });
-    })
-
-    createTicketBtn.disabled = true;
-    const errorTypeSelector = ui.input.choice('Severity', {
-      value: '', items: ['', ...errorSeverityLevels], nullable: false, onValueChanged: (e) => {
-        createTicketBtn.disabled = ticketSummary.value.length === 0 || errorTypeSelector.value == '';
-      }
-    });
+    const errorTypeSelector = ui.input.choice('Severity', {value: '', items: ['', ...errorSeverityLevels], nullable: false});
 
     const textInput = ui.input.textArea(errorSeverityLevels.includes(status) ? 'Tickets' : 'Reasons', { value: value, nullable: false });
     textInput.classList.add('ui-input-reason');
-    ticketSummary.onChanged.subscribe((value) => {
-      createTicketBtn.disabled = value.length === 0 || errorTypeSelector.value == '';
-    })
-
-    const createTicketButtonTooltip = ui.tooltip.bind(createTicketBtn, 'Ensure that you selected severity level and wrote ticket summary.')
-
-    createTicketBtn.classList.add('create-ticket-button');
-    const jiraTicketsTab = ui.divH([ui.divV([ticketSummary, ticketDescription]), createTicketBtn]);
-
     errorTypeSelector.addValidator((value) => {
       if (value == '')
         return 'Can\'t be null';
@@ -945,11 +886,7 @@ export class TestTrack extends DG.ViewBase {
     dialog.onOK(() => {
       edit ? this.changeNodeReason(node, status, textInput.value) : this.changeNodeStatus(node, status, textInput.value);
     });
-    if (errorSeverityLevels.includes(status)) {
-      const accordion = ui.accordion();
-      accordion.addPane('Jira Tickets', () => jiraTicketsTab)
-      dialog.add(accordion);
-    }
+    // TODO: creating a ticket for a failure goes to GitHub issues with the observability work; Jira is gone.
 
     dialog.show({ resizable: false });
     dialog.initDefaultHistory();
@@ -1069,7 +1006,7 @@ export class TestTrack extends DG.ViewBase {
     const params = {
       success: status === PASSED, result: reason, skipped: status === SKIPPED, type: 'manual',
       package: 'Test Track',
-      category: node.value.path.replace(/:\s[^:]+$/, ''), name: node.text, version: this.version, uid: this.uid, start: this.start, ms: 0, batchName: this.testingName,
+      category: node.value.path.replace(/:\s[^:]+$/, ''), name: node.text, version: this.version, uid: uid, start: this.start, ms: 0, batchName: this.testingName,
       severityLevel: errorSeverityLevels.includes(status) ? status : null
     };
 
@@ -1077,7 +1014,7 @@ export class TestTrack extends DG.ViewBase {
     grok.dapi.users.find(params['uid']).then((user) => {
       const map: StatusInfo = {
         'User': user,
-        'Date': Date.now().toString(),
+        'Date': this.dateTooltip(new Date()),
         'Version': params['version'],
         'Batch': this.testingName
       };

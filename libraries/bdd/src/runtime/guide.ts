@@ -26,6 +26,12 @@ export interface GuidePointer {
   box?: GuideBox;
   /** The page as it was with the button held here — what a drag has drawn so far. */
   shot?: string;
+  /** A move kept as a corner of the way (`waypoint`): the next move does not replace it. */
+  kept?: boolean;
+  /** A press the video shows and the page never got (`pressShown`): on the box it names, whatever is lit. */
+  shown?: boolean;
+  /** The keys held through a press (`Shift`, `Control`): a demo shows them as key caps. */
+  mods?: string[];
 }
 
 /** `note`: a line of text the video shows over the page (`the video says …`), no gesture of its own. */
@@ -37,12 +43,18 @@ const BEATS = 6;
 
 /** A stop of a step: the page as the pointer set off for it, the element lit there, and what the
  * pointer did at it. A step has one stop, or one per stop of a path it walked (a menu's group, each
- * item, the leaf). */
+ * item, the leaf). The next stop's picture is the page as the pointer's arrival here left it (a group
+ * opened, an item lit): the video cuts to it on arrival. */
 export interface GuideLeg {
   shot: string;
   target?: GuideBox;
   pointer: GuidePointer[];
+  /** `menu`: an item of a menu or a list on the way, held long enough to read; `list`: the control a list opens
+   * from, the list held a little longer. */
+  kind?: GuideLegKind;
 }
+
+export type GuideLegKind = 'menu' | 'list';
 
 export interface GuideStep {
   index: number;
@@ -62,10 +74,16 @@ export interface GuideStep {
   /** Keys pressed during the step (`Enter`, `Control+A`), and text typed. */
   keys: string[];
   typed: string;
+  /** The keys the step pressed as its own gesture (`user presses Escape`): a demo shows them as key caps. */
+  pressed?: string[];
   ms: number;
   /** The view in front when the step ended: a demo folds the steps after an action into its result only while
    * they stay in its view. */
   view?: string;
+  /** A dialog the step opened, by the inputs it shows: a demo rests on it as long as they take to read. */
+  dialog?: {inputs: number};
+  /** Where a note goes when the feature pins it (`the video says "…" at the top`); else the renderer places it. */
+  noteAt?: 'top' | 'bottom';
 }
 
 export interface GuideManifest {
@@ -87,6 +105,7 @@ interface Recording {
   lastType: string;
   keys: string[];
   typed: string;
+  pressed: string[];
   located?: Locator;
   target?: GuideBox | null;
   legs: GuideLeg[];
@@ -95,8 +114,11 @@ interface Recording {
   dragShots: number;
   beats: number;
   silent: boolean;
-  /** The open step is a line of text for the video (`say`). */
+  /** The open step is a line of text for the video (`say`), pinned to the top or the bottom when the feature says. */
   note?: string;
+  noteAt?: 'top' | 'bottom';
+  /** A note was the last step shown since the last action: a hover's tooltip is no part of what follows it. */
+  afterNote?: boolean;
   /** The step aimed at a hit area (`locatedArea`): finer than the viewer a later read of it locates. */
   area?: boolean;
   open?: {index: number; line: number; keyword: string; text: string; table?: string[][]; caption?: string; started: number; before: string};
@@ -247,9 +269,9 @@ function typeOf(keyword: string, lastType: string): string {
 
 /** Runs in the page, on every document it loads: logs each real press, release and move of the
  * pointer, whatever sent it — the page's mouse, a locator's click, a drag — where the browser
- * delivered it, and what the press landed on. A move with no button held only says where the
- * pointer came to rest, so a run of them keeps the last; a synthetic `el.click()` has no place on
- * the page and is not a gesture. */
+ * delivered it, and what the press landed on (with the keys held through it). A move with no button
+ * held only says where the pointer came to rest, so a run of them keeps the last — but for a corner
+ * of its way (`waypoint`); a synthetic `el.click()` has no place on the page and is not a gesture. */
 function capturePointer(): void {
   const w = window as any;
   if (w.__bddGuidePointer)
@@ -264,7 +286,7 @@ function capturePointer(): void {
         return;
       const held = e.buttons !== 0;
       const prev = log[log.length - 1];
-      if (type === 'move' && !held && prev?.type === 'move' && !prev.held)
+      if (type === 'move' && !held && prev?.type === 'move' && !prev.held && !prev.kept)
         log.pop();
       const entry: any = {type, x: e.clientX, y: e.clientY};
       if (type === 'move' && held)
@@ -273,6 +295,10 @@ function capturePointer(): void {
         entry.button = buttons[e.button] ?? 'left';
       if (type === 'down') {
         entry.count = 1;
+        const mods = [e.ctrlKey && 'Control', e.metaKey && 'Meta', e.altKey && 'Alt', e.shiftKey && 'Shift']
+          .filter(Boolean);
+        if (mods.length > 0)
+          entry.mods = mods;
         const el = e.target instanceof Element ? e.target : null;
         if (el) {
           const r = el.getBoundingClientRect();
@@ -326,12 +352,14 @@ function pieces(text: string): string[] {
 /** A locator's typing goes past `page.keyboard`: its `fill` and `pressSequentially` are wrapped once
  * for every page, and do what they did whenever the page is not being filmed. */
 let locatorWrapped = false;
+/** The locator's own `fill`, for a text pictured going in that a gesture then puts in at once (`pictureTyping`). */
+let rawFill: ((this: Locator, value: string, options?: unknown) => Promise<void>) | undefined;
 function wrapLocatorTyping(loc: Locator): void {
   if (locatorWrapped)
     return;
   locatorWrapped = true;
   const proto = Object.getPrototypeOf(loc);
-  const fill = proto.fill;
+  const fill = rawFill = proto.fill;
   const pressSequentially = proto.pressSequentially;
   const filming = (l: Locator): Recording | undefined => {
     const r = recordings.get(l.page());
@@ -359,14 +387,69 @@ function wrapLocatorTyping(loc: Locator): void {
   };
 }
 
+/** Rows as wide as their panel, pressed where a person presses them — on their caption: an accordion pane's header, a
+ * tree node, a menu item. */
+const CAPTIONED = '.d4-accordion-pane-header, .d4-tree-view-node, .d4-menu-item, .u2-menu-item, [role="treeitem"], ' +
+  '[role="menuitem"]';
+
+/** A locator's click, double-click and hover land on the middle of the element: a row as wide as its panel is pressed
+ * far right of its caption (an accordion pane's header 250 px right of "Explore"). A guide aims a row (`CAPTIONED`) at
+ * its caption — the middle of its first text — when that is well off the middle and nothing of its own (a link, a
+ * button, a field) is there; a test, and a gesture given a position, are as they were. */
+let clicksWrapped = false;
+function wrapLocatorClicks(loc: Locator): void {
+  if (clicksWrapped)
+    return;
+  clicksWrapped = true;
+  const proto = Object.getPrototypeOf(loc);
+  for (const name of ['click', 'dblclick', 'hover'] as const) {
+    const gesture = proto[name];
+    proto[name] = async function(this: Locator, options?: {position?: {x: number; y: number}}) {
+      const r = recordings.get(this.page());
+      if (!r?.open || r.silent || options?.position)
+        return gesture.call(this, options);
+      // looked up only on an element already there (the gesture keeps its own wait); no named functions in the page:
+      // tsx wraps them in a `__name` call the page lacks
+      const position = await this.first().evaluate((el, rows) => {
+        const box = el.getBoundingClientRect();
+        if (!el.matches(rows) || box.width < 3 * box.height)
+          return null;
+        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+        for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+          if (!(n.textContent ?? '').trim())
+            continue;
+          const range = document.createRange();
+          range.selectNodeContents(n);
+          const t = range.getBoundingClientRect();
+          if (t.width === 0 || t.height === 0)
+            continue;
+          const x = Math.max(box.left + 2, Math.min(box.right - 2, t.left + t.width / 2));
+          const y = box.top + box.height / 2;
+          const hit = document.elementFromPoint(x, y);
+          const own = hit?.closest('a, button, input, select, textarea, [role="button"], [role="link"], ' +
+            '[role="checkbox"]');
+          if (Math.abs(x - (box.left + box.width / 2)) < 40 || !hit || !el.contains(hit) ||
+            (own && own !== el && el.contains(own)))
+            return null;
+          return {x: x - box.left, y: y - box.top};
+        }
+        return null;
+      }, CAPTIONED, {timeout: 500}).catch(() => null);
+      return gesture.call(this, position ? {...options, position} : options);
+    };
+  }
+}
+
 /** The pointer is followed in the page, whatever runtime path drives it (a gesture, a menu walk, a
  * viewer hit area, a locator's own click). The page's `mouse` is wrapped to picture drags and wheel
- * turns, and the typing to picture the text as it goes in. */
+ * turns, the typing to picture the text as it goes in, and a locator's clicks and hover to press a row
+ * on its caption. */
 export async function attach(page: Page): Promise<void> {
   if (!guideDir() || attached.has(page))
     return;
   attached.add(page);
   wrapLocatorTyping(page.locator('body'));
+  wrapLocatorClicks(page.locator('body'));
   await page.addInitScript(capturePointer);
   await page.evaluate(capturePointer).catch(() => undefined);
   const rec = (): Recording | undefined => recordings.get(page);
@@ -457,6 +540,18 @@ export async function located(page: Page, loc: Locator): Promise<void> {
     return;
   r.located = loc;
   r.target = await loc.first().boundingBox({timeout: 200}).catch(() => null);
+  // an element below the fold (a property category low in the context panel) is scrolled into view by the gesture
+  // that follows, so the box read here is not where the press lands: filmed, the element is scrolled first and the
+  // step's first picture taken again. Only a small element off the window, before the step has any stop: a scope
+  // (a whole panel) is never scrolled
+  const view = page.viewportSize();
+  const box = r.target;
+  if (box && view && r.legs.length === 0 && box.height < view.height / 2 &&
+    (box.y < 0 || box.y + box.height > view.height)) {
+    await loc.first().scrollIntoViewIfNeeded({timeout: 1000}).catch(() => undefined);
+    r.target = await loc.first().boundingBox({timeout: 200}).catch(() => null);
+    await shot(page, r.dir, r.open.before);
+  }
 }
 
 /** The step acts on a place inside the element it located — a hit area of a viewer or a widget (an
@@ -489,34 +584,156 @@ export function frameTo(page: Page, box: GuideBox, margin = 16): void {
 /** A stop on the path the step walks: the page as it is now (a menu opened by the stop before)
  * and the element's place on it; the guide moves the pointer stop by stop and lights each. What
  * the pointer did before the first stop — on an element located before it, or anywhere (the
- * right-click that opened the menu) — is a stop of its own, on the "before" picture. */
-export async function hop(page: Page, loc: Locator): Promise<void> {
+ * right-click that opened the menu) — is a stop of its own, on the "before" picture. A stop is
+ * taken as the pointer sets off for it: the next stop's picture is what the pointer's arrival led
+ * to, and the video cuts to it on arrival. `kind` paces it (`GuideLeg`). */
+export async function hop(page: Page, loc: Locator, kind?: GuideLegKind): Promise<void> {
   if (!recordings.get(page)?.open)
     return;
   const box = await loc.first().boundingBox({timeout: 200}).catch(() => null);
   if (box)
-    await hopAt(page, box);
+    await hopAt(page, box, kind);
+}
+
+/** The leaf of a menu walk, before the click a caller makes: a stop as the pointer sets off for it, then — the
+ * pointer on it — a stop with the item lit under the pointer, so the video shows the item the press lands on lit
+ * before the press. An item the pointer already rests on is lit in its first stop. A test only clicks. */
+export async function hopLeaf(page: Page, leaf: Locator, timeout?: number): Promise<void> {
+  await hop(page, leaf, 'menu');
+  if (!filming(page) || await leaf.first().evaluate((e) => e.matches(':hover')).catch(() => false))
+    return;
+  await leaf.first().hover({timeout});
+  await hop(page, leaf, 'menu');
+}
+
+/** Whether the page's open step is being filmed (a guide, not its set-up). */
+export function filming(page: Page): boolean {
+  const r = recordings.get(page);
+  return !!r?.open && !r.silent;
+}
+
+/** Keeps the pointer's last move as a corner of its way: a run of moves with no button held is logged as the one
+ * point it came to rest at, and a way that goes round something (into a menu's flyout along the group's row, not
+ * across the items below it) would be filmed as a straight line. */
+export async function waypoint(page: Page): Promise<void> {
+  if (!filming(page))
+    return;
+  await page.evaluate(() => {
+    const log = (window as any).__bddGuidePointer as {type: string; held?: boolean; kept?: boolean}[] | undefined;
+    const last = log?.[log.length - 1];
+    if (last?.type === 'move' && !last.held)
+      last.kept = true;
+  }).catch(() => undefined);
+}
+
+/** Pointer events the video shows where the step sends none: logged as the page logs its own. */
+async function logShown(page: Page, events: GuidePointer[]): Promise<void> {
+  if (!filming(page))
+    return;
+  await page.evaluate((list) => {
+    (window as any).__bddGuidePointer?.push(...list);
+  }, events).catch(() => undefined);
+}
+
+/** The pointer moved on film to the middle of a place the step moves nothing to for real (a row of a list only the
+ * video shows). */
+export async function pointShown(page: Page, box: GuideBox): Promise<void> {
+  await logShown(page, [{type: 'move', x: box.x + box.width / 2, y: box.y + box.height / 2, kept: true}]);
+}
+
+/** A press the video shows where the step presses nothing for real: the place is pressed on film, the page gets no
+ * event (a native select's list, which headless Chromium does not draw, opened and an option of it taken). Its box
+ * is the element pressed, whatever the stop lit. */
+export async function pressShown(page: Page, box: GuideBox, on: string): Promise<void> {
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  await logShown(page, [{type: 'move', x, y}, {type: 'down', x, y, button: 'left', count: 1, box, on, shown: true},
+    {type: 'up', x, y, button: 'left'}]);
+}
+
+/** A move the video leaves out: the pointer goes there for real — off a canvas whose lens or tooltip follows it, which
+ * would otherwise stay drawn where the pointer rested while the video's pointer goes on — and the video's pointer goes
+ * on from where it was. */
+export async function moveUnfilmed(page: Page, x: number, y: number): Promise<void> {
+  const r = recordings.get(page);
+  if (!r?.open || r.silent)
+    return;
+  r.pending.push(...await drain(page));
+  await page.mouse.move(x, y);
+  await drain(page);
+}
+
+/** A picture of the page in the middle of the step, the pointer where it is (a list scrolling under it). */
+export async function still(page: Page): Promise<void> {
+  const r = recordings.get(page);
+  if (r?.open && !r.silent)
+    await beat(page, r);
+}
+
+/** A key the step presses as its gesture (`user presses Escape`), whichever way it reaches the page: a demo shows it
+ * as a key cap. */
+export function keyPressed(page: Page, key: string): void {
+  const r = recordings.get(page);
+  if (r?.open && !r.silent)
+    r.pressed.push(key);
+}
+
+/** A text a gesture puts in at once (a paste), pictured going in as a typing is: the editor filled piece by piece
+ * short of the whole text, a picture after each; the gesture then puts the whole of it in itself. A single-line
+ * field shows the lines of the text as values separated by commas. */
+export async function pictureTyping(page: Page, loc: Locator, text: string): Promise<void> {
+  const r = recordings.get(page);
+  if (!r?.open || r.silent || !rawFill)
+    return;
+  const single = await loc.evaluate((e) => e.tagName === 'INPUT').catch(() => true);
+  const shown = single ? text.replace(/\n+$/, '').replace(/\n+/g, ', ') : text;
+  let typed = '';
+  for (const piece of pieces(shown).slice(0, -1)) {
+    typed += piece;
+    if (!await rawFill.call(loc, typed).then(() => true, () => false))
+      return;
+    await beat(page, r);
+  }
+}
+
+/** A guide films a column picker with no tooltip over it: one the pointer raised beside the picker (a column
+ * header's) covers the row the picker is about to take. On while the picker is filmed, off after it. */
+export async function pickerFilmed(page: Page, open: boolean): Promise<void> {
+  if (!filming(page))
+    return;
+  await page.evaluate((on) => {
+    if (!document.getElementById('bdd-picker-style')) {
+      const style = document.createElement('style');
+      style.id = 'bdd-picker-style';
+      style.textContent = 'body.bdd-picker-open .d4-tooltip {display: none !important}';
+      document.head.append(style);
+    }
+    document.body.classList.toggle('bdd-picker-open', on);
+  }, open).catch(() => undefined);
 }
 
 /** The same stop for a place that is no element of its own — a row of a canvas grid. */
-export async function hopAt(page: Page, box: GuideBox): Promise<void> {
+export async function hopAt(page: Page, box: GuideBox, kind?: GuideLegKind): Promise<void> {
   const r = recordings.get(page);
   if (!r || !r.open)
     return;
-  closeLeg(r, r.open.before, r.target ?? undefined, await drain(page));
+  // an element located before the walk is no stop of its own unless the pointer did something there
+  closeLeg(r, r.open.before, r.target ?? undefined, await drain(page), false);
   const stem = String(r.open.index).padStart(2, '0');
-  r.legs.push({shot: await shot(page, r.dir, `${stem}-hop${r.legs.length + 1}.png`), target: box, pointer: []});
+  r.legs.push({shot: await shot(page, r.dir, `${stem}-hop${r.legs.length + 1}.png`), target: box, pointer: [],
+    ...(kind ? {kind} : {})});
   r.located = undefined;
   r.target = box;
 }
 
 /** What the pointer did since the last stop goes to that stop; before the first stop, to a stop on
- * the page the step began with (when it acted there, or located something there). */
-function closeLeg(r: Recording, before: string, target: GuideBox | undefined, drained: GuidePointer[]): void {
+ * the page the step began with (when it acted there, or — `located` — located something there). */
+function closeLeg(r: Recording, before: string, target: GuideBox | undefined, drained: GuidePointer[],
+  located = true): void {
   r.pending.push(...drained);
   if (r.legs.length > 0)
     r.legs[r.legs.length - 1].pointer.push(...r.pending);
-  else if (target || r.pending.length > 0)
+  else if ((located && target) || r.pending.length > 0)
     r.legs.push({shot: before, target, pointer: r.pending});
   r.pending = [];
 }
@@ -529,11 +746,14 @@ export function silent(page: Page): void {
     r.silent = true;
 }
 
-/** The open step is a line of text the video shows over the page, whatever the step's own words. */
-export function say(page: Page, text: string): void {
+/** The open step is a line of text the video shows over the page, whatever the step's own words; `at` pins it to the
+ * top or the bottom of the page, where the renderer would otherwise choose. */
+export function say(page: Page, text: string, at?: 'top' | 'bottom'): void {
   const r = recordings.get(page);
-  if (r?.open)
+  if (r?.open) {
     r.note = text;
+    r.noteAt = at;
+  }
 }
 
 function sameFile(dir: string, a: string, b: string): boolean {
@@ -556,7 +776,8 @@ function recordingFor(page: Page, info: TestInfo): Recording {
   const manifest: GuideManifest =
     {feature: featureName, scenario: scenarioName, description: '', tags: info.tags, viewport,
       scale: info.project.use.deviceScaleFactor ?? 1, steps: []};
-  r = {dir, manifest, lastType: 'Given', keys: [], typed: '', legs: [], pending: [], dragShots: 0, beats: 0, silent: false};
+  r = {dir, manifest, lastType: 'Given', keys: [], typed: '', pressed: [], legs: [], pending: [], dragShots: 0,
+    beats: 0, silent: false};
   recordings.set(page, r);
   return r;
 }
@@ -578,8 +799,12 @@ export async function begin(page: Page | undefined, info: TestInfo, line: number
   const stem = String(index).padStart(2, '0');
   // what the pointer did between steps is part of neither
   await drain(page);
+  // the dialogs open before the step: one that is open after it and not among them is the step's (`end`)
+  await page.evaluate((sel) => document.querySelectorAll(sel).forEach((d) => { (d as any).__bddSeen = true; }),
+    DIALOGS).catch(() => undefined);
   r.keys = [];
   r.typed = '';
+  r.pressed = [];
   r.located = undefined;
   r.target = undefined;
   r.legs = [];
@@ -588,7 +813,12 @@ export async function begin(page: Page | undefined, info: TestInfo, line: number
   r.beats = 0;
   r.silent = false;
   r.note = undefined;
+  r.noteAt = undefined;
   r.area = false;
+  // a demo's set-up after a note can change the page under a tooltip a hover left up (the rows switched under it): the
+  // tooltip goes first. Right after a hover the set-up is part of what the hover led to, and the tooltip stays
+  if (demoMode() && r.afterNote && typeOf(keyword, r.lastType) === 'Given')
+    await page.evaluate(() => (window as any).ui?.tooltip?.hide?.()).catch(() => undefined);
   r.open = {index, line, keyword, text, table, caption, started: Date.now(), before: await shot(page, r.dir, `${stem}-before.png`)};
 }
 
@@ -609,6 +839,7 @@ export async function end(page: Page | undefined): Promise<void> {
   const stem = String(open.index).padStart(2, '0');
   const after = await shot(page, r.dir, `${stem}-after.png`);
   const view = await page.evaluate(() => (window as any).grok?.shell?.v?.name as string | undefined).catch(() => undefined);
+  const inputs = await newDialogInputs(page);
   let target = r.target ?? undefined;
   if (!target && r.located)
     target = await r.located.first().boundingBox({timeout: 200}).catch(() => null) ?? undefined;
@@ -631,9 +862,35 @@ export async function end(page: Page | undefined): Promise<void> {
   const kind: GuideStepKind = r.note !== undefined ? 'note' : hidden ? 'setup' : type === 'Then' ? 'check' :
     acted || !sameFile(r.dir, open.before, after) ? 'action' : 'setup';
   const caption = r.note ?? open.caption;
+  r.afterNote = kind === 'note' ? true : kind === 'action' ? false : r.afterNote;
   r.manifest.steps.push({index: open.index, line: open.line, keyword: open.keyword, text: open.text,
     caption: caption ?? captionOf(open.text, kind, open.table), ...(caption ? {captioned: true} : {}), kind,
-    before: open.before, after, target, legs: r.legs, keys: r.keys, typed: r.typed, ms: Date.now() - open.started,
-    ...(view ? {view} : {})});
+    before: open.before, after, target, legs: r.legs, keys: r.keys, typed: r.typed,
+    ...(r.pressed.length > 0 ? {pressed: r.pressed} : {}), ms: Date.now() - open.started,
+    ...(view ? {view} : {}), ...(inputs !== undefined ? {dialog: {inputs}} : {}),
+    ...(r.noteAt ? {noteAt: r.noteAt} : {})});
   writeFileSync(join(r.dir, 'steps.json'), JSON.stringify(r.manifest, null, 2));
+}
+
+const DIALOGS = '.d4-dialog, [data-u2="dialog"]';
+
+/** The inputs a dialog the step opened shows (its input rows; else its bare fields), or nothing when no dialog is
+ * open that was not open before the step. */
+function newDialogInputs(page: Page): Promise<number | undefined> {
+  // no named functions in the page: tsx wraps them in a `__name` call the page lacks
+  return page.evaluate((sel) => {
+    const fresh = Array.from(document.querySelectorAll(sel)).filter((d) => !(d as any).__bddSeen &&
+      d.getClientRects().length > 0 && getComputedStyle(d).visibility !== 'hidden');
+    const dialog = fresh.filter((d) => !fresh.some((o) => o !== d && o.contains(d))).pop();
+    if (!dialog)
+      return undefined;
+    for (const query of ['.ui-input-root, [data-u2-part="editor"]', 'input, select, textarea']) {
+      const found = Array.from(dialog.querySelectorAll(query)).filter((e) => e.getClientRects().length > 0 &&
+        getComputedStyle(e).visibility !== 'hidden');
+      const rows = found.filter((e) => !found.some((o) => o !== e && o.contains(e))).length;
+      if (rows > 0)
+        return rows;
+    }
+    return 0;
+  }, DIALOGS).catch(() => undefined);
 }

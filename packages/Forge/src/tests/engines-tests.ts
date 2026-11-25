@@ -1,0 +1,394 @@
+import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
+import {category, expect, expectArray, expectExceptionAsync, test} from '@datagrok-libraries/test/src/test';
+import {applicableEngines} from '../engines/applicable-engines';
+import {selectBestEngine} from '../engines/best-engine';
+import {defaultHyperparameters, defaultValuesOf, Engine, featureSemTypesOf, givesProbabilities, handlesMissingValues,
+  hasTrainingRows, hyperparametersOf, isComplete, isServerCheck, isServerEngine, probabilityInput, rolesOf,
+  runsOnServer, takesSemTypes, visibleHyperparametersOf, withProbabilityInput} from '../engines/engine';
+import {EngineRegistry} from '../engines/engine-registry';
+import {apply, isApplicable, isInteractive, NoAnswerError} from '../engines/engine-calls';
+import {methodList, SettingDetails} from '../engines/method-list';
+import {errorMessage} from '../forge-error';
+import {runListMethods, runTrainModel} from '../training/train-api';
+import {CLASSIFIERS, columnsOf, deleteRunsOf, demoDemog, EDA_METHODS, engineByName, expectReleased, failsWith,
+  framesSharing, inDiscoveryOrder, IRIS, MEASUREMENTS, moleculeEngine, NATIVE_NANS, openDemoTable, REGRESSORS,
+  stuckEngine, valuesOf, xgboost} from './test-data';
+
+const ROWS_ENGINES = ['SVM', 'k-Nearest Neighbors'];
+const BEST_NAMES = ['Chemprop', 'XGBoost', 'PLS Regression', 'Linear Regression'];
+const METHOD_COLUMNS = ['Method', 'Package', 'Method type', 'Runs on', 'Semantic types', 'Keeps training rows',
+  'Retrains live', 'Roles', 'Hyperparameters', 'Settings'];
+
+/** An engine with a name only, for the rules that read names. */
+function namedEngine(name: string, functions: Engine['functions'] = {}): Engine {
+  return {name, namespace: 'Forge', kind: 'function', functions, isLiveUpdate: true};
+}
+
+/** A script method's train function, built in the browser (nothing is saved). */
+function scriptTrain(language: string, meta: {[key: string]: string} = {}, inputs = ''): DG.Script {
+  const script = DG.Script.create(`//name: forge-test-train\n//language: ${language}\n` +
+    `//input: dataframe df\n//input: string predictColumn\n${inputs}//output: blob model\n`);
+  for (const [key, value] of Object.entries(meta))
+    script.options[key] = value;
+  return script;
+}
+
+function floats(name: string, value: (i: number) => number): DG.Column {
+  return DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, name, valuesOf(12, value));
+}
+
+function strings(name: string, value: (i: number) => string): DG.Column {
+  return DG.Column.fromStrings(name, Array.from({length: 12}, (_, i) => value(i)));
+}
+
+/** The EDA methods that `listMethods` marks true in [column] for [table] and [target], sorted. */
+async function markedMethods(table: DG.DataFrame, target: string | null, column: string): Promise<string[]> {
+  const methods = await runListMethods(table, target);
+  const names: string[] = methods.getCol('Method').toList();
+  return names.filter((name, i) => EDA_METHODS.includes(name) && methods.get(column, i) === true).sort();
+}
+
+category('Engines', () => {
+  test('discovers the EDA engines', async () => {
+    const engines = EngineRegistry.discover();
+    for (const name of EDA_METHODS) {
+      const engine = engineByName(engines, name);
+      expect(engine.kind, 'function');
+      expect(engine.namespace, 'Eda');
+      expect(isComplete(engine), true, `${name} is incomplete`);
+    }
+  });
+
+  test('groups roles by mlname', async () => {
+    const engines = EngineRegistry.discover();
+    expect(rolesOf(engineByName(engines, 'PLS Regression')).includes('visualize'), true);
+    expect(rolesOf(engineByName(engines, 'XGBoost')).includes('visualize'), false);
+    for (const name of EDA_METHODS) {
+      const engine = engineByName(engines, name);
+      expect(rolesOf(engine).includes('isInteractive'), true, `${name} has no isInteractive`);
+      expect(engine.isLiveUpdate, true, `${name} is not live`);
+    }
+  });
+
+  test('hyperparameters exclude the table and the target', async () => {
+    const xgboost = engineByName(EngineRegistry.discover(), 'XGBoost');
+    expectArray(hyperparametersOf(xgboost).map((p) => p.name), ['iterations', 'eta', 'maxDepth', 'lambda', 'alpha',
+      'subsample', 'colsample', 'seed']);
+  });
+
+  test('default hyperparameters are the train inputs\' initial values', async () => {
+    const xgboost = engineByName(EngineRegistry.discover(), 'XGBoost');
+    expect(JSON.stringify(defaultHyperparameters(xgboost)),
+      JSON.stringify({iterations: 20, eta: 0.3, maxDepth: 6, lambda: 1, alpha: 0, subsample: 1, colsample: 1,
+        seed: 0}));
+  });
+
+  test('apply takes the first column and the proba_ columns after it, drops the rest', async () => {
+    const xgboost = engineByName(EngineRegistry.discover(), 'XGBoost');
+    const engineReturning = (result: () => DG.DataFrame): Engine => {
+      const spy: DG.Func = Object.create(xgboost.functions.apply!);
+      spy.apply = async () => result();
+      return {...xgboost, functions: {...xgboost.functions, apply: spy}};
+    };
+    const frame = DG.DataFrame.fromColumns([
+      DG.Column.fromStrings('Prediction', ['a', 'b', 'a']),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'proba_b', [0.2, 0.7, 0.4]),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'proba_a', [0.8, 0.3, 0.6]),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'other', [1, 2, 3])]);
+    const spy = engineReturning(() => frame);
+    const columns = [DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'x', [0, 1, 2])];
+    const result = await apply(spy, columns, new Uint8Array());
+    expect(result.prediction.name, 'Prediction');
+    expectArray(result.probabilities?.classes ?? [], ['b', 'a']);
+    expectArray(result.probabilities?.columns.map((c) => c.name) ?? [], ['proba_b', 'proba_a']);
+    expectArray(frame.columns.names(), ['other']);
+
+    const single = engineReturning(() =>
+      DG.DataFrame.fromColumns([DG.Column.fromStrings('Prediction', ['a', 'b', 'a'])]));
+    expect((await apply(single, columns, new Uint8Array())).probabilities === undefined, true,
+      'A single column gave probabilities');
+  });
+
+  test('givesProbabilities, probabilityInput, withProbabilityInput and visibleHyperparametersOf', async () => {
+    const inputs = '//input: int a\n//input: bool probability\n//input: int count\n';
+    const stub = (mlprobabilities: string) => namedEngine('forge-test-js',
+      {train: scriptTrain('javascript', {mlprobabilities}, inputs)});
+    const always = stub('true');
+    expect(givesProbabilities(always), true, 'mlprobabilities true');
+    expect(probabilityInput(always) === undefined, true, 'An input of mlprobabilities true');
+    expect(JSON.stringify(withProbabilityInput(always, {a: 1})), JSON.stringify({a: 1}));
+    expectArray(visibleHyperparametersOf(always).map((p) => p.name), ['a', 'probability', 'count']);
+    const named = stub('probability');
+    expect(givesProbabilities(named), true, 'A named bool input');
+    expect(probabilityInput(named), 'probability');
+    expect(JSON.stringify(withProbabilityInput(named, {a: 1})), JSON.stringify({a: 1, probability: true}));
+    expectArray(visibleHyperparametersOf(named).map((p) => p.name), ['a', 'count']);
+    for (const value of ['missing', 'count']) {
+      const engine = stub(value);
+      expect(givesProbabilities(engine), false, `mlprobabilities ${value}`);
+      expect(probabilityInput(engine) === undefined, true, `An input of mlprobabilities ${value}`);
+      expectArray(visibleHyperparametersOf(engine).map((p) => p.name), ['a', 'probability', 'count']);
+    }
+    expect(givesProbabilities(namedEngine('forge-test-none')), false, 'No train function');
+
+    const engines = EngineRegistry.discover();
+    for (const name of EDA_METHODS) {
+      const engine = engineByName(engines, name);
+      const isRegression = name.endsWith('Regression');
+      expect(givesProbabilities(engine), !isRegression, `${name} gives probabilities`);
+      expect(probabilityInput(engine) ?? 'none', name === 'SVM' ? 'probability' : 'none', `${name} probability input`);
+    }
+    const svmEngine = engineByName(engines, 'SVM');
+    expect(visibleHyperparametersOf(svmEngine).some((p) => p.name === 'probability'), false, 'SVM shows probability');
+    expect(hyperparametersOf(svmEngine).some((p) => p.name === 'probability'), true, 'SVM has no probability input');
+  });
+
+  test('a string default loses the quotes the server keeps it in', async () => {
+    const kernel = hyperparametersOf(engineByName(EngineRegistry.discover(), 'SVM')).find((p) => p.name === 'kernel');
+    if (kernel === undefined)
+      throw new Error('SVM has no kernel input');
+    expect(/^["']RBF["']$|^RBF$/.test(kernel.initialValue), true, `Initial value ${kernel.initialValue}`);
+    expect(defaultValuesOf([kernel])['kernel'], 'RBF');
+  });
+
+  test('isApplicable and isInteractive through the contract', async () => {
+    const engines = EngineRegistry.discover();
+    const iris = await grok.data.files.openTable(IRIS);
+    const without = (...names: string[]) => iris.columns.toList().filter((c) => !names.includes(c.name));
+    const species = iris.getCol('Species');
+    const petalLength = iris.getCol('Petal.Length');
+    const xgboost = engineByName(engines, 'XGBoost');
+    const softmax = engineByName(engines, 'Softmax');
+    expect(await isApplicable(xgboost, without('Species'), species), true);
+    expect(await isInteractive(xgboost, without('Species'), species), true);
+    expect(await isApplicable(softmax, without('Species', 'Petal.Length'), petalLength), false);
+  });
+
+  test('selectBestEngine follows the built-in rule', async () => {
+    const all = BEST_NAMES.map((name) => namedEngine(name));
+    const withoutChemprop = all.slice(1);
+    const pick = (engines: Engine[], features: DG.Column[], target: DG.Column) =>
+      selectBestEngine(engines, features, target)?.name;
+    const molecule = strings('smiles', (i) => i % 2 === 0 ? 'CCO' : 'c1ccccc1');
+    molecule.semType = DG.SEMTYPE.MOLECULE;
+    const x = floats('x', (i) => i);
+    const label = strings('label', (i) => i % 2 === 0 ? 'a' : 'b');
+    const y = floats('y', (i) => 2 * i);
+    const six = Array.from({length: 6}, (_, k) => floats(`f${k}`, (i) => i * (k + 1)));
+
+    expect(pick(all, [molecule, x], y), 'Chemprop');
+    expect(pick(withoutChemprop, [molecule, x], y), 'XGBoost', 'Without Chemprop the first engine');
+    expect(pick(all, [x, strings('kind', (i) => i < 6 ? 'p' : 'q')], label), 'XGBoost');
+    expect(pick(all, six, y), 'PLS Regression');
+    expect(pick(all, six.slice(0, 2), y), 'Linear Regression');
+    expect(pick(all, [strings('kind', (i) => i < 6 ? 'p' : 'q')], label), 'XGBoost');
+    expect(pick([], [x], y) === undefined, true, 'An empty list gives a method');
+  });
+
+  test('applicableEngines lists the methods for the target, in discovery order', async () => {
+    const engines = EngineRegistry.discover();
+    const iris = await grok.data.files.openTable(IRIS);
+    const species = iris.getCol('Species');
+    const petalLength = iris.getCol('Petal.Length');
+    const classifiers = (await applicableEngines(engines, columnsOf(iris, MEASUREMENTS), species)).applicable;
+    expectArray(classifiers.map((e) => e.name).filter((name) => EDA_METHODS.includes(name)),
+      inDiscoveryOrder(engines, CLASSIFIERS));
+    const features = columnsOf(iris, MEASUREMENTS.filter((name) => name !== 'Petal.Length'));
+    const [{applicable, failed}, frames] = await framesSharing(features,
+      () => applicableEngines(engines, features, petalLength));
+    expectArray(applicable.map((e) => e.name).filter((name) => EDA_METHODS.includes(name)),
+      inDiscoveryOrder(engines, REGRESSORS));
+    expect(failed.length, 0, failed.map((f) => f.engine.name).join(', '));
+    expectReleased(frames);
+  });
+
+  test('applicableEngines leaves out a method whose check throws', async () => {
+    const xgboost = engineByName(EngineRegistry.discover(), 'XGBoost');
+    const check = xgboost.functions.isApplicable;
+    if (check === undefined)
+      throw new Error('XGBoost has no isApplicable');
+    const throwing: DG.Func = Object.create(check);
+    throwing.apply = async () => {
+      throw new Error('forge-test: the check failed');
+    };
+    const broken: Engine = {...xgboost, name: 'forge-test-broken', functions: {...xgboost.functions,
+      isApplicable: throwing}};
+    const iris = await grok.data.files.openTable(IRIS);
+    const {applicable, failed} = await applicableEngines([broken, xgboost], columnsOf(iris, MEASUREMENTS),
+      iris.getCol('Species'));
+    expectArray(applicable.map((e) => e.name), ['XGBoost']);
+    expectArray(failed.map((f) => f.engine.name), ['forge-test-broken']);
+    expect(String(failed[0].error).includes('the check failed'), true, String(failed[0].error));
+  });
+
+  test('isServerEngine and hasTrainingRows', async () => {
+    const engines = EngineRegistry.discover();
+    for (const name of EDA_METHODS) {
+      const engine = engineByName(engines, name);
+      expect(isServerEngine(engine), false, `${name} runs on the server`);
+      expect(hasTrainingRows(engine), ROWS_ENGINES.includes(name), `${name} training rows`);
+      expect(handlesMissingValues(engine), NATIVE_NANS.includes(name), `${name} missing values`);
+    }
+    expect(handlesMissingValues(namedEngine('forge-test-js', {train: scriptTrain('javascript',
+      {mlnativenans: 'true'})})), true, 'meta.mlnativenans');
+    expect(handlesMissingValues(namedEngine('forge-test-none')), false, 'No train function');
+    const python = scriptTrain('python');
+    expect(python.language, 'python');
+    expect(isServerEngine({...namedEngine('forge-test-py', {train: python}), kind: 'script'}), true, 'Python');
+    expect(isServerEngine({...namedEngine('forge-test-js', {train: scriptTrain('javascript')}), kind: 'script'}),
+      false, 'JavaScript');
+    expect(isServerEngine(namedEngine('forge-test-js', {train: scriptTrain('javascript', {mlserver: 'true'})})),
+      true, 'meta.mlserver');
+    expect(isServerEngine(namedEngine('Chemprop')), true, 'Chemprop');
+    expect(hasTrainingRows(namedEngine('forge-test-js', {train: scriptTrain('javascript', {mlhasrows: 'true'})})),
+      true, 'meta.mlhasrows');
+    expect(hasTrainingRows(namedEngine('forge-test-none')), false, 'No train function');
+  });
+
+  test('runsOnServer and isServerCheck', async () => {
+    const stuck = stuckEngine('forge-test-stuck', new Promise(() => {}));
+    expect(runsOnServer(stuck.functions.isApplicable), true, 'The container check');
+    expect(runsOnServer(stuck.functions.train), true, 'The container train');
+    expect(isServerCheck(stuck), true, 'isServerCheck of the container method');
+    expect(isServerEngine(stuck), true, 'isServerEngine of the container method');
+    const engines = EngineRegistry.discover();
+    for (const name of EDA_METHODS) {
+      const engine = engineByName(engines, name);
+      expect(runsOnServer(engine.functions.train), false, `${name} train`);
+      expect(isServerCheck(engine), false, `${name} check`);
+    }
+    expect(runsOnServer(scriptTrain('python')), true, 'Python');
+    expect(runsOnServer(scriptTrain('javascript')), false, 'JavaScript');
+    expect(runsOnServer(undefined), false, 'No function');
+  });
+
+  test('a check that does not answer fails with NoAnswerError', async () => {
+    const iris = await grok.data.files.openTable(IRIS);
+    const stuck = stuckEngine('forge-test-stuck', new Promise(() => {}));
+    const xgboost = engineByName(EngineRegistry.discover(), 'XGBoost');
+    const {applicable, failed} = await applicableEngines([stuck, xgboost], columnsOf(iris, MEASUREMENTS),
+      iris.getCol('Species'), 200);
+    expectArray(applicable.map((e) => e.name), ['XGBoost']);
+    expectArray(failed.map((f) => f.engine.name), ['forge-test-stuck']);
+    expect(failed[0].error instanceof NoAnswerError, true, String(failed[0].error));
+    expect(errorMessage(failed[0].error), 'The method \'forge-test-stuck\' did not answer in 0.2 s.');
+  });
+
+  test('EngineRegistry.kindOf', async () => {
+    const stuck = stuckEngine('forge-test-stuck', new Promise(() => {}));
+    const train = stuck.functions.train;
+    const edaTrain = engineByName(EngineRegistry.discover(), 'XGBoost').functions.train;
+    if (train === undefined || edaTrain === undefined)
+      throw new Error('No train function');
+    expect(EngineRegistry.kindOf(train), 'script', 'A container function');
+    expect(EngineRegistry.kindOf(edaTrain), 'function', 'An EDA function');
+  });
+
+  test('listMethods marks a container method as server', async () => {
+    const methods = methodList([stuckEngine('forge-test-stuck', new Promise(() => {}))]);
+    expect(methods.get('Runs on', 0), 'server');
+  });
+
+  test('featureSemTypesOf reads meta.mlsemtypes', async () => {
+    const stub = moleculeEngine('forge-test-mol');
+    expectArray(featureSemTypesOf(stub), ['molecule']);
+    expectArray(featureSemTypesOf(moleculeEngine('forge-test-mols', {semTypes: ' Molecule , Macromolecule,'})),
+      ['molecule', 'macromolecule']);
+    const engines = EngineRegistry.discover();
+    for (const name of EDA_METHODS)
+      expect(featureSemTypesOf(engineByName(engines, name)).length, 0, name);
+    expect(takesSemTypes(stub, ['MOLECULE']), true);
+    expect(takesSemTypes(xgboost(), ['Molecule']), false);
+    expect(takesSemTypes(xgboost(), []), true);
+  });
+
+  test('listMethods shows the semantic types a method takes', async () => {
+    const methods = methodList([xgboost(), moleculeEngine('forge-test-mol')]);
+    const semTypes = methods.getCol('Semantic types');
+    expectArray([semTypes.getString(0), semTypes.getString(1)], ['', 'Molecule']);
+  });
+
+  test('listMethods lists the complete methods with their settings', async () => {
+    const engines = EngineRegistry.discover();
+    const methods = await runListMethods(null, null);
+    expect(methods.name, 'Methods');
+    expectArray(methods.columns.names(), METHOD_COLUMNS);
+    const names: string[] = methods.getCol('Method').toList();
+    expectArray(names, inDiscoveryOrder(engines, engines.filter(isComplete).map((e) => e.name)));
+    for (const name of EDA_METHODS) {
+      const i = names.indexOf(name);
+      expect(methods.get('Runs on', i), 'browser', name);
+      expect(methods.get('Keeps training rows', i), ROWS_ENGINES.includes(name), `${name} training rows`);
+    }
+    const xgboost = engineByName(engines, 'XGBoost');
+    const settings: SettingDetails[] = JSON.parse(methods.get('Settings', names.indexOf('XGBoost')));
+    expectArray(settings.map((s) => s.name), hyperparametersOf(xgboost).map((p) => p.name));
+    const iterations = settings.find((s) => s.name === 'iterations');
+    if (iterations === undefined)
+      throw new Error('XGBoost has no iterations setting');
+    expect(iterations.type, DG.TYPE.INT);
+    expect(iterations.default, 20);
+    expect(iterations.min, 1);
+    expect(iterations.max, 100);
+    const svm = names.indexOf('SVM');
+    const svmSettings: SettingDetails[] = JSON.parse(methods.get('Settings', svm));
+    expect(svmSettings.some((s) => s.name === 'probability'), false, 'Settings lists SVM\'s probability');
+    expect(methods.get('Hyperparameters', svm).split(', ').includes('probability'), false,
+      'Hyperparameters lists SVM\'s probability');
+  });
+
+  test('listMethods marks the applicable and the suggested methods of a table', async () => {
+    const iris = await grok.data.files.openTable(IRIS);
+    expectArray(await markedMethods(iris, 'Species', 'Applicable'), [...CLASSIFIERS].sort());
+    expectArray(await markedMethods(iris, 'Species', 'Suggested'), ['XGBoost']);
+    expectArray((await markedMethods(iris, 'Petal.Length', 'Applicable')).filter((name) => name.endsWith('Regression')),
+      ['Linear Regression', 'PLS Regression']);
+  });
+
+  test('listMethods takes the table\'s last column as the target by default', async () => {
+    const iris = await grok.data.files.openTable(IRIS);
+    expect(iris.columns.byIndex(iris.columns.length - 1).name, 'Species');
+    expectArray(await markedMethods(iris, null, 'Applicable'), [...CLASSIFIERS].sort());
+    expectArray(await markedMethods(iris, null, 'Suggested'), ['XGBoost']);
+  });
+
+  test('listMethods refuses a missing target column', async () => {
+    const iris = await grok.data.files.openTable(IRIS);
+    await expectExceptionAsync(() => runListMethods(iris, 'Specie').then(() => {}),
+      failsWith('The table has no column \'Specie\'.'));
+    await expectExceptionAsync(() => runListMethods(DG.DataFrame.create(0), null).then(() => {}),
+      failsWith('The table has no columns.'));
+  });
+
+  test('listMethods refuses a table as trainModel does', async () => {
+    const few = DG.DataFrame.fromColumns([DG.Column.fromFloat32Array('x', new Float32Array([1, 2, 3])),
+      DG.Column.fromFloat32Array('y', new Float32Array([2, 4, 6]))]);
+    const message = 'Training needs at least 10 rows; the table has 3.';
+    await expectExceptionAsync(() => runListMethods(few, 'y').then(() => {}), failsWith(message));
+    await expectExceptionAsync(() => runTrainModel({table: few, target: 'y', showProgress: false}).then(() => {}),
+      failsWith(message));
+  });
+
+  test('listMethods suggests the method trainModel trains with', async () => {
+    const tables = [await openDemoTable(IRIS, 'methods'), demoDemog(200)];
+    try {
+      for (const [table, target] of [[tables[0], 'Species'], [tables[1], 'height']] as const) {
+        const methods = await runListMethods(table, target);
+        const suggested = methods.getCol('Method').toList().filter((_, i) => methods.get('Suggested', i) === true);
+        const {method} = await runTrainModel({table, target, showProgress: false});
+        expectArray(suggested, [method]);
+      }
+    } finally {
+      await deleteRunsOf(tables);
+    }
+  }, {timeout: 60000});
+
+  test('listMethods is registered and callable without inputs', async () => {
+    const func = DG.Func.find({package: 'Forge', name: 'listMethods'})[0];
+    expectArray(func?.inputs.map((p) => p.name) ?? [], ['table', 'target']);
+    expect(func?.outputs[0]?.propertyType, DG.TYPE.DATA_FRAME);
+    const methods: unknown = await grok.functions.call('Forge:listMethods', {});
+    expect(methods instanceof DG.DataFrame && methods.col('Method') !== null, true, `Result: ${methods}`);
+  });
+});

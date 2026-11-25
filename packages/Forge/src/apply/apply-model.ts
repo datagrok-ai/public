@@ -1,0 +1,372 @@
+import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
+import {PREDICTION_TAG} from '../constants';
+import {defaultMissingValues, Engine, featureSemTypesOf, isComplete} from '../engines/engine';
+import {apply, EnginePrediction, LoopProgress, yieldToEventLoop} from '../engines/engine-calls';
+import {EngineRegistry} from '../engines/engine-registry';
+import {errorMessage, ForgeError} from '../forge-error';
+import {ApplicationInsert, ApplicationSource, ModelRow} from '../generated/db';
+import {ClassProbabilities, probabilityOf} from '../metrics/metrics';
+import {imputeSettings, MissingValuesSettings, prepareMissingValues} from '../preparation/missing-values';
+import {CLASS_PROBABILITIES, isRecord, PreparationOptions, preparationOptionsOf, stringsOf}
+  from '../preparation/preparation-options';
+import {replayPostprocessing, replayPreprocessing} from '../preparation/pipeline';
+import {rowCopy} from '../preparation/row-copy';
+import {findModelRow, ownBlob} from '../storage/model-store';
+import {ColumnSchema, TargetSchema} from '../training/train-model';
+import {recordApplication} from './application-store';
+import {ColumnMapping, exactMapping, MappingProblem, mappingProblems} from './column-matching';
+import {featureColumns} from './feature-columns';
+
+export const DEFAULT_BATCH_SIZE = 10000;
+const YIELD_MS = 50;
+// Prediction types copied through their raw data; a text column's raw data indexes its own categories.
+const RAW_COPY_TYPES: string[] = [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT, DG.COLUMN_TYPE.QNUM];
+
+/** The `model` columns applying reads (the system columns come with any query). */
+export const APPLY_COLUMNS = ['name', 'engine_name', 'engine_namespace', 'target_name', 'features', 'options',
+  'blob'] as const;
+export type ApplyModelRow = Pick<ModelRow, typeof APPLY_COLUMNS[number] | 'id' | 'created_on'>;
+
+export interface LoadedModel {
+  row: ApplyModelRow;
+  engine: Engine;
+  /** The features a table must provide ({@link requiredFeaturesOf}). */
+  features: ColumnSchema[];
+  options: PreparationOptions;
+  blobPath: string;
+}
+
+export interface ApplyRequest {
+  model: LoadedModel;
+  table: DG.DataFrame;
+  mapping: ColumnMapping;
+  batchSize: number;
+  missingValues: MissingValuesSettings;
+}
+
+export interface ApplyResult {
+  column: DG.Column;
+  /** The probability columns added after the labels (a model saved with Predict probability). */
+  probabilityColumns: DG.Column[];
+  skippedRows: number;
+}
+
+/** The predictions of the rows a request keeps; nothing is added to the table. */
+export interface RowPredictions {
+  /** What the method got: the feature columns with the missing values handled and the preprocessing replayed. */
+  columns: DG.Column[];
+  /** The method's own output column. */
+  raw: DG.Column;
+  /** [raw] with the postprocessing replayed (the labels of Predict probability); [raw] itself without a step. */
+  labels: DG.Column;
+  /** The table's rows predicted, or null when no row was skipped. */
+  keptRows: DG.BitSet | null;
+  skippedRows: number;
+  blob: Uint8Array;
+  /** The method's class probabilities of the kept rows, when it returns them. */
+  probabilities?: ClassProbabilities;
+}
+
+/** The model with the id or the unique name [idOrName], ready to apply. */
+export async function loadModel(idOrName: string): Promise<LoadedModel> {
+  return loadedModelOf(await findModelRow(idOrName, APPLY_COLUMNS), EngineRegistry.discover());
+}
+
+/** {@link loadModel} for a row already read, with the engines already discovered. */
+export function loadedModelOf(row: ApplyModelRow, engines: Engine[]): LoadedModel {
+  const name = row.name;
+  if (!row.blob) {
+    throw new ForgeError(`The model '${name}' has no model file, so it cannot be applied. ` +
+      'It was not trained and saved in Forge.');
+  }
+  const blob = ownBlob(row.blob);
+  if (blob === null)
+    throw new ForgeError(`The model '${name}' points to a file outside Forge's storage and cannot be applied.`);
+  const features = requiredFeaturesOf(row);
+  if (features === null)
+    throw new ForgeError(`The model '${name}' has no feature list.`);
+  const engine = engines.find((e) => e.name === row.engine_name && isComplete(e));
+  if (engine === undefined) {
+    throw new ForgeError(`The method '${row.engine_name}' is not installed. ` +
+      `Install the ${row.engine_namespace} package.`);
+  }
+  return {row, engine, features, options: preparationOptionsOf(row.options), blobPath: blob.path};
+}
+
+/** Adds the prediction column to the request's table and records the application as completed, failed or
+ * cancelled; mapping problems and an empty table are refused first, without a record. */
+export async function applyAndRecord(request: ApplyRequest, source: ApplicationSource,
+  progress?: LoopProgress): Promise<ApplyResult> {
+  checkApplyRequest(request);
+  const {model, table} = request;
+  const startedOn = Date.now();
+  const record = (outcome: Pick<ApplicationInsert, 'status' | 'column_name' | 'skipped_rows' | 'error'>) =>
+    recordApplication({model_id: model.row.id, table_name: table.name, row_count: table.rowCount, source,
+      ...outcome, duration_ms: Date.now() - startedOn});
+  let result: ApplyResult;
+  try {
+    result = await predict(request, progress);
+  } catch (e) {
+    // The caller gets the application's own error, even when its record cannot be written.
+    await Promise.allSettled([record(progress?.canceled ? {status: 'cancelled'} :
+      {status: 'failed', error: errorMessage(e)})]);
+    throw e;
+  }
+  await record({status: 'completed', column_name: result.column.name, skipped_rows: result.skippedRows});
+  return result;
+}
+
+/** {@link applyAndRecord} under the cancellable task-bar progress "Predicting <target>". */
+export async function applyWithProgress(request: ApplyRequest, source: ApplicationSource): Promise<ApplyResult> {
+  const progress = DG.TaskBarProgressIndicator.create(`Predicting ${request.model.row.target_name}`,
+    {cancelable: true});
+  try {
+    return await applyAndRecord(request, source, progress);
+  } finally {
+    progress.close();
+  }
+}
+
+/** The missing-values handling [model] was trained with (Impute with its recorded settings); for a model that
+ * records none, `keep` when its method handles missing values, else `skip`. */
+export function missingValuesOf(model: LoadedModel): MissingValuesSettings {
+  const recorded = model.options.missingValues;
+  if (recorded === undefined)
+    return defaultMissingValues(model.engine);
+  return recorded.mode === 'impute' ? imputeSettings(recorded.neighbors, recorded.distance) : {mode: recorded.mode};
+}
+
+/** The body of `Forge:applyModel`: exact names plus the given pairs, missing values handled as at training
+ * ({@link missingValuesOf}). */
+export async function runApplyModel(model: string, table: DG.DataFrame,
+  columnNamesMap: {[feature: string]: string} | null, showProgress: boolean): Promise<DG.DataFrame> {
+  const loaded = await loadModel(model);
+  const request: ApplyRequest = {model: loaded, table, mapping: apiMapping(loaded, table, columnNamesMap),
+    batchSize: DEFAULT_BATCH_SIZE, missingValues: missingValuesOf(loaded)};
+  await (showProgress ? applyWithProgress(request, 'api') : applyAndRecord(request, 'api'));
+  return table;
+}
+
+/** The API functions' mapping: exact names overlaid with the [columnNamesMap] pairs; its problems are refused in
+ * {@link apiMappingMessage}'s sentences. */
+export function apiMapping(model: LoadedModel, table: DG.DataFrame,
+  columnNamesMap: {[feature: string]: string} | null | undefined): ColumnMapping {
+  const mapping = exactMapping(model.features, table);
+  for (const [feature, column] of Object.entries(columnNamesMap ?? {}))
+    mapping.set(feature, column);
+  const problems = mappingProblems(model.features, mapping, table, model.engine.name);
+  if (problems.length > 0)
+    throw new ForgeError(apiMappingMessage(problems));
+  return mapping;
+}
+
+/** `<target> (predicted)`, then `<target> (predicted 2)`, ...: the first name no column has, ignoring case. */
+export function predictionName(table: DG.DataFrame, target: string): string {
+  return freeName(table, `${target} (predicted)`, (i) => `${target} (predicted ${i})`);
+}
+
+/** [first], else the first of [nth] 2, 3, ... that no column of [table] has, ignoring case. */
+function freeName(table: DG.DataFrame, first: string, nth: (i: number) => string): string {
+  let name = first;
+  for (let i = 2; table.col(name) !== null; i++)
+    name = nth(i);
+  return name;
+}
+
+/** Refuses a request whose mapping has problems or whose table has no rows. */
+export function checkApplyRequest({model, table, mapping}: ApplyRequest): void {
+  const problems = mappingProblems(model.features, mapping, table, model.engine.name);
+  if (problems.length > 0)
+    throw new ForgeError(problems.map((p) => p.message).join(' '));
+  if (table.rowCount === 0)
+    throw new ForgeError('The table has no rows to predict.');
+}
+
+/** The model's predictions of the request's rows: the missing values handled, the preparation replayed, the method
+ * called in batches. Nothing is added to the table and nothing is recorded. */
+export async function predictRows(request: ApplyRequest, progress?: LoopProgress): Promise<RowPredictions> {
+  const {model, table, mapping} = request;
+  const prepared = await prepareMissingValues(featureColumns(table, model.features, mapping), undefined,
+    request.missingValues, featureSemTypesOf(model.engine));
+  const rowCount = table.rowCount - prepared.skippedRows;
+  if (rowCount === 0) {
+    throw new ForgeError('Every row has a missing value in the columns the model needs, so nothing can be ' +
+      'predicted. Fill the missing values or choose Impute.');
+  }
+  const columns = replayPreprocessing(prepared.features, model.options);
+  const blob = await grok.dapi.files.readAsBytes(model.blobPath);
+  const {prediction: raw, probabilities} =
+    await predictInBatches(model.engine, columns, rowCount, blob, request.batchSize, progress);
+  return {columns, raw, labels: replayPostprocessing(raw, model.options, probabilities), keptRows: prepared.keptRows,
+    skippedRows: prepared.skippedRows, blob, probabilities};
+}
+
+async function predict(request: ApplyRequest, progress?: LoopProgress): Promise<ApplyResult> {
+  const {model, table} = request;
+  const {labels, keptRows, skippedRows, probabilities} = await predictRows(request, progress);
+  const target = model.row.target_name;
+  const added = (values: DG.Column, name: string): DG.Column => {
+    const column = keptRows === null ? values : scatteredColumn(values, keptRows, table.rowCount);
+    column.name = name;
+    column.setTag(PREDICTION_TAG, model.row.id);
+    table.columns.add(column);
+    return column;
+  };
+  const column = added(labels, predictionName(table, target));
+  const {options} = model;
+  const probabilityColumns: DG.Column[] = [];
+  if (options.postprocessingInfo.includes(CLASS_PROBABILITIES) && probabilities !== undefined) {
+    const {positiveClass} = options;
+    const classes = positiveClass !== undefined && probabilities.classes.includes(positiveClass) ? [positiveClass] :
+      probabilities.classes;
+    for (const cls of classes) {
+      const probability = added(probabilityOf(probabilities, cls)!, probabilityName(table, target, cls));
+      probability.meta.description = `Probability that ${target} is ${cls}, predicted by ${model.row.name}`;
+      probabilityColumns.push(probability);
+    }
+  }
+  return {column, probabilityColumns, skippedRows};
+}
+
+/** `P(<target> = <cls>)`, then `P(<target> = <cls>) 2`, ...: the first name no column has, ignoring case. */
+function probabilityName(table: DG.DataFrame, target: string, cls: string): string {
+  const base = `P(${target} = ${cls})`;
+  return freeName(table, base, (i) => `${base} ${i}`);
+}
+
+/** One engine call on [features] themselves ([rowCount] rows) when they fit a batch; otherwise one call per batch of
+ * rows, with a pause for the event loop at most every YIELD_MS, so a cancel and the progress repaint get through.
+ * The cancel is checked before and after every call, so a cancel during the last one stops the application too. */
+async function predictInBatches(engine: Engine, features: DG.Column[], rowCount: number, blob: Uint8Array,
+  batchSize: number, progress?: LoopProgress): Promise<EnginePrediction> {
+  let yieldedAt = Date.now();
+  const checkCanceled = (): void => {
+    if (progress?.canceled)
+      throw new ForgeError('Application was cancelled.');
+  };
+  const predictBatch = async (start: number): Promise<EnginePrediction> => {
+    if (Date.now() - yieldedAt >= YIELD_MS) {
+      await yieldToEventLoop();
+      yieldedAt = Date.now();
+    }
+    checkCanceled();
+    const end = Math.min(start + batchSize, rowCount);
+    const batch = rowCount <= batchSize ? features : rowCopy(features, rowRange(rowCount, start, end));
+    const prediction = await apply(engine, batch, blob);
+    checkCanceled();
+    progress?.update(100 * end / rowCount, `Rows ${start + 1}-${end} of ${rowCount}`);
+    return prediction;
+  };
+  const first = await predictBatch(0);
+  if (rowCount <= batchSize)
+    return first;
+  const column = DG.Column.fromType(first.prediction.type, first.prediction.name, rowCount);
+  const probabilities: ClassProbabilities | undefined = first.probabilities === undefined ? undefined :
+    {classes: first.probabilities.classes,
+      columns: first.probabilities.columns.map((c) => DG.Column.fromType(DG.COLUMN_TYPE.FLOAT, c.name, rowCount))};
+  const copyBatch = (batch: EnginePrediction, start: number): void => {
+    copyInto(column, batch.prediction, start);
+    if (probabilities !== undefined && batch.probabilities !== undefined) {
+      for (const [k, col] of batch.probabilities.columns.entries())
+        copyInto(probabilities.columns[k], col, start);
+    }
+  };
+  copyBatch(first, 0);
+  for (let start = batchSize; start < rowCount; start += batchSize)
+    copyBatch(await predictBatch(start), start);
+  return {prediction: column, probabilities};
+}
+
+/** The rows [start, end) of [rowCount] rows; only the batch's bits are visited, not every row as a predicate would. */
+function rowRange(rowCount: number, start: number, end: number): DG.BitSet {
+  const words = new Uint32Array((rowCount + 31) >>> 5);
+  for (let r = start; r < end; r++)
+    words[r >>> 5] |= 1 << (r & 31);
+  return DG.BitSet.fromBytes(words.buffer, rowCount);
+}
+
+/** The values of [source] written into [target] from row [offset], without events. */
+export function copyInto(target: DG.Column, source: DG.Column, offset: number): void {
+  const targetRaw = rawNumbers(target);
+  const sourceRaw = rawNumbers(source);
+  if (targetRaw !== null && sourceRaw !== null && target.type === source.type)
+    targetRaw.set(sourceRaw.subarray(0, source.length), offset);
+  else {
+    for (let r = 0; r < source.length; r++)
+      target.set(offset + r, source.get(r), false);
+  }
+}
+
+/** [prediction] of the kept rows spread over all [rowCount] rows; the skipped rows stay empty. */
+export function scatteredColumn(prediction: DG.Column, keptRows: DG.BitSet, rowCount: number): DG.Column {
+  const column = DG.Column.fromType(prediction.type, prediction.name, rowCount);
+  const rows = keptRows.getSelectedIndexes();
+  const targetRaw = rawNumbers(column);
+  const sourceRaw = rawNumbers(prediction);
+  if (targetRaw !== null && sourceRaw !== null) {
+    for (let i = 0; i < rows.length; i++)
+      targetRaw[rows[i]] = sourceRaw[i];
+  } else {
+    for (let i = 0; i < rows.length; i++)
+      column.set(rows[i], prediction.get(i), false);
+  }
+  return column;
+}
+
+/** The raw values of a numerical column, empty cells included, or null for a column of another type. */
+function rawNumbers(col: DG.Column): Int32Array | Float32Array | Float64Array | null {
+  if (!RAW_COPY_TYPES.includes(col.type))
+    return null;
+  const raw = col.getRawData();
+  return raw instanceof Int32Array || raw instanceof Float32Array || raw instanceof Float64Array ? raw : null;
+}
+
+/** One sentence for the features without a column, then the other problems. */
+function apiMappingMessage(problems: MappingProblem[]): string {
+  const unmapped = problems.filter((p) => p.isUnmapped).map((p) => `'${p.feature}'`);
+  const sentences = problems.filter((p) => !p.isUnmapped).map((p) => p.message);
+  if (unmapped.length === 1)
+    sentences.unshift(`The table has no column ${unmapped[0]} the model needs. Map it in columnNamesMap.`);
+  else if (unmapped.length > 1) {
+    sentences.unshift(`The table has no columns ${unmapped.join(', ')} the model needs. ` +
+      'Map them in columnNamesMap.');
+  }
+  return sentences.join(' ');
+}
+
+/** The `{columns: [{name, type, semType?}]}` feature list of a model row, or null when it has none. */
+export function featureSchemasOf(features: unknown): ColumnSchema[] | null {
+  const columns = isRecord(features) ? features.columns : undefined;
+  if (!Array.isArray(columns) || columns.length === 0)
+    return null;
+  const schemas = columns.map(parsedColumnSchema).filter((s): s is ColumnSchema => s !== null);
+  return schemas.length === columns.length ? schemas : null;
+}
+
+/** The features a table must provide to apply the model: its feature list without the columns Skip unique categories
+ * left out (`options.skippedColumns`); null when it has no feature list. */
+export function requiredFeaturesOf(row: Pick<ModelRow, 'features' | 'options'>): ColumnSchema[] | null {
+  const features = featureSchemasOf(row.features);
+  const skipped = preparationOptionsOf(row.options).skippedColumns ?? [];
+  return features === null ? null : features.filter((f) => !skipped.includes(f.name));
+}
+
+/** A stored `model.target`: `{name, type, semType?}` with its `categories` when they are a list of strings; null
+ * without a name and a type. */
+export function targetSchemaOf(value: unknown): TargetSchema | null {
+  const schema = parsedColumnSchema(value);
+  if (schema === null || !isRecord(value) || !Array.isArray(value.categories))
+    return schema;
+  const categories = stringsOf(value.categories);
+  return categories.length === value.categories.length ? {...schema, categories} : schema;
+}
+
+function parsedColumnSchema(value: unknown): ColumnSchema | null {
+  if (!isRecord(value))
+    return null;
+  const {name, type, semType} = value;
+  if (typeof name !== 'string' || typeof type !== 'string')
+    return null;
+  return typeof semType === 'string' && semType !== '' ? {name, type, semType} : {name, type};
+}

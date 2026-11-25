@@ -9,7 +9,7 @@ import {ItemMetadata} from '../view/ViewCommunication';
 import {RestrictionState} from './FuncCallInstancesBridge';
 import {ConsistencyInfo, FuncCallStateInfo} from './StateTreeNodes';
 import {
-  RUN_ERROR_PATH, readInstanceState, readOutputOutdated, saveCallState, saveInstanceState,
+  RUN_ERROR_PATH, completedOption, readInstanceState, readOutputOutdated, saveCallState, saveInstanceState,
 } from './funccall-utils';
 import {copyDataFrame} from '../utils';
 
@@ -104,6 +104,9 @@ async function saveSnapshotRec(state: StateSnapshot): Promise<PipelineSerialized
   return {...state, uuid: '', steps} as PipelineSerializedState;
 }
 
+const isCompleted = (state: StateSnapshot): boolean =>
+  isFuncCallState(state) ? state.isOutputOutdated === false : state.steps.every(isCompleted);
+
 /** Saves a snapshot like the driver saves a tree: every step call as a new run, then the workflow meta-call.
  * A step snapshot saves its call only. Resolves the saved meta-call or step call. */
 export async function saveStateSnapshot(snapshot: StateSnapshot, metadata: ItemMetadata = {}): Promise<DG.FuncCall> {
@@ -113,5 +116,6 @@ export async function saveStateSnapshot(snapshot: StateSnapshot, metadata: ItemM
   }
   if (!snapshot.nqName)
     throw new Error(`Attempting to save pipeline with no nqName`);
-  return saveInstanceState(snapshot.nqName, await saveSnapshotRec(snapshot), metadata, snapshot.version);
+  return saveInstanceState(snapshot.nqName, await saveSnapshotRec(snapshot), metadata, snapshot.version,
+    {callOptions: completedOption(isCompleted(snapshot))});
 }

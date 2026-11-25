@@ -1,7 +1,8 @@
 /* eslint-disable max-len */
 import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
 import {MolList, RDModule, RDMol, RGroupDecomp} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {IMolContext, getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
+import {IMolContext, getMolSafe, getQueryMolSafe, validationMessage, validationText}
+  from '../utils/mol-creation_rdkit';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {RuleId} from '../panels/structural-alerts';
 import {SubstructureSearchType} from '../constants';
@@ -154,6 +155,11 @@ const FAST_READ = JSON.stringify({sanitize: false, removeHs: false, assignStereo
  * order: kekulized, else aromatic as written. */
 const SANITIZED_READS = [JSON.stringify({removeHs: false, assignStereo: false}),
   JSON.stringify({removeHs: false, assignStereo: false, kekulize: false})];
+
+/** A SMILES's chirality marks (`@`, `@@`, `@TH1`, `@SP2`...) and its double bonds' directions: SMILES has neither `@`
+ * nor `/` and `\` elsewhere. */
+const CHIRALITY = /@(?:@|TH[12]|AL[12]|SP[1-3]|TB\d{1,2}|OH\d{1,2})?/g;
+const BOND_DIRECTIONS = /[/\\]/g;
 
 export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity {
   /** The molecules the search read the fast way and cached: a query that needs sanitized molecules reads them again. */
@@ -477,9 +483,9 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return results;
   }
 
-  /** Returns SMILES with stereochemistry removed for {@link molecules}.
-   * Malformed molecules result in an empty string. */
-  async flattenMolecules(molecules: string[]): Promise<string[]> {
+  /** Returns SMILES of {@link molecules} without their stereocenters, and without the E/Z configuration of their
+   * double bonds only with {@link flattenDoubleBonds}. Malformed molecules result in an empty string. */
+  async flattenMolecules(molecules: string[], flattenDoubleBonds: boolean = false): Promise<string[]> {
     if (!molecules || this._requestTerminated)
       return [];
     const results = new Array<string>(molecules.length).fill('');
@@ -502,7 +508,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       }
       if (rdMol) {
         try {
-          results[i] = rdMol.get_smiles(JSON.stringify({doIsomericSmiles: false}));
+          results[i] = this.withoutStereo(rdMol.get_smiles(), flattenDoubleBonds);
           addedToCache = this.addToCache(rdMol);
         } catch {
           // nothing to do, result is already an empty string
@@ -515,6 +521,21 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       }
     }
     return results;
+  }
+
+  /** Isomeric `smiles` without its chirality marks and, with `flattenDoubleBonds`, its bond directions, written again
+   * canonically; isotopes stay. */
+  private withoutStereo(smiles: string, flattenDoubleBonds: boolean): string {
+    const achiral = smiles.replace(CHIRALITY, '');
+    const flat = flattenDoubleBonds ? achiral.replace(BOND_DIRECTIONS, '') : achiral;
+    if (flat === smiles)
+      return smiles;
+    const mol = this._rdKitModule.get_mol(flat);
+    try {
+      return mol?.get_smiles() || flat;
+    } finally {
+      mol?.delete();
+    }
   }
 
   /** Returns InChI identifiers for {@link molecules}, or InChI keys when {@link keys} is set.
@@ -557,6 +578,13 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       }
     }
     return results;
+  }
+
+  /** `validateMolecules`' texts of {@link molecules} on this worker's module (utils/mol-creation_rdkit.ts: the
+   * `validationText` of `validationMessage`, the function `validateMolecule` calls): '' for a valid molecule. In one go,
+   * without the pauses for the terminate flag (a validation is never cancelled, and each pause costs ~4 ms). */
+  validateMolecules(molecules: string[]): string[] {
+    return molecules.map((molecule) => validationText(validationMessage(molecule, this._rdKitModule)));
   }
 
   getStructuralAlerts(alerts: {[rule in RuleId]?: string[]}, molecules?: string[]): {[rule in RuleId]?: boolean[]} {

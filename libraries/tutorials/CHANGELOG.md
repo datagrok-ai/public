@@ -1,5 +1,9 @@
 # tutorials changelog
 
+## v.next
+
+* Tutorial: The steps pane holds only the running tutorial; closing it returns to the Tutorials view instead of docking the track list
+
 ## 1.7.11 (2026-11-05)
 
 * Dependencies: Pinned `uuid` to ^11.1.1 through `overrides`, so the `uuid` 8.3.2 that exceljs 4.4.0 brings is no longer resolved (GHSA-w5hq-g745-h8pq)

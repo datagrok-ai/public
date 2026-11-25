@@ -143,6 +143,21 @@ pre-dose > 5% of Cmax — are **not computed**; this is stated rather than impli
 - Handled by position (before first measurable / embedded / trailing),
   consistent with the zero-fill convention of ICH M13A.
 
+**Intraperitoneal (i.p.) dosing**
+- Route values \`IP\`, \`i.p.\`, \`intraperitoneal\`, \`I-PERITON\`, \`IP bolus\` and
+  similar spellings map to *IP*, an extravascular route (CL/F, Vz/F; no Vss or
+  C₀). \`intraportal\` and \`intrapleural\` are not i.p.
+- \`intraperitoneal infusion\` is analysed as a single i.p. dose, with a warning.
+- Of the order of 10–20% of i.p. injections fail (Gaines Das & North 2007,
+  citing Claassen 1994), depending on the operator; 29% in one rat series
+  (Laferriere 2022). Outlier tests catch only some. Inspect the
+  individual profiles (Combined chart by subject, facets; for sparse designs,
+  the per-animal points beside the composite mean).
+- *Exclude λz* removes only the λz-dependent values; keeping a whole animal out
+  of the means and %F is not available yet.
+- %F after i.p. can include partial hepatic first pass (portal absorption, Al
+  Shoyaib et al. 2020) and injection failures; it is not an oral F.
+
 ## Demo studies
 
 Five demo studies of one simulated discovery program (Series X, lead

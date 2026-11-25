@@ -1,0 +1,118 @@
+import * as DG from 'datagrok-api/dg';
+import {Engine, EngineRole, Hyperparameters} from './engine';
+import {ForgeError} from '../forge-error';
+import {ClassProbabilities} from '../metrics/metrics';
+import {onFrame} from '../preparation/shared-frame';
+
+/** The time a method's `isApplicable` or `isInteractive` may take. */
+export const CHECK_TIMEOUT_MS = 30000;
+
+/** A method's check did not answer in time. */
+export class NoAnswerError extends ForgeError {
+  constructor(engine: Engine, ms: number) {
+    super(`The method '${engine.name}' did not answer in ${ms / 1000} s.`);
+    this.name = 'NoAnswerError';
+  }
+}
+
+export async function isApplicable(engine: Engine, features: DG.Column[], target: DG.Column,
+  timeoutMs: number = CHECK_TIMEOUT_MS): Promise<boolean> {
+  const func = roleFunc(engine, 'isApplicable', 'does not say which data it supports');
+  return await callCheck(engine, func, features, target, timeoutMs);
+}
+
+export async function isInteractive(engine: Engine, features: DG.Column[], target: DG.Column,
+  timeoutMs: number = CHECK_TIMEOUT_MS): Promise<boolean> {
+  const func = engine.functions.isInteractive;
+  return func === undefined ? false : await callCheck(engine, func, features, target, timeoutMs);
+}
+
+export async function train(engine: Engine, features: DG.Column[], target: DG.Column,
+  hyperparameters: Hyperparameters): Promise<Uint8Array> {
+  const func = roleFunc(engine, 'train', 'cannot train models');
+  const result: unknown = await onFrame(features, (frame) => {
+    const [df, predictColumn] = dataArgs(engine, frame, target);
+    return func.apply({...hyperparameters, df, predictColumn});
+  });
+  if (result instanceof Uint8Array)
+    return result;
+  if (result instanceof DG.FileInfo)
+    return result.data;
+  throw new ForgeError(`The method '${engine.name}' returned no model.`);
+}
+
+const PROBABILITY_PREFIX = 'proba_';
+
+export interface EnginePrediction {
+  prediction: DG.Column;
+  probabilities?: ClassProbabilities;
+}
+
+/** The first column of the engine's result, the prediction, and the `proba_<class>` columns after it, all taken out of
+ * the result frame, so a table they are added to is their parent. */
+export async function apply(engine: Engine, features: DG.Column[], blob: Uint8Array): Promise<EnginePrediction> {
+  const func = roleFunc(engine, 'apply', 'cannot apply models');
+  const result: unknown = await onFrame(features, (df) => func.apply({df, model: blob}));
+  if (!(result instanceof DG.DataFrame) || result.columns.length === 0)
+    throw new ForgeError(`The method '${engine.name}' returned no predictions.`);
+  const columns = result.columns.toList();
+  const prediction = columns[0];
+  const probabilityColumns = columns.slice(1).filter((c) => c.name.startsWith(PROBABILITY_PREFIX));
+  for (const col of [prediction, ...probabilityColumns])
+    result.columns.remove(col, false);
+  return probabilityColumns.length === 0 ? {prediction} : {prediction, probabilities: {
+    classes: probabilityColumns.map((c) => c.name.substring(PROBABILITY_PREFIX.length)), columns: probabilityColumns}};
+}
+
+/** The part of a progress indicator a loop of engine calls uses: the cancel flag and the update. */
+export type LoopProgress = Pick<DG.ProgressIndicator, 'canceled' | 'update'>;
+
+/** Lets the browser handle pending events, such as a click on a progress's cancel, between engine calls: awaited
+ * engine calls that finish without I/O resume as microtasks, so a loop of them never reaches the event loop.
+ * A message, unlike `setTimeout`, is not throttled to about a second in a background tab. */
+export function yieldToEventLoop(): Promise<void> {
+  return new Promise((resolve) => {
+    const channel = new MessageChannel();
+    channel.port1.onmessage = () => {
+      channel.port1.close();
+      resolve();
+    };
+    channel.port2.postMessage(null);
+  });
+}
+
+function roleFunc(engine: Engine, role: EngineRole, problem: string): DG.Func {
+  const func = engine.functions[role];
+  if (func === undefined)
+    throw new ForgeError(`The method '${engine.name}' ${problem}. Choose another method.`);
+  return func;
+}
+
+// The race runs inside onFrame, so a check that does not answer gives the shared frame back at the timeout.
+async function callCheck(engine: Engine, func: DG.Func, features: DG.Column[], target: DG.Column,
+  timeoutMs: number): Promise<boolean> {
+  const result: unknown = await onFrame(features, (frame) =>
+    answerWithin<unknown>(engine, func.apply(dataArgs(engine, frame, target)), timeoutMs));
+  return result === true;
+}
+
+async function answerWithin<T>(engine: Engine, call: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new NoAnswerError(engine, ms)), ms);
+  });
+  try {
+    return await Promise.race([call, timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Function engines take the feature table and the target column; script engines one table and the target name. */
+function dataArgs(engine: Engine, features: DG.DataFrame, target: DG.Column): [DG.DataFrame, DG.Column | string] {
+  if (engine.kind === 'function')
+    return [features, target];
+  const table = features.clone();
+  table.columns.add(target.clone());
+  return [table, target.name];
+}

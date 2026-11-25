@@ -218,7 +218,8 @@ for (const lang of languages) {
       }, {timeout: 660000, node: true});
 
       test('Env: reuse existing environment', async () => {
-        // First call creates the env
+        // Same inline environment as 'Env: pip-only deps', which has created it by now (the env
+        // name is a hash of the spec); run alone, this call creates it
         const result1 = await grok.functions.call('CVMTests:PythonEnvReuse',
           {'text': 'first call'});
         expect(result1.startsWith('ok:'), true);

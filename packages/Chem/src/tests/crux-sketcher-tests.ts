@@ -6,6 +6,7 @@ import {_package} from '../package-test';
 import {PackageFunctions} from '../package';
 import {SubstructureFilter} from '../widgets/chem-substructure-filter';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
+import {getQueryMolSafe} from '../utils/mol-creation_rdkit';
 
 const SMILES = 'CC(C(=O)OCCCc1cccnc1)c2cccc(c2)C(=O)c3ccccc3';
 const STEREO_SMILES = 'N[C@@H](C)C(=O)O';
@@ -384,13 +385,14 @@ category('Crux sketcher', () => {
   test('registered', async () => {
     const funcs = DG.Func.find({meta: {role: DG.FUNC_TYPES.MOLECULE_SKETCHER}});
     expect(funcs.some((f) => f.friendlyName === 'Crux'), true, 'Crux is not a molecule sketcher');
-    // HOST-001, HOST-003: registered by Chem alone; a choice of Chem's Sketcher setting, never its default
+    // HOST-001, HOST-003: registered by Chem alone; a choice of Chem's Sketcher setting, and its default since
+    // 2026-11-19 (the product owner: the sketcher of a user who never picked one)
     expect(funcs.filter((f) => f.friendlyName === 'Crux').map((f) => f.package?.name).join(', '), 'Chem',
       'the packages that register Crux');
     const sketcher = (await (await fetch(`${_package.webRoot}package.json`)).json())
       .properties.find((p: {name: string}) => p.name === 'Sketcher');
     expect(sketcher.choices.includes('Crux'), true, `Chem's Sketcher setting offers ${sketcher.choices.join(', ')}`);
-    expect(sketcher.defaultValue, 'Ketcher', 'the default of Chem\'s Sketcher setting');
+    expect(sketcher.defaultValue, 'Crux', 'the default of Chem\'s Sketcher setting');
     const s = await openCrux();
     try {
       expect(s.changes(), 0, 'onChanged events on open');
@@ -409,6 +411,67 @@ category('Crux sketcher', () => {
     } finally {
       s.dialog.close();
     }
+  });
+
+  // run20 STAND S-004: the filter's text box gave Crux `[NH2]c1ccccc1` as SMILES, which drops a bracket atom's H count:
+  // the filter searched any N on benzene (264 of mol1K's rows where the text finds 11), and `[CH3]c` drew nothing. A
+  // substructure filter's host now sets such a text as SMARTS; a sketcher outside a filter still takes it as a molecule.
+  // Only a bracket a SMILES does not need is a query's H count: a canonical SMILES with stereo centres pasted into the
+  // filter's box (reported 2026-11-23: smiles.csv's Nc1ncnc2c1c(Br)cn2[C@@H]3OC[C@@H](O)[C@H]3O) was read as SMARTS,
+  // every atom drawn aromatic- or aliphatic-only, and Similar found nothing; it stays a molecule, as pasted on the
+  // canvas.
+  test('a typed bracket H count stays the query\'s in the substructure filter', async () => {
+    // the text typed, in a filter or not; whether the filter searches the drawing's query or the molecule typed;
+    // molecules the filter's search finds, and ones it misses
+    const rows: [string, boolean, 'query' | 'molecule', string[], string[]][] = [
+      ['[NH2]c1ccccc1', true, 'query', ['Nc1ccccc1'], ['CNc1ccccc1']],
+      ['[CH3]c', true, 'query', ['Cc1ccccc1'], ['CCc1ccccc1']],
+      ['c1cc[nH]c1', true, 'molecule', ['c1cc[nH]c1', 'Cn1cccc1'], []],
+      ['Nc1ncnc2c1c(Br)cn2[C@@H]3OC[C@@H](O)[C@H]3O', true, 'molecule', ['Nc1ncnc2c1c(Br)cn2[C@@H]3OC[C@@H](O)[C@H]3O',
+        'Nc1ncnc2c1c(Br)cn2[C@@H]3OC[C@@](C)(O)[C@H]3O'], ['Nc1ncnc2c1ccn2C']],
+      ['N[C@@H](C)C(=O)O', true, 'molecule', ['N[C@@H](C)C(=O)O', 'CC(C)(N)C(=O)O'], ['NCC(=O)O']],
+      ['[NH2]c1ccccc1', false, 'molecule', ['Nc1ccccc1', 'CNc1ccccc1'], []],
+    ];
+    const problems: string[] = [];
+    for (const filter of [true, false]) {
+      const s = await openCrux(undefined, filter);
+      try {
+        for (const [text, , reads, finds, misses] of rows.filter((r) => r[1] === filter)) {
+          const before = cruxElement(s)!.smarts;
+          s.host.setValue(text);
+          for (let i = 0; i < 30 && cruxElement(s)!.smarts === before; i++)
+            await delay(100);
+          await cruxSettled(s.host.sketcher!);
+          const smarts = cruxElement(s)!.smarts;
+          const where = `${text} ${filter ? 'in a filter' : 'outside a filter'}, drawn as "${smarts}"`;
+          // the filter's key (chem-substructure-filter.ts getSketcherMolecule): the drawing's query, or the text typed
+          const key = s.host.sketcher!.explicitMol?.value ?? s.host.getMolFile();
+          const readsAs = DG.chem.isMolBlock(key) || DG.chem.isSmarts(key) ? 'query' : 'molecule';
+          if (readsAs !== reads)
+            problems.push(`${where}: the filter's key "${key.slice(0, 80)}" reads as a ${readsAs}`);
+          // a molecule is drawn as one: no atom or bond query on the canvas (an aromatic- or aliphatic-only atom)
+          if (reads === 'molecule' && s.host.getMolFile().includes('SMARTSQ'))
+            problems.push(`${where}: drawn with query atoms`);
+          // what the filter's search finds with that key (getQueryMolSafe, as the search builds its query)
+          const query = getQueryMolSafe(key, DG.chem.isMolBlock(key) ? '' : key, rdkit);
+          const targets = [...finds.map((t) => [t, true] as const), ...misses.map((t) => [t, false] as const)];
+          try {
+            for (const [target, want] of targets) {
+              const mol = rdkit.get_mol(target);
+              const got = !!query && mol.get_substruct_match(query) !== '{}';
+              mol.delete();
+              if (got !== want)
+                problems.push(`${where}: ${got ? 'finds' : 'misses'} ${target}`);
+            }
+          } finally {
+            query?.delete();
+          }
+        }
+      } finally {
+        s.dialog.close();
+      }
+    }
+    expect(problems.join('; '), '', 'typed texts');
   });
 
   test('size', async () => {
@@ -908,6 +971,96 @@ category('Crux sketcher', () => {
       dialog.close();
     }
   });
+
+  // js-api's ISketcherOptions (2026-11-19, the owner's decision 11 on Apps | Chem | Sketcher): a host given its own
+  // sketcher shows it whatever the session's, and leaves the session's alone; a switch through `sketcherType` is the
+  // host's own from then on (a host following the session's sketcher would wait for the session's to match, and show
+  // nothing)
+  test('a host given its own sketcher shows it whatever the session\'s, which it leaves as it is', async () => {
+    grok.chem.currentSketcherType = 'OpenChemLib';
+    const host = new DG.chem.Sketcher(undefined, undefined, {sketcherType: 'Crux'});
+    host.setSmiles(SMILES);
+    const dialog = ui.dialog().add(host).show();
+    let other: DG.Dialog | null = null;
+    try {
+      const shown = await host.sketcherReady();
+      expect(shown.root.classList.contains('crux-sketcher'), true, 'the host shows its own sketcher, Crux');
+      expect(grok.chem.currentSketcherType, 'OpenChemLib', 'the session\'s sketcher');
+      expect(canonical(host.getMolFile()), canonical(SMILES), 'the molecule in Crux');
+      const plain = new DG.chem.Sketcher();
+      other = ui.dialog().add(plain).show();
+      expect((await plain.sketcherReady()).root.classList.contains('crux-sketcher'), false,
+        'a host without its own sketcher shows the session\'s, OpenChemLib');
+      other.close();
+      other = null;
+      host.sketcherType = 'OpenChemLib';
+      expect((await host.sketcherReady()).root.classList.contains('crux-sketcher'), false, 'switched to OpenChemLib');
+      await waitUntil(() => canonical(host.getMolFile()) === canonical(SMILES), 'the molecule in OpenChemLib', 5000);
+      // the session's sketcher is still OpenChemLib: the host switches to Crux all the same
+      host.sketcherType = 'Crux';
+      const back = await host.sketcherReady();
+      expect(back.root.classList.contains('crux-sketcher'), true, 'switched back to Crux, the session on OpenChemLib');
+      await waitUntil(() => back.root.querySelector<CruxElement>('crux-sketch')?.isEmpty === false,
+        'the molecule did not come back to Crux', 5000);
+      expect(canonical(host.sketcher!.molFile), canonical(SMILES), 'the molecule back in Crux');
+      expect(grok.chem.currentSketcherType, 'OpenChemLib', 'the session\'s sketcher after the switches');
+    } finally {
+      other?.close();
+      dialog.close();
+    }
+  });
+
+  // HOST-021, Apps | Chem | Sketcher (2026-11-19): `grok.shell.o = x` freezes the current object for a second, and the
+  // host's next drawing within it was dropped: two strokes in a row left the context panel on the first drawing (the
+  // app's BDD, a bond drawn as the app opened). The host's own next drawing replaces its last one.
+  test('a drawing within a second of the host\'s last one still becomes the current object', async () => {
+    const s = await openCrux();
+    const current = () => {
+      const o = grok.shell.o;
+      return o instanceof DG.SemanticValue && o.semType === DG.SEMTYPE.MOLECULE ? canonical(String(o.value)) : null;
+    };
+    try {
+      s.host.setSmiles('CCO');
+      await waitUntil(() => current() === canonical('CCO'), 'the first drawing did not become the current object', 5000);
+      // at once: within the second the platform keeps the first drawing current
+      s.host.setSmiles('CCN');
+      await waitUntil(() => current() === canonical('CCN'), () => `the second drawing is not the current object, ` +
+        `${current()} is`, 5000);
+      await delay(1500);
+      expect(current(), canonical('CCN'), 'the current object a second and a half later');
+    } finally {
+      s.dialog.close();
+    }
+  });
+
+  test('showInput: false leaves the host\'s input row out and the sketcher takes the host; by default it is there',
+    async () => {
+      grok.chem.currentSketcherType = 'Crux';
+      // Chem's validateMolecule as the platform calls it (package.js's: this bundle's has no RDKit of its own)
+      const validate = (molecule: string) => DG.Func.find({package: 'Chem', name: 'validateMolecule'})[0]
+        .prepare({s: molecule}).callSync().getOutputParamValue();
+      const bare = new DG.chem.Sketcher(undefined, validate, {showInput: false});
+      const usual = new DG.chem.Sketcher();
+      const dialogs = [ui.dialog().add(bare).show(), ui.dialog().add(usual).show()];
+      try {
+        await Promise.all([bare.sketcherReady(), usual.sketcherReady()]);
+        const row = (host: DG.chem.Sketcher) => host.root.querySelector<HTMLElement>('.grok-sketcher-input');
+        expect(row(bare), null, 'showInput: false: no input row');
+        expect(bare.molInput.isConnected, false, 'showInput: false: no molecule field in the page');
+        expect(row(usual) !== null && row(usual)!.getClientRects().length > 0, true, 'by default: the input row shown');
+        // the sketcher's box is the in-place sketcher's: nothing above it
+        const inplace = bare.root.querySelector<HTMLElement>('.chem-inplace-sketcher')!.getBoundingClientRect();
+        const box = bare.host.getBoundingClientRect();
+        expect(Math.abs(box.top - inplace.top) <= 1 && Math.abs(box.height - inplace.height) <= 1, true,
+          `the sketcher's box ${box.top},${box.height} in the in-place sketcher's ${inplace.top},${inplace.height}`);
+        // the host still says when a molecule is malformed
+        bare.setMolecule('C1CC(');
+        await waitUntil(() => (bare.root.querySelector('.chem-invalid-molecule-warning')?.textContent ?? '')
+          .includes('Malformed molecule'), 'the host shows the molecule as malformed', 5000);
+      } finally {
+        dialogs.forEach((d) => d.close());
+      }
+    });
 
   // The SketcherBase contract in Datagrok (HOST-007 to 015, 022, 023, 042, 046, 047; spike datagrok-chem, R3): what was
   // crux-sketch's @datagrok contract feature. A user's edit is made as the user makes it, on Crux's own controls in the
@@ -1435,14 +1588,16 @@ category('Crux sketcher', () => {
   test('every query tool in the substructure filter passes the rows of its intended SMARTS', async () => {
     const probes = ['CO', 'C=O', 'CC=O', 'CCO', 'OCCO', 'c1ccncc1', 'C1CCNCC1', 'CN', 'C=N', 'CC#N', 'CCF', 'CCCl', 'CBr',
       'CI', 'C[Na]', 'C[Mg]C', 'CS', 'CC', 'C', 'C1CCCCC1', 'c1ccccc1', 'C1CC1', 'CC(C)(C)C', 'C=C', 'C#C', 'CC(=O)O',
-      'Oc1ccccc1', 'C[Se]', 'CC1CCCCC1', 'Cc1ccccc1', 'NC=O', 'OC1CCCCC1', 'Oc1ccncc1'];
+      'Oc1ccccc1', 'C[Se]', 'CC1CCCCC1', 'Cc1ccccc1', 'NC=O', 'OC1CCCCC1', 'Oc1ccncc1', 'O=C=O'];
     const metals = '[Li,Na,K,Rb,Cs,Mg,Ca,Sr,Ba,Al,Sc,Ti,V,Cr,Mn,Fe,Co,Ni,Cu,Zn,Y,Zr,Nb,Mo,Ru,Rh,Pd,Ag,Cd,Hf,Ta,W,Re,Os,Ir,Pt,Au,Hg]';
     const field = (props: string, hhh = 0) => ['field', '', '', '  2  1  0  0  0  0  0  0  0  0999 V2000',
       `    0.0000    0.0000    0.0000 C   0  0  0  ${hhh}  0  0  0  0  0  0  0  0`,
       '    1.2990    0.7500    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0', '  1  2  1  0', ...props.split('|').filter(Boolean),
       'M  END', ''].join('\n');
-    // [the tool, Crux's model of what it makes, its intended SMARTS]
-    const tools: [string, string, string][] = [
+    // [the tool, Crux's model of what it makes, its intended SMARTS, the SMARTS Crux writes when it differs]. A generic
+    // with H (AH, QH, XH, MH) also accepts an implicit H on the atom it hangs from (the owner's meaning 2, 2026-11-20:
+    // Crux mode's adjust_drawn_query, applied when the filter reads the query); Crux's own SMARTS stays the literal one
+    const tools: [string, string, string, string?][] = [
       ['any bond', '[#6]~[#8]', '[#6]~[#8]'],
       ['single or double bond', '[#6]-,=[#8]', '[#6]-,=[#8]'],
       ['single or aromatic bond', '[#6]-,:[#7]', '[#6]-,:[#7]'],
@@ -1453,13 +1608,13 @@ category('Crux sketcher', () => {
       ['atom list', '[#6]-[#7,#8]', '[#6]-[#7,#8]'],
       ['NOT list', '[#6]-[!#7&!#8]', '[#6]-[!#7&!#8]'],
       ['generic A', '[#6]-[!#1]', '[#6]-[!#1]'],
-      ['generic AH', 'C* |$;AH_p$|', '[#6]-*'],
+      ['generic AH', 'C* |$;AH_p$|', '[#6;!H0,$([#6]-*)]', '[#6]-*'],
       ['generic Q', 'C* |$;Q_e$|', '[#6]-[!#6&!#1]'],
-      ['generic QH', 'C* |$;QH_p$|', '[#6]-[!#6]'],
+      ['generic QH', 'C* |$;QH_p$|', '[#6;!H0,$([#6]-[!#6])]', '[#6]-[!#6]'],
       ['generic X', 'C* |$;X_p$|', '[#6]-[F,Cl,Br,I]'],
-      ['generic XH', 'C* |$;XH_p$|', '[#6]-[F,Cl,Br,I,#1]'],
+      ['generic XH', 'C* |$;XH_p$|', '[#6;!H0,$([#6]-[F,Cl,Br,I])]', '[#6]-[F,Cl,Br,I,#1]'],
       ['generic M', 'C* |$;M_p$|', `[#6]-${metals}`],
-      ['generic MH', 'C* |$;MH_p$|', `[#6]-${metals.replace(']', ',#1]')}`],
+      ['generic MH', 'C* |$;MH_p$|', `[#6;!H0,$([#6]-${metals})]`, `[#6]-${metals.replace(']', ',#1]')}`],
       ['generic *', 'C* |$;star_e$|', '[#6]-*'],
       ['ring bond count 2', field('M  RBC  1   1   2'), '[#6;x2]-[#8]'],
       ['ring bond count as drawn', field('M  RBC  1   1  -2'), '[#6;x0]-[#8]'],
@@ -1501,7 +1656,7 @@ category('Crux sketcher', () => {
       expect(el.mode, 'query', 'Crux\'s mode in the substructure filter');
       expect(el.disabledQueryElements.join(', '), '', 'the query elements turned off in the filter');
       const rows = (bits: DG.BitSet) => probes.filter((_, i) => bits.get(i)).join(' ');
-      for (const [tool, made, intended] of tools) {
+      for (const [tool, made, intended, written] of tools) {
         const qmol = rdkit.get_qmol(intended);
         const want = DG.BitSet.create(probes.length, (i) => {
           const mol = rdkit.get_mol(probes[i]);
@@ -1520,7 +1675,8 @@ category('Crux sketcher', () => {
         // as the user's drawing does, the canvas's own molblock is the query (no caller's string)
         impl.explicitMol = null;
         el.setValue(made, made.includes('|') || made.includes('\n') ? undefined : {format: 'smarts'});
-        expect(sameQuery(el.smarts, intended), true, `${tool}: Crux's own SMARTS ${el.smarts} finds what ${intended} finds`);
+        expect(sameQuery(el.smarts, written ?? intended), true,
+          `${tool}: Crux's own SMARTS ${el.smarts} finds what ${written ?? intended} finds`);
         await waitUntil(() => rows(df.filter) === rows(want),
           `${tool}: the filter passes [${rows(df.filter)}], ${intended} matches [${rows(want)}]`, 15000);
       }

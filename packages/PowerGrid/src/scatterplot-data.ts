@@ -47,7 +47,6 @@ export interface Frame {
   selectedColor: number;
   /** The color of every filtered-out row, or null when they keep their row colors. */
   filteredOutColor: number | null;
-  opacity: number;
   /** The width of the darker border the core strokes around markers; 0 for none. */
   border: number;
   /** `Marker.draw` caches the markers of a canvas this large and blits them at whole CSS pixels. */
@@ -215,7 +214,6 @@ export class ScatterData {
       rowColors, color: look.filteredRowsColor, rowSizes, markerSize, rowTypes, markerType,
       selection, selectedColor: look.selectedRowsColor,
       filteredOutColor: look.rowSource == 'All' ? null : look.filteredOutRowsColor,
-      opacity: Math.trunc(Math.min(Math.max(look.markerOpacity, 0), 100) * 255 / 100) / 255,
       border: look.markerDrawBorder ? look.markerBorderWidth : 0,
       markerCache: viewer.width > 250 && viewer.height > 250,
       largestMarker: largestMarker(sc, look),

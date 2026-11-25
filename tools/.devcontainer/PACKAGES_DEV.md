@@ -181,7 +181,7 @@ The host `~/.claude` directory is found by searching (in order):
 | Profile | Services added | Use case |
 |---------|---------------|----------|
 | (none) | postgres, rabbitmq, grok_pipe, datagrok, grok_connect, tools-dev | Basic package dev |
-| `scripting` | + jupyter_kernel_gateway | Python/R/Julia scripts |
+| `scripting` | + jkg_python, jkg_r | Python and R scripts |
 | `demo` | + world, test_db, northwind | Demo databases |
 | `full` | + grok_spawner, JKG, demo DBs | Everything |
 

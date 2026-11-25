@@ -2,10 +2,11 @@ import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
 //name: Chemspace
+//output: view result
 //meta.role: app
 //meta.browsePath: Chem
-export async function app() : Promise<void> {
-  await PackageFunctions.app();
+export async function app() : Promise<any> {
+  return await PackageFunctions.app();
 }
 
 //name: Databases | Chemspace

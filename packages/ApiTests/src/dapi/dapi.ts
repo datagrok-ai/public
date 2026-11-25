@@ -30,13 +30,20 @@ category('Dapi', () => {
     }, {owner: 'aparamonov@datagrok.ai', stressTest: true});
   }
 
+  test('find without an id returns nothing', async () => {
+    for (const id of [undefined, null, ''])
+      for (const source of [grok.dapi.groups, grok.dapi.projects, grok.dapi.queries])
+        expect((await source.find(id as any)) == null, true, `${JSON.stringify(id) ?? 'undefined'}`);
+  });
+
   test('admin.getMetrics', async () => {
     const isIso = (s: string) => typeof s === 'string' && !isNaN(Date.parse(s));
     const m = await grok.dapi.admin.getMetrics({date: 'last 7 days', limit: 5});
     expect(isIso(m.window.start) && isIso(m.window.end), true, 'window');
     expect(typeof m.http.now.count === 'number' && m.http.now.count >= 0, true, 'http.now.count');
     expect(Array.isArray(m.http.routes) && m.http.routes.length <= 5, true, 'http.routes');
-    expect(typeof m.queue.queued === 'number' && typeof m.queue.running === 'number', true, 'queue');
+    const q = m.queue;
+    expect(q === null || [q.messages, q.ready, q.unacknowledged].every((n) => typeof n === 'number'), true, 'queue');
     expect(m.database.sizeBytes > 0, true, 'database.sizeBytes');
     expect(m.database.connections.total >= 1, true, 'database.connections.total');
     expect(typeof m.database.statements.available, 'boolean', 'database.statements.available');

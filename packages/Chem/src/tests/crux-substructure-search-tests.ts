@@ -71,6 +71,39 @@ const AMBIGUOUS_BOND_MOLBLOCK = ['', '  query-roundtrip', '', '  2  1  0  0  0  
   '    1.5000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
   '  1  2  5  0  0  1', 'M  END', ''].join('\n');
 const FORMERLY_RDKIT_MOLBLOCKS = [RADICAL_MOLBLOCK, H_COUNT_MOLBLOCK, EXPLICIT_H_MOLBLOCK, AMBIGUOUS_BOND_MOLBLOCK];
+// queries drawn in Crux Sketch as its molfile writes them (the run20 owner's two, 2026-11-20): propane made aromatic
+// / aliphatic / aromatic with a plain C drawn on its third atom; naphthalene with the atom list [H,Cl,F] on a ring
+// carbon, V3000 (Crux Sketch's) and V2000 (M  ALS, read through mergeQueryHs); each with its meaning written as SMARTS
+// and its rows on mol1K
+function v3000Block(atoms: string[], bonds: string[], queries: string[] = []): string {
+  const sgroups = queries.map((q, i) => `M  V30 ${i + 1} DAT 0 ATOMS=(1 ${i + 1}) QUERYTYPE=SMARTSQ QUERYOP== ` +
+    `FIELDDATA="${q}"`);
+  return ['', '  drawn', '', '  0  0  0  0  0  0  0  0  0  0999 V3000', 'M  V30 BEGIN CTAB',
+    `M  V30 COUNTS ${atoms.length} ${bonds.length} ${sgroups.length} 0 0`, 'M  V30 BEGIN ATOM',
+    ...atoms.map((a, i) => `M  V30 ${i + 1} ${a} ${i % 4}.0 ${Math.floor(i / 4)}.0 0 0`), 'M  V30 END ATOM',
+    'M  V30 BEGIN BOND', ...bonds.map((b, i) => `M  V30 ${i + 1} ${b}`), 'M  V30 END BOND',
+    ...(sgroups.length ? ['M  V30 BEGIN SGROUP', ...sgroups, 'M  V30 END SGROUP'] : []),
+    'M  V30 END CTAB', 'M  END'].join('\n');
+}
+/** naphthalene drawn Kekulé, atom 10 an alpha carbon, then its bond to atom 11: (type, atom, atom) */
+const NAPHTHALENE_BONDS = ['2 1 2', '1 2 3', '2 3 4', '1 4 5', '2 5 6', '1 6 7', '2 7 8', '1 8 9', '2 9 10', '1 10 1',
+  '1 9 4', '1 10 11'];
+/** that naphthalene in V2000 (Crux Sketch's molfile), atom 11 the symbol given, then the property lines given */
+function naphthaleneV2000(symbol: string, props: string[] = []): string {
+  return ['', '  drawn', '', ' 11 12  0  0  0  0  0  0  0  0999 V2000',
+    ...[...Array(10).fill('C'), symbol].map((a, i) => (i % 4).toFixed(4).padStart(10) +
+      Math.floor(i / 4).toFixed(4).padStart(10) + `    0.0000 ${a.padEnd(3)} 0  0  0  0  0  0  0  0  0  0  0  0`),
+    ...NAPHTHALENE_BONDS.map((b) => b.split(' '))
+      .map(([t, a, c]) => `${a.padStart(3)}${c.padStart(3)}${t.padStart(3)}  0`),
+    ...props, 'M  END'].join('\n');
+}
+const DRAWN_QUERIES: [string, string, number][] = [
+  [v3000Block(['C', 'C', 'C', 'C'], ['1 1 2', '1 2 3', '1 3 4'], ['[#6&a]', '[#6&A]', '[#6&a]']),
+    '[#6&a]-[#6&A]-[#6&a]-,:[#6]', 149],
+  [v3000Block([...Array(10).fill('C'), '[H,Cl,F]'], NAPHTHALENE_BONDS), '[c;!H0,$(c-[Cl,F])]1cccc2ccccc12', 108],
+  [naphthaleneV2000('L', ['M  ALS  11  3 F H   Cl  F   ']), '[c;!H0,$(c-[Cl,F])]1cccc2ccccc12', 108],
+  [naphthaleneV2000('AH'), '[c;!H0,$(c-[!#1])]1cccc2ccccc12', 109], // a generic with H: any atom or H
+];
 // molecules crux read differently from RDKit before crux-core's rdkit-parity-gaps: nitro / N-oxide / azide /
 // halogen oxide in their neutral hypervalent form, a radium salt, leading spaces, a cyclic iodine
 const SANITIZATION_CASES = ['CC(C)(C)c1ccc(cc1)S(=O)(=O)Nc2ccc(Cl)cc2C(=O)c3ccn(=O)cc3',
@@ -331,13 +364,14 @@ category('crux substructure search', () => {
     const smiles = (await readDataframe('smiles.csv')).col('canonical_smiles')!;
     for (const col of [smiles, moleculeColumn(SPECIAL_CASES)])
       await expectRdkitHitsThroughCrux(col, read);
-    // query features in the extension its reader does not read yet (query atom labels, positional variation, ring bond
-    // count, unsaturation, substitution, bond lists): RDKit searches them, Crux mode gives RDKit's search
+    // query features in the extension (query atom labels, positional variation, ring bond count, unsaturation,
+    // substitution, bond lists), which Crux reads as RDKit 2026.03 since crux-core e881b8e98 (RDKit searched them
+    // before): Crux searches them, with RDKit's hits
     const notRead = ['Cc1ccccc1 |$;;;;Q_e;;$|', 'Cc1ccccc1 |$;;;;AH_p;;$|', 'ClC |$X_p;$|',
       'c1ccccc1* |$;;;;;;star_e$|', '*c1ccccc1 |m:0:1.2.3|', 'C=CC |$;;$,rb:1:*|', 'CCC |u:1|', 'CCC |s:1:1|',
       'c1ccccc1 |c:0,2,4|'];
     for (const query of notRead) {
-      expect(await cruxReadsQuery(query, ''), false, `Crux searches for ${query}`);
+      expect(await cruxReadsQuery(query, ''), true, `Crux searches for ${query}`);
       const crux = await search(SubstructureSearchEngine.Crux, smiles, query);
       const rdkit = await search(SubstructureSearchEngine.RDKit, smiles, query);
       expect(crux.equals(rdkit), true, `Crux mode differs from RDKit: ${query} (${crux.trueCount()}, ` +
@@ -353,6 +387,29 @@ category('crux substructure search', () => {
     for (const searchType of [SubstructureSearchType.CONTAINS, SubstructureSearchType.NOT_CONTAINS])
       await expectRdkitHitsThroughCrux(col, [empty, 'C1CC'], searchType);
   });
+
+  test('drawnQueries', async () => {
+    // a query drawn in a sketcher, as a chemist means it, Crux mode only (crux-core spike drawn-query, the module's
+    // adjust_drawn_query, which getQueryMolSafe calls; RDKit, both versions, reads both literally and passes no row):
+    // a plain bond at an aromatic query atom whose ring is not drawn also matches an aromatic bond, and an atom list
+    // or a generic holding H counts its atom's H. The rows of each query's meaning (RDKit's hits of its SMARTS), and
+    // their number.
+    const col = (await readDataframe('mol1K.csv')).col('molecule')!;
+    const rdkit = chemCommonRdKit.getRdKitModule();
+    const mols = (col.toList() as (string | null)[]).map((m) => m ? getMolSafe(m, {}, rdkit).mol : null);
+    try {
+      for (const [query, meaning, rows] of DRAWN_QUERIES) {
+        expect(await cruxReadsQuery(query, ''), true, `Crux does not search for ${meaning}`);
+        const crux = await search(SubstructureSearchEngine.Crux, col, query);
+        const expected = rdkitHits(mols, meaning);
+        expect(crux.equals(expected), true,
+          `${meaning}: Crux ${crux.trueCount()} rows, its meaning ${expected.trueCount()}`);
+        expect(crux.trueCount(), rows, `${meaning}: rows`);
+      }
+    } finally {
+      mols.forEach((mol) => mol?.delete());
+    }
+  }, {timeout: 60000});
 
   test('supersededSearchStops', async () => {
     setSubstructureSearchEngine(SubstructureSearchEngine.Crux);

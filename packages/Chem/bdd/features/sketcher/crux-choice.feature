@@ -1,8 +1,8 @@
 @sketcher-controls
 Feature: Crux as a sketcher choice
   Crux Sketch is a molecule sketcher of Chem: a function with meta.role moleculeSketcher, so every sketcher's options
-  menu (≡) offers it, and a choice of Chem's Sketcher setting, never its default (the package test "registered" in the
-  Crux sketcher category reads the setting). Picking it in the menu is the account's choice, kept in its
+  menu (≡) offers it, and a choice of Chem's Sketcher setting, its default since 2026-11-19 (the package test
+  "registered" in the Crux sketcher category reads the setting). Picking it in the menu is the account's choice, kept in its
   sketcher/selected setting, which a reload takes up again; the account's own choice comes back when the feature ends.
   Switching sketchers in place keeps the molecule, its stereo included (the same switch with a SMARTS is the package
   test "a switch keeps a SMARTS"). Ketcher picked in the sketcher of the molecule's filter card becomes the session's

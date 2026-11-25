@@ -11,6 +11,11 @@ category('AI: Color: static helpers', () => {
     expect(DG.Color.b(c), 0x78);
   });
 
+  test('opaqueIfNoAlpha makes a color written without alpha opaque', async () => {
+    expect(DG.Color.opaqueIfNoAlpha(0x112233), 0xFF112233);
+    expect(DG.Color.opaqueIfNoAlpha(0x80112233), 0x80112233);
+  });
+
   test('argb round-trip', async () => {
     const packed = DG.Color.argb(0x12, 0x34, 0x56, 0x78);
     expect(packed, 0x12345678);

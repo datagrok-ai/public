@@ -15,7 +15,7 @@ import {
 import {
   TargetSelection, EMPTY_TARGET_SELECTION, isCharted, clickTarget, setMultiMode, reconcileTargets, chartedTargets,
 } from './target-selection';
-import {captureTableLayout, showProjectSaveDialog} from '../../project-export';
+import {captureTableLayout} from '../../project-export';
 import {buildComparison} from './comparison-builders';
 import {ScalarChartType, chartSpec} from './chart-spec';
 import {confidenceBadge, renderListFilter, sourceBadge} from './list-ui';
@@ -148,7 +148,7 @@ export const ComparisonTab = Vue.defineComponent({
       const {df, viewers} = snap;
       const layout = captureTableLayout(df, viewers);
       try {
-        await showProjectSaveDialog([df], [layout], name);
+        await DG.Project.showSaveDialog({tables: [df], layouts: [layout], name});
       } catch (e: any) {
         grok.shell.error(e);
       } finally {

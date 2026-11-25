@@ -1,6 +1,7 @@
 /* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import {explicitCatalog, hasCatalogs} from '@datagrok-libraries/db-explorer/src/utils';
 
 /** Cache for full-schema calls, keyed by "nqName/schema/db". Evicts on rejection; capped at 50 entries. */
 const schemaCache = new Map<string, Promise<DG.TableInfo[]>>();
@@ -98,8 +99,17 @@ export function convertTableQueryToEnrichment(query: DG.TableQuery, name: string
   return {name: name, keySchema: keySchema, keyTable: keyTable, keyColumn: keyColumn, fields: query.fields, joins: query.joins, keyDb: keyDb};
 }
 
-function convertEnrichmentToQuery(e: Enrichment, conn: DG.DataConnection): DG.TableQuery {
-  const query = conn.tableQuery();
+async function convertEnrichmentToQuery(e: Enrichment, conn: DG.DataConnection, db: string | null): Promise<DG.TableQuery | null> {
+  const catalog = hasCatalogs(conn) ? explicitCatalog(conn, db ?? e.keyDb) : undefined;
+  let query = conn.tableQuery();
+  // a query built from the key table's info carries its catalog: the platform puts it before every schema.table
+  if (catalog) {
+    const keyTable = (await grok.dapi.connections.getSchema(conn, e.keySchema, e.keyTable, catalog))
+      .find((t) => t.tags.get(DG.Tags.TableCatalog)?.toLowerCase() === catalog.toLowerCase());
+    if (!keyTable)
+      return null;
+    query = DG.TableQuery.fromTable(keyTable).build();
+  }
   query.table = `${e.keySchema}.${e.keyTable}`;
   query.fields = e.fields;
   query.joins = e.joins;
@@ -112,7 +122,17 @@ export async function runEnrichmentFromConfig(conn: DG.DataConnection, schema: s
     new DG.Balloon().error('Could not find enrichment. Please try again or create a new one.');
     return;
   }
-  const query = convertEnrichmentToQuery(config, conn);
+  let query: DG.TableQuery | null;
+  try {
+    query = await convertEnrichmentToQuery(config, conn, db);
+  } catch (e: any) {
+    grok.shell.error(`Failed to enrich:\n ${e}`);
+    return;
+  }
+  if (!query) {
+    new DG.Balloon().error(`Could not find the table ${db ?? config.keyDb}.${config.keySchema}.${config.keyTable} of the enrichment.`);
+    return;
+  }
   await executeEnrichQuery(query, df, column, localColumn ?? undefined);
 }
 

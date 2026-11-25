@@ -122,7 +122,7 @@ visible reply.
 
 ## Clarifying ambiguous requests
 
-You have the \`AskUserQuestion\` tool available. Use it only when the **intent** itself is unclear — e.g. a request names no action, or two fundamentally different actions are equally plausible.`;
+You have the \`AskUserQuestion\` tool available. Use it only when the **intent** itself is unclear — e.g. a request names no action, or two fundamentally different actions are equally plausible. End your turn right after asking.`;
 
 // ---------------------------------------------------------------------------
 // Inlined skills — skill bodies appended to the full system prompt at startup
@@ -197,8 +197,15 @@ const DATAGROK_SYSTEM_PROMPT = INLINED_SKILLS ?
   DATAGROK_PROMPT;
 const DATAGROK_FULL_PROMPT = SKILLS_INDEX ? `${DATAGROK_SYSTEM_PROMPT}\n\n${SKILLS_INDEX}` : DATAGROK_SYSTEM_PROMPT;
 
+const SEARCH_PROMPT = `${DATAGROK_FULL_PROMPT}
+
+## Search bar request
+
+No browser tools this turn: \`datagrok_exec\`, \`datagrok_verify\`, \`datagrok_show_entities\`, \`AskUserQuestion\` and the view functions are unavailable. Skills and MCP tools work. If the reply format has a \`code\` field, the search bar runs that code after your reply: do not run or verify it yourself.`;
+
 export function buildSystemPrompt(mode?: PromptMode): string {
   if (mode === 'bash') return BASH_EXEC_PROMPT;
   if (mode === 'none') return '';
+  if (mode === 'search') return SEARCH_PROMPT;
   return DATAGROK_FULL_PROMPT;
 }

@@ -1,5 +1,5 @@
-/* Steps of the structure demo clips (features/demos/05-08): the molecule a context panel pane draws, its
-   full-screen dialog and the magnifying lens over it, and the 3D view turned with the pointer. */
+// Steps of the structure demo clips (features/demos/05-08): the molecule a context panel pane draws, its
+// full-screen dialog and the magnifying lens over it, and the 3D view turned with the pointer.
 import type {Locator, Page} from '@playwright/test';
 import {Given, Then, When} from '@datagrok-libraries/bdd';
 import type {ElementRef} from '@datagrok-libraries/bdd/runtime';
@@ -20,17 +20,6 @@ export const noCurrentRow = Given('no row of the table is current', async (page:
 function pane(page: Page, title: string): Locator {
   return page.locator(`.d4-accordion-pane:has(> [name="div-section--${title.replace(/ /g, '-')}"])`).filter({visible: true}).last();
 }
-
-/** A pane of an accordion inside a context panel pane (SequenceTranslator's Oligo Structures > Sense): its own
- * header is clicked. The library's `user expands "Sense" section` passes there without expanding it. */
-export const expandInnerPane = When('user expands the {string} pane inside the {string} section',
-  async (page: Page, inner: string, outer: string) => {
-    const header = pane(page, outer).locator(`[name="div-section--${inner.replace(/ /g, '-')}"]`).filter({visible: true}).first();
-    await expect(header, `the ${inner} pane inside the ${outer} section`).toBeVisible();
-    if (await header.getAttribute('aria-expanded') !== 'true')
-      await header.click();
-    await expect(header, `the ${inner} pane inside the ${outer} section`).toHaveAttribute('aria-expanded', 'true');
-  }, {tier: 'ui', description: 'a click on the header of the inner pane unless it is expanded; done when it says it is'});
 
 /** Bio's Molecular Structure pane draws the molecule on a canvas that opens it full screen on a click. */
 export const clickPaneMolecule = When('user clicks on the molecule in the {string} section', async (page: Page, title: string) => {

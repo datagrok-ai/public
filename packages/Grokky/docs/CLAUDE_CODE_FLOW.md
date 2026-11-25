@@ -89,7 +89,7 @@ Message types are defined in [`dockerfiles/claude-runtime/src/types.ts`](../dock
 
 | `type` | Purpose | Key fields |
 |--------|---------|------------|
-| `user_message` | Send a prompt, start or resume a session | `sessionId`, `message`, `images?`, `apiKey`, `mcpServerUrl`, `outputSchema?`, `systemPromptMode?` (`datagrok`/`bash`/`none`), `model?`, `clientTools?`, `gates?`, `resumeExpected?`, `taskId?` |
+| `user_message` | Send a prompt, start or resume a session | `sessionId`, `message`, `images?`, `apiKey`, `mcpServerUrl`, `outputSchema?`, `systemPromptMode?` (`datagrok`/`search`/`bash`/`none`), `model?`, `clientTools?`, `gates?`, `resumeExpected?`, `taskId?` |
 | `abort` | Cancel an in-progress query | `sessionId` |
 | `input_response` | Reply to an `input_request` (browser tool result or user answer) | `sessionId`, `requestId`, `value` |
 | `sync_user_files` | Trigger a skills/knowledge sync | `apiKey`, `mcpServerUrl`, `scope?`, `packageName?` |
@@ -117,6 +117,7 @@ Notes on `user_message` fields:
 | `session_reset` | The session record is gone but the browser sent `resumeExpected` — the turn was not run; the browser resends the prompt with the conversation transcript prepended | `sessionId` |
 | `aborted` | Confirmed abort | `sessionId` |
 | `queued` | Turn is waiting — behind the session's active query, or for its celery admission claim (re-sent every 60s while waiting) | `sessionId` |
+| `keepalive` | Every 20s while the socket has a turn open, so a proxy never sees it idle; the browser ignores it | |
 | `input_request` | Runtime needs the browser to execute a tool or answer a question | `sessionId`, `requestId`, `toolName`, `input` |
 | `sync_status` | Result of a `sync_user_files` request | `status`, `files?`, `message?` |
 
@@ -223,8 +224,7 @@ server sends an `input_request` and waits for the matching `input_response` (cor
   (see [`src/ai/view-tools.ts`](../src/ai/view-tools.ts)). A declared tool needs a plain name and a
   description; a name another tool already has is skipped.
 
-`AskUserQuestion` round-trips the same way with a 60s answer timeout: an unanswered question returns
-"did not answer in time" to the model instead of holding the turn open.
+`AskUserQuestion` does not wait: the card is shown, the turn ends, and Submit sends the choice as the next prompt.
 
 ### Verification and grounding gates
 
@@ -283,6 +283,8 @@ MCP tools, their `op`; view tools and unknown tools read as their name.
 - `datagrok` (default): `DATAGROK_PROMPT`, the inlined `datagrok-exec` and `datagrok-entities` skill
   bodies, and an index of every skill in `plugin/skills/` (name and description) to load with
   `skill_view`.
+- `search`: the `datagrok` prompt plus a note that no browser tools are available. The agent runs without
+  them: nothing answers a browser call from the search bar's Help and Execute tabs.
 - `bash`: a short prompt to run the given command with the terminal tool and output only its stdout. Its
   text does not stream: the answer is the final message, since models remark before the tool call anyway.
 - `none`: no system prompt at all.
@@ -344,7 +346,8 @@ client.onChunk         → panel.updateStreaming(accumulated)           (live ma
 client.onToolActivity  → panel.updateStreaming(accumulated + status)  (tool badge)
 client.onRevisionStart → delayed "Revising…" status
 client.onFinal         → panel.finalizeStreaming(content)             (render; swap in revision if 'replaced')
-client.onError         → grok.shell.error(msg) + cleanup
+client.onError         → panel.showError(msg) (status strip above the prompt box) + cleanup
+client.onClose         → the same, "Connection lost, …"
 client.onAborted       → panel.clearStreaming() + cleanup
 client.onSessionReset  → resend prompt with restored transcript prepended (once)
 client.onInputRequest  → dispatch by toolName:
@@ -537,8 +540,9 @@ See the [process model](#process-model).
 - The browser saves each chat's session id with the conversation: a chat reopened from the history, after a
   page reload too, resumes that session while the runtime still has it, and otherwise gets
   `session_reset` and sends the turn again with the saved transcript.
-- Abort: the server sends `cancel`; the agent interrupts Hermes and fails its pending browser calls with
-  `aborted`. Once the turn has settled, the server kills everything under the agent process, since Hermes
+- Abort: the server sends `cancel` with the reason; the agent interrupts Hermes and fails its pending browser
+  calls with it: "The user stopped this request." on Stop, and on a lost connection a note that the call's
+  code may still be running in the tab. Once the turn has settled, the server kills everything under the agent process, since Hermes
   does not stop what a tool started in a session of its own. The next turn continues the conversation,
   which keeps the interrupted request.
 - Disposing a process kills its whole descendant tree (read from `/proc`), then its process group. SIGTERM

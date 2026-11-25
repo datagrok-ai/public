@@ -24,10 +24,15 @@ export function getWorkspacePreviewHost(): HTMLElement | null {
   return host;
 }
 
+/** On the panel while a preview has the home page to itself: the other widgets step aside, so that the preview is
+ * right under the Spotlight and takes the rest of the page. */
+const FOCUS_CLASS = 'power-pack-preview-focus';
+
 export function clearWorkspacePreview(): void {
   if (!host) return;
   host.innerHTML = '';
   host.style.display = 'none';
+  host.parentElement?.classList.remove(FOCUS_CLASS);
   if (customizeEl) customizeEl.style.display = '';
 }
 
@@ -35,6 +40,7 @@ export function showWorkspacePreview(content: HTMLElement, title?: string, onOpe
   if (!host)
     return;
   host.innerHTML = '';
+  host.parentElement?.classList.remove(FOCUS_CLASS);
   if (title || onOpen) {
     const header = document.createElement('div');
     header.className = 'pp-workspace-preview-header';
@@ -59,4 +65,10 @@ export function showWorkspacePreview(content: HTMLElement, title?: string, onOpe
   host.appendChild(content);
   host.style.display = '';
   if (customizeEl) customizeEl.style.display = 'none';
+}
+
+/** A package Spotlight tab's results: the other widgets step aside until the Spotlight's tab changes. */
+export function showFocusedPreview(content: HTMLElement, title?: string): void {
+  showWorkspacePreview(content, title);
+  host?.parentElement?.classList.add(FOCUS_CLASS);
 }

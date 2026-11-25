@@ -1,15 +1,15 @@
 /**
  * A stack overflow out of a Crux call counts as a trap (crux-api.ts `isWasmTrap`): V8 unwinds a wasm stack overflow as
  * `RangeError: Maximum call stack size exceeded` without restoring the instance's stack pointer, so after a few the
- * instance reads and writes out of bounds. The worker jobs rethrow it, the pool replaces the workers, and on the main
- * thread Crux is off for the session, as after a trap. (Crux's recursive writers overflow on molecules of a few
- * thousand atoms: a 20,000-carbon chain.)
+ * instance reads and writes out of bounds. A worker job that reports one has the pool replace the workers; on the main
+ * thread the module recovers inside the call, as after any trap (crux/crux-recover.ts), and Crux stays on. (Crux's
+ * recursive writers overflow on molecules of a few thousand atoms: a 20,000-carbon chain.)
  */
 import {before, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
-import {ChemicalEngine, cruxReady, isCruxRequested} from '../engine/chem-engine';
-import {loadCrux, noteCruxError, resetCruxLoaderForTests} from '../engine/crux-module';
+import {ChemicalEngine, isCruxRequested} from '../engine/chem-engine';
+import {armCruxTrapForTests, loadCrux, noteCruxError} from '../engine/crux-module';
 import {CruxMacromoleculeAssembler} from '../engine/biopolymer';
 import {isWasmTrap, throwIfTrap} from '../crux/crux-api';
 import {getCruxService} from '../crux/crux-searches';
@@ -60,22 +60,37 @@ category('chemical engine: traps', () => {
     });
   }, {timeout: 60000});
 
-  test('a stack overflow on the main thread leaves RDKit for the session', async () => {
+  // a trap never switches Crux off: the main thread's module recovers
+  // inside the call (crux/crux-recover.ts), and a call that overflows on a fresh instance too fails alone
+  test('a stack overflow on the main thread fails that call alone: Crux stays on', async () => {
     await inEngine(ChemicalEngine.Crux, async () => {
+      const crux = await loadCrux('test');
+      noteCruxError(new RangeError('Invalid array length'));
+      expect(isCruxRequested(), true, 'another RangeError leaves Crux on');
+      // a real one where Crux's SMILES writer still recurses (a no-op test once it does not)
+      const chain = crux.get_mol('C'.repeat(20000));
+      let failure = '';
       try {
-        noteCruxError(new RangeError('Invalid array length'));
-        expect(isCruxRequested(), true, 'another RangeError leaves Crux on');
-        noteCruxError(new RangeError(OVERFLOW));
-        expect(isCruxRequested(), false, 'after a stack overflow: RDKit');
+        chain?.get_smiles();
+      } catch (e: any) {
+        failure = String(e?.message ?? e);
+        noteCruxError(e);
       } finally {
-        resetCruxLoaderForTests(null); // the next session's Crux
+        chain?.delete();
       }
-      expect(await cruxReady(), true, 'Crux back after the reset');
+      expect(failure.includes(OVERFLOW), false, `the overflow reached the caller: ${failure}`);
+      expect(isCruxRequested(), true, 'Crux stays on');
+      const mol = crux.get_mol('CCO')!;
+      try {
+        expect(mol.get_smiles(), 'CCO', 'the next call answers');
+      } finally {
+        mol.delete();
+      }
     });
-  });
+  }, {timeout: 60000});
 
-  test('after a trap on the main thread the assembler\'s synchronous calls refuse', async () => {
-    // as its async calls do (they load the module, which fails for the session): a trapped instance may be broken
+  test('a trap on the main thread in the assembler\'s synchronous call is recovered from: it answers', async () => {
+    // crux-core's real test trap (the next engine call panics), not a stub
     await inEngine(ChemicalEngine.Crux, async () => {
       const crux = await loadCrux('test');
       const mol = crux.get_mol('CCO')!;
@@ -84,22 +99,10 @@ category('chemical engine: traps', () => {
       const assembler = new CruxMacromoleculeAssembler();
       const v2000 = await assembler.toV2000(molblock); // loads the main thread's module for the synchronous twins
       expect(assembler.toV2000Sync(molblock), v2000, 'the synchronous twin before the trap');
-      try {
-        noteCruxError(new WebAssembly.RuntimeError('simulated: unreachable'));
-        let refused = '';
-        try {
-          assembler.toV2000Sync(molblock);
-        } catch (e: any) {
-          refused = String(e?.message ?? e);
-        }
-        expect(refused.includes('trapped'), true, `toV2000Sync after the trap: ${refused || 'answered'}`);
-        let asyncRefused = false;
-        await assembler.toV2000(molblock).catch(() => asyncRefused = true);
-        expect(asyncRefused, true, 'toV2000 after the trap');
-      } finally {
-        resetCruxLoaderForTests(null); // the next session's Crux
-      }
-      expect(await cruxReady(), true, 'Crux back after the reset');
+      expect(armCruxTrapForTests(1), true, 'the main thread\'s module is loaded');
+      expect(assembler.toV2000Sync(molblock), v2000, 'toV2000Sync, a trap in it');
+      expect(isCruxRequested(), true, 'Crux stays on');
+      expect(await assembler.toV2000(molblock), v2000, 'toV2000 after the trap');
     });
   });
 });

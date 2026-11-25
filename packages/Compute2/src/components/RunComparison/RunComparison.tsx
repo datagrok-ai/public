@@ -487,6 +487,7 @@ export const RunComparison = Vue.defineComponent({
               extraModels={extraModels.value}
               roleOnlyFilter={props.roleOnlyFilter}
               allowCompare={false}
+              allowExport={false}
               allowOpen={false}
               showDetails={false}
               onSelectionChanged={(calls: DG.FuncCall[]) => historySelection.value = calls.map((c) => Vue.markRaw(c))}

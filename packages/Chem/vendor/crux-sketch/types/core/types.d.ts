@@ -10,6 +10,21 @@ export type { Message, PluralForms, SketcherStrings } from './strings.js';
  * writes a value's query features, and the getters are the same in both.
  */
 export type SketcherMode = 'molecule' | 'query';
+/**
+ * What the sketcher edits (spike reaction-document; the reaction editor's decision 7): `molecule` (the default), the
+ * sketcher as it has always been, byte for byte; or `reaction`, one reaction or a route of steps: the arrow tool, reaction
+ * text read by `value`, `setValue` and a paste, and the getters writing the reaction once it has an arrow. Chosen when the
+ * sketcher is made (`createSketcherOptions.document`, the element's `document` before it is ready); the handle reads it.
+ */
+export type SketchDocument = 'molecule' | 'reaction';
+/**
+ * The tools a sketcher offers (spike reaction-toolset; the reaction editor's decision 7: one catalog, a runtime switch):
+ * `reaction`, every tool with the query tools (query mode: the query bonds, the periodic table's lists and generics, SMARTS
+ * pasted), for a reaction cell's editor, whose reactions may be templates; or `publication`, the query tools hidden
+ * (molecule mode: a query read is still drawn, kept and written), for drawing a scheme. The host chooses it, the gear's
+ * items switch it; it is never written to `crux-sketch:settings` or any storage.
+ */
+export type SketchToolset = 'reaction' | 'publication';
 /** Where a change came from: a user edit, or the host application through the API. */
 export type ChangeSource = 'user' | 'api';
 /** What a `change` listener receives, once per completed edit. */
@@ -176,7 +191,9 @@ export interface RenderDetail {
  * atoms and bonds by index, ascending): once per change, when a click, a drag's release, a key or an edit changes it,
  * never per pointer move, and not for an edit that leaves it as it was. `notice` (API-047; spike later-quick): the status
  * line says a refusal or a notice to the user (`SketchNotice`), once each time it says one; never for a drag's preview or a
- * hover.
+ * hover. `recover` (spike engine-recover): the page's engine trapped and went on with a fresh instance, every sketcher's
+ * drawing and undo history kept (`SketchRecovery`); told to every sketcher on the page, once the call that trapped is
+ * over.
  */
 export interface SketcherEvents {
     change: ChangeDetail;
@@ -185,6 +202,32 @@ export interface SketcherEvents {
     render: RenderDetail;
     selection: SketchSelection;
     notice: SketchNotice;
+    recover: SketchRecovery;
+}
+/**
+ * What a `recover` listener receives (spike engine-recover; the product owner's choices 18 and 19 of 2026-11-14): the
+ * engine's account of the trap, and whether this sketcher's own action was the one refused.
+ */
+export interface SketchRecovery {
+    /** The engine call that trapped: `SketchMol.addBond`, `detectFormat`, ... or `a free by the browser's finalizer`. */
+    readonly call: string;
+    /** The trap as JS saw it: `RuntimeError: unreachable`. */
+    readonly trap: string;
+    /** The engine's note of it: the panic's message and place (`panicked at <file>:<line>:<col>: …`); else the trap named from itself (`ran out of memory (inferred …)`), or null. */
+    readonly note: string | null;
+    /**
+     * `retried`: the call answered on a fresh engine instance and the action went on; `refused`: it trapped there too, so
+     * that action alone was refused, the drawing kept; `recovered`: there was no call to try again (a free).
+     */
+    readonly outcome: 'retried' | 'refused' | 'recovered';
+    /** The engine instance in use now: 0 for the page's first, one more for each fresh one. */
+    readonly instance: number;
+    /** The engine molecules rebuilt on the fresh instance for that call; every other one is rebuilt at its own first call. */
+    readonly rebuilt: number;
+    /** From the trap to the answer, in ms. */
+    readonly ms: number;
+    /** It was this sketcher's own call the engine could not do, even on a fresh instance: that action was refused, the drawing kept, as the status line says. */
+    readonly kept: boolean;
 }
 /**
  * What the status line says to the user, told to the host as the `notice` event (API-047; spike later-quick; Ketcher's
@@ -197,14 +240,38 @@ export interface SketchNotice {
     readonly kind: 'refusal' | 'notice';
     readonly message: string;
 }
-/** An event's name, as `on()` and `off()` take it: `change`, `error`, `settings`, `render`, `selection` or `notice`. */
+/** An event's name, as `on()` and `off()` take it: `change`, `error`, `settings`, `render`, `selection`, `notice` or `recover`. */
 export type SketcherEventType = keyof SketcherEvents;
 /** A listener of the event `T`, called with that event's detail (`SketcherEvents[T]`). */
 export type SketcherListener<T extends SketcherEventType> = (detail: SketcherEvents[T]) => void;
 /** A format `setValue` can force; any other text is detected from its shape. */
 export type SketcherFormat = 'smiles' | 'cxsmiles' | 'smarts' | 'molV2000' | 'molV3000' | 'inchi' | 'cdxml';
-/** What `png()` takes (spike later-quick-2, API-023, IO-033). */
-export interface PngOptions {
+/**
+ * How `svgWith()` and `png()` draw their picture (spike eval6-polish, API-078; the owner, 2026-11-16: "an api to quickly get
+ * either an image, and svg"; Chem's Export "As drawn"): what the engine's drawing takes, nothing it does not. None given,
+ * the picture is the `svg` getter's.
+ */
+export interface PictureOptions {
+    /**
+     * The atom map numbers drawn as notes beside their atoms (`true`) or not at all (`false`), whatever the sketcher shows;
+     * by default as it shows them (`mapNumbers`, API-074). Only the picture: the numbers stay on their atoms in every format.
+     */
+    readonly mapNumbers?: boolean;
+    /**
+     * The mean bond's length in points (1/72 in; 4/3 CSS px at the picture's natural size): 20 by default, the sketcher's own
+     * (H44); 14.4 is ACS 1996's. The line width (0.6 pt at 14.4), a wedge's wide end and the hash spacing follow it, as the
+     * engine's editor style keeps them; the 10 pt labels and their margin do not. A finite number above 0, else `svgWith()`
+     * throws and `png()` rejects with a RangeError.
+     */
+    readonly bondLength?: number;
+    /**
+     * The atoms in their element colours (`true`) or all black (`false`); by default as the sketcher draws them
+     * (`atomColours`). Arrows, texts and shapes keep their own colours.
+     */
+    readonly colour?: boolean;
+}
+/** What `png()` takes (spike later-quick-2, API-023, IO-033), and the picture's options (spike eval6-polish, API-078). */
+export interface PngOptions extends PictureOptions {
     /**
      * The scale of the drawing's natural size (the `svg` getter's `width` and `height`, CSS px): 1 by default, one pixel
      * per CSS px (96 dpi); 3.125 gives 300 dpi, 4 gives 384. A finite number above 0, else `png()` rejects with a
@@ -224,6 +291,65 @@ export interface SetValueOptions {
      * is fitted. Any other value is `'fit'`.
      */
     view?: 'fit' | 'keep';
+    /**
+     * What the write does to the undo history (API-072; spike reaction-host-api, EVAL's batch 7: a host's Text field typed
+     * into): `'replace'`, the default, starts a new history with the molecule written, as every write does; `'edit'` makes the
+     * write one edit, one undo step: undo brings back the drawing as it was before it, redo the molecule written, and `value`
+     * reads the text written while that state is shown. Before the sketcher is ready a write is the first state either way. Any
+     * other value is `'replace'`.
+     */
+    history?: 'replace' | 'edit';
+    /**
+     * Whether the write lays a reaction out as Arrange does (API-073; main, 2026-11-15, for Chem's Reactions app): in a
+     * reaction document, a reaction or route read from text without coordinates of its own (reaction SMILES or SMARTS, an RXN
+     * or RD file whose atoms all sit at 0, 0) is arranged by the write itself, every molecule at one bond length, in rows as
+     * wide as the canvas at 100%, widened to fit the pane (RXN-027), each ending at an arrow, and drawn fitted: no edit and no undo step of its own, the write
+     * one step as `history` says. Text with coordinates (an RXN or RD file drawn, a CDXML page), a lone molecule and a
+     * molecule document are drawn as without it. `false`, the default, draws the text as read.
+     */
+    arrange?: boolean;
+}
+/**
+ * What a molecule added to a reaction document is (API-071): a reactant, an agent (over the arrow) or a product; or (spike
+ * route-steps, API-075) `'next'`, the product of a new step after the route's last product.
+ */
+export type MoleculeRole = 'reactant' | 'agent' | 'product' | 'next';
+/** A text of a reaction step (spike t2-add-panel; API-077): where it stands and what it says. */
+export interface ReactionStepText {
+    /** Over the step's arrow or under it. */
+    readonly place: 'above' | 'below';
+    /** Its characters as plain text: a line break "\n", a subscript or superscript as its plain characters ("CH2Cl2"). */
+    readonly text: string;
+    /**
+     * The text as the engine's drawing JSON writes it, as is (its runs and their faces, its size, its alignment, its soft
+     * wrap): an opaque JSON object for a host to pass on untouched (Chem's export; chem-wasm's step texts).
+     */
+    readonly drawing: Readonly<Record<string, unknown>>;
+}
+/** A step of a reaction document (spike t2-add-panel; API-077): its number and its texts. */
+export interface ReactionStepTexts {
+    /** The step's number as the canvas shows it, 1 the first: step k is the k-th `--**--` part the `smiles` getter writes. */
+    readonly step: number;
+    /** Its texts: those over the arrow first, then those under it, each in reading order along the arrow. */
+    readonly texts: readonly ReactionStepText[];
+}
+/** How `addMolecule` reads its text, and, in a reaction document, the role the molecule is added in. */
+export interface AddMoleculeOptions {
+    /** Read the text as this format instead of detecting it. */
+    format?: SketcherFormat;
+    /**
+     * In a reaction document (API-071; spike reaction-host-api, Chem's Add panel): the molecule is placed in this role in the
+     * last arrow's step: a reactant after the step's last reactant (the engine draws the plus between them), or before the
+     * arrow; an agent over the arrow beside the agents there, the arrow made long enough for them all and the group centred
+     * on it; a product after the step's last product, or after the arrow. What stands after the place on the arrow's row
+     * moves along to make room; nothing is arranged. With no arrow yet a reactant goes after the drawing, and an agent or a
+     * product draws an arrow after it first. All one edit. Ignored in a molecule document, and when absent.
+     *
+     * `'next'` (spike route-steps, API-075; Chem's Add panel's next step): the product of a new step after the last arrow's
+     * step: its arrow drawn after the step's last product, on its line, that product the new step's reactant, and the molecule
+     * past the arrow; what stands after on the row moves along to make room. With no product there, as `'product'`.
+     */
+    role?: MoleculeRole;
 }
 /**
  * An action a toolbar can hold: it does something once, and is no tool that stays chosen. `element.table`
@@ -243,8 +369,9 @@ export type ToolbarReadout = 'zoom.level';
 /**
  * A menu button a toolbar can hold (spike bar-fit, B7, B9): `zoom`, the zoom level as Ketcher shows it, whose menu holds Zoom
  * in, Zoom out, Actual size and Fit to view (it and `zoom.level` show the same level, and a configuration shows the first
- * of them it names); `options`, the gear, whose menu holds Settings…, Query mode (spike reports-oct5, R3) and Keyboard
- * shortcuts…; `hydrogens` (spike hydrogens-and-dative, R1), whose menu holds Add explicit hydrogens and Remove explicit
+ * of them it names); `options`, the gear, whose menu holds Settings…, Query mode (spike reports-oct5, R3; none while a
+ * toolset is in force or in a reaction document, spike reaction-bar) and Keyboard shortcuts…;
+ * `hydrogens` (spike hydrogens-and-dative, R1), whose menu holds Add explicit hydrogens and Remove explicit
  * hydrogens, each acting on the selection's atoms, or on the whole drawing with nothing selected.
  */
 export type ToolbarMenu = 'zoom' | 'options' | 'hydrogens';
@@ -254,7 +381,20 @@ export type ToolbarMenu = 'zoom' | 'options' | 'hydrogens';
  * `hydrogens.add` and `hydrogens.remove`, the Hydrogens menu's Add explicit hydrogens and Remove explicit hydrogens (spike
  * hydrogens-and-dative, R1). A menu whose items are all hidden leaves the bar with them.
  */
-export type ToolbarMenuItem = 'mode' | 'hydrogens.add' | 'hydrogens.remove';
+export type ToolbarMenuItem = 'mode' | 'hydrogens.add' | 'hydrogens.remove' | ToolbarMapItem;
+/**
+ * The Map tool's menu items (spike reaction-map, RXN-020), beside the tool in a reaction document's bar: `map.auto`, Auto-map,
+ * shown only with the host's `mapReaction`; `map.clear`, Clear all, every map number cleared, one edit.
+ */
+export type ToolbarMapItem = 'map.auto' | 'map.clear';
+/**
+ * A host's reaction mapper (spike reaction-map, RXN-020): given one step of the drawing as reaction SMILES without map numbers
+ * (`reactants>agents>products`), it returns the same reaction with atom map numbers (RXNMapper's, RDKit's), or null where it
+ * maps nothing. Auto-map calls it once for each step, then writes every step's numbers in one edit, one number per atom
+ * through a route; the molecules it could not pair are said in the status line, never silently. A mapper that throws, or
+ * a promise that rejects, maps nothing for that step.
+ */
+export type ReactionMapper = (reaction: string) => Promise<string | null> | string | null;
 /** The 118 element symbols, as written. */
 export type ElementSymbol = 'H' | 'He' | 'Li' | 'Be' | 'B' | 'C' | 'N' | 'O' | 'F' | 'Ne' | 'Na' | 'Mg' | 'Al' | 'Si' | 'P' | 'S' | 'Cl' | 'Ar' | 'K' | 'Ca' | 'Sc' | 'Ti' | 'V' | 'Cr' | 'Mn' | 'Fe' | 'Co' | 'Ni' | 'Cu' | 'Zn' | 'Ga' | 'Ge' | 'As' | 'Se' | 'Br' | 'Kr' | 'Rb' | 'Sr' | 'Y' | 'Zr' | 'Nb' | 'Mo' | 'Tc' | 'Ru' | 'Rh' | 'Pd' | 'Ag' | 'Cd' | 'In' | 'Sn' | 'Sb' | 'Te' | 'I' | 'Xe' | 'Cs' | 'Ba' | 'La' | 'Ce' | 'Pr' | 'Nd' | 'Pm' | 'Sm' | 'Eu' | 'Gd' | 'Tb' | 'Dy' | 'Ho' | 'Er' | 'Tm' | 'Yb' | 'Lu' | 'Hf' | 'Ta' | 'W' | 'Re' | 'Os' | 'Ir' | 'Pt' | 'Au' | 'Hg' | 'Tl' | 'Pb' | 'Bi' | 'Po' | 'At' | 'Rn' | 'Fr' | 'Ra' | 'Ac' | 'Th' | 'Pa' | 'U' | 'Np' | 'Pu' | 'Am' | 'Cm' | 'Bk' | 'Cf' | 'Es' | 'Fm' | 'Md' | 'No' | 'Lr' | 'Rf' | 'Db' | 'Sg' | 'Bh' | 'Hs' | 'Mt' | 'Ds' | 'Rg' | 'Cn' | 'Nh' | 'Fl' | 'Mc' | 'Lv' | 'Ts' | 'Og';
 /** An element tool, named by its symbol in lower case: `element.n`, `element.cl` (spike atoms). */
@@ -275,9 +415,10 @@ export type ToolbarRingTool = `ring.${RingName}`;
  * `bond.wavy` and `bond.crossed` are the wavy bond and the crossed double bond (spike stereo); `bond.dative` the dative bond,
  * drawn from its donor to its acceptor, the arrow on the acceptor (spike hydrogens-and-dative, R2). The query bond tools,
  * `bond.any`, `bond.single-or-double`, `bond.single-or-aromatic` and `bond.double-or-aromatic`, show in query mode only
- * (spike query-edit, API-021). A misspelt name fails to compile.
+ * (spike query-edit, API-021). The reaction arrow tool, `reaction.arrow`, shows in a reaction document only (spike
+ * reaction-document). A misspelt name fails to compile.
  */
-export type ToolbarTool = ToolbarAction | ToolbarReadout | ToolbarMenu | 'select.rect' | 'select.lasso' | 'select.structure' | 'hand' | 'erase' | 'bond.single' | 'bond.double' | 'bond.triple' | 'bond.aromatic' | 'bond.wedge' | 'bond.hash' | 'bond.wavy' | 'bond.crossed' | 'bond.dative' | 'bond.any' | 'bond.single-or-double' | 'bond.single-or-aromatic' | 'bond.double-or-aromatic' | 'chain' | 'template.library' | 'rgroup.label' | 'rgroup.attachment' | 'sgroup' | 'charge.plus' | 'charge.minus' | ToolbarRingTool | ToolbarElementTool;
+export type ToolbarTool = ToolbarAction | ToolbarReadout | ToolbarMenu | 'select.rect' | 'select.lasso' | 'select.structure' | 'hand' | 'erase' | 'bond.single' | 'bond.double' | 'bond.triple' | 'bond.aromatic' | 'bond.wedge' | 'bond.hash' | 'bond.wavy' | 'bond.crossed' | 'bond.dative' | 'bond.any' | 'bond.single-or-double' | 'bond.single-or-aromatic' | 'bond.double-or-aromatic' | 'chain' | 'template.library' | 'rgroup.label' | 'rgroup.attachment' | 'sgroup' | 'charge.plus' | 'charge.minus' | 'reaction.arrow' | 'reaction.arrow.equilibrium' | 'reaction.arrow.retrosynthetic' | 'reaction.arrow.resonance' | 'reaction.arrow.failed' | 'reaction.arrow.dashed' | 'reaction.arrow.curved' | 'reaction.arrow.curved-half' | 'reaction.text' | 'reaction.bracket.repeat' | 'reaction.bracket.charge' | 'reaction.cycle.3' | 'reaction.cycle.4' | 'reaction.cycle.5' | 'reaction.cycle.6' | 'reaction.cycle.7' | 'reaction.cycle.8' | 'reaction.map' | ToolbarRingTool | ToolbarElementTool;
 /**
  * A sub-palette of a toolbar: its id (a test-id path of your own, such as `bond.multiple`: its main
  * button is `toolbar.<palette>`), its name, and its tools. Its main button shows the tool used last.
@@ -335,6 +476,12 @@ export type KeymapProfile = 'chemdraw' | 'ketcher';
  */
 export type StereoDisplay = 'shown' | 'hidden';
 /**
+ * Whether the atom map numbers are drawn (spike map-numbers-option, API-074): `'shown'`, as notes beside their atoms in
+ * the map numbers' blue, a mapped carbon a bare vertex (CANVAS-052), or `'hidden'`, not drawn at all. Either way the
+ * numbers stay on their atoms in every format.
+ */
+export type MapNumbers = 'shown' | 'hidden';
+/**
  * How the stereo labels are written (spike labels-2; STEREO-010, the GCRS review's DR-04, the product owner's choice of
  * 2026-10-18): `'standard'` (the default), as RDKit and ChemDraw write them, a stereocentre's CIP label in parentheses
  * ((R)), its group beside it (abs, or1, &1), a centre in an AND or OR group not given its CIP label; or `'registration'`,
@@ -383,6 +530,18 @@ export interface CreateSketcherOptions {
     value?: string;
     /** `'molecule'` (the default) or `'query'` (API-021): the handle's `mode` switches it later. */
     mode?: SketcherMode;
+    /** `'molecule'` (the default) or `'reaction'` (spike reaction-document): what the sketcher edits, for its lifetime. */
+    document?: SketchDocument;
+    /**
+     * `'reaction'` or `'publication'` (spike reaction-toolset): the tools offered, which set the mode (`'reaction'` query mode,
+     * `'publication'` molecule mode) over `mode`; left out, none, `mode` alone deciding. The handle's `toolset` switches it later.
+     */
+    toolset?: SketchToolset;
+    /**
+     * A reaction document's mapper (spike reaction-map, RXN-020; `ReactionMapper`): with it, the Map tool's menu offers
+     * Auto-map. Left out, none: map numbers are given by hand. The handle's `mapReaction` sets it later.
+     */
+    mapReaction?: ReactionMapper;
     /**
      * What the toolbars hold (UI-002): `{ top, left, right, bottom }`, each a list of groups `{ label,
      * tools }`, a tool named by its test id without `toolbar.` (`bond.single`, `element.n`,
@@ -412,6 +571,8 @@ export interface CreateSketcherOptions {
     readoutItems?: readonly ReadoutItem[];
     /** The CIP labels: `'hidden'` (the default) or `'shown'` (spike stereo, S10). The handle's `stereoLabels` changes it later. */
     stereoLabels?: StereoDisplay;
+    /** The atom map numbers: `'shown'` (the default) or `'hidden'` (spike map-numbers-option, API-074). The handle's `mapNumbers` changes it later. */
+    mapNumbers?: MapNumbers;
     /**
      * How the stereo labels are written: `'standard'` (the default) or `'registration'` (spike labels-2, STEREO-010). The
      * handle's `stereoLabelStyle` changes it later.
@@ -600,8 +761,10 @@ export interface SketcherApi {
     readonly canonicalCxsmiles: string;
     /**
      * SMARTS, as RDKit's MolToSmarts writes the same query (spike query, Q10; QUERY-017): each query feature as RDKit writes
-     * it, drawn hydrogens merged into their heavy atoms where the drawing has a query feature (P10, QUERY-022); a drawing
-     * without one gives RDKit's explicit-atom SMARTS (QUERY-018).
+     * it; a drawing without one gives RDKit's explicit-atom SMARTS (QUERY-018). Drawn hydrogens are merged into their heavy
+     * atoms as "at least that many H" (`[#8&!H0]`), as RDKit's `mergeQueryHs` reads the molfile on Datagrok's path, whether
+     * or not the drawing has a query feature (P10, QUERY-022; spike query-add-hydrogens); one it keeps, a deuterium, stays
+     * an atom.
      */
     readonly smarts: string;
     /**
@@ -615,13 +778,21 @@ export interface SketcherApi {
      */
     readonly svg: string;
     /**
+     * The drawing as SVG drawn as `options` say (spike eval6-polish, API-078): the map numbers on or off, the bond's length in
+     * points (an ACS 1996 picture at 14.4), the atoms in colour or black; otherwise as the `svg` getter draws it, which
+     * `svgWith()` with no options returns. Throws a RangeError for a `bondLength` that is not a finite number above 0, and
+     * what the `svg` getter throws. A read: nothing is drawn on the canvas, nothing emitted. After `destroy()`, the last
+     * drawing's as `svg` gives it, whatever the options.
+     */
+    svgWith(options?: PictureOptions): string;
+    /**
      * The drawing as a PNG (API-023, IO-033; spike later-quick-2): the `svg` getter's drawing rasterised in the browser, on
      * a canvas never put in the page, at `scale` times its natural size (1 by default: one pixel per CSS px; 3.125 for 300
      * dpi), its vectors drawn at that size. The PNG says its resolution (`pHYs`, 96 × scale dpi), so that a document places
      * it at the drawing's natural size; its background is the canvas's, white. Resolves `null` for an empty drawing (as
      * `svg` is `""`); rejects with the `svg` getter's error when the engine cannot draw it, and with a RangeError for a
      * scale that is not a finite number above 0. A read: it draws nothing on the canvas and emits nothing. After
-     * `destroy()`, the last drawing's.
+     * `destroy()`, the last drawing's. With picture options (spike eval6-polish, API-078) it is `svgWith(options)`'s drawing.
      */
     png(options?: PngOptions): Promise<Blob | null>;
     /**
@@ -683,12 +854,16 @@ export interface SketcherApi {
      * `addFragment`): read as `options.format` when it is given, else detected from its shape, as `value` reads it, and placed
      * as a paste is placed: scaled to the drawing's bond length, the middle of its box at the centre of the view, moved right
      * and down until it is clear of every structure. One edit, one undo step, one change event with `{ source: 'api' }`;
-     * the selection and the view stay as they are. A text that holds no structure (or a reaction) changes nothing, sets
-     * `lastError` and emits `error`, never throwing (API-013); CDXML and InChI wait for their module, as `value` does; before
-     * the sketcher is ready it waits until it is. Throws on a destroyed sketcher.
+     * the selection and the view stay as they are, and `lastError` is cleared to `null`. A text that holds no structure (or
+     * a reaction) changes nothing, sets `lastError` and emits `error`, never throwing (API-013); CDXML and InChI wait for their module, as `value` does; before
+     * the sketcher is ready it waits until it is. Throws on a destroyed sketcher. In a reaction document `options.role` places
+     * it as a reactant, an agent or a product of the last arrow's step (API-071; `AddMoleculeOptions`).
      */
-    addMolecule(text: string, options?: Pick<SetValueOptions, 'format'>): void;
-    /** The last refused write's error, until the next accepted write clears it to `null`. */
+    addMolecule(text: string, options?: AddMoleculeOptions): void;
+    /**
+     * The last refused write's or `addMolecule`'s error, until the next accepted write or `addMolecule` clears it to `null`
+     * (spike last-error-add): it describes the last such call.
+     */
     readonly lastError: SketchError | null;
     /**
      * Every problem of the molecule as it is now, then what the getters' formats cannot hold of it, `[]` when there is
@@ -806,6 +981,28 @@ export interface SketcherApi {
      */
     mode: SketcherMode;
     /**
+     * What the sketcher edits (spike reaction-document): `'molecule'`, the default, or `'reaction'`, as it was made
+     * (`createSketcher`'s `document`). In a reaction document the arrow tool draws arrows; `value`, `setValue` and a paste read
+     * reaction text (reaction SMILES or SMARTS, RXN, a step list), which a molecule document refuses (IO-031); and once the
+     * drawing has an arrow, `value` is the reaction in the notation read (the text read itself while nothing changed), `smiles`
+     * its reaction SMILES, `smarts` its reaction SMARTS, `molfile` the RXN read while nothing changed, and the getters of other
+     * formats throw, saying a reaction is not written in them.
+     */
+    readonly document: SketchDocument;
+    /**
+     * The tools offered (spike reaction-toolset): `'reaction'` (query mode: every tool, the query tools among them) or
+     * `'publication'` (molecule mode: the query tools hidden, a query read still drawn, kept and written), switched at any time
+     * by the host alone (spike reaction-bar: nothing on the page switches it; the gear shows no Query mode while it is in
+     * force); `null`, the default, for none, `mode` alone deciding and the gear as it was. Setting it sets `mode`; while
+     * it is in force, setting `mode` switches it too. No edit, no change event; never stored. Any other value is `null`.
+     */
+    toolset: SketchToolset | null;
+    /**
+     * A reaction document's mapper (spike reaction-map, RXN-020; `ReactionMapper`), which Auto-map calls once for each step;
+     * `null`, the default, for none, the Map tool's menu then offering Clear all alone. No edit, no change event; never stored.
+     */
+    mapReaction: ReactionMapper | null;
+    /**
      * The query elements the host turns off (API-028; spike query-edit, E5): generic symbols (`A` … `MH`, `*`), `list`,
      * `not-list` and the query bond names (`any`, `single-or-double`, `single-or-aromatic`, `double-or-aromatic`). Each is
      * shown disabled where it is offered, saying why, and refused, saying why, where it is typed. It reads back the names it
@@ -861,6 +1058,26 @@ export interface SketcherApi {
     undo(): boolean;
     /** Redoes the last edit that was undone: as `undo()`, the other way. A new edit clears what could be redone. */
     redo(): boolean;
+    /**
+     * Arrange (API-070; spike reaction-cdxml, the product owner's decision 12): a reaction document laid out again in rows
+     * at most `width` bond lengths wide (when left out, as wide as the canvas shows at 100%, widened to fit the pane while
+     * the fitted drawing grows: RXN-027), each row ending at an arrow and
+     * its conditions and the next starting with that arrow's product; every molecule moved, never turned; the scheme's top
+     * left kept. One edit and one `change` with `{ source: 'api' }`, drawn fitted. Returns whether it edited: `false` in a
+     * molecule document, a document with no arrow, or on an engine before it. As the Clean Up and Layout menu's Arrange.
+     */
+    arrange(width?: number): boolean;
+    /**
+     * A reaction document's steps in the order the `smiles` getter writes them, each with its texts over and under its
+     * arrow, its conditions (spike t2-add-panel; API-077); `null` in a molecule document, `[]` with no step. Reading it
+     * makes no edit and no event.
+     */
+    readonly reactionSteps: readonly ReactionStepTexts[] | null;
+    /**
+     * Fits the drawing into the view as the toolbar's Fit to view (F6) does (CANVAS-007): centred and zoomed to fill the
+     * canvas with a margin, clear of the readout. No edit, no `change` event, no undo step (spike t2-add-panel; API-076).
+     */
+    fitView(): void;
     /** Whether `undo()` would do anything: the history holds a completed edit since the host last wrote a value. Read-only. */
     readonly canUndo: boolean;
     /** Whether `redo()` would do anything: an edit was undone, and none has been made since. Read-only. */
@@ -886,6 +1103,14 @@ export interface SketcherApi {
      * The canvas menu's "Show stereochemistry" sets it too. Each sketcher has its own.
      */
     stereoLabels: StereoDisplay;
+    /**
+     * The atom map numbers (spike map-numbers-option, API-074): `'shown'` (the default), drawn as notes beside their atoms
+     * in the map numbers' blue, a mapped carbon a bare vertex (CANVAS-052); or `'hidden'`, drawn not at all, in every
+     * document. It reads back the value in force, as `stereoLabels` does: `'hidden'` only when set to that keyword.
+     * Setting it redraws at once, and is no edit: no change event, no undo step, and no getter changes (the numbers stay on
+     * their atoms in every format). The `map-numbers` attribute sets it too. Each sketcher has its own.
+     */
+    mapNumbers: MapNumbers;
     /**
      * How the stereo labels are written (spike labels-2; STEREO-010, the GCRS review's DR-04): `'standard'` (the default),
      * (R) beside a centre and abs, or1, &1 beside a grouped one, an AND or OR centre without its CIP label; or

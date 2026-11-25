@@ -12,7 +12,7 @@ Feature: The Filters tutorial
 
   Fixed in the tutorial for this translation: the row-count and bin-selection steps completed on
   any selection event; the indicator and reset hints were captured when their step began.
-  The named filter state lives in the browser's storage and is removed before and after the walk.
+  The named filter state is a preset on the server (public#3481), removed before and after the walk.
 
   Serial, because a finished tutorial writes its completion record into the account's settings,
   which every page syncs whole.
@@ -112,6 +112,8 @@ Feature: The Filters tutorial
     When user picks "Save or Apply > Save..." from the filter panel menu
     Then the tutorial step "Save the filter configuration" should be done
     When user clicks on OK button in dialog
+    # the dialog closes once the preset is saved and the panel's presets are listed anew
+    Then the "Save filter preset" dialog should close
 
     When user hovers over filter panel
     And user clicks on "Reset filter" icon in filter panel

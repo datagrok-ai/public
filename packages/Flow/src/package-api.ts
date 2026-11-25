@@ -17,6 +17,13 @@ export namespace funcs {
   }
 
   /**
+   * Reopens a Flow view saved in a project
+   */
+  export async function flowView(params: any , path: string ): Promise<DG.View> {
+    return await grok.functions.call('Flow:FlowView', { params, path });
+  }
+
+  /**
    * Reads a file uploaded into a flow and parses it into a table
    */
   export async function readUploadedFile(fileId: string , fileName: string ): Promise<DG.DataFrame> {

@@ -49,6 +49,22 @@ export async function previewRtf(file: DG.FileInfo) : Promise<any> {
 //input: file file 
 //output: view result
 //meta.role: fileViewer
+//meta.fileViewer: odt
+export async function previewOdt(file: DG.FileInfo) : Promise<any> {
+  return await PackageFunctions.previewOdt(file);
+}
+
+//input: file file 
+//output: view result
+//meta.role: fileViewer
+//meta.fileViewer: doc
+export async function previewDoc(file: DG.FileInfo) : Promise<any> {
+  return await PackageFunctions.previewDoc(file);
+}
+
+//input: file file 
+//output: view result
+//meta.role: fileViewer
 //meta.fileViewer: tex
 export async function previewTex(file: DG.FileInfo) : Promise<any> {
   return await PackageFunctions.previewTex(file);

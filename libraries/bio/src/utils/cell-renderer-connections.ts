@@ -6,7 +6,9 @@
  *
  * The drawing follows how disulfides are drawn over one-letter sequences: a square bracket with a leg on each monomer,
  * shorter brackets nearer the letters, overlapping ones on separate lanes; a chain's backbone ring under the chain;
- * a monomer bonded to three or more others (a scaffold on three Cys) as one comb.
+ * a monomer bonded to three or more others (a scaffold on three Cys) as one comb. Two chains bonded side by side (the
+ * last monomer of one to the first of the next, as HELM writes a conjugate's CHEM parts) read as one line: a short
+ * line between the two monomers in place of the chain break, its ends at the R-groups' heights.
  */
 import {ISeqConnection, ISeqGraphInfoHelm, ISeqSplitted} from './macromolecule/types';
 
@@ -25,6 +27,10 @@ export interface IDrawnConnection {
   headToTail: boolean;
   /** A hydrogen bond (HELM `pair`): drawn dashed */
   hbond: boolean;
+  /** Two chains bonded side by side: {@link from} is the last monomer of its chain and {@link to} the first of the next
+   * one. Drawn as a short line between them in place of the chain break ({@link drawInlineJoins}), not as a bracket;
+   * the two chains are one line of a stacked layout. Not for a monomer bonded to three or more others (a comb) */
+  inline: boolean;
   /** Set by {@link assignLanes}: 1 above the monomers, -1 below */
   side: 1 | -1;
   /** Set by {@link assignLanes}: 0 is the lane nearest the monomers */
@@ -63,8 +69,11 @@ export interface IConnectionsLayout {
   above: number;
   below: number;
   geo: IConnectionsGeometry;
-  /** Stacked: the chains' first flat positions, one line each; empty when the row is drawn on one line */
+  /** Stacked: the lines' first flat positions, a line being a chain or chains bonded side by side
+   * ({@link IDrawnConnection.inline}); empty when the row is drawn on one line */
   chains: number[];
+  /** The bonds drawn between two monomers side by side ({@link IDrawnConnection.inline}), not in {@link conns} */
+  inline: IDrawnConnection[];
 }
 
 /** Lines of bonds whose two ends are not the same monomer, and of rings */
@@ -72,6 +81,13 @@ export const CONNECTION_GREY = 'rgb(105,105,105)';
 
 /** Colours of the bond numbers that stand for bonds crossing a line break (multiline) */
 export const CONNECTION_NUMBER_COLORS = ['#4e79a7', '#e15759', '#f28e2b', '#59a14f', '#b07aa1', '#76b7b2', '#9c755f', '#ff9da7'];
+
+/** The index of the run that holds flat position {@link p}, of runs starting at {@link starts} (ascending) */
+function runOf(starts: ArrayLike<number>, p: number): number {
+  let k = starts.length - 1;
+  while (k > 0 && starts[k] > p) k--;
+  return k;
+}
 
 /** The row's connections in flat positions, in graph info order; empty when it has none.
  * {@link ISeqConnection.monomerIndex1} counts within its chain: flat = chain start + monomer index. */
@@ -83,31 +99,60 @@ export function getDrawnConnections(seqSS: ISeqSplitted): IDrawnConnection[] {
   const starts = gi.disjointSeqStarts?.length ? gi.disjointSeqStarts : [0];
   const len = seqSS.length;
   const chainLast = (c: number): number => (c + 1 < starts.length ? starts[c + 1] : len) - 1;
-  /** the chain a flat position is in (the connection's own chain indices are not trusted) */
-  const chainOf = (p: number): number => {
-    let c = starts.length - 1;
-    while (c > 0 && starts[c] > p) c--;
-    return c;
-  };
   const res: IDrawnConnection[] = [];
   const add = (c: ISeqConnection, hbond: boolean): void => {
     const p1 = (starts[c.seqIndex1] ?? NaN) + c.monomerIndex1;
     const p2 = (starts[c.seqIndex2] ?? NaN) + c.monomerIndex2;
     if (!(p1 >= 0 && p2 >= 0 && p1 < len && p2 < len) || p1 === p2) return;
     const fwd = p1 < p2;
-    const chainFrom = chainOf(fwd ? p1 : p2);
-    const chainTo = chainOf(fwd ? p2 : p1);
     const from = fwd ? p1 : p2;
     const to = fwd ? p2 : p1;
-    const rFrom = fwd ? c.rGroup1 : c.rGroup2;
-    const rTo = fwd ? c.rGroup2 : c.rGroup1;
-    const headToTail = !hbond && chainFrom === chainTo && rFrom === 1 && rTo === 2 &&
-      from === starts[chainFrom] && to === chainLast(chainFrom);
-    res.push({from, to, rFrom, rTo, chainFrom, chainTo, headToTail, hbond, side: 1, lane: 0});
+    // the chain a flat position is in (the connection's own chain indices are not trusted)
+    res.push({from, to, rFrom: fwd ? c.rGroup1 : c.rGroup2, rTo: fwd ? c.rGroup2 : c.rGroup1, chainFrom: runOf(starts, from),
+      chainTo: runOf(starts, to), headToTail: false, hbond, inline: false, side: 1, lane: 0});
   };
   for (const c of gi.connections ?? []) add(c, false);
   for (const c of hbonds ?? []) add(c, true);
+  // chains side by side: the last monomer of a chain bonded to the first of the next, one bond per chain break, unless
+  // either monomer holds three or more bonds (a comb shows those better)
+  let bonds: Map<number, number> | null = null;
+  const joined = new Set<number>(); // the first positions of the chains joined to the chain before
+  for (const c of res) {
+    if (c.hbond || c.chainTo !== c.chainFrom + 1 || c.from !== chainLast(c.chainFrom) || c.to !== starts[c.chainTo] ||
+      joined.has(c.to)) continue;
+    if (!bonds) {
+      bonds = new Map<number, number>();
+      for (const b of res) if (!b.hbond) for (const p of [b.from, b.to]) bonds.set(p, (bonds.get(p) ?? 0) + 1);
+    }
+    if (bonds.get(c.from)! >= 3 || bonds.get(c.to)! >= 3) continue;
+    c.inline = true;
+    joined.add(c.to);
+  }
+  // a chain closed head to tail is a ring, its first monomer's R1 to its last monomer's R2, and so is a line of chains
+  // side by side closed so
+  const lines = joined.size > 0 ? starts.filter((s) => !joined.has(s)) : starts;
+  const lineLast = (l: number): number => (l + 1 < lines.length ? lines[l + 1] : len) - 1;
+  for (const c of res) {
+    if (c.hbond || c.inline || c.rFrom !== 1 || c.rTo !== 2) continue;
+    const l = runOf(lines, c.from);
+    c.headToTail = c.chainFrom === c.chainTo && c.from === starts[c.chainFrom] && c.to === chainLast(c.chainFrom) ||
+      joined.size > 0 && c.from === lines[l] && c.to === lineLast(l);
+  }
   return res;
+}
+
+/** The first flat positions of the row's lines: its chains, where a chain bonded side by side to the one before it
+ * ({@link IDrawnConnection.inline}) continues that one's line */
+export function connectionLines(seqSS: ISeqSplitted, conns: IDrawnConnection[]): number[] {
+  const starts = seqSS.graphInfo?.disjointSeqStarts?.length ? seqSS.graphInfo.disjointSeqStarts : [0];
+  let joined: Set<number> | null = null;
+  for (const c of conns) if (c.inline) (joined ??= new Set<number>()).add(c.to);
+  return joined ? starts.filter((s) => !joined!.has(s)) : starts.slice();
+}
+
+/** The line ({@link connectionLines}) that holds flat position {@link p} */
+export function lineOf(lines: number[], p: number): number {
+  return runOf(lines, p);
 }
 
 /** A monomer bonded to three or more others through side bonds (a TATA/THA scaffold on three Cys, a branching Lys)
@@ -116,7 +161,7 @@ export function getDrawnConnections(seqSS: ISeqSplitted): IDrawnConnection[] {
 export function combineHubs(conns: IDrawnConnection[]): IDrawnConnection[] {
   const byPos = new Map<number, IDrawnConnection[]>();
   for (const c of conns) {
-    if (c.headToTail || c.hbond) continue;
+    if (c.headToTail || c.hbond || c.inline) continue;
     for (const p of [c.from, c.to]) {
       let l = byPos.get(p);
       if (!l) byPos.set(p, l = []);
@@ -215,18 +260,22 @@ export function measureConnectionsFont(font: string, fontSize: number): IConnect
   return res;
 }
 
-/** One line per chain reads when every inter-chain bond joins neighbouring lines through a side chain (or pairs them),
- * and only the first and the last chain have bonds of their own (drawn above the first line and below the last);
- * every chain has monomers. Chains joined backbone to backbone (one chain's C-terminus to the next one's N-terminus)
- * are one backbone, which a single line shows better */
-function isStackable(conns: IDrawnConnection[], chains: number[], len: number): boolean {
-  if (chains.length < 2) return false;
-  for (let k = 0; k < chains.length; k++)
-    if ((k + 1 < chains.length ? chains[k + 1] : len) <= chains[k]) return false;
-  const last = chains.length - 1;
-  return conns.every((c) => c.chainFrom !== c.chainTo ?
-    Math.abs(c.chainTo - c.chainFrom) === 1 && (c.hbond || c.rFrom > 2 || c.rTo > 2) :
-    c.chainFrom === 0 || c.chainFrom === last);
+/** One line per chain reads when every bond between lines joins neighbouring lines through a side chain (or pairs
+ * them), and only the first and the last line have bonds of their own (drawn above the first line and below the last);
+ * every line has monomers. A line is a chain, or chains bonded side by side ({@link connectionLines}): their bond is
+ * drawn within the line. Chains joined backbone to backbone further along (one chain's C-terminus to the next one's
+ * N-terminus) are one backbone, which a single line shows better */
+function isStackable(conns: IDrawnConnection[], lines: number[], len: number): boolean {
+  if (lines.length < 2) return false;
+  for (let k = 0; k < lines.length; k++)
+    if ((k + 1 < lines.length ? lines[k + 1] : len) <= lines[k]) return false;
+  const last = lines.length - 1;
+  return conns.every((c) => {
+    if (c.inline) return true;
+    const a = lineOf(lines, c.from);
+    const b = lineOf(lines, c.to);
+    return a !== b ? Math.abs(b - a) === 1 && (c.hbond || c.rFrom > 2 || c.rTo > 2) : a === 0 || a === last;
+  });
 }
 
 /** How the row's connections fit a cell of height {@link h}, or null when it has none or they do not fit: the cell
@@ -238,24 +287,26 @@ export function layoutConnections(seqSS: ISeqSplitted, h: number, fontSize: numb
   const all = getDrawnConnections(seqSS);
   if (all.length === 0) return null;
   const capH = met.capBotOff - met.capTopOff;
-  const chains = seqSS.graphInfo?.disjointSeqStarts ?? [0];
-  if (stackedAllowed && isStackable(all, chains, seqSS.length)) {
-    const own = all.filter((c) => c.chainFrom === c.chainTo);
-    const lanes = assignLanes(own, (c) => c.chainFrom === 0 ? 1 : -1);
+  const inline = all.filter((c) => c.inline);
+  const rest = inline.length > 0 ? all.filter((c) => !c.inline) : all;
+  const lines = connectionLines(seqSS, all);
+  if (stackedAllowed && isStackable(rest, lines, seqSS.length)) {
+    const own = rest.filter((c) => lineOf(lines, c.from) === lineOf(lines, c.to));
+    const lanes = assignLanes(own, (c) => lineOf(lines, c.from) === 0 ? 1 : -1);
     const geo = connectionsGeometry(fontSize, false);
-    const need = sideHeight(lanes.above, geo) + chains.length * capH + (chains.length - 1) * stackedLineGap(fontSize) +
+    const need = sideHeight(lanes.above, geo) + lines.length * capH + (lines.length - 1) * stackedLineGap(fontSize) +
       Math.max(sideHeight(lanes.below, geo) + 2, met.descBelow) + 2;
     if (h >= need) {
-      const inter = all.filter((c) => c.chainFrom !== c.chainTo);
-      return {conns: own.sort(byLaneOuterFirst).concat(inter), ...lanes, geo, chains: chains.slice()};
+      const between = rest.filter((c) => lineOf(lines, c.from) !== lineOf(lines, c.to));
+      return {conns: own.sort(byLaneOuterFirst).concat(between), inline, ...lanes, geo, chains: lines};
     }
   }
-  const conns = combineHubs(all);
+  const conns = combineHubs(rest);
   const lanes = assignLanes(conns);
   for (const compressed of [false, true]) {
     const geo = connectionsGeometry(fontSize, compressed);
     if (h >= lineHeightWithLanes(lanes.above, lanes.below, geo, met) + 2)
-      return {conns: conns.slice().sort(byLaneOuterFirst), ...lanes, geo, chains: []};
+      return {conns: conns.slice().sort(byLaneOuterFirst), inline, ...lanes, geo, chains: []};
   }
   return null;
 }
@@ -266,11 +317,11 @@ export function layoutConnections(seqSS: ISeqSplitted, h: number, fontSize: numb
  * hovered position are drawn thicker and the others fade. */
 export function drawConnections(g: CanvasRenderingContext2D, conns: IDrawnConnection[], xOf: (pos: number, r?: number) => number,
   aboveY0: number, belowY0: number, geo: IConnectionsGeometry, colorOf: (c: IDrawnConnection) => string,
-  hoverPos: number | null = null,
+  hoverPos: number | null = null, fade?: boolean,
 ): void {
-  const touches = (c: IDrawnConnection): boolean => hoverPos !== null && (c.comb ?
-    c.comb.hub === hoverPos || c.comb.members.includes(hoverPos) : c.from === hoverPos || c.to === hoverPos);
-  const anyHover = hoverPos !== null && conns.some(touches);
+  const touches = (c: IDrawnConnection): boolean => touchesPos(c, hoverPos);
+  // the others fade when the hovered monomer has a bond here, or the caller says it has one elsewhere in the cell
+  const anyHover = hoverPos !== null && (fade ?? conns.some(touches));
   g.save();
   try {
     g.lineCap = 'round';
@@ -311,6 +362,60 @@ export function drawConnections(g: CanvasRenderingContext2D, conns: IDrawnConnec
       g.arcTo(x2, laneY, x2, laneY + s * r, r);
       g.lineTo(x2, y0);
       g.stroke();
+    }
+  } finally {
+    g.restore();
+  }
+}
+
+/** Whether connection {@link c} (or comb) has its end at {@link pos} */
+export function touchesPos(c: IDrawnConnection, pos: number | null): boolean {
+  return pos !== null && (c.comb ? c.comb.hub === pos || c.comb.members.includes(pos) : c.from === pos || c.to === pos);
+}
+
+/** The height a bond's end takes beside a monomer, between the top of the capitals and their foot: R1 at the foot, R2
+ * at the top, a side chain in the middle (as a bracket's legs stand at a monomer's left edge, right edge and middle) */
+export function inlineJoinY(r: number, top: number, foot: number): number {
+  return r === 1 ? foot : r === 2 ? top : (top + foot) / 2;
+}
+
+/** Draws the bonds of chains side by side ({@link IDrawnConnection.inline}) where the chain break would be: a line
+ * from the left monomer's right edge to the right monomer's left edge, each end at its R-group's height
+ * ({@link inlineJoinY}) and marked with a dot, so that a side chain to a side chain (both ends in the middle) does not
+ * read as the separator of a chain. {@link ends} gives where the left label ends and the right one begins, and the
+ * line's top and foot of the capitals; null skips a bond. The hovered monomer's bond is drawn thicker and, with
+ * {@link fade}, the others fade, as the brackets do. */
+export function drawInlineJoins(g: CanvasRenderingContext2D, joins: IDrawnConnection[],
+  ends: (c: IDrawnConnection) => { x1: number, x2: number, top: number, foot: number } | null,
+  lineWidth: number, colorOf: (c: IDrawnConnection) => string, hoverPos: number | null, fade: boolean,
+): void {
+  if (joins.length === 0) return;
+  g.save();
+  try {
+    g.lineCap = 'round';
+    g.setLineDash(SOLID);
+    for (const c of joins) {
+      const e = ends(c);
+      if (!e) continue;
+      const hovered = touchesPos(c, hoverPos);
+      const color = colorOf(c);
+      const w = hovered ? lineWidth * 2 : lineWidth;
+      const y1 = inlineJoinY(c.rFrom, e.top, e.foot);
+      const y2 = inlineJoinY(c.rTo, e.top, e.foot);
+      g.strokeStyle = color;
+      g.fillStyle = color;
+      g.globalAlpha = fade && !hovered ? 0.3 : 1;
+      g.lineWidth = w;
+      g.beginPath();
+      g.moveTo(e.x1, y1);
+      g.lineTo(e.x2, y2);
+      g.stroke();
+      const r = Math.max(1.1, w * 1.1);
+      g.beginPath();
+      g.arc(e.x1, y1, r, 0, Math.PI * 2);
+      g.moveTo(e.x2 + r, y2);
+      g.arc(e.x2, y2, r, 0, Math.PI * 2);
+      g.fill();
     }
   } finally {
     g.restore();

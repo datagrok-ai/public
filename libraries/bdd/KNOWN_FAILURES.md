@@ -147,6 +147,18 @@ MISSING.md, with the claim to add once fixed. Core paths are relative to `core/`
 | The Move entity dialog of a drop on a project or space opened before its rows, which wait for each entity to be fetched again: under two workers "selects Move" found no choice (projects-move, projects-complex, now and then) | xamgle `meta/project_meta.dart` `entityProjectMove` shows the dialog once the move widget is built | xamgle `Core: xamgle: Projects/Layouts: Projects` 'The Move entity dialog opens with its choices'; the nine features that use the dialog |
 | A connection a local docker spawner serves (the ChEMBL container, PostgresDocker) failed: grok_connect, itself in docker, was handed `localhost:<port>` (the 2026-10-29 fix, lost in the Dart 3 merge) | `server/datlas/lib/src/services/connectors/connectors_service.dart` `startConnectionDocker` | `viewers/trellis-plot/trellis-plot-keyboard`; `connections/connections-schema`, which skipped at its gate before |
 
+## Tags retired on 2026-11-15
+
+The full round after core master's pull to 427476055e found three tags passing. Each defect was fixed in the core
+after the 2026-11-08 round (and before that pull); the scenarios pass untagged, two runs each. Core paths are relative
+to `core/`.
+
+| Scenario | Was | Fix |
+| --- | --- | --- |
+| [A table renamed from the status bar — core#626](../../packages/UsageAnalysis/bdd/features/projects/projects-regressions-rename-from-status-bar.feature) | Rename... on a query result's table did not reach the table or its view. | 90f72867a4: `client/xamgle/lib/src/views/table_view.dart` binds the status bar's table label to the view's current table (a query result gets its table after the view is built); `commands_param/table_commands.dart`: the rename validator skips a relation without a project. |
+| [A visual query's parameter value on reopen — GROK-20535](../../packages/UsageAnalysis/bdd/features/projects/projects-regressions-visual-query.feature) | The reopened project held the default value's row. | 1afc15f6c8 (core#1484): `shared/ddt/lib/src/data_frame/tools/query.dart` `TableQuery.toConsole` writes a saved visual query by name with the values it ran with (`Admin:<query>("Script")`), not as an inline `DbQuery(...)` of its own where clauses. |
+| [A key column header dragged inside the pivot's inner grid — core#467](../../packages/UsageAnalysis/bdd/features/viewers/pivot-table/pivot-table-inner-grid-drag.feature) | A NullError from `GridCore.col2screen` on every repaint. | b787e255ca: `client/d4/lib/src/viewers/pivot_viewer/pivot_grid.dart`: a header dragged inside the grid only reorders its columns; `grid/features/grid_column_reordering.dart` skips a column the drop detached. |
+
 ## Open on 2026-10-12
 
 | Scenario | Pinned at | Was |

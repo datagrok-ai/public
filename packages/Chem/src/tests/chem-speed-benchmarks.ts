@@ -33,18 +33,21 @@ import {MmpFragments, MmpRules, MolecularPair} from '../analysis/molecular-match
 import {chemSimilarityBitset} from '../analysis/chem-similarity-viewer';
 import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {Fingerprint} from '../utils/chem-common';
-import {FILTER_SCAFFOLD_TAG} from '../constants';
+import {ALIGN_BY_SCAFFOLD_TAG, FILTER_SCAFFOLD_TAG, HIGHLIGHT_BY_SCAFFOLD_COL, HIGHLIGHT_BY_SCAFFOLD_TAG}
+  from '../constants';
 import {getPropertiesAsColumns} from '../widgets/properties';
 import {convertNotationForColumn} from '../utils/convert-notation-utils';
 import {getStructuralAlertsByRules, RuleSet} from '../panels/structural-alerts';
 import {getInchiKeysImpl, getInchisImpl} from '../panels/inchi';
 import {convertMolNotationByEngine, fingerprintsByEngine, inchisByEngine} from '../engine/worker-jobs';
-import {beautifyMolsByEngine, coordGenCoordsByEngine, flattenMoleculesByEngine} from '../engine/molecule-jobs';
+import {beautifyMolsByEngine, coordGenCoordsByEngine, flattenMoleculesByEngine, validationTextsByEngine}
+  from '../engine/molecule-jobs';
+import {getMolSafe, getQueryMolSafe, validationText} from '../utils/mol-creation_rdkit';
 import {rGroupsByEngine} from '../engine/analysis-jobs';
 import {cruxInchi} from '../crux/crux-inchi';
 import {loadCruxSketch} from '../crux/crux-sketcher';
 import {inchiToInchiKey, inchiToSmiles, smilesToInchi, smilesToInchiKey} from '../python-free';
-import {inEngine} from './engine-utils';
+import {OWNER_PROPANE_QUERY, inEngine} from './engine-utils';
 import {readDataframe} from './utils';
 
 const ENGINES = [ChemicalEngine.Crux, ChemicalEngine.RDKit];
@@ -78,6 +81,29 @@ async function interleaved(legs: {[label: string]: () => unknown}, reps = REPS,
   return medians;
 }
 
+/** `run()`'s result and the main thread's longest stall meanwhile (ms): the longest gap between the ticks of a 5 ms
+ * timer (the browser holds nested timers to 4 ms at least, so a free main thread shows ~5). */
+async function withStallWatch<T>(run: () => Promise<T>): Promise<{texts: T, stall: number}> {
+  let last = performance.now();
+  let stall = 0;
+  let on = true;
+  const tick = () => {
+    const now = performance.now();
+    stall = Math.max(stall, now - last);
+    last = now;
+    if (on)
+      setTimeout(tick, 5);
+  };
+  setTimeout(tick, 5);
+  try {
+    const texts = await run();
+    stall = Math.max(stall, performance.now() - last);
+    return {texts, stall};
+  } finally {
+    on = false;
+  }
+}
+
 /** `legs` per engine (`<label> <engine>`), each leg run in its engine. */
 function byEngine(legs: {[label: string]: () => unknown}): {[label: string]: () => unknown} {
   const out: {[label: string]: () => unknown} = {};
@@ -89,14 +115,18 @@ function byEngine(legs: {[label: string]: () => unknown}): {[label: string]: () 
 }
 
 let large: string | null = null;
+/** Where {@link largeCsv}'s table came from: the stand's ChEMBL 100k, or 10x smi10K. */
+let largeSource = '';
 async function largeCsv(): Promise<string> {
   if (large === null) {
     try {
       large = await grok.dapi.files.readAsText(LARGE);
+      largeSource = 'ChEMBL 100k';
     } catch {
       const small = (await readDataframe('tests/smi10K.csv')).toCsv();
       const rows = small.split('\n').slice(1).filter((l) => l !== '');
       large = ['smiles', ...Array.from({length: 10}, () => rows).flat()].join('\n');
+      largeSource = '10x smi10K';
     }
   }
   return large;
@@ -106,6 +136,69 @@ async function molTable(csv: string): Promise<DG.DataFrame> {
   const df = DG.DataFrame.fromCsv(csv);
   df.col('smiles')!.semType = DG.SEMTYPE.MOLECULE;
   return df;
+}
+
+/**
+ * The owner's decision 1 of 2026-11-20: in Crux mode the renderer reads the filter's query as the filter does
+ * (getQueryMolSafe). smi10K's rows the owner's propane query passes in the filter (150 at most), drawn fresh, Crux
+ * mode: with nothing on the column; under the filter's tag (highlighted; aligned and highlighted); and with the same
+ * molblock as a highlight scaffold and as a highlighted align scaffold of the column, read literally, as the renderer
+ * read the filter's query before (it matches none of these rows). The medians (ms) as JSON.
+ */
+async function filterQueryDrawing(smi10k: string): Promise<string> {
+  const df = await molTable(smi10k);
+  const col = df.col('smiles')!;
+  const grid = df.plot.grid();
+  const renderer = getMoleculeRenderer();
+  const g = ui.canvas(200, 100).getContext('2d')!;
+  const rows = await inEngine(ChemicalEngine.Crux, async () => {
+    const crux = cruxModuleSync()!;
+    const query = getQueryMolSafe(OWNER_PROPANE_QUERY, OWNER_PROPANE_QUERY, crux)!;
+    const out: number[] = [];
+    try {
+      for (let i = 0; i < col.length && out.length < 150; i++) {
+        const mol = getMolSafe(col.get(i), {}, crux).mol;
+        try {
+          if (mol && mol.get_substruct_match(query) !== '{}')
+            out.push(i);
+        } finally {
+          mol?.delete();
+        }
+      }
+    } finally {
+      query.delete();
+    }
+    return out;
+  });
+  expect(rows.length > 0, true, 'smi10K rows the query passes');
+  const setTags = (label: string) => {
+    delete col.temp[FILTER_SCAFFOLD_TAG];
+    for (const tag of [HIGHLIGHT_BY_SCAFFOLD_TAG, ALIGN_BY_SCAFFOLD_TAG, HIGHLIGHT_BY_SCAFFOLD_COL])
+      delete col.tags[tag];
+    if (label.startsWith('filter')) {
+      col.temp[FILTER_SCAFFOLD_TAG] = JSON.stringify([{molecule: OWNER_PROPANE_QUERY, isSuperstructure: false,
+        align: label.startsWith('filter align')}]);
+    } else if (label.startsWith('literal highlight'))
+      col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify([{molecule: OWNER_PROPANE_QUERY}]));
+    else if (label.startsWith('literal align')) {
+      col.setTag(ALIGN_BY_SCAFFOLD_TAG, OWNER_PROPANE_QUERY);
+      col.setTag(HIGHLIGHT_BY_SCAFFOLD_COL, 'true');
+    }
+    (renderer as any).cacheGeneration = -1;
+    renderer._syncEngine();
+  };
+  const draw = () => {
+    for (const i of rows) {
+      const cell = grid.cell('smiles', i);
+      renderer.render(g, 0, 0, 200, 100, cell, cell.style);
+    }
+  };
+  const legs: {[label: string]: () => unknown} = {};
+  for (const label of ['nothing', 'literal highlight', 'filter highlight', 'literal align', 'filter align'])
+    legs[`${label}, ${rows.length} rows`] = () => inEngine(ChemicalEngine.Crux, async () => draw());
+  const times = await interleaved(legs, REPS, setTags);
+  setTags('nothing');
+  return JSON.stringify({rows: rows.length, ...times});
 }
 
 category('chem speed', () => {
@@ -168,6 +261,12 @@ category('chem speed', () => {
       () => empty());
     delete col.temp[FILTER_SCAFFOLD_TAG];
     return JSON.stringify({...fresh, ...hits, ...highlighted});
+  }, {benchmark: true, timeout: 600000});
+
+  test('grid drawing: the filter\'s drawn query, read as the filter reads it and literally', async () => {
+    if (!DG.Test.isInBenchmark)
+      return;
+    return await filterQueryDrawing(smi10k);
   }, {benchmark: true, timeout: 600000});
 
   test('column detection on open', async () => {
@@ -285,6 +384,49 @@ category('chem speed', () => {
       'InChI keys': () => getInchiKeysImpl(col),
     })));
   }, {benchmark: true, timeout: 900000});
+
+  test('validateMolecules 10k and 100k: the column on the workers against a loop of validateMolecule', async () => {
+    if (!DG.Test.isInBenchmark)
+      return;
+    // smi10K and the large table (ChEMBL 100k, or 10x smi10K), each with every 50th row made invalid
+    const spoil = (molecules: string[]) => Array.from(molecules, (m, i) => i % 50 === 25 ? `${m ?? ''}(` : m ?? '');
+    const sets: [string, string[]][] = [
+      ['10k', spoil((await molTable(smi10k)).col('smiles')!.toList())],
+      ['100k', spoil((await molTable(await largeCsv())).col('smiles')!.toList())],
+    ];
+    await getCruxService();
+    await chemCommonRdKit.getRdKitService();
+    const out: {[label: string]: number} = {};
+    for (const [size, molecules] of sets) {
+      const loop = () => molecules.map((m) => validationText(PackageFunctions.validateMolecule(m)));
+      const legs: {[label: string]: () => unknown} = {};
+      const stalls: {[label: string]: number[]} = {};
+      for (const engine of ENGINES) {
+        legs[`loop ${size} ${engine}`] = () => inEngine(engine, async () => loop());
+        legs[`column ${size} ${engine}`] = () => inEngine(engine, async () => {
+          const {texts, stall} = await withStallWatch(() => validationTextsByEngine(molecules));
+          (stalls[`column ${size} ${engine} longest main-thread stall`] ??= []).push(stall);
+          expect(texts.length, molecules.length);
+        });
+      }
+      Object.assign(out, await interleaved(legs));
+      for (const [label, values] of Object.entries(stalls))
+        out[label] = +median(values).toFixed(2);
+      for (const engine of ENGINES) {
+        expect(out[`column ${size} ${engine}`] <= out[`loop ${size} ${engine}`], true,
+          `${size} ${engine}: the column (${out[`column ${size} ${engine}`]} ms) is not slower than the loop ` +
+          `(${out[`loop ${size} ${engine}`]} ms)`);
+      }
+    }
+    // the same texts: the column against the loop on the 10k set, in each engine
+    for (const engine of ENGINES) {
+      const [column, loop] = await inEngine(engine, async () => [await validationTextsByEngine(sets[0][1]),
+        sets[0][1].map((m) => validationText(PackageFunctions.validateMolecule(m)))]);
+      expect(column.filter((t, i) => t !== loop[i]).length, 0, `${engine}: the column's texts are the loop's`);
+    }
+    console.log(`chem speed: validateMolecules ${JSON.stringify(out)}`);
+    return JSON.stringify({...out, '100k table': largeSource, '100k rows': sets[1][1].length});
+  }, {benchmark: true, timeout: 1800000});
 
   test('InChI 10k: column vs molecule by molecule, first call', async () => {
     if (!DG.Test.isInBenchmark)

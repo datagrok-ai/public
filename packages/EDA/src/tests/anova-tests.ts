@@ -8,7 +8,9 @@ import {_package} from '../package-test';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
 import {oneWayAnova, FactorizedData} from '../anova/anova-tools';
+import {runOneWayAnova} from '../anova/anova-ui';
 import {FIXTURES, Tol} from './anova-fixtures';
+import {DEMOG_FILE} from './control-comparisons-fixtures';
 
 const ROWS_M = 1;
 const M = 1000000;
@@ -221,4 +223,41 @@ category('ANOVA: NIST StRD', () => {
       expectClose(r.fCritical, w.fCritical, w.tol, `${datasetName} Welch fCritical`);
     }, {timeout: NIST_TIMEOUT});
   }
+});
+
+category('ANOVA: dialog', () => {
+  test('A filtered table compares only the rows that pass the filter', async () => {
+    const df = await grok.dapi.files.readCsv(DEMOG_FILE);
+    const sex = df.col('SEX')!;
+    const race = df.col('RACE')!;
+    const age = df.col('AGE')!;
+    df.filter.init((i) => sex.get(i) === 'F');
+    const visibleCount = df.filter.trueCount;
+    const expected = oneWayAnova(race.clone(df.filter), age.clone(df.filter), ALPHA,
+      {method: 'Welch', toValidate: false});
+    const whole = oneWayAnova(race, age, ALPHA, {method: 'Welch', toValidate: false});
+    const view = grok.shell.addTableView(df);
+    runOneWayAnova();
+    const dlg = DG.Dialog.getOpenDialogs().find((d) => d.title === 'ANOVA')!;
+    let result: DG.DataFrame | undefined;
+    try {
+      (dlg.input('Category') as DG.InputBase<DG.Column | null>).value = race;
+      (dlg.input('Feature') as DG.InputBase<DG.Column | null>).value = age;
+      dlg.getButton('Run').click();
+      result = grok.shell.tables.find((t) => t.name === 'ANOVA result');
+      expect(result !== undefined, true, 'the result table is not open');
+      expect(df.filter.trueCount, visibleCount, 'the run changed the filter');
+      // the result grid's float columns hold float32 values
+      const float32Tol = {rtol: 1e-6, atol: 1e-9};
+      expectClose(result!.get('F', 0), expected.anovaTable.fStat, float32Tol, 'F');
+      expectClose(result!.get('df₂', 0), expected.anovaTable.dfWn, float32Tol, 'df₂');
+      expect(Math.abs(expected.anovaTable.fStat - whole.anovaTable.fStat) > 1e-6, true,
+        'the filter does not change the test on this data');
+    } finally {
+      DG.Dialog.getOpenDialogs().find((d) => d.title === 'ANOVA')?.close();
+      view.close();
+      if (result)
+        grok.shell.closeTable(result);
+    }
+  }, {timeout: 60000});
 });

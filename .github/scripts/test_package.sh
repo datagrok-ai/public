@@ -55,7 +55,6 @@ if [[ "${unpublished_deps}" == "" ]] && [[ "$(tr '[:upper:]' '[:lower:]' <<<${PA
 else
     DATAGROK_VERSION='bleeding-edge'
     export GROK_SPAWNER_VERSION='bleeding-edge'
-    export GROK_JUPYTER_KERNEL_GATEWAY_VERSION='bleeding-edge'
 fi
 export DATAGROK_VERSION
 

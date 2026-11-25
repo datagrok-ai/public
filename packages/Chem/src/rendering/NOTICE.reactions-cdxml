@@ -1,0 +1,62 @@
+files/reactions-cdxml.csv is Chem's demo table of reaction schemes as CDXML (the owner's note on decision 16, 2026-11-14).
+Its "cdxml" column holds eight files copied from three projects' test data, unchanged but for the two changes noted
+under RDKit and Ketcher, fetched 2026-11-09 from each repository's default branch; "written by" is each file's
+CreationProgram, "source" its repository path and licence.
+
+RDKit
+  rxn1.cdxml, reaction-with-boc.cdxml, chemdraw_template8.cdxml, chemdraw_template6.cdxml
+  from https://github.com/rdkit/rdkit, Code/GraphMol/test_data/CDXML/, licensed under RDKit's BSD 3-Clause License,
+  reproduced at the end of this notice.
+  Changed here, 2026-11-15: rxn1.cdxml's phenylboronic acid restored: an extra carbon removed (its fragment drew
+  Ph-BH-C(OH)2: the carbon between the boron and the two OH dropped, the OH bonded to the boron at the page's bond
+  length, the boron's H and its "BH" label made "B").
+
+Indigo (EPAM Systems)
+  Suzuki_Rxn1.cdxml, N-Sulfonylation_Rxn1.cdxml (api/tests/integration/tests/formats/cdxml/) and
+  reactions_with_brackets_2801.cdxml (api/tests/integration/tests/rendering/reactions/)
+  from https://github.com/epam/Indigo, licensed under the Apache License, Version 2.0
+  (http://www.apache.org/licenses/LICENSE-2.0).
+
+Ketcher
+Copyright (C) 2018 EPAM Systems
+This product includes software developed at EPAM Systems, Inc.
+  schema-with-two-retrosynthetic-arrows.cdxml (ketcher-autotests/tests/test-data/CDXML/)
+  from https://github.com/epam/ketcher, licensed under the Apache License, Version 2.0
+  (http://www.apache.org/licenses/LICENSE-2.0).
+  Changed here, 2026-11-15: its six methyl carbons restored from Ketcher's Mn labels (each node written as
+  Element="25" NumHydrogens="0" with the text "Mn" is a plain carbon again, its id and position kept; the scheme is
+  acetylacetone and thiourea to 4,6-dimethylpyrimidine-2-thione).
+
+RDKit's licence:
+
+BSD 3-Clause License, reproduced here:
+
+BSD 3-Clause License
+
+Copyright (c) 2006-2015, Rational Discovery LLC, Greg Landrum, and Julie Penzotti and others
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+   contributors may be used to endorse or promote products derived from
+   this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.

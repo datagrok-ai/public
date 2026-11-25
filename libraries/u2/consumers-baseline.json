@@ -2,7 +2,7 @@
   "description": "Shrink-only counts per u2 consumer (scripts/audit-consumers.mjs). Neutral, not ratcheted: files, u2Files, cssFiles, controlBuild, commentLines.",
   "trees": {
     "libraries/u2/src": {
-      "files": 208,
+      "files": 212,
       "u2Files": 20,
       "valueValue": 15,
       "valuePeek": 0,
@@ -27,7 +27,7 @@
       "cssLines": 0,
       "cssInternalLines": 0,
       "cssImportant": 0,
-      "commentLines": 5457,
+      "commentLines": 5554,
       "fileHeaders": 144,
       "privateDocs": 388,
       "classes": {
@@ -36,7 +36,7 @@
         "classBuildsUi": []
       },
       "lint": {
-        "u2/comments": 533,
+        "u2/comments": 532,
         "u2/no-snapshot-in-live-slot": 0,
         "u2/reason-text": 0,
         "u2/no-raw-column-list": 0,
@@ -45,7 +45,7 @@
       }
     },
     "libraries/u2/tests": {
-      "files": 187,
+      "files": 189,
       "u2Files": 36,
       "valueValue": 8,
       "valuePeek": 10,
@@ -70,7 +70,7 @@
       "cssLines": 0,
       "cssInternalLines": 0,
       "cssImportant": 0,
-      "commentLines": 1462,
+      "commentLines": 1481,
       "fileHeaders": 158,
       "privateDocs": 0,
       "classes": {
@@ -140,7 +140,7 @@
       "cssLines": 0,
       "cssInternalLines": 0,
       "cssImportant": 0,
-      "commentLines": 911,
+      "commentLines": 915,
       "fileHeaders": 5,
       "privateDocs": 15,
       "classes": {
@@ -150,8 +150,8 @@
       }
     },
     "libraries/ems/src": {
-      "files": 43,
-      "u2Files": 36,
+      "files": 45,
+      "u2Files": 38,
       "valueValue": 0,
       "valuePeek": 0,
       "runInScope": 0,
@@ -175,34 +175,34 @@
       "cssLines": 1092,
       "cssInternalLines": 209,
       "cssImportant": 0,
-      "commentLines": 1666,
+      "commentLines": 1698,
       "fileHeaders": 0,
       "privateDocs": 0,
       "classes": {
         "subclassU2": [
-          "libraries/ems/src/core/domain-source.ts: DomainSource (line 80)",
-          "libraries/ems/src/dg/app.ts: DomainApp (line 112)",
-          "libraries/ems/src/dg/authoring/binding-dialog.ts: BindingWizard (line 86)",
-          "libraries/ems/src/dg/authoring/manifest-editor.ts: ManifestEditor (line 94)",
-          "libraries/ems/src/dg/authoring/manifest-panel.ts: ManifestContextPanel (line 63)",
-          "libraries/ems/src/dg/authoring/manifest-tree.ts: ManifestTree (line 26)",
-          "libraries/ems/src/dg/buttons.ts: SessionButton (line 15)",
-          "libraries/ems/src/dg/children.ts: DomainChildren (line 37)",
-          "libraries/ems/src/dg/filters.ts: DomainFilters (line 35)",
-          "libraries/ems/src/dg/form.ts: DomainForm (line 56)",
-          "libraries/ems/src/dg/grid.ts: DomainGrid (line 42)",
-          "libraries/ems/src/dg/grid.ts: DomainDataTable (line 262)",
-          "libraries/ems/src/dg/history.ts: DomainHistory (line 33)",
-          "libraries/ems/src/dg/list.ts: DomainList (line 34)",
-          "libraries/ems/src/dg/pick.ts: DomainPick (line 43)",
-          "libraries/ems/src/dg/search.ts: DomainSearch (line 18)",
-          "libraries/ems/src/dg/tree.ts: DomainTree (line 31)"
+          "libraries\\ems\\src\\core\\domain-source.ts: DomainSource (line 80)",
+          "libraries\\ems\\src\\dg\\app.ts: DomainApp (line 117)",
+          "libraries\\ems\\src\\dg\\authoring\\binding-dialog.ts: BindingWizard (line 86)",
+          "libraries\\ems\\src\\dg\\authoring\\manifest-editor.ts: ManifestEditor (line 94)",
+          "libraries\\ems\\src\\dg\\authoring\\manifest-panel.ts: ManifestContextPanel (line 63)",
+          "libraries\\ems\\src\\dg\\authoring\\manifest-tree.ts: ManifestTree (line 26)",
+          "libraries\\ems\\src\\dg\\buttons.ts: SessionButton (line 15)",
+          "libraries\\ems\\src\\dg\\children.ts: DomainChildren (line 37)",
+          "libraries\\ems\\src\\dg\\filters.ts: DomainFilters (line 35)",
+          "libraries\\ems\\src\\dg\\form.ts: DomainForm (line 56)",
+          "libraries\\ems\\src\\dg\\grid.ts: DomainGrid (line 42)",
+          "libraries\\ems\\src\\dg\\grid.ts: DomainDataTable (line 266)",
+          "libraries\\ems\\src\\dg\\history.ts: DomainHistory (line 33)",
+          "libraries\\ems\\src\\dg\\list.ts: DomainList (line 34)",
+          "libraries\\ems\\src\\dg\\pick.ts: DomainPick (line 43)",
+          "libraries\\ems\\src\\dg\\search.ts: DomainSearch (line 18)",
+          "libraries\\ems\\src\\dg\\tree.ts: DomainTree (line 31)"
         ],
         "subclassEms": [],
         "classBuildsUi": [
-          "libraries/ems/src/dg/authoring/binding-dialog.ts: BindingDialog (line 227)",
-          "libraries/ems/src/dg/authoring/binding-edit-dialog.ts: BindingEditDialog (line 55)",
-          "libraries/ems/src/dg/import.ts: ImportFlow (line 155)"
+          "libraries\\ems\\src\\dg\\authoring\\binding-dialog.ts: BindingDialog (line 227)",
+          "libraries\\ems\\src\\dg\\authoring\\binding-edit-dialog.ts: BindingEditDialog (line 55)",
+          "libraries\\ems\\src\\dg\\import.ts: ImportFlow (line 164)"
         ]
       },
       "lint": {
@@ -275,7 +275,7 @@
       "cssLines": 0,
       "cssInternalLines": 0,
       "cssImportant": 0,
-      "commentLines": 2042,
+      "commentLines": 2248,
       "fileHeaders": 0,
       "privateDocs": 0,
       "classes": {
@@ -285,7 +285,7 @@
       }
     },
     "packages/Admetica": {
-      "files": 11,
+      "files": 10,
       "u2Files": 2,
       "valueValue": 0,
       "valuePeek": 0,
@@ -307,10 +307,10 @@
       "subclassEms": 0,
       "classBuildsUi": 0,
       "cssFiles": 1,
-      "cssLines": 91,
+      "cssLines": 64,
       "cssInternalLines": 1,
       "cssImportant": 0,
-      "commentLines": 78,
+      "commentLines": 70,
       "fileHeaders": 0,
       "privateDocs": 0,
       "classes": {
@@ -328,7 +328,7 @@
       }
     },
     "packages/ApiTests": {
-      "files": 234,
+      "files": 239,
       "u2Files": 2,
       "valueValue": 1,
       "valuePeek": 0,
@@ -353,12 +353,12 @@
       "cssLines": 0,
       "cssInternalLines": 0,
       "cssImportant": 0,
-      "commentLines": 1521,
+      "commentLines": 1574,
       "fileHeaders": 1,
       "privateDocs": 0,
       "classes": {
         "subclassU2": [
-          "packages/ApiTests/src/u2/u2.ts: Sample (line 39)"
+          "packages\\ApiTests\\src\\u2\\u2.ts: Sample (line 39)"
         ],
         "subclassEms": [],
         "classBuildsUi": []
@@ -416,7 +416,7 @@
       }
     },
     "packages/Bio": {
-      "files": 170,
+      "files": 163,
       "u2Files": 7,
       "valueValue": 0,
       "valuePeek": 0,
@@ -441,9 +441,9 @@
       "cssLines": 459,
       "cssInternalLines": 5,
       "cssImportant": 13,
-      "commentLines": 3161,
-      "fileHeaders": 17,
-      "privateDocs": 46,
+      "commentLines": 3422,
+      "fileHeaders": 13,
+      "privateDocs": 45,
       "classes": {
         "subclassU2": [],
         "subclassEms": [],
@@ -545,7 +545,7 @@
       }
     },
     "packages/Chem": {
-      "files": 262,
+      "files": 322,
       "u2Files": 4,
       "valueValue": 0,
       "valuePeek": 0,
@@ -567,12 +567,12 @@
       "subclassEms": 0,
       "classBuildsUi": 0,
       "cssFiles": 4,
-      "cssLines": 2718,
+      "cssLines": 2765,
       "cssInternalLines": 0,
-      "cssImportant": 112,
-      "commentLines": 7710,
-      "fileHeaders": 14,
-      "privateDocs": 202,
+      "cssImportant": 110,
+      "commentLines": 12023,
+      "fileHeaders": 13,
+      "privateDocs": 189,
       "classes": {
         "subclassU2": [],
         "subclassEms": [],
@@ -613,7 +613,7 @@
       "cssLines": 63,
       "cssInternalLines": 0,
       "cssImportant": 4,
-      "commentLines": 711,
+      "commentLines": 712,
       "fileHeaders": 2,
       "privateDocs": 2,
       "classes": {
@@ -631,7 +631,7 @@
       }
     },
     "packages/DiffStudio": {
-      "files": 34,
+      "files": 35,
       "u2Files": 1,
       "valueValue": 0,
       "valuePeek": 0,
@@ -656,7 +656,7 @@
       "cssLines": 312,
       "cssInternalLines": 0,
       "cssImportant": 0,
-      "commentLines": 1086,
+      "commentLines": 1084,
       "fileHeaders": 3,
       "privateDocs": 112,
       "classes": {
@@ -699,7 +699,7 @@
       "cssLines": 0,
       "cssInternalLines": 0,
       "cssImportant": 0,
-      "commentLines": 125,
+      "commentLines": 126,
       "fileHeaders": 1,
       "privateDocs": 4,
       "classes": {
@@ -742,7 +742,7 @@
       "cssLines": 71,
       "cssInternalLines": 0,
       "cssImportant": 2,
-      "commentLines": 876,
+      "commentLines": 899,
       "fileHeaders": 16,
       "privateDocs": 34,
       "classes": {
@@ -757,6 +757,49 @@
         "u2/no-raw-column-list": 0,
         "u2/build-in-owner": 0,
         "u2/no-unowned-root": 2
+      }
+    },
+    "packages/Jmp": {
+      "files": 20,
+      "u2Files": 1,
+      "valueValue": 0,
+      "valuePeek": 0,
+      "runInScope": 0,
+      "runWith": 0,
+      "runWithUndefined": 0,
+      "newScope": 0,
+      "viewZoo": 0,
+      "freeSubscribe": 0,
+      "enabledOpt": 0,
+      "okEnabled": 0,
+      "deepDgIndex": 0,
+      "deepImports": 0,
+      "controlBuild": 2,
+      "newAppHeader": 0,
+      "rawSubscribe": 0,
+      "tsInternalSelectors": 0,
+      "subclassU2": 0,
+      "subclassEms": 0,
+      "classBuildsUi": 0,
+      "cssFiles": 0,
+      "cssLines": 0,
+      "cssInternalLines": 0,
+      "cssImportant": 0,
+      "commentLines": 362,
+      "fileHeaders": 0,
+      "privateDocs": 0,
+      "classes": {
+        "subclassU2": [],
+        "subclassEms": [],
+        "classBuildsUi": []
+      },
+      "lint": {
+        "u2/comments": 0,
+        "u2/no-snapshot-in-live-slot": 0,
+        "u2/reason-text": 0,
+        "u2/no-raw-column-list": 0,
+        "u2/build-in-owner": 0,
+        "u2/no-unowned-root": 0
       }
     },
     "packages/KnimeLink": {
@@ -828,7 +871,7 @@
       "cssLines": 83,
       "cssInternalLines": 0,
       "cssImportant": 0,
-      "commentLines": 49,
+      "commentLines": 52,
       "fileHeaders": 1,
       "privateDocs": 1,
       "classes": {
@@ -846,7 +889,7 @@
       }
     },
     "packages/NCA": {
-      "files": 141,
+      "files": 145,
       "u2Files": 2,
       "valueValue": 0,
       "valuePeek": 0,
@@ -871,7 +914,7 @@
       "cssLines": 575,
       "cssInternalLines": 0,
       "cssImportant": 2,
-      "commentLines": 18355,
+      "commentLines": 19042,
       "fileHeaders": 1,
       "privateDocs": 24,
       "classes": {
@@ -889,7 +932,7 @@
       }
     },
     "packages/Peptides": {
-      "files": 44,
+      "files": 45,
       "u2Files": 1,
       "valueValue": 0,
       "valuePeek": 0,
@@ -914,7 +957,7 @@
       "cssLines": 73,
       "cssInternalLines": 0,
       "cssImportant": 2,
-      "commentLines": 1399,
+      "commentLines": 1404,
       "fileHeaders": 2,
       "privateDocs": 20,
       "classes": {
@@ -932,8 +975,8 @@
       }
     },
     "packages/PowerPack": {
-      "files": 49,
-      "u2Files": 4,
+      "files": 53,
+      "u2Files": 5,
       "valueValue": 0,
       "valuePeek": 0,
       "runInScope": 0,
@@ -954,12 +997,12 @@
       "subclassEms": 0,
       "classBuildsUi": 0,
       "cssFiles": 1,
-      "cssLines": 1817,
+      "cssLines": 1824,
       "cssInternalLines": 0,
-      "cssImportant": 42,
-      "commentLines": 913,
+      "cssImportant": 41,
+      "commentLines": 947,
       "fileHeaders": 15,
-      "privateDocs": 46,
+      "privateDocs": 45,
       "classes": {
         "subclassU2": [],
         "subclassEms": [],
@@ -1147,8 +1190,8 @@
       }
     },
     "packages/U2Demo": {
-      "files": 48,
-      "u2Files": 39,
+      "files": 49,
+      "u2Files": 40,
       "valueValue": 0,
       "valuePeek": 0,
       "runInScope": 0,
@@ -1172,7 +1215,7 @@
       "cssLines": 667,
       "cssInternalLines": 8,
       "cssImportant": 0,
-      "commentLines": 536,
+      "commentLines": 541,
       "fileHeaders": 25,
       "privateDocs": 0,
       "classes": {
@@ -1341,6 +1384,34 @@
       "grown": [
         "packages/Bio fileHeaders: 13 → 17",
         "packages/Peptides fileHeaders: 1 → 2"
+      ]
+    },
+    {
+      "date": "2026-11-16",
+      "reason": "Chem: Crux Sketch takes Datagrok's look in its own dialogs, fields, buttons and tooltips through its host-look custom properties (css/crux-sketcher.css), set from Datagrok's colour variables so the theme follows; Chem's other counts are lowered to what they are now",
+      "grown": [
+        "packages/Chem cssLines: 2718 → 2745"
+      ]
+    },
+    {
+      "date": "2026-11-17",
+      "reason": "Chem: Crux Sketch's dialogs take Datagrok's form look (right-aligned grey labels, focus ring, field underline) through more of its host-look custom properties (css/crux-sketcher.css), set from Datagrok's colour variables; no Datagrok selector is styled",
+      "grown": [
+        "packages/Chem cssLines: 2745 → 2758"
+      ]
+    },
+    {
+      "date": "2026-11-19",
+      "reason": "chem sketcher removed margins",
+      "grown": [
+        "packages/Chem cssLines: 2758 → 2765"
+      ]
+    },
+    {
+      "date": "2026-11-23",
+      "reason": "PowerPack: home search placed in the tab strip or ribbon",
+      "grown": [
+        "packages/PowerPack cssLines: 1817 → 1824"
       ]
     }
   ]

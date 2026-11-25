@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {drawReactionByRdKit} from './reaction-drawing';
+import {drawReactionPreview} from './reaction-drawing';
 import {NamedReaction, ReactionMode} from './types';
 import {getReactionCategories} from './consts';
 import {loadAllReactions, deleteUserReaction, invalidateReactionsCache} from './reaction-storage';
@@ -179,7 +179,7 @@ export class ReactionBrowser {
 
     // Render reaction preview
     try {
-      drawReactionByRdKit(canvas, previewSmarts, canvas.width, canvas.height);
+      drawReactionPreview(canvas, previewSmarts);
     } catch {
       const ctx = canvas.getContext('2d')!;
       ctx.save();
@@ -292,7 +292,7 @@ export class ReactionBrowser {
     return card;
   }
 
-  /** The reaction editor (`preset`: the reaction to edit; else a new one); a save reloads the browser. */
+  // The reaction editor (`preset`: the reaction to edit; else a new one); a save reloads the browser.
   private openEditor(options: {preset?: NamedReaction, defaultMode?: ReactionMode}): void {
     openReactionEditor(this.rdkit, {
       ...options,

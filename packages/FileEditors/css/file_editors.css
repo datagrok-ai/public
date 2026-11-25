@@ -2,8 +2,24 @@
   overflow-y: scroll;
 }
 
-.fe-docx-preview > style {
-  display: revert !important;
+.fe-document-preview {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  padding: 0 16px;
+  overflow: auto;
+}
+
+.fe-document-preview > .fe-docx {
+  margin: 0 -16px;
+}
+
+.fe-document-preview > p.ui-p {
+  white-space: pre-wrap;
+}
+
+.fe-document-preview > table {
+  border-collapse: collapse;
 }
 
 .fe-latex-viewer-ribbon-text {    

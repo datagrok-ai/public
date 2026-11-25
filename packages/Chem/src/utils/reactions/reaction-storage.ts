@@ -57,6 +57,14 @@ export async function loadDefaultReactions(): Promise<NamedReaction[]> {
   return [];
 }
 
+/** Tests: the built-in reactions are `reactions` (null: read from the package's file at the next load), and the list
+ * with the user's is made afresh. The test bundle's package.ts `_package` has no name and reads no package file, so a
+ * test gives the library itself. */
+export function setDefaultReactionsForTests(reactions: NamedReaction[] | null): void {
+  _cachedDefaults = reactions ? reactions.map((r) => ({...r, isUserDefined: false})) : null;
+  _cachedReactions = null;
+}
+
 /** Load user-defined reactions for the current user from AppData. */
 export async function loadUserReactions(): Promise<NamedReaction[]> {
   const userName = getUserFileName();
@@ -99,23 +107,25 @@ export async function deleteUserReaction(reactionId: string): Promise<boolean> {
   return true;
 }
 
-/** Validate a reaction SMARTS/SMIRKS string using RDKit, in both modes: with the drawing it gates (reaction-drawing.ts
- * `drawReactionByRdKit`); a run reads the reaction on Crux in Crux mode, with RDKit behind it. */
+/** Validate a reaction SMARTS/SMIRKS string using RDKit, in both modes: a reaction saved to the library runs and is
+ * drawn in either mode. The preview it gates is drawn by the engine in effect (reaction-drawing.ts
+ * `drawReactionPreview`), and a run reads the reaction on Crux in Crux mode, with RDKit behind it. */
 export function validateReactionSmarts(
   rdkit: RDModule, smarts: string,
 ): {valid: boolean; error?: string; numReactants?: number; numProducts?: number} {
-  // basic format check first
-  const parts = smarts.split('>>');
-  if (parts.length !== 2)
-    return {valid: false, error: 'Reaction SMARTS must contain exactly one ">>".'};
+  // basic format check first: reactants>agents>products, the agents empty in reactants>>products (a `>` after `-` is
+  // a dative bond, as the renderer splits); a route (A>>B>>C) is not one reaction
+  const sides = smarts.split(/(?<!-)>/);
+  if (sides.length !== 3)
+    return {valid: false, error: 'Reaction SMARTS must be reactants>>products or reactants>agents>products.'};
 
   let rxn: RDReaction | null = null;
   try {
     rxn = rdkit.get_rxn(smarts);
     if (!rxn)
       return {valid: false, error: 'RDKit could not parse the reaction SMARTS.'};
-    const reactantCount = parts[0].split('.').length;
-    const productCount = parts[1].split('.').length;
+    const reactantCount = sides[0].split('.').length;
+    const productCount = sides[2].split('.').length;
     return {valid: true, numReactants: reactantCount, numProducts: productCount};
   } catch (e: any) {
     return {valid: false, error: e?.message ?? 'Invalid reaction SMARTS.'};

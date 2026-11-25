@@ -1,0 +1,787 @@
+.forge-gallery-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 8px;
+}
+
+/* The blue of an input's own icons (ui.css). */
+.forge-gallery-actions > .grok-icon {
+  color: var(--blue-1);
+}
+
+/* The search box without the magnifier ui.input.search puts on its left. */
+.forge-gallery .d4-search-bar i.ui-input-icon-left {
+  display: none;
+}
+
+div.forge-gallery {
+  height: 100%;
+}
+
+/* The items scroll under the toolbar. */
+div.forge-gallery > .grok-gallery-grid {
+  min-height: 0;
+}
+
+/* A current or selected card: the platform gallery marks it only with the hover's shadow (dataset_gallery.css), so it
+   also gets the tint of a current Train card (.forge-card-current) and a blue frame. List items are the platform's
+   brief-mode links (dataset_gallery.css, .grok-gallery-grid[mode="Brief"] .d4-link-label) and keep its look. */
+div.forge-gallery .grok-gallery-grid-item-wrapper.d4-current {
+  border-color: var(--blue-1);
+  background-color: color-mix(in srgb, var(--blue-1) 8%, var(--white));
+}
+
+.forge-gallery-empty {
+  margin: 24px;
+  color: var(--grey-4);
+}
+
+.grok-gallery-grid-item-wrapper > .forge-model-card {
+  padding: 10px;
+}
+
+/* The line under the toolbar starts where the toolbar's icons do (dataset_gallery.css: the bar's 12 px margin). */
+div.forge-gallery > .forge-gallery-below {
+  margin: 0 12px;
+}
+
+/* A model's pane in the context panel spans its width: the accordion's pane content sizes its children to their content,
+   where a grid's width: 100% would resolve to the grid's own width. */
+.forge-pane-fill {
+  width: 100%;
+}
+
+.forge-apply-rows {
+  overflow-y: auto;
+}
+
+.forge-seed {
+  user-select: text;
+}
+
+.forge-group-header {
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  cursor: pointer;
+  font-weight: bold;
+  color: var(--text-color);
+}
+
+.forge-group-chevron {
+  flex: 0 0 14px;
+  width: 14px;
+  display: flex;
+  justify-content: center;
+}
+
+.forge-group-summary {
+  font-weight: normal;
+  color: var(--text-color-light);
+}
+
+.forge-group-summary.forge-group-invalid {
+  color: var(--failure);
+}
+
+.ui-input-radio.forge-inline-radio > .ui-input-editor {
+  flex-direction: row;
+  flex-wrap: wrap;
+  column-gap: 8px;
+}
+
+.forge-note {
+  margin: 4px 0;
+  color: var(--text-color-light);
+}
+
+.forge-links,
+.forge-results-header {
+  align-items: center;
+  gap: 12px;
+}
+
+.forge-links {
+  margin-top: 12px;
+}
+
+/* ui.loader() has no width of its own. */
+.forge-results-status > .grok-loader {
+  flex: none;
+  width: 36px;
+}
+
+.forge-train-form {
+  overflow-y: auto;
+}
+
+.forge-train-form > .ui-form {
+  overflow: visible;
+}
+
+/* Right under the inputs, held at the bottom edge while a taller form scrolls (ui.css .ui-form.ui-form-condensed
+   .ui-input-root is relative). */
+.forge-train-form > .ui-form > .ui-input-root.forge-train-row {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  background-color: var(--white);
+}
+
+.forge-train-row > .ui-input-editor {
+  justify-content: flex-end;
+}
+
+/* Settings: the reset button at the right edge, over the pins of Search options. */
+.ui-input-root.forge-tune-mode:not(.tag-editor-input) > .ui-input-options {
+  margin-left: auto;
+}
+
+/* The platform pads an editor by its options' width (inline, for options laid over it); the reset button follows the
+   radios in the row, so that room would only wrap Auto-tune onto a second line. */
+.ui-input-root.forge-tune-mode > .ui-input-editor {
+  padding-right: 0 !important;
+}
+
+.forge-tune-unavailable > label {
+  color: var(--text-color-light);
+}
+
+/* The status under the radio, one height whatever it reads. */
+.ui-form .ui-input-root.forge-tune-status {
+  height: 30px;
+  padding: 0;
+}
+
+/* Labels above the inputs: the status's empty label would take a line of its own above the status, pushing it out of its
+   30 px row onto the Search options toggle; without it the status sits right under the radios. */
+.ui-form.ui-form-condensed .ui-input-root.forge-tune-status {
+  height: auto;
+}
+
+.ui-form.ui-form-condensed .ui-input-root.forge-tune-status > label.ui-input-label {
+  display: none;
+}
+
+/* Without the 30 px status row the toggle's -3 px would lift Search options onto the status: as far under the status as
+   the status is under the radios instead. */
+.ui-form-condensed .forge-tune-toggle {
+  margin-top: 10.5px;
+}
+
+.forge-tune-status-text {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--text-color-light);
+}
+
+/* Search options is plain DOM in its own grid (the user's decision: the platform form laid platform inputs out by its
+   own measures there). The label column takes the form's measured label width (--forge-tune-label) and its 8 px gap. */
+.forge-tune-auto {
+  font-size: 13px;
+  color: var(--text-color);
+}
+
+/* The groups' header gap and chevron box (.forge-group-header); as far under the status line as the status is under
+   Settings. */
+.forge-tune-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: -3px 0 0;
+  padding: 0 4px 4px 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--text-color);
+  cursor: pointer;
+}
+
+.forge-tune-toggle > .grok-icon {
+  flex: none;
+  color: var(--grey-5);
+}
+
+.forge-tune-grid {
+  display: grid;
+  grid-template-columns: var(--forge-tune-label, 112px) minmax(0, 1fr);
+  column-gap: 8px;
+  row-gap: 6px;
+  align-items: start;
+  padding-top: 4px;
+}
+
+.forge-tune-label {
+  min-width: 0;
+  line-height: 30px;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-color-light);
+}
+
+/* A form too narrow for its inputs puts its labels above them (the platform's ui-form-condensed): so does the grid. */
+.ui-form-condensed .forge-tune-grid {
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 0;
+}
+
+.ui-form-condensed .forge-tune-label {
+  padding: 6px 0 0 3px;
+  line-height: normal;
+  font-size: 12px;
+  text-align: left;
+}
+
+.forge-tune-cell,
+.forge-tune-slot {
+  min-width: 0;
+}
+
+/* The value (a range, the choices or one value) and the pin on one line. */
+.forge-tune-row,
+.forge-tune-range {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+}
+
+.forge-tune-slot {
+  display: flex;
+  flex: 1 1 0;
+}
+
+.forge-tune-slot > * {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* The fields, the selects and the choices button: an underline, no frame; a focused one underlines in the accent, as a
+   focused input does. Scoped to the grid, so the selects' rules beat the platform's select.ui-input-editor. */
+.forge-tune-grid .forge-tune-control {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  border-bottom: 1px solid var(--grey-3);
+  border-radius: 0;
+  outline: none;
+  background-color: transparent;
+  font: inherit;
+  color: var(--text-color);
+}
+
+.forge-tune-grid .forge-tune-control:focus {
+  border-bottom-color: var(--blue-1);
+}
+
+.forge-tune-grid .forge-tune-control[aria-invalid="true"] {
+  border-bottom: 2px solid var(--red-3);
+  color: var(--red-3);
+}
+
+.forge-tune-grid .forge-tune-control:disabled {
+  color: var(--text-color-light);
+  cursor: default;
+}
+
+.forge-tune-range > .forge-tune-field {
+  flex: 1 1 0;
+  width: 0;
+}
+
+.forge-tune-field {
+  padding: 5px 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The selects as the platform's choice input draws its select (ui.css .ui-input-root > select.ui-input-editor): its
+   chevron image (css/forge-platform-images.css), 16 px at the right. */
+.forge-tune-select {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+}
+
+.forge-tune-select > select.ui-input-editor,
+.forge-tune-choices-button {
+  flex: 1 1 0;
+  height: 28px;
+  padding: 0 20px 0 4px;
+  appearance: none;
+  background-repeat: no-repeat;
+  background-size: 16px;
+  background-position: 100% 55%;
+}
+
+.forge-tune-choices-button {
+  cursor: pointer;
+}
+
+.forge-tune-choices {
+  position: relative;
+}
+
+.forge-tune-choices-button {
+  display: flex;
+  align-items: center;
+  text-align: left;
+}
+
+.forge-tune-choices-text {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.forge-tune-choice-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  padding: 4px 0;
+  border: 1px solid var(--grey-2);
+  background-color: var(--white);
+}
+
+.forge-tune-choice {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+
+.forge-tune-check {
+  display: flex;
+  align-items: center;
+  min-height: 30px;
+}
+
+.forge-tune-hint {
+  flex: none;
+  white-space: nowrap;
+  color: var(--text-color-light);
+}
+
+/* The pins and the reset: native buttons, 30 px, the icon in the button's colour at its right edge, so the glyphs end
+   on the block's right edge with Tune's letters and the selects' underlines; the hit area extends to the left. */
+.forge-tune-icon {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--grey-5);
+  cursor: pointer;
+}
+
+.ui-input-root > .ui-input-options > .forge-tune-icon {
+  margin: 0;
+}
+
+.forge-tune-icon > .grok-icon {
+  color: inherit;
+}
+
+.forge-tune-icon:hover:not(:disabled):not([aria-disabled="true"]) {
+  color: var(--text-color);
+}
+
+.forge-tune-pin {
+  color: var(--grey-4);
+}
+
+.forge-tune-pin.forge-tune-pinned {
+  color: var(--blue-1);
+}
+
+.forge-tune-icon:disabled,
+.forge-tune-icon[aria-disabled="true"] {
+  color: var(--grey-3);
+  cursor: default;
+}
+
+.forge-tune-err {
+  padding: 0 4px;
+  font-size: 12px;
+  color: var(--red-3);
+}
+
+/* Tune's letters end at the block's right edge, where the reset and pin glyphs and the selects end; so do those of
+   Set, right after the select of Best threshold by (in its row, not in its options, which underline it). */
+.forge-tune-bar {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 12px;
+}
+
+.forge-tune-bar > button.ui-btn,
+.ui-input-root.forge-threshold-metric > button.ui-btn {
+  margin-right: 0;
+  padding-right: 0;
+}
+
+/* A platform input in a Search options cell (Strategy, Limit, Max time, Max trials, Candidates): its caption is in the
+   grid's label column, so its own label is hidden. */
+.ui-form .forge-tune-grid .ui-input-root.forge-tune-input {
+  padding: 0;
+  min-height: 30px;
+}
+
+.forge-tune-input > label.ui-input-label {
+  display: none;
+}
+
+/* Max time and Max trials as wide as the cell, as the selects are (ui.css caps an editor at 150 px), at the bottom of
+   the 30 px row, where ui.css puts the options (the clicker and `min`): the editor's underline and theirs are then one
+   line, not two 2 px apart. */
+.forge-tune-grid .forge-tune-input > input.ui-input-editor {
+  max-width: none;
+  align-self: flex-end;
+}
+
+/* Candidates: every check shown (ui.css scrolls the list at 155 px), the first one level with the caption's 30 px
+   line. */
+.forge-find-candidates > .ui-input-multi-choice-checks {
+  max-height: none;
+  overflow-y: visible;
+  padding: 5px 0 0 !important;
+}
+
+/* Trained models: the cards at the end of the form; a pinned card is a click target. */
+.forge-cards {
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.forge-card {
+  box-sizing: border-box;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 14px 10px;
+  border: 1px solid var(--grey-2);
+  border-radius: 4px;
+  background-color: color-mix(in srgb, var(--grey-1) 50%, var(--white));
+}
+
+.forge-card:not(.forge-card-current) {
+  cursor: pointer;
+}
+
+.forge-card:not(.forge-card-current):active {
+  background-color: var(--grey-2);
+}
+
+.forge-card.forge-card-current {
+  background-color: color-mix(in srgb, var(--blue-1) 8%, var(--white));
+  border-color: color-mix(in srgb, var(--blue-1) 25%, var(--white));
+}
+
+.forge-card-header {
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.forge-card-body {
+  flex: 1 1 0;
+  min-width: 0;
+  gap: 2px;
+}
+
+.forge-card-title-row {
+  align-items: center;
+  gap: 8px;
+}
+
+.forge-card-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--text-color);
+}
+
+.forge-card-best {
+  flex: none;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background-color: var(--green-1);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--green-3);
+}
+
+.forge-card-icon {
+  flex: none;
+  margin-left: auto;
+  padding: 4px 0 4px 8px;
+  font-size: larger;
+  color: var(--blue-1);
+  cursor: pointer;
+}
+
+.forge-card-kind {
+  font-style: italic;
+}
+
+.forge-card-settings {
+  margin: 4px 0 0 10px;
+  font-size: 14px;
+  color: var(--text-color-light);
+}
+
+/* The pairs never reflow: a card narrower than the table scrolls it. */
+.forge-card-settings-table {
+  margin-left: 10px;
+  overflow-x: auto;
+  font-size: 14px;
+}
+
+.forge-card-settings-table table td {
+  padding: 0 0 0 8px;
+  white-space: nowrap;
+  color: var(--text-color);
+}
+
+.forge-card-settings-table table td:nth-child(odd) {
+  color: var(--text-color-light);
+}
+
+.forge-card-settings-table table td:first-child {
+  padding-left: 0;
+}
+
+.forge-card-settings-table table td:nth-child(3) {
+  padding-left: 24px;
+}
+
+.forge-card-main {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.forge-card-score {
+  align-items: baseline;
+  gap: 6px;
+}
+
+.forge-card-metric,
+.forge-card-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.forge-card-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.forge-card-status {
+  margin-left: auto;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.forge-card-ok {
+  color: var(--green-3);
+}
+
+.forge-card-warn {
+  color: var(--orange-3);
+}
+
+.forge-card-status > .grok-icon {
+  font-size: inherit;
+  color: inherit;
+  cursor: default;
+}
+
+.forge-card-tip-table {
+  align-self: flex-start;
+  width: auto;
+}
+
+.forge-card-tip-table td:not(:first-child) {
+  padding-left: 12px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.forge-card-tip-table.forge-card-status-tip-table td:not(:first-child) {
+  text-align: left;
+}
+
+.forge-card-tip-table td:first-child {
+  color: var(--text-color-light);
+}
+
+.forge-card-tip-table tr.header > td {
+  font-weight: bold;
+  color: var(--text-color);
+}
+
+.forge-card-tip-table tr.forge-card-tip-selected > td {
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.forge-train-results {
+  overflow: auto;
+}
+
+.forge-insights > ul {
+  margin: 0 0 12px;
+}
+
+/* A viewer or a grid fills its panel under the title, whatever size it was given (the platform gives a box in a div
+   400 x 300 px, ui.css div.ui-div > div.ui-box); a grid's own height is overridden so it scrolls inside the slot. The
+   Performance and Insights panels keep their content's height and scroll. */
+div.ui-div.forge-results-panel:not(.forge-results-metrics):not(.forge-insights) > :last-child {
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+  height: auto;
+}
+
+/* In a row the title stays where it is and the content under it scrolls (ui.css div.ui-box > div.ui-div scrolls the
+   whole panel). */
+div.ui-box > div.ui-div.forge-results-panel {
+  overflow: hidden !important;
+}
+
+.forge-results-row .forge-insights > ul,
+.forge-results-row .forge-results-metrics > .forge-results-body {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* The grid and the bullets under the Performance title, aligned with the titles' text. */
+.forge-results-body {
+  padding: 0 10px;
+}
+
+/* The title's text answers the mouse for its tooltip (d4-dialog-title lets the mouse through), without the dialog
+   header's hover. */
+.forge-results-title > span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: auto;
+}
+
+.d4-dialog-header.forge-results-title:hover {
+  cursor: default;
+  background-color: transparent;
+}
+
+.forge-results-rows {
+  margin-top: 12px;
+}
+
+/* A box whose one child (a grid, a viewer, a splitter) fills it: a flex column, so a grid starts at its top, and the
+   flex basis overrides the inline height a grid gives itself. */
+.forge-panel-fill {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* More specific than ui.css div.ui-div > div.ui-box, which gives a box 400 x 300 px. */
+div.ui-div.forge-panel-fill > div.ui-box,
+div.ui-box.forge-panel-fill > div.ui-box {
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+  height: auto;
+}
+
+/* The panels share a row by their growth alone (set from the weights, re-split by a drag); the widths the splitter
+   writes when it measures the row would otherwise keep a passing layout. */
+div.ui-box.ui-split-h.forge-results-row > div.ui-box:not(.ui-split-h-divider) {
+  flex-basis: 0;
+  min-width: 0;
+}
+
+/* The platform gives a box in a div 400 x 300 px (ui.css div.ui-div > div.ui-box): the rows span the width and are as
+   tall as their inline heights. */
+div.ui-div.forge-results-rows > div.ui-box {
+  width: 100%;
+  height: auto;
+}
+
+/* Five lines of one height, whatever the model holds. The height is the lines' own: ui.css div.ui-div counts the padding
+   a gallery card gets (dataset_gallery.css .d4-gallery-card) into the height. */
+div.ui-div.forge-model-card {
+  box-sizing: content-box;
+  height: 90px;
+  overflow: hidden;
+}
+
+.forge-model-card > * {
+  flex: none;
+  height: 18px;
+  line-height: 18px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.forge-model-card-title {
+  align-items: center;
+  gap: 4px;
+}
+
+.forge-model-card-title > label {
+  min-width: 0;
+}
+
+/* The built-in row (d4.css span.d4-entity-markup-row > div[data-wrapper=true]) stretches its items, which leaves the 12 px
+   run icon at the top of the name's line: centre it on the line. */
+span.d4-entity-markup-row > div.forge-model-line {
+  align-items: center;
+}
+
+.forge-model-train {
+  margin-top: 6px;
+}
+
+/* A model name is a drag source: a drag must not select its text (accordion.css gives a title label user-select: all). */
+.forge-model-name,
+.d4-accordion-title label.forge-model-name {
+  user-select: none;
+}
+
+.forge-tooltip {
+  max-width: 320px;
+  white-space: normal;
+}
+
+.forge-tooltip-title {
+  font-weight: bold;
+}
+
+.forge-tooltip-minor {
+  color: var(--text-color-light);
+}

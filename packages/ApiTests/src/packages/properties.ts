@@ -28,6 +28,13 @@ category('Packages: Properties', () => {
     await changeProp('STRING', 'value2');
   });
 
+  test('cleared settings fall back to the defaults', async () => {
+    await changeProp('INT', 10);
+    //@ts-ignore
+    await _package.setSettings(null, group);
+    expect(_package.settings['INT'], 1);
+  });
+
   after(async () => {
     await _package.setProperties({INT: 1, FLOAT: 1.234, BOOL: true, STRING: 'value1'});
   });

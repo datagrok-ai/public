@@ -4,7 +4,7 @@ Feature: Projects regressions: a query result renamed from the status bar
   the database features' subject) is run from the Browse tree, and its result view is not saved as a
   project. The table name on the left of the status bar puts the table into the context panel, and
   Actions > Rename... there renames it. The table and its view should take the new name, as with
-  Rename on the view tab. The scenario is a known failure until they do.
+  Rename on the view tab (core#626, fixed in the core on 2026-11-10).
 
   The query carries the run's time and is removed when the feature starts and ends.
 
@@ -18,8 +18,7 @@ Feature: Projects regressions: a query result renamed from the status bar
       select name from entity_types
       """
 
-  # core#626: the rename from the status bar's table does not reach the table or its view
-  @known-failure:38 @realizes:core#626
+  @realizes:core#626
   Scenario: The table renamed through the status bar takes the new name with its view
     When user clicks on "Refresh" icon inside browse toolbar
     Given Databases tree node inside browse tree is expanded

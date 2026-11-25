@@ -1,9 +1,9 @@
-/* Crux Sketch, Chem's own molecule sketcher (src/crux/crux-sketcher.ts), as Chem's features drive it. The sketcher's
-   widget ("crux sketcher widget": its "atom N" and "bond N" areas, its readings), its controls by test id and the
-   molecule readings are the library's `molecules` tier (bdd.config.json), shared with the other packages whose hosts
-   open Crux. Here is what is Chem's own: the drawing a sketcher shows in place of itself (a filter card's, a pane's),
-   Ketcher's canvas after a switch, and what the platform does with the sketcher that no gesture shows: the change
-   events of the sketcher a step opens next, counted from its creation, and the molecules made the current object. */
+// Crux Sketch, Chem's own molecule sketcher (src/crux/crux-sketcher.ts), as Chem's features drive it. The sketcher's
+// widget ("crux sketcher widget": its "atom N" and "bond N" areas, its readings), its controls by test id and the
+// molecule readings are the library's `molecules` tier (bdd.config.json), shared with the other packages whose hosts
+// open Crux. Here is what is Chem's own: the drawing a sketcher shows in place of itself (a filter card's, a pane's),
+// Ketcher's canvas after a switch, and what the platform does with the sketcher that no gesture shows: the change
+// events of the sketcher a step opens next, counted from its creation, and the molecules made the current object.
 import {Page} from '@playwright/test';
 import {element, Given, Then, When} from '@datagrok-libraries/bdd';
 import {type ElementRef, atFeatureEnd, el, expect, gestures, guideFrame, locate, pollMs, silent, viewers} from '@datagrok-libraries/bdd/runtime';
@@ -26,6 +26,7 @@ declare global {
   interface Window {
     __cruxNext?: {changes: number, created: boolean, cleared: boolean | null};
     __cruxCurrent?: {semType: string | null, value: string}[];
+    __cruxCurrentSub?: {unsubscribe(): void};
   }
 }
 
@@ -141,16 +142,26 @@ export const dragThenClick = When('user drags the {string} area of {widget} by {
 
 // ---------------------------------------------------------------- the current object
 
-export const watchCurrent = Given('the molecules made the current object are counted', (page: Page) =>
-  page.evaluate(() => {
+// One count per page: the page outlives its features, and a subscription an earlier count left counts every change again
+const stopCounting = (page: Page): Promise<void> => page.evaluate(() => {
+  window.__cruxCurrentSub?.unsubscribe();
+  window.__cruxCurrentSub = undefined;
+  window.__cruxCurrent = undefined;
+});
+
+export const watchCurrent = Given('the molecules made the current object are counted', async (page: Page) => {
+  await page.evaluate(() => {
+    window.__cruxCurrentSub?.unsubscribe();
     window.__cruxCurrent = [];
-    grok.events.onCurrentObjectChanged.subscribe(() => {
+    window.__cruxCurrentSub = grok.events.onCurrentObjectChanged.subscribe(() => {
       const o = grok.shell.o;
       if (window.__cruxCurrent && o?.semType === DG.SEMTYPE.MOLECULE && typeof o.value === 'string' && o.value.trim() !== '')
         window.__cruxCurrent.push({semType: o.semType, value: o.value});
     });
-  }),
-{tier: 'api', description: 'from now on, each change of the current object to a Molecule semantic value with a molecule in it (what a sketcher\'s host sets on an edit); a dialog the platform makes current, or an empty cell, is not one'});
+  });
+  atFeatureEnd(page, () => stopCounting(page));
+},
+{tier: 'api', description: 'from now on, each change of the current object to a Molecule semantic value with a molecule in it (what a sketcher\'s host sets on an edit); a dialog the platform makes current, or an empty cell, is not one; a later count replaces this one, and the count ends with the feature'});
 
 export const currentCount = Then('a molecule should have become the current object {int} time(s)', async (page: Page, n: number) => {
   await viewers.settle(page, el('crux sketcher widget')).catch(() => undefined);
@@ -191,6 +202,14 @@ export const cellAsRemembered = Then('the value of {string} column in row {int} 
   await expect.poll(() => page.evaluate(([c, r]) => String(grok.shell.t.col(c).get(r - 1) ?? ''), [column, row] as [string, number]),
     {message: `${column} in row ${row}`}).toBe(before);
 }, {description: 'the cell\'s text is the very string remembered'});
+
+export const cellDiffers = Then('the value of {string} column in row {int} should differ from what was remembered', async (page: Page, column: string, row: number) => {
+  const before = cells.get(page);
+  if (before === undefined)
+    throw new Error('no cell remembered: "user remembers the value of … column in row …" first');
+  await expect.poll(() => page.evaluate(([c, r]) => String(grok.shell.t.col(c).get(r - 1) ?? ''), [column, row] as [string, number]),
+    {message: `${column} in row ${row}`}).not.toBe(before);
+}, {description: 'the cell\'s text is no longer the string remembered (an edit written into it)'});
 
 // ---------------------------------------------------------------- the sketcher chosen
 

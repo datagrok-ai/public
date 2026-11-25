@@ -79,9 +79,9 @@ export function setModelCatalogEventHandlers(options: ModelCatalogConfig) {
   });
 }
 
-export function setModelCatalogHandler() {
-  if (!(DG.ObjectHandler.list().find((handler) => handler.type === 'Model')))
-    DG.ObjectHandler.register(new ModelHandler());
+export function setModelCatalogHandler(handler: ModelHandler = new ModelHandler()) {
+  if (!(DG.ObjectHandler.list().find((registered) => registered.type === 'Model')))
+    DG.ObjectHandler.register(handler);
 }
 
 export async function renderRestPanel(func: DG.Func): Promise<DG.Widget> {

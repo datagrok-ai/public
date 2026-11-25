@@ -6,9 +6,10 @@ reproduces the license text required by third-party components that are
 bundled into the published artifact.
 
 The Apache License 2.0 reproduced below applies to the bundled Apache-2.0
-components: XGBoost (wasm/XGBoostAPI.wasm), math.js and umap-js. None of
-these ship a NOTICE file. Per-component attributions (including the
-MIT-licensed components) are in CREDITS.md.
+components: XGBoost, CatBoost and pymoo (Rust ports in
+crux/eda/crux_wasm_bg.wasm), math.js, umap-js and apache-arrow. Only
+apache-arrow ships a NOTICE file; it is reproduced in CREDITS.md. Per-component attributions (including the
+MIT-, BSD-, BSL-1.0- and MPL-2.0-licensed components) are in CREDITS.md.
 
 ================================================================================
 

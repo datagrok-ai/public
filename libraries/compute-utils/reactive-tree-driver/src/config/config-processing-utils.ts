@@ -7,7 +7,7 @@ import {normalizeIdRef} from './PipelineInstance';
 import {annotationCheckLinks, annotationRules, expandLink, narrowRuleLink} from './rule-expansion';
 import {CheckOptions, isOptionalAnnotation, parseAnnotationChecks, parseChoices} from './checks';
 import wu from 'wu';
-import {getViewersHook} from '../../../shared-utils/utils';
+import {loadViewersHook} from '../../../shared-utils/utils';
 import {DriverLogger, reportError} from '../data/Logger';
 
 //
@@ -196,12 +196,7 @@ async function processStepConfig(conf: PipelineStepConfiguration<never>, logger?
   ];
   const links = allLinks.length ? allLinks : undefined;
   const actions = processActions(conf.actions ?? [], logger);
-  const viewersHookMakerName = getViewersHook(func);
-  let viewersHook = conf.viewersHook;
-  if (!viewersHook && viewersHookMakerName) {
-    const hookMaker = DG.Func.byName(viewersHookMakerName);
-    viewersHook = await hookMaker.apply();
-  }
+  const viewersHook = conf.viewersHook ?? await loadViewersHook(func);
   const states = conf.states?.map((s) => normalizeIdRef(s));
   return {...conf, viewersHook, io, links, actions, states};
 }

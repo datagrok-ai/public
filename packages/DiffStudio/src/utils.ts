@@ -5,7 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {MISC, INPUTS_DF, LOOKUP_DF_FAIL, LOOKUP_EXPR_FAIL, TITLE, PATH, UI_TIME,
-  LIBRARY_CHANGED_EVENT} from './ui-constants';
+  LIBRARY_CHANGED_EVENT, ERROR_MSG} from './ui-constants';
 import {CONTROL_EXPR, CONTROL_TAG, METHOD_KEY_WORD} from './constants';
 import {CONTROL_SEP, BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR} from './scripting-tools';
 import {DEFAULT_OPTIONS} from './solver-tools';
@@ -70,6 +70,34 @@ export function unusedFileName(name: string, files: string[]): string {
 
   return `${name}(${num})`;
 }
+
+/** Values or captions of the argument inputs, keyed as `ARG_INPUT_KEYS` */
+export type ArgSpec<T> = {initial: T, final: T, step: T};
+
+/** Broken constraint of the argument range: the inputs that break it, their caption for a message,
+ *  the full rule and its short form (without the subject) */
+export type ArgIssue = {keys: (keyof ArgSpec<unknown>)[], culprit: string, rule: string, shortRule: string};
+
+/** Return the constraint that the argument range breaks, or null if it is valid.
+ *  Negated comparisons also reject NaN-s, e.g. coming from a malformed link. */
+export function getArgIssue(values: ArgSpec<number>, captions: ArgSpec<string>): ArgIssue | null {
+  if (!(values.final > values.initial)) {
+    const shortRule = `${captions.final} ${ERROR_MSG.MUST_BE_GREATER} ${captions.initial}`;
+    return {keys: ['initial', 'final'], culprit: `${captions.initial}/${captions.final}`, rule: shortRule, shortRule};
+  }
+
+  if (!(values.step > 0)) {
+    return {keys: ['step'], culprit: captions.step, rule: `${captions.step} ${ERROR_MSG.MUST_BE_POSITIVE}`,
+      shortRule: ERROR_MSG.MUST_BE_POSITIVE};
+  }
+
+  if (values.step > values.final - values.initial) {
+    return {keys: ['step'], culprit: captions.step, rule: `${captions.step} ${ERROR_MSG.EXCEEDS_INTERVAL}`,
+      shortRule: ERROR_MSG.EXCEEDS_INTERVAL};
+  }
+
+  return null;
+} // getArgIssue
 
 /** Index of the `?params:` marker (plain or percent-encoded `?params%3a`), or -1. */
 export function findParamsIdx(path: string): number {

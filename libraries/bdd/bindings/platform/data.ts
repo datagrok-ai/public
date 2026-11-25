@@ -1,9 +1,12 @@
 import {Locator, Page} from '@playwright/test';
 import {expect, pollMs} from '../../src/runtime/patience.js';
 import {Given, Then, When} from '../../src/registry.js';
-import {openColumnSelector, pickInColumnGrid} from '../../src/runtime/gestures.js';
+import {el} from '../../src/runtime/args.js';
+import {openColumnSelector, pickInColumnGrid, selectNative, withKeys} from '../../src/runtime/gestures.js';
+import * as guide from '../../src/runtime/guide.js';
 import {atFeatureEnd} from '../../src/runtime/harness.js';
-import {baselineAll, changeAll, evaluate, RowFacts, RowTest, settleAll} from '../../src/runtime/viewers.js';
+import {baselineAll, centerOf, changeAll, evaluate, hitArea, RowFacts, RowTest, settleAll}
+  from '../../src/runtime/viewers.js';
 
 declare const grok: any;
 declare const DG: any;
@@ -49,6 +52,21 @@ export const selectAllRows = When('user selects all rows', (page: Page) =>
 
 export const selectNoRows = When('user selects no rows', (page: Page) =>
   page.evaluate(() => { grok.shell.t.selection.setAll(false); }), {tier: 'api', description: 'the selection cleared'});
+
+/** The way a person selects a run of rows in the grid: a click on the first row's header (that row alone, made
+ * current), a Shift+click on the last one's (every row from the current one to it). A guide films two presses,
+ * each a stop of its own. */
+export const selectRowsByHeaders = When('user selects rows {int} to {int} by their row headers', async (page: Page, from: number, to: number) => {
+  const grid = el('grid');
+  const first = await hitArea(page, grid, `row header ${from}`, true);
+  await guide.hopAt(page, first);
+  await page.mouse.click(centerOf(first).x, centerOf(first).y);
+  const last = await hitArea(page, grid, `row header ${to}`, true);
+  await guide.hopAt(page, last);
+  await withKeys(page, ['Shift'], () => page.mouse.click(centerOf(last).x, centerOf(last).y));
+  await settleAll(page);
+}, {tier: 'ui', description: 'rows counted from 1 as the table counts them (the grid\'s "row header N" areas, both ' +
+  'on screen): a click on the first row\'s header, a Shift+click on the last one\'s'});
 
 export const noneSelected = Then('no rows should be selected', (page: Page) =>
   expect.poll(() => selectedCount(page), {message: 'rows selected'}).toBe(0));
@@ -788,7 +806,7 @@ export const setLinkTables = When('user sets the tables of the Link Tables dialo
   async (page: Page, left: string, right: string) => {
     for (const [side, table] of [['Left', left], ['Right', right]]) {
       const select = linkDialog(page).locator(`select[name="input-selectTable${side}"]`).first();
-      await select.selectOption({label: table});
+      await selectNative(page, select, table);
       await expect(select, `the ${side.toLowerCase()} table of the Link Tables dialog`).toHaveValue(table, {timeout: pollMs(5000)});
     }
   }, {tier: 'ui', description: 'chooses the left and the right table of the link being made and reads both back'});

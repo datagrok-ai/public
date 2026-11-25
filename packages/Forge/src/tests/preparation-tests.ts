@@ -1,0 +1,325 @@
+import * as DG from 'datagrok-api/dg';
+import {category, expect, expectArray, expectExceptionAsync, test} from '@datagrok-libraries/test/src/test';
+import {defaultValuesOf} from '../engines/engine';
+import {imputeFunction, imputeSettingsOf, missingValuesProblems, prepareMissingValues}
+  from '../preparation/missing-values';
+import {defaultOneHot, prepareFeatures, replayPostprocessing, replayPreprocessing} from '../preparation/pipeline';
+import {PreparationOptions, preparationOptionsOf} from '../preparation/preparation-options';
+import {columnNamed, expectReleased, failsWith, framesSharing, IMPUTE, moleculeFrame, names, NO_OPTIONS,
+  PREDICT_PROBABILITY, SKIP_UNIQUE_STEPS, smilesColumn, smilesSeries, valuesOf} from './test-data';
+
+const gapCount = (columns: DG.Column[]) => columns.reduce((sum, c) => sum + c.stats.missingValueCount, 0);
+
+category('Preparation', () => {
+  test('one-hot replaces the text and boolean columns', async () => {
+    const columns = [
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'x', [0.5, 1.5, 2.5]),
+      DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'c', ['a', 'b', 'a']),
+      DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'f', [true, false, true]),
+    ];
+    const encoded = replayPreprocessing(columns, {...NO_OPTIONS, preprocessingInfo: ['one-hot']});
+    expectArray(names(encoded), ['x', 'c=a', 'c=b', 'f=false', 'f=true']);
+    expectArray(columnNamed(encoded, 'c=a').toList(), [1, 0, 1]);
+    expectArray(columnNamed(encoded, 'c=b').toList(), [0, 1, 0]);
+    expectArray(columnNamed(encoded, 'f=false').toList(), [0, 1, 0]);
+    expectArray(columnNamed(encoded, 'f=true').toList(), [1, 0, 1]);
+    expectArray(names(columns), ['x', 'c', 'f']);
+  });
+
+  test('skip-unique-categories removes the all-unique text columns', async () => {
+    const columns = [
+      DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'id', ['a', 'b', 'c']),
+      DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'group', ['x', 'x', 'y']),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'v', [1, 2, 3]),
+    ];
+    const kept = replayPreprocessing(columns, {...NO_OPTIONS, preprocessingInfo: ['skip-unique-categories']});
+    expectArray(names(kept), ['group', 'v']);
+    // A record of the skipped names replaces the rule: a repeating id is dropped, a unique group is kept.
+    const repeated = [
+      DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'id', ['a', 'a', 'b']),
+      DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'group', ['x', 'y', 'z']),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'v', [1, 2, 3]),
+    ];
+    const recorded = {...NO_OPTIONS, preprocessingInfo: ['skip-unique-categories'], skippedColumns: ['id']};
+    expectArray(names(replayPreprocessing(repeated, recorded)), ['group', 'v']);
+    expectArray(names(replayPreprocessing(repeated, {...recorded, skippedColumns: undefined})), ['id', 'v']);
+  });
+
+  test('binary-classification maps scores to the two classes', async () => {
+    const scores = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'y', [0.2, 0.5, 0.9]);
+    const options: PreparationOptions = {...NO_OPTIONS, postprocessingInfo: ['binary-classification'],
+      positiveClass: 'yes', negativeClass: 'no', binaryClassificationThreshold: 0.5, targetType: 'string'};
+    const classes = replayPostprocessing(scores, options);
+    expectArray(classes.toList(), ['no', 'yes', 'yes']);
+    expectArray(classes.categories, ['no', 'yes']);
+    const gap = replayPostprocessing(DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'y', [0.2, null, 0.9]), options);
+    expect(gap.isNone(1), true, 'A missing score got a class');
+    expect(gap.get(0), 'no');
+    expect(gap.get(2), 'yes');
+    expectArray([...gap.categories].sort(), ['', 'no', 'yes']);
+  });
+
+  test('class-probabilities: two classes cut the positive class\'s probability at the threshold', async () => {
+    const prediction = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Prediction', ['no', 'no', 'yes', 'yes']);
+    const probabilities = {classes: ['yes', 'no'], columns: [
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'proba_yes', [0.9, 0.6, 0.59, null]),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'proba_no', [0.1, 0.4, 0.41, null])]};
+    const options: PreparationOptions = {...NO_OPTIONS, postprocessingInfo: ['class-probabilities'],
+      positiveClass: 'yes', negativeClass: 'no', binaryClassificationThreshold: 0.6};
+    const labels = replayPostprocessing(prediction, options, probabilities);
+    expectArray(labels.toList(), ['yes', 'yes', 'no', 'yes']);
+    expect(labels.type, DG.COLUMN_TYPE.STRING);
+    expect(labels.name, 'Prediction');
+    expect(labels.categories.includes(''), false, labels.categories.join(', '));
+    expectArray(prediction.toList(), ['no', 'no', 'yes', 'yes']);
+    expect(replayPostprocessing(prediction, options) === prediction, true, 'Labels without probabilities');
+  });
+
+  test('class-probabilities: a probability equal to the threshold in single precision is positive', async () => {
+    const values = [0.7, 0.9, 0.42];
+    const prediction = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Prediction', values.map(() => 'no'));
+    const probabilities = {classes: ['yes', 'no'], columns: [
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'proba_yes', values),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'proba_no', values.map((p) => 1 - p))]};
+    for (const [i, threshold] of values.entries()) {
+      const options: PreparationOptions = {...NO_OPTIONS, postprocessingInfo: ['class-probabilities'],
+        positiveClass: 'yes', negativeClass: 'no', binaryClassificationThreshold: threshold};
+      const labels = replayPostprocessing(prediction, options, probabilities);
+      expect(labels.get(i), 'yes', `${threshold}: ${probabilities.columns[0].getNumber(i)}`);
+      expectArray(labels.toList(), values.map((p) => Math.fround(p) >= Math.fround(threshold) ? 'yes' : 'no'));
+    }
+  });
+
+  test('class-probabilities: more classes take the most probable one, a tie the first', async () => {
+    const prediction = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Prediction', ['c', 'c', 'b', 'a', null]);
+    const probabilities = {classes: ['a', 'b', 'c'], columns: [
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'proba_a', [0.2, 0.4, null, 0.1, 0.5]),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'proba_b', [0.5, 0.4, null, 0.1, 0.3]),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'proba_c', [0.3, 0.2, null, 0.8, 0.2])]};
+    const options: PreparationOptions = {...NO_OPTIONS, postprocessingInfo: ['class-probabilities']};
+    const labels = replayPostprocessing(prediction, options, probabilities);
+    expectArray(labels.toList().slice(0, 4), ['b', 'a', 'b', 'c']);
+    expect(labels.isNone(4), true, 'A row without a prediction got a label');
+  });
+
+  test('prepareFeatures: predict probability records class-probabilities and keeps the target', async () => {
+    const x = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'x', [1, 2, 3, 4, 5]);
+    const sex = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'sex', ['M', 'F', 'F', 'M', null]);
+    const prepared = prepareFeatures([x], sex, {...PREDICT_PROBABILITY, threshold: 0.4}, NO_OPTIONS);
+    expect(prepared.target === sex, true, 'The target was replaced');
+    expect(JSON.stringify(prepared.options), JSON.stringify({preprocessingInfo: [],
+      postprocessingInfo: ['class-probabilities'], positiveClass: 'F', negativeClass: 'M',
+      binaryClassificationThreshold: 0.4}));
+    const optimized = prepareFeatures([x], sex, {...PREDICT_PROBABILITY, thresholdMetric: 'mcc'}, NO_OPTIONS);
+    expect(optimized.options.thresholdMetric, 'mcc');
+
+    const three =DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'kind', ['a', 'b', 'c', 'a', 'b']);
+    const classes = prepareFeatures([x], three, PREDICT_PROBABILITY, NO_OPTIONS);
+    expect(classes.target === three, true, 'A three-class target was replaced');
+    expect(JSON.stringify(classes.options), JSON.stringify({preprocessingInfo: [],
+      postprocessingInfo: ['class-probabilities']}));
+
+    const y = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'y', [1, 0, 1, 0, 1]);
+    const regression = prepareFeatures([x], y, PREDICT_PROBABILITY, NO_OPTIONS);
+    expect(regression.target === y, true, 'A numerical target was replaced');
+    expectArray(regression.options.postprocessingInfo, []);
+  });
+
+  test('empty step lists leave the data untouched', async () => {
+    const columns = [DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'c', ['a', 'b'])];
+    const prediction = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'y', [0.2, 0.9]);
+    expect(replayPreprocessing(columns, NO_OPTIONS) === columns, true, 'New columns without steps');
+    expect(replayPostprocessing(prediction, NO_OPTIONS) === prediction, true, 'A new column without steps');
+  });
+
+  test('missing-value ids are dropped, unknown ids refused', async () => {
+    const columns = [DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'c', ['a', 'b'])];
+    const recorded = {...NO_OPTIONS, preprocessingInfo: ['impute-missing', 'ignore-missing']};
+    expect(replayPreprocessing(columns, recorded) === columns, true, 'The recorded ids were replayed');
+    await expectExceptionAsync(async () => {
+      replayPreprocessing(columns, {...NO_OPTIONS, preprocessingInfo: ['one-hot-x']});
+    }, failsWith('The model uses the preparation step \'one-hot-x\', which Forge cannot replay yet.'));
+  });
+
+  test('preparationOptionsOf tolerates missing and malformed options', async () => {
+    for (const value of [{}, null, undefined, 'x', [1]])
+      expect(JSON.stringify(preparationOptionsOf(value)), JSON.stringify(NO_OPTIONS), JSON.stringify(value));
+    const options = preparationOptionsOf({preprocessingInfo: ['one-hot', 3], positiveClass: 'a', targetType: 7,
+      binaryClassificationThreshold: 0.4, missingValues: {mode: 'impute', neighbors: 4, skippedRows: 2},
+      oneHotCategories: {c: ['x', 1, 'y'], d: 'z'}, skippedColumns: ['id', 2]});
+    expect(JSON.stringify(options), JSON.stringify({preprocessingInfo: ['one-hot'], postprocessingInfo: [],
+      missingValues: {mode: 'impute', skippedRows: 2, neighbors: 4},
+      oneHotCategories: {c: ['x', 'y'], d: []}, skippedColumns: ['id'],
+      positiveClass: 'a', binaryClassificationThreshold: 0.4}));
+    expect(preparationOptionsOf({thresholdMetric: 'balancedAccuracy'}).thresholdMetric, 'balancedAccuracy');
+    expect(preparationOptionsOf({thresholdMetric: 'auc'}).thresholdMetric === undefined, true, 'An unknown metric');
+  });
+
+  test('Skip rows drops the rows with a missing feature or target value, without touching the input', async () => {
+    const rows = 12;
+    const a = DG.Column.fromList(DG.COLUMN_TYPE.INT, 'a', valuesOf(rows, (i) => i, [3]));
+    const b = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'b', valuesOf(rows, (i) => i / 2, [7]));
+    const y = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'y', valuesOf(rows, (i) => i % 3, [9]).map((v) =>
+      v === null ? null : `class ${v}`));
+    const prepared = await prepareMissingValues([a, b], y, {mode: 'skip'});
+    expect(prepared.keptRows?.trueCount, 9);
+    expect(prepared.skippedRows, 3);
+    expectArray(prepared.features.map((c) => c.length), [9, 9]);
+    expect(prepared.target?.length, 9);
+    expect(gapCount(prepared.features), 0);
+    expect(a.isNone(3) && b.isNone(7) && y.isNone(9), true, 'The input columns changed');
+    expect(a.length, rows);
+
+    const full = [DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'x', valuesOf(rows, (i) => i))];
+    const untouched = await prepareMissingValues(full, undefined, {mode: 'skip'});
+    expect(untouched.keptRows === null, true, 'Rows kept without gaps');
+    expect(untouched.features === full, true, 'The columns were copied without gaps');
+  });
+
+  test('Skip rows without a target counts the feature gaps only', async () => {
+    const rows = 12;
+    const columns = [
+      DG.Column.fromList(DG.COLUMN_TYPE.INT, 'a', valuesOf(rows, (i) => i, [3])),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'b', valuesOf(rows, (i) => i / 2, [3, 7])),
+    ];
+    const prepared = await prepareMissingValues(columns, undefined, {mode: 'skip'});
+    expect(prepared.skippedRows, 2);
+    expect(prepared.target === undefined, true, 'A target appeared');
+    const skipped = Array.from({length: rows}, (_, i) => i).filter((i) => !(prepared.keptRows?.get(i) ?? true));
+    expectArray(skipped, [3, 7]);
+  });
+
+  test('keep drops only the rows without a target', async () => {
+    const rows = 12;
+    const a = DG.Column.fromList(DG.COLUMN_TYPE.INT, 'a', valuesOf(rows, (i) => i, [3]));
+    const b = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'b', valuesOf(rows, (i) => i / 2, [7]));
+    const y = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'y', valuesOf(rows, (i) => i, [5]));
+    const prepared = await prepareMissingValues([a, b], y, {mode: 'keep'});
+    expect(prepared.skippedRows, 1);
+    expect(prepared.keptRows?.get(3), true);
+    expect(prepared.keptRows?.get(5), false);
+    expect(prepared.features[0] !== a && prepared.features[1] !== b, true, 'The features were not copied');
+    expectArray(prepared.features.map((c) => c.length), [11, 11]);
+    expect(gapCount(prepared.features), 2);
+    expect(prepared.target?.length, 11);
+    expectArray(prepared.imputedColumns, []);
+
+    const untouched = await prepareMissingValues([a, b], undefined, {mode: 'keep'});
+    expect(untouched.keptRows === null && untouched.features[0] === a, true, 'Rows were skipped without a target');
+  });
+
+  test('a copied text column keeps only the categories its rows have', async () => {
+    const rows = 12;
+    const c = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'c',
+      Array.from({length: rows}, (_, i) => i === 3 ? null : i % 3 === 0 ? 'x' : 'y'));
+    const columns = [
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'a', valuesOf(rows, (i) => i)),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'b', valuesOf(rows, (i) => 2 * i)),
+      c,
+    ];
+    const skipped = await prepareMissingValues(columns, undefined, {mode: 'skip'});
+    expectArray(columnNamed(skipped.features, 'c').categories, ['x', 'y']);
+    const imputed = await prepareMissingValues(columns, undefined, IMPUTE);
+    expect(gapCount(imputed.features), 0);
+    const imputedCategories = columnNamed(imputed.features, 'c').categories;
+    expect(imputedCategories.includes(''), false, imputedCategories.join(', '));
+    expect(c.categories.includes(''), true, 'The input column lost its empty category');
+  }, {timeout: 30000});
+
+  test('Impute fills the gaps in copies of the gapped columns and skips the rows it cannot fill', async () => {
+    const func = imputeFunction();
+    if (func === undefined)
+      throw new Error('Eda:knnImpute is not available');
+    expect(JSON.stringify(defaultValuesOf(imputeSettingsOf(func))),
+      JSON.stringify({neighbors: 4, distance: 'Euclidean'}));
+
+    const rows = 30;
+    const columnsOf = (allMissing: number[]) => [
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'a', valuesOf(rows, (i) => i, [3, 10, ...allMissing])),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'b', valuesOf(rows, (i) => 2 * i, [7, ...allMissing])),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'c', valuesOf(rows, (i) => rows - i, allMissing)),
+    ];
+    const [a, b, c] = columnsOf([]);
+    const prepared = await prepareMissingValues([a, b, c], undefined, IMPUTE);
+    expect(gapCount(prepared.features), 0);
+    expectArray(prepared.imputedColumns, ['a', 'b']);
+    expect(prepared.skippedRows, 0);
+    expect(prepared.keptRows === null, true, 'Rows were skipped');
+    expect(a.isNone(3) && a.isNone(10) && b.isNone(7), true, 'The input columns were imputed');
+    expect(columnNamed(prepared.features, 'c') === c, true, 'The column without gaps was copied');
+
+    // A yes/no column without gaps stays shared in the imputation frame, which is given back.
+    const gapped = columnsOf([12]);
+    gapped.push(DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'flag', Array.from({length: rows}, (_, i) => i % 2 === 1)));
+    const [withEmptyRow, frames] = await framesSharing(gapped,
+      () => prepareMissingValues(gapped, undefined, IMPUTE));
+    expect(withEmptyRow.failedRows, 1);
+    expect(withEmptyRow.skippedRows, 1);
+    expectArray(withEmptyRow.features.map((col) => col.length), [rows - 1, rows - 1, rows - 1, rows - 1]);
+    expect(withEmptyRow.keptRows?.get(12), false);
+    expect(gapCount(withEmptyRow.features), 0);
+    expectReleased(frames);
+  }, {timeout: 30000});
+
+  test('a semType feature is never left out or one-hot encoded', async () => {
+    const {smiles, color, x, y} = moleculeFrame(12);
+    const encoded = color.categories.map((c) => `color=${c}`);
+    const prepared = prepareFeatures([smiles, color, x], y, {...SKIP_UNIQUE_STEPS, oneHot: true}, NO_OPTIONS,
+      ['molecule']);
+    expectArray(names(prepared.columns), ['smiles', 'x', ...encoded]);
+    expect(prepared.columns[0] === smiles, true, 'The molecule column was copied');
+    expectArray(Object.keys(prepared.options.oneHotCategories ?? {}), ['color']);
+    expect(prepared.options.preprocessingInfo.includes('skip-unique-categories'), false, 'smiles was skipped');
+    const withoutSemTypes = prepareFeatures([smiles, color, x], y, {...SKIP_UNIQUE_STEPS, oneHot: true}, NO_OPTIONS);
+    expectArray(withoutSemTypes.options.skippedColumns ?? [], ['smiles']);
+  });
+
+  test('one-hot passes on a numerical column named as an Object property', async () => {
+    const {color, x, y} = moleculeFrame(12);
+    const named = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'constructor', valuesOf(12, (i) => i));
+    const encoded = color.categories.map((c) => `color=${c}`);
+    const prepared = prepareFeatures([named, color, x], y, {...SKIP_UNIQUE_STEPS, oneHot: true}, NO_OPTIONS);
+    expectArray(names(prepared.columns), ['constructor', 'x', ...encoded]);
+    expectArray(Object.keys(prepared.options.oneHotCategories ?? {}), ['color']);
+    expectArray(names(replayPreprocessing([named, x, color], prepared.options)),
+      ['constructor', 'x', ...encoded]);
+  });
+
+  test('one-hot replays exactly the recorded columns', async () => {
+    const {smiles, color, x} = moleculeFrame(12);
+    const options: PreparationOptions = {preprocessingInfo: ['one-hot'], postprocessingInfo: [],
+      oneHotCategories: {color: [...color.categories]}};
+    expectArray(names(replayPreprocessing([smiles, x, color], options)),
+      ['smiles', 'x', ...color.categories.map((c) => `color=${c}`)]);
+    const unrecorded = names(replayPreprocessing([smiles, x, color], {...options, oneHotCategories: undefined}));
+    expect(unrecorded[0], 'x');
+    expect(unrecorded.filter((name) => name.startsWith('smiles=')).length, 12);
+  });
+
+  test('defaultOneHot ignores semType features', async () => {
+    const {smiles, color} = moleculeFrame(25);
+    expect(defaultOneHot([smiles, color], false), false);
+    expect(defaultOneHot([smiles, color], false, ['molecule']), true);
+  });
+
+  test('Impute refuses a gapped molecule feature and never uses one', async () => {
+    const rows = 12;
+    const molecules = smilesSeries(rows);
+    const gappedSmiles = smilesColumn('smiles', molecules.map((m, i) => i === 3 ? '' : m));
+    const fullSmiles = smilesColumn('smiles', molecules);
+    const a = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'a', valuesOf(rows, (i) => i, [5]));
+    const b = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'b', valuesOf(rows, (i) => 2 * i));
+    const fullA = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'a', valuesOf(rows, (i) => i));
+    expect(missingValuesProblems([gappedSmiles, fullA, b], IMPUTE, ['molecule'])
+      .includes('Impute cannot fill the Molecule column \'smiles\'. Choose Skip rows.'), true);
+    const imputed = await prepareMissingValues([fullSmiles, a, b], undefined, IMPUTE, ['molecule']);
+    expectArray(imputed.imputedColumns, ['a']);
+    expect(gapCount(imputed.features), 0);
+    expect(imputed.features[0] === fullSmiles, true, 'The molecule column was copied');
+    const y = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'y', valuesOf(rows, (i) => i));
+    const skipped = await prepareMissingValues([gappedSmiles, fullA], y, {mode: 'skip'}, ['molecule']);
+    const copy = columnNamed(skipped.features, 'smiles');
+    expect(copy.semType, DG.SEMTYPE.MOLECULE);
+    expect(copy.length, rows - 1);
+  }, {timeout: 30000});
+});

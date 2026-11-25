@@ -14,9 +14,19 @@ export const OUTPUT_OUTDATED_PATH = 'OUTPUT_OUTDATED';
 export const RUN_ERROR_PATH = 'RUN_ERROR';
 
 export const CONFIG_PATH = 'PIPELINE_CONFIG';
+/** On a workflow run: whether every step's outputs were current when it was saved */
+export const RUN_COMPLETED_PATH = 'RUN_COMPLETED';
 
 export const readOutputOutdated = (fc: DG.FuncCall): boolean =>
   deserialize(fc.options[OUTPUT_OUTDATED_PATH] ?? 'false');
+
+/** Undefined for a workflow run saved before the flag existed. */
+export const readRunCompleted = (metaCall: DG.FuncCall): boolean | undefined => {
+  const value = metaCall.options[RUN_COMPLETED_PATH];
+  return value == null ? undefined : value === 'true';
+};
+
+export const completedOption = (completed: boolean) => ({[RUN_COMPLETED_PATH]: String(completed)});
 
 /** The serialized workflow state of a saved meta-call, undefined for a plain function run. */
 export function readInstanceState(metaCall: DG.FuncCall): PipelineSerializedState | undefined {
@@ -86,7 +96,7 @@ function setDefault(fc: DG.FuncCall, name: string, value: any) {
 }
 
 /** The annotation defaults of a new call; initial values win. Choices never fill a value: they are metadata. */
-async function initNewCall(fc: DG.FuncCall, initialValues: Record<string, any>) {
+export async function initNewCall(fc: DG.FuncCall, initialValues: Record<string, any>) {
   const defaults = fc.func.inputs.filter((prop) => prop.options.default != null && !(prop.name in initialValues));
   const values = await Promise.all(defaults.map((prop) => annotationDefault(fc, prop)));
   defaults.forEach((prop, idx) => setDefault(fc, prop.name, values[idx]));

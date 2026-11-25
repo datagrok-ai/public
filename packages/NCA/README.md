@@ -70,7 +70,7 @@ scattered across scripts and spreadsheets.
 | Format | Shape | Notes |
 |--------|-------|-------|
 | **Standard concentration-time** | one row per sample | Subject, time, concentration required; dose / route / body weight / BLQ optional, per-row or as a scalar |
-| **Multi-route** | route per row | IV-bolus, IV-infusion, PO, SC, IM in one table; CL/Vz basis (absolute vs `/F`) resolved per row |
+| **Multi-route** | route per row | IV-bolus, IV-infusion, PO, SC, IM, IP (intraperitoneal) in one table; CL/Vz basis (absolute vs `/F`) resolved per row |
 | **NONMEM event dataset** | EVID / AMT / CMT / RATE / MDV | Event records normalized into subject / time / concentration / dose columns, including infusion `RATE` and per-day resets |
 | **Sparse / destructive** | nominal time + animal pool | Pooled composite profile with bootstrap CI, for designs where no single animal has a full curve |
 
@@ -78,6 +78,30 @@ Data enters as a CSV upload or any open Datagrok table. Columns are **auto-fille
 hints (subject, time, conc, dose, body weight, BLQ, LLOQ, route) and unit tokens are parsed from
 suffixes (`Conc_ng_mL` → ng/mL, `Time_hr` → h) — you confirm or override in the mapping pane.
 CSV numeric columns are re-read to Float64 to recover the precision needed for PKNCA bit-identity.
+
+### Intraperitoneal (i.p.) dosing
+- **Accepted spellings:** `IP`, `i.p.`, `intraperitoneal`, `intraperitoneally`, `intra-peritoneal`,
+  `INTRAPERITONEAL` (SEND), `I-PERITON` (FDA), `IP bolus`, `i.p. injection`, `intraperitoneal bolus`,
+  and the misspelling `intraperitonial`. i.p. is extravascular: results report CL/F and Vz/F, and
+  Vss and C₀ stay blank, exactly as for PO. Exact spellings only: `intraportal` and `intrapleural`
+  are not i.p. and stay unrecognised.
+- **`intraperitoneal infusion`** is analysed as a single i.p. dose, with a warning: Cmax and Tmax
+  describe the infusion, MRT includes the infusion time, and λz, t½, AUC0–∞, CL/F and Vz/F are
+  valid only if the sampling covers the decline after the infusion ends. AUC0–∞ and CL/F do not
+  depend on the input rate only under linear kinetics. A mapped infusion duration on any
+  extravascular row is not used, and an info note says so.
+- **Failed injections.** Of the order of 10–20 % of i.p. injections deposit outside the peritoneal
+  cavity (Gaines Das & North 2007, *Lab Anim* 41:312, citing Claassen 1994); the rate depends on
+  the operator and the technique, and reached 29 % in one rat series (Laferriere 2022). Formal
+  outlier tests identify only some failures. Inspect the individual profiles — the Combined chart
+  by subject and the per-subject facets — or, for sparse designs, the per-animal points beside the
+  composite mean.
+- **Exclude λz** removes only the λz-dependent values of a profile (t½, AUC∞, CL/F, Vz/F, MRT).
+  Keeping a whole animal out of the means and %F is not available yet.
+- **%F after i.p.** is absolute bioavailability against the IV reference. Small molecules absorbed
+  from the peritoneum pass mainly into the portal vein (Al Shoyaib et al. 2020, *Pharm Res* 37:12),
+  so F can include partial hepatic first pass, injection-site loss and failed injections; it should
+  not be read as an oral F.
 
 ## Workflow
 
@@ -118,11 +142,17 @@ rest still compute.
 ### Stratify
 - **Group by** — aggregate to group-level mean ± CV by route, status, sex, dose, study day, or any
   carried metadata column.
-- **Bioavailability** — F% per route × sex stratum, with CL and CL/F.
+- **Bioavailability** — F% per route × sex stratum (× study day on a confirmed repeat-dose
+  design), with CL and CL/F.
 - **Dose proportionality** — Smith power-model slope with 90% CI and a proportional /
-  sub / super verdict, plus a dose-normalized view.
-- **Accumulation & exposure margin** — Rac(AUC), Rac(Cmax), human/animal exposure margin, and
-  sex fold-change for repeat-dose TK.
+  sub / super verdict per route × sex × study day, plus a dose-normalized view.
+- **Sex comparison** — female / male fold-change per dose (× study day when the study has
+  several days).
+- **Day N / Day 1 & exposure margin** — Rac(AUC), Rac(Cmax) and human/animal exposure margin for
+  repeat-dose TK.
+
+The study day (or period / occasion) column is detected by name and confirmed in Settings,
+together with the animal key and the design (repeat-dose, crossover, escalation).
 - **Sparse NCA** — pooled composite AUClast with Bailer/Holder bootstrap CI, a composite profile,
   and an AUC-vs-dose scatter.
 

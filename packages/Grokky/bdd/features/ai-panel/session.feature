@@ -23,7 +23,7 @@ Feature: The AI panel's chat survives a stop, a bash command, a reload and a los
     Then the AI runtime container should be running "sleep 613"
     When user clicks on AI stop button
     Then the AI turn should have been stopped
-    And the AI panel should show the message "Processing aborted by user"
+    And the AI panel should show the message "Stopped"
     And the AI runtime container should not be running "sleep 613"
     When user asks the AI panel "What is the median WEIGHT of the patients in this table, to one decimal? Reply with just the number."
     Then the AI answer should be the median of "WEIGHT"

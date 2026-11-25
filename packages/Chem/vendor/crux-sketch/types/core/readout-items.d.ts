@@ -102,9 +102,14 @@ export interface ReadoutSource {
     /** What is under the pointer or being drawn; null for nothing. */
     pointer(): PointerFacts | null;
 }
+/**
+ * A fact a reaction document's readout shows in place of the items (spike reaction-fixes-1205): its steps, its species by
+ * role, the molecules no step places; a document with no step, its molecules. Not an item a user checks.
+ */
+export type ReactionFact = 'steps' | 'reactants' | 'intermediates' | 'products' | 'agents' | 'unplaced' | 'molecules';
 /** An item as the line shows it. */
 export interface ShownItem {
-    readonly id: ReadoutItem;
+    readonly id: ReadoutItem | ReactionFact;
     /** Its label before its value in the line ("MW", "SMILES"); `''` for the formula, which has none. */
     readonly label: string;
     /** Its label's full words where the label is short ("Molecular weight" for "MW"): the label's tooltip. */
@@ -126,6 +131,46 @@ export interface ShownItem {
     /** A pointer's item, which the line keeps in sight before the others when there is no room for all (ruling 3). */
     readonly pointer?: boolean;
 }
+/** What `reactionCounts` reads of a reaction's roles (`EngineReactionRoles`): each step's components by role, and those no step places. */
+export interface RolesRead {
+    readonly steps: readonly {
+        readonly reactants: readonly number[];
+        readonly agents: readonly {
+            readonly component: number;
+        }[];
+        readonly products: readonly number[];
+    }[];
+    readonly unplaced: readonly number[];
+}
+/** A reaction document's counts (spike reaction-fixes-1205): its steps, and its species by role through the route. */
+export interface ReactionCounts {
+    readonly steps: number;
+    /** In a step and made by none: the starting materials. */
+    readonly reactants: number;
+    /** Made by one step and taken by another. */
+    readonly intermediates: number;
+    /** Made by a step and taken by none: the products. */
+    readonly products: number;
+    /** A step's agents that are no reactant or product of any step. */
+    readonly agents: number;
+    /** The molecules no step places. */
+    readonly unplaced: number;
+    /** The molecules of a document with no step (0 otherwise). */
+    readonly molecules: number;
+}
+/**
+ * The counts of a reaction document from its roles (core/sketcher.ts `reactionRoles`, null without an arrow): each
+ * component once, by its role through the route; `molecules` (the drawing's, asked only where there is no step) for none.
+ */
+export declare function reactionCounts(roles: RolesRead | null, molecules: () => number): ReactionCounts;
+/**
+ * A reaction document's line (spike reaction-fixes-1205): its steps, then its reactants, intermediates, products, agents and
+ * the molecules no step places, each where there is one; with no step, its molecules; nothing for an empty drawing. The
+ * pointer's items (`pointer`, as `readoutLine` makes them) follow.
+ */
+export declare function reactionLine(counts: ReactionCounts, pointer: readonly ShownItem[], s: Catalog): ReadoutLine;
+/** The pointer's items (spike reaction-fixes-1205: a reaction document's line keeps them). */
+export declare const POINTER_ITEMS: ReadonlySet<ReadoutItem>;
 /** What the readout shows: nothing, or its items for the drawing or the selection. */
 export type ReadoutLine = {
     readonly kind: 'empty';

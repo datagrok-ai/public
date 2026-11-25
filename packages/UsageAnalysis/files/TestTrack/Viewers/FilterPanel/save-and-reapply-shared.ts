@@ -87,8 +87,16 @@ export async function dismissPanelMenu(page: Page): Promise<void> {
     'the panel menu popup stayed on screen and would intercept the next gesture').toBe(0);
 }
 
+// The caller's own saved filter presets of that name: the ids of the SavedFilter entities on the server.
+const myPresetIds = (page: Page, name: string): Promise<string[]> => page.evaluate(async (n) => {
+  const headers = {Authorization: String(grok.dapi.token)};
+  const found: any[] = await (await fetch(`${grok.dapi.root}/entities?text=${encodeURIComponent(n)}`, {headers})).json();
+  return found.filter((e) => e['#type'] === 'SavedFilter' && e.friendlyName === n && e.author?.id === grok.shell.user.id)
+    .map((e) => e.id as string);
+}, name);
+
 // Step 4 of the scenario: the hamburger's Save or Apply > Save... dialog, checked against the
-// "filter-states" localStorage entry the product writes and against the console.
+// preset the product saves on the server and against the console.
 export async function saveStateViaMenu(page: Page, probeName: string): Promise<void> {
   const consoleErrors: string[] = [];
   const onConsole = (msg: import('@playwright/test').ConsoleMessage) => {
@@ -106,7 +114,7 @@ export async function saveStateViaMenu(page: Page, probeName: string): Promise<v
   // Modal.editValue defers focus()+select() to a Timer.run (d4 widgets/dialog/dialog.dart:321).
   // Under two workers that timer lands in the middle of a per-character type, and the next
   // character replaces the whole selection — the dialog then saves under a truncated name, which
-  // is why the probe never reached localStorage. Wait the timer out, then set the name in one
+  // is why the probe was never saved. Wait the timer out, then set the name in one
   // assignment so a later select() has nothing left to swallow.
   await page.evaluate(() => (window as any).__poll(() => {
     const el = document.querySelector('.d4-dialog[name="dialog-Save-filter-preset"] input[name="input-Name"]') as
@@ -125,18 +133,10 @@ export async function saveStateViaMenu(page: Page, probeName: string): Promise<v
     message: 'the Save filter preset dialog did not close after OK',
   }).toBe(0);
 
-  // the entry is written a beat after the dialog closes, so a one-shot read races it under load
-  const stored = await v.pollValue(() => page.evaluate((name) => {
-    const raw = window.localStorage.getItem('filter-states');
-    if (raw === null) return {parsed: false, has: false};
-    const states = JSON.parse(raw);
-    return {parsed: true, has: Object.prototype.hasOwnProperty.call(states, name)};
-  }, probeName), (r) => r.has, 3000, 100);
-  expect(stored.parsed,
-    'the "filter-states" localStorage entry is absent after the save — nothing was stored').toBe(true);
-  expect(stored.has,
-    'the probe name is absent from the "filter-states" localStorage entry — the state was not saved')
-    .toBe(true);
+  // the preset is saved a beat after the dialog closes, so a one-shot read races it under load
+  const stored = await v.pollValue(() => myPresetIds(page, probeName), (ids) => ids.length > 0, 10000, 250);
+  expect(stored.length, 'no saved filter preset with the probe name is on the server — the state was not saved')
+    .toBeGreaterThan(0);
 
   page.off('console', onConsole);
   const newErrors = [...errorSet()].filter((t) => !errorsBefore.has(t));
@@ -144,23 +144,12 @@ export async function saveStateViaMenu(page: Page, probeName: string): Promise<v
 }
 
 export async function removeProbeState(page: Page, probeName: string): Promise<void> {
-  await page.evaluate((name) => {
-    try {
-      const states = JSON.parse(window.localStorage.getItem('filter-states') ?? '{}');
-      if (Object.prototype.hasOwnProperty.call(states, name)) {
-        delete states[name];
-        window.localStorage.setItem('filter-states', JSON.stringify(states));
-      }
-    } catch (_) {}
-  }, probeName);
-  await softStep('Teardown probe key removed from localStorage', async () => {
-    const leaked = await page.evaluate((name) => {
-      const raw = window.localStorage.getItem('filter-states');
-      if (raw === null) return false;
-      const states = JSON.parse(raw);
-      return Object.prototype.hasOwnProperty.call(states, name);
-    }, probeName);
-    expect(leaked, 'the probe named state is still in localStorage and would bleed into later runs')
-      .toBe(false);
+  for (const id of await myPresetIds(page, probeName))
+    await page.evaluate(async (i) => {
+      await fetch(`${grok.dapi.root}/domains/filters/${i}`, {method: 'DELETE', headers: {Authorization: String(grok.dapi.token)}});
+    }, id);
+  await softStep('Teardown probe preset removed from the server', async () => {
+    expect(await myPresetIds(page, probeName), 'the probe preset is still on the server and would bleed into later runs')
+      .toEqual([]);
   });
 }

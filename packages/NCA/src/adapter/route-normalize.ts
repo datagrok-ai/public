@@ -14,8 +14,9 @@
  *     is a hard **block**, never a silent downgrade to `other`. The else branch
  *     in sci-comp `computeNca` prepends extravascular `(0,0)`; silently routing
  *     an IV-adjacent string to `other` would understate early AUC + corrupt CL
- *     with no warning. A clearly-non-IV unknown (`ip`, `topical`, …) is a
- *     *warning* + `other` (extravascular augmentation is correct there).
+ *     with no warning. A clearly-non-IV unknown (`topical`, `intraportal`, …) is a
+ *     *warning* + `other` (extravascular augmentation is correct there). The i.p.
+ *     sets (incl. `ip bolus`, `intraperitoneal infusion`) are checked before it.
  *  3. **Bare-IV disambiguation** — bare `IV` /
  *     `intravenous` defaults to **IV-bolus** (small-molecule preclinical PK);
  *     when a positive infusion duration is present (per-row column or scalar)
@@ -34,6 +35,8 @@ import {nca} from '@datagrok-libraries/sci-comp';
 
 import type {ValidationError} from './column-contract';
 import {stringifyKey} from './adapter-utils';
+import {isIntravascular} from './bioavailability';
+import {ROUTE_CODE_TO_STRING} from './profile-inputs';
 
 /** ParameterWarning code pushed when bare `IV` defaults to IV-bolus (AD-3). It
  *  rides the OPEN `nca.ParameterWarning.code` union — no sci-comp change. */
@@ -75,6 +78,60 @@ const SC: ReadonlySet<string> = new Set([
 const IM: ReadonlySet<string> = new Set([
   'im', 'intramuscular', 'intramuscular injection', 'intramuscular administration',
 ]);
+/** Intraperitoneal (i.p.) synonyms, as normalized tokens: `ip` covers `IP` / `i.p.` /
+ *  `I.P.`; `i periton` is the FDA route code `I-PERITON`; `intraperitoneal` covers the
+ *  SEND term `INTRAPERITONEAL`; `intraperitonial` is the one explicit common misspelling.
+ *  Exact tokens only — no prefix / fuzzy rule, so the neighbours `intraportal` and
+ *  `intrapleural` stay unrecognised. Checked BEFORE the IV-adjacency guard: `ip bolus`
+ *  contains the IV-adjacent substring `bolus` but names the peritoneal site explicitly. */
+const IP: ReadonlySet<string> = new Set([
+  'ip', 'intraperitoneal', 'intraperitoneally', 'intra peritoneal', 'i periton', 'intraperitonial',
+  'intraperitoneal injection', 'intraperitoneal administration', 'intraperitoneal dose',
+  'intraperitoneal bolus', 'intraperitoneal bolus injection',
+  'ip injection', 'ip bolus', 'ip dosing', 'ip administration',
+]);
+/** Intraperitoneal INFUSION synonyms → analysed as a single i.p. dose with
+ *  {@link IP_INFUSION_AS_SINGLE_DOSE}. Also checked before the guard: the guard blocks
+ *  IV-adjacent strings because an intravascular dose read as extravascular corrupts the
+ *  dose-time anchor and CL; `intraperitoneal` names the site, so the string cannot be
+ *  intravascular, and the remaining risk (a continuous input read as a bolus) is
+ *  disclosed by the warning. Every other `infus` / `bolus` / `drip` string still blocks. */
+const IP_INFUSION: ReadonlySet<string> = new Set([
+  'intraperitoneal infusion', 'intra peritoneal infusion', 'ip infusion',
+]);
+
+/** Warning code: an `intraperitoneal infusion` route analysed as a single i.p. dose. */
+export const IP_INFUSION_AS_SINGLE_DOSE = 'IP_INFUSION_AS_SINGLE_DOSE';
+/** The dense / NONMEM wording of {@link IP_INFUSION_AS_SINGLE_DOSE}. */
+export const IP_INFUSION_MESSAGE =
+  `Route 'intraperitoneal infusion' is analysed as a single i.p. dose. Cmax and Tmax describe ` +
+  `the infusion, not a bolus, and MRT includes the infusion time. λz, t½, AUC0–∞, CL/F and ` +
+  `Vz/F are valid only if the sampling covers the decline after the infusion ends.`;
+
+/** Info code: a positive input duration on an extravascular row, which NCA does not use. */
+export const INFUSION_DURATION_NOT_USED = 'INFUSION_DURATION_NOT_USED';
+/** Wording of {@link INFUSION_DURATION_NOT_USED} for a profile of route `route`. */
+export function infusionDurationNotUsedMessage(route: string): string {
+  return `An input duration is set for this ${route} profile. NCA here models an extravascular ` +
+    `dose as a single instantaneous input, so the duration is not used: Cmax and Tmax describe ` +
+    `the actual input, and MRT includes the input time.`;
+}
+
+/** True for an extravascular route code — through the shared IV/EV owner
+ *  (`isIntravascular` over the canonical label), never a copy of the split. */
+function isExtravascularCode(code: number): boolean {
+  const label = ROUTE_CODE_TO_STRING[code];
+  return label !== undefined && !isIntravascular(label);
+}
+
+/** The {@link INFUSION_DURATION_NOT_USED} note for a profile of route `code` that has a positive
+ *  input duration, or null on an intravascular route (which uses its duration). The ONE builder the
+ *  dense (`normalizeRouteColumn`) and NONMEM (`resolveRoute`) paths call. */
+export function durationNotUsedWarning(code: number):
+  {code: string; severity: 'info'; message: string} | null {
+  return isExtravascularCode(code) ? {code: INFUSION_DURATION_NOT_USED, severity: 'info',
+    message: infusionDurationNotUsedMessage(ROUTE_CODE_TO_STRING[code])} : null;
+}
 
 /** IV-adjacency substrings (whole-word `iv` handled separately). `intraven`
  *  rather than `intra` so `intraperitoneal` / `intramuscular` do NOT false-
@@ -97,7 +154,9 @@ function isIvAdjacent(norm: string): boolean {
  */
 export type RouteNormalization =
   | {readonly status: 'mapped'; readonly code: nca.RouteCode;
-      readonly bareIvDefaulted: boolean; readonly infusionMissingDuration: boolean}
+      readonly bareIvDefaulted: boolean; readonly infusionMissingDuration: boolean;
+      /** True when an `intraperitoneal infusion` string resolved to a single i.p. dose. */
+      readonly ipInfusion: boolean}
   | {readonly status: 'other'; readonly code: typeof nca.ROUTE_OTHER}
   | {readonly status: 'block'}
   | {readonly status: 'empty'};
@@ -116,23 +175,22 @@ export function normalizeRouteString(
   const n = normalizeRouteToken(raw);
   if (n === '') return {status: 'empty'};
 
-  if (BARE_IV.has(n)) {
-    return infusionPositive ?
-      {status: 'mapped', code: nca.ROUTE_IV_INFUSION, bareIvDefaulted: false, infusionMissingDuration: false} :
-      {status: 'mapped', code: nca.ROUTE_IV_BOLUS, bareIvDefaulted: true, infusionMissingDuration: false};
-  }
-  if (IV_BOLUS.has(n))
-    return {status: 'mapped', code: nca.ROUTE_IV_BOLUS, bareIvDefaulted: false, infusionMissingDuration: false};
-  if (IV_INFUSION.has(n)) {
-    return {status: 'mapped', code: nca.ROUTE_IV_INFUSION, bareIvDefaulted: false,
-      infusionMissingDuration: !infusionPositive};
-  }
-  if (PO.has(n))
-    return {status: 'mapped', code: nca.ROUTE_PO, bareIvDefaulted: false, infusionMissingDuration: false};
-  if (SC.has(n))
-    return {status: 'mapped', code: nca.ROUTE_SC, bareIvDefaulted: false, infusionMissingDuration: false};
-  if (IM.has(n))
-    return {status: 'mapped', code: nca.ROUTE_IM, bareIvDefaulted: false, infusionMissingDuration: false};
+  const mapped = (code: nca.RouteCode, flags: {bareIvDefaulted?: boolean;
+    infusionMissingDuration?: boolean; ipInfusion?: boolean} = {}): RouteNormalization => ({
+    status: 'mapped', code, bareIvDefaulted: flags.bareIvDefaulted ?? false,
+    infusionMissingDuration: flags.infusionMissingDuration ?? false, ipInfusion: flags.ipInfusion ?? false,
+  });
+
+  if (BARE_IV.has(n))
+    return infusionPositive ? mapped(nca.ROUTE_IV_INFUSION) : mapped(nca.ROUTE_IV_BOLUS, {bareIvDefaulted: true});
+  if (IV_BOLUS.has(n)) return mapped(nca.ROUTE_IV_BOLUS);
+  if (IV_INFUSION.has(n)) return mapped(nca.ROUTE_IV_INFUSION, {infusionMissingDuration: !infusionPositive});
+  if (PO.has(n)) return mapped(nca.ROUTE_PO);
+  if (SC.has(n)) return mapped(nca.ROUTE_SC);
+  if (IM.has(n)) return mapped(nca.ROUTE_IM);
+  // i.p. sets BEFORE the IV-adjacency guard (`ip bolus`, `ip infusion` name the site).
+  if (IP.has(n)) return mapped(nca.ROUTE_IP);
+  if (IP_INFUSION.has(n)) return mapped(nca.ROUTE_IP, {ipInfusion: true});
 
   // No synonym hit. IV-adjacent → BLOCK (O-6 guard); else → other + warning.
   if (isIvAdjacent(n)) return {status: 'block'};
@@ -203,12 +261,22 @@ export function normalizeRouteColumn(
 
   const durCol = opts.infusionDurationCol ?? null;
   const scalarPos = opts.infusionScalarPositive ?? false;
-  const infusionPositiveAt = (row: number): boolean => {
-    if (durCol !== null) {
-      const v = durCol.get(row);
-      if (typeof v === 'number' && Number.isFinite(v) && v > 0) return true;
-    }
-    return scalarPos;
+  /** A positive duration from the PER-ROW column only. The scalar is not read for the
+   *  "duration not used" note: the mapping pane hides the scalar unless the scalar route
+   *  is IV-infusion, so a hidden stale value must not raise a note. */
+  const durationColumnPositiveAt = (row: number): boolean => {
+    // `isNone` first: a null cell may read back as the platform sentinel `FLOAT_NULL`, which is a
+    // positive finite number.
+    if (durCol === null || durCol.isNone(row)) return false;
+    const v = durCol.get(row);
+    return typeof v === 'number' && Number.isFinite(v) && v > 0;
+  };
+  const infusionPositiveAt = (row: number): boolean => durationColumnPositiveAt(row) || scalarPos;
+  /** UD-2: a positive per-row duration on an EXTRAVASCULAR row (any of PO, SC, IM, IP,
+   *  other) is reported as not used — the engine models it as a single instantaneous input. */
+  const noteUnusedDuration = (row: number, subjectKey: string, code: number): void => {
+    const note = durationColumnPositiveAt(row) ? durationNotUsedWarning(code) : null;
+    if (note !== null) pushWarn(subjectKey, note);
   };
 
   // --- Step 1: column-quality pre-scan over unique non-null values. ---------
@@ -265,10 +333,15 @@ export function normalizeRouteColumn(
           `Route value '${routeCol.get(i)}' is not a recognised route; treated as ` +
           `'other' (extravascular). Verify the route string.`,
       });
+      noteUnusedDuration(i, subjectKey, res.code);
       break;
     case 'mapped':
       codes[i] = res.code;
       addCode(codesBySubject, subjectKey, res.code);
+      if (res.ipInfusion)
+        pushWarn(subjectKey, {code: IP_INFUSION_AS_SINGLE_DOSE, severity: 'warning', message: IP_INFUSION_MESSAGE});
+      else
+        noteUnusedDuration(i, subjectKey, res.code);
       if (res.bareIvDefaulted) {
         pushWarn(subjectKey, {
           code: BARE_IV_DEFAULTED_TO_BOLUS,
@@ -289,6 +362,15 @@ export function normalizeRouteColumn(
         });
       }
       break;
+    }
+  }
+
+  // F2 + F3 meet: the i.p.-infusion warning already says the input is analysed as a
+  // single dose and that MRT includes the infusion time — one line, not two.
+  for (const list of warningsBySubject.values()) {
+    if (list.some((w) => w.code === IP_INFUSION_AS_SINGLE_DOSE)) {
+      const k = list.findIndex((w) => w.code === INFUSION_DURATION_NOT_USED);
+      if (k >= 0) list.splice(k, 1);
     }
   }
 

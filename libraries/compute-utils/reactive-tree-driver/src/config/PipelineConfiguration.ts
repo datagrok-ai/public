@@ -105,17 +105,30 @@ export interface ExportCbInput {
   description?: Record<string, string | string[]>,
 }
 
+/** What a `meta.customExports` function gets besides `funcCall` (and the legacy `startDownload`). */
+export type CustomExportArgs = {
+  validationState?: Record<string, ValidationResult>,
+  consistencyState?: Record<string, ConsistencyInfo>,
+  isOutputOutdated?: boolean,
+  runError?: string,
+  viewersHook?: ViewersHook,
+  metaState?: Record<string, {value: any}>,
+};
+
 export type ExportUtils = {
-  reportStateExcel: (pipelineState: PipelineState, cb?: <T>(input: ExportCbInput) => Promise<T>) =>
-    Promise<readonly [Blob, Zippable, string, ExportSummaryItem[]]>;
+  reportStateExcel: (pipelineState: PipelineState, cb?: (input: ExportCbInput) => Promise<void>) =>
+    Promise<readonly [DG.FileInfo, Zippable, ExportSummaryItem[]]>;
   getExportSummary: (pipelineState: PipelineState) => ExportSummaryItem[];
-  reportSummaryExcel: (pipelineState: PipelineState) => Promise<readonly [Blob, ExcelJS.Workbook]>;
-  reportFuncCallExcel: (fc: DG.FuncCall, uuid: string) => Promise<readonly [Blob, ExcelJS.Workbook]>;
+  reportSummaryExcel: (pipelineState: PipelineState) => Promise<readonly [DG.FileInfo, ExcelJS.Workbook]>;
+  // the step's report, with the step's own states
+  reportStepExcel: (fc: DG.FuncCall, uuid: string) => Promise<readonly [DG.FileInfo, ExcelJS.Workbook]>;
   getFuncCallCustomExports: (fc: DG.FuncCall) => string[];
-  runFuncCallCustomExport: (fc: DG.FuncCall, uuid: string, exportName: string) => Promise<any>;
+  runFuncCallCustomExport: (fc: DG.FuncCall, uuid: string, exportName: string) => Promise<DG.FileInfo>;
 
 }
-export type PipelineExport = (pipelineState: PipelineState, utils: ExportUtils) => Promise<any>;
+// startDownload, always false, matches meta.customExports functions
+export type PipelineExport =
+  (pipelineState: PipelineState, utils: ExportUtils, startDownload: boolean) => Promise<DG.FileInfo>;
 export type ViewersHook = (ioName: string, type: string, viewer?: DG.Viewer, meta?: any) => void;
 
 // link-like
@@ -377,6 +390,8 @@ export interface CustomExport {
   id: string,
   friendlyName?: string,
   handler: PipelineExport,
+  // listed before the default export and the other exports, so that it is the default
+  preferred?: boolean,
 }
 
 export type PipelineConfigurationBase<S> = {

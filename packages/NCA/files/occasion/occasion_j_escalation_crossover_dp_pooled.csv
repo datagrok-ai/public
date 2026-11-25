@@ -1,0 +1,9 @@
+"Sex","basis","n_animals","label","n","n_levels","n_by_dose","dose_ratio","cr_low","cr_high","beta","slope_se","df","ci_low","ci_high","verdict","knife_edge"
+"F","AUC0tau",3,"within-animal dependence not modelled; CI anti-conservative",9,3,"3/3/3",10,0.903089986991944,1.09691001300806,0.659507269144873,0.0669570256969516,7,0.532651920798966,0.786362617490779,"sub-proportional",FALSE
+"F","AUCinf",3,"within-animal dependence not modelled; CI anti-conservative",9,3,"3/3/3",10,0.903089986991944,1.09691001300806,0.665381837915704,0.0679540010249329,7,0.536637641443601,0.794126034387806,"sub-proportional",FALSE
+"F","AUClast",3,"within-animal dependence not modelled; CI anti-conservative",9,3,"3/3/3",10,0.903089986991944,1.09691001300806,0.659507269144873,0.0669570256969516,7,0.532651920798966,0.786362617490779,"sub-proportional",FALSE
+"F","Cmax",3,"within-animal dependence not modelled; CI anti-conservative",9,3,"3/3/3",10,0.903089986991944,1.09691001300806,0.404781092242353,0.0284005304726428,7,0.350974054835677,0.458588129649028,"sub-proportional",FALSE
+"M","AUC0tau",3,"within-animal dependence not modelled; CI anti-conservative",9,3,"3/3/3",10,0.903089986991944,1.09691001300806,0.580780030684561,0.0756346199087163,7,0.437484298001393,0.72407576336773,"sub-proportional",FALSE
+"M","AUCinf",3,"within-animal dependence not modelled; CI anti-conservative",9,3,"3/3/3",10,0.903089986991944,1.09691001300806,0.581323412602261,0.075760474206635,7,0.437789239058897,0.724857586145625,"sub-proportional",FALSE
+"M","AUClast",3,"within-animal dependence not modelled; CI anti-conservative",9,3,"3/3/3",10,0.903089986991944,1.09691001300806,0.580780030684561,0.0756346199087163,7,0.437484298001393,0.72407576336773,"sub-proportional",FALSE
+"M","Cmax",3,"within-animal dependence not modelled; CI anti-conservative",9,3,"3/3/3",10,0.903089986991944,1.09691001300806,0.347066005507133,0.10215721853613,7,0.153521124913076,0.540610886101189,"sub-proportional",FALSE

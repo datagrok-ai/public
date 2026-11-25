@@ -66,7 +66,7 @@ validation error, a lost device) is not used again, and its plots are drawn with
 
 Both backends draw the same thing, the CPU renderers' output:
 - `scatterplot-look.ts` reads the viewer properties in one pass (`sc.props.x` builds wrappers for every property on
-  each access) and holds the rules both backends share (`isGpuRenderable`: no jitter, no pack-and-zoom, no labels
+  each access) and holds the rules both backends share (`isGpuRenderable`: no jitter, no pack-and-zoom, no X or Y category order, no labels
   next to markers, plain axis columns, not a matrix plot cell, which keeps the plot canvas without its overlay).
   The core asks `isWebGPURenderValid` once a frame and twice on every mouse move, so the check reads only the
   properties its rules use (`readCheckLook`); `plotCanvases` caches the plot's canvas and overlay, as `sc.canvas`

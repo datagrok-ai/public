@@ -69,6 +69,9 @@ export function runTurn(req: AgentTurnRequest): AsyncIterator<AgentEvent, undefi
           (value) => p?.send({type: 'browser_result', id: ev.id, value}),
           (e) => p?.send({type: 'browser_result', id: ev.id, error: String(e?.message ?? e)}));
         return chan.push({type: 'activity'});
+      case 'browser_show':
+        req.showInBrowser(ev.name, ev.input);
+        return chan.push({type: 'activity'});
       case 'stopped': {
         const feedback = req.gates.map((g) => g.atStop()).filter((f): f is string => !!f);
         if (feedback.length && !req.signal.aborted)
@@ -114,14 +117,15 @@ export function runTurn(req: AgentTurnRequest): AsyncIterator<AgentEvent, undefi
     p.turns++;
     p.send({type: 'turn', text: req.text, images: req.images, systemPrompt: req.systemPrompt, effort: req.effort,
       cwd: req.cwd, userDir: req.userDir, outputSchema: req.outputSchema,
-      clientTools: req.clientTools, datagrokMcp: req.datagrokMcp, limits: req.limits, restore: p.restore});
+      clientTools: req.clientTools, browserTools: req.browserTools, datagrokMcp: req.datagrokMcp, limits: req.limits,
+      restore: p.restore});
     await settled;
   };
 
   req.signal.addEventListener('abort', () => {
     const proc = processForSession(req.sessionKey);
     if (proc?.turn?.settled === settled) {
-      proc.send({type: 'cancel'});
+      proc.send({type: 'cancel', reason: (req.signal.reason as Error | undefined)?.message});
       // Hermes stops the tool it is running, but not what that tool started in a session of its own.
       void settled.then(() => {
         if (!proc.disposed && proc.proc.pid)

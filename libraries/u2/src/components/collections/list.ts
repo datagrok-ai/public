@@ -260,6 +260,13 @@ export abstract class VirtualRows<T> extends Control {
       [...this._selected.peek()].map((i) => this.items[i]).filter((x) => x !== undefined).map(keyOf);
   }
 
+  /** Takes the focus with a row selected, the first when none is: Down arrow in a search box above the rows. */
+  focusRows(): void {
+    this.root.focus();
+    if (this.selectedIndex.peek() < 0 && this.items.length > 0)
+      this.selectedIndex.value = 0;
+  }
+
   setItems(items: readonly T[] | ReadonlySignal<T[]>): void {
     this._source.value = Array.isArray(items) ?
       signal(items as readonly T[]) : items as ReadonlySignal<readonly T[]>;

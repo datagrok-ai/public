@@ -7,7 +7,7 @@ import {
   historyUtils, RunMetadata, SaveTarget,
 } from '@datagrok-libraries/compute-utils/history-utils/src/history-utils';
 import {PlacesTree} from './PlacesTree';
-import {Breadcrumbs, FolderRows} from './RunList';
+import {Breadcrumbs, FolderRows, notCompletedMark} from './RunList';
 import {spaceFolders} from './space-index';
 import {useFavorites} from './use-favorites';
 import {useSpaceIndex} from './use-space-index';
@@ -231,7 +231,7 @@ export const SaveRunDialog = Vue.defineComponent({
               class={['c2-runs-row', ofModel ? '' : 'c2-runs-dimmed',
                 overwrite.value?.id === run.id ? 'c2-runs-selected' : '']}
               onClick={() => pickRun(run)}>
-              <span class='c2-runs-row-name'>{getRunName(run)}</span>
+              <span class='c2-runs-row-name'>{notCompletedMark(run)}{getRunName(run)}</span>
               <span class='c2-runs-muted'>
                 {ofModel ? formatSaved(run) : `${run.func?.friendlyName || run.func?.name} run`}
               </span>

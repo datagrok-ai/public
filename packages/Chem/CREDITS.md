@@ -269,7 +269,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 The Crux sketcher (`src/crux/crux-sketcher.ts`) bundles a build of Crux Sketch, vendored in `vendor/crux-sketch/`
 (its `VERSION` names the crux-sketch and crux-core revisions), into `dist/`: `crux-sketch.js` and its lazily loaded
-chunks (`shared-*.js`, `structure-library-*.js`, `cdxml-*.js`, `inchi-*.js`), with Lit bundled in; and the Crux
+chunks (`shared-*.js`, `structure-library-*.js`, `cdxml-*.js`, `inchi.js`), with Lit bundled in; and the Crux
 chemistry engine, crux-core's `sketch-wasm`, `cdxml-wasm` and `inchi-wasm` crates compiled to WebAssembly
 (`sketch_wasm_bg-*.wasm`, `cdxml_wasm_bg-*.wasm`, `inchi_wasm_bg-*.wasm`), which ports parts of RDKit, the InChI
 library, FreeType 2.9.1 and one file of Eigen 3.3.9 (Mozilla Public License 2.0), and embeds the Roboto font.
@@ -346,13 +346,13 @@ R-group palette's (rgroup-label.svg, rgroup-attpoints.svg), as they are; and the
 palette's (select-rectangle.svg, select-lasso.svg, select-structure.svg), as they are; and the
 rotation handle's and the floating buttons' (transform-rotate.svg, its paint written currentColor;
 transform-flip-h.svg, transform-flip-v.svg, delete.svg, as they are); and the Clipboard group's
-(cut.svg, copy.svg, paste.svg), their paint written currentColor; and the charge
-tools' (charge-plus.svg, charge-minus.svg), as they are; and Enhanced Stereochemistry's
+(cut.svg, copy.svg, paste.svg), their paint written currentColor; and Enhanced Stereochemistry's
 (enhanced-stereo.svg), as it is; and the shortcuts sheet's and the Settings gear's (help.svg,
 settings.svg), their paint written currentColor; and the query bond tools' (bond-any.svg,
 bond-singledouble.svg, bond-singlearomatic.svg, bond-doublearomatic.svg), as they are; and the dative bond tool's
 (bond-dative.svg), as it is, and the Hydrogens menu button's (explicit-hydrogens.svg), its paint written currentColor; and Aromatize's and
-Dearomatize's (arom.svg, dearom.svg), their paint written currentColor. The fit-to-view icon and the bars' scroll chevrons
+Dearomatize's (arom.svg, dearom.svg), their paint written currentColor; and the reaction arrow tool's
+(reaction-arrow-filled-bow.svg), as it is. The fit-to-view icon and the bars' scroll chevrons
 are Crux Sketch's own.
 
 Ketcher

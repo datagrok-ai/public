@@ -219,6 +219,7 @@ export const U2_KINDS: readonly U2KindDef[] = [
     {aliases: ['func input']}),
   input('func-call-input', 'function input', 'button', PICKER_STATE, ['open', 'pick']),
   input('rsa-input', 'rsa input', 'textbox', INPUT_STATE, ['type'], {aliases: ['key input']}),
+  input('space-input', 'space input', 'combobox', PICKER_STATE, ['open', 'pick'], {aliases: ['space picker']}),
   input('dynamic-input', 'dynamic input', undefined, INPUT_STATE, ['type', 'pick']),
   input('dart-input', 'dart input', undefined, INPUT_STATE, ['type'], {aliases: ['bridged input']}),
   def('input', 'readonly-field', 'read-only field', {nameFrom: ['label'],
@@ -345,6 +346,8 @@ export const U2_KINDS: readonly U2KindDef[] = [
   def('collection', 'func-call-history-browser', 'history browser',
     {aliases: ['func call history browser', 'run history'], state: ['items', 'busy', 'error'],
       items: {role: 'option', noun: 'item', gestures: ['select']}, gestures: ['select']}),
+  def('collection', 'space-browser', 'space browser', {aliases: ['open from space'], state: ['items', 'selection'],
+    items: {role: 'option', noun: 'item', gestures: ['select']}, gestures: ['type', 'select']}),
 
   // --- navigation -----------------------------------------------------------------------------------
   def('navigation', 'breadcrumbs', 'breadcrumbs', {aliases: ['breadcrumb bar'], role: 'navigation',

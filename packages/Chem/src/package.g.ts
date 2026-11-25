@@ -105,6 +105,62 @@ export async function rdKitReactionRenderer() : Promise<any> {
   return await PackageFunctions.rdKitReactionRenderer();
 }
 
+//description: Whether the Reaction panel shows: Crux draws reactions (Crux mode)
+//input: string reaction 
+//output: bool result
+export function reactionPanelShown(reaction: string) : boolean {
+  return PackageFunctions.reactionPanelShown(reaction);
+}
+
+//name: Reaction
+//description: The reaction drawn large, with a full-screen view, and a route's steps
+//input: string reaction { semType: ChemicalReaction }
+//output: widget result
+//meta.role: widgets,panel
+//meta.domain: chem
+//condition: Chem:reactionPanelShown(reaction)
+export function reactionPanel(reaction: string) : any {
+  return PackageFunctions.reactionPanel(reaction);
+}
+
+//description: Whether the Checks section shows for a molecule: Crux mode, and a flag to show
+//input: string molecule 
+//output: bool result
+export function moleculeChecksShown(molecule: string) : boolean {
+  return PackageFunctions.moleculeChecksShown(molecule);
+}
+
+//name: moleculeChecks
+//description: What this molecule breaks downstream, in Crux mode: what Chem cannot read, what changes meaning
+//input: semantic_value molecule { semType: Molecule }
+//output: widget result
+//meta.role: widgets,panel
+//meta.domain: chem
+//friendlyName: Checks
+//condition: Chem:moleculeChecksShown(molecule)
+export function moleculeChecksPanel(molecule: DG.SemanticValue) : any {
+  return PackageFunctions.moleculeChecksPanel(molecule);
+}
+
+//description: Whether the Checks section shows for a reaction: Crux mode, and a flag to show
+//input: string reaction 
+//output: bool result
+export function reactionChecksShown(reaction: string) : boolean {
+  return PackageFunctions.reactionChecksShown(reaction);
+}
+
+//name: reactionChecks
+//description: What this reaction or template breaks downstream, in Crux mode: what Chem cannot read, what a run gets wrong
+//input: semantic_value reaction { semType: ChemicalReaction }
+//output: widget result
+//meta.role: widgets,panel
+//meta.domain: chem
+//friendlyName: Checks
+//condition: Chem:reactionChecksShown(reaction)
+export function reactionChecksPanel(reaction: DG.SemanticValue) : any {
+  return PackageFunctions.reactionChecksPanel(reaction);
+}
+
 //name: chemMixtureRenderer
 //output: grid_cell_renderer result
 //meta.cellType: ChemicalMixture
@@ -913,16 +969,17 @@ export async function convertNotation(data: DG.DataFrame, molecules: DG.Column<a
 }
 
 //name: Flatten Molecules
-//description: Removes stereochemistry from molecules and adds a column with flat SMILES.
+//description: Removes stereocenters (and optionally the E/Z of double bonds) and adds a column with flat SMILES.
 //input: dataframe data 
 //input: column molecules { semType: Molecule }
 //input: bool overwrite = false 
 //input: bool join = true 
+//input: bool flattenDoubleBonds = false { caption: Flatten E/Z; description: Also remove the E/Z (cis/trans) configuration of double bonds }
 //output: column result
 //meta.role: transform
 //top-menu: Chem | Transform | Flatten Molecules...
-export async function flattenMolecules(data: DG.DataFrame, molecules: DG.Column<any>, overwrite: boolean, join: boolean) : Promise<any> {
-  return await PackageFunctions.flattenMolecules(data, molecules, overwrite, join);
+export async function flattenMolecules(data: DG.DataFrame, molecules: DG.Column<any>, overwrite: boolean, join: boolean, flattenDoubleBonds: boolean) : Promise<any> {
+  return await PackageFunctions.flattenMolecules(data, molecules, overwrite, join, flattenDoubleBonds);
 }
 
 //name: Convert Notation...
@@ -944,6 +1001,14 @@ export function convertMixtureToSmiles(col: DG.Column) : void {
 //meta.role: cellEditor
 export async function editMoleculeCell(cell: any) : Promise<void> {
   await PackageFunctions.editMoleculeCell(cell);
+}
+
+//description: ChemicalReaction
+//input: grid_cell cell 
+//meta.role: cellEditor
+//meta.columnTags: quality=ChemicalReaction
+export async function editReactionCell(cell: any) : Promise<void> {
+  await PackageFunctions.editReactionCell(cell);
 }
 
 //name: OpenChemLib
@@ -1098,6 +1163,11 @@ export function isSmarts(s: string) : boolean {
 }
 
 //input: column col 
+export function detectCdxmlReactions(col: DG.Column) : void {
+  PackageFunctions.detectCdxmlReactions(col);
+}
+
+//input: column col 
 //input: int min 
 export function detectSmiles(col: DG.Column, min: number) : void {
   PackageFunctions.detectSmiles(col, min);
@@ -1162,6 +1232,16 @@ export async function addChemPropertiesColumns(table: DG.DataFrame, molecules: D
 //meta.vectorFunc: true
 export async function getProperties(molecules: DG.Column, selected?: string[]) : Promise<any> {
   return await PackageFunctions.getProperties(molecules, selected);
+}
+
+//name: Molecular Property
+//description: Computes one chemical property for a column of molecules so that the platform can sort and order them by it.
+//input: column molecules { semType: Molecule }
+//input: string property { choices: ["MW","HBA","HBD","LogP","LogS","PSA","Rotatable bonds","Stereo centers","Molecule charge"] }
+//output: column result
+//meta.role: categoryOrderer
+export async function molecularProperty(molecules: DG.Column, property: string) : Promise<any> {
+  return await PackageFunctions.molecularProperty(molecules, property);
 }
 
 //name: Toxicity Risks
@@ -1391,10 +1471,19 @@ export function getMolecularFormula(molecule: string) : string {
   return PackageFunctions.getMolecularFormula(molecule);
 }
 
+//description: Checks a molecule (SMILES, SMARTS or molfile): the error messages of the chemical engine on reading it, each line starting with its time, or an empty string when it reads without an error
 //input: string s 
 //output: object result
 export function validateMolecule(s: string) : any {
   return PackageFunctions.validateMolecule(s);
+}
+
+//description: Checks every molecule of a column (SMILES, SMARTS or molfiles) in background workers: one cell per row with the error messages of the chemical engine on reading that molecule (those of validateMolecule without their times), empty for a molecule that reads without an error. As a formula in Add New Column it is called once for the whole column
+//input: column<string> molecules { semType: Molecule }
+//output: column result
+//meta.vectorFunc: true
+export async function validateMolecules(molecules: DG.Column) : Promise<any> {
+  return await PackageFunctions.validateMolecules(molecules);
 }
 
 //name: Train Chemprop
@@ -1427,7 +1516,8 @@ export function validateMolecule(s: string) : any {
 //output: dynamic model
 //meta.mlname: Chemprop
 //meta.mlrole: train
-export async function trainChemprop(df: DG.DataFrame, predictColumn: DG.Column, dataset_type: string, metric: string, multiclass_num_classes: number, num_folds: number, data_seed: number, split_sizes: any, split_type: string, activation: string, atom_messages: boolean, message_bias: boolean, ensemble_size: number, message_hidden_dim: number, depth: number, dropout: number, ffn_hidden_dim: number, ffn_num_layers: number, epochs: number, batch_size: number, warmup_epochs: number, init_lr: number, max_lr: number, final_lr: number, no_descriptor_scaling: boolean) : Promise<any> {
+//meta.mlsemtypes: Molecule
+export async function trainChemprop(df: DG.DataFrame, predictColumn: DG.Column, dataset_type: string, metric: string, multiclass_num_classes: number, num_folds: number, data_seed: number, split_sizes: any, split_type: string, activation: string, atom_messages: boolean, message_bias: boolean, ensemble_size: number, message_hidden_dim: number, depth: number, dropout: number, ffn_hidden_dim: number, ffn_num_layers: number, epochs: number, batch_size: number, warmup_epochs: number, init_lr: number, max_lr: number, final_lr: number, no_descriptor_scaling: boolean) : Promise<Uint8Array> {
   return await PackageFunctions.trainChemprop(df, predictColumn, dataset_type, metric, multiclass_num_classes, num_folds, data_seed, split_sizes, split_type, activation, atom_messages, message_bias, ensemble_size, message_hidden_dim, depth, dropout, ffn_hidden_dim, ffn_num_layers, epochs, batch_size, warmup_epochs, init_lr, max_lr, final_lr, no_descriptor_scaling);
 }
 
@@ -1623,9 +1713,31 @@ export async function mpoProfilesApp(path?: string) : Promise<any> {
 //description: Forward-reaction library enumeration over building blocks and SMARTS templates.
 //output: view result
 //meta.browsePath: Chem | Reactions
+//meta.icon: images/reaction-enumerator.png
 //meta.role: app
 export async function reactionEnumeratorApp() : Promise<any> {
   return await PackageFunctions.reactionEnumeratorApp();
+}
+
+//name: Reaction Sketcher
+//description: Draws, edits and exports reactions and multi-step routes
+//output: view result
+//meta.browsePath: Chem | Reactions
+//meta.icon: images/reaction-sketcher.png
+//meta.role: app
+export async function reactionsApp() : Promise<any> {
+  return await PackageFunctions.reactionsApp();
+}
+
+//name: Sketcher
+//description: Draws a molecule or a query in the Crux sketcher; the page address is a link to the drawing
+//input: string smiles { optional: true; description:  }
+//output: view result
+//meta.browsePath: Chem
+//meta.icon: images/sketcher.png
+//meta.role: app
+export async function sketcherApp(smiles?: string) : Promise<any> {
+  return await PackageFunctions.sketcherApp(smiles);
 }
 
 //input: dynamic treeNode 
@@ -1688,6 +1800,7 @@ export async function twoComponentReactionTopMenu() : Promise<void> {
 //output: view result
 //meta.browsePath: Chem | Reactions
 //meta.role: app
+//meta.icon: images/transformation-reactions.png
 export async function transformationReactionsApp(_path?: string) : Promise<any> {
   return await PackageFunctions.transformationReactionsApp(_path);
 }
@@ -1698,6 +1811,7 @@ export async function transformationReactionsApp(_path?: string) : Promise<any> 
 //output: view result
 //meta.browsePath: Chem | Reactions
 //meta.role: app
+//meta.icon: images/two-component-reactions.png
 export async function twoComponentReactionsApp(_path?: string) : Promise<any> {
   return await PackageFunctions.twoComponentReactionsApp(_path);
 }

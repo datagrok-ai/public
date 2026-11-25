@@ -20,7 +20,7 @@ import '../bindings/common/kinds.js';
 import '../bindings/platform/elements.js';
 import {noSpaceOnServer} from '../bindings/platform/steps.js';
 import {el} from '../src/runtime/args.js';
-import {clear, hover, keysOf, press, pressIn, readExpanded, select, setExpanded, typeInto, withKeys} from '../src/runtime/gestures.js';
+import {clear, click, hover, keysOf, press, pressIn, readExpanded, select, setExpanded, typeInto, withKeys} from '../src/runtime/gestures.js';
 import {atFeatureEnd, feature, stacksLogged, takeErrors, watchErrors} from '../src/runtime/harness.js';
 import {expectState, expectText} from '../src/runtime/assertions.js';
 import {whileExpectedToFail} from '../src/runtime/patience.js';
@@ -320,6 +320,68 @@ scenario('tooltip text assertions ignore hidden content retained between hovers'
   await assert.rejects(whileExpectedToFail(() => expectText(page!, el('tooltip'), 'Pearson R', {negate: true})));
   await page!.locator('.d4-tooltip').evaluate((e) => e.remove());
   await expectText(page!, el('tooltip'), 'Pearson R', {negate: true});
+});
+
+/* The Dart tooltip of an element with links in it (a browse tree node's entity card): it comes up a moment after the
+   pointer rests on its owner, lets the pointer through while the pointer is on the owner, takes it in once the pointer
+   leaves, and goes down 300 ms after the pointer is off both. projects-move failed on one over a gallery link. */
+scenario('a tooltip with links over the element, which takes the pointer once it is off its owner, is left before the click', async () => {
+  await page!.setContent(`
+    <div id="owner" style="position:absolute;left:10px;top:10px;width:100px;height:20px">BDDMoveA</div>
+    <button style="position:absolute;left:150px;top:60px;width:120px;height:24px">Target</button>
+    <div class="d4-tooltip" style="display:none;position:absolute;left:10px;top:35px;width:220px;height:60px;pointer-events:none;background:#fff">
+      <span class="d4-link-label">39 seconds ago</span></div>`);
+  // a string, so that the test's transpiler leaves no helper of its own in what the page runs
+  await page!.evaluate(`(() => {
+    const owner = document.getElementById('owner');
+    const tip = document.querySelector('.d4-tooltip');
+    // over an element as Dart's AppEvents.isMouseOver says: the last mouse move inside its box
+    let last = {x: -1, y: -1};
+    document.addEventListener('mousemove', (e) => last = {x: e.clientX, y: e.clientY});
+    const over = (e) => {
+      const r = e.getBoundingClientRect();
+      return last.x >= r.left && last.x <= r.right && last.y >= r.top && last.y <= r.bottom;
+    };
+    const hideUnlessOver = () => setTimeout(() => {
+      if (!over(tip) && !over(owner)) {
+        tip.style.display = 'none';
+        tip.style.pointerEvents = 'none';
+      }
+    }, 300);
+    let timer;
+    owner.addEventListener('mouseenter', () => timer = setTimeout(() => tip.style.display = 'block', 50));
+    owner.addEventListener('mouseleave', () => {
+      clearTimeout(timer);
+      if (tip.style.display !== 'none') {
+        tip.style.pointerEvents = 'auto';
+        hideUnlessOver();
+      }
+    });
+    tip.addEventListener('mouseleave', hideUnlessOver);
+    document.querySelector('button').addEventListener('click', () => window.__clicked = true);
+  })()`);
+  // from elsewhere first: the pointer an earlier scenario left on that spot enters nothing
+  await page!.mouse.move(400, 300);
+  await page!.mouse.move(60, 20);
+  await page!.locator('.d4-tooltip').waitFor({state: 'visible', timeout: 4000});
+  page!.setDefaultTimeout(4000);
+  try {
+    await click(page!, el('Target button'));
+  }
+  finally {
+    page!.setDefaultTimeout(30000);
+  }
+  assert.equal(await page!.evaluate(() => (window as any).__clicked), true);
+});
+
+scenario('an element in a tooltip is clicked at once: the tooltip it is in is not over it', async () => {
+  await page!.setContent(`<div class="d4-tooltip" style="position:absolute;left:10px;top:10px;width:200px;height:80px;pointer-events:auto">
+    <div name="legend-item" aria-label="Black" style="position:absolute;left:20px;top:20px;width:80px;height:20px">Black</div></div>`);
+  await page!.locator('[name="legend-item"]').evaluate((e) => e.addEventListener('click', () => (window as any).__clicked = true));
+  const start = Date.now();
+  await click(page!, el('"Black" legend item in tooltip'));
+  assert.equal(await page!.evaluate(() => (window as any).__clicked), true);
+  assert.ok(Date.now() - start < 3000, `the click took ${Date.now() - start} ms: it waited for the tooltip it is in to go`);
 });
 
 scenario('a hover enters a row wider than the panel that clips it', async () => {

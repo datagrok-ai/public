@@ -1,9 +1,3 @@
-.grokky-content-log-notice {
-  color: var(--grey-5);
-  font-size: 11px;
-  margin-top: 4px;
-}
-
 .ai-panel-question {
   font-style: italic;
 }
@@ -37,7 +31,6 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* flexbox `gap` is Chrome 84+ — spacing is done with sibling margins so it works in Chrome 50 too */
 .ai-execute-plan > * + * {
   margin-top: 10px;
 }
@@ -56,6 +49,7 @@
 }
 
 .d4-ai-generation-panel {
+  --grokky-tint: color-mix(in srgb, var(--blue-1) 14%, var(--white));
   height: 100%;
   padding: 8px;
   width: 100%;
@@ -67,11 +61,29 @@
   margin-top: 8px;
 }
 
+/* The chat keeps a reading width however wide the panel is. */
+.d4-ai-generation-panel:not(.d4-ai-raw-mode) .d4-ai-panel-output-area > *,
+.d4-ai-generation-panel:not(.d4-ai-raw-mode) > .grokky-status-bar,
+.d4-ai-generation-panel:not(.d4-ai-raw-mode) > .d4-ai-panel-input-area {
+  width: 100%;
+  max-width: 760px;
+  align-self: center;
+}
+
 .d4-ai-generation-panel .d4-ai-panel-input-area {
   display: flex;
   flex-direction: column;
-  padding: 6px;
-  padding-bottom: 16px;
+  box-sizing: border-box;
+  margin-bottom: 8px;
+  padding: 8px 10px 6px;
+  border: 1px solid var(--grey-2);
+  border-radius: 12px;
+  background: var(--white);
+  box-shadow: 0 1px 4px var(--steel-1);
+}
+
+.d4-ai-generation-panel .d4-ai-panel-input-area:focus-within {
+  border-color: var(--blue-1);
 }
 
 .d4-ai-generation-panel .d4-ai-panel-input-area > * + * {
@@ -109,15 +121,13 @@
 .d4-ai-generation-panel textarea.d4-ai-input-textarea {
   resize: none;
   flex-grow: 1;
-  min-height: 80px;
+  min-height: 60px;
   max-height: 200px;
-  font-size: 14px;
-  border: 1px solid var(--grey-1);
+  font: inherit;
+  border: none;
   outline: none;
-  border-radius: 8px;
-  box-shadow: 0px 0px 2px var(--steel-1);
-  background: var(--grey-1);
-  padding: 4px;
+  background: transparent;
+  padding: 0;
 }
 
 .d4-ai-generation-panel .d4-ai-panel-output-area {
@@ -134,6 +144,16 @@
   margin-top: auto;
 }
 
+.d4-ai-generation-panel:not(.d4-ai-inline-mode) .d4-ai-panel-output-area {
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 12px), transparent);
+}
+
+.d4-ai-generation-panel:not(.d4-ai-inline-mode) .d4-ai-panel-output-area::after {
+  content: '';
+  flex: none;
+  height: 8px;
+}
+
 .d4-ai-generation-panel.d4-ai-inline-mode {
   height: auto;
 }
@@ -142,6 +162,10 @@
   flex: none;
   min-height: 120px;
   overflow: visible;
+}
+
+.d4-ai-generation-panel.d4-ai-inline-mode .d4-ai-panel-output-area > * {
+  max-width: none;
 }
 
 .d4-ai-generation-panel.d4-ai-inline-mode .d4-ai-panel-output-area > *:first-child {
@@ -162,7 +186,6 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding-left: 35px;
 }
 
 .d4-ai-handled-natively-icon {
@@ -172,12 +195,12 @@
 }
 
 .d4-ai-generation-panel .d4-ai-user-prompt-container .d4-ai-user-prompt-divtext {
-  width: 100%;
-  border-radius: 8px;
-  background-color: var(--steel-1);
-  text-align: right;
-  padding: 4px;
+  max-width: 80%;
+  border-radius: 16px;
+  background-color: var(--grokky-tint);
+  padding: 6px 14px;
   margin: 4px 0;
+  overflow-wrap: anywhere;
   -webkit-user-select: text !important;
   user-select: text !important;
 }
@@ -186,23 +209,56 @@
   width: 100%;
   display: flex;
   justify-content: flex-start;
-  padding-right: 20px;
-  background: aliceblue;
-  border-radius: 8px;
-  padding: 6px;
+  padding-top: 6px;
   margin-bottom: 4px;
-  padding-bottom: 0px;
   -webkit-user-select: text;
   user-select: text;
 }
 
 .d4-ai-generation-panel .d4-ai-assistant-response-container pre {
-  background: aliceblue;
-  -webkit-filter: drop-shadow(0px 0px 4px var(--steel-2));
-  filter: drop-shadow(0px 0px 4px var(--steel-2));
+  background: var(--grey-1);
   padding: 6px;
   border-radius: 8px;
-  overflow: scroll;
+  overflow: auto;
+}
+
+.grokky-code-card {
+  margin: 4px 0 10px;
+  border: 1px solid var(--grey-2);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.grokky-code-head {
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 10px;
+  border-bottom: 1px solid var(--grey-2);
+  background: var(--grey-1);
+  font-size: 11px;
+  color: var(--grey-5);
+}
+
+.grokky-code-copy {
+  align-items: center;
+  cursor: pointer;
+}
+
+.grokky-code-copy > i {
+  margin-right: 5px;
+}
+
+.grokky-code-copy:hover {
+  color: var(--blue-1);
+}
+
+.grokky-code-card pre,
+.d4-ai-generation-panel .d4-ai-assistant-response-container .grokky-code-card pre {
+  margin: 0 !important;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 0;
+  background: var(--white);
 }
 
 .d4-ai-generation-panel .d4-ai-assistant-response-container pre::-webkit-scrollbar {
@@ -242,6 +298,10 @@
 .d4-ai-generation-panel .d4-ai-panel-controls-container {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+}
+
+.d4-ai-generation-panel .d4-ai-panel-run-controls {
   align-items: center;
 }
 
@@ -290,12 +350,10 @@
 .d4-ai-response-block-collapsed > .d4-ai-messages-accordion-pane {
   max-height: 2.2em;
   overflow: hidden;
-  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent);
   mask-image: linear-gradient(to bottom, #000 55%, transparent);
 }
 
-.d4-ai-response-block-collapsed .d4-ai-panel-feedback-div,
-.d4-ai-response-block-collapsed .d4-ai-copy-code-button {
+.d4-ai-response-block-collapsed .d4-ai-panel-feedback-div {
   display: none !important;
 }
 
@@ -311,38 +369,12 @@
   pointer-events: auto;
 }
 
+.d4-ai-generation-panel .d4-ai-panel-feedback-div i:hover {
+  color: var(--blue-1);
+}
+
 .d4-ai-generation-panel .d4-ai-panel-feedback-div > * + * {
   margin-left: 8px;
-}
-
-.d4-ai-copy-code-button {
-  position: absolute;
-  top: 1px;
-  right: 1px;
-  color: var(--blue-1);
-  opacity: 0.6;
-  cursor: pointer;
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.3s, opacity 0.3s, color 0.3s;
-  display: none;
-}
-
-.d4-ai-copy-code-button:hover {
-  opacity: 1.0;
-}
-
-.d4-markup:hover .d4-ai-copy-code-button {
-  display: flex;
-}
-
-.d4-ai-copy-code-button.d4-ai-copy-code-button-copied {
-  background-color: var(--green-2);
-  color: var(--steel-5);
-  opacity: 0.3;
 }
 
 .grokky-entity-cards {
@@ -367,8 +399,9 @@
 }
 
 .d4-ai-generation-panel.d4-ai-raw-mode .d4-ai-panel-input-area {
-  background: #111;
-  border-top: 1px solid #333;
+  background: #0a0a0a;
+  border-color: #333;
+  box-shadow: none;
 }
 
 .d4-ai-generation-panel.d4-ai-raw-mode textarea.d4-ai-input-textarea {
@@ -403,7 +436,6 @@
 .d4-ai-generation-panel.d4-ai-raw-mode .d4-ai-assistant-response-container pre {
   background: transparent;
   color: #e0e0e0;
-  -webkit-filter: none;
   filter: none;
   border: none;
   padding: 2px 0;
@@ -416,6 +448,7 @@
 }
 
 .d4-ai-generation-panel.d4-ai-raw-mode .d4-ai-user-prompt-container .d4-ai-user-prompt-divtext {
+  max-width: none;
   background: transparent;
   color: #7cb8ff;
   text-align: left;
@@ -445,9 +478,54 @@
   border-radius: 3px;
 }
 
-/* Loader spinner + (voice mode only) the "Say "cancel" to stop" caption beside it. */
+.d4-ai-generation-panel > .grokky-status-bar,
+.grokky-status-bar + .d4-ai-panel-input-area {
+  margin-top: 4px;
+}
+
+.grokky-status-bar {
+  height: 22px;
+  flex: none;
+  padding: 0 8px;
+  overflow: hidden;
+  font-size: 12px;
+  color: var(--text-color-light);
+}
+
 .d4-ai-loader {
   align-items: center;
+  height: 100%;
+  min-width: 0;
+}
+
+.grokky-status-bar .grok-loader {
+  width: 36px;
+  height: 10px;
+  top: 0;
+  flex-shrink: 0;
+}
+
+.grokky-status-label {
+  margin-left: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.grokky-status-error {
+  line-height: 22px;
+  color: var(--failure);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.grokky-status-in {
+  animation: grokky-status-in .25s ease-out;
+}
+
+@keyframes grokky-status-in {
+  from { transform: translateY(100%); opacity: 0; }
 }
 
 .d4-ai-voice-cancel-hint {
@@ -466,10 +544,6 @@
   font-size: 12px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   padding: 3px 0;
-}
-
-.grokky-stream .d4-ai-copy-code-button {
-  display: flex;
 }
 
 .grokky-search-wand {
@@ -524,13 +598,51 @@
   border: 1px solid var(--grey-3);
   border-radius: 14px;
   background: var(--grey-1);
-  -webkit-transition: background 0.12s, border-color 0.12s;
   transition: background 0.12s, border-color 0.12s;
 }
 
 .grokky-choice-card:hover {
   border-color: var(--blue-1);
   background: var(--grey-2);
+}
+
+.grokky-history-icon {
+  margin: 0 6px;
+}
+
+.grokky-history-delete {
+  visibility: hidden;
+  color: var(--red-3);
+}
+
+.d4-menu-item:hover > .grokky-history-delete {
+  visibility: visible;
+}
+
+.grokky-history-deleted > .grokky-history-delete,
+.d4-menu-item:not(.grokky-history-deleted) > .grokky-history-undo {
+  display: none;
+}
+
+.grokky-history-deleted > .d4-menu-item-label {
+  color: var(--grey-4);
+  text-decoration: line-through;
+}
+
+.grokky-history-deleted::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--blue-1);
+  transform-origin: left;
+  animation: grokky-history-countdown 5s linear forwards;
+}
+
+@keyframes grokky-history-countdown {
+  to { transform: scaleX(0); }
 }
 
 .grokky-system-message {
@@ -557,6 +669,9 @@
 }
 
 .grokky-strip {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
   padding: 8px 12px;
   border-left: 3px solid;
   border-bottom: 1px solid var(--grey-2);
@@ -566,6 +681,64 @@
   border-left-color: var(--red-3);
   background: var(--red-1);
   color: var(--red-4);
+}
+
+.grokky-strip-success {
+  border-left-color: var(--green-2);
+  background: var(--green-1);
+  color: var(--green-3);
+}
+
+.grokky-strip-muted {
+  border-left-color: var(--grey-3);
+  background: var(--grey-1);
+  color: var(--grey-5);
+}
+
+.grokky-strip-question {
+  border-left-color: var(--blue-1);
+  background: var(--steel-1);
+  font-weight: 500;
+}
+
+.grokky-question-card {
+  width: 100%;
+  max-width: 520px;
+}
+
+.grokky-question-card > .grokky-strip:last-child {
+  border-bottom: none;
+}
+
+.grokky-question-card .grokky-choice-row {
+  margin-bottom: -8px;
+}
+
+.grokky-question-card .grokky-choice-card {
+  background: var(--white);
+}
+
+.grokky-question-card .grokky-choice-card.grokky-choice-selected {
+  border-color: var(--blue-1);
+  background: var(--grokky-tint);
+  color: var(--blue-1);
+}
+
+.grokky-question-footer {
+  justify-content: flex-end;
+  padding: 6px 12px;
+  border-top: 1px solid var(--grey-1);
+}
+
+.grokky-strip-answer {
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
+.grokky-strip-answer > i {
+  color: inherit;
+  pointer-events: none;
 }
 
 .grokky-unverified-warning {
@@ -590,17 +763,26 @@
 .grokky-exec-icon.grokky-exec-error { color: var(--red-3); }
 
 .grokky-exec-code {
-  margin: 0 0 6px;
-  padding: 6px 8px;
-  border: 1px solid var(--steel-2);
-  border-radius: 6px;
-  background: transparent;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 11px;
   white-space: pre-wrap;
-  overflow-x: auto;
 }
 
-.grokky-hidden {
+.grokky-hidden,
+.grokky-code-card.grokky-hidden {
   display: none;
+}
+
+.d4-ai-generation-panel .d4-ai-panel-controls-container i.grokky-send,
+.d4-ai-generation-panel .d4-ai-panel-controls-container i.grokky-send:hover {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background-color: var(--blue-1);
+  color: var(--white);
+  font-size: 10px;
+}
+
+.d4-ai-generation-panel .d4-ai-panel-controls-container i.grokky-send.fa-stop {
+  background-color: var(--red-3);
 }

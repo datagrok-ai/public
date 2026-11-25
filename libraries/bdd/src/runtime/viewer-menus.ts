@@ -54,7 +54,7 @@ export async function openContextMenuAt(page: Page, x: number, y: number): Promi
  * right-click reached, and a click that missed the element is aimed again. */
 export async function openContextMenuOf(page: Page, target: ElementRef, area?: string): Promise<Locator> {
   for (let attempt = 1; ; attempt++) {
-    const {x, y, token} = await onReachable(page, target, (el, [a, cap]) => {
+    const {x, y, token, area: lit} = await onReachable(page, target, (el, [a, cap]) => {
       const w = window as any;
       w.__bddMenuHit = undefined;
       w.__bddMenuReached = 'no contextmenu event';
@@ -66,6 +66,8 @@ export async function openContextMenuOf(page: Page, target: ElementRef, area?: s
       }, {capture: true, once: true});
       return w.__bdd.menuPoint(el, a, cap);
     }, [area ?? null, MENU_SHOWN_MS()] as [string | null, number]);
+    if (lit)
+      guide.locatedArea(page, lit);
     const menu = await rightClickArmed(page, x, y, token);
     if (attempt === 3 || await page.evaluate(() => (window as any).__bddMenuHit !== false)) {
       await page.evaluate((n) => (window as any).__bddMenuReached += ` (try ${n})`, attempt).catch(() => undefined);
@@ -97,11 +99,15 @@ export function menuItem(page: Page, label: string): Locator {
   return menuItems(page, label).first();
 }
 
-/** What the open menus show, by item: its label, or the caption of an element item (a property
- * editor the menu embeds — the PC plot's column picker under "Columns" — carries it as `data-source`). */
+/** What the open menus show, by item in the order on screen (a menu may order its items by CSS): its
+ * label, or the caption of an element item (a property editor the menu embeds — the PC plot's column
+ * picker under "Columns" — carries it as `data-source`). */
 async function visibleMenuLabels(page: Page, within?: Locator): Promise<string> {
   const items = (within ? within.locator(CHILDREN) : page.locator(POPUP)).locator(ITEM).filter({visible: true});
-  const labels = await items.evaluateAll((els, own) => els.map((e) => e.querySelector(own)?.textContent ?? e.getAttribute('data-source') ?? ''), OWN_LABEL);
+  const labels = await items.evaluateAll((els, own) => els
+    .map((e) => ({box: e.getBoundingClientRect(), label: e.querySelector(own)?.textContent ?? e.getAttribute('data-source') ?? ''}))
+    .sort((a, b) => a.box.top - b.box.top || a.box.left - b.box.left)
+    .map((e) => e.label), OWN_LABEL);
   return labels.map((t) => t.trim()).filter(Boolean).join(' | ');
 }
 
@@ -109,15 +115,20 @@ async function visibleMenuLabels(page: Page, within?: Locator): Promise<string> 
  * already resting on the item (a hover before the menu was reopened) would move nowhere. When
  * several items share the label, each is tried until [wanted] shows up among its children — so
  * "HEIGHT > Chart type" is the series' group, not the chart-wide "Chart Type" beside it. Returns
- * the group item, the scope of the next segment. */
+ * the group item, the scope of the next segment. A guide films two stops on the group: as the
+ * pointer sets off for it, and lit with its submenu open — the picture its arrival cuts to. */
 async function openGroup(page: Page, label: string, wanted: string | undefined, within?: Locator): Promise<Locator> {
   const candidates = menuItems(page, label, within);
   await candidates.filter({visible: true}).first().waitFor({state: 'visible', timeout: 5000});
   const count = await candidates.count();
-  // a group already open, or one the menu renders inline, needs no hover
+  // a group already open, or one the menu renders inline, needs no hover; a guide's pointer goes onto it all the
+  // same, so the video walks every group of the path
   for (let i = 0; wanted !== undefined && i < count; i++) {
     if (await menuShows(page, wanted, candidates.nth(i))) {
-      await guide.hop(page, candidates.nth(i));
+      await guide.hop(page, candidates.nth(i), 'menu');
+      const box = guide.filming(page) ? await candidates.nth(i).boundingBox() : null;
+      if (box)
+        await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
       return candidates.nth(i);
     }
   }
@@ -128,7 +139,7 @@ async function openGroup(page: Page, label: string, wanted: string | undefined, 
     const box = await item.boundingBox();
     if (!box)
       continue;
-    await guide.hop(page, item);
+    await guide.hop(page, item, 'menu');
     const cy = box.y + box.height / 2;
     await page.mouse.move(Math.max(0, box.x - 8), cy);
     await page.mouse.move(box.x + box.width * 0.75, cy);
@@ -139,11 +150,14 @@ async function openGroup(page: Page, label: string, wanted: string | undefined, 
       return item;
     const opened = await expect.poll(() => menuShows(page, wanted, item), {timeout: pollMs(2000)}).toBe(true).then(() => true, () => false);
     if (opened) {
+      await guide.hop(page, item, 'menu');
       // step into the flyout along the group's own row: the menu hides a submenu when the pointer
-      // leaves the group item at a steep angle, which would take the item away mid-click
+      // leaves the group item at a steep angle, which would take the item away mid-click (a guide
+      // keeps the corner, so the video goes the same way)
       const target = await menuLabelsMatching(page, wanted, item).filter({visible: true}).first().boundingBox();
       if (target != null) {
         await page.mouse.move(target.x + 4, cy);
+        await guide.waypoint(page);
         await page.mouse.move(target.x + 4, target.y + target.height / 2);
       }
       return item;
@@ -173,7 +187,10 @@ export async function pickMenuPath(page: Page, path: string): Promise<void> {
   for (let i = 0; i < segments.length; i++) {
     const last = i === segments.length - 1;
     if (!last) {
-      group = await openGroup(page, segments[i], segments[i + 1], group).catch(async () => {
+      group = await openGroup(page, segments[i], segments[i + 1], group).catch(async (e) => {
+        // the group is there and opened without the next segment: that, not a missing group, is the failure
+        if (await menuShows(page, segments[i], group) && /did not show/.test(String(e?.message)))
+          throw new Error(`${e.message}${await reached()}`);
         throw new Error(`no "${segments[i]}" in the menu; it shows: ${await visibleMenuLabels(page, group)}${await reached()}`);
       });
       continue;
@@ -184,7 +201,8 @@ export async function pickMenuPath(page: Page, path: string): Promise<void> {
     });
     const item = label.locator(MENU_ITEM);
     const leaf = await item.count() > 0 ? item : label;
-    await guide.hop(page, leaf);
+    // a guide shows the leaf lit under the pointer before the press
+    await guide.hopLeaf(page, leaf);
     await leaf.click();
   }
   await page.evaluate(() => delete (window as any).__bddMenuReached).catch(() => undefined);

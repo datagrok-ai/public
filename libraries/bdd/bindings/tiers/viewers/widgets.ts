@@ -477,6 +477,26 @@ export const gridColumnWidth = When('the {string} column of the grid is {int} px
   }, [column, width] as [string, number]);
   await v.settleAll(page);
 }, {tier: 'api', description: 'set-up a filmed guide leaves out: the width of the column in the current view\'s grid'});
+/** The header and the cells of a long sequence column show a window of its positions, from the column's
+ * `.positionShift` tag (Bio's sequence-scrolling widget), named by its position names or numbered from 1;
+ * a numbered column starts in the N-terminal flank, so a clip moves it to the scheme's first position. */
+export const headerStartsAt = When('the header of the {string} column starts at position {string}',
+  async (page: Page, column: string, position: string) => {
+    guide.silent(page);
+    await page.evaluate(([c, p]) => {
+      const col = (window as any).grok.shell.tv?.dataFrame.col(c);
+      if (!col)
+        throw new Error(`the table has no "${c}" column`);
+      const tag: string = col.getTag('.positionLabels') || col.getTag('.positionNames') || '';
+      const names = tag ? tag.split(',').map((n: string) => n.trim()) : [];
+      const index = names.length ? names.indexOf(p) : Number(p) - 1;
+      if (!(index >= 0))
+        throw new Error(`"${c}" has no position "${p}"; it starts: ${names.slice(0, 30).join(', ')}`);
+      col.setTag('.positionShift', String(index));
+      (window as any).grok.shell.tv.grid.invalidate();
+    }, [column, position] as [string, string]);
+    await v.settleAll(page);
+  }, {tier: 'api', description: 'set-up a filmed demo leaves out: the column\'s position window starts at the named position'});
 export const gridRowHeight = When('the rows of the grid are {int} px tall', async (page: Page, height: number) => {
   guide.silent(page);
   await page.evaluate((h) => { (window as any).grok.shell.tv.grid.props.rowHeight = h; }, height);
@@ -766,8 +786,9 @@ export const moveAcrossPlace = When('user moves the pointer across the remembere
  * in steps; a single jump drops nothing. */
 export const dragAreaOntoWidget = When('user drags the {string} area of {widget} onto the {string} area of {widget}',
   async (page: Page, from: string, source: ElementRef, to: string, target: ElementRef) => {
-    const a = v.centerOf(await v.hitArea(page, source, from, true));
+    // the drop target is read first: the area read last is the one a guide lights, and the press is on the source
     const b = v.centerOf(await v.hitArea(page, target, to, true));
+    const a = v.centerOf(await v.hitArea(page, source, from, true));
     await page.mouse.move(a.x, a.y);
     await page.mouse.down();
     for (let i = 1; i <= 10; i++)

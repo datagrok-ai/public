@@ -280,6 +280,9 @@ kind('dock panel', {
   selector: '.panel-base',
   match: ['label', 'text'],
   labelSelector: '.panel-titlebar-text',
+  // the titlebar's ×: a panel docked into the shell (Batch Edit, the Ctrl+L suggestions) is no view, so closing every
+  // view leaves it open
+  parts: {'close icon': '.panel-titlebar-button-close[name="Close"]'},
   description: 'a panel of the dock manager by the title its titlebar (or its tab handle) shows — "Activity cliffs"',
 });
 kind('floating panel', {

@@ -24,3 +24,43 @@
   padding: 12px;
   color: var(--red-3);
 }
+
+/* Datagrok's look for Crux Sketch's dialogs, fields, buttons and tooltips (crux-sketch's host-look tokens): Datagrok's
+   colour variables where it has them, so its theme follows, with the stand's own values as fallbacks. */
+crux-sketch {
+  --crux-sketch-font: Roboto, "Roboto Local", sans-serif;
+  --crux-sketch-text: var(--text-color, #4d5261);
+  --crux-sketch-accent: var(--blue-1, #2083d5);
+  --crux-sketch-line: var(--grey-2, #dbdcdf);
+  --crux-sketch-corner: 0px;
+  --crux-sketch-shadow: 0 0 5px var(--grey-6, #4d5261);
+  --crux-sketch-backdrop: transparent;
+  --crux-sketch-field-border-width: 0 0 1px;
+  --crux-sketch-button-face: transparent;
+  --crux-sketch-button-line: transparent;
+  --crux-sketch-button-text: var(--blue-1, #2083d5);
+  --crux-sketch-button-case: uppercase;
+  --crux-sketch-button-weight: 700;
+  --crux-sketch-primary-face: transparent;
+  --crux-sketch-primary-text: var(--blue-1, #2083d5);
+  --crux-sketch-tip-face: var(--beige-1, #fdffe5);
+  --crux-sketch-tip-text: var(--warm-grey-4, #4a4a49);
+  --crux-sketch-tip-line: var(--beige-2, #e4e6ce);
+  --crux-sketch-key-font: Roboto, "Roboto Local", sans-serif;
+  /* Datagrok's dialog title (.d4-dialog-header: 18px, its weight unset); Datagrok has no variable for it */
+  --crux-sketch-title-size: 18px;
+  --crux-sketch-title-weight: 400;
+  /* Datagrok's form rows (.ui-input-label): the label right-aligned next to its field, light grey, 8px from it; the
+     sketcher's own menus keep their look (the owner, 2026-11-17) */
+  --crux-sketch-label-align: right;
+  --crux-sketch-label-text: var(--text-color-light, #9497a0);
+  --crux-sketch-label-gap: 8px;
+  /* a button in a dialog's body (Periodic table) as Datagrok's ui.button there; keyboard focus a thin accent ring */
+  --crux-sketch-inline-button-size: 10px;
+  --crux-sketch-focus-ring: 1px solid var(--blue-1, #2083d5);
+  --crux-sketch-focus-offset: 2px;
+  /* a focused field: no box, its underline turns accent (Datagrok's .ui-input-editor:focus); a disabled one's face */
+  --crux-sketch-field-focus-ring: none;
+  --crux-sketch-field-focus-line: var(--blue-1, #2083d5);
+  --crux-sketch-field-disabled-face: #fafafa;
+}

@@ -25,12 +25,14 @@ import {newUsersSearch, registerDGUserHandler} from './dg-db';
 import {merge} from 'rxjs';
 import {HelpObjectHandler} from './search/help-entity';
 import {SpotlightWidget} from './spotlight/spotlight-widget';
+import {showFocusedPreview} from './spotlight/preview-host';
 import {DBExplorerEditor} from '@datagrok-libraries/db-explorer/src/editor';
 import {setupDBQueryCellHandler, setupGlobalDBExplorer} from './db-explorer';
 import {runEnrichmentFromConfig} from './enrichment';
 import {FilterBuilderFilter} from './filter/filter-builder-filter';
 import {ChatInputWidget} from './widgets/chat-input';
 import {domains} from '@datagrok-libraries/ems/src/dg';
+import {spaceSaveRowFor} from '@datagrok-libraries/u2/dg';
 // every sheet the domain stack paints with, in one import
 import '@datagrok-libraries/ems/src/dg/styles.js';
 export * from './package.g';
@@ -153,6 +155,17 @@ export class PackageFunctions {
     return new SpotlightWidget();
   }
 
+  @grok.decorators.func({
+    description: 'Shows a widget below the home page\'s Spotlight, hiding the other widgets until the tab changes. ' +
+      'For Spotlight tabs that packages add (meta.role: spotlightTab).',
+  })
+  static showSpotlightPreview(
+    @grok.decorators.param({type: 'widget'}) content: DG.Widget,
+    @grok.decorators.param({options: {optional: true}}) title?: string,
+  ): void {
+    showFocusedPreview(content.root, title ?? undefined);
+  }
+
   @grok.decorators.dashboard({
     order: '6',
     name: 'Community',
@@ -248,6 +261,19 @@ export class PackageFunctions {
     @grok.decorators.param({options: {optional: true}}) sendOnEnter?: boolean,
     @grok.decorators.param({options: {optional: true}}) draftKey?: string): DG.Widget {
     return new ChatInputWidget(value, placeholder, sendOnEnter, draftKey);
+  }
+
+  @grok.decorators.func({
+    name: 'spaceSaveRow',
+    description: 'The Space row of the Save project dialog (u2); the platform reaches it through ui.spaceSaveRow()',
+    meta: {role: 'spaceSaveRow'},
+    outputs: [{name: 'result', type: 'widget'}],
+  })
+  static async spaceSaveRow(
+    @grok.decorators.param({options: {optional: true}}) homeId?: string,
+    @grok.decorators.param({options: {optional: true}}) name?: string,
+    @grok.decorators.param({options: {optional: true}}) projectId?: string): Promise<DG.Widget> {
+    return spaceSaveRowFor(homeId, name, projectId);
   }
 
   @grok.decorators.func({})

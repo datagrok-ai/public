@@ -2,6 +2,32 @@
 
 ## v.next
 
+* [public#4667](https://github.com/datagrok-ai/public/issues/4667): A wand suggestion opens in its own tab (Help, Execute or Query) without asking the model which one fits
+* Search: Help and Execute no longer wait on browser tools that the search bar never answers
+* AI panel: Restyled the chat. Blue-tint prompts, a bordered prompt box, code blocks with a header and Copy, questions as a card with clickable options, and search answers use the full width
+* Search: The AI wand finds the home page's search box when PowerPack places it in the top row (no tabs)
+* Grokky: Ctrl+Z undoes the columns, rows, values and viewers a request added, removed or changed
+* [public#4650](https://github.com/datagrok-ai/public/issues/4650): Fixed the AI panel rendering replies as trusted HTML, so scripts in a reply ran
+* Grokky: The chat keeps a reading width in a wide panel: replies on white, your prompt in a bubble that fits its text
+* Grokky: Fixed "Speech recognition error: aborted" in the console when voice input stops
+* Grokky: Added bringing back earlier prompts with the Up and Down arrow keys in the prompt box
+* Grokky: Fixed Try again forgetting the request after a quick Stop
+* Grokky: Added deleting a single chat from the history menu, with undo
+* Grokky: Fixed suggestions naming the wrong column, such as an ID column in the Molecules prompts or a date in the numeric ones
+* Grokky: Confirmation card shows its answer in the header
+* [public#4648](https://github.com/datagrok-ai/public/issues/4648): Fixed asterisks in the Stop notice
+* Grokky: Fixed voice input sending only the first word: the whole phrase is captured, shown as it is spoken, and sent after a pause
+* Grokky: A prompt that fails or loses its connection says why above the prompt box, and the next prompt reconnects
+* Grokky: Fixed SAVE staying active after the AI saved the project
+* Grokky: Properties (F4) open on top of the AI panel instead of beside it, and the AI panel keeps its width when they close
+* Grokky: Clicking the icons under the prompt box no longer takes focus from it
+* Grokky: Answering the AI's question (choosing an option, clicking Submit) returns focus to the prompt box
+* Grokky: Return focus to the prompt box when the AI's actions take it
+* Grokky: Tool activity shows in a status strip above the prompt
+* Grokky: Removed suggestions that asked a question instead of running
+* Grokky: New chat (+) clears the typed prompt and attached entities
+* Grokky: The assistant's question no longer blocks new prompts; Submit sends the choice as the next prompt
+* Grokky: Removed the "Your administrators log your AI ..." notice under the AI panel, answers and search results
 * [public#4552](https://github.com/datagrok-ai/public/issues/4552): Grokky: suggestions use an ID column (USUBJID) for categorical slots
 * [public#4551](https://github.com/datagrok-ai/public/issues/4551): Grokky: AI panel hangs for good when the final answer fails to render (markdown RangeError)
 * Docker: Moved the claude-runtime image to Wolfi and raised @hono/node-server to 2.x in claude-runtime and mcp-server, so both images have no known CVEs; the runtime no longer ships npm or virtualenv

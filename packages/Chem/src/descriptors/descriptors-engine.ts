@@ -11,7 +11,6 @@ import {warnCruxFallback} from '../engine/fallback';
 import {getCruxService} from '../crux/crux-searches';
 import {loadCrux} from '../engine/crux-module';
 import {CruxWorkerApi, DescriptorTiming, INT_NONE, PackedDescriptorValues, isNoneValue} from '../crux/crux-api';
-import {cruxReadsCxExtension} from '../crux/crux-service';
 
 let cruxTree: object | null = null;
 
@@ -59,9 +58,9 @@ async function cruxDescriptors(molecules: DG.Column, descriptors: string[]): Pro
   lap('pool');
   const result = await service.calcDescriptors(input, descriptors, timing ?? undefined);
   phase = performance.now();
-  // a CXSMILES whose query features Crux's reader skips gets the container's values, as a molecule Crux cannot read
+  // tests: a molecule marked unreadable gets the container's values, as a molecule Crux cannot read
   input.forEach((m, i) => {
-    if (m && (unreadableForTests?.has(m) || !cruxReadsCxExtension(m)))
+    if (m && unreadableForTests?.has(m))
       Object.values(result).forEach((values) => values.value[i] = values.type === 'int' ? INT_NONE : NaN);
   });
   await fromContainerWhereUnread(input, descriptors, result);

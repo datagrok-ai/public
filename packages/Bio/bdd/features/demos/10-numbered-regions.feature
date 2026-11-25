@@ -1,14 +1,16 @@
 @guide @demo
-Feature: Bioinformatics · Numbered regions
+Feature: 6 · Antibodies and proteins · CDR3
   A demo clip, one of the Bio showcase (features/demos, filmed with `grok-bdd guide`: the @demo tag
   leaves the set-up and the checks off camera). The heavy chains of Bio's antibodies sample, numbered in
   IMGT off camera (ANARCI, the default engine with the HMM package), give an aligned column whose cell
   menu extracts any region: CDR3 becomes a column of its own that keeps the scheme's positions (its ruler
   starts at 105, insertions named 111A, 112A), and Scan Liabilities marks the deamidation, isomerization
-  and oxidation motifs in it. Needs the HMM package (the clip skips without it).
+  and oxidation motifs in it. Off camera the CDR3 column is drawn wide, its residues at 18 px in 30 px rows,
+  so the liabilities' marks read; after the liability's tooltip the pointer goes up to the column's header, so
+  the clip ends on the marked column. Needs the HMM package (the clip skips without it).
 
   Scenario: CDR3 extracted with its IMGT positions
-    A numbered antibody column gives up any region as a column of its own, in the scheme's positions, ready to scan for liabilities.
+    Any numbered region becomes a column in IMGT positions, ready to scan for liabilities.
 
     Given user is logged in
     And simple mode is off
@@ -30,8 +32,10 @@ Feature: Bioinformatics · Numbered regions
     Then a new column "AntibodyHC (aligned)(CDR3)" should have been added
     And the "header tracks of AntibodyHC (aligned)(CDR3)" reading of grid should be "Conservation, WebLogo"
     Given the notification balloons are closed
-    And the "AntibodyHC (aligned)" column of the grid stays 700 px wide
-    And the "AntibodyHC (aligned)(CDR3)" column of the grid stays 440 px wide
+    And the rows of the grid are 30 px tall
+    And the monomers of the "AntibodyHC (aligned)(CDR3)" column are drawn at 18 px
+    And the "AntibodyHC (aligned)" column of the grid stays 560 px wide
+    And the "AntibodyHC (aligned)(CDR3)" column of the grid stays 680 px wide
     Then the "header positions of AntibodyHC (aligned)(CDR3)" reading of grid should be "105, 110"
     When the video says "CDR3 keeps its IMGT positions: 105 to 117"
     And user hovers over the "position 111A of AntibodyHC (aligned)(CDR3) header" area of grid
@@ -45,5 +49,6 @@ Feature: Bioinformatics · Numbered regions
     When the video says "Liabilities marked in every CDR3"
     And user hovers over monomer 3 of the "cell 12 of AntibodyHC (aligned)(CDR3)" area of grid
     Then tooltip should contain text "Isomerization (DG)"
-    And no error or warning balloon should have been shown
+    When user hovers over the "position 105 of AntibodyHC (aligned)(CDR3) header" area of grid
+    Then no error or warning balloon should have been shown
     And no errors should have been logged

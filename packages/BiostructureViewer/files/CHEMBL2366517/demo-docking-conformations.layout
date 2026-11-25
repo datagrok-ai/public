@@ -249,7 +249,6 @@
                           "visible": false,
                           "width": 105,
                           "columnName": "Name",
-                          "cellType": "sequence",
                           "settings": {}
                         },
                         {

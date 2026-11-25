@@ -2,6 +2,9 @@
 
 ## v.next
 
+* [public#4636](https://github.com/datagrok-ai/public/issues/4636): Fixed the MySQL and MariaDB sample queries having no inputs and failing with an SQL syntax error
+* Notebooks: Migrated sample notebooks to datagrok-api 0.1.0
+* Notebooks: Fixed the dashboard shared by the Datagrok API notebook opening only for its author
 * Scripts: Migrated nodejs sample scripts to the js-api (`grok`/`DG` globals) following the nodejs script runtime change
 
 * Docker: Raised conda env to Python 3.10 and added security floors (setuptools/wheel/urllib3/pyarrow/jaraco.context/brotli), plus removed stale ensurepip/pkgs-cache copies (VEX)

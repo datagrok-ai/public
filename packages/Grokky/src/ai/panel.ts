@@ -5,12 +5,11 @@ import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 // @ts-ignore .... idk why it does not like it
 import '../../css/ai.css';
-import {dartLike, fireAIAbortEvent, createStyledMarkdown, tryMarkdown, plainTextEl, isEnterKey,
+import {dartLike, fireAIAbortEvent, createStyledMarkdown, codeCard, tryMarkdown, plainTextEl,
   copyToClipboard} from '../utils';
 import {buildWorkspaceContext, executeSingleBlock} from '../claude/exec-blocks';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
 import {ClaudeRuntimeClient} from '../claude/runtime-client';
-import {contentLoggingNotice} from '../claude/turn-log';
 import {resolveScopes, showSuggestionsMenu, runSuggestionAction, Suggestion, Block, ChoiceOption} from './prompt-suggestions';
 import {AiFeature} from '../claude/ai-feature';
 
@@ -18,6 +17,7 @@ export type MessageType = {role: string; content: any};
 
 type AIPanelInputs = {
     prompt: string,
+    isAnswer?: boolean,
 }
 
 
@@ -37,15 +37,20 @@ interface AskUserInput {
   questions: AskUserQuestion[];
 }
 
-interface AskUserResponse {
-  questions: AskUserQuestion[];
-  answers: Record<string, string>;
+interface QuestionSection {
+  strip: HTMLElement;
+  body: HTMLElement;
 }
+
+export type StripStyle = 'success' | 'muted';
 
 const actionButtionValues = {
   run: 'Run AI Prompt',
   stop: 'Stop AI Generation',
 } as const;
+
+/** Silence after which a spoken phrase is sent as the prompt. */
+const VOICE_SUBMIT_DELAY_MS = 1500;
 
 const micTooltips = {
   default: 'Voice Input',
@@ -100,24 +105,23 @@ export type AIPanelFuncs<T extends MessageType = MessageType> = {
   /**Adds confirmation section to the panel and awaits result */
   addConfirmMessage: (msg?: string) => Promise<boolean>,
   /** Shows options to the user and returns their selection */
-  showInputRequest?: (input: AskUserInput) => Promise<AskUserResponse | null>,
+  showInputRequest?: (input: AskUserInput) => void,
 }
 
 export interface StreamingPanel<T extends MessageType = MessageType> {
   sessionId: string;
-  startChatSession(): {session: AIPanelFuncs<T>, endSession: () => void, loader: HTMLElement};
+  startChatSession(): {session: AIPanelFuncs<T>, endSession: () => void};
   prependViewContext(prompt: string, view: DG.ViewBase): string;
   prependEntityContext(prompt: string): string;
-  updateStreaming(content: string, loader: HTMLElement): void;
+  updateStreaming(content: string): void;
+  setStatus(text: string): void;
+  showError(text: string): void;
   finalizeStreaming(displayContent: string, execCodes: string[], view: DG.ViewBase): Promise<void>;
   appendStreamedElement(el: HTMLElement): void;
   appendUiMessage(content: string): void;
   clearStreaming(): void;
-  showInputRequest(input: any): Promise<any>;
-  cancelInputRequest(): void;
-  /** Shows the turn's loader again (e.g. right after the user answers an input request),
-   * so the wait for the assistant's next move is visibly "working", not dead air. */
-  showWaitingIndicator(loader: HTMLElement): void;
+  showInputRequest(input: AskUserInput): void;
+  dismissQuestion(): void;
   restoredTranscript(): string;
   get rawRender(): boolean;
   get noPrompt(): boolean;
@@ -147,6 +151,9 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private _pendingNativeContext: string[] = [];
   private recognition: SpeechRecognition | null = null;
   private isRecognizing: boolean = false;
+  /** The final results of the phrase being spoken, not yet submitted. */
+  private voiceTranscript: string = '';
+  private voiceSubmitTimer?: number;
   /** `Say "cancel" to stop` caption shown next to the loader while the AI is working in voice mode. */
   private _voiceCancelHint: HTMLElement | null = null;
   private micAccessDenied: boolean = false;
@@ -183,19 +190,20 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
 
   protected _streamingContainer: HTMLElement | null = null;
   protected _streamingMarkdownEl: HTMLElement | null = null;
-  private _loaderPauseTimer: number | null = null;
+  private statusBar: HTMLElement = ui.divH([], 'grokky-status-bar');
+  private statusLabel: HTMLElement = ui.divText('', 'grokky-status-label');
+  private statusRepeats = 0;
+  private followOutput = true;
   private _sessionId: string;
-  private _pendingInputResolve: ((value: AskUserResponse | null) => void) | null = null;
-  private _skillMenu: DG.Menu | null = null;
   private _inline: boolean = false;
-  private _loggingNotice: HTMLElement | null = null;
   private _feature: AiFeature;
   /** Guards async {@link renderEmptyState} against out-of-order completion on rapid view switches. */
   private _emptyStateSeq = 0;
-  /** Index into {@link promptHistory} while cycling with Ctrl+[ / Ctrl+]; `null` means the live draft is shown. */
+  /** Index into {@link promptHistory} while recalling prompts with the arrow keys; `null` means the live draft is shown. */
   private _promptHistoryIndex: number | null = null;
   /** The unsubmitted draft saved when the user starts cycling, restored when they cycle back past the newest entry. */
   private _promptDraft: string = '';
+  private _dismissQuestion: (() => void) | null = null;
 
   get sessionId(): string { return this._sessionId; }
 
@@ -220,29 +228,29 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       this.handleRun();
     }, 'Send');
     this.textArea.addEventListener('keydown', (event: KeyboardEvent) => {
-      if ((event.key === 'Escape' || event.keyCode === 27) && this._skillMenu) {
-        this._skillMenu.hide();
-        this._skillMenu = null;
+      if (event.isComposing)
+        return;
+      if (event.key === 'Escape' && this._promptHistoryIndex !== null) {
+        this.textArea.value = this._promptDraft;
+        this._promptHistoryIndex = null;
         return;
       }
-      // Ctrl+[ / Ctrl+] cycle through this session's prompt history (keyCode fallback for Chrome ≤ 50).
-      if (event.ctrlKey && (event.key === '[' || event.keyCode === 219)) {
+      const up = event.key === 'ArrowUp';
+      if ((up || event.key === 'ArrowDown') && !event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey &&
+        (this._promptHistoryIndex !== null || (up && this.textArea.selectionEnd === 0)) &&
+        this.navigatePromptHistory(up ? -1 : 1))
         event.preventDefault();
-        this.navigatePromptHistory(-1);
-        return;
-      }
-      if (event.ctrlKey && (event.key === ']' || event.keyCode === 221)) {
-        event.preventDefault();
-        this.navigatePromptHistory(1);
-        return;
-      }
-      if (isEnterKey(event) && (!event.ctrlKey && !event.metaKey)) {
+      if (event.key === 'Enter' && (!event.ctrlKey && !event.metaKey)) {
         event.preventDefault();
         event.stopImmediatePropagation();
         this.handleRun();
       }
     });
-    this.textArea.addEventListener('input', () => { this._promptHistoryIndex = null; this._updateSkillMenu(); });
+    this.textArea.addEventListener('input', () => this._promptHistoryIndex = null);
+    this.textArea.addEventListener('blur', (e) => {
+      if (this.isBusy && (e as any).sourceCapabilities === null)
+        Promise.resolve().then(() => this.textArea.focus());
+    });
     ui.tooltip.bind(this.runButton, () => this.runButtonTooltip, 'left');
     this.tryAgainButton = ui.icons.sync(() => this.tryAgain(), 'Try Again');
     this.historyButton = ui.iconFA('history', () => this.showHistory());
@@ -273,6 +281,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       }
       this.resetSession();
       this.handleClear();
+      this.textArea.value = '';
+      this.clearAttachments();
       this.currentConversationId = null;
     });
     this.syncConversationButtons();
@@ -291,11 +301,15 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this.inputControlsDiv = ui.divH([
       this.wandButton, this.micButton, this.rawRenderButton,
     ], 'd4-ai-panel-input-controls');
-    this.runButton.style.color = 'var(--blue-1)';
+    this.runButton.classList.add('grokky-send');
     const sessionControls = ui.divH([this.copyConversationButton, this.historyButton, this.newChatButton], 'd4-ai-panel-run-controls');
     sessionControls.style.marginLeft = 'auto';
     const messageControls = ui.divH([this.tryAgainButton, this.runButton], 'd4-ai-panel-run-controls');
     const controlsDiv = ui.divH([this.inputControlsDiv, sessionControls, ui.div([], 'd4-ribbon-separator'), messageControls], 'd4-ai-panel-controls-container');
+    controlsDiv.addEventListener('mousedown', (e) => {
+      if (document.activeElement === this.textArea)
+        e.preventDefault();
+    });
     this.textAreaDiv = ui.divV([this.attachmentsRow, this.textArea], {classes: 'd4-ai-input-textarea-div', style: {position: 'relative'}});
     ui.makeDroppable(this.textAreaDiv, {
       acceptDrop: (o) => o instanceof DG.Entity,
@@ -308,10 +322,14 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     });
     this.inputArea.appendChild(this.textAreaDiv);
     this.inputArea.appendChild(controlsDiv);
-    this.refreshLoggingNotice();
     this.root.appendChild(this.header);
     this.root.appendChild(this.outputArea);
+    this.root.appendChild(this.statusBar);
     this.root.appendChild(this.inputArea);
+    this.outputArea.addEventListener('scroll', () => {
+      const o = this.outputArea;
+      this.followOutput = o.scrollHeight - o.clientHeight - o.scrollTop < 30;
+    });
 
     if (this._inline)
       this.root.classList.add('d4-ai-inline-mode');
@@ -347,7 +365,6 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   dispose() {
-    this.clearStreamingLoaderTimer();
     this.stopRecognition();
     this.root.remove();
     this._messages = [];
@@ -468,7 +485,10 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   private buildExecIcons(markDown: HTMLElement, {codes, ranThisSession, view = this.view}: ExecInfo): HTMLElement[] {
-    const codeBlock = ui.divText(codes.map((c) => c.trim()).join('\n\n'), 'grokky-exec-code grokky-hidden');
+    const pre = ui.element('pre', 'grokky-exec-code');
+    pre.textContent = codes.map((c) => c.trim()).join('\n\n');
+    const codeBlock = codeCard(pre, 'JavaScript');
+    codeBlock.classList.add('grokky-hidden');
     markDown.appendChild(codeBlock);
 
     let state: ExecState = ranThisSession ? ExecState.ran : ExecState.idle;
@@ -508,7 +528,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   protected appendMessage(
     aiMessage: T, uiMessage: {
       title: string, content: string, fromUser: boolean, onlyAddToMessages?: boolean, uiOnly?: boolean, messageOptions?: UIMessageOptions, execCode?: string[]
-    }, loader?: HTMLElement
+    }
   ): PanelMessageRet | undefined {
     let ret: PanelMessageRet | undefined = undefined;
     this.removeChoiceBlocks();
@@ -596,48 +616,44 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       const assistantDiv = ui.divV([...titleText, markDown], 'd4-ai-assistant-response-container');
       this._aiMessagesAccordionPane!.appendChild(assistantDiv);
     }
-    // reapend loader to the end
-    if (loader)
-      this.outputArea.appendChild(loader);
     this.outputArea.scrollTop = this.outputArea.scrollHeight;
     this.showContentIcons();
     return ret;
   }
 
-  public startChatSession(): {session: AIPanelFuncs<T>, endSession: () => void, loader: HTMLElement} {
+  public startChatSession(): {session: AIPanelFuncs<T>, endSession: () => void} {
     const spinner = ui.icons.loader();
-    dartLike(spinner.style).set('height', '20px');
     // Speech is easy to mishear, so while the AI works in voice mode show the word that aborts the run.
     const cancelHint = ui.divText('Say "cancel" to stop', 'd4-ai-voice-cancel-hint');
     cancelHint.style.display = this.isRecognizing ? '' : 'none';
     this._voiceCancelHint = cancelHint;
-    const loader = ui.divH([spinner, cancelHint], 'd4-ai-loader');
-    dartLike(loader.style).set('alignSelf', 'center').set('marginTop', '8px');
+    this.statusRepeats = 0;
+    this.dismissQuestion();
+    this.setStatus('Thinking…');
+    const loader = ui.divH([spinner, this.statusLabel, cancelHint], 'd4-ai-loader');
+    ui.empty(this.statusBar);
+    this.statusBar.appendChild(loader);
     this.runButton.classList.remove('fal', 'fa-paper-plane');
     this.runButton.classList.add('fas', 'fa-stop');
-    this.runButton.style.color = 'orangered';
     this.runButtonTooltip = actionButtionValues.stop;
     this.syncConversationButtons();
     return {
-      loader,
       session: {
-        addAIMessage: (aiMessage, title, content) => this.appendMessage(aiMessage, {title: title, content: content, fromUser: false}, loader),
-        addEngineMessage: (aiMessage) => this.appendMessage(aiMessage, {title: '', content: '', fromUser: false, onlyAddToMessages: true}, loader),
-        addUiMessage: (msg: string, fromUser: boolean, messageOptions?: UIMessageOptions) => this.appendMessage('' as any, {title: '', content: msg, fromUser: fromUser, uiOnly: true, messageOptions: messageOptions}, loader),
+        addAIMessage: (aiMessage, title, content) => this.appendMessage(aiMessage, {title: title, content: content, fromUser: false}),
+        addEngineMessage: (aiMessage) => this.appendMessage(aiMessage, {title: '', content: '', fromUser: false, onlyAddToMessages: true}),
+        addUiMessage: (msg: string, fromUser: boolean, messageOptions?: UIMessageOptions) => this.appendMessage('' as any, {title: '', content: msg, fromUser: fromUser, uiOnly: true, messageOptions: messageOptions}),
         markHandledNatively: () => this.markPromptHandledNatively(),
-        addUserMessage: (aiMsg, content) => this.appendMessage(aiMsg, {title: '', content: content, fromUser: true}, loader),
-        addConfirmMessage: (msg?: string) => this.appendMessage('' as any, {title: '', content: '', fromUser: false, uiOnly: true, messageOptions: {confirm: {message: msg}}}, loader)!.confirmPromise,
+        addUserMessage: (aiMsg, content) => this.appendMessage(aiMsg, {title: '', content: content, fromUser: true}),
+        addConfirmMessage: (msg?: string) => this.appendMessage('' as any, {title: '', content: '', fromUser: false, uiOnly: true, messageOptions: {confirm: {message: msg}}})!.confirmPromise,
         showInputRequest: (input: AskUserInput) => this.showInputRequest(input),
       },
       endSession: () => {
         this.runButton.classList.remove('fas', 'fa-stop');
         this.runButton.classList.add('fal', 'fa-paper-plane');
-        this.runButton.style.color = 'var(--blue-1)';
         this.runButtonTooltip = actionButtionValues.run;
         this.syncConversationButtons();
         this._voiceCancelHint = null;
         this.saveCurrentConversation().catch((e) => console.error('Failed to save conversation before hiding panel:', e));
-        this.clearStreamingLoaderTimer();
         loader.remove();
       }
     };
@@ -739,13 +755,6 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     return `[The user previously asked:]\n${items}\n\n`;
   }
 
-  private refreshLoggingNotice(): void {
-    this._loggingNotice?.remove();
-    this._loggingNotice = contentLoggingNotice();
-    if (this._loggingNotice)
-      this.inputArea.appendChild(this._loggingNotice);
-  }
-
   resetSession(): void {
     this._sessionId = `${this._feature}-${crypto.randomUUID()}`;
     this._streamingContainer = null;
@@ -772,13 +781,12 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     return md;
   }
 
-  updateStreaming(content: string, loader: HTMLElement): void {
+  updateStreaming(content: string): void {
     if (!this._streamingContainer) {
       this.ensureResponseBlock();
       this._streamingMarkdownEl = this.createStreamingEl(content) ?? plainTextEl(content);
       this._streamingContainer = ui.divV([this._streamingMarkdownEl], 'd4-ai-assistant-response-container');
       this._aiMessagesAccordionPane!.appendChild(this._streamingContainer);
-      this.outputArea.appendChild(loader);
     } else {
       const el = this.createStreamingEl(content);
       if (el) {
@@ -786,28 +794,35 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         this._streamingMarkdownEl = el;
       }
     }
-    this.refreshStreamingLoader(loader);
-    this.outputArea.scrollTop = this.outputArea.scrollHeight;
+    this.scrollIfFollowing();
   }
 
-  refreshStreamingLoader(loader: HTMLElement): void {
-    loader.style.display = 'none';
-    this.clearStreamingLoaderTimer();
-    this._loaderPauseTimer = window.setTimeout(() => {
-      loader.style.display = '';
-      this.outputArea.scrollTop = this.outputArea.scrollHeight;
-    }, 600);
-  }
-
-  clearStreamingLoaderTimer(): void {
-    if (this._loaderPauseTimer != null) {
-      clearTimeout(this._loaderPauseTimer);
-      this._loaderPauseTimer = null;
+  setStatus(text: string): void {
+    if (this.statusRepeats && this.statusLabel.dataset.status === text) {
+      this.statusLabel.textContent = `${text} \u00d7${++this.statusRepeats}`;
+      return;
     }
+    this.statusRepeats = 1;
+    this.statusLabel.dataset.status = text;
+    this.statusLabel.textContent = text;
+    this.statusLabel.classList.remove('grokky-status-in');
+    void this.statusLabel.offsetWidth;
+    this.statusLabel.classList.add('grokky-status-in');
+  }
+
+  showError(text: string): void {
+    const error = ui.divText(text, 'grokky-status-error');
+    ui.tooltip.bind(error, text);
+    ui.empty(this.statusBar);
+    this.statusBar.appendChild(error);
+  }
+
+  private scrollIfFollowing(): void {
+    if (this.followOutput)
+      this.outputArea.scrollTop = this.outputArea.scrollHeight;
   }
 
   async finalizeStreaming(displayContent: string, execCodes: string[], view: DG.ViewBase): Promise<void> {
-    this.clearStreamingLoaderTimer();
     if (this._rawRender) {
       this._streamingMarkdownEl = null;
       this._streamingContainer = null;
@@ -822,6 +837,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this._aiMessagesAccordionPane!.appendChild(ui.divV([el], 'd4-ai-assistant-response-container'));
     this._streamingContainer = null;
     this._streamingMarkdownEl = null;
+    this.scrollIfFollowing();
   }
 
   public appendUiMessage(content: string): void {
@@ -829,7 +845,6 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   protected renderFinalContent(content: string, execCodes: string[], view: DG.ViewBase): void {
-    this.clearStreamingLoaderTimer();
     const markDown = this.createStyledMarkdown(content);
     this.appendFeedbackButtons(markDown, undefined,
       execCodes.length ? {codes: execCodes, ranThisSession: true, view} : undefined);
@@ -847,77 +862,72 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   clearStreaming(): void {
-    this.clearStreamingLoaderTimer();
     this._streamingContainer?.remove();
     this._streamingContainer = null;
     this._streamingMarkdownEl = null;
   }
 
-  showInputRequest(input: AskUserInput): Promise<AskUserResponse | null> {
+  showInputRequest(input: AskUserInput): void {
     const questions = input.questions ?? [];
-    let resolved = false;
-    const choiceInputs: DG.InputBase<string>[] = [];
-
-    for (const q of questions) {
-      const items = q.options.map((o) => o.label);
-      choiceInputs.push(ui.input.choice(q.header ?? '', {items, value: items[0], nullable: false}) as DG.InputBase<string>);
-    }
-    const form = ui.divV(questions.map((q, i) => ui.divV([ui.divText(q.question), choiceInputs[i].root])));
-
-    return new Promise<AskUserResponse | null>((resolve) => {
-      const submitButton = ui.button('Submit', () => {
-        const answers: Record<string, string> = {};
-        for (let i = 0; i < questions.length; i++)
-          answers[questions[i].question] = choiceInputs[i].value!;
-        doResolve({questions, answers});
-      }) as HTMLButtonElement;
-
-      const doResolve = (value: AskUserResponse | null) => {
-        if (resolved)
-          return;
-        resolved = true;
-        this._pendingInputResolve = null;
-        for (const inp of choiceInputs)
-          (inp.input as HTMLSelectElement).disabled = true;
-        // Instant feedback on click — the assistant's next event can be seconds away.
-        submitButton.disabled = true;
-        if (value)
-          submitButton.textContent = 'Submitted';
-        resolve(value);
+    const answers = questions.map((q) => q.options[0]?.label ?? '');
+    const sections = questions.map((q, i): QuestionSection => {
+      const pills: HTMLElement[] = q.options.map((o) => {
+        const pill = ui.divText(o.label, 'grokky-choice-card');
+        if (o.description)
+          ui.tooltip.bind(pill, o.description);
+        pill.onclick = () => {
+          answers[i] = o.label;
+          pills.forEach((p) => p.classList.toggle('grokky-choice-selected', p === pill));
+        };
+        return pill;
+      });
+      pills[0]?.classList.add('grokky-choice-selected');
+      return {
+        strip: ui.divH([ui.divText(q.question)], 'grokky-strip grokky-strip-question'),
+        body: ui.div([ui.divH(pills, 'grokky-choice-row')], 'grokky-confirm-body'),
       };
-
-      form.appendChild(submitButton);
-
-      this._pendingInputResolve = doResolve;
-      this.ensureResponseBlock();
-      const wrapper = ui.divV([form], 'd4-ai-assistant-response-container');
-      this._aiMessagesAccordionPane!.appendChild(wrapper);
-      this.outputArea.scrollTop = this.outputArea.scrollHeight;
     });
-  }
+    const close = (style: StripStyle, icon: string, answerText: (questionIdx: number) => string): void => {
+      this._dismissQuestion = null;
+      footer.remove();
+      sections.forEach((s, i) => {
+        s.body.remove();
+        s.strip.classList.replace('grokky-strip-question', `grokky-strip-${style}`);
+        s.strip.append(ui.divH([ui.iconFA(icon), ui.divText(answerText(i))], 'grokky-strip-answer'));
+      });
+    };
+    this.dismissQuestion();
+    this._dismissQuestion = () => close('muted', 'minus', () => 'Not answered');
+    const footer = ui.divH([ui.bigButton('Submit', () => {
+      if (this.isBusy)
+        return;
+      close('success', 'check', (i) => answers[i]);
+      const prompt = questions.length === 1 ? answers[0] :
+        questions.map((q, i) => `${q.question} ${answers[i]}`).join('\n');
+      this._onRunRequest.next({prevMessages: this._messages, currentPrompt: {prompt, isAnswer: true} as K});
+      this.textArea.focus();
+    })], 'grokky-question-footer');
 
-  cancelInputRequest(): void {
-    if (this._pendingInputResolve) {
-      this._pendingInputResolve(null);
-      this._pendingInputResolve = null;
-    }
-  }
-
-  showWaitingIndicator(loader: HTMLElement): void {
-    this.clearStreamingLoaderTimer();
-    loader.style.display = '';
-    this.outputArea.appendChild(loader);
+    const card = ui.divV([...sections.flatMap((s) => [s.strip, s.body]), footer],
+      'grokky-confirm-card grokky-question-card');
+    this.ensureResponseBlock();
+    this._aiMessagesAccordionPane!.appendChild(ui.divV([card], 'd4-ai-assistant-response-container'));
     this.outputArea.scrollTop = this.outputArea.scrollHeight;
+  }
+
+  dismissQuestion(): void {
+    this._dismissQuestion?.();
   }
 
   private tryAgain() {
     if (this._messages.length === 0)
       return; // should never happen, but just in case
-    if (this.isBusy)
+    // The prompt itself is resent: a request stopped before the agent picked it up is not in its history.
+    const last = this.promptHistory.pop();
+    if (!last || this.isBusy)
       return;
     const inputs = this.getCurrentInputs();
-    inputs.prompt = 'Please try again. ';
-    this.refreshLoggingNotice();
+    inputs.prompt = last;
     this._onRunRequest.next({
       prevMessages: [...this._messages],
       currentPrompt: inputs,
@@ -933,34 +943,22 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     return this._uiMessages.filter((m) => m.fromUser).map((m) => m.text);
   }
 
-  /** Replaces the input with the previous (-1) or next (+1) prompt from this session's history. */
-  private navigatePromptHistory(direction: -1 | 1): void {
+  /** Replaces the input with the previous (-1) or next (+1) prompt from this session's history; false if there is none. */
+  private navigatePromptHistory(direction: -1 | 1): boolean {
     const hist = this.promptHistory;
-    if (hist.length === 0)
-      return;
-    if (this._promptHistoryIndex === null) {
-      if (direction === 1)
-        return; // already at the live draft — nothing newer
+    const current = this._promptHistoryIndex ?? hist.length;
+    const next = current + direction;
+    if (next < 0 || next > hist.length)
+      return false;
+    if (this._promptHistoryIndex === null)
       this._promptDraft = this.textArea.value;
-      this._promptHistoryIndex = hist.length;
-    }
-    const next = this._promptHistoryIndex + direction;
-    if (next < 0)
-      return; // already at the oldest entry
-    if (next >= hist.length) {
-      this._promptHistoryIndex = null;
-      this.textArea.value = this._promptDraft;
-    } else {
-      this._promptHistoryIndex = next;
-      this.textArea.value = hist[next];
-    }
+    this._promptHistoryIndex = next === hist.length ? null : next;
+    this.textArea.value = next === hist.length ? this._promptDraft : hist[next];
     this.textArea.selectionStart = this.textArea.selectionEnd = this.textArea.value.length;
-    this._updateSkillMenu();
+    return true;
   }
 
   protected handleRun() {
-    if (this._pendingInputResolve)
-      return;
     if (this.isBusy)
       return;
     if (!this.textArea.value.trim())
@@ -974,45 +972,10 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this._pendingAttachmentsForRender = [...this.attachedEntities];
     this.clearAttachments();
     this._promptHistoryIndex = null;
-    this.refreshLoggingNotice();
     this._onRunRequest.next({
       prevMessages: this._messages,
       currentPrompt: inputs,
     });
-  }
-
-  private _hideSkillMenu(): void {
-    if (this._skillMenu) {
-      this._skillMenu.hide();
-      this._skillMenu = null;
-    }
-  }
-
-  private _updateSkillMenu(): void {
-    const text = this.textArea.value;
-    if (!text.startsWith('/'))
-      return this._hideSkillMenu();
-
-    const query = text.slice(1).toLowerCase();
-    const allNames = ClaudeRuntimeClient.getInstance().getSkillNames();
-    if (!allNames.length)
-      return this._hideSkillMenu();
-
-    const filtered = allNames.filter((name) => name.toLowerCase().includes(query));
-    if (!filtered.length)
-      return this._hideSkillMenu();
-
-    this._hideSkillMenu();
-    this._skillMenu = DG.Menu.popup();
-    this._skillMenu.header('Skills');
-    for (const name of filtered) {
-      this._skillMenu.item(name, () => {
-        this.textArea.value = `/${name} `;
-        this.textArea.focus();
-        this._skillMenu = null;
-      });
-    }
-    this._skillMenu.show({element: this.textAreaDiv, y: 0});
   }
 
   protected showContentIcons() {
@@ -1028,7 +991,6 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   protected handleClear() {
-    this.clearStreamingLoaderTimer();
     this._messages = [];
     this._uiMessages = [];
     this._pendingNativeContext = [];
@@ -1041,19 +1003,11 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   protected runSuggestion(s: Suggestion): void {
-    if (runSuggestionAction(s.action, this))
-      return;
-    // Ask-for-a-detail suggestions: post the question as the assistant's reply without calling the
-    // AI, and carry the task forward so the user's answer runs it with full context.
-    if (s.immediateResponse) {
-      this.appendMessage('' as any, {title: '', content: s.immediateResponse, fromUser: false, uiOnly: true});
-      if (s.prompt)
-        this.pushNativeContext(s.prompt);
-      this.textArea.focus();
-      return;
+    if (!runSuggestionAction(s.action, this)) {
+      this.textArea.value = s.prompt ?? '';
+      this.handleRun();
     }
-    this.textArea.value = s.prompt ?? '';
-    this.handleRun();
+    this.textArea.focus();
   }
 
   /** The view the panel currently works against: the pinned one for owned panels, else the live current view. */
@@ -1099,7 +1053,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       const rows = s.suggestions.map((sg) => {
         const row = ui.divText(sg.label ?? sg.prompt ?? '', 'grokky-suggestion-item');
         row.onclick = () => this.runSuggestion(sg);
-        if (!sg.immediateResponse && sg.prompt && sg.label && sg.label !== sg.prompt)
+        if (sg.prompt && sg.label && sg.label !== sg.prompt)
           ui.tooltip.bind(row, () => sg.prompt ?? '');
         return row;
       });
@@ -1128,15 +1082,42 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       }
 
       const menu = DG.Menu.popup();
+      const deleting = new Map<string, number>();
+      const finish = (id: string, remove: boolean) => {
+        clearTimeout(deleting.get(id));
+        deleting.delete(id);
+        if (remove)
+          ConversationStorage.deleteConversation(id).catch(() => grok.shell.error('Failed to delete chat'));
+      };
       for (const conv of conversations) {
         if (this.currentConversationId && conv.id === this.currentConversationId)
           continue;
         const date = new Date(conv.timestamp).toLocaleString();
-        const preview = conv.initialPrompt.substring(0, 40);
+        const preview = conv.initialPrompt.substring(0, 40).replace(/\|/g, '/'); // '|' would make a submenu
         const displayText = `${preview}${conv.initialPrompt.length > 40 ? '...' : ''} (${date})`;
 
-        menu.item(displayText, () => this.loadConversation(conv.id));
+        menu.item(displayText, () => {
+          finish(conv.id, false);
+          this.loadConversation(conv.id);
+        });
+        const row = menu.root.querySelector('.d4-menu-item:last-child')!;
+        const toggle = (e: MouseEvent) => {
+          e.stopPropagation();
+          finish(conv.id, false);
+          if (row.classList.toggle('grokky-history-deleted')) {
+            deleting.set(conv.id, window.setTimeout(() => {
+              row.remove();
+              finish(conv.id, true);
+            }, 5000));
+          }
+        };
+        const trash = ui.icons.delete(toggle, 'Delete chat');
+        const undo = ui.icons.undo(toggle, 'Undo');
+        trash.classList.add('grokky-history-icon', 'grokky-history-delete');
+        undo.classList.add('grokky-history-icon', 'grokky-history-undo', 'grok-icon-blue');
+        row.append(trash, undo);
       }
+      menu.onClose.subscribe(() => Array.from(deleting.keys()).forEach((id) => finish(id, true)));
 
       menu.separator();
       menu.item('Clear All History', async () => {
@@ -1185,6 +1166,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         ClaudeRuntimeClient.getInstance().expectResume(meta.sessionId);
       }
       this.afterConversationLoad(conv);
+      this.textArea.focus();
       //grok.shell.info(`Loaded conversation: ${conv.initialPrompt.substring(0, 50)}...`);
     } catch (error) {
       console.error('Failed to load conversation:', error);
@@ -1254,50 +1236,64 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   private startRecognition() {
-    try {
-      this.recognition = new SpeechRecognition();
-      this.recognition.continuous = false;
-      this.recognition.interimResults = false;
-      this.recognition.lang = 'en-US';
+    this.isRecognizing = true;
+    this.voiceTranscript = '';
+    this.micButton.classList.remove('fa-microphone');
+    this.micButton.classList.add('fa-stop');
+    this.micButton.style.color = 'orangered';
+    this.syncVoiceCancelHint();
+    this.listen();
+  }
 
-      // Update UI to show recording state
-      this.isRecognizing = true;
-      this.micButton.classList.remove('fa-microphone');
-      this.micButton.classList.add('fa-stop');
-      this.micButton.style.color = 'orangered';
-      ui.setUpdateIndicator(this.textAreaDiv, true, 'Listening...');
-      this.syncVoiceCancelHint();
+  /** Starts a recognition session. Chrome ends a continuous session on its own after a while or on
+   * a network hiccup; `onend` then calls this again, keeping the phrase heard so far. */
+  private listen() {
+    try {
+      // Continuous mode, so a pause between words does not end the phrase: Chrome's own end-of-speech
+      // detection cut it after the first word for mics that gate the signal to silence between words.
+      // The phrase is submitted after VOICE_SUBMIT_DELAY_MS without new speech instead.
+      this.recognition = new SpeechRecognition();
+      this.recognition.continuous = true;
+      this.recognition.interimResults = true;
+      this.recognition.lang = 'en-US';
+      if (!this.voiceTranscript)
+        ui.setUpdateIndicator(this.textAreaDiv, true, 'Listening...');
 
       this.recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
         ui.setUpdateIndicator(this.textAreaDiv, false);
+        let interim = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const text = event.results[i][0].transcript;
+          if (!event.results[i].isFinal) {
+            interim += text;
+            continue;
+          }
+          const command = text.trim().replace(/[.,;:!?]+$/, '').toLowerCase();
+          if (command === 'stop' || command === 'cancel') {
+            this.onVoiceCancel();
+            return;
+          }
+          this.voiceTranscript += text;
+        }
 
-        const command = transcript.trim().replace(/[.,;:!?]+$/, '').toLowerCase();
-        const isCancelWord = command === 'stop' || command === 'cancel';
-
-        // While a prompt is being processed, "stop"/"cancel" aborts the AI run instead of being sent
-        // as a new prompt — speech is easy to mishear, so keep this escape hatch reliable. Anything
-        // else said while busy is ignored (a new prompt can't be submitted yet anyway).
-        if (this.runButtonTooltip === actionButtionValues.stop) {
-          if (isCancelWord)
-            this.terminate();
+        // Speech while the AI works is not a prompt (one can't be submitted yet); only "stop"/"cancel"
+        // counts then, to abort the run.
+        if (this.isBusy) {
+          this.voiceTranscript = '';
           return;
         }
 
-        if (isCancelWord) {
-          this.stopRecognition();
-          this.textArea.focus();
-          return;
-        }
-
-        this.textArea.value = transcript;
-        this.handleRun();
+        this._promptHistoryIndex = null;
+        this.textArea.value = (this.voiceTranscript + interim).trim();
+        window.clearTimeout(this.voiceSubmitTimer);
+        this.voiceSubmitTimer = window.setTimeout(() => this.submitVoicePrompt(), VOICE_SUBMIT_DELAY_MS);
       };
 
       this.recognition.onerror = (event) => {
         if (event.error === 'no-speech')
           return; // silence timeout — onend restarts the mic, no user action needed
-        console.error('Speech recognition error:', event.error);
+        if (event.error !== 'aborted')
+          console.error('Speech recognition error:', event.error);
         ui.setUpdateIndicator(this.textAreaDiv, false);
 
         let errorMessage = 'Speech recognition error';
@@ -1314,7 +1310,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
           errorMessage = 'Network error during speech recognition';
           break;
         case 'aborted':
-          // User stopped intentionally, no error message needed
+          // Something else took the microphone, e.g. voice input in another tab: no error message needed
           break;
         default:
           errorMessage = `Speech recognition error: ${event.error}`;
@@ -1328,14 +1324,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       };
 
       this.recognition.onend = () => {
-        if (this.isRecognizing) {
-          this.startRecognition();
-          return;
-        }
-        this.micButton.classList.remove('fa-stop');
-        this.micButton.classList.add('fa-microphone');
-        this.micButton.style.color = '';
-        ui.setUpdateIndicator(this.textAreaDiv, false);
+        if (this.isRecognizing)
+          this.listen();
       };
 
       this.recognition.start();
@@ -1346,11 +1336,35 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     }
   }
 
+  /** "stop"/"cancel" aborts the AI run while it works, and otherwise drops the phrase and the mic. */
+  private onVoiceCancel() {
+    window.clearTimeout(this.voiceSubmitTimer);
+    this.voiceTranscript = '';
+    if (this.isBusy) {
+      this.terminate();
+      return;
+    }
+    this._promptHistoryIndex = null;
+    this.textArea.value = '';
+    this.stopRecognition();
+    this.textArea.focus();
+  }
+
+  private submitVoicePrompt() {
+    this.voiceTranscript = '';
+    this.handleRun();
+  }
+
+  /** Stops listening; a phrase heard so far stays in the prompt box, unsent, to edit or send by hand. */
   private stopRecognition() {
     this.isRecognizing = false;
+    this.voiceTranscript = '';
+    window.clearTimeout(this.voiceSubmitTimer);
     this.syncVoiceCancelHint();
 
     if (this.recognition) {
+      // A stopped session can still report late; it must not log or switch off a newer one.
+      this.recognition.onresult = this.recognition.onerror = this.recognition.onend = null;
       try {
         this.recognition.stop();
       } catch (error) {

@@ -149,7 +149,7 @@ class BioPackageDetectors extends DG.Package {
   //meta.role: semTypeDetector
   //tags: semTypeDetector
   //meta.skipTest: GROK-17630
-  //input: column col
+  //input: column col {type: string}
   //output: string semType
   detectMacromolecule(col) {
     const tableName = col.dataFrame ? col.dataFrame.name : null;

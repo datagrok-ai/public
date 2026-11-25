@@ -15,6 +15,12 @@ category('AI: Viewers: BoxPlot extras', () => {
     expectChoices(c, 'plotStyle', ['box', 'violin']);
   });
 
+  test('setMarkerOpacity sets the own markerOpacity', async () => {
+    const c = v();
+    c.setMarkerOpacity(60);
+    expect(c.props.markerOpacity, 60);
+  });
+
   test('violin bins int round-trip within 20-1000', async () => {
     const c = v();
     c.setOptions({plotStyle: 'violin'});

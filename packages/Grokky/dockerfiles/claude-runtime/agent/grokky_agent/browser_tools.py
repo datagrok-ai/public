@@ -14,11 +14,12 @@ TOOLSET = 'grokky-browser'
 VIEW_TOOLSET = 'grokky-view'
 
 # Seconds. An unanswered question must not hold the turn (and the workspace sync behind it) open.
-EXEC_TIMEOUT, VERIFY_TIMEOUT, ENTITIES_TIMEOUT, VIEW_TIMEOUT, ASK_TIMEOUT = 300, 60, 30, 120, 60
+EXEC_TIMEOUT, VERIFY_TIMEOUT, ENTITIES_TIMEOUT, VIEW_TIMEOUT = 300, 60, 30, 120
 
 ENTITY_TYPES = {'dataquery': 'query', 'dataconnection': 'connection', 'usergroup': 'group', 'fileinfo': 'file'}
 
 CallBrowser = Callable[[str, JsonObject, int], Any]
+ShowInBrowser = Callable[[str, JsonObject], None]
 
 
 def _string(description: str) -> JsonObject:
@@ -85,7 +86,7 @@ SHOW_ENTITIES: ToolSpec = {
 ASK_USER: ToolSpec = {
     'name': 'AskUserQuestion',
     'description': ('Ask the user a multiple-choice question when the intent of their request is genuinely unclear. '
-                    "Returns the user's answers."),
+                    'End your turn after asking: the answer, if any, comes as the next message.'),
     'parameters': {'type': 'object', 'required': ['questions'], 'properties': {'questions': {
         'type': 'array', 'description': '1-4 questions to ask.',
         'items': {'type': 'object', 'required': ['question', 'options'], 'properties': {
@@ -133,26 +134,22 @@ def _relay(spec: ToolSpec, call: CallBrowser, timeout: int, failure_key: str,
     return handler
 
 
-def _ask_user(call: CallBrowser) -> ToolHandler:
+def _ask_user(show: ShowInBrowser) -> ToolHandler:
     def handler(args: JsonObject, **_: Any) -> str:
         invalid = _invalid(ASK_USER, args)
         if invalid:
             return invalid
-        try:
-            answers = (call(ASK_USER['name'], args, ASK_TIMEOUT) or {}).get('answers') or {}
-        except Exception:
-            return 'The user did not answer the question in time. Proceed without the answer or end the turn.'
-        given = ', '.join(f'"{q}"="{a}"' for q, a in answers.items())
-        return f'Your questions have been answered: {given}. You can now continue with these answers in mind.'
+        show(ASK_USER['name'], args)
+        return 'The question is shown. End your turn now; the answer, if any, comes as the next message.'
     return handler
 
 
-def register(registry: ToolRegistry, call: CallBrowser) -> None:
+def register(registry: ToolRegistry, call: CallBrowser, show: ShowInBrowser) -> None:
     """The browser tools every session has."""
     tools = [(EXEC, _relay(EXEC, call, EXEC_TIMEOUT, 'success')),
              (VERIFY, _relay(VERIFY, call, VERIFY_TIMEOUT, 'passed')),
              (SHOW_ENTITIES, _relay(SHOW_ENTITIES, call, ENTITIES_TIMEOUT, 'success', _entities)),
-             (ASK_USER, _ask_user(call))]
+             (ASK_USER, _ask_user(show))]
     for spec, handler in tools:
         registry.register(name=spec['name'], toolset=TOOLSET, schema=spec, handler=handler)
 

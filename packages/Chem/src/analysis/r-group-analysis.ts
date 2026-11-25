@@ -192,9 +192,6 @@ export function rGroupAnalysis(col: DG.Column): void {
         const res: RGroupDecompRes = funcCall.getOutputParamValue();
         if (res) {
           const view = grok.shell.tableView(col.dataFrame.name);
-          //make highlight column invisible
-          if (res.highlightColName)
-            view.grid.col(res.highlightColName)!.visible = false;
           if (visualAnalysisCheck.value! && view) {
             if (!res.yAxisColName && !res.xAxisColName)
               grok.shell.error('No R-Groups were found');
@@ -432,7 +429,7 @@ async function rGroupsMinilibRaw(molecules: DG.Column<string>, coreMolecule: str
     resCols.push(col);
   }
   //creating highlight column
-  const highlightColName = `r-groups-highlight_${rGroupPrefixIdx}`;
+  const highlightColName = `~r-groups-highlight_${rGroupPrefixIdx}`;
   const rGroupsNum = res.atomsToHighLight.length;
   const colors = Array<Array<number>>(rGroupsNum);
   for (let r = 0; r < rGroupsNum; r++)

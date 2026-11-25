@@ -1,7 +1,7 @@
 import { type SketcherSettings } from '../core/settings.js';
 import { type SketcherStrings } from '../core/strings.js';
 import { type ReadoutItem } from '../core/readout-items.js';
-import type { HostKeys, DrawnPositions, RenderDetail, SketcherLayout, SketcherTool, SketchSelection, SketchNotice, AnalysisPanel, AtomColours, ChangeDetail, KeymapProfile, MethylLabels, Density, SetValueOptions, PngOptions, SketcherFormat, SketchAnalysis, SketchError, SketchWarning, WarningMarks, SketcherApi, SketcherEventType, SketcherListener, SketcherMode, StereoDisplay, StereoLabelStyle, StereoPanel, SketchStereo, ToolbarConfig, UnspecifiedDoubleBonds } from '../core/types.js';
+import type { HostKeys, DrawnPositions, RenderDetail, SketcherLayout, SketcherTool, SketchSelection, SketchNotice, SketchRecovery, AnalysisPanel, AtomColours, ChangeDetail, KeymapProfile, MethylLabels, Density, SetValueOptions, AddMoleculeOptions, PictureOptions, PngOptions, SketcherFormat, SketchAnalysis, SketchError, SketchWarning, WarningMarks, SketcherApi, SketcherEventType, SketcherListener, SketcherMode, SketchDocument, SketchToolset, ReactionMapper, ReactionStepTexts, StereoDisplay, MapNumbers, StereoLabelStyle, StereoPanel, SketchStereo, ToolbarConfig, UnspecifiedDoubleBonds } from '../core/types.js';
 export declare const TAG = "crux-sketch";
 /**
  * The events of `<crux-sketch>`: an element's, with `change` and `error` as CustomEvents whose
@@ -18,6 +18,8 @@ export interface CruxSketchEventMap extends Omit<HTMLElementEventMap, 'change' |
     selection: CustomEvent<SketchSelection>;
     /** The status line said a refusal or a notice to the user (API-047; spike later-quick). */
     notice: CustomEvent<SketchNotice>;
+    /** The page's engine trapped and went on with a fresh instance, this sketcher's drawing and undo history kept (spike engine-recover). */
+    recover: CustomEvent<SketchRecovery>;
 }
 /** `<crux-sketch>`'s listeners, typed by its events (`CruxSketchEventMap`): `change`, `error`, `settings`, `render`, `selection`, `notice`. */
 export interface CruxSketchElement {
@@ -29,7 +31,7 @@ export interface CruxSketchElement {
 /**
  * `<crux-sketch>` (H29; API-002), defined when the module is imported: the sketcher as a custom element, with every member
  * of the handle `createSketcher` gives (`SketcherApi`), and `ready`, which resolves once it is ready, and `toolbar`, its
- * toolbars' configuration. Its attributes are `value`, `mode`, `atom-colours`, `keymap`, `warning-marks`, `analysis-panel`,
+ * toolbars' configuration. Its attributes are `value`, `mode`, `document` (spike reaction-document), `toolset` (spike reaction-toolset), `atom-colours`, `keymap`, `warning-marks`, `analysis-panel`,
  * `stereo-labels`, `stereo-label-style`, `stereo-flag`, `unspecified-double-bonds`, `locale`, `methyl-labels`,
  * `cxsmiles-coordinates`, `density` and `persist-settings`, each setting the property of its name; changes made before it is ready are applied in order
  * once it is (API-003). Its events are DOM events too (`change`, `error`, `settings`, `render`, `selection`, `notice`; API-053, API-061, API-017, API-047). Its
@@ -43,6 +45,12 @@ export declare class CruxSketchElement extends HTMLElement implements SketcherAp
      * the engine cannot be loaded (which is also reported as an `error` event).
      */
     readonly ready: Promise<void>;
+    /**
+     * Fits the drawing into the view as the toolbar's Fit to view (F6) does (spike t2-add-panel, API-076; CANVAS-007),
+     * clear of the readout: no edit, no `change` event, no undo step. Before ready, nothing to fit. Throws on a destroyed
+     * sketcher (API-037).
+     */
+    fitView(): void;
     /**
      * How atoms are coloured: `'element'` (the default) or `'black'` (H36). It reads back the value in
      * force, by HTML's rule for enumerated attributes (fix round 3): `'black'` only when set to that
@@ -60,6 +68,14 @@ export declare class CruxSketchElement extends HTMLElement implements SketcherAp
      */
     get stereoLabels(): StereoDisplay;
     set stereoLabels(value: StereoDisplay);
+    /**
+     * The atom map numbers (spike map-numbers-option, API-074): `'shown'` (the default), notes beside their atoms, or
+     * `'hidden'`, drawn not at all; read back as the value in force by HTML's rule for enumerated attributes, as
+     * `stereoLabels` is. Setting it redraws at once: no change event, no undo step, and the getters as they were. The
+     * `map-numbers` attribute sets it too. A host's option, not a user's setting.
+     */
+    get mapNumbers(): MapNumbers;
+    set mapNumbers(value: MapNumbers);
     /**
      * How the stereo labels are written (spike labels-2; STEREO-010): `'standard'` (the default) or `'registration'` (an ABS
      * centre its CIP label bare, an OR centre its group and CIP label, an AND centre its group alone), read back as the value
@@ -100,6 +116,14 @@ export declare class CruxSketchElement extends HTMLElement implements SketcherAp
      * why, and refused, saying why, where it is typed (the label editor, x). It reads back the names it took, in that order;
      * anything else is left out. No edit: no change event, the getters as they were.
      */
+    /**
+     * A reaction document's mapper (spike reaction-map, RXN-020; `ReactionMapper`): with it, the Map tool's menu offers Auto-map,
+     * which calls it once for each step. `null`, the default, for none. Property only: a function is no attribute. No edit.
+     */
+    /** Each step's texts over and under its arrow (spike t2-add-panel, API-077; CHEM-8's H6): the core's. */
+    get reactionSteps(): readonly ReactionStepTexts[] | null;
+    get mapReaction(): ReactionMapper | null;
+    set mapReaction(mapper: ReactionMapper | null);
     get disabledQueryElements(): readonly string[];
     set disabledQueryElements(value: readonly string[]);
     /** Plain SMILES, or CXSMILES where plain SMILES would lose something (spike smiles-cx, X1): the core's. */
@@ -117,8 +141,14 @@ export declare class CruxSketchElement extends HTMLElement implements SketcherAp
     /** The drawing as SVG (spike copy-as, P5; API-022, IO-032): the core's, its ids new with each read. */
     get svg(): string;
     /**
+     * The drawing as SVG drawn as `options` say (spike eval6-polish, API-078): the map numbers on or off, the bond's length
+     * in points, the atoms in colour or black; the core's. With no options, the `svg` getter's.
+     */
+    svgWith(options?: PictureOptions): string;
+    /**
      * The drawing as a PNG (spike later-quick-2, API-023, IO-033): the `svg` getter's drawing rasterised in this page, at
-     * `scale` times its natural size; `null` for an empty drawing.
+     * `scale` times its natural size; `null` for an empty drawing. With picture options (spike eval6-polish, API-078),
+     * `svgWith(options)`'s drawing.
      */
     png(options?: PngOptions): Promise<Blob | null>;
     /** The drawing as CDXML (spike cdxml, X4; API-008): the core's. It throws while the page's CDXML module loads: `loadFormat('cdxml')`. */
@@ -194,10 +224,11 @@ export declare class CruxSketchElement extends HTMLElement implements SketcherAp
     setValue(text: string, options?: SetValueOptions): void;
     /**
      * Adds the molecule `text` holds without replacing the drawing (API-025; spike later-quick): the editor's `addMolecule`,
-     * placed as a paste is, one edit with `source: 'api'`; what it cannot read is refused as a write is (`lastError`,
+     * placed as a paste is, one edit with `source: 'api'`, which clears `lastError` as an accepted write does (spike
+     * last-error-add); what it cannot read is refused as a write is (`lastError`,
      * `error`). Before ready, it waits until the sketcher is. Throws on a destroyed sketcher (API-037).
      */
-    addMolecule(text: string, options?: Pick<SetValueOptions, 'format'>): void;
+    addMolecule(text: string, options?: AddMoleculeOptions): void;
     get lastError(): SketchError | null;
     get warnings(): readonly SketchWarning[];
     /** What the last accepted write, paste or drop dropped on reading (spike formats, F10, F11; IO-030): the core's. */
@@ -274,12 +305,29 @@ export declare class CruxSketchElement extends HTMLElement implements SketcherAp
     markSaved(): void;
     get isEmpty(): boolean;
     get mode(): SketcherMode;
+    /** What the sketcher edits (spike reaction-document): `'molecule'`, the default, or `'reaction'`. */
+    get document(): SketchDocument;
+    /**
+     * Chosen before the sketcher is ready (spike reaction-document), as a property or the `document` attribute; ignored once it
+     * is: a reaction document shows the arrow tool and reads reaction text. No edit, no change event.
+     */
+    set document(document: SketchDocument);
     /**
      * Query mode or molecule mode (spike query, Q2, P2): switched at any time; no edit, no change event, the getters as they
      * were. Query mode shows the query tools, the menus' query items and the dialogs' query sections, and reads SMARTS pasted;
      * molecule mode hides them (spike query-edit), a query tool in hand giving way to the single bond tool.
      */
     set mode(mode: SketcherMode);
+    /**
+     * The tools offered (spike reaction-toolset; the reaction editor's decision 7): `'reaction'` (query mode: every tool, the
+     * query tools among them) or `'publication'` (molecule mode: the query tools hidden, a query read still drawn, kept and
+     * written), switched at any time, as a property or the `toolset` attribute, by the host alone (spike reaction-bar: nothing
+     * on the page switches it; the gear shows no Query mode while one is in force); `null`, the default, for none, `mode` alone
+     * deciding and the gear as it was. Setting it sets `mode`; while it is in force, setting `mode` switches it too. No edit, no change event;
+     * never written to `crux-sketch:settings` or any storage.
+     */
+    get toolset(): SketchToolset | null;
+    set toolset(toolset: SketchToolset | null);
     get version(): string;
     get engineRev(): string;
     get renderCount(): number;
@@ -311,6 +359,7 @@ export declare class CruxSketchElement extends HTMLElement implements SketcherAp
     get tool(): SketcherTool;
     undo(): boolean;
     redo(): boolean;
+    arrange(width?: number): boolean;
     get canUndo(): boolean;
     get canRedo(): boolean;
     on<T extends SketcherEventType>(type: T, listener: SketcherListener<T>): () => void;

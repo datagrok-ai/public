@@ -319,6 +319,11 @@ export const FUNC_TYPES = {
   /** Converts values. Has one input and one output */
   CONVERTER: 'converter',
 
+  /** Computes a comparable number for each value of a semantic type; viewers order categories by it.
+   *  A second input with choices gives one property per choice.
+   *  Signature: categoryOrderer(values: Column, property?: string): Column */
+  CATEGORY_ORDERER: 'categoryOrderer',
+
   WIDGET: 'widget',
   WIDGETS: 'widgets',
   EDITOR: 'editor',
@@ -329,6 +334,9 @@ export const FUNC_TYPES = {
   CELL_EDITOR: 'cellEditor',
   UNIT_CONVERTER: 'unitConverter',
   MOLECULE_SKETCHER: 'moleculeSketcher',
+  /** The Space row of the Save project dialog, reached through `ui.spaceSaveRow()`
+    * Signature: spaceSaveRow(homeId?: string, name?: string): Widget */
+  SPACE_SAVE_ROW: 'spaceSaveRow',
   TOOLTIP: 'tooltip',
   FOLDER_VIEWER: 'folderViewer',
   SCRIPT_HANDLER: 'scriptHandler',
@@ -481,6 +489,11 @@ export const functionRoles: FuncRoleDescription[] = [
     role: FUNC_TYPES.MOLECULE_SKETCHER,
     description: 'Creates a molecule sketcher widget',
     signature: 'moleculeSketcher(): Widget',
+  },
+  {
+    role: FUNC_TYPES.SPACE_SAVE_ROW,
+    description: 'Creates the Space row of the Save project dialog: where the project goes, Move or Link',
+    signature: 'spaceSaveRow(homeId?: string, name?: string): Widget',
   },
   {
     role: FUNC_TYPES.TOOLTIP,

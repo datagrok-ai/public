@@ -177,6 +177,11 @@ export enum ERROR_MSG {
   PLATFORM_ISSUE = 'Platform issue',
   INCORTECT_INPUT = 'Incorrect input caption',
   NANS_OBTAINED = 'Failed computations: obtained NaN-s. Check inputs and formulas.',
+  MUST_BE_GREATER = 'must be greater than',
+  MUST_BE_POSITIVE = 'must be positive',
+  EXCEEDS_INTERVAL = 'exceeds the interval length',
+  PREV_SOLUTION_SHOWN = 'The previous solution is shown',
+  LINK_DEFAULTS_USED = 'Default values are used',
 };
 
 /** Lookup table fails */

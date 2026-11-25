@@ -301,6 +301,60 @@ category('Event-driven: route resolution (AC-C1/C2/C4)', () => {
     expect(infWarn!.severity, 'info', 'infusion-rate-inferred warning is informational (BD-1)');
   });
 
+  // ── nca-ip-route F8 (UD-4, R2 N-1) + F2 / F3 on the NONMEM path ─────────────
+  const twoSubjects = (route?: [string, string], cmt?: [number, number], rate?: [number, number]): DG.DataFrame =>
+    nmDf({
+      id: ['a', 'a', 'b', 'b'], time: [0, 1, 0, 1], dv: [NaN, 50, NaN, 40], amt: [1, NaN, 1, NaN], evid: [1, 0, 1, 0],
+      ...(route !== undefined ? {route: [route[0], route[0], route[1], route[1]]} : {}),
+      ...(cmt !== undefined ? {cmt: [cmt[0], cmt[0], cmt[1], cmt[1]]} : {}),
+      ...(rate !== undefined ? {rate: [rate[0], NaN, rate[1], NaN]} : {}),
+    });
+
+  test('AC-8.1: ROUTE `1` on every dose → confirm required, the value named; confirmed IP → IP', async () => {
+    const ec = {...BASE_EC, route: 'ROUTE'};
+    const res = normalizeEventDrivenObservations(twoSubjects(['1', '1']), ec);
+    expect(res.errors.length, 0, 'one unrecognised value does not block');
+    expect(res.routeConfirmRequired, true, 'never computed silently as other');
+    expect(res.unrecognisedRouteValues.map((u) => u.value).join(), '1', 'the dialog names `1`');
+    expect(res.inferredRoutes.every((r) => r.inferred && r.inferredCode === nca.ROUTE_OTHER), true,
+      'no CMT / RATE → every subject infers other');
+    const ok = normalizeEventDrivenObservations(twoSubjects(['1', '1']), ec, {confirmedRoute: nca.ROUTE_IP});
+    expect(ok.routeConfirmRequired, false);
+    expect(ok.observations.col(DERIVED_ROUTE_CODE_COL)!.get(0) as number, nca.ROUTE_IP, 'confirmed IP applied');
+  });
+
+  test('AC-8.2: ROUTE `1` and `2` → blocked, both values named; integers are never route codes', async () => {
+    const res = normalizeEventDrivenObservations(twoSubjects(['1', '2']), {...BASE_EC, route: 'ROUTE'});
+    const err = res.errors.find((e) => e.code === 'NONMEM_ROUTE_UNRECOGNISED');
+    expect(err !== undefined, true, 'blocked');
+    expect(err!.message.includes('\'1\' (row 1)') && err!.message.includes('\'2\' (row 3)') &&
+      err!.message.includes('IP'), true, `1-based rows as the grid shows them: ${err!.message}`);
+    const six = normalizeEventDrivenObservations(twoSubjects(['6', '6']), {...BASE_EC, route: 'ROUTE'});
+    expect(six.routeConfirmRequired, true, '`6` is not read as ROUTE_IP');
+  });
+
+  test('AC-8.3: ROUTE `IP` → mapped, no confirm; F2 / F3 notes on the NONMEM path', async () => {
+    const res = normalizeEventDrivenObservations(twoSubjects(['IP', 'i.p.']), {...BASE_EC, route: 'ROUTE'});
+    expect(res.routeConfirmRequired, false);
+    expect(res.observations.col(DERIVED_ROUTE_CODE_COL)!.get(0) as number, nca.ROUTE_IP);
+    const f = normalizeEventDrivenObservations(twoSubjects(['intraperitoneal infusion', 'PO'], undefined, [2, 2]),
+      {...BASE_EC, route: 'ROUTE', rate: 'RATE'});
+    const codes = (s: string): string[] => (f.warningsBySubject.get(s) ?? []).map((w) => w.code);
+    expect(codes('a').includes('IP_INFUSION_AS_SINGLE_DOSE'), true, 'i.p. infusion warned');
+    expect(codes('a').includes('INFUSION_DURATION_NOT_USED'), false, 'one line when F2 + F3 meet');
+    expect(codes('b').includes('INFUSION_DURATION_NOT_USED'), true, 'PO + RATE > 0 → duration not used');
+  });
+
+  test('AC-8.6: inferred subjects that need different routes block (NONMEM_ROUTE_INFERENCE_MIXED)', async () => {
+    const res = normalizeEventDrivenObservations(twoSubjects(undefined, [1, 2]), {...BASE_EC, cmt: 'CMT'});
+    const err = res.errors.find((e) => e.code === 'NONMEM_ROUTE_INFERENCE_MIXED');
+    expect(err !== undefined, true, 'blocked, no dialog');
+    expect(err!.message.includes('IV-bolus (subjects a)') && err!.message.includes('other (subjects b)'), true,
+      err!.message);
+    const same = normalizeEventDrivenObservations(twoSubjects(undefined, [2, 2]), {...BASE_EC, cmt: 'CMT'});
+    expect(same.errors.length, 0, 'one shared inference: the confirm dialog');
+  });
+
   test('confirmedRoute overrides inference and clears the confirm gate', async () => {
     const df = nmDf({
       id: ['s', 's'], time: [0, 1], dv: [NaN, 50], amt: [1, NaN], evid: [1, 0], cmt: [2, 2],

@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Plates: Added `plateWidget(table, rows, cols)`, which draws a plate from a table of wells, for packages that read plates of their own
+* Plates: Fixed a plate read from a table or a reader with a well in row I or column 13 getting the 96-well size; `fromTableByRow` also takes an explicit size
 * Search: Fixed a numeric range criterion (`10-20`) searching for its first number only, and an emptied numeric input of Search Plates or Search Wells showing as invalid
 * [core#1146](https://github.com/datagrok-ai/core/issues/1146): Search Plates: no second, identical search 1.5 s after opening, which could replace the results of a search started meanwhile
 * GROK-21054: Fixed the Plates app crashing when opened before demo plates are created

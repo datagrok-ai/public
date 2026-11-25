@@ -6,6 +6,7 @@ import {ResizeHandle} from '@datagrok-libraries/webcomponents-vue';
 import {historyUtils} from '@datagrok-libraries/compute-utils/history-utils/src/history-utils';
 import {getRunName, getRunTitle} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {getModelFilter} from '@datagrok-libraries/compute-utils/model-catalog/src/model-handler';
+import type {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import {PlacesTree} from './PlacesTree';
 import {ModelSelector} from './ModelSelector';
 import {addRunToSpace, addSeveralToSpace} from './add-to-space';
@@ -16,7 +17,7 @@ import {
   Place, bySavedDesc, deleteOrRemoveRuns, formatSaved, modelLabel, placeName, placeRunFilter, runVersion,
   notifyRunsChanged, spaceListingError,
 } from './run-storage';
-import {spaceFolders, subtreeRuns} from './space-index';
+import {spaceFolders, subtreeRuns, unlistedSpaces} from './space-index';
 import {useFavorites} from './use-favorites';
 import {useSpaceIndex} from './use-space-index';
 import {locationKey, useSpaceNavigation} from './use-space-navigation';
@@ -26,6 +27,8 @@ import {useRunSelection} from './use-run-selection';
 import {useMyRuns} from './use-my-runs';
 import {useRunAuthors} from './use-run-authors';
 import {showAddToComparisonDialog} from '../RunComparison/comparison-views';
+import {ExportRun} from './bulk-export';
+import {openBulkExportDialog} from './BulkExportDialog';
 import './RunStorage.css';
 
 /** Opens and manages saved runs of one model, in My runs and in spaces, browsed like folders. */
@@ -42,7 +45,10 @@ export const RunBrowser = Vue.defineComponent({
     roleOnlyFilter: {type: Boolean, default: false},
     layout: {type: String as Vue.PropType<'dialog' | 'docked'>, default: 'docked'},
     stepHistory: {type: Boolean, default: false},
+    // a workflow step's hook, for exporting its history
+    viewersHook: {type: Function as Vue.PropType<ViewersHook>, required: false},
     allowCompare: {type: Boolean, default: true},
+    allowExport: {type: Boolean, default: true},
     allowOpen: {type: Boolean, default: true},
     // hosts that open each run in a new view open all the selected ones; the rest load one run into their view
     openSeveral: {type: Boolean, default: false},
@@ -214,6 +220,39 @@ export const RunBrowser = Vue.defineComponent({
       showAddToComparisonDialog(selection.value.map((run) => ({runId: run.id, name: getRunTitle(run)})),
         {model: compareModel.value, preferNew: true, onAdded: () => emit('cancel')});
     };
+    // Export takes the runs the filters keep in the location and below it; the top of the spaces isn't a space
+    const exportScope = Vue.computed<ExportRun[]>(() => {
+      if (!isMyRuns.value && !nav.spaceId.value)
+        return [];
+      const kept = isActive.value ? listed.value : scopeRuns.value;
+      return kept.flatMap(({run, spaceId, path}) => {
+        const func = modelOf(run);
+        const folders = (path ?? []).slice(1).map((id) => placeName(nodeOf(id)!.space));
+        return func ? [{run, model: func, spaceId, folders}] : [];
+      });
+    });
+    const exportTitle = () => {
+      if (!isMyRuns.value && !nav.spaceId.value)
+        return 'Open a space to export its runs';
+      if (exportScope.value.length === 0)
+        return 'No runs to export';
+      return isMyRuns.value ? 'Export the runs listed here' : 'Export the runs here and in the subspaces';
+    };
+    const exportLocation = () => {
+      if (exportScope.value.length === 0)
+        return;
+      openBulkExportDialog({
+        locationName: nav.crumbs.value[nav.crumbs.value.length - 1].label,
+        modelsName: model.value ? modelLabel(model.value) : 'All models',
+        runs: exportScope.value,
+        spaceId: nav.spaceId.value,
+        unlisted: nav.spaceId.value && spaces.index.value ? unlistedSpaces(spaces.index.value, nav.spaceId.value)
+          .map((node) => ({spaceId: node.space.id, name: placeName(node.space)})) : [],
+        filtered: isActive.value,
+        stepHistory: props.stepHistory,
+        viewersHook: props.viewersHook,
+      });
+    };
     // the run as listed, without its tables: most hosts open runs by id, the rest load what they need
     const openRun = (run: DG.FuncCall) => {
       if (props.allowOpen)
@@ -350,6 +389,9 @@ export const RunBrowser = Vue.defineComponent({
       <div class='c2-runs-buttons'>
         <span class='c2-runs-muted c2-runs-footer-note'>{footerNote()}</span>
         <div class='c2-runs-button-group'>
+          { props.allowExport &&
+            <button class={['ui-btn', exportScope.value.length > 0 ? '' : 'd4-disabled']} title={exportTitle()}
+              onClick={exportLocation}>Export</button> }
           { props.allowCompare &&
             <button class={['ui-btn', compareModel.value ? '' : 'd4-disabled']}
               onClick={() => compareModel.value && compareSelected()}>Compare</button> }

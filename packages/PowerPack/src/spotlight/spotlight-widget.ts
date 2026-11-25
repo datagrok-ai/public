@@ -3,10 +3,12 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import dayjs from 'dayjs';
 import {queries} from '../package-api';
+import {_package} from '../package';
 import {LearningWidget} from '../widgets/learning-widget';
 import {WorkspaceTab} from './workspace-tab';
-import {isSpotlightEntity} from './entity-kinds';
+import {hasHandler, isSpotlightEntity} from './entity-kinds';
 import {clearWorkspacePreview} from './preview-host';
+import {openDefaultTabOnce, spotlightTabContent, spotlightTabFunctions} from './package-tabs';
 
 
 enum SpotlightTabNames {
@@ -82,7 +84,7 @@ export class SpotlightWidget extends DG.Widget {
     this.sqlPromise = queries.mostRecentEntities(userId);
     this.sharedSqlPromise = queries.recentlySharedWithMe(userId);
     const notificationsDataSource: DG.NotificationsDataSource = grok.dapi.users.notifications.forCurrentUser()
-      .by(SpotlightWidget.SPOTLIGHT_ITEMS_LENGTH) as DG.NotificationsDataSource;
+      .by(SpotlightWidget.SPOTLIGHT_ITEMS_LENGTH).order('createdAt', true) as DG.NotificationsDataSource;
     this.notificationsPromise = notificationsDataSource.list({pageSize: 20});
     this.buildTabbedUI();
   }
@@ -97,12 +99,15 @@ export class SpotlightWidget extends DG.Widget {
       'My Activity': () => ui.wait(async () => await this.getActivityTab()),
       'Learn': () => new LearningWidget().root,
     };
+    const packageTabs = spotlightTabFunctions().filter((f) => !(f.friendlyName in tabs));
+    for (const func of packageTabs)
+      tabs[func.friendlyName] = () => ui.wait(async () => spotlightTabContent(func));
 
     this.tabControl = ui.tabControl(tabs, {vertical: true, key: 'spotlight-widget'});
+    openDefaultTabOnce(this.tabControl, packageTabs);
     this.subs.push(this.tabControl.onTabChanged.subscribe((tabPane: DG.TabPane) => {
       this.cleanLists();
-      if (tabPane.name !== 'Workspace')
-        clearWorkspacePreview();
+      clearWorkspacePreview();
       this.updateContentOverflow(tabPane);
       for (const id of Array.from(this.markedReadIds)) {
         for (const el of Array.from(tabPane.content.querySelectorAll(`[data-notification-id="${id}"]`))) {
@@ -125,11 +130,12 @@ export class SpotlightWidget extends DG.Widget {
       });
     }
 
-    this.tabControl.root.style.height = '90%';
+    this.tabControl.root.style.height = 'auto';
     this.tabControl.root.style.width = '100%';
 
     this.root.appendChild(this.tabControl.root);
-    this.root.appendChild(await this.createRandomizedTipOfTheDay());
+    if (_package.settings['showTipOfTheDay'] !== false)
+      this.root.appendChild(await this.createRandomizedTipOfTheDay());
     // TODO: uncomment when JS API 1.27/1.26.5 is released
     // this.subs.push((grok.events.onCurrentObjectChanged.subscribe((args) => {
     //   const trigger = args.args.trigger;
@@ -206,11 +212,11 @@ export class SpotlightWidget extends DG.Widget {
         const path = newRandomTip.options[DG.FUNC_OPTIONS.DEMO_PATH] as string;
         const pathArray = path.split('|').map((s) => s.trim());
         const actualPath = pathArray.map((s) => s.replaceAll(' ', '-')).join('/');
-        link = ui.link(pathArray[pathArray.length - 1], async () => await demoApp.apply({path: `/${actualPath}`}), newRandomTip.description);
+        link = SpotlightWidget.viewLink(pathArray[pathArray.length - 1], async () => await demoApp.apply({path: `/${actualPath}`}), newRandomTip.description);
         tip.appendChild(link);
       }
       else if (!(newRandomTip instanceof DG.Func) && this.tutorialsOfTheDay.includes(newRandomTip) && tutorialsApp) {
-        link = ui.link(newRandomTip, async () => await tutorialsApp.apply());
+        link = SpotlightWidget.viewLink(newRandomTip, () => this.openTutorials());
         tip.appendChild(link);
       }
       const updateTip = () => {
@@ -287,7 +293,7 @@ export class SpotlightWidget extends DG.Widget {
     for (const c of parsedCandidates) {
       const user = byIdMap.get(c.userId);
       const ent = byIdMap.get(c.entityId);
-      if (!(user instanceof DG.User) || !ent || ent instanceof DG.User)
+      if (!(user instanceof DG.User) || !hasHandler(ent) || ent instanceof DG.User)
         continue;
       this.sharedNotifications.push(c.notification);
       this.sharedUsers.push(user);
@@ -396,16 +402,9 @@ export class SpotlightWidget extends DG.Widget {
             parentElem.insertBefore(iconToPaste, parentElem.firstChild);
         } else if (item instanceof DG.UserNotification) {
           (listChild as HTMLElement).dataset.notificationId = item.id;
+          this.openReportInContextPanel(listChild as HTMLElement);
           if (!item.isRead && !this.markedReadIds.has(item.id)) {
-            listChild.classList.add('grok-notification-unread');
-            const dartIcon = listChild.querySelector('.grok-notification-mark-read');
-            if (dartIcon) {
-              dartIcon.addEventListener('click', () => {
-                this.markedReadIds.add(item.id);
-                listChild.classList.remove('grok-notification-unread');
-                this.refreshUnreadCountUI();
-              });
-            }
+            this.markReadOnClick(listChild as HTMLElement, item);
           }
           if (item.createdAt) {
             const timestamp = ui.time.shortTimestamp(item.createdAt);
@@ -528,8 +527,8 @@ export class SpotlightWidget extends DG.Widget {
       return root;
     const appHandler = DG.ObjectHandler.forEntity(demoApp);
 
-    const createLinkWithIcon = (text: string, target: Function, appFunc: DG.Func) => {
-      const link = ui.link('', target);
+    const createLinkWithIcon = (text: string, target: () => void, appFunc: DG.Func) => {
+      const link = SpotlightWidget.viewLink('', target);
       const appElement = appHandler?.renderTooltip(DG.toDart(appFunc)).firstChild as HTMLElement;
       if (appElement) {
         const appElementLabel = appElement.querySelector('label');
@@ -563,11 +562,11 @@ export class SpotlightWidget extends DG.Widget {
     };
 
     const gettingStartedList = ui.list([
-      createLinkWithIcon('Data Access', async () => await tutorialsApp.apply(), tutorialsApp),
-      createLinkWithIcon('Data Transformation', async () => await tutorialsApp.apply(), tutorialsApp),
-      createLinkWithIcon('Exploratory Data Analysis', async () => await tutorialsApp.apply(), tutorialsApp),
-      createLinkWithIcon('Cheminformatics', async () => await tutorialsApp.apply(), tutorialsApp),
-      createLinkWithIcon('Explore more Tutorials', async () => await tutorialsApp.apply(), tutorialsApp),
+      createLinkWithIcon('Data Access', () => this.openTutorials('access'), tutorialsApp),
+      createLinkWithIcon('Data Transformation', () => this.openTutorials('Datatransformation'), tutorialsApp),
+      createLinkWithIcon('Exploratory Data Analysis', () => this.openTutorials('eda'), tutorialsApp),
+      createLinkWithIcon('Cheminformatics', () => this.openTutorials('chem'), tutorialsApp),
+      createLinkWithIcon('Explore more Tutorials', () => this.openTutorials(), tutorialsApp),
     ]);
     gettingStartedList.classList.add('power-pack-activity-widget-subwidget-list-content', 'power-pack-activity-widget-getting-started-subwidget-list-content');
     const gettingStartedRoot = ui.divV([ui.h3(ui.span([ui.iconFA('rocket'), ui.span([' Interactive Tutorials'])]), 'power-pack-activity-widget-spotlight-column-header'),
@@ -616,6 +615,23 @@ export class SpotlightWidget extends DG.Widget {
     return root;
   }
 
+  /** A link that opens a view. A view's root makes its view current on click, and the browser runs the opening's
+   * promise callbacks before the click bubbles up there, so the click must not reach Home's root. */
+  static viewLink(text: string, open: () => void, tooltip?: string): HTMLAnchorElement {
+    const link = ui.link(text, open, tooltip);
+    link.addEventListener('click', (e) => e.stopPropagation());
+    return link;
+  }
+
+  /** Tutorials on master returns its view without opening it, released versions dock their panel and return nothing;
+   * `track` is the track's name in the app's URL. */
+  async openTutorials(track?: string): Promise<void> {
+    const app = DG.Func.find({meta: {role: DG.FUNC_TYPES.APP}, package: 'Tutorials', name: 'trackOverview'})[0];
+    const view = await app.apply(track ? {path: track} : {});
+    if (view)
+      grok.shell.addView(view);
+  }
+
   replaceMarkupSpans(container: HTMLElement, replacements: HTMLElement[], names: string[], time: dayjs.Dayjs): HTMLElement {
     const result = ui.span([], 'd4-markup');
     let replacementIndex = 0;
@@ -642,10 +658,8 @@ export class SpotlightWidget extends DG.Widget {
     console.time('ActivityDashboardWidget.buildFavoritesTab');
     const root = ui.div([], 'power-pack-activity-widget-favorites-tab');
     const favorites = grok.shell.favorites;
-    if (favorites.length === 0) {
-      root.appendChild(ui.divText('No favorites found.'));
-      return root;
-    }
+    if (favorites.length === 0)
+      return ui.divText('No favorites found.', 'pp-empty-message');
 
     const eventFetches = await Promise.all(favorites.map((entity) =>
       grok.dapi.log.where({entityId: entity.id,
@@ -654,15 +668,40 @@ export class SpotlightWidget extends DG.Widget {
     this.favoritesEvents = (this.removeUnnecessaryEntities(eventFetches.flat()) as DG.LogEvent[])
       .sort((a, b) => b.eventTime?.diff(a.eventTime) ?? 0);
 
-    if (this.favoritesEvents.length === 0) {
-      root.appendChild(ui.divText('No recent activity on your favorites.'));
-      return root;
-    }
+    if (this.favoritesEvents.length === 0)
+      return ui.divText('No recent activity on your favorites.', 'pp-empty-message');
     this.favoritesListRoot = ui.list(this.favoritesEvents);
     root.appendChild(this.favoritesListRoot);
     this.cleanLists();
     console.timeEnd('ActivityDashboardWidget.buildFavoritesTab');
     return root;
+  }
+
+  /** cleanList re-parents the rendered notification, dropping the Dart renderer's own click handler. */
+  markReadOnClick(row: HTMLElement, item: DG.UserNotification): void {
+    row.classList.add('grok-notification-unread');
+    row.addEventListener('click', () => {
+      this.markedReadIds.add(item.id);
+      row.classList.remove('grok-notification-unread');
+      this.refreshUnreadCountUI();
+      grok.dapi.users.notifications.markAsRead(item.id);
+    }, {once: true, capture: true});
+  }
+
+  /** An alert's "Details" link points at the Reports app, which is slow to open; show just the report instead. */
+  openReportInContextPanel(row: HTMLElement): void {
+    row.addEventListener('click', async (e) => {
+      const reportNumber = (e.target as HTMLElement).closest('a')?.href.match(/\/apps\/usage\/reports\/(\d+)/)?.[1];
+      if (!reportNumber)
+        return;
+      e.preventDefault();
+      e.stopPropagation();
+      const reports = await grok.dapi.reports.getReports(parseInt(reportNumber));
+      if (reports.rowCount === 0)
+        return;
+      grok.shell.windows.showContextPanel = true;
+      grok.shell.o = await grok.dapi.reports.find(reports.get('id', 0));
+    }, {capture: true});
   }
 
   refreshUnreadCountUI(): void {
@@ -691,26 +730,17 @@ export class SpotlightWidget extends DG.Widget {
     if (this.recentNotifications.length === 0)
       await this.initNotificationData();
     const root = ui.div([], 'power-pack-activity-widget-notifications-tab');
-    if (this.recentNotifications.length === 0) {
-      root.appendChild(ui.divText('No recent notifications.'));
-      return root;
-    }
+    if (this.recentNotifications.length === 0)
+      return ui.divText('No recent notifications.', 'pp-empty-message');
 
     this.notificationsListRoot = ui.list(this.recentNotifications);
     for (let i = 0; i < this.notificationsListRoot.children.length; i++) {
       const child = this.notificationsListRoot.children[i];
       const item = this.recentNotifications[i];
       (child as HTMLElement).dataset.notificationId = item.id;
+      this.openReportInContextPanel(child as HTMLElement);
       if (!item.isRead && !this.markedReadIds.has(item.id)) {
-        child.classList.add('grok-notification-unread');
-        const dartIcon = child.querySelector('.grok-notification-mark-read');
-        if (dartIcon) {
-          dartIcon.addEventListener('click', () => {
-            this.markedReadIds.add(item.id);
-            child.classList.remove('grok-notification-unread');
-            this.refreshUnreadCountUI();
-          });
-        }
+        this.markReadOnClick(child as HTMLElement, item);
       }
       if (item.createdAt) {
         const timestamp = ui.time.shortTimestamp(item.createdAt);
@@ -753,10 +783,8 @@ export class SpotlightWidget extends DG.Widget {
       .sort((a, b) => b.eventTime?.diff(a.eventTime) ?? 0);
 
     const root = ui.div([], 'power-pack-activity-widget-activity-tab');
-    if (this.recentUserActivity.length === 0) {
-      root.appendChild(ui.divText('No recent user activity.'));
-      return root;
-    }
+    if (this.recentUserActivity.length === 0)
+      return ui.divText('No recent user activity.', 'pp-empty-message');
     this.activityListRoot = ui.list(this.recentUserActivity);
     root.appendChild(this.activityListRoot);
     this.cleanLists();

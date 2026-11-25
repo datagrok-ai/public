@@ -19,6 +19,9 @@ import {
 } from './shared';
 import {loadEnumerationDefaults} from './default-files';
 import {PropagatedColumnsPicker} from './propagation';
+import {buildInputs} from './shared';
+import {Flag, checksModule} from '../footguns/checks';
+import {enumeratorFlags} from '../footguns/enumerator';
 
 function pickFile(accept: string): Promise<File | null> {
   return new Promise((resolve) => {
@@ -600,7 +603,27 @@ export class EnumeratorConfigForm {
       ps.min_num_carbon_atoms > ps.max_num_carbon_atoms)
       return 'Min carbon atoms must not exceed Max carbon atoms.';
 
+    // Crux mode: a blocking or exclusion SMARTS no engine reads would be dropped without a word (TRF-05, TRF-06)
+    const block = this.footgunFlags().find((f) => f.level === 'block');
+    if (block) return block.text;
+
     return null;
+  };
+
+  /** The foot-gun flags of the run's filters (Crux mode; utils/footguns/enumerator.ts): what the words beside
+   * Enumerate say. A block also makes `validate` fail, so Enumerate is disabled. */
+  footgunFlags = (): Flag[] => {
+    const crux = checksModule();
+    const tDf = this.templatesInput.value;
+    const bDf = this.bbsInput.value;
+    if (!crux || !tDf || !bDf)
+      return [];
+    try {
+      return enumeratorFlags(crux, getRdKitModule(),
+        buildInputs(this.config, tDf, bDf, this.exclusionInput.value, null));
+    } catch {
+      return [];
+    }
   };
 
   refreshStrategyCards = (): void => {

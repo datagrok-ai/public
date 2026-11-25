@@ -58,12 +58,12 @@ async function trellisMenuLabels(page: Page): Promise<string[]> {
     await w.__poll(() => items().length, (n: number) => n > 0, 800, 40);
     await w.__settledFor(() => items().join('|'), 250, 800, 25);
     const out = items();
-    document.body.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
-    document.body.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
-    await w.__poll(() => document.querySelectorAll('.d4-menu-popup').length, (n: number) => n === 0, 400, 40);
-    return out;
+    await w.__closeContextMenu(2000);
+    return {out, popups: document.querySelectorAll('.d4-menu-popup').length};
   });
-  return labels;
+  // a menu left open eats the next mousedown, such as the range-slider drag of Scenario 2
+  expect(labels.popups, 'context menu still open after closing it').toBe(0);
+  return labels.out;
 }
 
 async function rangeSliderCount(page: Page): Promise<number> {
@@ -81,6 +81,21 @@ async function cellCenter(page: Page, idx: number): Promise<{x: number; y: numbe
     const r = cell.getBoundingClientRect();
     return {x: r.left + r.width / 2, y: r.top + r.height / 2};
   }, idx);
+}
+
+// isRenderPending covers the trellis's own timers, the cells' settle poll and every inner viewer
+async function trellisSettled(page: Page): Promise<void> {
+  const settled = await page.evaluate(async () => {
+    const tp = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Trellis plot') as any;
+    let held = 0;
+    const t0 = Date.now();
+    while (held < 2 && Date.now() - t0 < 10000) {
+      held = tp.isRenderPending ? 0 : held + 1;
+      await new Promise((r) => setTimeout(r, 16));
+    }
+    return held >= 2;
+  });
+  expect(settled, 'trellis plot still rendering after 10 s').toBe(true);
 }
 
 async function setInnerType(page: Page, viewerType: string): Promise<void> {
@@ -119,6 +134,7 @@ async function dragInnerRangeSlider(page: Page, axis: 'x' | 'y', rootIndex = 0):
     return {x: b.x + b.width / 2, y: b.y + b.height / 2};
   }, rootIndex);
   if (!cell) return false;
+  await page.evaluate(() => (window as any).__closeContextMenu(2000));
   // the reveal is cell.onMouseEnter, so the pointer has to come from outside the cell
   await page.mouse.move(2, 2);
   await page.mouse.move(cell.x, cell.y);
@@ -320,7 +336,8 @@ test('Trellis plot: global scale, inner axes, range slider reset', async ({page}
       const tp = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Trellis plot') as any;
       tp.props.globalScale = true;
     });
-    await v.waitForViewerRendered(page, 'Trellis plot', 900);
+    // the scale is applied once every cell has painted (_syncCells), and that resetView wipes a zoom made earlier
+    await trellisSettled(page);
     const probes = [0, 2];
 
     const errBefore = consoleErrors.length;

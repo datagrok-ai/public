@@ -32,7 +32,7 @@ PROVIDER_MESSAGE = re.compile(r"""['"]message['"]: (?:'((?:[^'\\]|\\.)*)'|"((?:[
 # api_request_error's reason when the provider's safety filter stops an answer; its message is the cut-off answer.
 SAFETY_FILTER = 'content_policy_blocked'
 SAFETY_FILTER_MESSAGE = "The model provider's safety filter stopped this answer. Try rewording the request."
-BASE_TOOLSETS = ['file', 'terminal', 'skills', 'web', browser_tools.TOOLSET]
+BASE_TOOLSETS = ['file', 'terminal', 'skills', 'web']
 # The connection test's call: no system prompt, no tools, a reply of a word or two. Hermes may call again after an
 # empty reply, which a limit of one would refuse and report as the provider's error.
 RETRY_STRUCTURED = ('Your reply did not match the required JSON schema: {}. '
@@ -146,13 +146,14 @@ class Session:
         self.latest: Turn | None = None
         self.view_tools: list[str] = []
         self.view_specs: list[hermes.ToolSpec] = []
+        self.browser_tools = True
         self.mcp: McpServer | None = None
         # The stored session this process reloads, until a turn has restored it.
         self.restore: str | None = None
         self.calls: dict[str, BrowserCall] = {}
         self.skills: list[skills.Skill] = []
         self.hooks_registered = False
-        browser_tools.register(registry, self.call_browser)
+        browser_tools.register(registry, self.call_browser, self.show_in_browser)
         threading.Thread(target=self._beat_every_second, daemon=True).start()
 
     def register_hooks(self, ctx: hermes.PluginContext) -> None:
@@ -282,7 +283,7 @@ class Session:
         assert self.agent is not None, 'a continue follows its turn'
         self._run(self.agent, t, cmd['text'])
 
-    def cancel(self) -> None:
+    def cancel(self, reason: str | None = None) -> None:
         t = self.latest
         if t is None or t.cancelled:
             return
@@ -290,7 +291,7 @@ class Session:
         if self.turn is t and self.agent:
             self.agent.interrupt('cancelled by the user', hard_cancel=True)
         for call in list(self.calls.values()):
-            call.answer(error='aborted')
+            call.answer(error=reason or 'aborted')
 
     def browser_answer(self, cmd: BrowserResultCommand) -> None:
         call = self.calls.get(cmd['id'])
@@ -308,6 +309,9 @@ class Session:
         if call.error:
             raise RuntimeError(call.error)
         return call.value
+
+    def show_in_browser(self, name: str, args: JsonObject) -> None:
+        self.emit({'type': 'browser_show', 'name': name, 'input': args})
 
     def build_agent(self, hermes_session: str | None = None) -> hermes.Agent:
         self.hermes_session = hermes_session or uuid.uuid4().hex
@@ -331,6 +335,8 @@ class Session:
             agent = self.agent
         hermes.set_terminal_cwd(self.key, cmd['cwd'])
         changed = self._set_view_tools(browser_tools.view_tool_specs(cmd.get('clientTools')))
+        changed = cmd['browserTools'] != self.browser_tools or changed
+        self.browser_tools = cmd['browserTools']
         changed = self._set_mcp(cmd.get('datagrokMcp')) or changed
         if changed:
             agent.enabled_toolsets = self._toolsets()
@@ -339,7 +345,8 @@ class Session:
         return agent
 
     def _toolsets(self) -> list[str]:
-        return BASE_TOOLSETS + ([browser_tools.VIEW_TOOLSET] if self.view_tools else []) + \
+        return BASE_TOOLSETS + ([browser_tools.TOOLSET] if self.browser_tools else []) + \
+            ([browser_tools.VIEW_TOOLSET] if self.view_tools else []) + \
             ([f'mcp-{MCP_SERVER}'] if self.mcp else [])
 
     def _set_view_tools(self, specs: list[hermes.ToolSpec]) -> bool:

@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, test} from '@datagrok-libraries/test/src/test';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import type {
-  HeadlessResult, StepRunState, WorkflowRunState,
+  HeadlessResult, LoadedRun, StepRunState,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/headless';
 import {loadStateSnapshot} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/state-snapshot';
 import {deleteSavedWorkflow} from './utils';
@@ -15,7 +15,7 @@ async function callFunc(nqName: string, params: Record<string, any>) {
 }
 
 category('Workflows: headless run', () => {
-  test('A workflow run without UI returns its values and saves to history', async () => {
+  test('A workflow run without UI returns its values, saves to history and loads back', async () => {
     const workflow = {nqName: 'Compute2:MockPipeline2', version: '1.0'};
     const result: HeadlessResult = await callFunc('Compute2:RunWorkflow', {...workflow,
       instanceConfig: {steps: [
@@ -24,7 +24,7 @@ category('Workflows: headless run', () => {
       ]},
     });
     expectDeepEqual(result.isRun, true);
-    const steps = (result.state as WorkflowRunState).steps as StepRunState[];
+    const steps = result.state.steps as StepRunState[];
     expectDeepEqual(steps.map((step) => [step.id, step.status, step.initialValues.result]),
       [['stepAdd', 'succeeded', 3], ['stepMul', 'succeeded', 40]]);
     expectDeepEqual(result.summary[0].rollup?.steps, 2);
@@ -36,6 +36,12 @@ category('Workflows: headless run', () => {
       const saved = (await loadStateSnapshot(run)) as any;
       expectDeepEqual(saved.steps.map((step: any) => [step.funcCall.outputs.result, step.isOutputOutdated]),
         [[3, false], [40, false]]);
+
+      const loaded: LoadedRun = await callFunc('Compute2:LoadWorkflowRun', {id: run.id});
+      expectDeepEqual((loaded.state.steps as StepRunState[])
+        .map((step) => [step.id, step.status, step.initialValues.result]),
+      [['stepAdd', 'succeeded', 3], ['stepMul', 'succeeded', 40]]);
+      expectDeepEqual(loaded.summary[0].rollup?.steps, 2);
     } finally {
       await deleteSavedWorkflow(run.id);
     }

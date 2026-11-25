@@ -114,6 +114,14 @@ function fence(dir: string, open: string[] = [], start = false): boolean {
 
 const modules = (owner: string, c: Child) => path.resolve(owner, git(owner, ['rev-parse', '--git-path', `modules/${c.name}`]).out);
 
+// GitHub's answer for a private repo: "not found" when signed in, a username prompt without credentials.
+function unreadable(owner: string, c: Child): boolean {
+  const url = git(owner, ['config', `submodule.${c.name}.url`]).out;
+  const r = spawnSync('git', ['-C', owner, 'ls-remote', '--quiet', '--', url, 'HEAD'],
+    {encoding: 'utf-8', env: {...env, GIT_TERMINAL_PROMPT: '0', LC_ALL: 'C'}});
+  return !!url && r.status !== 0 && /repository not found|could not read username/i.test(r.stderr ?? '');
+}
+
 function rollback(owner: string, c: Child, made?: string): void {
   if (cloned(c.dir) || empty(c.dir))
     step(owner, ['submodule', 'deinit', '--force', '--', c.path]);
@@ -123,60 +131,68 @@ function rollback(owner: string, c: Child, made?: string): void {
   fence(owner);
 }
 
-function cloneChild(root: string, owner: string, c: Child, failed: string[]): boolean {
+interface Outcome {failed: Set<string>; skipped: Set<string>}
+
+function cloneChild(root: string, owner: string, c: Child, out: Outcome, named = false): boolean {
   if (cloned(c.dir))
     return true;
+  const failed = out.failed;
   const gitdir = modules(owner, c);
   const made = fs.existsSync(gitdir) ? undefined : gitdir;
   if (!fence(owner, [c.path]) ||
     !step(owner, ['submodule', 'update', '--init', '--require-init', '--checkout', '--filter=blob:none', '--', c.path])) {
+    const skip = !named && unreadable(owner, c);
     rollback(owner, c, made);
-    failed.push(label(root, c.dir));
+    (skip ? out.skipped : failed).add(label(root, c.dir));
     return false;
   }
   if (c.branch && !step(c.dir, ['switch', c.branch]))
-    failed.push(label(root, c.dir));
+    failed.add(label(root, c.dir));
   if (fs.existsSync(path.join(c.dir, '.gitmodules')))
     step(c.dir, ['config', 'push.recurseSubmodules', 'check']);
   fence(c.dir, [], true);
   return true;
 }
 
-function cloneTree(root: string, owner: string, c: Child, failed: string[]): void {
+function cloneTree(root: string, owner: string, c: Child, out: Outcome, named = false): void {
   const fresh = !cloned(c.dir);
-  if (!cloneChild(root, owner, c, failed) || !git(c.dir, ['ls-files', '--', '.gitmodules']).out)
+  if (!cloneChild(root, owner, c, out, named) || !git(c.dir, ['ls-files', '--', '.gitmodules']).out)
     return;
   const cur = fresh ? c.branch : git(c.dir, ['branch', '--show-current']).out;
   if (cur === c.branch || (!cur && git(c.dir, ['rev-parse', 'HEAD']).out === git(owner, ['rev-parse', `:${c.path}`]).out))
-    children(c.dir).forEach((k) => cloneTree(root, c.dir, k, failed));
+    children(c.dir).forEach((k) => cloneTree(root, c.dir, k, out));
 }
 
-function addSpec(root: string, dir: string, spec: string, failed: string[]): boolean {
+function addSpec(root: string, dir: string, spec: string, out: Outcome, named: boolean): boolean {
   const kids = children(dir);
   const parent = kids.find((c) => spec.startsWith(c.path + '/'));
   if (parent) {
-    return !cloneChild(root, dir, parent, failed) || (explain && !cloned(parent.dir)) ||
-      addSpec(root, parent.dir, spec.slice(parent.path.length + 1), failed);
+    return !cloneChild(root, dir, parent, out, named) || (explain && !cloned(parent.dir)) ||
+      addSpec(root, parent.dir, spec.slice(parent.path.length + 1), out, named);
   }
   const listed = git(dir, ['ls-files', '-z', '--', spec]).out.split('\0');
   const targets = kids.filter((c) => listed.includes(c.path));
-  targets.forEach((c) => cloneTree(root, dir, c, failed));
+  targets.forEach((c) => cloneTree(root, dir, c, out, named && c.path === spec));
   return targets.length > 0;
 }
 
 function add(root: string, sel: string[]): boolean {
+  const tidy = (s: string) => s.replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/+$/, '');
+  const typed = sel.map(tidy);
   const specs = (sel.length ? sel : ['default']).flatMap((s) => {
     const profile = git(root, ['config', '-f', '.gitprofiles', '--get-all', `profile.${s}.path`]);
     if (profile.fatal)
       throw new Error(`${path.join(root, '.gitprofiles')}: ${profile.err}`);
     return profile.ok ? profile.out.split('\n') : sel.length ? [s] : ['.'];
-  });
-  const failed: string[] = [];
-  const unknown = specs.map((s) => s.replace(/^\.\//, '').replace(/\/+$/, '')).filter((s) => !addSpec(root, root, s, failed));
+  }).map(tidy);
+  const out: Outcome = {failed: new Set(), skipped: new Set()};
+  const unknown = specs.filter((s) => !addSpec(root, root, s, out, typed.includes(s)));
   unknown.forEach((s) => color.error(`${s}: no profile or submodule by that name`));
-  if (failed.length)
-    color.error(`Failed (see the git errors above): ${failed.join(', ')}`);
-  return !unknown.length && !failed.length;
+  if (out.skipped.size)
+    color.warn(`Skipped, no access: ${[...out.skipped].join(', ')}`);
+  if (out.failed.size)
+    color.error(`Failed (see the git errors above): ${[...out.failed].join(', ')}`);
+  return !unknown.length && !out.failed.size;
 }
 
 function clone(sel: string[], url: string, dir: string): boolean {
@@ -186,7 +202,7 @@ function clone(sel: string[], url: string, dir: string): boolean {
     return fence(dir, [], true) && step(dir, ['checkout']) && add(dir, sel);
   console.log(`$ ${gitC(dir)} sparse-checkout set --no-cone '/*' '!/<child>'...   # every child`);
   console.log(`$ ${gitC(dir)} checkout`);
-  console.log(`# then, in ${dir}: grok src add ${sel.join(' ') || '(profile "default", else every child)'}`);
+  console.log(`# then, in ${dir}: grok src add ${sel.join(' ') || 'default'}`);
   return true;
 }
 

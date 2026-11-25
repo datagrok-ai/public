@@ -5,8 +5,10 @@ import * as DG from 'datagrok-api/dg';
 
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getRdKitModule} from '../chem-common-rdkit';
-import {drawReactionByRdKit} from './reaction-drawing';
+import {drawReactionPreview} from './reaction-drawing';
 import {resolveReactionVariables, runTransformationReaction, runTwoComponentReaction} from './reactions';
+import {footerSlot} from '../footguns/footer-slot';
+import {checkTransform, checksModule} from '../footguns/checks';
 import {ReactionBrowser} from './reaction-browser';
 import {openReactionEditor} from './reaction-editor';
 import {NamedReaction, TwoComponentReactionResult} from './types';
@@ -220,7 +222,7 @@ function buildTransformationComponents(
     const ctx = previewCanvas.getContext('2d')!;
     ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
     try {
-      drawReactionByRdKit(previewCanvas, smarts, previewCanvas.width, previewCanvas.height);
+      drawReactionPreview(previewCanvas, smarts);
     } catch {/* preview error */}
 
     const col = columnInput.value;
@@ -377,7 +379,7 @@ function buildTwoComponentComponents(
     const smarts = smartsWithDefaults(reaction);
 
     try {
-      drawReactionByRdKit(previewCanvas, smarts, previewCanvas.width, previewCanvas.height);
+      drawReactionPreview(previewCanvas, smarts);
     } catch {/* preview error */}
 
     const col1 = column1Input.value;
@@ -493,7 +495,7 @@ export async function transformationReactionsUI(table?: DG.DataFrame, column?: D
   }
 
   const c = buildTransformationComponents(rdkit, table, column);
-  showReactionDialog('Run Reaction', c, [
+  showReactionDialog('Run Reaction', c, 1, [
     ui.divH([c.tableInput.root, c.columnContainer], {style: {gap: '8px'}}),
     ui.divH([c.outputNameInput.root, c.saltsInput.root], {style: {gap: '8px'}}),
   ]);
@@ -514,7 +516,7 @@ export async function twoComponentReactionUI(table?: DG.DataFrame): Promise<void
   }
 
   const c = buildTwoComponentComponents(rdkit, table);
-  showReactionDialog('Two-Component Reaction', c, [
+  showReactionDialog('Two-Component Reaction', c, 2, [
     ui.divH([c.table1Input.root, c.col1Container], {style: {gap: '8px'}}),
     ui.divH([c.table2Input.root, c.col2Container], {style: {gap: '8px'}}),
     ui.divH([c.modeInput.root, c.saltsInput.root], {style: {gap: '8px'}}),
@@ -522,9 +524,10 @@ export async function twoComponentReactionUI(table?: DG.DataFrame): Promise<void
 }
 
 /** A reaction dialog: `inputRows`, the browser and New Reaction on the left, the preview on the right; OK runs the
- * reaction on the table. */
+ * reaction on the table, with `reactants` reactants a row. */
 function showReactionDialog(title: string, c: Pick<TransformationComponents, 'browser' | 'newReactionButton' |
-  'previewCanvas' | 'variablesDiv' | 'exampleGrid' | 'runOnExistingTable'>, inputRows: HTMLElement[]): void {
+  'previewCanvas' | 'variablesDiv' | 'exampleGrid' | 'runOnExistingTable' | 'getResolvedSmarts'>, reactants: number,
+inputRows: HTMLElement[]): void {
   const previewSection = ui.divV([
     ui.h3('Reaction Preview'),
     c.previewCanvas,
@@ -545,6 +548,23 @@ function showReactionDialog(title: string, c: Pick<TransformationComponents, 'br
 
   dialog.onOK(async () => {await c.runOnExistingTable();});
   dialog.show({resizable: true});
+  // the picked reaction's foot-gun flags in the footer's middle slot (Crux mode): a template that takes another number
+  // of reactants than the dialog gives (TRF-01), and its template checks
+  if (checksModule()) {
+    const slot = footerSlot(dialog);
+    const check = () => {
+      const smarts = c.browser.selected ? c.getResolvedSmarts() : null;
+      slot.show(smarts ? checkTransform(smarts, reactants) : []);
+    };
+    const picked = c.browser.onSelectionChanged.subscribe(check);
+    c.variablesDiv.addEventListener('input', check);
+    const closed = dialog.onClose.subscribe(() => {
+      picked.unsubscribe();
+      c.variablesDiv.removeEventListener('input', check);
+      closed.unsubscribe();
+    });
+    check();
+  }
 }
 
 // ==========================================
@@ -694,7 +714,7 @@ function openFullscreenPreview(reaction: NamedReaction | null): void {
   const smarts = smartsWithDefaults(reaction);
 
   try {
-    drawReactionByRdKit(canvas, smarts, canvas.width, canvas.height);
+    drawReactionPreview(canvas, smarts, canvas.width, canvas.height, {fullScreen: true});
   } catch {
     const ctx = canvas.getContext('2d')!;
     ctx.save();

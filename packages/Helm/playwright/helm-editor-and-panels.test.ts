@@ -690,14 +690,32 @@ test('Helm / cell rendering, Web Editor & Properties panel', async ({page}) => {
     // matching Block E's reliable palette-tab switch.
     await page.evaluate(() => (document.querySelector(
       '.d4-dialog.d4-dialog-full-screen [data-testid="palette-tab-PEPTIDE"]') as HTMLElement | null)?.click());
-    // HARD: poll for the peptide palette to render its monomer tiles.
-    await expect.poll(async () => dlg.locator('[data-testid="palette-tile-G"]').count(),
-      {timeout: 8_000, intervals: [200, 400, 600],
-        message: 'helm.editor: peptide palette tile [data-testid="palette-tile-G"] MUST be present'}).toBeGreaterThan(0);
+    // HARD: poll for the peptide palette to render its G tile. A library of thousands of
+    // monomers makes the pane a virtual list (only the rows on screen are built), so the
+    // pane is scrolled a screen at a time, as a user would, until G is built, then G is
+    // brought to its middle. (`palette-tile-G` alone would also find the RNA tab's base G.)
+    await expect.poll(async () => page.evaluate(async () => {
+      const pane = document.querySelector(
+        '.d4-dialog.d4-dialog-full-screen [data-testid="palette-pane-PEPTIDE"]') as HTMLElement | null;
+      if (pane === null || pane.clientHeight === 0) return 0;
+      const frame = (): Promise<void> => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+      const g = (): HTMLElement | null => pane.querySelector('[data-testid="palette-tile-G"]');
+      for (let top = 0; g() === null && top < pane.scrollHeight; top += pane.clientHeight) {
+        pane.scrollTop = top;
+        await frame();
+      }
+      const tile = g();
+      if (tile === null) return 0;
+      pane.scrollTop += tile.getBoundingClientRect().top - pane.getBoundingClientRect().top - pane.clientHeight / 2;
+      await frame();
+      return pane.querySelectorAll('[data-testid="palette-tile-G"]').length;
+    }), {timeout: 20_000, intervals: [200, 400, 600],
+      message: 'helm.editor: peptide palette tile [data-testid="palette-tile-G"] MUST be present'}).toBeGreaterThan(0);
     // BEST-EFFORT: clicking a tile arms "Next add: G×". Arming (and Step 2b
     // placement) need real pointer events that headless synthetic clicks don't
     // reliably reproduce — log the outcome rather than hard-fail.
-    await dlg.locator('[data-testid="palette-tile-G"]').first().click({timeout: 8_000}).catch(() => {});
+    await dlg.locator('[data-testid="palette-pane-PEPTIDE"] [data-testid="palette-tile-G"]').first()
+      .click({timeout: 8_000}).catch(() => {});
     let armText = '';
     // Bounded poll loop: re-check the status bar for the "Next add" arm signal.
     for (let i = 0; i < 12; i++) {
@@ -706,10 +724,10 @@ test('Helm / cell rendering, Web Editor & Properties panel', async ({page}) => {
         return ((d?.querySelector('[data-testid="status-message"]')?.textContent
           || d?.querySelector('[data-testid="status-mode"]')?.textContent) || '').trim();
       });
-      if (/Next add/i.test(armText)) break;
+      if (/Next add: (?!none)/i.test(armText)) break;
       await page.waitForTimeout(300);
     }
-    if (/Next add/i.test(armText))
+    if (/Next add: (?!none)/i.test(armText))
       console.warn(`Block H Step 2: palette tile armed the status bar ("${armText}").`);
     else
       console.warn(`Block H Step 2: arm-status not observed under headless synthetic click (got "${armText}") — palette tile presence asserted; arming needs real pointer events.`);
@@ -720,7 +738,9 @@ test('Helm / cell rendering, Web Editor & Properties panel', async ({page}) => {
     // the editor SVG, and log whether the structure / notation grew.
     const before = await page.evaluate(() => {
       const dlg = document.querySelector('.d4-dialog.d4-dialog-full-screen');
-      (dlg?.querySelector('[data-testid="palette-tile-G"]') as HTMLElement | null)?.click();
+      // Arm G unless Step 2 already did: a second click on an armed tile un-arms it.
+      const g = dlg?.querySelector('[data-testid="palette-pane-PEPTIDE"] [data-testid="palette-tile-G"]') as HTMLElement | null;
+      if (g?.getAttribute('aria-pressed') !== 'true') g?.click();
       const svg = dlg?.querySelector('[data-testid="editor-svg"]') as SVGElement | null;
       const r = svg?.getBoundingClientRect();
       const atoms = dlg?.querySelectorAll('[data-testid^="canvas-atom-"]').length ?? 0;

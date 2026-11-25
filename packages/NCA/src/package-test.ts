@@ -27,6 +27,7 @@ import './tests/toxicokinetics-tests';
 import './tests/dose-proportionality-tests';
 import './tests/sparse-nca-tests';
 import './tests/sparse-strata-tests';
+import './tests/sparse-iv-anchor-tests';
 import './tests/adapter-na-normalize-tests';
 import './tests/adapter-csv-float64-tests';
 import './tests/adapter-unit-conversion-tests';
@@ -64,12 +65,14 @@ import './tests/workflow-stages-ui-tests';
 import './tests/workflow-stages-live-tests';
 import './tests/pipeline-functions-tests';
 import './tests/pipeline-save-tests';
+import './tests/ip-route-tests';
 import './tests/ems-goldens-tests';
 import './tests/ems-platform-tests';
 import './tests/ems-nca-rows-tests';
 import './tests/nca-repository-contract-tests';
 import './tests/shared-stand-guard-tests';
 import './tests/demo-studies-tests';
+import './tests/occasion-tests';
 import {skipStoreWritingTestsOnSharedStand, isLoopbackServer, refuseStoreWrites} from './tests/shared-stand-guard';
 
 // After every category registered: the store-writing tests run only against a local / CI server.

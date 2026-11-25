@@ -1,33 +1,12 @@
-/* Steps of the antibody demo clips (features/demos/09-11b): off camera, the window of positions a sequence
-   column's header shows, a width the header does not reset, balloons and a stale tooltip out of the way; on
-   camera, the header dragged along its ruler and its region band under the pointer. */
+// Steps of the antibody demo clips (features/demos/09-11b): off camera, the window of positions a sequence
+// column's header shows, a width the header does not reset, balloons and a stale tooltip out of the way; on
+// camera, the header dragged along its ruler and its region band under the pointer.
 import type {Page} from '@playwright/test';
 import {When} from '@datagrok-libraries/bdd';
 import type {ElementRef} from '@datagrok-libraries/bdd/runtime';
 import {expect, silent, viewers} from '@datagrok-libraries/bdd/runtime';
 
 declare const grok: any;
-
-/** The header and the cells of a long sequence column show a window of its positions, from the column's
- * `.positionShift` tag (Bio's sequence-scrolling widget), named by its position names or numbered from 1;
- * a numbered column starts in the N-terminal flank, so a clip moves it to the scheme's first position. */
-export const headerStartsAt = When('the header of the {string} column starts at position {string}',
-  async (page: Page, column: string, position: string) => {
-    silent(page);
-    await page.evaluate(([c, p]) => {
-      const col = grok.shell.tv?.dataFrame.col(c);
-      if (!col)
-        throw new Error(`the table has no "${c}" column`);
-      const tag: string = col.getTag('.positionLabels') || col.getTag('.positionNames') || '';
-      const names = tag ? tag.split(',').map((n: string) => n.trim()) : [];
-      const index = names.length ? names.indexOf(p) : Number(p) - 1;
-      if (!(index >= 0))
-        throw new Error(`"${c}" has no position "${p}"; it starts: ${names.slice(0, 30).join(', ')}`);
-      col.setTag('.positionShift', String(index));
-      grok.shell.tv.grid.invalidate();
-    }, [column, position] as [string, string]);
-    await viewers.settleAll(page);
-  }, {tier: 'api', description: 'set-up a filmed demo leaves out: the column\'s position window starts at the named position'});
 
 /** Bio's header sets a new long sequence column 400 px wide 300 ms after it first paints the column's header
  * (`sequence-scrolling-widget.ts`), over a width set meanwhile: the width is set once the header shows

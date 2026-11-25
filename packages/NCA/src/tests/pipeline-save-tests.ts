@@ -77,6 +77,7 @@ category('Pipeline save: untouched (pure)', () => {
       groupByCols: (r) => ({...r, groupByCols: ['Sex']}),
       passthroughCols: (r) => ({...r, passthroughCols: [{name: 'Smiles', isStructure: true}]}),
       acceptanceRSquared: (r) => ({...r, acceptanceRSquared: 0.5}),
+      derived: (r) => ({...r, derived: {occasionCol: 'StudyDay', tauH: 24}}),
     };
     for (const [field, fn] of Object.entries(mutate)) {
       const edited: AnalysisEntry = {...e, ...fn(recipeOf(e))};
@@ -171,6 +172,41 @@ category('Pipeline save: study plan (pure)', () => {
     const day1 = pipelineEntry('x1', 'A · Day1', '2026-10-14T10:00:00Z');
     const plan3 = planStudyUpdate(study([day1]), [planned('A', 'n4')], CTX);
     expect(plan3.superseded.length, 0, 'same design, prefix only');
+  });
+
+  test('nca-ip-route AC-7.1 / 7.2: a legacy sparse `A · other` is superseded by `A · IP` unless planned', async () => {
+    const touched = {...pipelineEntry('o1', 'A · other', '2026-10-14T10:00:00Z', true),
+      reviewDecisions: [{unitKey: 'sparse:DOSE=10', current: null, history: []}]};
+    for (const old of [pipelineEntry('o1', 'A · other', '2026-10-14T10:00:00Z', true), touched]) {
+      const plan = planStudyUpdate(study([old]), [planned('A · IP', 'n1', 'A', true)], CTX);
+      expect(plan.study.analyses.length, 2, 'the old entry is kept');
+      expect(plan.superseded.map((s) => `${s.label}→${s.by}`).join(), 'A · other→A · IP');
+      const added = plan.study.analyses.find((a) => a.id === 'n1')!;
+      expect(added.origin?.kind === 'pipeline' ? added.origin.supersedes : '', 'o1', 'the new entry links it');
+      // A re-run updates `A · IP` in place and keeps the link.
+      const again = planStudyUpdate(plan.study, [planned('A · IP', 'n2', 'A', true)], CTX);
+      const updated = again.study.analyses.find((a) => a.id === 'n1')!;
+      expect(updated.origin?.kind === 'pipeline' ? updated.origin.supersedes : '', 'o1', 're-run keeps the link');
+    }
+    // AC-7.2: the run still plans `A · other` → updated in place, no supersede.
+    const old = pipelineEntry('o1', 'A · other', '2026-10-14T10:00:00Z', true);
+    const plan = planStudyUpdate(study([old]),
+      [planned('A · IP', 'n1', 'A', true), planned('A · other', 'n2', 'A', true)], CTX);
+    expect(plan.superseded.length, 0, 'no supersede note');
+    expect(plan.outcomes.map((o) => o.status).join(), 'created,updated');
+    // A dense `A · other` partition (another groupBy value) is not a legacy-route predecessor.
+    const dense = pipelineEntry('d1', 'A · other', '2026-10-14T10:00:00Z');
+    expect(planStudyUpdate(study([dense]), [planned('A · IP', 'n1', 'A', true)], CTX).superseded.length, 0,
+      'dense same label: not a legacy-route predecessor');
+  });
+
+  test('nca-ip-route F7: a design flip AND a legacy-route predecessor → the flip linked, both reported', async () => {
+    const dense = pipelineEntry('d1', 'A', '2026-10-14T10:00:00Z');
+    const other = pipelineEntry('o1', 'A · other', '2026-10-14T10:00:00Z', true);
+    const plan = planStudyUpdate(study([dense, other]), [planned('A · IP', 'n1', 'A', true)], CTX);
+    const added = plan.study.analyses.find((a) => a.id === 'n1')!;
+    expect(added.origin?.kind === 'pipeline' ? added.origin.supersedes : '', 'd1', 'the design flip keeps precedence');
+    expect(plan.superseded.map((s) => s.analysisId).sort().join(), 'd1,o1', 'both reported');
   });
 });
 

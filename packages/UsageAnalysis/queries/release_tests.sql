@@ -83,31 +83,28 @@ SELECT
   b.build_index,
   b.build_name AS build,
   b.commit AS build_commit,
-  b.branch AS branch,
-  b.build_date,
-  r.instance,
   act.last_run,
   pa.prev_ms AS prev_release_ms,
   CASE WHEN r.passed IS NULL THEN 'did not run'
        WHEN r.skipped THEN 'skipped'
        WHEN r.passed THEN 'passed'
-       WHEN NOT r.passed THEN 'failed'
-       ELSE 'unknown' END AS status,
+       ELSE 'failed' END AS status,
   r.result,
   CAST(r.duration AS int) AS duration,
   COALESCE(r.params->>'flaking', 'false')::bool AS flaking
+-- One row per actual run, not per (test, build): most of a test x build grid is "did not run" padding
+-- that the client pivot fills in anyway. A test with no run in the window keeps a single placeholder
+-- row on the latest build, so it still shows up (and can be flagged stale).
 FROM tests t
-CROSS JOIN indexed_builds b
-LEFT JOIN latest_runs r
-  ON r.test_name = t.name AND r.build_name = b.build_name AND r.rn = 1
-LEFT JOIN active_tests act ON act.test_name = t.name
+JOIN active_tests act ON act.test_name = t.name
+LEFT JOIN latest_runs r ON r.test_name = t.name AND r.rn = 1
+JOIN indexed_builds b ON b.build_name = COALESCE(r.build_name,
+  (SELECT build_name FROM indexed_builds ORDER BY build_index DESC LIMIT 1))
 LEFT JOIN prev_avg pa ON pa.test_name = t.name
 LEFT JOIN published_packages p ON p.name = t.package AND p.is_current
 WHERE t.type <> 'manual'
-  AND t.name IN (SELECT test_name FROM active_tests)
   AND t.name NOT LIKE '%Unhandled exceptions: Exception'
   AND t.name <> ': : '
-ORDER BY b.build_index, package, t.name
 --end
 
 --name: ReleaseBenchmarks

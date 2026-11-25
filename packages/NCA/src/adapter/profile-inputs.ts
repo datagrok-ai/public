@@ -87,6 +87,11 @@ export interface ProfileScalars {
 /**
  * Adapter→core route mapping (string → `RouteCode`). Locked-in by spec §7.1
  * row Route and cycle-state phase_3_plan resolved_decisions #6.
+ *
+ * The ONE owner of the route vocabulary: one label per code (1:1), and the
+ * code → label inverse `ROUTE_CODE_TO_STRING` is derived from it. `IP` sits
+ * before `other` because the scalar Route dropdown and the NONMEM confirm
+ * dialog list `Object.keys` in this order.
  */
 export const ROUTE_STRING_TO_CODE: Readonly<Record<string, nca.RouteCode>> = {
   'IV-bolus': nca.ROUTE_IV_BOLUS,
@@ -94,8 +99,22 @@ export const ROUTE_STRING_TO_CODE: Readonly<Record<string, nca.RouteCode>> = {
   'PO': nca.ROUTE_PO,
   'SC': nca.ROUTE_SC,
   'IM': nca.ROUTE_IM,
+  'IP': nca.ROUTE_IP,
   'other': nca.ROUTE_OTHER,
 };
+
+/**
+ * Inverse of {@link ROUTE_STRING_TO_CODE}, indexed by `RouteCode`: the CANONICAL
+ * route label the results `ROUTE` column carries (and the study grid, the
+ * summary cache and the Mean±SD chart show). Derived, never restated, so a code
+ * added to the vocabulary is labelled everywhere at once; a code with no label
+ * reads `undefined` (pinned by the drift test over `nca.isKnownRouteCode`).
+ */
+export const ROUTE_CODE_TO_STRING: ReadonlyArray<string> = (() => {
+  const labels: string[] = [];
+  for (const [label, code] of Object.entries(ROUTE_STRING_TO_CODE)) labels[code] = label;
+  return labels;
+})();
 
 /**
  * Translate a route string to its integer `RouteCode`. Throws on unknown

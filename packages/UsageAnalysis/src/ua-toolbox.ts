@@ -12,6 +12,22 @@ import $ from 'cash-dom';
 import {ChoiceInputTags} from "./elements/choice-input-tags";
 import {ChoiceInputPackagesCategories} from "./elements/choice-input-packages-categories";
 import {ChoiceInputProjects} from "./elements/choice-input-projects";
+import {ChoiceInputBase} from './elements/choice-input-base';
+
+export interface UaFilterState {
+  date: string;
+  groups: string[];
+  packages: string[];
+  tags: string[];
+  categories: string[];
+  projects: string[];
+}
+
+export interface UaViewState {
+  tab?: string;
+  rout?: string | null;
+  filters?: Partial<UaFilterState>;
+}
 
 
 export class UaToolbox {
@@ -174,7 +190,7 @@ export class UaToolbox {
   applyFilter() {
     this.filterStream.next(this.getFilter());
     this.viewHandler.setUrlParam('date', this.dateInput.value, true);
-    this.viewHandler.setUrlParam('users', this.groupsInput.getSelectedItems().join(','), true);
+    this.viewHandler.setUrlParam('groups', this.groupsInput.getSelectedItems().join(','), true);
     if (this.packagesInput.field.root.style.display !== 'none')
       this.viewHandler.setUrlParam('packages', this.packagesInput.getSelectedItems().join(','), false);
     if (this.tagsInput.field.root.style.display !== 'none')
@@ -183,6 +199,25 @@ export class UaToolbox {
       this.viewHandler.setUrlParam('categories', this.packagesCategoriesInput.getSelectedItems().join(','), false);
     if (this.projectsInput.field.root.style.display !== 'none')
       this.viewHandler.setUrlParam('projects', this.projectsInput.getSelectedItems().join(','), false);
+  }
+
+  /** Every filter value, whether its input is shown on the current tab or not. */
+  getState(): UaFilterState {
+    return {date: this.dateInput.value, groups: this.groupsInput.getSelectedItems(),
+      packages: this.packagesInput.getSelectedItems(), tags: this.tagsInput.getSelectedItems(),
+      categories: this.packagesCategoriesInput.getSelectedItems(), projects: this.projectsInput.getSelectedItems()};
+  }
+
+  setState(state: Partial<UaFilterState>): void {
+    if (typeof state.date === 'string')
+      this.dateInput.value = state.date;
+    const inputs: [string[] | undefined, ChoiceInputBase][] = [[state.groups, this.groupsInput],
+      [state.packages, this.packagesInput], [state.tags, this.tagsInput],
+      [state.categories, this.packagesCategoriesInput], [state.projects, this.projectsInput]];
+    for (const [items, input] of inputs) {
+      if (Array.isArray(items))
+        input.setItems(items);
+    }
   }
 
   setDate(value: string) {

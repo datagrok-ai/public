@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
 import $ from 'cash-dom';
-import {Subject, BehaviorSubject, Observable} from 'rxjs';
+import {Subject, BehaviorSubject, Observable, Subscription} from 'rxjs';
 
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
@@ -38,8 +38,10 @@ class TranslatorAppLayout {
   private inputFormats = Object.keys(_package.jsonData.codesToHelmDict).concat(DEFAULT_FORMATS.HELM);
   private readonly seqHelper: ISeqHelper = _package.seqHelper;
 
+  /** [subs]: the view's, cancelled when it closes; the workspace subscriptions of the bulk controls go there. */
   constructor(
     private readonly th: ITranslationHelper,
+    private readonly subs: Subscription[] = [],
   ) {
     this.moleculeImgDiv = ui.div([]);
     this.moleculeImgDiv.className = 'mol-host';
@@ -72,7 +74,8 @@ class TranslatorAppLayout {
       await this.updateMolImg();
     });
 
-    this.eventBus = EventBus.getInstance();
+    // the bulk choices (table, columns, formats) are this view's: another Translator keeps its own
+    this.eventBus = new EventBus();
   }
 
   // todo: reduce # of state vars by further refactoring legacy code
@@ -106,7 +109,7 @@ class TranslatorAppLayout {
     const title = ui.h1('Bulk');
     ui.tooltip.bind(title, 'Bulk translation from table input');
 
-    const tableControlsManager = new TableControlsManager(this.eventBus);
+    const tableControlsManager = new TableControlsManager(this.eventBus, this.subs);
     const tableControls = tableControlsManager.createUIComponents();
     const inputFormats = ui.input.choice('Input format', {
       value: DEFAULT_FORMATS.AXOLABS,
@@ -330,8 +333,8 @@ class TableControlsManager {
   private tableInputManager: TableInputManager;
   private columnInputManager: ColumnInputsManager;
 
-  constructor(eventBus: EventBus) {
-    this.tableInputManager = new TableInputManager(eventBus);
+  constructor(eventBus: EventBus, subs: Subscription[]) {
+    this.tableInputManager = new TableInputManager(eventBus, subs);
     this.columnInputManager = new ColumnInputsManager(eventBus);
   }
 
@@ -350,7 +353,7 @@ class TableInputManager {
   private availableTables: DG.DataFrame[] = [];
   private tableInputContainer: HTMLDivElement = ui.div([]);
 
-  constructor(private eventBus: EventBus) {
+  constructor(private eventBus: EventBus, private subs: Subscription[]) {
     this.subscribeToTableEvents();
     this.refreshTableInput();
   }
@@ -360,8 +363,10 @@ class TableInputManager {
   }
 
   private subscribeToTableEvents(): void {
-    grok.events.onTableAdded.subscribe((eventData) => this.handleTableAdded(eventData));
-    grok.events.onTableRemoved.subscribe((eventData) => this.handleTableRemoved(eventData));
+    // the view's subscriptions: a closed Translator no longer follows the tables opened after it
+    this.subs.push(
+      grok.events.onTableAdded.subscribe((eventData) => this.handleTableAdded(eventData)),
+      grok.events.onTableRemoved.subscribe((eventData) => this.handleTableRemoved(eventData)));
     this.eventBus.tableSelected$.subscribe(() => this.handleTableChoice());
   }
 
@@ -495,8 +500,6 @@ class ColumnInputsManager {
 }
 
 export class EventBus {
-  private static _instance: EventBus;
-
   private _tableSelection$ = new BehaviorSubject<DG.DataFrame | null>(null);
   private _columnSelection = Object.fromEntries(REQUIRED_COLUMN_LABELS.map((columnLabel: string) => {
     const columnSelection$ = new BehaviorSubject<DG.Column<string> | null>(null);
@@ -505,13 +508,6 @@ export class EventBus {
   private _inputFormatSelection$ = new BehaviorSubject<string>(DEFAULT_FORMATS.AXOLABS);
   private _outputFormatSelection$ = new BehaviorSubject<string>(NUCLEOTIDES_FORMAT);
 
-  private constructor() {}
-
-  public static getInstance(): EventBus {
-    if (EventBus._instance === undefined)
-      EventBus._instance = new EventBus();
-    return EventBus._instance;
-  }
 
   get tableSelected$(): Observable<DG.DataFrame | null> {
     return this._tableSelection$.asObservable();
@@ -560,7 +556,7 @@ export class OligoTranslatorUI extends IsolatedAppUIBase {
     super(APP_NAME.TRANSLATOR);
 
     this.th = _package;
-    this.layout = new TranslatorAppLayout(this.th);
+    this.layout = new TranslatorAppLayout(this.th, this.view.subs);
     const viewMonomerLibIcon = ui.iconFA('book', MonomerLibViewer.view, 'View monomer library');
     this.topPanel = [
       viewMonomerLibIcon,

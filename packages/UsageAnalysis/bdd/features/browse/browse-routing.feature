@@ -64,7 +64,7 @@ Feature: Opening what the address names
     Given user opens demog-1000 dataset
     Then the "demog-1000" view should be current
     When user opens the address "/p/no.such_project/none"
-    Then an error balloon containing "Unable to get project asset" should have been shown
+    Then an error balloon containing 'Project "no.such_project" was not found' should have been shown
     And the "demog-1000" view should be current
     And no errors should have been logged
     When user opens the address "/apps/BddNoSuchApp{time}"

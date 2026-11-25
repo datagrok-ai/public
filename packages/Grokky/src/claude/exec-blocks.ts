@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {widgetBriefings} from '../ai/view-tools';
+import {undoable} from './undoable';
 
 export interface ExecError {
   blockIndex: number;
@@ -15,9 +16,9 @@ export async function executeSingleBlock(
     // Prefer the live current view: Claude may have opened a new view earlier in the same turn.
     const liveView = grok.shell.v ?? view;
     const t = liveView?.type === DG.VIEW_TYPE.TABLE_VIEW ? (liveView as DG.TableView).dataFrame : undefined;
-    const result = await new Function('grok', 'ui', 'DG', 'view', 't',
+    const result = await new Function('grok', 'ui', 'DG', 'view', 't', 'undoable',
       'return (async () => {' + code + '})()',
-    )(grok, ui, DG, liveView, t);
+    )(grok, ui, DG, liveView, t, undoable);
     const element = result instanceof HTMLElement ? result : null;
     return {element, value: element ? undefined : result, error: null};
   } catch (e: any) {

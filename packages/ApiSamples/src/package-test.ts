@@ -9,6 +9,7 @@ export { tests };
 
 import './tests/test';
 
+// A name, or 'folder/name' where several samples share the name
 const skip = [
   // Skipped
   'function-events', 'demo', 'ui-events', 'last-error', 'chem-benchmark',
@@ -24,9 +25,18 @@ const skip = [
   // Await a modal that only a user can dismiss. Driving them through `scriptViewer`
   // is not an option: clicking the confirm button completes the flow and leaves
   // server state behind (a published project, a grit.issue row).
-  'projects-save-dialog', 'facade-form-dialog', 'facade-list-view', 'row-editor', 'pick-table',
+  'projects-save-dialog', 'facade-form-dialog', 'facade-list-view', 'row-editor', 'pick-table', 'pick-file',
   // Development only: reads the database list of the stand's own server
   'catalogs',
+  // Need an AI engine with a model behind it (Grokky with an API key, or Chrome's built-in Gemma);
+  // engines and register-engine run without one
+  'ai/chat', 'ai/events', 'ai/gemma', 'ai/prompt', 'ai/prompt-with-document', 'ai/prompt-with-image', 'ai/stream',
+  'ai/structured-output',
+  // Reads CloudWatch: needs an instance in AWS, or an S3 connection with credentials
+  'cloud-logs',
+  // Create a table in a database, and the login of the demo Northwind is read-only. ApiTests covers the API
+  // on a writable database: 'Dapi: connector ddl' and 'Dapi: connector writes'
+  'db-ddl', 'db-table-writes',
 
   // To fix
   'custom-viewer-properties',
@@ -150,7 +160,8 @@ export async function initTests() {
           if (!keepsLoading.includes(script.friendlyName))
             await uiSettled(script.friendlyName);
         }
-      }, skip.includes(script.friendlyName) ? { skipReason: 'skip', owner: owner } : { timeout: 60000, owner: owner });
+      }, skip.includes(script.friendlyName) || skip.includes(`${script.options.path}/${script.friendlyName}`) ?
+        { skipReason: 'skip', owner: owner } : { timeout: 60000, owner: owner });
     });
   }
 }

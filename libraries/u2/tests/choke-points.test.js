@@ -116,7 +116,8 @@ const CHOKE_POINTS = [
       'src/components/collections/catalog-table.ts': 1,
       'src/components/collections/functions-browser.ts': 3,
       'src/components/collections/master-detail.ts': 1,
-      'src/components/collections/tree.ts': 1,
+      // the inline rename box: a text field, named for screen readers and steps; no tooltip to name it through
+      'src/components/collections/tree.ts': 2,
       'src/components/containers/dialog.ts': 1,
       'src/components/display/badge.ts': 1,
       'src/components/display/icon.ts': 1,

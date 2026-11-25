@@ -28,6 +28,11 @@ export abstract class ChoiceInputBase {
             return [this.emptyLabel];
     }
 
+    setItems(items: string[]) {
+        this.choices.removeActiveItems(-1);
+        this.addItems(items.map((i) => i.toLowerCase()));
+    }
+
     addItems(items: string[]) {
         if (items && items.length === 1 && items[0] === this.emptyLabel)
             return;

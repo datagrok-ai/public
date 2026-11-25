@@ -1,10 +1,11 @@
 /* eslint-disable max-len */
 /**
- * Reading molecules and queries, shared by both engines: every function takes the module it reads with (`RDModule`,
- * RDKit.js's shape, which Crux's module answers too) and none picks one itself, so the same code serves RDKit mode,
- * Crux mode and its RDKit fallback. ("RDKit" in the comments below names the reader's behaviour, which Crux ports.)
+ * Reading molecules and queries, and validating molecules, shared by both engines: every function takes the module it
+ * reads with (`RDModule`, RDKit.js's shape, which Crux's module answers too) and none picks one itself, so the same code
+ * serves RDKit mode, Crux mode and its RDKit fallback. ("RDKit" in the comments below names the reader's behaviour,
+ * which Crux ports.)
  */
-import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {RDLog, RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {hasNewLines, isMolBlock} from './chem-common';
 import {MAX_SMILES_LENGTH} from './chem-constants';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
@@ -144,6 +145,67 @@ export function getMolSafe(molString: string, details: object = {}, module: RDMo
   else if (!warnOff)
     console.error('Chem | In getMolSafe: RDKit.get_mol crashes on a molString: `' + molString + '`');
   return {mol, kekulize, isQMol, useMolBlockWedging};
+}
+
+/** The log RDKit's readers write their errors to (RDKit.js's `set_log_capture` name): what a validation reads. */
+export const VALIDATION_LOG = 'rdApp.error';
+
+/** What the readers themselves throw, RDKit's and Crux's alike: `get_qmol` of a CXSMILES whose extension does not
+ * parse (RDKit's `SmartsToMol` with `strictCXSMILES`; crux-core's minilib throws the same words). No Crux failure: a
+ * read that throws it reads nothing, as on RDKit (getMolSafe). */
+const READERS_OWN_THROW = 'failure parsing CXSMILES extensions';
+
+/** Whether `e` is what the readers throw themselves ({@link READERS_OWN_THROW}). */
+function readersOwnThrow(e: unknown): boolean {
+  return (e as {message?: unknown} | null)?.message === READERS_OWN_THROW;
+}
+
+/** How {@link validationMessage} runs on Crux's module (on RDKit's, with none of them). */
+export interface ValidationOptions {
+  /** A read that throws throws (Crux: that molecule is RDKit's), but for what the readers throw themselves (a CXSMILES
+   * extension that does not parse: no molecule, as on RDKit); without it, it reads nothing, as in getMolSafe. */
+  rethrow?: boolean;
+  /** The module's renewal count (Crux's module after a trap, crux/crux-recover.ts): a renewal while the molecule is read
+   * loses the log's lines of the read made again, so it throws, as a read that throws does. */
+  renewals?: () => number;
+}
+
+/**
+ * What `validateMolecule` says of a molecule string, on either engine's module (RDKit's or Crux's, each with its own
+ * lines: RDKit.js 2024.09's, Crux's RDKit 2026.03's): the error log (`rdApp.error`, each line "[HH:MM:SS] " first)
+ * written while the module reads `molecule` as getMolSafe reads it (`get_mol`, without Kekulize, `get_qmol`); '' when
+ * it reads it and logs nothing, 'unknown error' when it reads nothing and logs nothing (a SMILES over Chem's length
+ * limit, a blank string, a MOL block whose reader logs nothing); null when the module gives no log. One function for
+ * every caller: the main thread's `validateMolecule` and the workers' `validateMolecules` (engine/README.md). Crux's
+ * module throws where it keeps no log (a Crux file before its log).
+ */
+export function validationMessage(molecule: string, module: RDModule, options: ValidationOptions = {}): string | null {
+  let log: RDLog | null = null;
+  let mol: RDMol | null = null;
+  const renewals = options.renewals?.();
+  try {
+    log = module.set_log_capture(VALIDATION_LOG);
+    mol = getMolSafe(molecule, {}, module, true, options.rethrow ? (e) => {
+      if (!readersOwnThrow(e))
+        throw e;
+    } : undefined).mol;
+    let message: string | null = log?.get_buffer() ?? null;
+    log?.clear_buffer();
+    if (renewals !== undefined && options.renewals!() !== renewals)
+      throw new Error('the engine was renewed while the molecule was read: its log is lost');
+    if (!mol && !message)
+      message = 'unknown error';
+    return message;
+  } finally {
+    log?.delete();
+    mol?.delete();
+  }
+}
+
+/** A validation message as a cell of `validateMolecules` shows it: its lines without their "[HH:MM:SS] " prefixes and
+ * without the last line break ('' for a valid molecule, and for no message). */
+export function validationText(message: string | null): string {
+  return (message ?? '').replace(/^\[\d\d:\d\d:\d\d\] /gm, '').replace(/\r?\n$/, '');
 }
 
 
@@ -295,6 +357,18 @@ function withHCountHs(molBlock: string): string {
   return changed ? lines.join('\n') : molBlock;
 }
 
+/** A query drawn in a sketcher (a molblock's), as a chemist means it, where the module reads it so (Crux's
+ * `adjust_drawn_query`, crux-core spike drawn-query; RDKit has no such call and reads the molblock literally): a plain single
+ * bond at an atom whose query asks for an aromatic atom, its ring not drawn, also matches an aromatic bond (propane made
+ * aromatic / aliphatic / aromatic and a C drawn on its third atom matched nothing, its aromatic C's bonds being aromatic);
+ * an atom list holding H (`[H,Cl,F]`) or a generic with H (AH, QH, XH, MH), on one atom by a single bond, is that atom's
+ * implicit H or its other atoms (RDKit's mergeQueryHs leaves each an atom, which matched an H atom alone); `*` and A stay
+ * "an atom must be there". The run20 owner's report and decisions, 2026-11-20. */
+function asDrawn(queryMol: RDMol | null): RDMol | null {
+  (queryMol as (RDMol & {adjust_drawn_query?: () => boolean}) | null)?.adjust_drawn_query?.();
+  return queryMol;
+}
+
 export function getQueryMolSafe(queryMolString: string, queryMolBlockFailover: string,
   module: RDModule): RDMol | null {
   if (queryMolString && !hasNewLines(queryMolString) && queryMolString.length > MAX_SMILES_LENGTH)
@@ -322,7 +396,7 @@ export function getQueryMolSafe(queryMolString: string, queryMolBlockFailover: s
             queryMol = null;
           }
           if (queryMol !== null)
-            return queryMol;
+            return asDrawn(queryMol);
         }
       }
       try {
@@ -339,6 +413,7 @@ export function getQueryMolSafe(queryMolString: string, queryMolBlockFailover: s
         } catch (e) {/* non-fatal */}
       }
     }
+    return asDrawn(queryMol);
   } else { // not a molblock
     const treatAsSmarts = _isSmarts(queryMolString);
     try {

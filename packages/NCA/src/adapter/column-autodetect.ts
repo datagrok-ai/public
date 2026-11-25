@@ -439,12 +439,19 @@ export interface EventDrivenDetection {
   readonly addl?: DG.Column;
   readonly ii?: DG.Column;
   readonly ss?: DG.Column;
+  /** The NONMEM `ID` data item, the subject by definition of the format (GAP-14b). Resolved
+   *  only here: {@link detectMapping} leaves a bare `ID` out of `SUBJECT_SYNONYMS` (GAP-14),
+   *  because outside a NONMEM data set it is often a row or sample id. The pane fills Subject
+   *  from it only when the layout is event-driven and no subject synonym matched. */
+  readonly id?: DG.Column;
 }
 
 /** NONMEM data-item synonyms (exact case-insensitive match, frozen — mirrors the
  *  detector convention). Single-token each: the NONMEM column names are
- *  standardized data items, not free CRO headers. */
-const EVENT_SYNONYMS: Readonly<Record<keyof Omit<EventDrivenDetection, 'isEventDriven'>, ReadonlyArray<string>>> =
+ *  standardized data items, not free CRO headers. `id` is matched separately (string or
+ *  integer, like a subject column; the other items are numeric). */
+const EVENT_SYNONYMS: Readonly<Record<keyof Omit<EventDrivenDetection, 'isEventDriven' | 'id'>,
+  ReadonlyArray<string>>> =
   Object.freeze({
     evid: ['evid'], amt: ['amt'], cmt: ['cmt'], rate: ['rate'],
     mdv: ['mdv'], addl: ['addl'], ii: ['ii'], ss: ['ss'],
@@ -463,10 +470,12 @@ const VALID_EVID_VALUES: ReadonlySet<number> = new Set([0, 1, 2, 3, 4]);
  * The conjunction avoids a false trigger on a coincidental "Event ID" / Phoenix
  * `AMT`-as-nominal column (a single-column trigger is too weak).
  *
- * Pure: no mutation; idempotent on the same `df`. The id / time / concentration
- * roles are detected by {@link detectMapping} (DV ∈ `CONCENTRATION_SYNONYMS`,
- * TIME ∈ `ACTUAL_TIME_SYNONYMS`, ID ∈ `SUBJECT_SYNONYMS`); the pane bridges both
- * into an `EventContract` at the confirm step.
+ * Pure: no mutation; idempotent on the same `df`. The time / concentration roles
+ * are detected by {@link detectMapping} (DV ∈ `CONCENTRATION_SYNONYMS`, TIME ∈
+ * `ACTUAL_TIME_SYNONYMS`). The NONMEM `ID` is returned here as `id`, NOT through
+ * `SUBJECT_SYNONYMS` (GAP-14 excludes a bare `id` there); the pane uses it for
+ * Subject when no subject synonym matched (GAP-14b). The pane bridges both into an
+ * `EventContract` at the confirm step.
  */
 export function detectEventDrivenColumns(df: DG.DataFrame): EventDrivenDetection {
   const cols = df.columns.toList();
@@ -495,7 +504,20 @@ export function detectEventDrivenColumns(df: DG.DataFrame): EventDrivenDetection
     const c = find(role);
     if (c !== undefined) out[role] = c;
   }
+  const id = uniqueMatch(cols, ['id'], STRING_OR_INT);
+  if (id !== undefined) out.id = id;
   return out;
+}
+
+/**
+ * The Subject column the mapping form starts with (GAP-14b): the subject synonym match if any,
+ * else, on an event-driven (NONMEM) layout only, the NONMEM `ID` item. Kept out of
+ * {@link detectMapping} on purpose: the headless pipeline (`detectPipelineMapping`) has no NONMEM
+ * ingestion, so an `ID` subject there would map a NONMEM table as a plain one.
+ */
+export function initialSubjectColumn(detected: DetectedMapping,
+  event: EventDrivenDetection): DG.Column | undefined {
+  return detected.subject ?? (event.isEventDriven ? event.id : undefined);
 }
 
 export function detectMapping(df: DG.DataFrame): DetectedMapping {

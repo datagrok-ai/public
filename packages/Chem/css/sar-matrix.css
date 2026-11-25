@@ -1167,3 +1167,13 @@ i.chem-sar-card-twisty:hover {
     gap: 6px;
   }
 }
+
+/* the demo tour's cards, in the tutorials' green: white ones are lost on the white viewer */
+.ui-hint-popup.chem-sar-tour-card, .ui-hint-popup.chem-sar-tour-card::before {
+  background: var(--green-1);
+}
+
+.ui-hint-popup.chem-sar-tour-card::before {
+  box-shadow: 0 0 1px 1px var(--green-1), -1px 1px 2px var(--grey-3);
+}
+

@@ -30,7 +30,7 @@ import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Projects regressions: a project of a visual query with a parameter", () => {
   const session = feature(test, "features/projects/projects-regressions-visual-query.feature", import.meta.url);
-  test("Projects regressions: a project of a visual query with a parameter", {tag: ["@journey", "@realizes:views.projects", "@known-failure:77", "@realizes:GROK-20535"]}, async ({browser}) => {
+  test("Projects regressions: a project of a visual query with a parameter", {tag: ["@journey", "@realizes:views.projects", "@realizes:GROK-20535"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 3, page);
     await session.step(21, "Given user is logged in", () => loggedIn(page));
@@ -88,7 +88,7 @@ test.describe("Projects regressions: a project of a visual query with a paramete
       await session.step(75, "Then the current view should be a TableView view", () => currentViewType(page, "TableView"));
       await session.step(76, "And the table should have been reloaded by data sync", () => reloadedByDataSync(page));
       await session.step(77, "And the \"text of cell 1 of name\" reading of grid should be \"Script\"", () => readingReads(page, "text of cell 1 of name", el("grid"), "Script"));
-    }, {knownFailure: true, line: 77});
+    });
     run.finish();
   });
 });

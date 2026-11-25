@@ -2,6 +2,8 @@
 
 ## v.next
 
+* core#1765: Detectors: Declared the column types the semantic type detectors check, so the platform no longer calls them for other columns
+* Fit: 4PL dose-response curves (the default of Data to Curves) fit their Hill slope instead of staying near the -10 they started from (statistics library)
 * Tests: Added the package test of Data to Curves: wells grouped into one curve per compound, assay, target and run, with each curve's and each group's maximum inhibition
 
 ## 1.13.4 (2026-11-05)

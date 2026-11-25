@@ -67,7 +67,7 @@ export {
 export {buildProfileIndices} from './profile-index';
 export type {ProfileIndex} from './profile-index';
 
-export {extractProfileInputs, routeStringToCode, ROUTE_STRING_TO_CODE} from './profile-inputs';
+export {extractProfileInputs, routeStringToCode, ROUTE_STRING_TO_CODE, ROUTE_CODE_TO_STRING} from './profile-inputs';
 export type {ProfileScalars} from './profile-inputs';
 
 export {
@@ -76,12 +76,14 @@ export {
   normalizeRouteToken,
   routeScalarColumnConflict,
   BARE_IV_DEFAULTED_TO_BOLUS,
+  IP_INFUSION_AS_SINGLE_DOSE,
+  INFUSION_DURATION_NOT_USED,
   ROUTE_COLUMN_MAP_THRESHOLD,
   DERIVED_ROUTE_CODE_COL,
 } from './route-normalize';
 export type {RouteNormalization, RouteColumnResult} from './route-normalize';
 
-export {computeBioavailability, isIntravascular} from './bioavailability';
+export {computeBioavailability, isIntravascular, IP_F_MEANING, fPctMeaningFor} from './bioavailability';
 export type {BioavailabilityOptions, BioavailabilityResult, BioavailabilityWarning} from './bioavailability';
 
 export {
@@ -116,8 +118,35 @@ export {
   MIN_DOSE_LEVELS,
   MIN_ANIMALS_PER_LEVEL,
   SEX_INTERACTION_ALPHA,
+  DP_PARAMETER_ID,
+  AUCINF_VALID_EXTRAP_PCT,
+  VERDICT_DIFFERS_NOTE,
 } from './dose-proportionality';
+export {
+  isOccasionName,
+  isDayLikeOccasionName,
+  normOccasionName,
+  detectOccasionColumn,
+  occasionNumber,
+  orderOccasionLevels,
+  stripDayCode,
+  resolveAnimals,
+  classifyOccasionDesign,
+  resolveOccasion,
+  occasionNotices,
+  profileRowsOf,
+  splitsProfiles,
+  appendAucTauColumn,
+  AUC_TAU_COL,
+  AUC_TAU_TLAST_TOL_H,
+  OCCASION_DESIGNS,
+} from './occasion';
 export type {
+  OccasionDesign, OccasionResolution, DesignProposal, DerivedChoices, ProfileRow, ProfileFrameCols,
+  AnimalResolution, AnimalRule,
+} from './occasion';
+export type {
+  DeltaBetaRow,
   AucBasis,
   VerdictMode,
   DoseProportionalityVerdict,
@@ -179,7 +208,7 @@ export type {ObservationsCtx, CurvesByCompound} from './summary-cache';
 export type {ReportableResults, ReviewInfo} from './reportable';
 export {
   classifyReviewUnits, pendingUnits, profileMeasurability, sparseUnitKey, SPARSE_UNIT_PREFIX, sharedFlagCodes,
-  denseProfilesViable,
+  denseProfilesViable, legacyCompositeKey, compositeKeyAliases, compositeAccepted, decisionMatches,
 } from './review-units';
 export type {
   ReviewUnit, ReviewNeed, UnitCategory, ProfileUnitInput, CompositeUnitInput, ClassifyInput,
@@ -192,6 +221,7 @@ export {
 export type {ReviewCategory, ReasonDef, ReasonExportCategory} from './review-reasons';
 export {
   computeRecipeFingerprint, computeDecisionFingerprint, computeRecipeHash, RECIPE_HASH_VERSION,
+  legacyOtherRouteFingerprint, NUMBER_FREE_NOTE_CODES,
 } from './fingerprint';
 export type {DecisionFingerprintInput} from './fingerprint';
 export {
@@ -201,7 +231,7 @@ export {
 } from './workflow-stage';
 export type {StageInput, StageResult, StageUnit} from './workflow-stage';
 
-export {writeResultsToDataFrame, patchResultRow, ROUTE_CODE_TO_STRING, FIXED_RESULT_COLUMNS} from './results-writer';
+export {writeResultsToDataFrame, patchResultRow, FIXED_RESULT_COLUMNS} from './results-writer';
 export type {ResultRowValues} from './results-writer';
 
 // λz manual point-selection (VR-11): the service-column contract shared by the
@@ -230,7 +260,7 @@ export {buildMeanSdProfile} from './mean-sd-profile';
 export type {MeanSdProfileSpec} from './mean-sd-profile';
 
 export {
-  detectMapping, isBoolLikeNumeric, detectAnalyteColumns, detectEventDrivenColumns,
+  detectMapping, initialSubjectColumn, isBoolLikeNumeric, detectAnalyteColumns, detectEventDrivenColumns,
   isCompoundIdColumnName, detectMixedCompoundGroups, mixedCompoundMessage, findColByPattern,
 } from './column-autodetect';
 export type {MixedCompoundGroup} from './column-autodetect';
@@ -254,12 +284,14 @@ export {
   EVID_OTHER_IGNORED,
   NONMEM_STEADY_STATE_ASSUMED,
   sparseDoseSource,
+  formatSourceRows,
 } from './event-driven';
 export type {
   EventContract,
   NormalizeEventOptions,
   NormalizeEventResult,
   InferredRoute,
+  UnrecognisedRouteValue,
   ClassificationCounts,
 } from './event-driven';
 
@@ -296,7 +328,7 @@ export {
 
 export {
   STANDALONE_ROUTE_SEGMENT, NCA_APP_ROOT, NCA_STUDIES_CHANGED_EVENT, newId, uniqueLabel, isStale, isEntryStale,
-  isBasisStale,
+  isBasisStale, isDerivedBasisStale,
   computeSnapshotHash, snapshotSignature, snapshotDiff, SourceReplacedError, ContentChangedError,
   KeepsChangingError, SnapshotFidelityError, getNcaRepository, setNcaRepository,
   registerNcaRepositoryFactory, isCurvePending, pendingCurveIds, withCurves,

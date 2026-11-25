@@ -70,6 +70,56 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`;
     expect(col.meta.units, DG.UNITS.Molecule.MOLBLOCK);
   });
 
+  test('detectReactionTemplates', async () => {
+    // Chem's own enumerator templates hold SMARTS with `!`, `&` and `~`: a reaction column, not text
+    const templates = DG.DataFrame.fromCsv(await loadFileAsText('enumerations/reactions.csv'));
+    await grok.data.detectSemanticTypes(templates);
+    expect(templates.col('reaction_smarts')!.semType, DG.SEMTYPE.CHEMICAL_REACTION);
+
+    // eight reactions in ten values are a reaction column: the detector asks for 80 %
+    const steps = DG.DataFrame.fromColumns([DG.Column.fromStrings('steps', [
+      'CO>>COC', 'CC(=O)O.N>>CC(=O)N', 'CBr.c1ccccc1B(O)O>>Cc1ccccc1', 'CCO>>CC=O', 'CC=O>>CC(=O)O',
+      'c1ccccc1>>Brc1ccccc1', 'CCBr>>CC[Mg]Br', 'C=C>>CC', 'not recorded', 'see the notebook'])]);
+    await grok.data.detectSemanticTypes(steps);
+    expect(steps.col('steps')!.semType, DG.SEMTYPE.CHEMICAL_REACTION);
+
+    // plain text with `>` in it (and `!`, `&`, `~`) stays text
+    const notes = DG.DataFrame.fromColumns([DG.Column.fromStrings('notes', [
+      'yield > 90 %', 'R&D > operations', 'heat to 80 C >> cool', 'ratio ~ 2:1 > 1:1', 'done!>next',
+      'see A > B > C', 'pH>7', 'step 1 >> step 2', 'warm & stir > 2 h', 'T > Tm!'])]);
+    await grok.data.detectSemanticTypes(notes);
+    expect(notes.col('notes')!.semType !== DG.SEMTYPE.CHEMICAL_REACTION, true);
+  });
+
+  test('detectReactionUnits', async () => {
+    // a reaction column's units name the notation of its values: smiles, smarts, rxn or route
+    const unitsOf = async (name: string, values: string[]) => {
+      const df = DG.DataFrame.fromColumns([DG.Column.fromStrings(name, values)]);
+      await grok.data.detectSemanticTypes(df);
+      expect(df.col(name)!.semType, DG.SEMTYPE.CHEMICAL_REACTION);
+      return df.col(name)!.meta.units;
+    };
+    expect(await unitsOf('reaction', ['CCO>>CC=O', 'CC(=O)O.OCC>OS(=O)(=O)O>CC(=O)OCC.O',
+      'CC>>CO |(0,0,;1,0,;0,0,;1,0,)|']), 'smiles');
+    expect(await unitsOf('reaction', ['CCO>>CC=O', '[C:1](=[O:2])[OH].[NH2:3]>>[C:1](=[O:2])[NH:3]',
+      '[c:1][Br,I].[c:2]B(O)O>>[c:1][c:2]']), 'smarts');
+    const rxn = await loadFileAsText('tests/reactions-crux.csv');
+    const blocks = DG.DataFrame.fromCsv(rxn).col('reaction')!.toList().filter((s: string) => s.startsWith('$RXN'));
+    expect(await unitsOf('reaction', blocks), 'rxn');
+    expect(await unitsOf('reaction', ['CCO>>CC=O', 'CCO>>CC=O>>CC(=O)O', 'CO>>COC--**--COC.Cl>>CCl']), 'route');
+    // routes whose steps carry agents: the detector judges a route by its first step
+    expect(await unitsOf('reaction', ['CCO>O=[Cr](=O)=O>CC=O--**--CC=O.N>>CC=N',
+      'Oc1ccccc1.O=C=O>[Na+].[OH-]>O=C(O)c1ccccc1O--**--' +
+      'O=C(O)c1ccccc1O.CC(=O)OC(C)=O>O=P(O)(O)O>CC(=O)Oc1ccccc1C(=O)O']),
+    'route');
+    const templates = DG.DataFrame.fromCsv(await loadFileAsText('enumerations/reactions.csv'));
+    await grok.data.detectSemanticTypes(templates);
+    expect(templates.col('reaction_smarts')!.meta.units, 'smarts');
+    const samples = DG.DataFrame.fromCsv(await loadFileAsText('test-reactions.csv'));
+    await grok.data.detectSemanticTypes(samples);
+    expect(samples.col('reaction')!.meta.units, 'route');
+  });
+
   test('spgi', async () => {
     const df = DG.DataFrame.fromCsv(await loadFileAsText('tests/spgi-100.csv'));
     await grok.data.detectSemanticTypes(df);

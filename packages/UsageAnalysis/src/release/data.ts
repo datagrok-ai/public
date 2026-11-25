@@ -1,12 +1,14 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import {BehaviorSubject, Subject} from 'rxjs';
+import {BehaviorSubject, Observable, Subject, combineLatest} from 'rxjs';
+import {debounceTime, distinctUntilChanged, map, skip} from 'rxjs/operators';
 
 import {queries} from '../package-api';
+import {GitHubIssuesClient} from '../github/issues-client';
+import {GitHubIssue} from '../github/issue';
 
 export const DEV_HOST = 'dev.datagrok.ai';
-export const JIRA_BROWSE = 'https://reddata.atlassian.net/browse/';
 export const JENKINS_TEST_JOB = 'https://ops.datagrok.ai/job/test-build/';
 const SLOW_FACTOR = 1.25;
 const MIN_SLOW_MS = 1000; // ignore sub-second tests — a +% on a few-ms test is noise, not a regression
@@ -25,9 +27,49 @@ export class ReleaseContext {
   readonly env: BehaviorSubject<string>;
   readonly branch: BehaviorSubject<string>;
   readonly refresh = new Subject<void>();
-  constructor(env: string = DEFAULT_ENV, branch: string = DEFAULT_BRANCH) {
+  /** Fires when the env or the branch really changes. Switching instance re-points the branch too,
+   * so the pair is debounced into one event; re-asserting the current values fires nothing. */
+  readonly scopeChanged: Observable<string>;
+  private lastTests: {key: string, pivot: Promise<ReleasePivot | null>} | null = null;
+  lastTickets: {milestone: string, issues: Promise<GitHubIssue[]>} | null = null;
+  githubIssues: GitHubIssuesClient;
+  constructor(githubIssues: GitHubIssuesClient, env: string = DEFAULT_ENV, branch: string = DEFAULT_BRANCH) {
+    this.githubIssues = githubIssues;
     this.env = new BehaviorSubject(env);
     this.branch = new BehaviorSubject(branch);
+    this.scopeChanged = combineLatest([this.env, this.branch]).pipe(debounceTime(0),
+      map(([e, b]) => `${e}|${b}`), distinctUntilChanged(), skip(1));
+  }
+
+  /** The tests pivot for the current env and branch. Overview and Tests open on the same one, so the
+   * last answer is kept and the second tab does not run the query again; `force` re-fetches. */
+  tests(lastBuilds: number, force = false): Promise<ReleasePivot | null> {
+    const key = `${this.env.value}|${this.branch.value}|${lastBuilds}`;
+    if (force || this.lastTests?.key !== key) {
+      const pivot = fetchReleaseTests(this.env.value, lastBuilds, this.branch.value);
+      const entry = this.lastTests = {key, pivot};
+      pivot.catch(() => { if (this.lastTests === entry) this.lastTests = null; });
+    }
+    return this.lastTests!.pivot;
+  }
+
+  tickets(milestone: string, force = false): Promise<GitHubIssue[]> {
+    if (!force && this.lastTickets?.milestone === milestone)
+      return this.lastTickets.issues;
+    const issues = this.githubIssues.milestoneIssues(milestone);
+    const entry = this.lastTickets = {milestone, issues};
+    issues.catch(() => {
+      if (this.lastTickets === entry)
+        this.lastTickets = null;
+    });
+    return issues;
+  }
+
+  /** Ribbon Refresh: drops the kept pivot once, then lets every tab re-fetch. */
+  reload(): void {
+    this.lastTests = null;
+    this.lastTickets = null;
+    this.refresh.next();
   }
 }
 
@@ -218,62 +260,94 @@ function countGroups(map: Record<string, string[]>): number {
   return Object.values(map).reduce((n, xs) => n + xs.length, 0);
 }
 
+export type StressBand = 'green' | 'orange' | 'red' | 'info';
+
 export interface StressRegression {
-  regressed: boolean;
+  band: StressBand;
+  value: string; // the card's headline: OK, or the worst change
+  summary: string; // the latest sweep's own numbers
   detail: string;
+  alerts: {label: string, band: StressBand}[];
 }
 
-function renameCol(df: DG.DataFrame, from: string, to: string): void {
-  const c = df.columns.byName(from);
-  if (c) {
-    c.name = to;
-    c.setTag('friendlyName', to);
+interface PivotValue { col: string; suffix: string; type?: DG.ColumnType; }
+
+/** One row per distinct `keys` combination, with a `${index}${suffix}` column per index value and
+ * value column; a cell with no source row stays empty. Hand-rolled because DataFrame pivot keeps
+ * numeric aggregates only: `first()` of a string column (status, result) yields no column at all. */
+function pivotByIndex(raw: DG.DataFrame, keys: string[], indexName: string,
+  values: PivotValue[]): {df: DG.DataFrame, indexes: number[]} {
+  const keyCols = keys.map((k) => raw.getCol(k));
+  const indexCol = raw.getCol(indexName);
+  const rowOf = new Map<string, number>();
+  const firstRows: number[] = [];
+  const target = new Int32Array(raw.rowCount);
+  const found = new Set<number>();
+  for (let i = 0; i < raw.rowCount; i++) {
+    const key = keyCols.map((c) => c.get(i) ?? '').join('\u0001');
+    let row = rowOf.get(key);
+    if (row === undefined) {
+      row = firstRows.length;
+      rowOf.set(key, row);
+      firstRows.push(i);
+    }
+    target[i] = row;
+    if (!indexCol.isNone(i))
+      found.add(indexCol.get(i));
   }
+  const indexes = [...found].sort((a, b) => a - b);
+  const df = DG.DataFrame.fromColumns(
+    keyCols.map((c) => DG.Column.fromStrings(c.name, firstRows.map((i) => c.get(i) ?? ''))));
+  for (const v of values) {
+    const src = raw.getCol(v.col);
+    const cols = new Map(indexes.map((idx) => [idx, df.columns.addNew(`${idx}${v.suffix}`, v.type ?? src.type)]));
+    for (let i = 0; i < raw.rowCount; i++) {
+      if (!indexCol.isNone(i) && !src.isNone(i))
+        cols.get(indexCol.get(i))!.set(target[i], src.get(i), false);
+    }
+  }
+  return {df, indexes};
+}
+
+/** The first non-empty value of `col` among the rows whose `indexName` equals `index`. */
+function valueAt(raw: DG.DataFrame, indexName: string, index: number, col: string): string {
+  const indexCol = raw.getCol(indexName);
+  const valueCol = raw.getCol(col);
+  for (let i = 0; i < raw.rowCount; i++) {
+    if (indexCol.get(i) === index && !valueCol.isNone(i))
+      return valueCol.get(i);
+  }
+  return '';
 }
 
 /** Runs ReleaseTests and pivots it client-side into one row per test with per-build columns. */
 export async function fetchReleaseTests(instanceFilter: string, lastBuildsNum: number,
   branchFilter: string = DEFAULT_BRANCH): Promise<ReleasePivot | null> {
-  const raw: DG.DataFrame = await queries.releaseTests(instanceFilter,
-    branchFilter === ALL_BRANCHES ? null : branchFilter, lastBuildsNum);
+  const [raw, schemas, mutesSchema] = await Promise.all([
+    queries.releaseTests(instanceFilter, branchFilter === ALL_BRANCHES ? null : branchFilter, lastBuildsNum),
+    grok.dapi.stickyMeta.getSchemas(),
+    getReleaseMutesSchema(),
+  ]);
   if (raw.rowCount === 0)
     return null;
 
-  const biCol = raw.getCol('build_index');
-  const buildIndexes = Array.from(new Set(Array.from({length: biCol.length}, (_, i) => biCol.get(i))))
-    .filter((v) => v != null).map(Number).sort((a, b) => a - b);
+  const {df: pivot, indexes: buildIndexes} = pivotByIndex(raw, ['package', 'test', 'owner'], 'build_index', [
+    {col: 'status', suffix: ''}, {col: 'duration', suffix: ' ms', type: DG.TYPE.FLOAT},
+    {col: 'flaking', suffix: ' flaking'}, {col: 'result', suffix: ' result'}]);
   const latest = buildIndexes[buildIndexes.length - 1];
-
-  const pivot = raw.groupBy(['package', 'test', 'owner'])
-    .pivot('build_index')
-    .first('status')
-    .avg('duration')
-    .first('flaking')
-    .first('result')
-    .first('build_commit')
-    .aggregate();
 
   // Per-build success (1 pass / 0 fail / gap for skipped & did-not-run) for the success sparkline.
   for (const bi of buildIndexes) {
-    const sc = pivot.getCol(`${bi} first(status)`);
+    const sc = pivot.getCol(`${bi}`);
     pivot.columns.addNewFloat(`${bi} ok`).init((i) => {
       const s = sc.get(i);
       return s === 'passed' ? 1 : s === 'failed' ? 0 : null;
     });
   }
 
-  const latestCommit = pivot.columns.addNewString('latest_commit');
-  latestCommit.init((i) => pivot.get(`${latest} first(build_commit)`, i) ?? '');
-  const latestResult = pivot.columns.addNewString('latest_result');
-
-  for (const bi of buildIndexes) {
-    renameCol(pivot, `${bi} first(status)`, `${bi}`);
-    renameCol(pivot, `${bi} avg(duration)`, `${bi} ms`);
-    renameCol(pivot, `${bi} first(result)`, `${bi} result`);
-    renameCol(pivot, `${bi} first(flaking)`, `${bi} flaking`);
-    pivot.columns.remove(`${bi} first(build_commit)`);
-  }
-  latestResult.init((i) => pivot.get(`${latest} result`, i) ?? '');
+  const latestCommit = valueAt(raw, 'build_index', latest, 'build_commit');
+  pivot.columns.addNewString('latest_commit').init(() => latestCommit);
+  pivot.columns.addNewString('latest_result').init((i) => pivot.get(`${latest} result`, i) ?? '');
 
   const statusCols = buildIndexes.map((bi) => `${bi}`);
   const durationCols = buildIndexes.map((bi) => `${bi} ms`);
@@ -282,11 +356,7 @@ export async function fetchReleaseTests(instanceFilter: string, lastBuildsNum: n
 
   // Release version + per-test baselines (last-run date, previous-release avg duration), read from the raw
   // result up front so the derived flags below (slower, stale) can use them.
-  const buildCol = raw.getCol('build');
-  let latestBuildName = '';
-  for (let i = 0; i < raw.rowCount; i++)
-    if (Number(biCol.get(i)) === latest) { latestBuildName = buildCol.get(i) ?? ''; break; }
-  const version = versionFromBuild(latestBuildName);
+  const version = versionFromBuild(valueAt(raw, 'build_index', latest, 'build'));
   const nowMs = Date.now();
   const rawTestCol = raw.getCol('test');
   const lastRunByTest = new Map<string, number>();
@@ -305,7 +375,8 @@ export async function fetchReleaseTests(instanceFilter: string, lastBuildsNum: n
   if (rawPrev) {
     for (let i = 0; i < raw.rowCount; i++) {
       const t = rawTestCol.get(i);
-      if (!prevReleaseByTest.has(t)) { const v: any = rawPrev.get(i); prevReleaseByTest.set(t, v == null ? NaN : Number(v)); }
+      if (!prevReleaseByTest.has(t))
+        prevReleaseByTest.set(t, rawPrev.isNone(i) ? NaN : Number(rawPrev.get(i)));
     }
   }
 
@@ -321,7 +392,7 @@ export async function fetchReleaseTests(instanceFilter: string, lastBuildsNum: n
   });
   pivot.columns.addNewBool('carried_forward').init((i) => {
     const latestS = pivot.get(`${latest}`, i);
-    return (latestS == null || latestS === 'did not run') && pivot.get('effective_status', i) !== '';
+    return (!latestS || latestS === 'did not run') && pivot.get('effective_status', i) !== '';
   });
 
   pivot.columns.addNewBool('failing').init((i) => pivot.get('effective_status', i) === 'failed');
@@ -367,23 +438,21 @@ export async function fetchReleaseTests(instanceFilter: string, lastBuildsNum: n
     return `${latestMs}ms — ${parts.join(', ')}`;
   });
 
-  const schemas = await grok.dapi.stickyMeta.getSchemas();
   const schema = schemas.find((s) => s.name === 'Autotests');
   pivot.getCol('test').semType = 'autotest';
   pivot.getCol('owner').semType = 'User';
   pivot.getCol('owner').setTag('cell.renderer', 'User');
-  if (schema) {
-    const meta = await grok.dapi.stickyMeta.getAllValues(schema, pivot.getCol('test'));
-    for (const name of ['ignore?', 'ignoreReason', 'lastResolved']) {
-      const c = meta.col(name);
-      if (c)
-        pivot.columns.add(c);
-    }
+  const [meta, mutes] = await Promise.all([
+    schema ? grok.dapi.stickyMeta.getAllValues(schema, pivot.getCol('test')) : null,
+    grok.dapi.stickyMeta.getAllValues(mutesSchema, pivot.getCol('test')),
+  ]);
+  for (const name of ['ignore?', 'ignoreReason', 'lastResolved']) {
+    const c = meta?.col(name);
+    if (c)
+      pivot.columns.add(c);
   }
   // Version-bound mutes (own schema). 'mutedForVersion' drives the grid icon; 'muted' = global ignore OR
   // muted-for-this-version and gates needs_attention and every failing/flaky count.
-  const mutesSchema = await getReleaseMutesSchema();
-  const mutes = await grok.dapi.stickyMeta.getAllValues(mutesSchema, pivot.getCol('test'));
   const mvCol = mutes.col(MUTED_VERSIONS);
   if (mvCol)
     pivot.columns.add(mvCol);
@@ -486,17 +555,13 @@ export async function fetchReleaseManual(lastBatches: number): Promise<ManualPiv
   for (let i = 0; i < raw.rowCount; i++)
     if (Number(biCol.get(i)) === latest) { latestBatchName = raw.get('batch_name', i) ?? ''; break; }
 
-  const pivot = raw.groupBy(['test']).pivot('batch_index').first('status').first('result').aggregate();
+  const pivot = pivotByIndex(raw, ['test'], 'batch_index',
+    [{col: 'status', suffix: ''}, {col: 'result', suffix: ' result'}]).df;
   for (const bi of idxs) {
-    const sc = pivot.getCol(`${bi} first(status)`);
+    const sc = pivot.getCol(`${bi}`);
     pivot.columns.addNewFloat(`${bi} ok`).init((i) => { const s = sc.get(i); return s === 'passed' ? 1 : s === 'failed' ? 0 : null; });
   }
-  const latestResult = pivot.columns.addNewString('latest_result');
-  for (const bi of idxs) {
-    renameCol(pivot, `${bi} first(status)`, `${bi}`);
-    renameCol(pivot, `${bi} first(result)`, `${bi} result`);
-  }
-  latestResult.init((i) => pivot.get(`${latest} result`, i) ?? '');
+  pivot.columns.addNewString('latest_result').init((i) => pivot.get(`${latest} result`, i) ?? '');
   pivot.columns.addNewBool('failing').init((i) => pivot.get(`${latest}`, i) === 'failed');
   pivot.getCol('test').semType = 'autotest';
   pivot.name = 'Manual tests';
@@ -552,29 +617,14 @@ export async function fetchReleaseBenchmarks(instanceFilter: string, lastBuildsN
   if (raw.rowCount === 0)
     return null;
 
-  const biCol = raw.getCol('build_index');
-  const buildIndexes = Array.from(new Set(Array.from({length: biCol.length}, (_, i) => biCol.get(i))))
-    .filter((v) => v != null).map(Number).sort((a, b) => a - b);
+  const {df: pivot, indexes: buildIndexes} = pivotByIndex(raw, ['package', 'test', 'owner'], 'build_index', [
+    {col: 'status', suffix: ''}, {col: 'duration', suffix: ' ms', type: DG.TYPE.FLOAT},
+    {col: 'result', suffix: ' result'}]);
   const latest = buildIndexes[buildIndexes.length - 1];
 
-  const pivot = raw.groupBy(['package', 'test', 'owner'])
-    .pivot('build_index')
-    .first('status')
-    .avg('duration')
-    .first('result')
-    .first('build_commit')
-    .aggregate();
-
-  const latestCommit = pivot.columns.addNewString('latest_commit');
-  latestCommit.init((i) => pivot.get(`${latest} first(build_commit)`, i) ?? '');
-  const latestResult = pivot.columns.addNewString('latest_result');
-  for (const bi of buildIndexes) {
-    renameCol(pivot, `${bi} first(status)`, `${bi}`);
-    renameCol(pivot, `${bi} avg(duration)`, `${bi} ms`);
-    renameCol(pivot, `${bi} first(result)`, `${bi} result`);
-    pivot.columns.remove(`${bi} first(build_commit)`);
-  }
-  latestResult.init((i) => pivot.get(`${latest} result`, i) ?? '');
+  const latestCommit = valueAt(raw, 'build_index', latest, 'build_commit');
+  pivot.columns.addNewString('latest_commit').init(() => latestCommit);
+  pivot.columns.addNewString('latest_result').init((i) => pivot.get(`${latest} result`, i) ?? '');
   const statusCols = buildIndexes.map((bi) => `${bi}`);
   const durationCols = buildIndexes.map((bi) => `${bi} ms`);
 
@@ -608,11 +658,7 @@ export async function fetchReleaseBenchmarks(instanceFilter: string, lastBuildsN
     });
   }
 
-  const buildCol = raw.getCol('build');
-  let latestBuildName = '';
-  for (let i = 0; i < raw.rowCount; i++)
-    if (Number(biCol.get(i)) === latest) { latestBuildName = buildCol.get(i) ?? ''; break; }
-  const version = versionFromBuild(latestBuildName);
+  const version = versionFromBuild(valueAt(raw, 'build_index', latest, 'build'));
 
   const prevReleaseByTest = new Map<string, number>();
   const rawPrev = raw.columns.byName('prev_release_ms');
@@ -620,7 +666,8 @@ export async function fetchReleaseBenchmarks(instanceFilter: string, lastBuildsN
   if (rawPrev) {
     for (let i = 0; i < raw.rowCount; i++) {
       const t = rawTestCol.get(i);
-      if (!prevReleaseByTest.has(t)) { const v: any = rawPrev.get(i); prevReleaseByTest.set(t, v == null ? NaN : Number(v)); }
+      if (!prevReleaseByTest.has(t))
+        prevReleaseByTest.set(t, rawPrev.isNone(i) ? NaN : Number(rawPrev.get(i)));
     }
   }
 
@@ -702,34 +749,142 @@ export function computeBenchmarkAlerts(p: BenchmarkPivot): BenchmarkAlerts {
   return a;
 }
 
-/** Compares the latest build's worst-case p95 to the median of prior builds (from StressTestsSummary). */
-export function stressRegression(df: DG.DataFrame, factor = 1.2): StressRegression {
-  const n = df.rowCount;
-  if (n === 0)
-    return {regressed: false, detail: 'No stress runs reported.'};
-  const buildCol = df.getCol('build');
-  const startedCol = df.columns.byName('started') ?? df.columns.byName('build_date');
-  const p95Col = df.columns.byName('p95_ms') ?? df.columns.byName('median_ms');
-  if (!p95Col)
-    return {regressed: false, detail: 'No duration metric available.'};
+const STRESS_PARALLEL = 4;
+export const STRESS_LAST_BUILDS = 30;
+export const STRESS_WARN_PCT = 10;
+export const STRESS_FAIL_PCT = 25;
+const STRESS_MIN_PASS = 95;
 
-  const byBuild = new Map<string, {started: number, p95: number}>();
-  for (let i = 0; i < n; i++) {
-    const b = buildCol.get(i);
-    const p = Number(p95Col.get(i) ?? 0);
-    const raw = startedCol ? startedCol.get(i) : i;
-    const started = raw && (raw as any).valueOf ? (raw as any).valueOf() : Number(raw) || 0;
-    const cur = byBuild.get(b);
-    byBuild.set(b, {started: Math.max(started, cur?.started ?? 0), p95: Math.max(p, cur?.p95 ?? 0)});
+/** The StressTestsSummary table (one row per build x threads: trunk builds newest first, then the
+ * latest release branch's sweeps), assembled from per-build summaries. Summarizing 20 builds in one
+ * query reads millions of rows and takes minutes; per build the server caches the answer, so only a
+ * new or re-run build is computed. Uncached builds are fetched a few at a time so a cold cache does
+ * not flood the database. */
+export async function fetchStressSummary(lastBuilds: number): Promise<DG.DataFrame> {
+  const builds = await queries.stressTestsBuilds(lastBuilds);
+  const names = builds.getCol('build');
+  const runs = builds.getCol('runs');
+  const parts: DG.DataFrame[] = new Array(builds.rowCount);
+  let next = 0;
+  await Promise.all(Array.from({length: Math.min(STRESS_PARALLEL, parts.length)}, async () => {
+    while (next < parts.length) {
+      const i = next++;
+      const part = await queries.stressTestsBuildSummary(names.get(i), runs.get(i));
+      const branch = builds.get('branch', i);
+      part.columns.addNewString('branch').init(() => branch);
+      parts[i] = part;
+    }
+  }));
+  if (parts.length === 0)
+    return builds;
+  const df = parts[0].clone();
+  for (const part of parts.slice(1))
+    df.append(part, true);
+  return df;
+}
+
+type StressMetric = 'speed' | 'median';
+type StressValues = Record<StressMetric, number>;
+
+interface StressBuild extends StressValues {
+  build: string;
+  branch: string;
+  started: number;
+  levels: Map<number, StressValues>; // per thread level; the build's own values average them
+  minPass: number;
+}
+
+// sign: which direction is worse (-1: lower is worse, 1: higher is worse).
+const STRESS_METRICS: {key: StressMetric, name: string, unit: string, sign: number, best: string}[] = [
+  {key: 'speed', name: 'speed', unit: 'tests/s', sign: -1, best: 'fastest'},
+  {key: 'median', name: 'median duration', unit: 'ms', sign: 1, best: 'lowest-median'},
+];
+
+function stressBuilds(df: DG.DataFrame): StressBuild[] {
+  const byBuild = new Map<string, StressBuild>();
+  for (let i = 0; i < df.rowCount; i++) {
+    const name = df.get('build', i);
+    let b = byBuild.get(name);
+    if (!b) {
+      b = {build: name, branch: df.get('branch', i) ?? '', started: df.get('started', i)?.valueOf() ?? 0,
+        levels: new Map(), speed: 0, median: 0, minPass: 100};
+      byBuild.set(name, b);
+    }
+    b.levels.set(df.get('threads', i), {speed: df.get('tests_per_s', i) ?? 0, median: df.get('median_ms', i) ?? 0});
+    b.minPass = Math.min(b.minPass, df.get('pass_rate', i) ?? 0);
   }
-  const builds = [...byBuild.entries()].map(([build, v]) => ({build, ...v})).sort((x, y) => y.started - x.started);
-  if (builds.length < 3)
-    return {regressed: false, detail: 'Not enough stress history to compare.'};
-  const latest = builds[0];
-  const priorMed = median(builds.slice(1).map((b) => b.p95));
-  const pct = priorMed > 0 ? Math.round((latest.p95 / priorMed - 1) * 100) : 0;
-  const regressed = priorMed > 0 && latest.p95 > priorMed * factor;
-  return {regressed, detail: regressed ?
-    `Latest p95 ${Math.round(latest.p95)}ms is ${pct}% above prior median ${Math.round(priorMed)}ms` :
-    `Latest p95 within range (${pct >= 0 ? '+' : ''}${pct}% vs prior median)`};
+  const builds = [...byBuild.values()].sort((x, y) => y.started - x.started);
+  for (const b of builds) {
+    for (const m of STRESS_METRICS)
+      b[m.key] = [...b.levels.values()].reduce((s, v) => s + v[m.key], 0) / b.levels.size;
+  }
+  return builds;
+}
+
+const signed = (pct: number): string => `${pct > 0 ? '+' : ''}${pct}%`;
+
+/** The latest trunk sweep (from fetchStressSummary) against two baselines, the best trunk sweep in
+ * the window and the best sweep of the latest release branch, on two metrics: speed (tests/s) and
+ * median test duration, each averaged over the thread levels. The best sweep is picked per metric.
+ * Only a sweep that completed the full suite counts, as the latest or as a baseline: every thread
+ * level ran and passed. A sweep cut short has no slow top levels and one whose tests fail returns
+ * early, so both read as fast. */
+export function stressRegression(df: DG.DataFrame): StressRegression {
+  const builds = stressBuilds(df);
+  const trunk = builds.filter((b) => !b.branch.startsWith('release/'));
+  if (trunk.length === 0)
+    return {band: 'info', value: 'n/a', summary: 'no stress runs', detail: 'No stress runs reported.', alerts: []};
+  const levelCount = Math.max(...trunk.map((b) => b.levels.size));
+  const full = (b: StressBuild): boolean => b.levels.size === levelCount && b.minPass >= STRESS_MIN_PASS &&
+    [...b.levels.values()].every((v) => v.speed > 0);
+
+  const latest = trunk[0];
+  if (!full(latest)) {
+    const detail = `Latest sweep ${latest.build} did not complete the full suite ` +
+      `(${latest.levels.size} of ${levelCount} thread levels, lowest pass rate ${latest.minPass}%): not compared`;
+    return {band: 'orange', value: 'Incomplete', summary: `${latest.levels.size} of ${levelCount} thread levels`,
+      detail, alerts: [{label: `Stress: ${detail}`, band: 'orange'}]};
+  }
+
+  const release = builds.filter((b) => b.branch.startsWith('release/'));
+  const res: StressRegression = {band: 'green', value: 'OK', detail: '', alerts: [],
+    summary: STRESS_METRICS.map((m) => `${Math.round(latest[m.key])} ${m.unit}${m.key === 'median' ? ' median' : ''}`)
+      .join(', ')};
+  let worstPct = 0;
+  const details: string[] = [];
+  for (const m of STRESS_METRICS) {
+    const change = (now: number, was: number): number => Math.round((now / was - 1) * 100);
+    const parts: string[] = [];
+    const compare = (candidates: StressBuild[], title: string): void => {
+      const base = candidates.filter(full).sort((x, y) => m.sign * (x[m.key] - y[m.key]))[0];
+      if (!base)
+        return;
+      const pct = change(latest[m.key], base[m.key]);
+      parts.push(`${signed(pct)} vs ${title} (${base.build}, ${Math.round(base[m.key])} ${m.unit})`);
+      const worse = m.sign * pct;
+      if (worse < STRESS_WARN_PCT)
+        return;
+      const band = worse >= STRESS_FAIL_PCT ? 'red' : 'orange';
+      let worst = {threads: 0, pct: 0};
+      for (const [threads, v] of latest.levels) {
+        const p = change(v[m.key], base.levels.get(threads)![m.key]);
+        if (m.sign * p > m.sign * worst.pct)
+          worst = {threads, pct: p};
+      }
+      res.alerts.push({band, label: `Stress ${m.name} ${signed(pct)} vs ${title}: ${Math.round(latest[m.key])} vs ` +
+        `${Math.round(base[m.key])} ${m.unit} (${base.build}), worst at ${worst.threads} threads (${signed(worst.pct)})`});
+      if (band === 'red' || res.band === 'green')
+        res.band = band;
+      if (worse > worstPct) {
+        worstPct = worse;
+        res.value = `${signed(pct)} ${m.key}`;
+      }
+    };
+    compare(trunk, `the ${m.best} full sweep`);
+    compare(release, release[0]?.branch);
+    details.push(`${Math.round(latest[m.key])} ${m.unit}${m.key === 'median' ? ' median' : ''}: ${parts.join(', ')}`);
+  }
+  res.detail = details.join('; ') + (release.some(full) ? '' : release.length > 0 ?
+    `; no full sweep on ${release[0].branch}` : '; no stress sweep on a release branch yet');
+  return res;
 }

@@ -8,25 +8,15 @@ function getFirstOfCol(col) {
   return '';
 }
 
-function prepareTicketsVerdict(
-    pivot,
-    ticketColumn,
-    resultColumnName
-) {
+function prepareTicketsVerdict(pivot, ticketColumn, resultColumnName) {
   const resultColumn = pivot.columns.getOrCreate(resultColumnName, DG.COLUMN_TYPE.STRING);
-  const ticketRegex = /GROK-\d*/;
-
-  for (let i = 0; i < ticketColumn.length; i++) {
-    const cellValue = ticketColumn.get(i);
-    if (typeof cellValue === 'string' && ticketRegex.test(cellValue))
-      resultColumn.set(i, 'Loading...');
-  }
-
-  grok.functions.call('UsageAnalysis:getTicketsVerdict', {
-    ticketColumn,
-    resultColumn
-  });
-
+  resultColumn.init((i) => ticketColumn.get(i) ? 'Loading...' : '');
+  grok.functions.call('UsageAnalysis:getTicketsVerdict', {ticketColumn})
+    .then((verdicts) => resultColumn.init((i) => verdicts.get(i)))
+    .catch((e) => {
+      grok.log.warning(`Tests dashboard: ticket verdicts are unavailable: ${e}`);
+      resultColumn.init((i) => ticketColumn.get(i) ? 'n/a' : '');
+    });
   return resultColumn;
 }
 
@@ -105,26 +95,36 @@ async function postprocess() {
   if (ticketsStatusCol)
     ticketsStatusCol.meta.colors.setCategorical({
       'Fixed': '#2ca02c',
-      'Partially Fixed (Lowest)': '#ffe51c',
-      'Partially Fixed (Low)': '#ffa500',
-      'Partially Fixed (Medium)': '#ff5a00',
+      'Not on GitHub': '#b0b0b0',
       'Partially Fixed (Blocker)': '#7b2d24',
-      'Wasn\'t Fixed (Lowest)': '#ffe51c',
-      'Wasn\'t Fixed (Low)': '#ffa500',
-      'Wasn\'t Fixed (Medium)': '#ff5a00',
+      'Partially Fixed (Urgent)': '#7b2d24',
+      'Partially Fixed (High)': '#ff5a00',
+      'Partially Fixed (Medium)': '#ffa500',
+      'Partially Fixed (Low)': '#ffe51c',
+      'Partially Fixed (No priority)': '#ffe51c',
       'Wasn\'t Fixed (Blocker)': '#7b2d24',
+      'Wasn\'t Fixed (Urgent)': '#7b2d24',
+      'Wasn\'t Fixed (High)': '#ff5a00',
+      'Wasn\'t Fixed (Medium)': '#ffa500',
+      'Wasn\'t Fixed (Low)': '#ffe51c',
+      'Wasn\'t Fixed (No priority)': '#ffe51c',
     })
   if (stickyMetaStatusCol)
     stickyMetaStatusCol.meta.colors.setCategorical({
       'Fixed': '#2ca02c',
-      'Partially Fixed (Lowest)': '#ffe51c',
-      'Partially Fixed (Low)': '#ffa500',
-      'Partially Fixed (Medium)': '#ff5a00',
+      'Not on GitHub': '#b0b0b0',
       'Partially Fixed (Blocker)': '#7b2d24',
-      'Wasn\'t Fixed (Lowest)': '#ffe51c',
-      'Wasn\'t Fixed (Low)': '#ffa500',
-      'Wasn\'t Fixed (Medium)': '#ff5a00',
+      'Partially Fixed (Urgent)': '#7b2d24',
+      'Partially Fixed (High)': '#ff5a00',
+      'Partially Fixed (Medium)': '#ffa500',
+      'Partially Fixed (Low)': '#ffe51c',
+      'Partially Fixed (No priority)': '#ffe51c',
       'Wasn\'t Fixed (Blocker)': '#7b2d24',
+      'Wasn\'t Fixed (Urgent)': '#7b2d24',
+      'Wasn\'t Fixed (High)': '#ff5a00',
+      'Wasn\'t Fixed (Medium)': '#ffa500',
+      'Wasn\'t Fixed (Low)': '#ffe51c',
+      'Wasn\'t Fixed (No priority)': '#ffe51c',
     })
     
 

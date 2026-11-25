@@ -16,12 +16,12 @@ export enum ChemicalEngine {
 
 /** The package property (package.json `properties`). */
 const ENGINE_PROPERTY = 'ChemicalEngine';
-/** The setting is read from the platform at most this often: the renderer asks for it on every cell. */
+/** The settings are read from the platform at most this often: the renderer asks for them on every cell. */
 const SETTING_REFRESH_MS = 1000;
 
 let engineOverride: ChemicalEngine | null = null;
-let settingValue: ChemicalEngine = ChemicalEngine.Crux;
-let settingReadAt = -Infinity;
+let settings: {[name: string]: any} = {};
+let settingsReadAt = -Infinity;
 /** Changes whenever the engine in effect changes (a switch, Crux ready, Crux failed): caches keyed by engine compare
  * it to know they must be emptied. */
 let generation = 0;
@@ -35,6 +35,10 @@ const switchListeners: (() => void)[] = [];
  * it; in the package-test bundle, whose `_package` is not the published package, the published package does.
  */
 export function chemSetting(name: string): any {
+  return readSettings()?.[name];
+}
+
+function readSettings(): {[name: string]: any} | null {
   const read = (settings: () => {[name: string]: any} | null | undefined) => {
     try {
       return settings() ?? null;
@@ -42,28 +46,31 @@ export function chemSetting(name: string): any {
       return null;
     }
   };
-  const settings = read(() => _package.settings) ??
+  return read(() => _package.settings) ??
     read(() => DG.Func.find({package: 'Chem', name: 'getRdKitModule'})[0]?.package?.settings);
-  return settings?.[name];
+}
+
+/** The package settings as {@link chemSetting} reads them, re-read at most every {@link SETTING_REFRESH_MS}. */
+export function chemSettings(): {[name: string]: any} {
+  const now = performance.now();
+  if (now - settingsReadAt >= SETTING_REFRESH_MS) {
+    settingsReadAt = now;
+    settings = readSettings() ?? {};
+  }
+  return settings;
 }
 
 /** Overrides the package setting until reset with null (tests, and scripts that run a suite in Crux mode). */
 export function setChemicalEngine(engine: ChemicalEngine | null): void {
   engineOverride = engine;
-  settingReadAt = -Infinity;
+  settingsReadAt = -Infinity;
   engineInEffect();
 }
 
 /** The engine the setting (or the override) asks for: Crux by default, RDKit only when the setting says so. */
 export function requestedEngine(): ChemicalEngine {
-  if (engineOverride)
-    return engineOverride;
-  const now = performance.now();
-  if (now - settingReadAt >= SETTING_REFRESH_MS) {
-    settingReadAt = now;
-    settingValue = chemSetting(ENGINE_PROPERTY) === ChemicalEngine.RDKit ? ChemicalEngine.RDKit : ChemicalEngine.Crux;
-  }
-  return settingValue;
+  return engineOverride ??
+    (chemSettings()[ENGINE_PROPERTY] === ChemicalEngine.RDKit ? ChemicalEngine.RDKit : ChemicalEngine.Crux);
 }
 
 /** Whether Crux is asked for and has not failed to load: the Crux paths (or their RDKit fallbacks) run. */

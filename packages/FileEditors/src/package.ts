@@ -6,10 +6,27 @@ import * as DG from 'datagrok-api/dg';
 import '../css/file_editors.css';
 import {getDocument, PDFDocumentProxy, PDFPageProxy} from 'pdfjs-dist';
 import 'pdfjs-dist/webpack';
-import {renderAsync} from 'docx-preview';
 import {LatexViewer} from './latex/latex-viewer';
+import {renderOdt} from './odt';
+import {readDocParagraphs} from './doc';
+import {isSafeUrl, renderDocx} from './docx';
 export * from './package.g';
 export const _package = new DG.Package();
+
+/** A view whose content scrolls as one document; a render error is shown in place of the content. */
+async function documentView(name: string, render: (host: HTMLDivElement) => Promise<unknown>): Promise<DG.View> {
+  const view = DG.View.create();
+  view.name = name;
+  const host = ui.div([], 'fe-document-preview');
+  view.append(host);
+  try {
+    await render(host);
+  }
+  catch (e) {
+    host.replaceChildren(ui.divText(`${name} cannot be displayed: ${e instanceof Error ? e.message : e}`));
+  }
+  return view;
+}
 
 
 export class PackageFunctions {
@@ -97,23 +114,14 @@ export class PackageFunctions {
   @grok.decorators.fileViewer({fileViewer: 'docx'})
   static async previewDocx(
     file: DG.FileInfo): Promise<DG.View> {
-    const view = DG.View.create();
-    view.name = file.name;
-    view.root.classList.add('fe-docx-preview');
-    const bytes = await file.readAsBytes();
-    renderAsync(bytes, view.root, undefined, {inWrapper: false, ignoreWidth: true, ignoreHeight: true});
-    return view;
+    return documentView(file.name, async (host) => renderDocx(await file.readAsBytes(), host));
   }
 
 
   @grok.decorators.fileHandler({ext: 'docx'})
   static async viewDocx(
     @grok.decorators.param({type: 'list'}) bytes: Uint8Array): Promise<DG.DataFrame[]> {
-    const view = DG.View.create();
-    bytes = new Uint8Array(bytes);
-    view.name = 'DOCX File';
-    renderAsync(bytes, view.root, undefined, {inWrapper: false});
-    grok.shell.addView(view);
+    grok.shell.addView(await documentView('DOCX File', (host) => renderDocx(new Uint8Array(bytes), host)));
     return [];
   }
 
@@ -121,21 +129,40 @@ export class PackageFunctions {
   @grok.decorators.fileViewer({fileViewer: 'rtf'})
   static async previewRtf(
     file: DG.FileInfo): Promise<DG.View> {
-    await DG.Utils.loadJsCss([`${_package.webRoot}/dist/package-rtf.js`]);
-    const view = DG.View.create();
-    view.name = file.name;
-
-    file.readAsBytes().then((bytes) => {
-      //@ts-ignore
-      const doc = new ((window.fileeditors_rtf.RTFJS) as any).Document(bytes, {});
-      doc.render().then((elements : any) => {
-        (elements as any[]).forEach((element) => {
-          element.style.minHeight = '';
-          view.root.append(element);
-        });
-      });
+    return documentView(file.name, async (host) => {
+      const {RTFJS, EMFJS, WMFJS} = await import('rtf.js');
+      for (const lib of [RTFJS, EMFJS, WMFJS])
+        lib.loggingEnabled(false);
+      const elements = await new RTFJS.Document(new Uint8Array(await file.readAsBytes()).buffer, {
+        onHyperlink: (create, link) => {
+          const a = create();
+          if (!isSafeUrl(link.url()))
+            a.removeAttribute('href');
+          return {element: a, content: a};
+        },
+      }).render();
+      for (const element of elements) {
+        element.style.minHeight = '';
+        host.append(element);
+      }
     });
-    return view;
+  }
+
+
+  @grok.decorators.fileViewer({fileViewer: 'odt'})
+  static async previewOdt(
+    file: DG.FileInfo): Promise<DG.View> {
+    return documentView(file.name, async (host) => renderOdt(await file.readAsBytes(), host));
+  }
+
+
+  @grok.decorators.fileViewer({fileViewer: 'doc'})
+  static async previewDoc(
+    file: DG.FileInfo): Promise<DG.View> {
+    return documentView(file.name, async (host) => {
+      for (const paragraph of readDocParagraphs(await file.readAsBytes()))
+        host.append(ui.p(paragraph || '\u00a0'));
+    });
   }
 
 

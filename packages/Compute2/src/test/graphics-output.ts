@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import type ExcelJS from 'exceljs';
 import {category, test, expect, waitUntil} from '@datagrok-libraries/test/src/test';
-import {richFunctionViewReport} from '@datagrok-libraries/compute-utils/shared-utils/export';
+import {dfToViewerMapping, richFunctionViewReport} from '@datagrok-libraries/compute-utils/shared-utils/export';
 import {closeViewsAfter, awaitWebComponents} from './utils';
 
 const PNG_PREFIX = 'iVBORw0KGgo';
@@ -100,5 +100,40 @@ category('Export: graphics outputs', () => {
     const call = DG.Func.byName('Compute2:GraphicsOutputTest').prepare({a: 7});
     const wb = await exportWorkbook(call);
     expect(wb.getWorksheet('plot') == null, true, 'no plot sheet for an unrun call');
+  });
+});
+
+const imageAspect = (base64: string) => new Promise<number>((resolve, reject) => {
+  const img = new Image();
+  img.onload = () => resolve(img.naturalWidth / img.naturalHeight);
+  img.onerror = () => reject(new Error('Exported chart is not an image'));
+  img.src = base64;
+});
+
+category('Export: charts', () => {
+  test('Charts of every dataframe are exported at the chart box size', async () => {
+    const df = grok.data.demo.demog(100);
+    const call = DG.Script.create(`//name: ExportChartsTest
+//language: javascript
+//input: dataframe dfIn {viewer: Line chart() | Scatter plot()}
+//output: dataframe dfOut {viewer: Bar chart() | Grid() | Histogram()}
+dfOut = dfIn;`).prepare({dfIn: df});
+    call.outputs['dfOut'] = df.clone();
+    const container = grok.shell.v.root.parentElement!;
+    const childCount = container.childElementCount;
+
+    const [, wb] = await richFunctionViewReport('Excel', call.func, call, await dfToViewerMapping(call));
+
+    expect(container.childElementCount, childCount, 'chart boxes left in the page');
+    for (const sheetName of ['dfIn', 'dfOut']) {
+      const images = wb.getWorksheet(sheetName)?.getImages() ?? [];
+      expect(images.length, 2, `${sheetName} charts`);
+      for (const image of images) {
+        expect(imageSize(image.range)?.width, 1280);
+        expect(imageSize(image.range)?.height, 720);
+        const aspect = await imageAspect(wb.getImage(Number(image.imageId)).base64!);
+        expect(Math.abs(aspect - 1280 / 720) < 0.01, true, `${sheetName} chart image is ${aspect.toFixed(2)}:1`);
+      }
+    }
   });
 });

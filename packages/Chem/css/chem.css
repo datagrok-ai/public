@@ -425,14 +425,6 @@
   border: 2px solid var(--blue-1);
 }
 
-.chem-demo-button-pushed {
-  background: var(--blue-2)!important
-}
-
-.chem-demo-chembl-id-selected {
-  border-bottom: 2px solid var(--blue-2)!important
-}
-
 .chem-mcs-button {
   font-size: 12px!important;
   margin-left: 0px!important;
@@ -705,13 +697,6 @@
   font-size: 17px;
   padding-top: 3px;
   padding-left: 2px;
-}
-
-.chem-mmpa-add-tab-header-button {
-  position: absolute;
-  padding-left: 3px;
-  padding-top: 2px;
-  visibility: hidden;
 }
 
 .chem-mmpa-fragments-filters-icon {
@@ -1500,4 +1485,11 @@
    at all (0 x 0). */
 .d4-dialog .d4-dialog-contents .grok-sketcher[style*="min-width: 0px"]:not([style*="min-height: 0px"]) {
   min-width: 400px !important;
+}
+
+.d4-dialog .d4-dialog-contents:has(.chem-inplace-sketcher) {
+  padding-bottom: 0;
+  padding-top: 0;
+  padding-left: 4px;
+  padding-right: 4px;
 }

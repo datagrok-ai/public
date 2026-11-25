@@ -16,7 +16,7 @@ class PowerPackPackageDetectors extends DG.Package {
   }
 
   //meta.role: semTypeDetector
-  //input: column col
+  //input: column col {type: string}
   //output: string semType
   //meta.skipTest: GROK-17759
   detectText(col) {

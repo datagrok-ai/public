@@ -146,12 +146,6 @@ export type AbortPointer = {
   aborted: boolean;
 }
 
-/** True for the Enter / numpad-Enter key. Falls back to `keyCode` because Dartium and
- * Chrome ≤ 50 predate the `KeyboardEvent.key` property (it returns `undefined` there). */
-export function isEnterKey(e: KeyboardEvent): boolean {
-  return e.key === 'Enter' || e.keyCode === 13;
-}
-
 export const SHORTCUT_HINT = 'Ctrl+I';
 
 export function isToggleKey(e: KeyboardEvent): boolean {
@@ -159,8 +153,8 @@ export function isToggleKey(e: KeyboardEvent): boolean {
 }
 
 /** Copies text to the clipboard, resolving to whether it succeeded (never rejects).
- * Falls back to `document.execCommand('copy')` when `navigator.clipboard` is unavailable —
- * Dartium / Chrome ≤ 65 / insecure contexts. */
+ * Falls back to `document.execCommand('copy')` when `navigator.clipboard` is unavailable
+ * (insecure, plain-HTTP contexts). */
 export async function copyToClipboard(text: string): Promise<boolean> {
   if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
     try {
@@ -273,7 +267,7 @@ export function linkBareUrls(text: string): string {
 /** Null when the platform's markdown parser throws (it did on a paragraph ending in `](`). */
 export function tryMarkdown(content: string): HTMLElement | null {
   try {
-    return ui.markdown(normalizeMarkdownTables(linkBareUrls(content)));
+    return ui.markdown(normalizeMarkdownTables(linkBareUrls(content)), {sanitize: true});
   } catch {
     return null;
   }
@@ -288,26 +282,21 @@ export function createStyledMarkdown(content: string): HTMLElement {
   const markDown = tryMarkdown(content) ?? plainTextEl(content);
   markDown.style.position = 'relative';
   dartLike(markDown.style).set('userSelect', 'text').set('maxWidth', '100%');
-  if (markDown.querySelector('pre > code')) {
-    const copyButton = ui.icons.copy(() => {}, 'Copy Code');
-    copyButton.classList.add('d4-ai-copy-code-button');
-    markDown.appendChild(copyButton);
-    copyButton.addEventListener('click', () => {
-      const codeElement = markDown.querySelector('pre > code');
-      if (codeElement) {
-        const header = markDown.children[0];
-        if (header && header.tagName?.toLowerCase() !== 'pre')
-          (header as HTMLElement).style.marginRight = '16px';
-        copyToClipboard(codeElement.textContent || '').then((ok) => {
-          if (!ok) {
-            grok.shell.error('Failed to copy code to clipboard.');
-            return;
-          }
-          copyButton.classList.add('d4-ai-copy-code-button-copied');
-          setTimeout(() => copyButton.classList.remove('d4-ai-copy-code-button-copied'), 600);
-        });
-      }
-    });
-  }
+  markDown.querySelectorAll('pre > code').forEach((code) =>
+    codeCard(code.parentElement!, /language-(\S+)/.exec(code.className)?.[1] ?? 'Code'));
   return markDown;
+}
+
+export function codeCard(pre: HTMLElement, language: string): HTMLElement {
+  const copy = ui.divH([ui.iconFA('copy'), ui.divText('Copy')], 'grokky-code-copy');
+  copy.onclick = async (): Promise<void> => {
+    if (await copyToClipboard(pre.textContent || ''))
+      grok.shell.info('Code copied to clipboard');
+    else
+      grok.shell.error('Failed to copy code to clipboard');
+  };
+  const card = ui.divV([ui.divH([ui.divText(language), copy], 'grokky-code-head')], 'grokky-code-card');
+  pre.replaceWith(card);
+  card.appendChild(pre);
+  return card;
 }

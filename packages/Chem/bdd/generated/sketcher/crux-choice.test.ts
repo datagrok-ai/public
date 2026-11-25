@@ -8,6 +8,10 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 import {test} from '@playwright/test';
 import '../../bindings/datasets.js';
 import '../../bindings/elements.js';
+import '../../bindings/reaction-editor.js';
+import '../../bindings/reaction-export.js';
+import '../../bindings/reactions-app-text.js';
+import '../../bindings/sketcher-app.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';

@@ -33,7 +33,7 @@ ctx.addEventListener('message', async (e: any) => {
     else if (op === WORKER_CALL.CONVERT_MOL_NOTATION)
       result = await _rdKitServiceWorker!.convertMolNotation(args[0], args[1], args[2]);
     else if (op === WORKER_CALL.FLATTEN_MOLECULES)
-      result = await _rdKitServiceWorker!.flattenMolecules(args[0]);
+      result = await _rdKitServiceWorker!.flattenMolecules(args[0], args[1]);
     else if (op === WORKER_CALL.GET_INCHIS)
       result = await _rdKitServiceWorker!.getInchis(args[0], args[1]);
     else if (op === WORKER_CALL.GET_STRUCTURAL_ALERTS)
@@ -56,6 +56,8 @@ ctx.addEventListener('message', async (e: any) => {
       result = _rdKitServiceWorker!.mostCommonStructure(args[0], args[1], args[2]);
     else if (op === WORKER_CALL.BEAUTIFY_MOLS)
       result = await _rdKitServiceWorker!.beautifyMoleculesV3K(args[0]);
+    else if (op === WORKER_CALL.VALIDATE_MOLECULES)
+      result = _rdKitServiceWorker!.validateMolecules(args[0]);
     else
       throw new Error(`Unknown operation: ${op}`);
 

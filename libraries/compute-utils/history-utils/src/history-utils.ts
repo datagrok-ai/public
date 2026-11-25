@@ -279,14 +279,20 @@ export namespace historyUtils {
       `((session.user.id="${me}") and (options.${CREATED_BY_OPTION} = null))`;
     const names = [...new Set(funcs.map((func) => func.name))];
     const views = funcs.map((func) => `(options.${CUSTOM_VIEW_OPTION} = "${func.nqName}")`);
-    const ofModels = `(func.name in (${names.map((name) => `"${name}"`).join(',')})) or ${views.join(' or ')}`;
     // every clause in its own parentheses, and the or-null clauses first: the server drops the first branch of a
     // nested or when an or-null clause comes before it unwrapped, and matches nothing when an options equality
     // comes before an or-null clause
-    const runs = await grok.dapi.functions.calls.allPackageVersions()
+    const list = (ofModels: string) => grok.dapi.functions.calls.allPackageVersions()
       .filter(`(${mine}) and (${NOT_DELETED}) and (options.${NESTED_ENTITY_OPTION} = null) and (${ofModels})`)
-      .include('session.user,options,func.package')
+      .include('session,options,func.package')
       .list();
+    // an or of the function name and an option costs the server a second per query, so they are listed apart;
+    // session.user would load every author, while session already gives the author's id
+    const [byName, byView] = await Promise.all([
+      list(`func.name in (${names.map((name) => `"${name}"`).join(',')})`),
+      list(views.join(' or ')),
+    ]);
+    const runs = [...new Map([...byName, ...byView].map((run) => [run.id, run])).values()];
     return runs.filter((run) => funcs.some((func) => isRunOf(func, run) &&
       (run.options?.[CUSTOM_VIEW_OPTION] === func.nqName || func.package?.name === run.func?.package?.name)));
   }

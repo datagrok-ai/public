@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 
-import {category, test, expect, expectTable, expectExceptionAsync} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, expectTable, expectExceptionAsync, testEvent} from '@datagrok-libraries/test/src/test';
 
 import {randomString, escapingTestStrings} from '../utils/test-utils';
 
@@ -77,11 +77,21 @@ category('Celery: node worker', () => {
 
   test('Cancellation', async () => {
     const call = DG.Func.find({package: 'CVMTests', name: 'jsCvmCancel'})[0].prepare({seconds: 60});
-    const promise = call.call().catch(() => {});
-    await DG.delay(5000);
+    const progress = DG.ProgressIndicator.create();
+    let promise: Promise<any> | undefined;
+    // jsCvmCancel reports progress while it runs: the first report means the worker has picked
+    // the task up, so the cancel below hits a running task.
+    await testEvent(progress.onProgressUpdated, () => {}, () => {
+      promise = call.call(false, progress).catch(() => {});
+    }, 90000, 'jsCvmCancel did not report progress: the worker never started the task');
     await call.cancel();
     await promise;
     expect(call.status, 'Canceled');
+    // The cancel has to free the worker, not just answer the caller: with the task still
+    // sleeping, this call would queue behind it for the rest of the minute.
+    const t0 = Date.now();
+    expect(await grok.functions.call('CVMTests:jsCvmInt', {x: 7}), 7);
+    expect(Date.now() - t0 < 30000, true, 'The worker stayed busy with the canceled task');
   }, {timeout: 120000});
 
   test('meta.server alias', async () => {

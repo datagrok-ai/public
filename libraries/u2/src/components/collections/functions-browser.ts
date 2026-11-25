@@ -192,9 +192,7 @@ export class FunctionsBrowser extends Control {
       if ((e as KeyboardEvent).key !== 'ArrowDown')
         return;
       e.preventDefault();
-      this._list.root.focus();
-      if (this._list.selectedIndex.peek() < 0 && this._shown.peek().length > 0)
-        this._list.selectedIndex.value = 0;
+      this._list.focusRows();
     });
 
     const rolesPane = options.roles === undefined ? null : div([], 'u2-fb-pane');

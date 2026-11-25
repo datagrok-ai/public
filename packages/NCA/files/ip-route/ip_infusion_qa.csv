@@ -1,0 +1,33 @@
+Subject,Route,Dose_mg_kg,Time_hr,Conc_ng_mL,Dur_h
+A,intraperitoneal infusion,10,0.25,29959.121,0.5
+A,intraperitoneal infusion,10,0.5,42269.181,0.5
+A,intraperitoneal infusion,10,1,45286.482,0.5
+A,intraperitoneal infusion,10,2,34568.800,0.5
+A,intraperitoneal infusion,10,4,15887.312,0.5
+A,intraperitoneal infusion,10,8,3210.856,0.5
+A,intraperitoneal infusion,10,12,616.398,0.5
+A,intraperitoneal infusion,10,24,39.190,0.5
+B,IP,10,0.25,28969.201,
+B,IP,10,0.5,42559.730,
+B,IP,10,1,47041.638,
+B,IP,10,2,35092.961,
+B,IP,10,4,15408.987,
+B,IP,10,8,3113.142,
+B,IP,10,12,623.606,
+B,IP,10,24,40.723,
+C,PO,10,0.25,28007.597,2
+C,PO,10,0.5,41416.270,2
+C,PO,10,1,47839.117,2
+C,PO,10,2,36451.049,2
+C,PO,10,4,15474.037,2
+C,PO,10,8,3003.346,2
+C,PO,10,12,609.111,2
+C,PO,10,24,41.592,2
+D,PO,10,0.25,27958.404,
+D,PO,10,0.5,39890.094,
+D,PO,10,1,46945.720,
+D,PO,10,2,37394.445,
+D,PO,10,4,16022.655,
+D,PO,10,8,2982.413,
+D,PO,10,12,586.239,
+D,PO,10,24,40.997,

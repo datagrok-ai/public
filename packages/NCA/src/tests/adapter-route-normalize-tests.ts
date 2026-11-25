@@ -94,10 +94,11 @@ category('Adapter: route-normalize (string)', () => {
     expect(r2.status === 'mapped' && r2.infusionMissingDuration === false, true, 'cleared with duration');
   });
 
-  test('IV-adjacent unmappable BLOCKS; non-IV unknown → other; intraperitoneal is non-IV', async () => {
+  test('IV-adjacent unmappable BLOCKS; non-IV unknown → other; intraperitoneal is IP (nca-ip-route)', async () => {
     expect(normalizeRouteString('IV-push-fast', false).status, 'block', 'IV-adjacent unmappable blocks');
     expect(normalizeRouteString('iv drip rapid', false).status, 'block', 'infusion-adjacent blocks');
-    expect(normalizeRouteString('intraperitoneal', false).status, 'other', 'IP is non-IV unknown → other');
+    const ip = normalizeRouteString('intraperitoneal', false);
+    expect(ip.status === 'mapped' && ip.code === nca.ROUTE_IP, true, 'intraperitoneal → IP (was other)');
     expect(normalizeRouteString('topical', false).status, 'other', 'topical → other');
     expect(normalizeRouteString('', false).status, 'empty', 'blank → empty');
   });
@@ -125,12 +126,13 @@ category('Adapter: route-normalize (column)', () => {
   });
 
   test('non-IV unknown row → other + UNMAPPABLE_ROUTE warning (AC-A5)', async () => {
-    const {route, subject} = frame(['intraperitoneal', 'PO'], ['A', 'B']);
+    // `topical` keeps the non-IV-unknown path (`intraperitoneal` pinned it before nca-ip-route).
+    const {route, subject} = frame(['topical', 'PO'], ['A', 'B']);
     const res = normalizeRouteColumn(route, subject, {});
     expect(res.errors.length, 0, 'no blocking error for non-IV unknown');
-    expect(res.codes[0], nca.ROUTE_OTHER, 'IP → other');
+    expect(res.codes[0], nca.ROUTE_OTHER, 'topical → other');
     const a = res.warningsBySubject.get('A') ?? [];
-    expect(a.some((w) => w.code === 'UNMAPPABLE_ROUTE' && w.severity === 'warning'), true, 'IP → warning');
+    expect(a.some((w) => w.code === 'UNMAPPABLE_ROUTE' && w.severity === 'warning'), true, 'topical → warning');
   });
 
   test('SEX-as-route column blocks with UNMAPPABLE_ROUTE_COLUMN (<50% map, AC-A6)', async () => {

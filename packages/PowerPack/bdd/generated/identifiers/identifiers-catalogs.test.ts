@@ -43,7 +43,7 @@ test.describe("Identifiers of a database with catalogs", () => {
       await session.step(44, "And OK button in \"Select catalog and schema for Identifiers Configuration\" dialog should be disabled", () => shouldBe(page, el("OK button in \"Select catalog and schema for Identifiers Configuration\" dialog"), "disabled"));
     });
     await run.scenario("Among two hundred catalogs one is found by a part of its name", async () => {
-      await session.step(47, "Then \"Select catalog and schema for Identifiers Configuration\" dialog should contain text \"207 catalogs; archive is the connection's own.\"", () => shouldContainText(page, el("\"Select catalog and schema for Identifiers Configuration\" dialog"), "207 catalogs; archive is the connection's own."));
+      await session.step(47, "Then \"Select catalog and schema for Identifiers Configuration\" dialog should contain text \"205 catalogs; archive is the connection's own.\"", () => shouldContainText(page, el("\"Select catalog and schema for Identifiers Configuration\" dialog"), "205 catalogs; archive is the connection's own."));
       await session.step(48, "When user clicks on catalog search icon", () => clickOn(page, el("catalog search icon")));
       await session.step(49, "And user finds the catalog \"tenant_150\" by typing \"tenant_15\"", () => findCatalog(page, "tenant_150", "tenant_15"));
       await session.step(50, "Then Catalog input in \"Select catalog and schema for Identifiers Configuration\" dialog should have value \"tenant_150\"", () => shouldHaveValue(page, el("Catalog input in \"Select catalog and schema for Identifiers Configuration\" dialog"), "tenant_150"));

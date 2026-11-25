@@ -22,6 +22,7 @@ is…", "explain…", "can you…" — do not call `datagrok_exec`; find the pag
 | `DG`     | module          | Always                                            |
 | `view`   | `DG.ViewBase`   | Always — check `view.type` for specific view type |
 | `t`      | `DG.DataFrame`  | Only when `view.type === 'TableView'`             |
+| `undoable` | object        | Always — changes Ctrl+Z takes back, see `datagrok-undo` |
 
 The code runs in an async IIFE, so `await` works directly.
 
@@ -87,6 +88,13 @@ Re-reading what an MCP call saved on the server — use these calls as written, 
 | space | `const s = (await grok.dapi.spaces.list()).find((x) => x.friendlyName === 'X'); return s && (await grok.dapi.spaces.id(s.id).children.list()).map((c) => c.friendlyName)` |
 | deleted entity | the same lookup, `return` that it is `null` / absent |
 
+## Undo
+
+A change to an open table or its view (columns, rows, values, column metadata, viewers) must be undoable with
+Ctrl+Z: make it with the `table_*` tools, or in a script through the `undoable` global. `datagrok-undo` has both
+and the limits of undo; open it before the first such change.
+Do not mention undo in a reply unless the user asks about it.
+
 ## Returning a result to the chat
 
 Only return an `HTMLElement` when the **explicit user goal** is to see output in the chat
@@ -138,6 +146,7 @@ For task-specific API surface, open the matching skill before writing code:
 | Filter rows (range, categorical, contains, substructure, predicate) | `datagrok-filtering`     |
 | Select rows; current row; selection ↔ filter   | `datagrok-selection`           |
 | Add / configure / find / close viewers         | `datagrok-viewers`             |
+| Make a change undoable with Ctrl+Z; "undo that" | `datagrok-undo`                |
 | Grid sort, visibility, widths, pins, freeze; grid-only cell tint | `datagrok-grid-customization` |
 | Cheminformatics: SMILES/MolBlock/InChI/canonicalize | `datagrok-chem-data` / `datagrok-chem-toolkit` |
 

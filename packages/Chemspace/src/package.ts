@@ -33,6 +33,8 @@ enum CATEGORY {
 
 const ALL_CATEGORIES = Object.values(CATEGORY).join(',');
 
+type SearchResult = {table: DG.DataFrame} | {error: string};
+
 const modeToParam: Record<SEARCH_MODE, string> = {[SEARCH_MODE.SIMILAR]: 'sim', [SEARCH_MODE.SUBSTRUCTURE]: 'sub',
   [SEARCH_MODE.TEXT]: 'text', [SEARCH_MODE.EXACT]: 'exact'};
 
@@ -41,9 +43,7 @@ export class PackageFunctions {
     'browsePath': 'Chem',
     'name': 'Chemspace',
   })
-  static async app(): Promise<void> {
-    await getApiToken();
-
+  static async app(): Promise<DG.ViewBase> {
     const molecule = ui.input.molecule('', {value: 'c1ccccc1O'});
     const mode = ui.input.choice('Mode', {
       value: SEARCH_MODE.SIMILAR,
@@ -62,44 +62,73 @@ export class PackageFunctions {
     const filterForm = ui.form([mode, shipToCountry, category]);
     const filtersHost = ui.div([molecule, filterForm], 'chemspace-controls ui-form');
 
-    const emptyTable = DG.DataFrame.create();
-    const view = grok.shell.addTableView(emptyTable);
+    async function search(): Promise<SearchResult> {
+      try {
+        await getApiToken();
+        const res = await grok.functions.call(`${_package.name}:queryMultipart`, {
+          path: `search/${modeToParam[mode.value]}`,
+          formParamsStr: JSON.stringify({'SMILES': molecule.value}),
+          paramsStr: JSON.stringify({category: category.value,
+            shipToCountry: COUNTRY_CODES[shipToCountry.value! as keyof typeof COUNTRY_CODES]}),
+        });
+        const table = DG.DataFrame.fromJson(res);
+        await grok.data.detectSemanticTypes(table);
+        return {table};
+      } catch (e: unknown) {
+        return {error: e instanceof Error ? e.message : String(e)};
+      }
+    }
+
+    const view = DG.TableView.create(DG.DataFrame.create(), false);
     view.name = 'Chemspace';
     view.basePath = '';
     view.description = 'Chemspace search viewer';
     view.root.className = 'grok-view grok-table-view chemspace';
 
+    const progressMessage = 'Searching Chemspace...';
     let requestId = 0;
-    function update(): void {
-      ui.setUpdateIndicator(view.root, true);
-      const currentRequest = ++requestId;
+    let searching = false;
+    let gridFitted = false;
 
-      function setDataFrame(t: DG.DataFrame): void {
-        if (currentRequest !== requestId) return;
-        if (t.rowCount === 0)
-          grok.shell.error('No matches');
-        view.dataFrame = t;
-        ui.setUpdateIndicator(view.root, false);
+    const showProgress = () => ui.setUpdateIndicator(view.grid?.root ?? view.root, true, progressMessage);
+
+    async function update(): Promise<void> {
+      const current = ++requestId;
+      searching = true;
+      showProgress();
+      const result = await search();
+      if (current !== requestId)
+        return;
+      searching = false;
+      ui.setUpdateIndicator(view.root, false);
+      if ('error' in result) {
+        grok.shell.error(result.error);
+        view.dataFrame = DG.DataFrame.create();
+        return;
       }
-      grok.functions.call(`${_package.name}:queryMultipart`, {
-        path: `search/${modeToParam[mode.value]}`,
-        formParamsStr: JSON.stringify({'SMILES': molecule.value}),
-        paramsStr: JSON.stringify({category: category.value,
-          shipToCountry: COUNTRY_CODES[shipToCountry.value! as keyof typeof COUNTRY_CODES]}),
-      }).then((res) => setDataFrame(DG.DataFrame.fromJson(res)))
-        .catch((e) => {
-          if (currentRequest !== requestId) return;
-          grok.shell.error(e?.message ?? String(e));
-          setDataFrame(emptyTable);
-        });
+      if (result.table.rowCount === 0)
+        grok.shell.warning('No matches');
+      view.dataFrame = result.table;
+      if (!gridFitted && result.table.rowCount > 0) {
+        view.resetLayout();
+        gridFitted = true;
+      }
     }
 
-    update();
+    const addedSub = grok.events.onViewAdded.subscribe((added: DG.View) => {
+      if (added.root !== view.root)
+        return;
+      addedSub.unsubscribe();
+      if (searching)
+        showProgress();
+      const acc = view.toolboxPage.accordion;
+      acc.addPane('Chemspace', () => filtersHost, true, acc.panes[0]);
+    });
 
     molecule.onChanged.subscribe(() => update());
+    update();
 
-    const acc = view.toolboxPage.accordion;
-    acc.addPane('Chemspace', () => filtersHost, true, acc.panes[0]);
+    return view;
   }
 
 

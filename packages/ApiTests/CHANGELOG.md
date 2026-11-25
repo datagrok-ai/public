@@ -2,6 +2,18 @@
 
 ## v.next
 
+* Tests: `Dapi` 'admin.getMetrics' checks the queue as the server sends it (RabbitMQ message totals, or null), and `ui: spaceSaveRow` tells an installed PowerPack by its functions: `grok.dapi.packages` lists the registry's packages too, so the test failed on a stand without PowerPack
+* [public#4627](https://github.com/datagrok-ai/public/issues/4627): Fixed `JS: domain handlers` 'row permissions and ribbon actions follow a real grant': it grants `Delete` to a probe user instead of revoking the caller's own
+* Node runner: The concurrent runs of a stress level are spread over several processes (`--workers`, by default one per 16 runs, at most a quarter of the cores) instead of sharing one thread, so that the tests wait for the server and not for the runner
+* Tests: `Dapi: connection` no longer deletes every `Local DG Test` connection after the category: under concurrent runs each run deleted the connections of all the others (in a stress sweep 113,000 of 123,000 deletes answered 404, 19% of the server's request time). Each test deletes its own connection
+* Tests: `ui: spaceSaveRow` does not fail on a stand without PowerPack, the package that provides the row
+* Tests: Fixed `Dapi: connector ddl` 'ddl lifecycle' and 'uploadAs creates and loads a DataFrame': the scratch table had a mixed-case name, which the test's own plain SQL checks, unquoted, could not find
+* Tests: Made the suite independent of the packages a stand has: `Dapi: sticky meta: canonical keys` (was `: molecules`) uses the package's own semantic type, detector and canonicalizer instead of Chem's, `Dapi: models` 'Engines' has the package's own engine (`ApiTests engine`, never applicable, so the Train Model view does not offer it) and names the engines it checked, and `Dapi: files: formats` no longer opens kml and kmz, which the GIS importer opens
+* Packages: `Packages: project isolation` 'Dashboard: a debug publish does not link the debug version' follows core#1244 (was 'entity propagation across package versions', which expected the debug version's entities to be linked)
+* Tests: Removed `Property: General`, a copy of the first five `Functions: General` tests; `Dapi: connector ddl` says which database the query path reached when it does not see a table the mutation path wrote
+* [core#745](https://github.com/datagrok-ai/core/issues/745): Domain schemas: per-table icons, and domain rows resolved in Favorites and the Space tree
+* [core#637](https://github.com/datagrok-ai/core/issues/637): Viewers, color, inputs: Added tests for the color alpha: removed scatter plot and line chart opacity props read, written and migrated from layouts through the color alpha, `setMarkerOpacity`, formula line opacity folded once, `AnnotationRegionsHelper.getFillColor`, `Color.opaqueIfNoAlpha` and a color input with `useAlphaChannel`
+* [#3924](https://github.com/datagrok-ai/public/issues/3924): Viewers: Added `Viewers: category order` (the per-viewer `categoryOrder` properties, a custom `categoryOrderer` function)
 * Connections, containers: Added `Widgets: containers` 'empty takes out text and comments, and kills the elements' and `Dapi: connection` 'getCatalogs lists the databases of the server, the connection's own among them' (development only, skipped)
 * Viewers: Added `AI: Viewers: Shared rules` (a column rename followed by every viewer's settings, and by a viewer's Filter formula, core#1213) and a test moved from BDD: `AI: Viewers: PcPlot Extras` 'a layout with Line Width 0 and density on draws and takes a hover without an error (core#967)'
 * Viewers: Added a test moved from BDD: `AI: Viewers: BoxPlot extras` 'a pointer over a box plot shrunk under Auto Layout logs no error (core#960)'

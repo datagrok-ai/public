@@ -15,9 +15,14 @@ export function isRunnable(entity: DG.Entity): entity is DG.Func {
   return entity instanceof DG.Func && !isApp(entity) && !isModel(entity);
 }
 
+/** Lists cannot render an entity without a handler (a saved filter, an entity of a custom schema): ui.list fails. */
+export function hasHandler(ent: DG.Entity | null | undefined): ent is DG.Entity {
+  return ent != null && DG.ObjectHandler.forEntity(ent) != null;
+}
+
 /** Returns true if the entity is relevant for Spotlight (Recent / Shared with me / Workspace). */
 export function isSpotlightEntity(ent: DG.Entity): boolean {
-  if (!ent || !ent.friendlyName)
+  if (!hasHandler(ent) || !ent.friendlyName)
     return false;
   if (ent instanceof DG.FuncCall || ent instanceof DG.Group || ent instanceof DG.User || ent instanceof DG.Package ||
     ent instanceof DG.UserReport || ent.entityType === 'UserReport' || ent instanceof DG.TableInfo ||

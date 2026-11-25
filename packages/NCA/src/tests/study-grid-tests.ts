@@ -389,6 +389,21 @@ category('NCA Studies: study-grid builder (AD-3)', () => {
     expect(clfMean.isNone(0), true, 'IV case leaves CL/F null');
   });
 
+  test('nca-ip-route AC-1.8: an IP case is extravascular — fills CL/F and Vz/F, leaves CL, Vz, Vss null', async () => {
+    const study = makeStudy([
+      {id: 'a1', label: 'A', route: 'IV-bolus', rows: [
+        compoundRow('IV-cpd', 'IV-bolus', 'per_kg', {cl: mv(2.0, 5, 3)}),
+        compoundRow('IP-cpd', 'IP', 'per_kg', {cl: mv(5.0, 5, 3)}),
+      ]},
+    ]);
+    const df = buildStudyGrid(study);
+    expect(df.col('CL Mean')!.isNone(1), true, 'IP leaves true CL null');
+    expect(df.col('CL/F Mean')!.get(1), 5.0, 'IP fills CL/F');
+    expect(df.col('Vz Mean')!.isNone(1), true, 'IP leaves true Vz null');
+    expect(df.col('Vz/F Mean')!.isNone(1), false, 'IP fills Vz/F');
+    expect(df.col('Vss Mean')!.isNone(1), true, 'no Vss for IP');
+  });
+
   test('AC-4a scaffold: each multi-stat param spans exactly Mean|%CV|n; %AUCextrap standalone', async () => {
     // The native column groups (configureStudyGrid → df.temp[".columnGroups"]) are
     // built by grouping columns on PARAM_TAG where STAT_TAG is set. This pins that
@@ -780,7 +795,12 @@ category('NCA Studies: compound drill-in (chemist-sar-grid S4c)', () => {
     // "Concentration–time profile" (the cached curve). Cache-only + synchronous. Driven here through
     // the SAME entry point production uses (a real grid over buildStudyGrid + a current row) — no
     // test-only wrapper, so the test exercises the mechanism production actually runs.
-    grok.shell.o = null;
+    // The reset is a forced, non-freezing clear: a plain `grok.shell.o = null` freezes the context
+    // panel, and the platform then ignores another `grok.shell.o` set for about a second (measured
+    // 2026-11-16: ignored after 0-600 ms, applied after 1000 ms), which swallowed the panel set
+    // below. A real row click is not affected (measured on a live grid the same day).
+    const clearContextPanel = (): void => grok.shell.setCurrentObject(null, false, true);
+    clearContextPanel();
     try {
       const curve: CompoundCurve = {series: [{group: '1', time: [0, 1, 2], geoMean: [100, 50, 25],
         geoLower: [90, 45, 22], geoUpper: [110, 55, 28]}]};
@@ -801,7 +821,7 @@ category('NCA Studies: compound drill-in (chemist-sar-grid S4c)', () => {
       expect(text.includes('Concentration–time profile'), true,
         'panel has the "Concentration–time profile" accordion pane');
     } finally {
-      grok.shell.o = null;
+      clearContextPanel();
     }
   });
 

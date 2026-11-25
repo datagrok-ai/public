@@ -1,15 +1,18 @@
 @guide @demo
-Feature: Bioinformatics · HMMER in the browser
+Feature: 6 · Antibodies and proteins · Pfam domains
   A demo clip, one of the Bio showcase (features/demos, filmed with `grok-bdd guide`: the @demo tag
   leaves the set-up and the checks off camera). The HMM package runs HMMER in the browser: Find Domains
   scans every heavy chain of Bio's antibodies sample against the package's built-in Pfam library and
   colors the V-set and C1-set immunoglobulin domains on the chains, with a column that names them; a chain's
   context panel shows its ANARCI numbering (chain, species, closest germlines, IMGT CDRs) and its Pfam
-  domains; Profile HMM Logo docks Bio's WebLogo drawing the V-set family's profile. Nothing is fetched
-  from InterPro: every model comes with the package.
+  domains; Profile HMM Logo docks Bio's WebLogo drawing the V-set family's profile, picked on camera from
+  the dialog's Family list (the dialog opens on the list's first family, 7tm_1, a GPCR family, rather than
+  on V-set, which it means to default to: a product bug). Nothing is fetched from InterPro: every model
+  comes with the package. Two notes: one as the chain's panes open, one as the V-set logo is added (read over
+  its arrival, gone before the clip ends on it).
 
   Scenario: Pfam domains, germlines and profile logos
-    HMMER runs in the browser: Pfam domains found on every chain, a chain's germlines and CDRs, and a family's profile logo.
+    HMMER in the browser: Pfam domains on every chain, germlines, a family's profile logo.
 
     Given user is logged in
     And simple mode is off
@@ -38,11 +41,17 @@ Feature: Bioinformatics · HMMER in the browser
     When user expands Bioinformatics accordion header in context panel
     And user expands ANARCI accordion header in context panel
     Then "ANARCI" pane in context panel should contain the text "IGHV"
+    When the video says "ANARCI and Pfam panes: germlines, CDRs and domains"
     When user expands "Pfam Domains" accordion header in context panel
     Then "Pfam Domains" pane in context panel should contain the text "V-set"
     When user picks "Bio > Analyze > Profile HMM Logo..." from the top menu
+    Then "Profile HMM Logo" dialog should be visible
+    When user selects "V-set" in Family input in "Profile HMM Logo" dialog
+    Then Family input in "Profile HMM Logo" dialog should have value "V-set"
+    When the video says "The V-set profile: its conserved Cys and Trp stand tall"
     And user clicks on OK button in "Profile HMM Logo" dialog
     Then WebLogo viewer should be visible
+    And "profile" property of WebLogo viewer should be "V-set"
     And the "positions shown" reading of WebLogo viewer should be at least 20
     And no error or warning balloon should have been shown
     And no errors should have been logged

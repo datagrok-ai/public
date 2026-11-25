@@ -327,7 +327,7 @@ t.filter.copyFrom(t.selection);                                                /
 7. **Combining selections across DataFrames of different row counts.**
    `dfA.selection.and(dfB.selection)` only makes sense if rows are aligned
    1:1. Cross-table sync by key columns is `grok.data.linkTables(...)`.
-8. **`t.rows.removeWhereIdx(pred)` when asked to "remove from the selection".**
+8. **Removing rows when asked to "remove from the selection".**
    That deletes rows from the DF entirely. To narrow the selection, use
    `andNot` or `set(i, false, false)` in a loop.
 

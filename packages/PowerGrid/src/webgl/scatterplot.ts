@@ -191,7 +191,6 @@ class ScatterPlotGL extends ScatterRenderer {
       const program = this.use(this.shapeProgram(frame.rowTypes ? ANY_KIND : frame.markerType), frame);
       gl.uniform1i(program.uniform('u_markerCache'), +frame.markerCache);
       gl.uniform1f(program.uniform('u_border'), frame.border);
-      gl.uniform1f(program.uniform('u_alpha'), frame.opacity);
       this.draw(program, frame, 'filteredOut');
       this.draw(program, frame, 'filtered');
       this.draw(program, frame, 'selected');
@@ -273,8 +272,8 @@ class ScatterPlotGL extends ScatterRenderer {
     gl.uniform2f(program.uniform('u_origin'), ...frame.origin);
     gl.uniform2f(program.uniform('u_size'), ...frame.size);
     gl.uniform1f(program.uniform('u_dpr'), frame.dpr);
-    const [b, g, r] = colorBytes(frame.selectedColor);
-    gl.uniform3f(program.uniform('u_selectedColor'), r, g, b);
+    const [b, g, r, a] = colorBytes(frame.selectedColor);
+    gl.uniform4f(program.uniform('u_selectedColor'), r, g, b, a);
     return program;
   }
 

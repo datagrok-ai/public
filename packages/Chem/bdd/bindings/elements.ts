@@ -1,7 +1,7 @@
 /* Chem's own screen parts: the calculators listed on the left of the Chemical Properties dialog
    (a checkbox and a name per registered calculator function), the MPO Profiles app — the
    editable title and description of a profile tab, its property rows and the rows of the list —
-   the 3D view of a molecule, and the parts of the SAR Matrix Summary. */
+   the 3D view of a molecule, the parts of the SAR Matrix Summary, and the Reaction pane's template notes. */
 import {element, kind} from '@datagrok-libraries/bdd';
 
 kind('calculator', {
@@ -122,3 +122,18 @@ kind('component row', {
   parts: {value: '.chem-sar-sum-half:not(.chem-sar-sum-swap)', swap: '.chem-sar-sum-swap'},
   description: 'a row of the What to change card of the SAR Matrix Summary when the components are columns, by its name; "value of Warhead component row" is its best value, "swap of …" its best measured swap',
 });
+
+/* A package's Settings pane (Plugins, a package's card) edits the settings of one group at a time, All users first; the
+   button under the form picks another (grok_package_meta.dart, renderSettings). The server gives an account its own
+   group's settings over All users', so an account whose group has its own Chem settings changes them there. */
+element('package settings group button', {selector: 'button.d4-pane-manage-button:has(.fa-user-friends)',
+  description: 'the button under a package\'s Settings form that names the group whose settings it edits ("All users"); a click lists the account\'s groups'});
+kind('package settings group', {
+  selector: '.grok-package-settings-groups .grok-package-settings-group',
+  match: ['label'],
+  labelSelector: '.grok-package-settings-group-name',
+  description: 'a group in the list the package settings group button opens, by its name ("admin"); "customized" beside the groups that have settings of their own',
+});
+
+element('reaction template notes', {selector: '.chem-reaction-notes',
+  description: 'the Template notes of the Reaction pane (widgets/reaction-panel.ts): what a template\'s generic atoms and query features stand for, one line each, which the cells draw none of'});

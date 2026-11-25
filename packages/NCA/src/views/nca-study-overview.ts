@@ -23,7 +23,7 @@ import {
   PARAM_TAG, STAT_TAG, PASSTHROUGH_TAG, PASSTHROUGH_STRUCT, ANALYSIS_ID_COL, COMPOUND_ID_COL, FLAGS_COL,
   ANALYSIS_COL, ROUTE_COL, CURVE_COL, studyGridRowTiers, normalizeGroupKey, dedupGroupValuesByCanonical,
   finiteMinMax, studyCellExclusion, CROSS_DOSE_POOL_CODE, uniqueLabel, getNcaRepository, isEntryStale,
-  studyCellBasisStale, STALE_ENGINE_FLAG, studyCurvePending, pendingCurveIds, withCurves,
+  studyCellBasisStale, STALE_ENGINE_FLAG, studyCurvePending, pendingCurveIds, withCurves, fPctMeaningFor,
 } from '../adapter';
 import type {NcaStudy, AnalysisEntry, CompoundTierRow, SourcePointer, LoadedStudy} from '../adapter';
 import {AGG_PARAM, aggStatSentence, EXCLUDED_TEXT} from './results-view';
@@ -688,6 +688,14 @@ function configureStudyGrid(
         }), x, y);
         return true;
       }
+    }
+    // (a'') A %F cell of an i.p. row → what %F means after i.p. dosing (nca-ip-route F4; the SAME
+    // constant as the Bioavailability grid).
+    const fMeaning = cell.isTableCell && cell.tableColumn?.getTag(PARAM_TAG) === '%F' &&
+      cell.tableRowIndex !== null ? fPctMeaningFor(df.col(ROUTE_COL)?.getString(cell.tableRowIndex) ?? null) : null;
+    if (fMeaning !== null) {
+      ui.tooltip.show(richTipEl({title: '%F', summary: fMeaning}), x, y);
+      return true;
     }
     // (b) Flags data cell → the cell's own text (no title), so a truncated
     // multi-warning cell is fully readable on hover. The text lives in the cell

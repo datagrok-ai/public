@@ -4,13 +4,17 @@
  * first use there (rendering, the search's query check); the compiled Module is what the Crux workers instantiate.
  * In RDKit mode only what runs on Crux in both modes loads it (molzip, the macromolecule assembler; FCFP and
  * chirality fingerprints). A load not done within a minute of its fetch's start (a stalled fetch) has failed; a failed
- * load is tried once more a minute later (a network hiccup), then it is final for the session; a wasm trap on the main
- * thread (`WebAssembly.RuntimeError`) is final at once. The callers take their RDKit paths meanwhile.
+ * load is tried once more a minute later (a network hiccup), then it is final for the session. The callers take their
+ * RDKit paths meanwhile. A wasm trap on the main thread is not final, as a user should never be asked to reload: the
+ * module recovers inside the call (crux/crux-recover.ts: a fresh instance, the
+ * objects rebuilt, the call tried once more; a second trap refuses that call alone). Crux is off for the session only
+ * when no fresh instance can be made.
  */
 import * as DG from 'datagrok-api/dg';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getRdKitWebRoot} from '../utils/chem-common-rdkit';
 import {isWasmTrap} from '../crux/crux-api';
+import {Recovering, recoverable} from '../crux/crux-recover';
 
 /** The vendored wasm, emitted under its own name into `dist/` (rspack.config.js `emit`). */
 export const CRUX_WASM_FILE = 'chem_wasm_bg.wasm';
@@ -26,6 +30,8 @@ export type ChemWasm = typeof import('../../vendor/chem-wasm/chem_wasm.js');
 let compiled: Promise<WebAssembly.Module> | null = null;
 let instantiated: Promise<ChemWasm> | null = null;
 let ready: ChemWasm | null = null;
+/** The main thread's module, recovering (its `crux` is {@link ready}). */
+let recovering: Recovering<ChemWasm> | null = null;
 let memory: WebAssembly.Memory | null = null;
 let failure: Error | null = null;
 /** The failure is for the session: the second failed load, or a trap. */
@@ -94,12 +100,16 @@ export function loadCrux(reason: string): Promise<ChemWasm> {
     // the glue's chunk is fetched while the wasm downloads and compiles, not after
     const [module, glue]: [WebAssembly.Module, ChemWasm] =
       await Promise.all([compileCrux(), import('../../vendor/chem-wasm/chem_wasm.js')]);
-    memory = (await glue.default({module_or_path: module})).memory;
-    glue.prefer_coordgen(false);
-    glue.use_legacy_stereo_perception(false);
-    ready = glue;
+    const settings = (g: ChemWasm, exports: {memory?: WebAssembly.Memory}): void => {
+      memory = exports.memory ?? memory;
+      g.prefer_coordgen(false);
+      g.use_legacy_stereo_perception(false);
+    };
+    settings(glue, await glue.default({module_or_path: module}));
+    recovering = recoverable(glue, {settings, log: 'Chem |'});
+    ready = recovering.crux;
     console.log('Chem | Crux module initialized');
-    return glue;
+    return ready;
   })()).catch((e) => fail(e));
   return instantiated;
 }
@@ -120,20 +130,35 @@ function withinLimit<T>(work: Promise<T>, onTimeout?: () => void): Promise<T> {
 export function cruxModuleSync(): RDModule | null {
   if (held || !ready)
     return null;
-  if (!parseTrap)
-    return ready as unknown as RDModule;
-  const trap = () => {
-    throw new WebAssembly.RuntimeError('simulated: unreachable');
-  };
-  return {...ready, get_mol: trap, get_qmol: trap} as unknown as RDModule;
+  return ready as unknown as RDModule;
 }
 
-/** Tests: the main thread's Crux module traps when it parses a molecule (get_mol, get_qmol), until called with
- * false. */
-export function setCruxParseTrapForTests(on: boolean): void {
-  parseTrap = on;
+/**
+ * Tests: crux-core's real test trap on the main thread's module (the glue's `cruxTestArmTrap`): the `calls`-th engine
+ * call from now panics (wasm-panic's `cruxTestTrap`), and so again on the next `instances - 1` fresh instances (2: the
+ * call is refused). False when the module is not loaded.
+ */
+export function armCruxTrapForTests(calls: number, instances = 1): boolean {
+  if (!recovering)
+    return false;
+  recovering.armTestTrap(calls, instances);
+  return true;
 }
-let parseTrap = false;
+
+/** How many fresh instances the main thread's module has had (crux-recover.ts `renewals`; 0 before the load). */
+export function cruxRenewals(): number {
+  return recovering?.renewals() ?? 0;
+}
+
+/** The main thread's module's recoveries: listens until the returned function is called (null before the load). */
+export function onCruxRecover(listener: Parameters<Recovering<ChemWasm>['onRecover']>[0]): (() => void) | null {
+  return recovering?.onRecover(listener) ?? null;
+}
+
+/** The debug switch of the main thread's module (a trap's console line then gives the input too): on, off, or read. */
+export function cruxDebug(on?: boolean): boolean {
+  return recovering?.debug(on) ?? false;
+}
 
 /** The main thread's Crux heap in bytes (0 before the module is loaded): tests watch it for growth. */
 export function cruxHeapBytes(): number {
@@ -160,12 +185,13 @@ function fail(e: any): never {
 }
 
 /**
- * A main-thread Crux call threw `e`: a wasm trap (`WebAssembly.RuntimeError`: a Rust panic or an out-of-bounds access)
- * or a stack overflow out of a wasm call (crux-api.ts `isWasmTrap`) may have left the instance broken, so Crux is off
- * for the session and RDKit does its work; logged once.
+ * A main-thread Crux call threw `e`. A trap the module recovered from never reaches here (the call answered, or threw
+ * crux-recover.ts `CruxRefused`, a plain error); a trap that does (`WebAssembly.RuntimeError`, a stack overflow out of
+ * a wasm call: crux-api.ts `isWasmTrap`) is one no fresh instance could get past, so Crux is off for the session and
+ * RDKit does its work; logged once.
  */
 export function noteCruxError(e: unknown): void {
-  if (!isWasmTrap(e) || failureFinal)
+  if (!isWasmTrap(e) || failureFinal || (recovering && recovering.failed() === null))
     return;
   failure = e;
   failureFinal = true;
@@ -194,6 +220,7 @@ export function resetCruxLoaderForTests(url: string | null): void {
   compiled = null;
   instantiated = null;
   ready = null;
+  recovering = null;
   failure = null;
   failureFinal = false;
   retried = false;

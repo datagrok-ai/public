@@ -13,8 +13,6 @@ import {ReportsWidget} from './widgets/reports-widget';
 import {ReportingApp} from './reporting/reporting_app';
 import {TestAnalysisManager} from './test-analysis/test-analysis-manager';
 import {getDate} from './utils';
-import {ServiceLogsApp} from './service_logs/service_logs';
-import {CloudLogsApp} from './cloud-logs/cloud-logs';
 import {TestGridCellHandler} from './handlers/test-grid-cell-handler';
 import {initTestStickyMeta} from './test-analysis/sticky-meta-initialization';
 import {TestDashboardWidget} from './viewers/ua-test-dashboard-viewer';
@@ -22,21 +20,16 @@ import {ClickEventsWidget} from './widgets/click-events-widget';
 import {fetchVexDashboardImages, vexImagesToDataFrame} from './tabs/vulnerabilities';
 import {ReleaseHandler} from './release/release-handler';
 import {isDevHost} from './release/data';
+import {GitHubIssuesClient} from './github/issues-client';
+import {findIssueRefs, ticketVerdict} from './github/issue';
 
 export const _package = new DG.Package();
 export let _properties: any;
 export * from './package.g';
 
-let AVAILABLE_SERVICES: string[];
+const githubIssues = new GitHubIssuesClient(_package);
 
 
-const highestPriorityIndex = 3;
-const priorityLevels : Record<string, number> = {
-  'Lowest': 0,
-  'Low': 1,
-  'Medium': 2,
-  'Blocker': highestPriorityIndex,
-};
 export class PackageFunctions {
   @grok.decorators.init()
   static _initUA(): void {
@@ -131,187 +124,19 @@ export class PackageFunctions {
       grok.shell.warning('The Release dashboard is available on dev.datagrok.ai only.');
       return null;
     }
-    const handler = new ReleaseHandler(path);
+    const handler = new ReleaseHandler(githubIssues, path);
     handler.view.parentCall = grok.functions.getCurrentCall();
     return handler.view;
   }
 
-  @grok.decorators.func({ meta: { vectorFunc: 'true' } })
+  @grok.decorators.func({meta: {vectorFunc: 'true'}, outputs: [{name: 'result', type: 'column'}]})
   static async getTicketsVerdict(
-      @grok.decorators.param({ type: 'column<string>' }) ticketColumn: DG.Column,
-      @grok.decorators.param({ type: 'column<string>' }) resultColumn: DG.Column
-  ): Promise<void> {
-
-    const n = ticketColumn.length;
-    if (n != resultColumn.length)
-      throw new Error('Ticket column and result column should have the same length.');
-
-    const ticketRegex = /GROK-\d*/g;
-    const issueIdToIdx = new Map<number, Set<string>>();
-    const issueIdsOrKeys = new Set<string>();
-
-    for (let i = 0; i < n; i++) {
-      const cellValue = ticketColumn.get(i);
-      if (!cellValue)
-        continue;
-
-      const matches = cellValue.matchAll(ticketRegex);
-
-      for (const match of matches) {
-        const ticket = match[0];
-        if (issueIdToIdx.has(i))
-          issueIdToIdx.get(i)!.add(ticket);
-        else
-          issueIdToIdx.set(i, new Set<string>([ticket]));
-        issueIdsOrKeys.add(ticket);
-      }
-    }
-    const { issues } = await grok.functions.call('JiraConnect:getJiraTicketsBulk',
-        { 'issueIdsOrKeys': [...issueIdsOrKeys], 'fields': ['status', 'priority']});
-    const resultIssuesInfo = new Map(issues.map((issue: any) => [issue.key, issue]));
-
-    for (let i = 0; i < n; i++) {
-      if (!issueIdToIdx.has(i))
-        continue;
-
-      const resultStatuses: { status: string; severity: string }[] = [...issueIdToIdx.get(i)!].map((k) => {
-        const issueData: any = resultIssuesInfo.get(k);
-        return issueData ? { status: issueData.fields.status.name, severity: issueData.fields.priority.name }
-            : null;
-      }).filter((s): s is { status: string; severity: string } => s !== null);
-
-      if (resultStatuses.length === 0)
-        continue;
-
-      let verdict: string;
-      if (resultStatuses.some((e) => e.status !== 'Done')) {
-        const priority = this.getHighestPriorityLevel(resultStatuses as any);
-        if (resultStatuses.some((e) => e.status === 'Done'))
-          verdict = `Partially Fixed (${priority})`;
-        else
-          verdict = `Wasn't Fixed (${priority})`;
-      }
-      else
-        verdict = 'Fixed';
-
-      resultColumn.set(i, verdict);
-    }
-  }
-
-  // @grok.decorators.func({ meta: { vectorFunc: 'true' } })
-  // static async getTicketsVerdict(
-  //     @grok.decorators.param({ type: 'column<string>' }) ticketColumn: DG.Column,
-  //     @grok.decorators.param({ type: 'column<string>' }) resultColumn: DG.Column,
-  //     @grok.decorators.param({ type: 'object' }) progress: DG.ProgressIndicator,
-  // ): Promise<void> {
-  //
-  //   const ticketRegex = /GROK-\d*/g;
-  //   const ticketsMap = new Map<string, { status: string; severity: string }>();
-  //   const n = ticketColumn.length;
-  //
-  //   for (let i = 0; i < n; i++) {
-  //     const cellValue = ticketColumn.get(i);
-  //     if (!cellValue)
-  //       continue;
-  //
-  //     const matches = cellValue.matchAll(ticketRegex);
-  //     const resultStatuses: { status: string; severity: string }[] = [];
-  //
-  //     for (const match of matches) {
-  //       const ticket = match[0];
-  //       let info = ticketsMap.get(ticket);
-  //
-  //       if (!info) {
-  //         const status = await grok.functions.call('JiraConnect:issueData', { issueKey: ticket });
-  //         if (progress.canceled)
-  //           return;
-  //         if (!status)
-  //           continue;
-  //
-  //         info = { status: status.fields.status.name, severity: status.fields.priority.name };
-  //         ticketsMap.set(ticket, info);
-  //       }
-  //
-  //       resultStatuses.push(info);
-  //     }
-  //
-  //     if (resultStatuses.length === 0)
-  //       continue;
-  //
-  //     let verdict: string;
-  //     if (resultStatuses.some((e) => e.status !== 'Done')) {
-  //       const priority = this.getHighestPriorityLevel(resultStatuses as any);
-  //       if (resultStatuses.some((e) => e.status === 'Done'))
-  //         verdict = `Partially Fixed (${priority})`;
-  //       else
-  //         verdict = `Wasn't Fixed (${priority})`;
-  //     } else {
-  //       verdict = 'Fixed';
-  //     }
-  //
-  //     resultColumn.set(i, verdict);
-  //   }
-  // }
-
-
-  // @grok.decorators.func({meta: {vectorFunc: 'true'}})
-  // static async getTicketsVerdict(@grok.decorators.param({type: 'column<string>'}) ticketColumn: DG.Column): Promise<DG.Column | undefined> {
-  //   const ticketsMap = new Map<string, {status: string, severity: string}>();
-  //   const ticketRegex = /GROK-\d*/g;
-  //   const ticketColumnList = ticketColumn.toList();
-  //   for (let i = 0; i < ticketColumnList.length; i++) {
-  //     if (ticketColumnList[i]) {
-  //       const matches = ticketColumnList[i].matchAll(ticketRegex);
-  //       for (const match of matches) {
-  //         const ticket: string = match[0];
-  //         const status = (await grok.functions.call('JiraConnect:issueData', {issueKey: ticket}));
-  //         if (status && !ticketsMap.has(ticket))
-  //           ticketsMap.set(ticket, {status: status.fields.status.name, severity: status.fields.priority.name});
-  //       }
-  //     }
-  //   }
-  //
-  //   const resultCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, `${ticketColumn} ticket verdict`, ticketColumn.length);
-  //   for (let i = 0; i < ticketColumnList.length; i++) {
-  //     if (ticketColumnList[i]) {
-  //       const matches = ticketColumnList[i].matchAll(ticketRegex);
-  //       const resultStatuses = [];
-  //       let status = undefined;
-  //       for (const match of matches) {
-  //         if (ticketsMap.has(match[0]))
-  //           resultStatuses.push(ticketsMap.get(match[0]));
-  //       }
-  //
-  //       if (resultStatuses.length > 0) {
-  //         if (resultStatuses.some((e)=> e?.status !== 'Done')) {
-  //           const priority = this.getHighestPriorityLevel(resultStatuses as any);
-  //           if (resultStatuses.some((e)=> e?.status === 'Done'))
-  //             status = `Partially Fixed (${priority})`;
-  //           else
-  //             status = `Wasn\'t Fixed (${priority})`;
-  //         } else
-  //           status = 'Fixed';
-  //         resultCol.set(i, status);
-  //       }
-  //     }
-  //   }
-  //
-  //   return resultCol;
-  // }
-
-  static getHighestPriorityLevel(ticketsMap: {status: string, severity: string}[]) {
-    let highestPriority = 'Lowest';
-    let highestPriorityIndex = 0;
-    for (const [key, value] of ticketsMap.entries()) {
-      const index = priorityLevels[value.severity];
-      if (index > highestPriorityIndex) {
-        highestPriority = (value.severity);
-        highestPriorityIndex = index;
-      }
-      if (index >= highestPriorityIndex)
-        break;
-    }
-    return highestPriority;
+    @grok.decorators.param({type: 'column<string>'}) ticketColumn: DG.Column<string>,
+  ): Promise<DG.Column<string>> {
+    const rowRefs = Array.from({length: ticketColumn.length}, (_, i) => findIssueRefs(ticketColumn.get(i)));
+    const issues = await githubIssues.findIssues(rowRefs.flat());
+    return DG.Column.string(`${ticketColumn.name} verdict`, ticketColumn.length)
+      .init((i) => ticketVerdict(rowRefs[i], issues));
   }
 
   /** Published VEX scan results (one row per scanned image) — feeds the
@@ -333,20 +158,6 @@ export class PackageFunctions {
   @grok.decorators.func()
   static async stressRawDashboard(): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:StressTestsRaw', {build: null});
-  }
-
-  @grok.decorators.app({
-    'url': '/metrics',
-    'name': 'Metrics',
-    'icon': 'images/icons/metrics.svg',
-    'meta': {'role': 'adminApp', 'browsePath': 'Observability'},
-  })
-  static metricsApp(
-    @grok.decorators.param({'options': {'optional': true, 'meta.url': true}}) path?: string): DG.ViewBase | null {
-    const handler = new ViewHandler('metrics');
-    handler.view.parentCall = grok.functions.getCurrentCall();
-    handler.init(undefined, undefined, undefined, undefined, undefined, undefined, path);
-    return handler.view;
   }
 
   @grok.decorators.app({
@@ -372,91 +183,11 @@ export class PackageFunctions {
   static async reportsApp(
     @grok.decorators.param({'options': {'optional': true, 'meta.url': true}}) path?: string): Promise<DG.ViewBase> {
     const parent = grok.functions.getCurrentCall();
-    const app = new ReportingApp(parent);
+    const app = new ReportingApp(parent, githubIssues);
     app.init(path).catch((e) => console.log(e));
     return app.view;
   }
 
-
-  @grok.decorators.app({
-    'url': '/service-logs',
-    'name': 'Service Logs',
-    'icon': 'images/icons/service-logs.svg',
-    'meta': {'role': 'adminApp', 'browsePath': 'Observability'},
-  })
-  static serviceLogsApp(
-    @grok.decorators.param({'options': {'optional': true, 'meta.url': true}}) path?: string,
-    @grok.decorators.param({'type': 'map', 'options': {'optional': true}}) params?: any,
-    @grok.decorators.param({'type': 'int', 'options': {'optional': true}}) limit?: number): DG.ViewBase {
-    if (path && path.startsWith('/'))
-      path = path.slice(1);
-    const view = DG.View.fromViewAsync(async () => {
-      const currentCall = grok.functions.getCurrentCall();
-      AVAILABLE_SERVICES ??= await grok.dapi.docker.getAvailableServices();
-      const app = new ServiceLogsApp(currentCall, AVAILABLE_SERVICES, path, limit);
-      if (AVAILABLE_SERVICES.length > 0)
-        app.getLogs().then((_) => {});
-      //@ts-ignore
-      return app as DG.View;
-    });
-    view.name = ServiceLogsApp.APP_NAME;
-    return view;
-  }
-
-
-  @grok.decorators.app({
-    'url': '/cloud-logs',
-    'name': 'Cloud Logs',
-    'icon': 'images/icons/service-logs.svg',
-    'meta': {'role': 'adminApp', 'browsePath': 'Observability'},
-  })
-  static cloudLogsApp(): DG.ViewBase {
-    return new CloudLogsApp(grok.functions.getCurrentCall());
-  }
-
-
-  @grok.decorators.appTreeBrowser({app: 'Service Logs'})
-  static async serviceLogsAppTreeBrowser(treeNode: DG.TreeViewGroup) {
-    const loaderDiv = ui.div([], {style: {width: '50px', height: '24px', position: 'relative'}});
-    loaderDiv.innerHTML = `<div class="grok-loader"><div></div><div></div><div></div><div></div></div>`;
-    const loaderItem = treeNode.item(loaderDiv);
-    try {
-      AVAILABLE_SERVICES ??= await grok.dapi.docker.getAvailableServices();
-      const services = ['datagrok', 'grok_pipe', 'grok-pipe', 'rabbitmq', 'jkg', 'spawner', 'grok-connect', 'grok_connect'];
-
-      const getItem = (service: string) => {
-        let icon: HTMLElement;
-        if (services.some((s) => service.includes(s)))
-          icon = ui.image('/images/entities/grok.png', 10, 10);
-
-        else
-          icon = ui.iconFA('server');
-        icon.style.marginRight = '3px';
-        const span = ui.span([icon, ' ', service]);
-        span.style.display = 'flex';
-        span.style.alignItems = 'center';
-        return span;
-      };
-
-      let currentView: DG.View;
-      for (const service of AVAILABLE_SERVICES) {
-        const node = treeNode.item(getItem(service));
-        node.onSelected.subscribe(async (_) => {
-          currentView?.close();
-          currentView= DG.View.fromViewAsync(async () => {
-            const app = new ServiceLogsApp(grok.functions.getCurrentCall(), AVAILABLE_SERVICES, service, ServiceLogsApp.DEFAULT_LIMIT, true);
-            await app.getLogs();
-            //@ts-ignore
-            return app as DG.View;
-          });
-          currentView.name = service;
-          grok.shell.addPreview(currentView);
-        });
-      }
-    } finally {
-      loaderItem.remove();
-    }
-  }
 
   @grok.decorators.appTreeBrowser({app: 'Reports'})
   static async reportsAppTreeBrowser(treeNode: DG.TreeViewGroup) {
@@ -502,7 +233,7 @@ export class PackageFunctions {
     ],
   })
   static testDashboardsViewer(): TestDashboardWidget {
-    return new TestDashboardWidget();
+    return new TestDashboardWidget(githubIssues);
   }
 
   @grok.decorators.func({
@@ -528,7 +259,7 @@ export class PackageFunctions {
           return widget;
         }));
         const UAlink = ui.link('', async () => {
-          grok.shell.v.path = `/apps/UsageAnalysis/Packages?date=this%20week&users=${(await grok.dapi.groups.getGroupsLookup('All users'))[0].id}&packages=${ent.name}`;
+          grok.shell.v.path = `/apps/UsageAnalysis/Packages?date=this%20week&groups=${(await grok.dapi.groups.getGroupsLookup('All users'))[0].id}&packages=${ent.name}`;
           grok.functions.eval('UsageAnalysis:usageAnalysisApp()');
         }, 'Open Usage Analysis');
         UAlink.style.marginLeft = '3px';
@@ -539,28 +270,5 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.func({
-    'name': 'Create JIRA ticket',
-    'description': 'Creates JIRA ticket using current error log',
-  })
-  static createJiraTicket() {
-    grok.data.query('JiraCreateIssue', {
-      'createRequest': JSON.stringify({
-        'fields': {
-          'project': {
-            'key': 'GROK',
-          },
-          'summary': 'test',
-          'description': '',
-          'issuetype': {
-            'name': 'Bug',
-          },
-        },
-      }),
-      'updateHistory': false,
-    }).then((t) => {
-      grok.shell.info('Created');
-      console.log(t);
-    });
-  }
+  // TODO: creating a ticket from the error log goes to GitHub issues with the observability work; Jira is gone.
 }

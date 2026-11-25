@@ -1,15 +1,17 @@
 @guide @demo @viewport:1920x1080
-Feature: Bioinformatics · Peptide SAR
-  A demo clip, one of the Bio showcase (features/demos, filmed with `grok-bdd guide`: the @demo tag leaves
-  the set-up and the checks off camera). Bio's antibodies sample opens from Browse; Bio numbers the heavy
-  chains in IMGT (the dialog's default engine: ANARCI of the HMM package, Bio's immunum without it); the
-  aligned column's cell menu cuts CDR3 out as a column of its own; Bio > Analyze > SAR... analyzes CDR3
-  against Y, the binding constant in molar, scaled by -lg (pKd 3.7 to 12.4), with MCL clusters at the
-  similarity threshold 90: 11 clusters of 6 to 17 related CDR3s (the default 70 lumps 428 of the 493 into
-  one). The SAR clips 13 and 14 start from this state, made off camera.
+Feature: 6 · Antibodies and proteins · CDR3 SAR
+  A demo clip, one of the Bio showcase (features/demos, filmed with `grok-bdd guide`: the @demo tag leaves the
+  set-up and the checks off camera). Bio's antibodies sample opens from Browse; Bio numbers the heavy chains
+  in IMGT (the dialog's default engine: ANARCI of the HMM package, Bio's immunum without it); the aligned
+  column's cell menu cuts CDR3 out as a column of its own; Bio > Analyze > SAR... analyzes CDR3 against Y, the
+  binding constant in molar, scaled by -lg (pKd 3.7 to 12.4), with MCL clusters at the similarity threshold
+  90: 11 clusters of 6 to 17 related CDR3s (the default 70 lumps 428 of the 493 into one). Off camera the info
+  balloons the numbering and the extraction raise are closed, and so is the SAR's Selection grid, empty while
+  nothing is selected; the last note, a long one, holds the finished analysis about five seconds. Clips 13 and
+  14 start from this state, made off camera.
 
   Scenario: From antibodies to a CDR3 SAR
-    Number the heavy chains, cut CDR3 out and relate its residues to binding affinity: variability map, potent residues and clusters.
+    Heavy chains numbered, CDR3 cut out and related to affinity: maps, residues, clusters.
 
     Given user is logged in
     And simple mode is off
@@ -33,14 +35,16 @@ Feature: Bioinformatics · Peptide SAR
     When user clicks on OK button in "Apply Antibody Numbering" dialog
     Then a new column "AntibodyHC (aligned)" should have been added
     And "AntibodyHC (aligned)" column should have tag ".numberingScheme" equal to "imgt"
-    Given the grid shows only the columns "Antibody_ID, AntibodyHC (aligned), Y"
+    Given the notification balloons are closed
+    And the grid shows only the columns "Antibody_ID, AntibodyHC (aligned), Y"
     And the "AntibodyHC (aligned)" column of the grid is 1300 px wide
     And the header of the "AntibodyHC (aligned)" column starts at position "93"
     Then the "header tracks of AntibodyHC (aligned)" reading of grid should be "Conservation, WebLogo, Annotations"
     When the video says "CDR3, the loop that binds the antigen, becomes a column"
     And user picks "Annotations > Extract CDR3 as Column" from the context menu of the "cell 1 of AntibodyHC (aligned)" area of grid
     Then a new column "AntibodyHC (aligned)(CDR3)" should have been added
-    Given the grid shows only the columns "Antibody_ID, AntibodyHC (aligned), AntibodyHC (aligned)(CDR3), Y"
+    Given the notification balloons are closed
+    And the grid shows only the columns "Antibody_ID, AntibodyHC (aligned), AntibodyHC (aligned)(CDR3), Y"
     And the "AntibodyHC (aligned)" column of the grid is 820 px wide
     And the "AntibodyHC (aligned)(CDR3)" column of the grid is 560 px wide
     When user picks "Bio > Analyze > SAR..." from the top menu
@@ -61,5 +65,7 @@ Feature: Bioinformatics · Peptide SAR
     And Sequence Variability Map viewer should be painted
     And Most Potent Residues viewer should be painted
     And Logo Summary Table viewer should be painted
-    When the video says "Variability map, most potent residues, MCL clusters and their CDR3 logos"
+    Given the "Selection" viewer of the analysis is closed
+    And the notification balloons are closed
+    When the video says "The SAR in one view: variability map, most potent residues, MCL clusters, CDR3 logos"
     Then no errors should have been logged

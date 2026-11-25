@@ -90,6 +90,32 @@ test('the renderer turns a synthetic manifest into a video, a GIF, a thumb and s
   }
 });
 
+test('the renderer cuts the same manifest as a demo clip: a review sheet, a timeline, every press on its element',
+  {timeout: 180000}, (t) => {
+  const python = process.env.BDD_PYTHON ?? (process.platform === 'win32' ? 'py' : 'python3');
+  const dir = mkdtempSync(join(tmpdir(), 'bdd-demo-'));
+  try {
+    const result = spawnSync(python, [join('tool', 'guide-render.py'), '--selftest', dir, '--demo'],
+      {encoding: 'utf8'});
+    if (result.error || result.status === 3) {
+      t.skip(`no python/Pillow/ffmpeg here: ${result.error?.message ?? result.stderr}`);
+      return;
+    }
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /audit: \d+ presses, 0 marked or pointed away from the press, 0 off the element lit/);
+    const timeline = JSON.parse(readFileSync(join(dir, 'timeline.json'), 'utf8')) as
+      {parts: {part: string; seconds: number}[]};
+    const part = (name: string): number => timeline.parts.find((p) => p.part.endsWith(name))?.seconds ?? 0;
+    assert.ok(part('title') >= 2.4 && part('title') <= 4.5, `a title card of about three seconds, ${part('title')} s`);
+    assert.ok(part('end') >= 2, `the last page held two seconds, ${part('end')} s`);
+    assert.ok(part('Click on the blue button') >= 1.2, 'the dialog the click opened rests long enough to read');
+    assert.ok(existsSync(join(dir, 'review-sheet.png')), 'a review sheet');
+  }
+  finally {
+    rmSync(dir, {recursive: true, force: true});
+  }
+});
+
 test('checks a person has no use for are hidden from a guide; what the page shows stays', () => {
   for (const hidden of ['no errors should have been logged', 'no error or warning balloon should have been shown',
     '1 project named "Molecular dashboard" should be on the server', 'the "labels shown" reading of scatter plot viewer should be at least 1',

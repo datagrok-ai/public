@@ -21,6 +21,7 @@ src/nca/
     augment.ts                      # augmentProfile — pipeline Steps 1–3 as ONE exported kernel: BLQ → observed Cmax → route-aware dose-time augmentation; returns the effective BLQ mask, the drop set, sourceIndex (augmented ↔ input), and the c0 estimate
     derived.ts                      # halfLifeFromLambdaZ, clearance, volumeTerminal, pctExtrapolated, meanResidenceTime, volumeSteadyState, pctExtrapolatedAumc, tlag
     compute-nca.ts                  # computeNca orchestrator — augmentProfile + Steps 4–7 (integration, λz, derived, warnings)
+    auc-interval.ts                 # aucInterval — AUC over [start, end] (PKNCA aucint.last): same augmented profile + kernel as AUClast, bound interpolation, no extrapolation past tlast
     sparse.ts                       # sparseAuc + buildCompositeProfile — composite AUClast for destructive/batch designs; Holder covariance SE, Nedelman-Jia Satterthwaite df, Student-t CI
     bootstrap.ts                    # summarizeBootstrap — stratified-by-timepoint resampling + BCa interval for the nonlinear parameters, with a self-suppression gate
     __tests__/                      # Per-module tests + reference-suite vs fixtures

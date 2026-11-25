@@ -116,6 +116,70 @@ export class FuncFlowView extends DG.ViewBase {
 
   private boundScript: DG.Script | null = null;
 
+  /** The view type a project reopens this view by: the name of the `flowView` view function. */
+  static readonly TYPE = 'flowView';
+  override get type(): string { return FuncFlowView.TYPE; }
+
+  /** The state a project restores and has not finished restoring yet; saving meanwhile keeps it. */
+  private restoring: object | null = null;
+  /** The state a restore could not load (its script could not be reached); kept while the canvas stays empty. */
+  private unrestored: object | null = null;
+
+  /** The saved script this flow edits, plus the graph when it is unsaved; an empty, unbound canvas saves nothing. */
+  override saveStateMap(): object | null {
+    if (this.restoring)
+      return this.restoring;
+    if (!this.outputPanelEnabled)
+      return null;
+    const empty = !this.boundScript && (this.flow?.getNodeCount() ?? 0) === 0;
+    if (empty && this.unrestored)
+      return this.unrestored;
+    if (!this.flow)
+      return this.boundScript ? {scriptId: this.boundScript.id, flow: null} : null;
+    if (empty)
+      return null;
+    const unsaved = !this.boundScript || this.savedSnapshot === null || this.currentSnapshot() !== this.savedSnapshot;
+    return {scriptId: this.boundScript?.id ?? null, flow: unsaved ? serializeFlow(this.flow, this.flowSettings) : null};
+  }
+
+  override loadStateMap(stateMap: object): void {
+    const state = stateMap as {scriptId?: string | null; flow?: FuncFlowDocument | null};
+    this.restoring = stateMap;
+    void this.restoreState(state.scriptId ?? null, state.flow ?? null)
+      .catch((e) => {
+        this.unrestored = stateMap;
+        grok.shell.error(`Cannot restore flow "${this.name}": ${e instanceof Error ? e.message : e}`);
+      })
+      .finally(() => {
+        if (this.restoring === stateMap)
+          this.restoring = null;
+      });
+  }
+
+  private async restoreState(scriptId: string | null, doc: FuncFlowDocument | null): Promise<void> {
+    // with an unsaved copy to show, a script that cannot be reached counts as gone
+    const script = scriptId ? await grok.dapi.scripts.find(scriptId).catch((e) => {
+      if (!doc)
+        throw e;
+      return null;
+    }) ?? null : null;
+    // the user loaded a flow of their own while the script was being fetched
+    if (this.boundScript || (this.flow?.getNodeCount() ?? 0) > 0)
+      return;
+    if (scriptId && !script)
+      grok.shell.warning(`The saved flow of "${this.name}" is not available${doc ? '; its unsaved copy is shown' : '; the empty view is not saved with the project'}`);
+    if (script && !doc) {
+      await this.bindScript(script);
+      return;
+    }
+    if (script) {
+      this.boundScript = script;
+      this.updatePath();
+    }
+    if (doc)
+      await this.loadFromDoc(doc);
+  }
+
   private dashboardProjectId: string | null = null;
 
   /** Resolves once `initEditor()` built the editor; load paths await it instead of retrying on timers. */
@@ -182,20 +246,23 @@ export class FuncFlowView extends DG.ViewBase {
 
   static forScript(script: DG.Script): FuncFlowView {
     const view = new FuncFlowView();
-    view.bindScript(script);
+    void view.bindScript(script);
     return view;
   }
 
-  private bindScript(script: DG.Script): void {
+  /** Resolves once the script's graph is on the canvas. */
+  private bindScript(script: DG.Script): Promise<void> {
+    this.unrestored = null;
     this.boundScript = script;
     this.name = script.friendlyName || script.name || 'Flow';
     this.updatePath();
     try {
       const {doc} = parseFlowBody(script.script);
-      void this.loadFromDoc(doc).then(() => this.markSaved())
+      return this.loadFromDoc(doc).then(() => this.markSaved())
         .catch((e) => grok.shell.error(`Cannot load flow "${this.name}": ${e instanceof Error ? e.message : e}`));
     } catch (e) {
       grok.shell.error(`Cannot read flow "${this.name}": ${e instanceof Error ? e.message : e}`);
+      return Promise.resolve();
     }
   }
 
@@ -1058,7 +1125,7 @@ export class FuncFlowView extends DG.ViewBase {
     try {
       // Re-find by id so the body is guaranteed present, not a lean listing row.
       const full = await grok.dapi.scripts.find(f.id);
-      this.bindScript((full as DG.Script | null) ?? f);
+      void this.bindScript((full as DG.Script | null) ?? f);
       this.hideStartPanel();
     } catch (e: any) {
       grok.shell.error(`Could not open "${f.friendlyName || f.name}": ${e?.message ?? e}`);
@@ -1877,7 +1944,7 @@ export class FuncFlowView extends DG.ViewBase {
         if (!picked) return;
         // Re-find by id so the body is guaranteed present, not a lean listing row.
         const full = await grok.dapi.scripts.find(picked.id);
-        this.bindScript(full ?? picked);
+        void this.bindScript(full ?? picked);
       })
       .show();
   }
@@ -2253,6 +2320,7 @@ export class FuncFlowView extends DG.ViewBase {
    *  serialized: deserialize is clear() + per-node adds, so two interleaved
    *  loads (a double-clicked recent-flow row) would merge both graphs. */
   async loadFromDoc(doc: FuncFlowDocument): Promise<void> {
+    this.unrestored = null;
     const run = this.loadChain.then(() => this.doLoadFromDoc(doc));
     this.loadChain = run.catch(() => {});
     return run;

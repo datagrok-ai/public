@@ -327,6 +327,54 @@ export namespace funcs {
     return await grok.functions.call('Chem:RdKitReactionRenderer', {});
   }
 
+  /**
+   * Whether the Reaction panel shows: Crux draws reactions (Crux mode)
+   */
+  export async function reactionPanelShown(reaction: string ): Promise<boolean> {
+    return await grok.functions.call('Chem:ReactionPanelShown', { reaction });
+  }
+
+  /**
+   * The reaction drawn large, with a full-screen view, and a route's steps
+   * @param {string} reaction
+   *   semType: ChemicalReaction
+   */
+  export async function reactionPanel(reaction: string ): Promise<any> {
+    return await grok.functions.call('Chem:ReactionPanel', { reaction });
+  }
+
+  /**
+   * Whether the Checks section shows for a molecule: Crux mode, and a flag to show
+   */
+  export async function moleculeChecksShown(molecule: string ): Promise<boolean> {
+    return await grok.functions.call('Chem:MoleculeChecksShown', { molecule });
+  }
+
+  /**
+   * What this molecule breaks downstream, in Crux mode: what Chem cannot read, what changes meaning
+   * @param {any} molecule
+   *   semType: Molecule
+   */
+  export async function moleculeChecksPanel(molecule: any ): Promise<any> {
+    return await grok.functions.call('Chem:MoleculeChecksPanel', { molecule });
+  }
+
+  /**
+   * Whether the Checks section shows for a reaction: Crux mode, and a flag to show
+   */
+  export async function reactionChecksShown(reaction: string ): Promise<boolean> {
+    return await grok.functions.call('Chem:ReactionChecksShown', { reaction });
+  }
+
+  /**
+   * What this reaction or template breaks downstream, in Crux mode: what Chem cannot read, what a run gets wrong
+   * @param {any} reaction
+   *   semType: ChemicalReaction
+   */
+  export async function reactionChecksPanel(reaction: any ): Promise<any> {
+    return await grok.functions.call('Chem:ReactionChecksPanel', { reaction });
+  }
+
   export async function rdKitMixtureRenderer(): Promise<any> {
     return await grok.functions.call('Chem:RdKitMixtureRenderer', {});
   }
@@ -1020,12 +1068,13 @@ export namespace funcs {
   }
 
   /**
-   * Removes stereochemistry from molecules and adds a column with flat SMILES.
+   * Removes stereocenters (and optionally the E/Z of double bonds) and adds a column with flat SMILES.
    * @param {DG.Column} molecules
    *   semType: Molecule
+   * @param {boolean} flattenDoubleBonds - Also remove the E/Z (cis/trans) configuration of double bonds
    */
-  export async function flattenMolecules(data: DG.DataFrame , molecules: DG.Column , overwrite: boolean , join: boolean ): Promise<DG.Column> {
-    return await grok.functions.call('Chem:FlattenMolecules', { data, molecules, overwrite, join });
+  export async function flattenMolecules(data: DG.DataFrame , molecules: DG.Column , overwrite: boolean , join: boolean , flattenDoubleBonds: boolean ): Promise<DG.Column> {
+    return await grok.functions.call('Chem:FlattenMolecules', { data, molecules, overwrite, join, flattenDoubleBonds });
   }
 
   /**
@@ -1049,6 +1098,13 @@ export namespace funcs {
    */
   export async function editMoleculeCell(cell: any ): Promise<void> {
     return await grok.functions.call('Chem:EditMoleculeCell', { cell });
+  }
+
+  /**
+   * ChemicalReaction
+   */
+  export async function editReactionCell(cell: any ): Promise<void> {
+    return await grok.functions.call('Chem:EditReactionCell', { cell });
   }
 
   export async function openChemLibSketcher(): Promise<any> {
@@ -1188,6 +1244,10 @@ export namespace funcs {
     return await grok.functions.call('Chem:IsSmarts', { s });
   }
 
+  export async function detectCdxmlReactions(col: DG.Column ): Promise<void> {
+    return await grok.functions.call('Chem:DetectCdxmlReactions', { col });
+  }
+
   export async function detectSmiles(col: DG.Column , min: number ): Promise<void> {
     return await grok.functions.call('Chem:DetectSmiles', { col, min });
   }
@@ -1233,6 +1293,17 @@ export namespace funcs {
    */
   export async function getProperties(molecules: DG.Column , selected?: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('Chem:GetProperties', { molecules, selected });
+  }
+
+  /**
+   * Computes one chemical property for a column of molecules so that the platform can sort and order them by it.
+   * @param {DG.Column} molecules
+   *   semType: Molecule
+   * @param {string} property
+   *   choices: ["MW","HBA","HBD","LogP","LogS","PSA","Rotatable bonds","Stereo centers","Molecule charge"]
+   */
+  export async function molecularProperty(molecules: DG.Column , property: string ): Promise<DG.Column> {
+    return await grok.functions.call('Chem:MolecularProperty', { molecules, property });
   }
 
   /**
@@ -1426,8 +1497,20 @@ export namespace funcs {
     return await grok.functions.call('Chem:GetMolecularFormula', { molecule });
   }
 
+  /**
+   * Checks a molecule (SMILES, SMARTS or molfile): the error messages of the chemical engine on reading it, each line starting with its time, or an empty string when it reads without an error
+   */
   export async function validateMolecule(s: string ): Promise<any> {
     return await grok.functions.call('Chem:ValidateMolecule', { s });
+  }
+
+  /**
+   * Checks every molecule of a column (SMILES, SMARTS or molfiles) in background workers: one cell per row with the error messages of the chemical engine on reading that molecule (those of validateMolecule without their times), empty for a molecule that reads without an error. As a formula in Add New Column it is called once for the whole column
+   * @param {DG.Column} molecules
+   *   semType: Molecule
+   */
+  export async function validateMolecules(molecules: DG.Column ): Promise<DG.Column> {
+    return await grok.functions.call('Chem:ValidateMolecules', { molecules });
   }
 
   /**
@@ -1614,6 +1697,20 @@ export namespace funcs {
    */
   export async function reactionEnumeratorApp(): Promise<DG.View> {
     return await grok.functions.call('Chem:ReactionEnumeratorApp', {});
+  }
+
+  /**
+   * Draws, edits and exports reactions and multi-step routes
+   */
+  export async function reactionsApp(): Promise<DG.View> {
+    return await grok.functions.call('Chem:ReactionsApp', {});
+  }
+
+  /**
+   * Draws a molecule or a query in the Crux sketcher; the page address is a link to the drawing
+   */
+  export async function sketcherApp(smiles?: string ): Promise<DG.View> {
+    return await grok.functions.call('Chem:SketcherApp', { smiles });
   }
 
   export async function mpoProfilesAppTreeBrowser(treeNode: any , _browseView: DG.View ): Promise<void> {

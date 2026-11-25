@@ -41,9 +41,8 @@ export class ClaudeRuntimeClient {
   public onSessionReset = new rxjs.Subject<SessionResetEvent>();
   public onAborted = new rxjs.Subject<AbortedEvent>();
   public onInputRequest = new rxjs.Subject<InputRequestEvent>();
-  public onSyncStatus = new rxjs.Subject<{status: string; message?: string; files?: string[]}>();
+  public onSyncStatus = new rxjs.Subject<{status: string; message?: string}>();
   public onClose = new rxjs.Subject<void>();
-  private _skillNames: string[] | null = null;
   private _resumable = new Set<string>();
   private _turnLog = new TurnLog();
 
@@ -102,7 +101,7 @@ export class ClaudeRuntimeClient {
     if (this.connected)
       return;
 
-    if (await this.discover()) {
+    for (let attempt = 0; attempt < 2 && !this.ws && await this.discover(); attempt++) {
       try {
         this.ws = await grok.dapi.docker.dockerContainers.webSocketProxy(this.containerId!, '/ws', 180_000);
       } catch (e) {
@@ -114,7 +113,7 @@ export class ClaudeRuntimeClient {
     }
 
     if (!this.ws)
-      throw new Error('AI runtime container is not running');
+      throw new Error('The AI runtime is not available. Try again in a minute.');
 
     this.ws.onmessage = (event: MessageEvent) => {
       let data: any;
@@ -169,9 +168,7 @@ export class ClaudeRuntimeClient {
         this.onInputRequest.next({sessionId: data.sessionId, requestId: data.requestId, toolName: data.toolName, input: data.input});
         break;
       case 'sync_status':
-        if (data.status === 'done' && Array.isArray(data.files))
-          this._skillNames = data.files.map((f: string) => f.replace(/\.[^.]+$/, ''));
-        this.onSyncStatus.next({status: data.status, message: data.message, files: data.files});
+        this.onSyncStatus.next({status: data.status, message: data.message});
         break;
       }
     };
@@ -227,10 +224,6 @@ export class ClaudeRuntimeClient {
       scope,
       ...(packageName ? {packageName} : {}),
     }));
-  }
-
-  getSkillNames(): string[] {
-    return this._skillNames ?? [];
   }
 
   abort(sessionId: string): void {

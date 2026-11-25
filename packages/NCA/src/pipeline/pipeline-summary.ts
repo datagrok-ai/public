@@ -13,9 +13,12 @@
 
 import * as DG from 'datagrok-api/dg';
 
-import {aggregateNcaResults, computeBioavailability, isIntravascular, numAt} from '../adapter';
+import {
+  aggregateNcaResults, computeBioavailability, isIntravascular, numAt,
+  detectOccasionColumn, isOccasionName, profileRowsOf, resolveOccasion,
+} from '../adapter';
 import {MIXED_SEX, VERDICT_BLOCKED, VERDICT_REVIEW} from './pipeline-compute';
-import {NO_SEX_COLUMN, isPeriodColumnName} from './pipeline-mapping';
+import {NO_SEX_COLUMN} from './pipeline-mapping';
 
 /** `CL` / `VZ` / `VSS` are per kg on every row and the `_ABS` companions absolute
  *  so pooling across DOSE_NORM is one basis per column.
@@ -50,9 +53,25 @@ interface ArmF {f: number; reason: string; ivN: number}
  * a cross-sex reference or test arm.
  */
 function bioavailabilityByArm(src: DG.DataFrame, agg: DG.DataFrame, keys: ReadonlyArray<string>,
-  noSexReason: string | null): ArmF[] {
-  // Period keys differ between the IV and oral arms of one crossover, so F% matching ignores them.
-  const matchKeys = keys.filter((k) => !isPeriodColumnName(k));
+  noSexReason: string | null, notes: string[]): ArmF[] {
+  // F5 (SF-PIPELINE-FPCT): the occasion key (one shared matcher, `detectOccasionColumn`) stays a
+  // match key only for a repeat-dose design (same-occasion pairing). For a crossover and for an
+  // unclassifiable design it is dropped as before — the IV and oral arms of one crossover sit in
+  // different periods. The Pipeline has no animal mapping: the design is read through rule (ii)
+  // (the subject id repeats across occasions) and adopted without confirmation (nobody to ask);
+  // a period-like name still proposes `unknown`, so crossover pairing is kept there.
+  const occasionKey = detectOccasionColumn(keys.filter((k) => isOccasionName(k)));
+  let sameOccasion = false;
+  if (occasionKey !== null) {
+    const occ = resolveOccasion(occasionKey, profileRowsOf(src, {subject: 'SUBJECT', occasion: occasionKey,
+      sex: src.col('SEX') !== null ? 'SEX' : null, dose: 'DOSE', route: 'ROUTE'}), {}, /* autoConfirm */ true);
+    sameOccasion = occ.fPctPairing === 'same-occasion';
+    if (occ.levels.length >= 2 && (occ.confirmed ?? occ.proposal.design) === 'unknown') {
+      notes.push(`F% pairs IV and extravascular profiles across '${occasionKey}' (${occ.levels.join(', ')}): ` +
+        `the design could not be classified (${occ.proposal.evidence}).`);
+    }
+  }
+  const matchKeys = keys.filter((k) => !isOccasionName(k) || (sameOccasion && k === occasionKey));
   const route = agg.col('ROUTE')!;
   const dose = agg.col('DOSE')!;
   const sexCol = agg.col('SEX');
@@ -62,7 +81,9 @@ function bioavailabilityByArm(src: DG.DataFrame, agg: DG.DataFrame, keys: Readon
     const srcSex = src.col('SEX')!;
     const single = src.clone(DG.BitSet.create(src.rowCount, (i) => SINGLE_SEX.has(srcSex.getString(i))));
     const strat = [...matchKeys, 'SEX'];
-    const {table} = computeBioavailability(single, {doseCol: 'DOSE', routeCol: 'ROUTE', stratifyCols: strat});
+    const {table, warnings} = computeBioavailability(single, {doseCol: 'DOSE', routeCol: 'ROUTE', stratifyCols: strat,
+      ...(sameOccasion && occasionKey !== null ? {occasionCol: occasionKey} : {})});
+    for (const w of warnings) if (w.code === 'CROSS_OCCASION_IV_REFERENCE') notes.push(w.message);
     cells = new Map();
     for (let i = 0; i < table.rowCount; i++) {
       cells.set(cellKey(strat.map((s) => table.col(s)!.getString(i)), table.col('ROUTE')!.getString(i),
@@ -108,13 +129,25 @@ export function summarizePipeline(results: DG.DataFrame): DG.DataFrame {
     Int32Array.from({length: agg.rowCount}, (_, i) => reviewByKey.get(keyOf(agg, groupBy, i)) ?? 0)));
 
   const sexReason = results.getTag('nca.sexReason');
+  const fNotes: string[] = [];
   const f = bioavailabilityByArm(src, agg, keys, sexReason !== null && sexReason !== undefined && sexReason !== '' ?
-    sexReason : null);
+    sexReason : null, fNotes);
+  // Design notes (unknown occasion design, cross-occasion IV reference) ride a frame tag: the
+  // summary schema is unchanged.
+  if (fNotes.length > 0) agg.setTag('nca.fPctNotes', JSON.stringify(fNotes));
   const fCol = DG.Column.fromFloat64Array('F_PCT',
     Float64Array.from(f, (a) => Number.isFinite(a.f) ? a.f : DG.FLOAT_NULL));
   fCol.setTag('units', '%');
   agg.columns.add(fCol);
   agg.columns.add(DG.Column.fromStrings('F_PCT_REASON', f.map((a) => a.reason)));
+  // The same notes as a visible column on the extravascular arms (a headless caller never reads
+  // frame tags). Written only when there is a note, so a summary without one keeps its schema.
+  if (fNotes.length > 0) {
+    const routeCol = agg.col('ROUTE')!;
+    const note = fNotes.join(' ');
+    agg.columns.add(DG.Column.fromStrings('F_PCT_NOTE', Array.from({length: agg.rowCount}, (_, i) =>
+      isIntravascular(routeCol.getString(i)) ? '' : note)));
+  }
   // The IV-reference N behind each F% (the app's "N (IV ref.)").
   agg.columns.add(DG.Column.fromInt32Array('F_PCT_IV_N',
     Int32Array.from(f, (a) => Number.isFinite(a.ivN) ? a.ivN : DG.INT_NULL)));

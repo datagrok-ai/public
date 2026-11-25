@@ -37,6 +37,7 @@ import './tests/helm-tests';
 import './tests/to-atomic-level-tests';
 import './tests/to-atomic-level-ui-tests';
 import './tests/to-atomic-level-crux-tests';
+import './tests/molecules-to-helm-tests';
 import './tests/assembly-input-tests';
 import './tests/assembler-library-tests';
 import './tests/mm-distance-tests';

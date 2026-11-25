@@ -330,7 +330,7 @@ export const TreeWizard = Vue.defineComponent({
 
 
     const exportItems = Vue.computed<RibbonMenuItem[]>(() => exports.value.map((exportData) => ({
-      text: exportData.friendlyName ?? exportData.id,
+      text: exportData.name,
       onClick: () => exportHandler(exportData),
       ...busyGuard('exporting'),
     })));

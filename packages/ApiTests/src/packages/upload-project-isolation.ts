@@ -122,51 +122,44 @@ category('Packages: project isolation', () => {
       'New version should create its own project entity with remapped IDs, not steal from the previous version');
   }, {timeout: 120000, owner: 'aparamonov@datagrok.ai'});
 
-  // When a new package version is published, dashboards that reference entities
-  // from the old version should automatically get relations to the new version's entities.
-  test('Dashboard: entity propagation across package versions', async () => {
+  // A debug version is one developer's: publishing it leaves the dashboards that link the release
+  // version's entities alone (core#1244). The links move to the current version when a version is
+  // deleted or a release is published, which datlas package_version_relations_test covers.
+  test('Dashboard: a debug publish does not link the debug version', async () => {
     await safeDeletePackage('pkgisolationa');
     await cleanupProjects();
     await cleanupDashboards();
+    let saved: DG.Project | null = null;
+    try {
+      await publish('pkgisolationa', false);
+      const funcs = await grok.dapi.functions.filter('package.shortName = "Pkgisolationa"').list();
+      expect(funcs.length >= 1, true, `Expected at least 1 function from package, got ${funcs.length}`);
+      const released = funcs[0];
 
-    // Publish release version
-    await publish('pkgisolationa', false);
+      const dashboard = DG.Project.create();
+      dashboard.name = 'DashboardRelationTest';
+      dashboard.addLink(released);
+      saved = await grok.dapi.projects.save(dashboard);
+      const linksOf = async () => (await grok.dapi.projects.find(saved!.id)).links.map((e: DG.Entity) => e.id);
+      const linkedBefore = await linksOf();
+      expect(linkedBefore.includes(released.id), true,
+        `The saved dashboard does not link the function it was given: ${linkedBefore.join()}`);
 
-    // Get a function entity from the package
-    const funcs = await grok.dapi.functions
-      .filter('package.shortName = "Pkgisolationa"').list();
-    expect(funcs.length >= 1, true,
-      `Expected at least 1 function from package, got ${funcs.length}`);
-    const funcV1 = funcs[0];
+      await publish('pkgisolationa', true);
+      const debugIds = (await grok.dapi.functions.filter('package.shortName = "Pkgisolationa"')
+        .allPackageVersions().list()).map((f: DG.Func) => f.id).filter((id: string) => id !== released.id);
+      expect(debugIds.length >= 1, true, `Expected functions from the debug version, got ${debugIds.length}`);
 
-    // Create a dashboard and add function as a link
-    const dashboard = DG.Project.create();
-    dashboard.name = 'DashboardRelationTest';
-    dashboard.addLink(funcV1);
-    const saved = await grok.dapi.projects.save(dashboard);
-
-    // Publish debug version (triggers _addProjectRelationsForPackageVersion)
-    await publish('pkgisolationa', true);
-
-    // Get all functions across all versions (including debug)
-    const allFuncs = await grok.dapi.functions
-      .filter('package.shortName = "Pkgisolationa"')
-      .allPackageVersions().list();
-
-    // Reload dashboard and check its links
-    const reloaded = await grok.dapi.projects.find(saved.id);
-    const linkedIds = new Set(reloaded.links.map((e: DG.Entity) => e.id));
-
-    // There should be a function from v2 with same bind_id in the dashboard
-    const v2Funcs = allFuncs.filter((f: DG.Func) => f.id !== funcV1.id);
-    expect(v2Funcs.length >= 1, true,
-      `Expected functions from debug version, got ${v2Funcs.length}`);
-    const hasV2Entity = v2Funcs.some((f: DG.Func) => linkedIds.has(f.id));
-    expect(hasV2Entity, true,
-      'Dashboard should contain entity from the new package version');
-
-    // Cleanup
-    await grok.dapi.projects.delete(reloaded);
+      // Read as the developer who published the debug version, the release function is hidden behind
+      // it, so the dashboard may show no link here; what must not appear is a debug-version entity.
+      const linked = await linksOf();
+      expect(linked.some((id: string) => debugIds.includes(id)), false,
+        `The dashboard links a function of the debug version: ${linked.join()}`);
+      return `links after the debug publish: ${linked.join() || 'none'}`;
+    } finally {
+      if (saved != null)
+        await grok.dapi.projects.delete(saved).catch(() => {});
+    }
   }, {timeout: 120000, owner: 'aparamonov@datagrok.ai'});
 }, {
   owner: 'aparamonov@datagrok.ai'

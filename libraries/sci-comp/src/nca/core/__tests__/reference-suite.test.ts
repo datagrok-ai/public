@@ -23,7 +23,8 @@ import {computeNca} from '../compute-nca';
 import {augmentProfile} from '../augment';
 import {sparseAuc} from '../sparse';
 import type {SparseInput} from '../sparse';
-import {ROUTE_IV_BOLUS, ROUTE_IV_INFUSION, ROUTE_PO} from '../types';
+import {aucInterval} from '../auc-interval';
+import {ROUTE_IM, ROUTE_IP, ROUTE_IV_BOLUS, ROUTE_IV_INFUSION, ROUTE_OTHER, ROUTE_PO, ROUTE_SC} from '../types';
 import type {ProfileInputs, NcaRules, RouteCode} from '../types';
 
 const PKNCA_RULES: NcaRules = {
@@ -948,5 +949,44 @@ describe('computeNca output snapshot @0.10.0 — byte-identity pin for numbers-c
     }
     expect(n).toBe(27);
     expect(out).toMatchSnapshot();
+  });
+});
+
+/**
+ * IP (intraperitoneal) is extravascular: `computeNca` must give it the PO
+ * result exactly. There is no PKNCA IP fixture because there is no separate IP
+ * computation; this identity carries the PO reference parity over to IP.
+ */
+describe('computeNca / aucInterval — IP route is computed as PO', () => {
+  const EXTRAVASCULAR_FIXTURES: ReadonlyArray<{
+    csv: string; timeCol: string; dose: (row: Record<string, number>) => number;
+  }> = [
+    {csv: '01_theoph.csv', timeCol: 'Time', dose: (r) => r.Dose * r.Wt},
+    {csv: '03_rat_simple.csv', timeCol: 'Time', dose: (r) => r.Dose},
+  ];
+
+  it('ROUTE_IP is code 6', () => {
+    expect(ROUTE_IP).toBe(6);
+  });
+
+  it.each([false, true])('compensatedSummation=%s — every profile equals its PO result', (compensated) => {
+    const rules: NcaRules = {...PKNCA_RULES, compensatedSummation: compensated};
+    let n = 0;
+    for (const spec of EXTRAVASCULAR_FIXTURES) {
+      for (const group of loadAndGroup(spec.csv)) {
+        const dose = spec.dose(group.rows[0]);
+        const poInputs = buildInputs(group.rows, spec.timeCol, dose, ROUTE_PO);
+        const po = computeNca(poInputs, rules);
+        const poInterval = aucInterval(poInputs, rules, 0, Infinity);
+        // Every extravascular code takes the one extravascular path; IP is the new one.
+        for (const route of [ROUTE_SC, ROUTE_IM, ROUTE_OTHER, ROUTE_IP]) {
+          const inputs = buildInputs(group.rows, spec.timeCol, dose, route);
+          expect(computeNca(inputs, rules)).toEqual(po);
+          expect(aucInterval(inputs, rules, 0, Infinity)).toEqual(poInterval);
+        }
+        n++;
+      }
+    }
+    expect(n).toBeGreaterThan(0);
   });
 });

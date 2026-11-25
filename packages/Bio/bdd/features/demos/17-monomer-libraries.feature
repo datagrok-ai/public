@@ -1,5 +1,5 @@
 @guide @demo
-Feature: Bioinformatics · Monomer libraries
+Feature: 5 · Design a library · Monomer libraries
   A demo clip, one of the Bio showcase (features/demos, filmed with `grok-bdd guide`: the @demo tag
   leaves the set-up and the checks off camera). Bio > Manage > Monomers opens the monomers of a library
   as a table (structure, symbol in its color, name, the cap of each attachment point) beside the monomer
@@ -8,10 +8,13 @@ Feature: Bioinformatics · Monomer libraries
   monomers, and Bio > Manage > Monomer Libraries lists the library files the platform loads together,
   with the symbols two of them define differently. Browsing only: nothing is saved, switched or picked,
   so no library and no setting on the server changes (the editor's Save is the monomer-editor
-  feature's, the library switches the libraries feature's).
+  feature's, the library switches the libraries feature's). The caps menu of an attachment point rests
+  under a note. polytool-lib's table shows no Name column: several of its monomer names are misspelled in
+  the library file (Acetylenil, Ethilenil, Alino, Oxiethilenil), so its rows are picked by symbol, and the
+  form names the one picked (Azido Glycine). The sample's Activity is shown to two decimals.
 
   Scenario: Browse the monomer libraries
-    Every monomer of a library in a table, beside an editor that shows its structure, attachment points and caps.
+    A library's monomers in a table, beside an editor of their structure and caps.
 
     Given user is logged in
     And simple mode is off
@@ -21,6 +24,7 @@ Feature: Bioinformatics · Monomer libraries
     And the Bio package is initialized
     And the toolbox pane is hidden
     And the context panel is closed
+    And user sets the format of "Activity" column in the grid to "0.00"
     When the video says "Monomers: the building blocks of every sequence"
     And user picks "Bio > Manage > Monomers" from the top menu
     Then the "Manage Monomers" view should be current
@@ -34,15 +38,16 @@ Feature: Bioinformatics · Monomer libraries
     And "R3" R-group chip in monomer form should contain the text "R3 OH"
     When user clicks on "R3" R-group chip in monomer form
     Then "OH" menu item should be checked
-    When user hovers over "Azide" menu item
+    When the video says "Each attachment point: its cap, or a common one"
+    And user hovers over "Azide" menu item
     And user presses Escape
     And user selects "polytool-lib" in "Library" input in monomer form
     Then the table should have 12 rows
     And "R1" column should have semantic type "Molecule"
-    Given the grid shows only the columns "Monomer, Symbol, Name, R1, R2"
+    Given the grid shows only the columns "Monomer, Symbol, R1, R2"
     And the "R1" column of the grid is 190 px wide
     And the "R2" column of the grid is 190 px wide
-    When user clicks on the "cell 4 of Name" area of grid
+    When user clicks on the "cell 4 of Symbol" area of grid
     Then "Name" input in monomer form should have value "Azido Glycine"
     When user picks "Bio > Manage > Monomer Libraries" from the top menu
     Then the "Manage Monomer Libraries" view should be current

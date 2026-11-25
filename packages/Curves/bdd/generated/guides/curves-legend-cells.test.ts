@@ -6,16 +6,17 @@ generated: features/guides/curves-legend-cells.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
 --- */
 import {test} from '@playwright/test';
+import '../../bindings/curves.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {columnWidth} from '../../bindings/curves.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {check, expand, scrollIntoView, selectIn, shouldBe, shouldHaveValue, uncheck} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {removeColumn} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {contextPanelOpen, openDataset, simpleModeOff} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {clickArea, noErrors, setProperties} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {gridColumnWidth} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Show Legend of curves in grid cells is set for the table, a column or one cell", () => {
@@ -27,7 +28,7 @@ test.describe("Show Legend of curves in grid cells is set for the table, a colum
     await session.step(17, "And user opens assay-curves dataset", () => openDataset(page, ds("assay-curves")));
     await session.step(18, "And user removes \"Molecule\" column", () => removeColumn(page, "Molecule"));
     await session.step(19, "And user sets properties of grid:", () => setProperties(page, el("grid"), [["Row Height","290"],["Col Header Height","30"]]), [["Row Height","290"],["Col Header Height","30"]]);
-    await session.step(22, "And the \"Fitted Curve\" column of the grid is 340 px wide", () => columnWidth(page, "Fitted Curve", 340));
+    await session.step(22, "And the \"Fitted Curve\" column of the grid is 340 px wide", () => gridColumnWidth(page, "Fitted Curve", 340));
     await session.step(23, "And the context panel is open", () => contextPanelOpen(page));
     await session.step(24, "When user clicks on the \"cell 1 of Fitted Curve\" area of grid", () => clickArea(page, "cell 1 of Fitted Curve", el("grid")));
     await session.step(25, "And user expands \"Options\" pane in context panel", () => expand(page, el("\"Options\" pane in context panel")));

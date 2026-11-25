@@ -365,11 +365,15 @@ test('Markers selector — picking a column works, including after a tooltip cyc
       return {x: r.x, y: r.y, h: r.height};
     });
     expect(popup, `${where}: the column popup did not open`).not.toBeNull();
-    // the third row of the column grid — any row works, it just has to differ from 'Series'
-    await page.mouse.click(popup!.x + 80, popup!.y + 70);
-    await page.waitForFunction(() => (window as any).grok.shell.tv.viewers
-      .find((q: any) => q.type === 'Scatter plot').props.markersColumnName !== 'Series',
-      {timeout: 8000}).catch(() => null);
+    // the third row of the column grid — any row works, it just has to differ from 'Series';
+    // a click that lands before the grid's first paint is dropped, so retry while the popup is open
+    for (let i = 0; i < 3; i++) {
+      await page.mouse.click(popup!.x + 80, popup!.y + 70);
+      const applied = await page.waitForFunction(() => (window as any).grok.shell.tv.viewers
+        .find((q: any) => q.type === 'Scatter plot').props.markersColumnName !== 'Series',
+        {timeout: 3000}).then(() => true).catch(() => false);
+      if (applied || !await page.locator('.d4-column-selector-backdrop').count()) break;
+    }
     const markers = await page.evaluate(() => {
       const tv = (window as any).grok.shell.tv;
       return tv.viewers.find((q: any) => q.type === 'Scatter plot').props.markersColumnName;

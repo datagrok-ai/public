@@ -328,6 +328,7 @@ async function processDockerImages(
   debug: boolean,
   skipDockerRebuild: boolean = false,
   generatedDirs: string[] = [],
+  skipDockerPush: boolean = false,
 ): Promise<void> {
   for (const dir of referencedImageDirs())
     color.log(`dockerfiles/${dir.name} runs ${dir.image} — nothing to build`);
@@ -368,7 +369,25 @@ async function processDockerImages(
       return null;
     };
 
-    if (rebuildDocker) {
+    if (skipDockerPush) {
+      // Neither build nor push: the container keeps the image the server already has for it, built from this
+      // Dockerfile folder or an older one. A server that cannot be asked stops the publish, so that no container is
+      // left without the image it runs.
+      const fallback = await fallbackImage(img, host, devKey, registry, version, contentHash);
+      if (fallback.serverError)
+        throw new Error(`--skip-docker-push: cannot read the server's image for ${img.imageName}: ${fallback.serverError}`);
+      if (fallback.image) {
+        result = fallback;
+        color.warn(`--skip-docker-push: ${img.imageName} keeps ${fallback.image}` +
+          `${fallback.hashMatch === false ? ' (built from an older Dockerfile folder)' : ''}`);
+      } else {
+        // As without the flag: an image already in the registry or on Docker Hub, looked up without pulling.
+        const registryImage = resolveRegistryImage(img.imageName, registryTag, img.imageTag, registry);
+        result = {image: registryImage, fallback: true, requestedVersion: registryTag};
+        color.warn(registryImage ? `--skip-docker-push: ${img.imageName} uses the registry's ${registryImage}` :
+          `--skip-docker-push: no image anywhere for ${img.imageName}; none is built or pushed`);
+      }
+    } else if (rebuildDocker) {
       // Delete old images before rebuilding
       dockerRemove(img.fullLocalName);
       if (registry)
@@ -523,7 +542,7 @@ async function serverPredatesBundleDetection(host: string): Promise<boolean> {
   }
 }
 
-export async function processPackage(debug: boolean, rebuild: boolean, host: string, devKey: string, packageName: any, dropDb: boolean, suffix?: string, hostAlias?: string, registry?: string, rebuildDocker?: boolean, skipDockerRebuild?: boolean) {
+export async function processPackage(debug: boolean, rebuild: boolean, host: string, devKey: string, packageName: any, dropDb: boolean, suffix?: string, hostAlias?: string, registry?: string, rebuildDocker?: boolean, skipDockerRebuild?: boolean, skipDockerPush?: boolean) {
   // Validate server connectivity and dev key
   let timestamps: Indexable = {};
   const url = `${host}/packages/dev/${packageName}`;
@@ -558,12 +577,14 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
 
   // Gather the files
   const localTimestamps: Indexable = {};
-  const files = await walk({
+  // a package's bdd/ suite never runs on the server, and the walk reads only the package's own ignore files, not the
+  // repository root's: without this, its filmed guides (a gigabyte for Bio's demos) and its login token were uploaded
+  const files = (await walk({
     path: '.',
     ignoreFiles: ['.npmignore', '.gitignore', '.grokignore'],
     includeEmpty: false,
     follow: true,
-  });
+  })).filter((f: string) => !f.replace(/\\/g, '/').startsWith('bdd/'));
 
   // A bundled package ships dist/package.js: built by webpack (legacy) or by `grok build`
   // (rspack via @datagrok/build-config, which needs no config file at all).
@@ -655,7 +676,7 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
     if (userInfo)
       dockerVersion = userInfo.login;
   }
-  await processDockerImages(packageName, dockerVersion, registry, devKey, host, rebuildDocker ?? false, zip, localTimestamps, debug, skipDockerRebuild ?? false, generatedDockerDirs);
+  await processDockerImages(packageName, dockerVersion, registry, devKey, host, rebuildDocker ?? false, zip, localTimestamps, debug, skipDockerRebuild ?? false, generatedDockerDirs, skipDockerPush ?? false);
 
   const bundledWithoutMarker = !rebuild && fs.existsSync('dist/package.js') && !fs.existsSync(BUNDLE_MARKER_NAME);
   if (bundledWithoutMarker && await serverPredatesBundleDetection(host)) {
@@ -826,7 +847,7 @@ async function publishPackage(args: PublishArgs) {
           args.suffix = stdout.toString().substring(0, 8);
       });
       await utils.delay(100);
-      code = await processPackage(!args.release, Boolean(args.rebuild), url, key, packageName, args.dropDb ?? false, args.suffix, host, registry, args['rebuild-docker'], args['skip-docker-rebuild']);
+      code = await processPackage(!args.release, Boolean(args.rebuild), url, key, packageName, args.dropDb ?? false, args.suffix, host, registry, args['rebuild-docker'], args['skip-docker-rebuild'], args['skip-docker-push']);
     } catch (error) {
       console.error(error);
       code = 1;
@@ -846,6 +867,7 @@ interface PublishArgs {
   rebuild?: boolean,
   ['rebuild-docker']?: boolean,
   ['skip-docker-rebuild']?: boolean,
+  ['skip-docker-push']?: boolean,
   debug?: boolean,
   release?: boolean,
   key?: string,

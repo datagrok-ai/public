@@ -2,23 +2,24 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 import {BehaviorSubject} from 'rxjs';
-import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
-import {richFunctionViewReport} from '@datagrok-libraries/compute-utils/shared-utils/export';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
-import {canUseResults, disposeViewers, getViewers} from '../../utils';
+import {canUseResults} from '../../utils';
 import {saveCallToProject, DfExportEntry} from '../../project-export';
+import {downloadFile} from '../../call-export';
+import {callExports, exportCall} from '../../run-exports';
+
+const PROJECT_EXPORT = 'project';
 
 interface ExportItem {
+  id: string,
   name: string,
   handler: (arg?: any) => void,
 }
 
 export function useRfvExports(currentCall: Readonly<Vue.Ref<DG.FuncCall>>, deps: {
-  isReportEnabled: Readonly<Vue.Ref<boolean>>,
   hideDefaultExport: () => boolean,
-  customExports: Readonly<Vue.Ref<{name: string, function: string}[]>>,
   autorun: Readonly<Vue.Ref<boolean>>,
   callState: () => FuncCallStateInfo | undefined,
   isOutputOutdated: Readonly<Vue.Ref<boolean | undefined>>,
@@ -30,56 +31,34 @@ export function useRfvExports(currentCall: Readonly<Vue.Ref<DG.FuncCall>>, deps:
 }) {
   const {isOutputOutdated, viewersHook, callMeta, validationState, consistencyState} = deps;
 
-  const reportHandler = async (nqName: string) => {
+  const runExport = async (exportId: string) => {
     try {
-      await DG.Func.byName(nqName).apply({
-        startDownload: true,
-        funcCall: currentCall.value,
-        validationState: validationState.value,
-        consistencyState: consistencyState.value,
+      downloadFile(await exportCall(currentCall.value, exportId, {
+        viewersHook: viewersHook.value,
+        metaState: callMeta.value,
+        validation: validationState.value,
+        consistency: consistencyState.value,
         isOutputOutdated: isOutputOutdated.value,
-      });
+        runError: deps.callState()?.runError,
+        completed: isOutputOutdated.value === false,
+      }));
     } catch (e: any) {
       grok.shell.error(e);
     }
   };
 
-  const exports = Vue.computed(() => {
-    const activeExports: ExportItem[] = [];
-    if (deps.isReportEnabled.value && !deps.hideDefaultExport()) {
-      const name = 'Default Excel';
-      const handler = async () => {
-        try {
-          const viewers = await getViewers(currentCall.value, viewersHook.value, callMeta.value);
-          const [blob] = await richFunctionViewReport(
-            'Excel',
-            currentCall.value.func,
-            currentCall.value,
-            viewers,
-            validationState.value,
-            consistencyState.value,
-          ).finally(() => disposeViewers(viewers));
-          DG.Utils.download(`${currentCall.value.func.nqName} - ${Utils.getStartedOrNull(currentCall.value) ?? 'Not completed'}.xlsx`, blob);
-        } catch (e: any) {
-          grok.shell.error(e);
-        }
-      };
-      activeExports.push({name, handler});
-    }
-    activeExports.push(...deps.customExports.value.filter((x) => x.function && x.name)
-      .map((x) => ({...x, handler: () => reportHandler(x.function)})));
-    activeExports.push({
+  const exports = Vue.computed<ExportItem[]>(() => [
+    ...callExports(currentCall.value.func, deps.hideDefaultExport())
+      .map(({id, name}) => ({id, name, handler: () => runExport(id)})),
+    {
+      id: PROJECT_EXPORT,
       name: 'Save as project...',
       handler: () => saveCallToProject(currentCall.value, deps.collectDfExportEntries()),
-    });
-    return activeExports;
-  });
+    },
+  ]);
 
-  // The Excel report (or a sole export) also gets a direct ribbon icon next to the menu
-  const directExport = Vue.computed(() => {
-    const list = exports.value;
-    return list.find((e) => e.name === 'Default Excel') ?? (list.length === 1 ? list[0] : null);
-  });
+  // The first export of the menu also gets a direct ribbon icon next to the menu
+  const directExport = Vue.computed(() => exports.value.find((e) => e.id !== PROJECT_EXPORT) ?? null);
 
   // On autorun the export icons stay put regardless of isOutputOutdated
   // (no ribbon rebuild/flicker); guard the click so a stale/in-flight run surfaces a shell

@@ -36,7 +36,8 @@ src/runtime/            args, locate (R9 order, item reveal, BDD_RESOLVE_TRACE),
 tool/guide-render.py    steps.json → guide.mp4 / step-NN.png / steps.md / audit.png (+ --gif: guide.gif from the lossless frames,
                         guide-thumb.png of the result, guide-sheet.png; --help: no title, strip, dimming, zoom or Given steps;
                         --demo: 1080p, a wrapped title card, notes over the page, no Given or uncaptioned check, review-sheet.png,
-                        timeline.json; --reel: demo clips cut into one video, with its index)
+                        timeline.json; --tutorial (`@tutorial`): a demo with the pressed element outlined and notes that wait
+                        to be read; --reel: demo clips cut into one video, with its index)
 tool/gen-u2-kinds.mjs   the u2 and EMS manifests → bindings/common/u2-kinds.g.ts (npm run vocab; vocab:check compares)
 tool/snapshot-kinds.mjs the built kind table → tests/fixtures/kinds-before.json (the compat test's reference)
 tool/audit-summary.mjs  a run's report.json (+ BDD_MEMORY_LOG files) → audit findings by rule, feature, scenario; heap per worker
@@ -56,7 +57,8 @@ bindings/tiers/molecules/ opt-in: crux (Chem's Crux sketcher wherever a host ope
                         types detected) — for the suites whose features draw or read molecules, Chem's and the hosts'
 tests/                  node:test via tsx: nouns, compile, project, init, failure, vocabulary (drift, coverage, compat), audit;
                         locate, addressing, u2-state, layout (Chromium over a static page)
-playwright.config.ts    the one config every project runs with (BDD_ROOT → testDir/outputDir/storageState; 4 workers)
+playwright.config.ts    the one config every project runs with (BDD_ROOT → testDir/outputDir/storageState; 4 workers);
+                        a suite run leaves out the films (@guide with @demo or @tutorial) unless BDD_GUIDE or BDD_FILMS=1
 ```
 
 ## The principle
@@ -347,7 +349,8 @@ ruling, 2026-10-06). A feature spends its time on the gestures it tests:
 - **The context panel renders the current object (`grok.shell.o`) and nothing else**
   (`property_panel.dart` on `onCurrentObjectChanged`; `grok.shell.windows.showContextPanel`
   shows it). The setter drops a change to the object already current, one within 2 s of a
-  property edit and one while the object is frozen. An explicit click in a top-level grid or on a
+  property edit and one while the object is frozen (`grok.shell.o` freezes it for a second, or until the next pointer
+  press: a sketcher's drawing no longer swallows a header clicked right after it). An explicit click in a top-level grid or on a
   gallery card (`ui.setUpSelection`) releases the property-edit guard, so a cell or a card clicked
   just after expanding a pane still becomes current:
   `the context panel is open` is the Given, `the context panel should show "X"` names the object
@@ -470,6 +473,16 @@ ruling, 2026-10-06). A feature spends its time on the gestures it tests:
   with no place (drawn unmarked, at the element's centre). `guide.ts` logs trusted pointer events
   in the page (capture listeners on every document) and drains them into the stop of the step they
   belong to; `page.mouse` is wrapped only to picture a drag and a wheel turn.
+- A guide's stop (`guide.hop`) is pictured as the pointer sets off for it, before the gesture; the next
+  stop's picture is what the pointer's arrival led to, and the renderer cuts to it on arrival. Played as
+  taken, every menu item lit and opened one stop late and the clicked one never lit (the reel of
+  2026-11-09). A menu's leaf is a stop twice (`hopLeaf`: once the pointer is on it); a run of moves is
+  logged as its last point, so a corner the pointer has to go round is kept with `guide.waypoint`; a
+  native select's list is drawn by the page and pressed on film only (`pressShown`), headless Chromium
+  painting no open popup into its pictures. A locator's click on a row as wide as its panel (`CAPTIONED`:
+  an accordion pane's header, a tree node, a menu item) is aimed at its caption while filming — at its
+  middle it landed 250 px right of "Explore" — and a dialog's close starts with an unfilmed move onto its
+  title (`moveUnfilmed`), so Bio's magnifier lens is not left frozen on film.
 - Package tools that decorate a view on `onViewAdded` (DevTools' Signature Editor icon) attach in
   the package's autostart; a view opened before it runs used to miss them (fixed in DevTools
   2026-09-24 by decorating the open views too).
@@ -669,6 +682,12 @@ Each of these passed green while the thing it named was broken (audits of 2026-0
   the feature's own (the account's choice still comes back at feature end), so a package's suite runs with a new
   sketcher. A feature about one sketcher's own controls (Chem's Ketcher template toolbar) carries `@sketcher-controls`
   and skips, saying why, under an override that names another (`sketcherPin`, platform/steps.ts).
+- `BDD_EXCLUDE_PACKAGES=<names>` (comma-separated) adds the platform's `excludePackages` startup parameter to every
+  document of the shared context (`excludePackages`, src/runtime/harness.ts): those packages never load, a feature
+  gated on one (`the "<name>" package is installed`) skips, and their autostarts and handlers stay out of the others.
+  The handlers include semantic types other packages' features rely on (Chem's floating pane needs Chembl's `molregno`
+  type: without Chembl the context panel stays on the row's molecule), so a full round keeps every package; ChEMBL's
+  own features skip through `the stand has a reachable "…" connection` on a stand that cannot reach it.
 - Every run leaves its JSON report in the project's `test-results/report.json`, with the stand and
   the machine in `config.metadata` (a `--reporter` on the command line gets `json` added; one that
   names `json` itself, `--reporter=list,json`, sends the report to stdout and the old file is gone,

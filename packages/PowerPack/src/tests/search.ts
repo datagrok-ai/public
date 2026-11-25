@@ -1,9 +1,10 @@
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {waitUntil, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 import {initTemplates} from '../search/templates-search';
 import {appSearch, exactAppFuncSearch, functionSearch, helpSearch} from '../search/entity-search';
-import {powerSearch, searchSuggestions} from '../search/power-search';
+import {createFuncTableViewWidget, powerSearch, searchSuggestions} from '../search/power-search';
 
 /** What the menu under the Home search box lists for the text, top to bottom. A test session loads the package
  * again for its test module (js_func.dart, _loadPackage), so the handlers its init registers come twice. */
@@ -78,5 +79,27 @@ category('Search', () => {
     expect(await suggestions('Project[0-9]+'), '');
     expect((await search('Project[0-9]+')).failures.join('; '), '',
       'the paths of the search for "Project[0-9]+" that failed');
+  });
+
+  test('TableResultFillsItsWidget', async () => {
+    const script = DG.Script.create('//name: Table\n//language: javascript\n//output: dataframe df\n' +
+      'df = grok.data.demo.demog(10);');
+    const widget = createFuncTableViewWidget(script, {});
+    const view = grok.shell.newView('table search result', [ui.block([widget], 'power-pack-search-host')]);
+    const height = (selector: string) => widget.querySelector(selector)?.clientHeight;
+    const gridFills = (h: number) => waitUntil(() => widget.clientHeight === h &&
+      height('.d4-grid canvas') !== undefined && height('.d4-grid') === height('.power-pack-widget-content'),
+    () => `widget ${widget.clientHeight} of ${h} px: the grid takes ${height('.d4-grid')} of its ` +
+      `${height('.power-pack-widget-content')} px`);
+    try {
+      await gridFills(window.innerHeight - 200);
+      for (const h of [900, 350]) {
+        widget.style.setProperty('height', `${h}px`, 'important');
+        await gridFills(h);
+      }
+    }
+    finally {
+      view.close();
+    }
   });
 });

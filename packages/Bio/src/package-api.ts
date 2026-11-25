@@ -9,15 +9,6 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace scripts {
   /**
-   * Converts molecules to HELM notation by matching atoms against a monomer library
-   * @param {DG.Column} moleculesColumn
-   *   semType: Molecule
-   */
-  export async function molToHelmConverterPy(moleculesDataframe: DG.DataFrame , moleculesColumn: DG.Column , libraryFile: DG.FileInfo ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Bio:MolToHelmConverterPy', { moleculesDataframe, moleculesColumn, libraryFile });
-  }
-
-  /**
    * Create the model peptides/DNA sequences with peptides data
    * @param {string} alphabet_key
    *   choices: ["Protein", "DNA", "RNA", "Protein_EXT"]

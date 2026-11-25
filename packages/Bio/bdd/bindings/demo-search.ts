@@ -1,5 +1,5 @@
-/* Steps of the search and analysis demo clips (features/demos/15-19): the grid a search viewer keeps inside
-   it, sized off camera, the main grid scrolled to the rows a clip is about, and what a diversity subset spans. */
+// Steps of the search and analysis demo clips (features/demos/15-19): the grid a search viewer keeps inside
+// it, sized off camera, the main grid scrolled to the rows a clip is about, and what a diversity subset spans.
 import type {Page} from '@playwright/test';
 import {Then, When} from '@datagrok-libraries/bdd';
 import type {ElementRef} from '@datagrok-libraries/bdd/runtime';

@@ -433,13 +433,41 @@ for (const h of HARNESSES) {
         for (const a of full) expect(isEntryStale(a), true, `${a.label}: the full entry is still stale`);
       }), {timeout: TIMEOUT});
 
-    test('BD-3: a frame d42 cannot store exactly is refused before upload', async () => withRepo(async (repo) => {
-      // The PR-18 probe's frame — the shape the d42 defect is measured on.
+    test('BD-3: the PR-18 frame passes verify-on-write and reads back exactly', async () => withRepo(async (repo) => {
+      // The PR-18 probe's frame. d42 lost its row-4 zero until the platform fix (measured fixed
+      // 2026-11-16), and the writer refused it. No d42-lossy shape is known now, so the refusal is
+      // driven by a lossy decode in the next test.
       const df = DG.DataFrame.fromColumns([DG.Column.fromBigInt64Array('Big',
         BigInt64Array.from([BigInt(0), BigInt('9007199254740993'), BigInt(1), BigInt(-2), BigInt(0)]))]);
       df.col('Big')!.set(0, null);
-      const e = await thrown(repo.writeSnapshot(df, new Date().toISOString()));
+      const written = await repo.writeSnapshot(df, new Date().toISOString());
+      try {
+        expect(snapshotDiff(df, await repo.readSource(written.source)), null, 'the stored frame is the written one');
+      } finally {
+        await repo.deleteSnapshot(written.source);
+      }
+    }), {timeout: TIMEOUT});
+
+    test('BD-3: a frame whose d42 decode differs is refused before upload', async () => withRepo(async (repo) => {
+      // The writer's own wiring (decode, compare, throw), driven with a decode that drops one cell —
+      // the loss PR-18 measured before the platform fix.
+      const df = DG.DataFrame.fromColumns([DG.Column.fromFloat64Array('X', Float64Array.from([0, 1, 2]))]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const dfClass = DG.DataFrame as any;
+      const decode = dfClass.fromByteArray;
+      dfClass.fromByteArray = (bytes: Uint8Array): DG.DataFrame => {
+        const back = decode.call(DG.DataFrame, bytes) as DG.DataFrame;
+        back.col('X')!.set(2, null);
+        return back;
+      };
+      let e: unknown;
+      try {
+        e = await thrown(repo.writeSnapshot(df, new Date().toISOString()));
+      } finally {
+        dfClass.fromByteArray = decode;
+      }
       expect(e instanceof SnapshotFidelityError, true, `expected SnapshotFidelityError, got ${e}`);
+      expect((e as SnapshotFidelityError).detail, '\'X\' row 3: 2.00 vs missing', 'the refusal names the lost cell');
     }), {timeout: TIMEOUT});
 
     // ems-modification decision 2: the time the results changed, not the time they were recomputed.
@@ -837,6 +865,26 @@ category('NCA storage: write-failure classification', () => {
     expect(isConflict(new Error('Run 409')), false, 'a 409 in a label is not a conflict');
     expect(isConflict(new DG.DomainVersionConflictError('x', 409, {error: 'version-conflict'})), true);
     expect(isConflict(domain(409, 'version-conflict')), true, 'a transaction op conflict');
+  });
+});
+
+// BD-3: the snapshot writer refuses when snapshotDiff finds a difference between the frame and its
+// decoded d42 bytes. Pure: the frame the platform used to return for the PR-18 shape.
+category('NCA storage: snapshot fidelity', () => {
+  test('BD-3: snapshotDiff names a lost cell, and the refusal message carries it', async () => {
+    const big = (v: Array<bigint | null>): DG.DataFrame => {
+      const df = DG.DataFrame.fromColumns([DG.Column.fromBigInt64Array('Big',
+        BigInt64Array.from(v.map((x) => x ?? BigInt(0))))]);
+      v.forEach((x, i) => {if (x === null) df.col('Big')!.set(i, null);});
+      return df;
+    };
+    const written = big([null, BigInt('9007199254740993'), BigInt(1), BigInt(-2), BigInt(0)]);
+    const decoded = big([null, BigInt('9007199254740993'), BigInt(1), BigInt(-2), null]);
+    const diff = snapshotDiff(written, decoded);
+    expect(diff, '\'Big\' row 5: 0 vs missing', 'the lost zero is named by column and 1-based row');
+    expect(snapshotDiff(written, big([null, BigInt('9007199254740993'), BigInt(1), BigInt(-2), BigInt(0)])), null,
+      'an exact copy has no difference');
+    expect(new SnapshotFidelityError(diff!).message.includes(diff!), true, 'the refusal names the difference');
   });
 });
 

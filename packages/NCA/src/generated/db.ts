@@ -115,6 +115,7 @@ export interface AnalysisRow {
   label: string;
   engine_version?: string;
   results_basis?: string;
+  derived_basis?: string;
   has_cache?: boolean;
   tier_n_subjects?: number;
   tier_n_compounds?: number;
@@ -167,6 +168,7 @@ export interface AnalysisInsert {
   label: string;
   engine_version?: string;
   results_basis?: string;
+  derived_basis?: string;
   has_cache?: boolean;
   tier_n_subjects?: number;
   tier_n_compounds?: number;
@@ -214,14 +216,15 @@ export interface AnalysisInsert {
 }
 
 export type AnalysisColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'study_id' | 'label' |
-  'engine_version' | 'results_basis' | 'has_cache' | 'tier_n_subjects' | 'tier_n_compounds' | 'tier_route' |
-  'tier_dose' | 'tier_status' | 'tier_flag_summary' | 'results_computed_at' | 'results_snapshot_hash' |
-  'group_keys' | 'row_count' | 'source_kind' | 'source_file' | 'source_ref' | 'source_sig_kind' | 'source_mtime' |
-  'source_hash' | 'source_computed_at' | 'recipe' | 'recipe_version' | 'is_sparse' | 'sparse_sampling_type' |
-  'auc_method' | 'blq_pre_first' | 'blq_embedded' | 'blq_after_last' | 'blq_consecutive' | 'confirmed_fingerprint' |
-  'confirmed_at' | 'confirmed_recipe' | 'stage' | 'stage_pending' | 'stage_not_applicable' | 'origin_kind' |
-  'origin_label' | 'origin_container_id' | 'pipeline_run' | 'pipeline_partition' | 'pipeline_recipe_hash' |
-  'pipeline_recipe_hash_version' | 'pipeline_supersedes' | 'pipeline_flag_count' | 'moved_from_label' | 'updated_at';
+  'engine_version' | 'results_basis' | 'derived_basis' | 'has_cache' | 'tier_n_subjects' | 'tier_n_compounds' |
+  'tier_route' | 'tier_dose' | 'tier_status' | 'tier_flag_summary' | 'results_computed_at' |
+  'results_snapshot_hash' | 'group_keys' | 'row_count' | 'source_kind' | 'source_file' | 'source_ref' |
+  'source_sig_kind' | 'source_mtime' | 'source_hash' | 'source_computed_at' | 'recipe' | 'recipe_version' |
+  'is_sparse' | 'sparse_sampling_type' | 'auc_method' | 'blq_pre_first' | 'blq_embedded' | 'blq_after_last' |
+  'blq_consecutive' | 'confirmed_fingerprint' | 'confirmed_at' | 'confirmed_recipe' | 'stage' | 'stage_pending' |
+  'stage_not_applicable' | 'origin_kind' | 'origin_label' | 'origin_container_id' | 'pipeline_run' |
+  'pipeline_partition' | 'pipeline_recipe_hash' | 'pipeline_recipe_hash_version' | 'pipeline_supersedes' |
+  'pipeline_flag_count' | 'moved_from_label' | 'updated_at';
 
 /** Expand keys of `nca.analysis` → fields each adds to the row (consumed by query()/builder). */
 export type AnalysisExpand = {
@@ -378,9 +381,9 @@ export type AnalysisResultColumn = 'id' | 'version' | 'created_on' | 'updated_on
 /** Expand keys of `nca.analysis_result` → fields each adds to the row (consumed by query()/builder). */
 export type AnalysisResultExpand = {
   'analysis_id': {'analysis_id.study_id'?: string; 'analysis_id.label'?: string;
-    'analysis_id.engine_version'?: string; 'analysis_id.results_basis'?: string; 'analysis_id.has_cache'?: boolean;
-    'analysis_id.tier_n_subjects'?: number; 'analysis_id.tier_n_compounds'?: number;
-    'analysis_id.tier_route'?: string; 'analysis_id.tier_dose'?: string;
+    'analysis_id.engine_version'?: string; 'analysis_id.results_basis'?: string;
+    'analysis_id.derived_basis'?: string; 'analysis_id.has_cache'?: boolean; 'analysis_id.tier_n_subjects'?: number;
+    'analysis_id.tier_n_compounds'?: number; 'analysis_id.tier_route'?: string; 'analysis_id.tier_dose'?: string;
     'analysis_id.tier_status'?: AnalysisTierStatus; 'analysis_id.tier_flag_summary'?: string;
     'analysis_id.results_computed_at'?: Dayjs; 'analysis_id.results_snapshot_hash'?: string;
     'analysis_id.group_keys'?: string[]; 'analysis_id.row_count'?: number;
@@ -441,9 +444,9 @@ export type LzOverrideColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 
 /** Expand keys of `nca.lz_override` → fields each adds to the row (consumed by query()/builder). */
 export type LzOverrideExpand = {
   'analysis_id': {'analysis_id.study_id'?: string; 'analysis_id.label'?: string;
-    'analysis_id.engine_version'?: string; 'analysis_id.results_basis'?: string; 'analysis_id.has_cache'?: boolean;
-    'analysis_id.tier_n_subjects'?: number; 'analysis_id.tier_n_compounds'?: number;
-    'analysis_id.tier_route'?: string; 'analysis_id.tier_dose'?: string;
+    'analysis_id.engine_version'?: string; 'analysis_id.results_basis'?: string;
+    'analysis_id.derived_basis'?: string; 'analysis_id.has_cache'?: boolean; 'analysis_id.tier_n_subjects'?: number;
+    'analysis_id.tier_n_compounds'?: number; 'analysis_id.tier_route'?: string; 'analysis_id.tier_dose'?: string;
     'analysis_id.tier_status'?: AnalysisTierStatus; 'analysis_id.tier_flag_summary'?: string;
     'analysis_id.results_computed_at'?: Dayjs; 'analysis_id.results_snapshot_hash'?: string;
     'analysis_id.group_keys'?: string[]; 'analysis_id.row_count'?: number;
@@ -512,9 +515,9 @@ export type ReviewDecisionColumn = 'id' | 'version' | 'created_on' | 'updated_on
 /** Expand keys of `nca.review_decision` → fields each adds to the row (consumed by query()/builder). */
 export type ReviewDecisionExpand = {
   'analysis_id': {'analysis_id.study_id'?: string; 'analysis_id.label'?: string;
-    'analysis_id.engine_version'?: string; 'analysis_id.results_basis'?: string; 'analysis_id.has_cache'?: boolean;
-    'analysis_id.tier_n_subjects'?: number; 'analysis_id.tier_n_compounds'?: number;
-    'analysis_id.tier_route'?: string; 'analysis_id.tier_dose'?: string;
+    'analysis_id.engine_version'?: string; 'analysis_id.results_basis'?: string;
+    'analysis_id.derived_basis'?: string; 'analysis_id.has_cache'?: boolean; 'analysis_id.tier_n_subjects'?: number;
+    'analysis_id.tier_n_compounds'?: number; 'analysis_id.tier_route'?: string; 'analysis_id.tier_dose'?: string;
     'analysis_id.tier_status'?: AnalysisTierStatus; 'analysis_id.tier_flag_summary'?: string;
     'analysis_id.results_computed_at'?: Dayjs; 'analysis_id.results_snapshot_hash'?: string;
     'analysis_id.group_keys'?: string[]; 'analysis_id.row_count'?: number;
@@ -572,9 +575,9 @@ export type PipelineFlagColumn = 'id' | 'version' | 'created_on' | 'updated_on' 
 /** Expand keys of `nca.pipeline_flag` → fields each adds to the row (consumed by query()/builder). */
 export type PipelineFlagExpand = {
   'analysis_id': {'analysis_id.study_id'?: string; 'analysis_id.label'?: string;
-    'analysis_id.engine_version'?: string; 'analysis_id.results_basis'?: string; 'analysis_id.has_cache'?: boolean;
-    'analysis_id.tier_n_subjects'?: number; 'analysis_id.tier_n_compounds'?: number;
-    'analysis_id.tier_route'?: string; 'analysis_id.tier_dose'?: string;
+    'analysis_id.engine_version'?: string; 'analysis_id.results_basis'?: string;
+    'analysis_id.derived_basis'?: string; 'analysis_id.has_cache'?: boolean; 'analysis_id.tier_n_subjects'?: number;
+    'analysis_id.tier_n_compounds'?: number; 'analysis_id.tier_route'?: string; 'analysis_id.tier_dose'?: string;
     'analysis_id.tier_status'?: AnalysisTierStatus; 'analysis_id.tier_flag_summary'?: string;
     'analysis_id.results_computed_at'?: Dayjs; 'analysis_id.results_snapshot_hash'?: string;
     'analysis_id.group_keys'?: string[]; 'analysis_id.row_count'?: number;

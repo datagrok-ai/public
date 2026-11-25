@@ -9,7 +9,7 @@
 TEST_SEM_TYPE = 'test';
 class UsageAnalysisPackageDetectors extends DG.Package {
     //meta.role: semTypeDetector
-    //input: column col
+    //input: column col {type: string}
     //output: string semType 
     //meta.skipTest: test
     detectTest(col) {

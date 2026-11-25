@@ -10,6 +10,7 @@ import {TestsView} from './tests';
 import {BenchmarksView} from './benchmarks';
 import {ManualTestsView} from './manual';
 import {ReleaseTicketsView} from './tickets';
+import {GitHubIssuesClient} from '../github/issues-client';
 import {ReleaseContext, ENV_CHOICES, DEFAULT_ENV, DEFAULT_BRANCH, ALL_BRANCHES, fetchTestBranches,
   defaultBranchForEnv} from './data';
 
@@ -19,13 +20,14 @@ import {ReleaseContext, ENV_CHOICES, DEFAULT_ENV, DEFAULT_BRANCH, ALL_BRANCHES, 
 export class ReleaseHandler {
   public static NAME = 'Release';
   public view: DG.MultiView;
-  private ctx = new ReleaseContext();
+  private ctx: ReleaseContext;
   private envInput: DG.InputBase;
   private branchInput: DG.InputBase;
   private branches: string[] = [];
   private refreshIcon: HTMLElement;
 
-  constructor(path?: string) {
+  constructor(githubIssues: GitHubIssuesClient, path?: string) {
+    this.ctx = new ReleaseContext(githubIssues);
     this.view = new DG.MultiView({viewFactories: {}});
     this.view.name = ReleaseHandler.NAME;
     this.view.box = true;
@@ -48,7 +50,7 @@ export class ReleaseHandler {
         this.selectEnv(this.ctx.env.value);
       })
       .catch((e) => grok.log.warning(`Release: could not list test branches: ${e}`));
-    this.refreshIcon = ui.iconFA('sync-alt', () => this.ctx.refresh.next(), 'Refresh the current data');
+    this.refreshIcon = ui.iconFA('sync-alt', () => this.ctx.reload(), 'Refresh the current data');
     this.refreshIcon.classList.add('ua-release-ribbon-refresh');
 
     const overview = new ReleaseOverviewView(this.ctx);

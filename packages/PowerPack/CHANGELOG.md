@@ -2,6 +2,24 @@
 
 ## v.next
 
+* [public#4668](https://github.com/datagrok-ai/public/issues/4668): Spotlight: Fixed the Recent and Shared with me lists failing with "Cannot read properties of null" when they held an entity the platform cannot show, such as a saved filter; such entities are left out
+* core#1765: Detectors: Declared the column types the semantic type detectors check, so the platform no longer calls them for other columns
+* Spotlight: Packages can add tabs: a function with `meta.role: spotlightTab` that returns a widget becomes a tab after the built-in ones, named by its friendly name; `meta.spotlightDefault: true` opens the Spotlight on it the first time it appears, after which the tab the user last picked is kept. What a tab finds goes to the preview below the Spotlight, as the Workspace tab's previews do, through `PowerPack:showSpotlightPreview(content, title)`
+* [public#4640](https://github.com/datagrok-ai/public/issues/4640): Spotlight: Fixed the Interactive Tutorials links doing nothing; a new user's empty workspace shows the getting-started columns across the full width; headers sit further from their items than the items from each other; empty tabs' messages line up with the tab names
+* Search: The home page's search moves into a row that is there anyway, leaving more room below: the tab strip while Home is the only tab, otherwise the view's ribbon; the page has less padding on top
+* Spotlight: The home page's Spotlight widget is as tall as its tabs, longer tabs scroll
+* Spotlight: Added the `showTipOfTheDay` setting to hide the tip of the day on the home page
+* Search: Fixed Ctrl+Space not showing suggestions in an empty search box or after reopening the home page; the "Use Ctrl+Space" hint shows only once you type
+* Search: Fixed a table result taking only the top of its widget on the home page; it fills the widget and follows its size
+* Search: Fixed missing PDB structure images: RCSB moved them to `cdn.rcsb.org/images/structures/pdb/`
+* [core#1507](https://github.com/datagrok-ai/core/issues/1507): Fixed Down arrow in the Space row's search not moving to the first matching space
+* Spotlight: Fixed notifications staying bold after being clicked, and the Notifications tab showing the oldest notifications instead of the newest
+* Spotlight: A notification's report "Details" link opens the report in the context panel instead of the Reports app
+* [core#1352](https://github.com/datagrok-ai/core/issues/1352): Add New Column: Fixed a bigint column being rejected by functions that take a number, as `${b} * 2` and `Abs(${b})`
+* [core#1507](https://github.com/datagrok-ai/core/issues/1507): Fixed the Space row refusing to move a project into a space that links it
+* [core#1507](https://github.com/datagrok-ai/core/issues/1507): Added `spaceSaveRow` (`meta.role: spaceSaveRow`), which provides u2's Space row to the Save project dialog through `ui.spaceSaveRow()`
+* [core#637](https://github.com/datagrok-ai/core/issues/637): Formula Lines: Removed the Opacity sliders - lines and bands take one RGBA color, regions an RGBA fill, outline and title color; an opacity saved earlier is folded into the color
+* Enrichments: Fixed an enrichment saved for a catalog other than the connection's own (Databricks, Snowflake, SQL Server) being run in the connection's own catalog, where it failed or joined the rows of a table with the same name
 * DB explorer: Added catalogs to Configure Identifiers: on a database that has them (Databricks, Snowflake, SQL Server) the dialog asks for the catalog first - it opens on the connection's own, lists the others with a search, and reads the schemas of the picked catalog alone; the configuration is listed as catalog.schema, and the Explore pane of a query result explores the catalog the result came from
 * DB explorer: Fixed Configure Identifiers showing nothing until the schemas were read, and nothing at all when they could not be: the dialog opens at once and reports the error with a way to retry; a configuration that cannot be loaded says so in its view instead of loading forever; the editor opens on the configurations as the server has them now, not as they were when the page loaded
 * [public#4538](https://github.com/datagrok-ai/public/issues/4538): Add New Column: Fixed the formula `null` being rejected for a column of a chosen type

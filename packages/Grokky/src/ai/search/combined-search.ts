@@ -9,7 +9,7 @@ import {UsageLimiter} from '../usage-limiter';
 import {AIPanel} from '../panel';
 import {runPromptWithLifecycle, RENDERED_EVENT} from '../ui';
 import {AiFeature} from '../../claude/ai-feature';
-import {contentLoggingNotice} from '../../claude/turn-log';
+import {SearchProvider} from '../prompt-suggestions';
 
 interface AISearchFuncInfo {
   func: DG.Func;
@@ -53,8 +53,8 @@ export class CombinedAISearchAssistant {
     return this._instance;
   }
 
-  public async getResultWidget(prompt: string): Promise<DG.Widget | null> {
-    const functionOrder = await this.getRelevantFunctionOrder(prompt);
+  public async getResultWidget(prompt: string, provider?: SearchProvider): Promise<DG.Widget | null> {
+    const functionOrder = provider && this.functions[provider] ? [provider] : await this.getRelevantFunctionOrder(prompt);
     console.log(`Function order for execution: ${functionOrder.join(', ')}`);
     const remainingFunctions = Object.keys(this.functions).filter((fn) => !functionOrder.includes(fn));
     let moreBtn: HTMLButtonElement | null = null;
@@ -107,14 +107,13 @@ export class CombinedAISearchAssistant {
     tabcontrol.root.style.minHeight = '300px';
     // d4 TabControl auto-hides the header stripe when only one pane is added; force it visible so tabs always show
     tabcontrol.header.style.display = 'flex';
-    const notice = contentLoggingNotice();
-    return DG.Widget.fromRoot(notice ? ui.divV([tabcontrol.root, notice]) : tabcontrol.root);
+    return DG.Widget.fromRoot(tabcontrol.root);
   }
 
   private buildFunctionTabContent(funcInfo: AISearchFuncInfo, prompt: string): HTMLElement {
     const host = ui.divV([], 'grokky-ai-search-tab-host');
     const chat = new AIPanel(`search-${funcInfo.func.name}`, grok.shell.v, {inline: true, feature: SEARCH_FEATURES[funcInfo.func.name]});
-    chat.onRunRequest.subscribe((a) => runPromptWithLifecycle(chat, a.currentPrompt.prompt, grok.shell.v, 'search'));
+    chat.onRunRequest.subscribe((a) => runPromptWithLifecycle(chat, a.currentPrompt.prompt, grok.shell.v, 'search', undefined, a.currentPrompt.isAnswer));
 
     host.appendChild(ui.wait(async () => {
       const client = ClaudeRuntimeClient.getInstance();
@@ -162,7 +161,7 @@ export class CombinedAISearchAssistant {
     this.lastUiprompt = '';
   }
 
-  public async searchUI(prompt: string) {
+  public async searchUI(prompt: string, provider?: SearchProvider) {
     if (this.lastUiprompt === prompt)
       return;
     this.lastUiprompt = prompt;
@@ -181,7 +180,7 @@ export class CombinedAISearchAssistant {
     const widgetDiv = ui.divV([loader], {style: {marginTop: '8px', marginBottom: '8px', alignItems: 'center', justifyContent: 'center', height: '100px'}});
     searchResultHost.prepend(widgetDiv);
     try {
-      const widgetResult = await this.getResultWidget(prompt);
+      const widgetResult = await this.getResultWidget(prompt, provider);
       if (!widgetResult)
         throw new Error('No result widget generated.');
       loader.remove();

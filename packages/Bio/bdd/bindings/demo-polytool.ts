@@ -1,4 +1,4 @@
-/* Steps of the PolyTool demo clip (features/demos/19): a click on a monomer of the HELM drawn in a dialog. */
+// Steps of the PolyTool demo clip (features/demos/19): a click on a monomer of the HELM drawn in a dialog.
 import type {Page} from '@playwright/test';
 import {When} from '@datagrok-libraries/bdd';
 import {expect} from '@datagrok-libraries/bdd/runtime';

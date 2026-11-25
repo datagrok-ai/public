@@ -1,0 +1,21 @@
+name,kind,reaction,product
+Suzuki coupling,reaction,"CC(=O)c1ccc(Br)cc1.OB(O)c1ccccc1>[Pd].O=C([O-])[O-].[K+].[K+].C1COCCO1.O>CC(=O)c1ccc(-c2ccccc2)cc1 |f:3.4.5|",CC(=O)c1ccc(-c2ccccc2)cc1
+Amide coupling with HATU,reaction,"CC(C)(C)OC(=O)N1CCNCC1.O=C(O)C1CC1>CN(C)C(On1nnc2cccnc21)=[N+](C)C.F[P-](F)(F)(F)(F)F.CCN(C(C)C)C(C)C.CN(C)C=O>CC(C)(C)OC(=O)N1CCN(C(=O)C2CC2)CC1 |f:2.3|",CC(C)(C)OC(=O)N1CCN(C(=O)C2CC2)CC1
+Reductive amination,reaction,"O=Cc1ccccc1.Nc1ccccc1>CC(=O)O[BH-](OC(C)=O)OC(C)=O.[Na+].ClCCCl>c1ccc(CNc2ccccc2)cc1 |f:2.3|",c1ccc(CNc2ccccc2)cc1
+Buchwald-Hartwig amination,reaction,"Cc1ccc(Br)cc1.C1COCCN1>[Pd].CC(C)(C)[O-].[Na+].Cc1ccccc1>Cc1ccc(N2CCOCC2)cc1 |f:3.4|",Cc1ccc(N2CCOCC2)cc1
+Williamson ether synthesis,reaction,"Oc1ccccc1.BrCc1ccccc1>O=C([O-])[O-].[K+].[K+].CC(C)=O>c1ccc(COc2ccccc2)cc1 |f:2.3.4|",c1ccc(COc2ccccc2)cc1
+Aspirin by acetylation,reaction,OC(=O)c1ccccc1O.CC(=O)OC(C)=O>OS(=O)(=O)O>CC(=O)Oc1ccccc1C(=O)O.CC(=O)O,CC(=O)Oc1ccccc1C(=O)O
+Mitsunobu esterification,reaction,C[C@H](O)CCc1ccccc1.OC(=O)c1ccccc1>c1ccc(cc1)P(c1ccccc1)c1ccccc1.CC(C)OC(=O)N=NC(=O)OC(C)C>C[C@@H](OC(=O)c1ccccc1)CCc1ccccc1.O,C[C@@H](OC(=O)c1ccccc1)CCc1ccccc1
+Diels-Alder reaction,reaction,[CH2:1]=[C:2]([CH3:7])[CH:3]=[CH2:4].[CH2:5]=[CH:6][C:8](=[O:9])[CH3:10]>>[CH2:1]1[C:2]([CH3:7])=[CH:3][CH2:4][CH2:5][CH:6]1[C:8](=[O:9])[CH3:10],CC1=CCCC(C(C)=O)C1
+Ugi reaction,reaction,O=Cc1ccccc1.Nc1ccccc1.CC(O)=O.CC(C)(C)[N+]#[C-]>CO>CC(=O)N(c1ccccc1)C(C(=O)NC(C)(C)C)c1ccccc1.O,CC(=O)N(c1ccccc1)C(C(=O)NC(C)(C)C)c1ccccc1
+Paracetamol from phenol,route,Oc1ccccc1.O=[N+]([O-])O>O>O=[N+]([O-])c1ccc(O)cc1--**--O=[N+]([O-])c1ccc(O)cc1>[H][H].[Pd].CCO>Nc1ccc(O)cc1--**--Nc1ccc(O)cc1.CC(=O)OC(C)=O>O>CC(=O)Nc1ccc(O)cc1,CC(=O)Nc1ccc(O)cc1
+Aspirin from phenol,route,Oc1ccccc1.O=C=O>[Na+].[OH-]>O=C(O)c1ccccc1O--**--O=C(O)c1ccccc1O.CC(=O)OC(C)=O>OS(=O)(=O)O>CC(=O)Oc1ccccc1C(=O)O,CC(=O)Oc1ccccc1C(=O)O
+Sulfanilamide from benzene,route,c1ccccc1.O=[N+]([O-])O>O=S(=O)(O)O>O=[N+]([O-])c1ccccc1--**--O=[N+]([O-])c1ccccc1>[Sn].Cl>Nc1ccccc1--**--Nc1ccccc1.CC(=O)OC(C)=O>>CC(=O)Nc1ccccc1--**--CC(=O)Nc1ccccc1.O=S(=O)(O)Cl>>CC(=O)Nc1ccc(S(=O)(=O)Cl)cc1--**--CC(=O)Nc1ccc(S(=O)(=O)Cl)cc1.N>>CC(=O)Nc1ccc(S(N)(=O)=O)cc1--**--CC(=O)Nc1ccc(S(N)(=O)=O)cc1>Cl.O>Nc1ccc(S(N)(=O)=O)cc1,Nc1ccc(S(N)(=O)=O)cc1
+Imatinib,route,CC(=O)c1cccnc1.COC(OC)N(C)C>>CN(C)/C=C/C(=O)c1cccnc1--**--Cc1ccc([N+](=O)[O-])cc1N.N#CN>O=[N+]([O-])O.CCO>Cc1ccc([N+](=O)[O-])cc1NC(=N)N--**--CN(C)/C=C/C(=O)c1cccnc1.Cc1ccc([N+](=O)[O-])cc1NC(=N)N>[Na+].[OH-].CC(C)O>Cc1ccc([N+](=O)[O-])cc1Nc1nccc(-c2cccnc2)n1--**--Cc1ccc([N+](=O)[O-])cc1Nc1nccc(-c2cccnc2)n1>[H][H].[Pd].C1CCOC1>Cc1ccc(N)cc1Nc1nccc(-c2cccnc2)n1--**--CN1CCN(Cc2ccc(C(=O)Cl)cc2)CC1.Cc1ccc(N)cc1Nc1nccc(-c2cccnc2)n1>c1ccncc1>Cc1ccc(NC(=O)c2ccc(CN3CCN(C)CC3)cc2)cc1Nc1nccc(-c2cccnc2)n1,Cc1ccc(NC(=O)c2ccc(CN3CCN(C)CC3)cc2)cc1Nc1nccc(-c2cccnc2)n1
+Suzuki coupling,template,"[c:1]-B(O)O.[Cl,Br,I][c:2]>>[c:1]-[c:2]",
+Amide coupling,template,"[NX3;!$(N[C]=[S,O,N]);$(N[#6,S]);!$(N[#7]);H1,H2:1].[#6:4][C:5](=[O:6])[OH,O-]>>[N:1][C:5](=[O:6])[#6:4]",
+Buchwald-Hartwig amination,template,"[Cl,Br,I][c;$(c1:[c,n]:[c,n]:[c,n]:[c,n]:[c,n]:1):1].[N;$(NC)&!$(N=*)&!$([N-])&!$(N#*)&!$([ND3])&!$([ND4])&!$([N][N])&!$(N[c,O])&!$(N[C,S]=[S,O,N]),H2&$(Nc1:[c,n]:[c,n]:[c,n]:[c,n]:[c,n]:1):2]>>[c:1][N:2]",
+Williamson ether synthesis,template,"[#6;!$(C=[O,S,N]):1][OH,SH:2].[Cl,Br,I][#6;!$(C=[N,O,S]):3]>>[#6:1][O,S:2][#6:3]",
+Reductive amination,template,"[NX3;!$(N[C,S]=[S,O,N]);$(N[#6]);!$(N[#7]);H1,H2:1].[#6:3][CX3;!$(C[!#6]);H0,H1:4]=[O]>>[N:1][C:4][#6:3]",
+CuAAC triazole cycloaddition,template,[#6:1]-[N:5]=[N+:6]=[N-:7].[#6:2]-[C:3]#[CH:4]>>[#6:2][cH0+0:3]1[cH1+0:4][nH0+0:5]([#6:1])[nH0+0:6][nH0+0:7]1,
+Fischer indole synthesis,template,"[NH1;$(N-c1ccccc1):1]([NH2])[c:5][cH1:4].[C;$(C([#6])[#6]):2](=[OD1])-[CH2;$(C([#6])[#6]);!$(C(C=O)C=O):3]>>[c:5]1[nH:1][c:2][c:3][c:4]1",

@@ -1,8 +1,8 @@
 import {join, sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {randomUUID} from 'node:crypto';
-import type {Browser, Page, PlaywrightTestArgs, PlaywrightTestOptions, PlaywrightWorkerArgs, PlaywrightWorkerOptions,
-  TestType} from '@playwright/test';
+import type {Browser, BrowserContext, Page, PlaywrightTestArgs, PlaywrightTestOptions, PlaywrightWorkerArgs,
+  PlaywrightWorkerOptions, TestType} from '@playwright/test';
 import {leave} from './args.js';
 import {auditAfterStep, type AuditOutcome, auditScenario, leakCheck, type LoggedError, markLeakBaseline, settleAudit,
   shouldAudit, startScenarioAudit, strictU2, trackLeaks} from './audit.js';
@@ -312,6 +312,34 @@ export function takeLoggedErrors(page: Page): LoggedError[] {
 let shared: Page | undefined;
 let lastTime = 0;
 
+/** `BDD_EXCLUDE_PACKAGES=<names>` (comma-separated) keeps those packages out of every shell the run loads,
+ * through the platform's `excludePackages` startup parameter (`StartupOptions`, help/develop/advanced/url-parameters.md):
+ * each document of the context has it in its address before the client starts, whichever step loads the
+ * page. A feature that needs such a package meets its `the "<name>" package is installed` gate and skips; the
+ * others run without the package's autostart and handlers — a stand that cannot reach a package's database
+ * (ChEMBL from a host-run grok_connect) stays out of features that never asked for it. */
+const EXCLUDED_PACKAGES = (process.env.BDD_EXCLUDE_PACKAGES ?? '').split(/[\s,]+/).filter(Boolean);
+
+async function excludePackages(context: BrowserContext): Promise<BrowserContext> {
+  if (EXCLUDED_PACKAGES.length > 0) {
+    await context.addInitScript((names: string) => {
+      try {
+        if (window !== window.top || !location.protocol.startsWith('http'))
+          return;
+        const url = new URL(location.href);
+        if (url.searchParams.has('excludePackages'))
+          return;
+        url.searchParams.set('excludePackages', names);
+        history.replaceState(history.state, '', url.href);
+      }
+      catch (_) {
+        // a document whose address cannot be rewritten loads with every package
+      }
+    }, EXCLUDED_PACKAGES.join(','));
+  }
+  return context;
+}
+
 /** A page is replaced after `BDD_PAGE_MAX_FEATURES` features or once its renderer holds more than
  * `BDD_PAGE_MAX_MB`: what it keeps meanwhile and what a new one costs are in CLAUDE.md. */
 const PAGE_MAX_FEATURES = Number(process.env.BDD_PAGE_MAX_FEATURES ?? 25);
@@ -447,7 +475,7 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
         }
         if (shared?.isClosed())
           shared = await shared.context().newPage();
-        shared ??= await (await browser.newContext()).newPage();
+        shared ??= await (await excludePackages(await browser.newContext())).newPage();
         watchErrors(shared);
         watchPictures(shared);
         await strictU2(shared);
@@ -569,7 +597,14 @@ export async function resetShell(page: Page): Promise<void> {
       (script.querySelector('.tutorials-root-header > button') as HTMLElement | null)?.click();
     if (w.grok.shell.windows.presentationMode)
       w.grok.shell.windows.presentationMode = false;
+    // the sidebar's Dashboards panel is docked, not a view: left open, it lists the open project with a SAVE button of
+    // its own beside every later table view's ribbon Save
+    if (w.grok.shell.windows.showProjects)
+      w.grok.shell.windows.showProjects = false;
     w.grok.shell.closeAll();
+    // closeAll from JS keeps Home but never reopens it, so a scenario that closed it (Close others) left none
+    if (!Array.from(w.grok.shell.views as Iterable<any>).some((v: any) => v.type === 'datagrok'))
+      w.grok.shell.addView(w.DG.View.createByType('datagrok'));
     // a context pane's expanded state is kept per accordion in localStorage (accordion.dart): what one
     // feature expanded would build, server-backed or not, in every later feature on the page; a gallery's
     // view mode too (data_source_card_view.dart), so a feature that switched the Scripts view to cards left

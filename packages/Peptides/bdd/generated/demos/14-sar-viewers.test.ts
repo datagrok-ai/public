@@ -12,7 +12,6 @@ import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {clusterStatistics} from '../../bindings/clusters.js';
-import {headerStartsAt} from '../../bindings/demo-sar.js';
 import {peptidesInitialized, sarReady} from '../../bindings/steps.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, doubleClickOn, enterInto, isExpanded, pressKey, selectIn, shouldBe, typeAtCaret, typeInto, videoSays} from '@datagrok-libraries/bdd/bindings/common/steps';
@@ -21,10 +20,10 @@ import {onlyOfSelected} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {listenCustom} from '@datagrok-libraries/bdd/bindings/platform/events';
 import {balloonsClosed, browsePanelClosed, browsePanelOpen, contextPanelClosed, simpleModeOff, toolboxPaneHidden, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {clickArea, hoverArea, noErrors, painted, pickFromAreaContextMenu, readingIs, readingReads, viewerAdded} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {gridColumnWidth, gridShowsColumns, viewersSettled} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
+import {gridColumnWidth, gridShowsColumns, headerStartsAt, viewersSettled} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {el, feature} from '@datagrok-libraries/bdd/runtime';
 
-test.describe("Bioinformatics · Peptide SAR", () => {
+test.describe("6 · Antibodies and proteins · SAR viewers", () => {
   const session = feature(test, "features/demos/14-sar-viewers.feature", import.meta.url);
   test("Clusters, residues and cliffs in more viewers", {tag: ["@guide", "@demo", "@viewport:1920x1080"]}, async ({browser}) => {
     const page = await session.page(browser);
@@ -80,12 +79,14 @@ test.describe("Bioinformatics · Peptide SAR", () => {
     await session.step(66, "Then \"Add Viewer\" dialog should be visible", () => shouldBe(page, el("\"Add Viewer\" dialog"), "visible"));
     await session.step(67, "When user types \"Mutation\" into viewer gallery search in \"Add Viewer\" dialog", () => typeInto(page, "Mutation", el("viewer gallery search in \"Add Viewer\" dialog")));
     await session.step(68, "And user clicks on first \"Sequence Mutation Cliffs\" button in \"Add Viewer\" dialog", () => clickOn(page, el("first \"Sequence Mutation Cliffs\" button in \"Add Viewer\" dialog")));
-    await session.step(69, "Then Sequence Mutation Cliffs viewer should be added to the open tableview", () => viewerAdded(page, "Sequence Mutation Cliffs"));
-    await session.step(70, "When user selects \"8\" in Position input in Sequence Mutation Cliffs viewer", () => selectIn(page, "8", el("Position input in Sequence Mutation Cliffs viewer")));
-    await session.step(71, "Then the \"position\" reading of Sequence Mutation Cliffs viewer should be 8", () => readingIs(page, "position", el("Sequence Mutation Cliffs viewer"), 8));
-    await session.step(72, "And the \"cliff rows\" reading of Sequence Mutation Cliffs viewer should be 9", () => readingIs(page, "cliff rows", el("Sequence Mutation Cliffs viewer"), 9));
-    await session.step(73, "And line chart viewer in Sequence Mutation Cliffs viewer should be painted", () => painted(page, el("line chart viewer in Sequence Mutation Cliffs viewer")));
-    await session.step(74, "When the video says \"Cliffs at one position: W there costs affinity\"", () => videoSays(page, "Cliffs at one position: W there costs affinity"));
-    await session.step(75, "Then no errors should have been logged", () => noErrors(page));
+    await session.step(69, "Then \"Add Viewer\" dialog should be absent", () => shouldBe(page, el("\"Add Viewer\" dialog"), "absent"));
+    await session.step(70, "And Sequence Mutation Cliffs viewer should be added to the open tableview", () => viewerAdded(page, "Sequence Mutation Cliffs"));
+    await session.step(71, "Given the viewers have settled", () => viewersSettled(page));
+    await session.step(72, "When user selects \"8\" in Position input in Sequence Mutation Cliffs viewer", () => selectIn(page, "8", el("Position input in Sequence Mutation Cliffs viewer")));
+    await session.step(73, "Then the \"position\" reading of Sequence Mutation Cliffs viewer should be 8", () => readingIs(page, "position", el("Sequence Mutation Cliffs viewer"), 8));
+    await session.step(74, "And the \"cliff rows\" reading of Sequence Mutation Cliffs viewer should be 9", () => readingIs(page, "cliff rows", el("Sequence Mutation Cliffs viewer"), 9));
+    await session.step(75, "And line chart viewer in Sequence Mutation Cliffs viewer should be painted", () => painted(page, el("line chart viewer in Sequence Mutation Cliffs viewer")));
+    await session.step(76, "When the video says \"Cliffs at one position: W there costs affinity\"", () => videoSays(page, "Cliffs at one position: W there costs affinity"));
+    await session.step(77, "Then no errors should have been logged", () => noErrors(page));
   });
 });

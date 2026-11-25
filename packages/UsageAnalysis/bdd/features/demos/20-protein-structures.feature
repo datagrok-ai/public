@@ -1,5 +1,5 @@
 @guide @demo
-Feature: Bioinformatics · Protein structures
+Feature: 6 · Antibodies and proteins · Protein structures
   A demo clip, one of the Bio showcase (features/demos, filmed with `grok-bdd guide`: the @demo tag leaves
   the set-up and the checks off camera). BiostructureViewer previews structure files with the Mol* engine
   straight from Browse > Files > App Data > BiostructureViewer > samples (a PDB, then an mmCIF), and opens
@@ -7,10 +7,11 @@ Feature: Bioinformatics · Protein structures
   added from the Add Viewer gallery, shows the structure of the current row and follows it. Off camera the
   grid keeps the PDB id, the class and the description, in rows under 40 px: into a taller cell the PDB id
   renderer draws RCSB's picture of the entry, fetched from cdn.rcsb.org, and the clip shows nothing an
-  outside service sends. Nothing is made on the server.
+  outside service sends. A note says what the previews are as the first one opens. Nothing is made on the
+  server.
 
   Scenario: Protein structures in 3D
-    Structure files preview in Mol* straight from Browse, and a 3D viewer follows a table of structures row by row.
+    Structure files preview in 3D from Browse; a viewer follows a table of structures.
 
     Given user is logged in
     And simple mode is off
@@ -20,7 +21,8 @@ Feature: Bioinformatics · Protein structures
     And Files---App-Data tree node inside browse tree is expanded
     And Files---App-Data---BiostructureViewer tree node inside browse tree is expanded
     And Files---App-Data---BiostructureViewer---samples tree node inside browse tree is expanded
-    When user clicks on Files---App-Data---BiostructureViewer---samples---1bdq.pdb tree node inside browse tree
+    When the video says "Structure files preview in 3D, right from Browse"
+    And user clicks on Files---App-Data---BiostructureViewer---samples---1bdq.pdb tree node inside browse tree
     Then the "1bdq.pdb" view should be current
     And "Reset Camera" button should be visible
     When user clicks on Files---App-Data---BiostructureViewer---samples---1RQ9.mmcif tree node inside browse tree

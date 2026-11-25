@@ -137,11 +137,11 @@ category('Workflow stages: controller persistence (S2)', () => {
     // Decide on S1 with the fingerprint of what is on screen (whatever its verdict).
     const fp = ctrl.reviewSnapshot(T, {viable: true}).units.find((u) => u.key === 'S1');
     expect(fp !== undefined, true, 'S1 is a unit');
-    const allFps = new Map<string, string>([['S1', 'fp-S1']]);
+    const allFps = new Map<string, string[]>([['S1', ['fp-S1']]]);
     ctrl.decide('S1', 'exclude', [{code: 'EXC_ERRATIC', text: 'Non-monotonic'}], 'fp-S1');
     expect(ctrl.excludedKeys().has('S1'), true, 'exclude decision feeds the exclusion set');
     expect(ctrl.reconcileDecisions(allFps), 0, 'same fingerprint → kept');
-    expect(ctrl.reconcileDecisions(new Map([['S1', 'changed']])), 1, 'fit changed → auto-reset');
+    expect(ctrl.reconcileDecisions(new Map([['S1', ['changed']]])), 1, 'fit changed → auto-reset');
     expect(ctrl.decisionFor('S1'), null, 'back to To review');
     expect(ctrl.excludedKeys().has('S1'), false, 'a reset decision excludes nothing');
     expect(ctrl.ledgerFor('S1')!.history.length, 1, 'superseded decision kept in history');
@@ -205,7 +205,7 @@ category('Workflow stages: Confirm dry run (F-S3.5 / AD-7)', () => {
     tmp.setLzOverrides(live.getLzOverrides());
     tmp.setReviewLedgers(live.getReviewLedgers());
     tmp.computeAll();
-    return tmp.reconcileDecisions(tmp.reviewSnapshot(T, {viable: true}).fingerprints);
+    return tmp.reconcileDecisions(tmp.reviewSnapshot(T, {viable: true}).accepted);
   };
 
   test('AC-S3.5.1 the dry run predicts exactly the resets the real Confirm makes', async () => {
@@ -215,7 +215,7 @@ category('Workflow stages: Confirm dry run (F-S3.5 / AD-7)', () => {
     const predicted = dryRun(ctrl, df, edited, new AuditLog());
     ctrl.setInputs(df, singleSubjectContract(df), singleSubjectScalars(), edited);
     ctrl.computeAll();
-    const actual = ctrl.reconcileDecisions(ctrl.reviewSnapshot(T, {viable: true}).fingerprints);
+    const actual = ctrl.reconcileDecisions(ctrl.reviewSnapshot(T, {viable: true}).accepted);
     expect(predicted, actual, `predicted ${predicted} = actual ${actual}`);
   });
 

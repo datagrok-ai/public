@@ -50,8 +50,11 @@ export class DBExplorer {
       return Promise.resolve(null);
     // to make sure it is only loaded once
     this._dbLoadingPromise ??= this.loadDbSchema();
+    // a caller that waited for a load that failed gets no schema, as a later one does: with the connection alone it
+    // would query a database that did not answer, and wait for that query to time out too
     return this._dbLoadPromise
-      .then(() => ({schema: {references: this.references, referencedBy: this.referencedBy}, connection: this.connection} as SchemaAndConnection))
+      .then(() => this.loadingFailed ? null :
+        ({schema: {references: this.references, referencedBy: this.referencedBy}, connection: this.connection} as SchemaAndConnection))
       .catch((e) => {
         console.error(e);
         return null;
@@ -87,10 +90,12 @@ export class DBExplorer {
       this.loadingFailed = true;
       // a database the stand cannot reach only means its object handlers are not offered
       console.warn('Failed to load DB schema, Object handlers not registered', e);
+    } finally {
+      if (this.connection)
+        this.objHandlers.forEach((handler) => handler.connectionNqName = this.connection!.nqName); // set for detection in isApplicable
+      // also when the connection is not found: the callers waiting for this load are answered
+      this._dbLoadPromiseResolver();
     }
-    if (this.connection)
-      this.objHandlers.forEach((handler) => handler.connectionNqName = this.connection!.nqName); // set for detection in isApplicable
-    this._dbLoadPromiseResolver();
   }
 
   public async addCustomRelation(tableName: string, columnName: string, refTable: string, refColumn: string, schemas?: {tableSchema?: string; refTableSchema?: string}) {

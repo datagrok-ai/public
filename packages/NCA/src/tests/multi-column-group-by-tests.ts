@@ -290,21 +290,21 @@ category('group-by-duplicate-restore (BUG-11): the selection is a SET', () => {
     expect(dedupeGroupBySelection([], frame).length, 0, 'empty selection stays empty (ungrouped)');
   });
 
-  test('the invariant is NOT optional: aggregateNcaResults rejects a duplicated key list', async () => {
-    // Why the set invariant has to hold at the SOURCE (this is the finding that makes the
-    // pane-side dedup load-bearing rather than cosmetic): the aggregator emits one output
-    // column per key, so a repeated key is not a harmless no-op partition — it THROWS.
-    // Every caller survives today only because it dedupes first (`resolveAggregateGroupKeys`
-    // → `Array.from(new Set(…))`; `buildSummaryCache` likewise). Pinned on the real
-    // aggregator, not inferred (rule 16).
+  test('aggregateNcaResults collapses a duplicated key list to the clean partition', async () => {
+    // The aggregator emits one output column per key. The platform's groupBy THREW on a repeated
+    // key until late 2026 and collapses it since (measured 2026-11-16), so the aggregator now
+    // collapses it itself: the partition no longer depends on the platform version. The pane-side
+    // dedup stays load-bearing for the persisted selection (the 8-entry grown value above).
+    // Pinned on the real aggregator, not inferred (rule 16).
     const df = DG.DataFrame.fromColumns([
       DG.Column.fromStrings('ROUTE', ['IV-bolus', 'IV-bolus', 'PO', 'PO']),
       DG.Column.fromStrings('Sex', ['F', 'M', 'F', 'M']),
       DG.Column.fromFloat64Array('AUC_INF', Float64Array.from([10, 20, 30, 40])),
     ]);
-    let threw: unknown = null;
-    try {aggregateNcaResults(df, ['ROUTE', 'Sex', 'ROUTE'], {params: ['AUC_INF']});} catch (e) {threw = e;}
-    expect(threw !== null, true, 'a duplicated key list is rejected, not silently double-grouped');
+    const dup = aggregateNcaResults(df, ['ROUTE', 'Sex', 'ROUTE'], {params: ['AUC_INF']});
+    const clean = aggregateNcaResults(df, ['ROUTE', 'Sex'], {params: ['AUC_INF']});
+    expect(dup.columns.names().join(','), clean.columns.names().join(','), 'one output column per distinct key');
+    expect(dup.toCsv(), clean.toCsv(), 'the duplicated list buckets exactly like the clean pick');
   });
 
   test('deduped keys bucket exactly like the clean pick (no partition changed by the repair)', async () => {

@@ -69,21 +69,9 @@ import {f64Column} from './adapter-utils';
 import {nca} from '@datagrok-libraries/sci-comp';
 
 import type {ProfileIndex} from './profile-index';
+import {ROUTE_CODE_TO_STRING} from './profile-inputs';
 import {CANONICAL_UNIT_TAGS, NO_BODY_WEIGHT, normaliseClVolumes} from './unit-conversion';
 import type {BodyWeightContext} from './unit-conversion';
-
-/** Inverse of `ROUTE_STRING_TO_CODE` in profile-inputs.ts, keyed by RouteCode
- *  index 0..5. This is the CANONICAL route label the results `ROUTE` column carries
- *  (and the study grid / tier show); exported so any other consumer that must display
- *  the SAME route labels (e.g. the Mean±SD chart grouping by route) uses one source. */
-export const ROUTE_CODE_TO_STRING: ReadonlyArray<string> = [
-  'IV-bolus', // 0  nca.ROUTE_IV_BOLUS
-  'IV-infusion', // 1  nca.ROUTE_IV_INFUSION
-  'PO', // 2  nca.ROUTE_PO
-  'SC', // 3  nca.ROUTE_SC
-  'IM', // 4  nca.ROUTE_IM
-  'other', // 5  nca.ROUTE_OTHER
-];
 
 /**
  * Write the 36-column results DataFrame.

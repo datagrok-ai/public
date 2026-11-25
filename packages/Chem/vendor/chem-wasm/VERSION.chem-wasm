@@ -2,29 +2,30 @@ chem-wasm: Chem's Crux engine (crux-core crates/chem-wasm), one WebAssembly file
 
 crate: chem-wasm
 features: ['chem']
-crux_core_rev: 8392cf0d62037fc3900eab41493e1a91a44e8379
+crux_core_rev: 5cc1527518a6d0c5cad86884a044484366094157
 crux_core_dirty: False
-built_utc: 2026-11-03T06:39:28.933Z
+built_utc: 2026-11-20T04:53:01.478Z
 cargo.profile: wasm-ship
 cargo.target: wasm32-unknown-unknown
 cargo.rustc: rustc 1.95.0 (59807616e 2026-04-14)
-cargo.rustflags: -C target-feature=+simd128
+cargo.rustflags: -C target-feature=+simd128 --remap-path-prefix=<home>=~ --remap-path-prefix=<cargo home>=/cargo --remap-path-prefix=<crux-core checkout>=/crux-core
 wasm_bindgen.version: 0.2.129
 wasm_bindgen.flags: --target web --remove-name-section
-wasm_opt.version: wasm-opt version 133 (version_133)
-wasm_opt.flags: -O1 --mvp-features --enable-bulk-memory --enable-bulk-memory-opt --enable-call-indirect-overlong --enable-multivalue --enable-mutable-globals --enable-nontrapping-float-to-int --enable-reference-types --enable-sign-ext --enable-simd --skip-pass=constraint-analysis --strip-producers --strip-debug
-files.chem_wasm_bg.wasm.raw: 6202069
-files.chem_wasm_bg.wasm.gzip9: 2402394
-files.chem_wasm_bg.wasm.brotli11: 1754322
-files.chem_wasm.js.raw: 166212
-files.chem_wasm.js.gzip9: 25434
-files.chem_wasm.js.brotli11: 21237
-cargo_artifact.raw: 7856391
-cargo_artifact.gzip9: 2804472
-cargo_artifact.brotli11: 1980681
+wasm_bindgen.glue_patch: tools/wasm_glue_fresh.mjs --crate crates/chem-wasm
+wasm_opt.version: wasm-opt version 117 (version_117)
+wasm_opt.flags: -O1 --mvp-features --enable-bulk-memory --enable-multivalue --enable-mutable-globals --enable-nontrapping-float-to-int --enable-reference-types --enable-sign-ext --enable-simd --skip-pass=constraint-analysis --strip-producers --strip-debug
+files.chem_wasm_bg.wasm.raw: 7237117
+files.chem_wasm_bg.wasm.gzip9: 2811730
+files.chem_wasm_bg.wasm.brotli11: 2045166
+files.chem_wasm.js.raw: 196097
+files.chem_wasm.js.gzip9: 33278
+files.chem_wasm.js.brotli11: 27681
+cargo_artifact.raw: 9170241
+cargo_artifact.gzip9: 3284109
+cargo_artifact.brotli11: 2307624
 
-vendored from: a clean build of crux-core main 8392cf0d6 (build-ship.sh chem)
-chem_wasm_bg.wasm: 6,202,069 B raw, sha256 f88d762f480b7c7e
+vendored from: crux-core main 5cc152751 (build-ship.sh chem, paths remapped)
+chem_wasm_bg.wasm: 7,237,117 B raw, sha256 fddbe0f8b913fdd0
 NOTICE: the build's (crux-core tools/wasm_notices.py)
-includes: night 2026-11-02 batches 1 and 2, landed as 76a70ad0b and 8392cf0d6 (batch 1: n1102-chem-speed pattern-fp speed, n1102-bio-speed-3 biopolymer/depictor speed + memory, n1102-chem-edge edge-case fixes, n1102-fuzz differential-fuzz fixes; batch 2: n1102-chem-speed-3 substructure existence/count search, CIP-rank skip, drawing caches, n1102-b3 stack-overflow fix, the empty-query guard)
+includes: everything in crux-core main 973f67f60 (built from spike/heavy-degree 5cc152751, whose tree dcffc1a5 is main 973f67f60's): JSMol adjust_drawn_query (decisions drawn-query and query-read-match: the owner's five meanings of 2026-11-20), a vvv equal to a generic or list atom's drawn valence ignored, RDKit's bond-order aromaticity port fix, ring facts from the whole molecule's ring info, a list atom with an H count drawn as its list, the heavy-degree primitive d as fast as D; molfile writes both H counts; with crux-core e881b8e98's CXSMILES fields
 files: chem_wasm.js (glue, wasm-bindgen --target web), chem_wasm.d.ts, chem_wasm_bg.wasm, NOTICE.chem-wasm, VERSION.chem-wasm (both emitted to dist)

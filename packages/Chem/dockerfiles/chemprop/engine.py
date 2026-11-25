@@ -129,10 +129,12 @@ class Engine(object):
             log_loss = None
 
         r2 = metrics.r2_score(y_true, y_pred)
+        mse = metrics.mean_squared_error(y_true, y_pred)
 
         return {
-            'mse': metrics.mean_absolute_error(y_true, y_pred),
-            'rmse': metrics.mean_squared_error(y_true, y_pred),
+            'mse': mse,
+            'rmse': math.sqrt(mse),
+            'mae': metrics.mean_absolute_error(y_true, y_pred),
             'corr': math.sqrt(abs(r2)),
             'nobs': len(y_true),
             'r2': r2,
@@ -150,6 +152,8 @@ class Engine(object):
         params = []
         for param in parameter_values.keys():
             value = parameter_values[param]
+            if value is None:
+                continue
             if value != self.parameters[param]['default_value'] or \
                 ('required' in self.parameters[param] and self.parameters[param]['required']):
                 if self.parameters[param]['type'] == Types.LIST:

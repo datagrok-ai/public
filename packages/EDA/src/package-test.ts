@@ -11,6 +11,13 @@ import './tests/pmpo-tests';
 import './tests/pareto-tests';
 import './tests/model-serialization-tests';
 import './tests/mva-project-tests';
+import './tests/legacy-models-tests';
+import './tests/crux-bridge-tests';
+import './tests/crux-pool-tests';
+import './tests/crux-space-tests';
+import './tests/crux-thresholds-tests';
+import './tests/crux-methods-tests';
+import './tests/crux-metrics-tests';
 
 export const _package = new DG.Package();
 export {tests};

@@ -46,15 +46,15 @@ Feature: Line chart axis types, label orientation, line styling and a chart type
   Scenario: Line width, transparency and colouring type restyle the line
     When user sets "lineWidth" property of line chart viewer to "3"
     Then line chart viewer should have more ink than before
-    When user sets "lineTransparency" property of line chart viewer to "0.5"
+    When user sets "lineColor" property of line chart viewer to "2157758693"
     Then line chart viewer should have repainted
     When user sets "lineColoringType" property of line chart viewer to "Custom"
     Then line chart viewer should have repainted
     And line chart viewer should report no error
     When user sets properties of line chart viewer:
-      | lineWidth        | 1    |
-      | lineTransparency | 0    |
-      | lineColoringType | Auto |
+      | lineWidth        | 1          |
+      | lineColor        | 4288465125 |
+      | lineColoringType | Auto       |
     Then line chart viewer should have less ink than before
     And no errors should have been logged
 

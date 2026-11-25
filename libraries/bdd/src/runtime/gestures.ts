@@ -92,19 +92,24 @@ export async function rightclick(page: Page, target: ElementRef): Promise<void> 
  * pointer in and stays up while it is over it; Playwright, which moves only once the element is clear, waits
  * out its timeout behind it. Leaving the resting place cancels a tooltip still to come; one already up is
  * left from a part of the element it does not cover (or the corner), and goes down once the pointer is off
- * its owner. */
+ * its owner. Such a tooltip lets the pointer through while the pointer is on its owner and takes it in only
+ * as the pointer leaves, so one over the element shows only after the move: the element is aimed at again
+ * then, and the pointer taken off it. A tooltip the element is in (a legend item of a viewer in a tooltip) is
+ * not over it. */
 async function approach(page: Page, loc: Locator): Promise<void> {
   if (!await loc.isVisible().catch(() => false))
     return;
   const covered = (): Promise<boolean> => loc.evaluate((el) => {
     const r = el.getBoundingClientRect();
-    return !!document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest('.d4-tooltip');
+    const tip = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest('.d4-tooltip');
+    return !!tip && !tip.contains(el);
   }).catch(() => false);
-  const aim = await loc.evaluate((el) => {
+  const aimAt = () => loc.evaluate((el) => {
     const r = el.getBoundingClientRect();
     const y = r.top + r.height / 2;
     const cx = r.left + r.width / 2;
-    if (!document.elementFromPoint(cx, y)?.closest('.d4-tooltip'))
+    const tip = document.elementFromPoint(cx, y)?.closest('.d4-tooltip');
+    if (!tip || tip.contains(el))
       return {x: cx, y, tooltip: false};
     for (const f of [0.05, 0.25, 0.75, 0.95]) {
       const x = r.left + r.width * f;
@@ -114,9 +119,17 @@ async function approach(page: Page, loc: Locator): Promise<void> {
     }
     return {x: 1, y: 1, tooltip: true};
   }).catch(() => null);
+  let aim = await aimAt();
   if (aim === null)
     return;
   await page.mouse.move(aim.x, aim.y);
+  if (!aim.tooltip) {
+    aim = await aimAt();
+    if (aim === null)
+      return;
+    if (aim.tooltip)
+      await page.mouse.move(aim.x, aim.y);
+  }
   // a tooltip that stays leaves the gesture to wait as it always did
   if (aim.tooltip)
     await expect.poll(covered, {message: 'a tooltip over the element', timeout: 5000}).toBe(false).catch(() => undefined);
@@ -264,12 +277,15 @@ export async function typeInto(page: Page, target: ElementRef, text: string, com
 
 /** A paste, not a typing: the text goes to the page's clipboard and the platform's paste key puts
  * it into the editor over whatever it held — an editor that reads a pasted value differently from
- * typed keys (a list rewritten on paste) sees the paste. `\n` in the text is a line break. */
+ * typed keys (a list rewritten on paste) sees the paste. `\n` in the text is a line break. A guide
+ * pictures the text going in first, as a typing is (`guide.pictureTyping`): a paste is all at once. */
 export async function paste(page: Page, editor: Locator, text: string): Promise<void> {
+  const value = text.replace(/\\n/g, '\n');
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
-  await page.evaluate((t) => navigator.clipboard.writeText(t), text.replace(/\\n/g, '\n'));
+  await page.evaluate((t) => navigator.clipboard.writeText(t), value);
   if (!await hasFocus(editor))
     await editor.click();
+  await guide.pictureTyping(page, editor, value);
   await editor.press('ControlOrMeta+A');
   await editor.press('ControlOrMeta+V');
 }
@@ -306,6 +322,7 @@ export function keysOf(chord: string): string[] {
  * topmost dialog itself. */
 export async function press(page: Page, key: string): Promise<void> {
   const name = normalizeKey(key);
+  guide.keyPressed(page, name);
   const dialog = page.locator('[data-u2="dialog"], .d4-dialog').filter({visible: true}).last();
   if (name === 'Escape' && await dialog.count() > 0) {
     await dialog.press(name);
@@ -326,33 +343,39 @@ export async function press(page: Page, key: string): Promise<void> {
  * always keep the focus its own mouse-down gave it — so the letter is pressed on that element. The
  * letter lands in the box at an unpredictable moment ("SEX" came back "EXS"), so the name is retyped
  * over whatever landed. Enter is pressed ON the box, because the grid moves the focus while it
- * filters. */
+ * filters. A guide films the picker with no tooltip over it (`guide.pickerFilmed`). */
 export async function typeInColumnGrid(page: Page, option: string, what: string, selector?: Locator): Promise<Locator> {
   // the picker's column grid holds the backdrop grid; a column list on the page (the Aggregation
   // Editor's, the column manager) is a column grid too, and must not be taken for it; nor is a picker
   // another selector left hidden in the page (a closed dialog's)
   const popup = page.locator('.d4-column-grid:has(.d4-column-selector-backdrop)').filter({visible: true}).last();
   await popup.waitFor({state: 'visible', timeout: 10000});
-  await (selector ? selector.press(option[0]) : page.keyboard.press(option[0]));
-  const search = page.locator('input.d4-column-selector-search-input');
-  await search.waitFor({state: 'visible', timeout: 10000});
-  // a guide shows the picker open with its search box, the name typed short of its last letter
-  // (the picker takes a name the moment it is complete and unique, before any row is clicked)
-  // and the row it leaves, clicked as a person would; a test types the name and commits with Enter
-  await guide.hop(page, search);
-  if (guide.guideDir() && option.length > 1) {
-    await typeVerified(search, option.slice(0, -1), `the column picker of ${what}`);
-    const row = await pickerRow(popup, option);
-    if (row) {
-      await guide.hopAt(page, row);
-      await page.mouse.click(row.x + row.width / 2, row.y + row.height / 2);
-      if (await popup.waitFor({state: 'detached', timeout: 1500}).then(() => true, () => false))
-        return popup;
+  await guide.pickerFilmed(page, true);
+  try {
+    await (selector ? selector.press(option[0]) : page.keyboard.press(option[0]));
+    const search = page.locator('input.d4-column-selector-search-input');
+    await search.waitFor({state: 'visible', timeout: 10000});
+    // a guide shows the picker open with its search box, the name typed short of its last letter
+    // (the picker takes a name the moment it is complete and unique, before any row is clicked)
+    // and the row it leaves, clicked as a person would; a test types the name and commits with Enter
+    await guide.hop(page, search);
+    if (guide.guideDir() && option.length > 1) {
+      await typeVerified(search, option.slice(0, -1), `the column picker of ${what}`);
+      const row = await pickerRow(popup, option);
+      if (row) {
+        await guide.hopAt(page, row, 'menu');
+        await page.mouse.click(row.x + row.width / 2, row.y + row.height / 2);
+        if (await popup.waitFor({state: 'detached', timeout: 1500}).then(() => true, () => false))
+          return popup;
+      }
     }
+    await typeVerified(search, option, `the column picker of ${what}`);
+    await search.press('Enter');
+    return popup;
   }
-  await typeVerified(search, option, `the column picker of ${what}`);
-  await search.press('Enter');
-  return popup;
+  finally {
+    await guide.pickerFilmed(page, false);
+  }
 }
 
 /** The row of the open picker's grid that names the column, in page pixels, read through the
@@ -389,8 +412,13 @@ export async function pickInColumnGrid(page: Page, option: string, what: string,
  * press that opened no column grid is made again on the selector as it is now. */
 export async function openColumnSelector(page: Page, selector: Locator, leave = true): Promise<void> {
   const popup = page.locator('.d4-column-grid:has(.d4-column-selector-backdrop)').filter({visible: true});
+  // a selector that aggregates (a bar chart's Value, a line chart's Y) starts with its aggregation's <select>: the
+  // press goes on the column's name, which opens the picker
+  const column = selector.locator('.d4-column-selector-column').first();
+  const aggregates = await selector.locator('select').count() > 0;
+  const target = aggregates && await column.isVisible().catch(() => false) ? column : selector;
   for (let attempt = 1; ; attempt++) {
-    const box = await selector.boundingBox();
+    const box = await target.boundingBox();
     if (!box)
       throw new Error('the column selector has no box');
     await page.mouse.move(box.x + Math.min(10, box.width / 2), box.y + box.height / 2);
@@ -409,14 +437,19 @@ export async function openColumnSelector(page: Page, selector: Locator, leave = 
 
 /** A guide's pointer steps just off the selector, clear of the picker it opened: the page's corner,
  * where a test's goes, is a flight across the video and back. */
-async function besidePicker(page: Page, box: guide.GuideBox): Promise<{x: number; y: number}> {
+export async function besidePicker(page: Page, box: guide.GuideBox): Promise<{x: number; y: number}> {
   const popup = page.locator('.d4-column-grid:has(.d4-column-selector-backdrop)').filter({visible: true}).last();
   await popup.waitFor({state: 'visible', timeout: 5000}).catch(() => undefined);
   const picker = await popup.boundingBox().catch(() => null);
   const view = page.viewportSize() ?? {width: 1920, height: 1080};
+  // the sidebar's icons slide their panels out under a resting pointer: a selector at the view's left edge (a tree
+  // map's Color) stepped aside onto it, and the Toolbox slid over the clip until the pick ended
+  const sidebar = await page.locator('.layout-sidebar').filter({visible: true}).first().boundingBox({timeout: 200})
+    .catch(() => null);
   const cx = box.x + box.width / 2;
   const cy = box.y + box.height / 2;
   const clear = (p: {x: number; y: number}): boolean => p.x > 0 && p.y > 0 && p.x < view.width && p.y < view.height &&
+    (!sidebar || p.x > sidebar.x + sidebar.width + 8) &&
     (!picker || p.x < picker.x - 4 || p.x > picker.x + picker.width + 4 || p.y < picker.y - 4 || p.y > picker.y + picker.height + 4);
   return [{x: box.x - 16, y: cy}, {x: cx, y: box.y - 16}, {x: box.x + box.width + 16, y: cy}, {x: cx, y: box.y + box.height + 16}]
     .find(clear) ?? {x: 2, y: 2};
@@ -517,31 +550,135 @@ export async function select(page: Page, target: ElementRef, option: string): Pr
   await options.first().click();
 }
 
-/** A native `<select>`: `selectOption` for a test. A guide makes the choice the way a person sees
- * it — the list opened with a click (headless Chromium draws it on the page), the option typed so
- * the list highlights it (one stop: the open list with the option lit), Enter to take it; the
- * label is checked afterwards, and the option set outright if type-ahead stopped on another one
- * with the same prefix. */
-async function selectNative(page: Page, select: Locator, option: string): Promise<void> {
-  if (!guide.guideDir()) {
+/** A native `<select>`: `selectOption` for a test. A guide films the choice the way a person makes it: headless
+ * Chromium draws no open list on the page (the browser's popup is not in its pictures), so the page draws one — the
+ * select's options under it, in its font, the current one ticked and lit, a scroll bar when it holds more than
+ * twelve — and the video shows the select pressed, that list, the pointer going to the option, the option lit as
+ * the pointer reaches it and pressed, and the select with the option taken. The list is pressed on film only
+ * (`guide.pressShown`): the page gets no event, a dialog around the select no Enter. */
+export async function selectNative(page: Page, select: Locator, option: string): Promise<void> {
+  if (!guide.filming(page)) {
     await select.selectOption({label: option});
     return;
   }
-  await select.click();
-  await page.waitForTimeout(300);
-  await page.keyboard.type(option);
-  await page.waitForTimeout(300);
-  await guide.hop(page, select);
-  // a list that did not open takes the option on the typing itself, and an Enter then reaches the
-  // page: a dialog around the select takes it as its OK
-  const typed = await select.evaluate((e) => (e as HTMLSelectElement).selectedOptions[0]?.label ?? '');
-  if (typed !== option)
-    await page.keyboard.press('Enter');
-  // a property grid closes its editor on Enter and shows the value as text again: nothing left to correct
-  const taken = await select.evaluate((e) => (e as HTMLSelectElement).selectedOptions[0]?.label ?? '', undefined, {timeout: 1000})
-    .catch(() => null);
-  if (taken !== null && taken !== option)
-    await select.selectOption({label: option});
+  await guide.hop(page, select, 'list');
+  const box = await select.boundingBox();
+  if (box)
+    await guide.pressShown(page, box, 'select');
+  // no named functions in the page: tsx wraps them in a `__name` call the page lacks
+  const drawn = await select.evaluate((e, opt) => {
+    const sel = e as HTMLSelectElement;
+    const r = sel.getBoundingClientRect();
+    const cs = getComputedStyle(sel);
+    const rows = Array.from(sel.options);
+    const current = sel.selectedOptions[0]?.label;
+    const rowH = Math.max(18, Math.round(parseFloat(cs.fontSize) * 1.6));
+    const shown = Math.min(rows.length, 12);
+    const below = innerHeight - r.bottom - 4;
+    const up = below < shown * rowH + 8 && r.top > below;
+    const list = document.createElement('div');
+    list.setAttribute('data-bdd-select-list', '');
+    Object.assign(list.style, {position: 'fixed', left: `${r.left}px`, minWidth: `${r.width}px`, zIndex: '2147483647',
+      background: '#fff', border: '1px solid #b9b9b9', borderRadius: '5px', boxShadow: '0 6px 18px rgba(0,0,0,0.22)',
+      padding: '3px 0', boxSizing: 'border-box', font: cs.font, color: '#202020', pointerEvents: 'none',
+      ...(up ? {bottom: `${innerHeight - r.top + 2}px`} : {top: `${r.bottom + 2}px`})});
+    const scroller = document.createElement('div');
+    Object.assign(scroller.style, {maxHeight: `${shown * rowH}px`, overflow: 'hidden'});
+    list.appendChild(scroller);
+    let lit: HTMLElement | null = null;
+    let target: HTMLElement | null = null;
+    for (const o of rows) {
+      const row = document.createElement('div');
+      row.textContent = (o.label === current ? '✓ ' : ' ') + o.label;
+      Object.assign(row.style, {height: `${rowH}px`, lineHeight: `${rowH}px`, whiteSpace: 'nowrap',
+        padding: `0 ${rows.length > shown ? 22 : 14}px 0 6px`});
+      if (o.label === current) {
+        Object.assign(row.style, {background: '#2f6fde', color: '#fff'});
+        row.setAttribute('data-bdd-select-lit', '');
+        lit = row;
+      }
+      if (o.label === opt) {
+        row.setAttribute('data-bdd-select-row', 'target');
+        target = row;
+      }
+      scroller.appendChild(row);
+    }
+    document.body.appendChild(list);
+    if (!target)
+      return null;
+    // a long list opens on the current option, as a native one does — on both it and the option where both fit,
+    // else scrolled to the option afterwards
+    const t = (target as HTMLElement).offsetTop;
+    const c = lit ? (lit as HTMLElement).offsetTop : t;
+    const view = scroller.clientHeight;
+    const span = scroller.scrollHeight - view;
+    const both = rows.length <= shown || Math.abs(t - c) + rowH <= view - rowH;
+    scroller.scrollTop = Math.max(0, Math.min(span, (both ? (t + c + rowH) / 2 : c + rowH / 2) - view / 2));
+    if (rows.length > shown) {
+      const track = document.createElement('div');
+      Object.assign(track.style, {position: 'absolute', right: '4px', top: '5px', bottom: '5px', width: '6px',
+        borderRadius: '3px', background: '#ececec'});
+      const thumb = document.createElement('div');
+      thumb.setAttribute('data-bdd-select-thumb', '');
+      Object.assign(thumb.style, {position: 'absolute', left: '0', right: '0', borderRadius: '3px',
+        background: '#a9a9a9', height: `${100 * view / scroller.scrollHeight}%`,
+        top: `${span > 0 ? 100 * (1 - view / scroller.scrollHeight) * scroller.scrollTop / span : 0}%`});
+      track.appendChild(thumb);
+      list.appendChild(track);
+    }
+    return {scrollTo: both ? null : Math.max(0, Math.min(span, t + rowH / 2 - view / 2))};
+  }, option);
+  try {
+    if (drawn) {
+      // the list as it opens, the current option lit; a long one scrolled to the option under the pointer; then the
+      // option lit as the pointer reaches it, and pressed
+      const row = page.locator('[data-bdd-select-row="target"]').first();
+      const listBox = drawn.scrollTo === null ? null :
+        await page.locator('[data-bdd-select-list]').first().boundingBox();
+      if (listBox) {
+        await guide.hopAt(page, listBox, 'menu');
+        await guide.pointShown(page, {x: listBox.x + listBox.width / 2 - 1, y: listBox.y + listBox.height / 2 - 1,
+          width: 2, height: 2});
+        // the list scrolls under the pointer as a wheel turns it, pictured as it goes, not a page in one frame
+        const from = await page.evaluate(() =>
+          (document.querySelector('[data-bdd-select-list]')?.firstElementChild as HTMLElement | null)?.scrollTop ?? 0);
+        for (let i = 1; i <= 6; i++) {
+          const f = i / 6;
+          await page.evaluate((top) => {
+            const scroller = document.querySelector('[data-bdd-select-list]')?.firstElementChild as HTMLElement | null;
+            const thumb = document.querySelector('[data-bdd-select-thumb]') as HTMLElement | null;
+            if (!scroller)
+              return;
+            scroller.scrollTop = top;
+            const span = scroller.scrollHeight - scroller.clientHeight;
+            if (thumb && span > 0)
+              thumb.style.top =
+                `${100 * (1 - scroller.clientHeight / scroller.scrollHeight) * scroller.scrollTop / span}%`;
+          }, from + (drawn.scrollTo! - from) * f * f * (3 - 2 * f));
+          await guide.still(page);
+        }
+      }
+      await guide.hop(page, row, 'menu');
+      const rowBox = await row.boundingBox();
+      if (rowBox) {
+        await guide.pointShown(page, rowBox);
+        await page.evaluate(() => {
+          const old = document.querySelector('[data-bdd-select-lit]') as HTMLElement | null;
+          if (old)
+            Object.assign(old.style, {background: '', color: ''});
+          const row = document.querySelector('[data-bdd-select-row="target"]') as HTMLElement | null;
+          if (row)
+            Object.assign(row.style, {background: '#2f6fde', color: '#fff'});
+        });
+        await guide.hop(page, row, 'menu');
+        await guide.pressShown(page, rowBox, 'option');
+      }
+    }
+  }
+  finally {
+    await page.evaluate(() => document.querySelectorAll('[data-bdd-select-list]').forEach((e) => e.remove()));
+  }
+  await select.selectOption({label: option});
 }
 
 /** Popup rows called `option`: by their whole text, by their primary-text part, or by a title/aria label. */
@@ -583,11 +720,29 @@ export async function toggle(page: Page, target: ElementRef): Promise<void> {
   await (await box.count() > 0 ? box : loc).click();
 }
 
+/** A guide takes the pointer off the dialog's content first, unfilmed, onto its title: a lens or a tooltip that follows
+ * the pointer (Bio's magnifier over a molecule) would stay drawn where the pointer rested, frozen, while the video's
+ * pointer goes to the close icon. */
 export async function close(page: Page, target: ElementRef): Promise<void> {
   const loc = await locate(page, target);
+  // a dock tab's own close button has no name; it closes on mousedown, which a click sends
+  const tabClose = loc.locator(':scope > .tab-handle-close-button').first();
+  if (await tabClose.count() > 0) {
+    await tabClose.click();
+    return;
+  }
   const button = loc.locator(DIALOG_CLOSE).first();
-  if (await button.count() > 0)
+  if (await button.count() > 0) {
+    if (guide.filming(page)) {
+      const named = loc.locator('.d4-dialog-title, [data-u2-part="title"]').filter({visible: true}).first();
+      const title = (await named.count() > 0 ? await named.boundingBox() : null) ?? await button.boundingBox();
+      if (title) {
+        await guide.moveUnfilmed(page, title.x + title.width / 2, title.y + title.height / 2);
+        await guide.hop(page, button);
+      }
+    }
     await button.click();
+  }
   else
     await page.keyboard.press('Escape');
 }
@@ -597,6 +752,7 @@ export async function focus(page: Page, target: ElementRef): Promise<void> {
 }
 
 export async function pressIn(page: Page, target: ElementRef, key: string): Promise<void> {
+  guide.keyPressed(page, normalizeKey(key));
   // a d4 grid (the spreadsheet, a categorical filter card) listens for keys on its overlay canvas,
   // which is what a click focuses: the element's root never sees them. Other viewers have an overlay
   // too (the box plot's T) and listen on their root, so only the grid's — beside its scroll bars — counts
@@ -802,6 +958,9 @@ export async function setSwitched(page: Page, target: ElementRef, on: boolean): 
   const sw = await switchOf(page, target);
   if (await readSwitch(sw) === on)
     return;
+  // the switch can sit outside the input it governs (a fitting form puts it before the input): a guide lights it, not
+  // the input the step named
+  await guide.hop(page, sw);
   await sw.click();
   await expect.poll(() => readSwitch(sw),
     {message: `the switch of ${target.phrase} after switching it ${on ? 'on' : 'off'}`}).toBe(on);

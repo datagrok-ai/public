@@ -81,6 +81,137 @@ export declare const STRINGS: {
     readonly groupCharges: 'Charges';
     readonly chargePlus: 'Charge plus';
     readonly chargeMinus: 'Charge minus';
+    /** The reaction arrow tool (spike reaction-document, RXN-001): the left bar's last group, in a reaction document only. */
+    readonly groupReactions: 'Reactions';
+    readonly reactionArrow: 'Reaction arrow';
+    /** The arrow palette's other styles (spike arrow-styles, RXN-013, RXN-012; the owner's decision 11), and its name. */
+    readonly reactionArrowEquilibrium: 'Equilibrium arrow';
+    readonly reactionArrowRetrosynthetic: 'Retrosynthetic arrow';
+    readonly reactionArrowResonance: 'Resonance arrow';
+    readonly reactionArrowFailed: 'Failed reaction arrow';
+    readonly reactionArrowDashed: 'Dashed arrow';
+    readonly reactionArrowCurved: 'Curved arrow (full head)';
+    readonly reactionArrowCurvedHalf: 'Curved arrow (half head)';
+    readonly arrowStyles: 'Arrow styles';
+    /** The Text tool and its in-place editor (spike reaction-text, decision 14): the tool, the editor, its bar's buttons. */
+    readonly reactionText: 'Text';
+    /** The bracket palette and its tools (spike reaction-brackets); the charge's in-place editor. */
+    readonly bracketTools: 'Brackets';
+    readonly bracketRepeat: 'Repeat bracket';
+    readonly bracketCharge: 'Charge bracket';
+    readonly chargeEditor: 'Charge';
+    /** The cycle palette and its tools (spike reaction-cycles). */
+    readonly cycleTools: 'Cycles';
+    readonly cycleOf3: 'Cycle of 3';
+    readonly cycleOf4: 'Cycle of 4';
+    readonly cycleOf5: 'Cycle of 5';
+    readonly cycleOf6: 'Cycle of 6';
+    readonly cycleOf7: 'Cycle of 7';
+    readonly cycleOf8: 'Cycle of 8';
+    /**
+     * What the Cycle tools take (spike reaction-fixes-1205; the owner, 2026-11-15: "the cycle element can't be placed at all"):
+     * each one's tooltip; the status line's words when one is chosen (`{tool}` its name, `{count}` its size), after each
+     * molecule taken, when a click takes none, and on a canvas with no molecule to take.
+     */
+    readonly cycleOf3Tip: 'Cycle of 3: click 3 molecules in turn, or the canvas to place it empty';
+    readonly cycleOf4Tip: 'Cycle of 4: click 4 molecules in turn, or the canvas to place it empty';
+    readonly cycleOf5Tip: 'Cycle of 5: click 5 molecules in turn, or the canvas to place it empty';
+    readonly cycleOf6Tip: 'Cycle of 6: click 6 molecules in turn, or the canvas to place it empty';
+    readonly cycleOf7Tip: 'Cycle of 7: click 7 molecules in turn, or the canvas to place it empty';
+    readonly cycleOf8Tip: 'Cycle of 8: click 8 molecules in turn, or the canvas to place it empty';
+    readonly cycleChosen: '{tool}: click {count} molecules in turn, or the canvas to place it empty';
+    readonly cyclePlaced: '{tool} placed: click, draw, paste or drag a molecule into each slot';
+    readonly cycleFilled: '{filled} of {count} filled: click the next molecule';
+    readonly cycleTaken: '{taken} of {count} taken: click the next molecule';
+    readonly droppedAgent: '{formula}: an agent of step {n}';
+    readonly droppedAgents: '{count} molecules: agents of step {n}';
+    /**
+     * A step's Add modes (spike step-roles, RXN-035; the owner, 2026-11-15: "a way to add things to the reaction from the
+     * arrow"): what the status line says as one starts (`{n}` the step, `{roles}` one of the three words after), and after a
+     * molecule clicked takes its role or is taken out of the step.
+     */
+    readonly stepAddMode: "Click molecules to make them step {n}'s {roles}; click one again to take it out. Esc ends.";
+    readonly stepAddReactants: 'reactants';
+    readonly stepAddReagents: 'reagents';
+    readonly stepAddProducts: 'products';
+    readonly stepRoleReactant: '{formula}: a reactant of step {n}';
+    readonly stepRoleProduct: '{formula}: a product of step {n}';
+    readonly stepRoleOut: '{formula}: taken out of step {n}';
+    /**
+     * A text dragged (spike eval4-ui; EVAL4, 2026-11-16, T6: "HATU, DIPEA" let go 60 px under its arrow left step 1 without a
+     * word): while it is held, where letting go puts it; once it is let go, a step it joined or left.
+     */
+    readonly textLandsStep: "Let go here: step {n}'s conditions";
+    readonly textLeavesStep: 'Let go here: out of step {n}, a free text';
+    readonly textLandsFree: 'Let go here: a free text, in no step';
+    readonly textJoinedStep: "Text: step {n}'s conditions";
+    readonly textLeftStep: 'Text: taken out of step {n}, a free text now';
+    /**
+     * An empty slot of a cycle (spike eval4-ui; EVAL4, 2026-11-16, T5: a click on a slot with the Cycle tool placed a second
+     * cycle on it): what a click on it does, in its tooltip, and the slot a Cycle tool click chose, which the next molecule
+     * clicked fills.
+     */
+    readonly slotCycleTip: 'Slot {slot}: click to choose it, then click the molecule to put in it';
+    readonly slotRingTip: 'Slot {slot}: click to draw this ring in it';
+    readonly slotChosen: 'Slot {slot} chosen: click the molecule to put in it, or draw, paste or drag one onto it';
+    /**
+     * What a tool that takes atoms, bonds or molecules takes, said when a click takes nothing (spike tool-hints, UI-043; EVAL3,
+     * 2026-11-15: they "do nothing on a click on empty canvas, and say nothing"), as the Cycle tools say theirs.
+     */
+    readonly bracketRepeatTakes: 'Repeat bracket: click an atom or a bond, or drag a box round atoms, to bracket them';
+    readonly bracketChargeTakes: 'Charge bracket: click a molecule to bracket it and write its charge';
+    readonly sgroupTakes: 'S-Group: click an atom or a bond, or drag a box round atoms, to make them a group';
+    readonly chargePlusTakes: 'Charge plus: click an atom to raise its charge';
+    readonly chargeMinusTakes: 'Charge minus: click an atom to lower its charge';
+    readonly mapTakes: "Reaction map: drag from a reactant's atom to the product's atom it becomes";
+    readonly attachmentTakes: 'Attachment point: click an atom to give it attachment points';
+    readonly textEditor: 'Text';
+    readonly textSubscript: 'Subscript';
+    readonly textSuperscript: 'Superscript';
+    /**
+     * A text's size and faces (spike text-style; the owner, 2026-11-15: "Its font can't be adjusted"): the text editor's bar's
+     * buttons and its Size list, and a text's menu: its name, its Size submenu, Edit Text.
+     */
+    readonly textBold: 'Bold';
+    readonly textItalic: 'Italic';
+    readonly textUnderline: 'Underline';
+    readonly textSize: 'Size';
+    readonly menuText: 'Text';
+    readonly editText: 'Edit Text';
+    /** A reaction arrow's context menu (spike arrow-styles): its name, and its styles' group. */
+    readonly menuArrow: 'Arrow';
+    readonly arrowStyleGroup: 'Arrow style';
+    /**
+     * The Map tool (spike reaction-map, RXN-020; ChemDraw's Reaction Map tool): its name, its tooltip saying how it is used,
+     * its menu (the opener beside it) and the menu's two items with their lines.
+     */
+    readonly mapTool: 'Reaction map';
+    readonly mapToolTip: 'Reaction map: drag from a reactant atom to the product atom it becomes';
+    readonly mapMenu: 'Atom mapping';
+    readonly mapAuto: 'Auto-map';
+    readonly mapAutoLine: 'Number the atoms of every step with the mapper';
+    readonly mapClear: 'Clear all';
+    readonly mapClearLine: 'Remove every map number';
+    /** A map refused (spike reaction-map): two atoms on one side of an arrow, or of different steps; no number left. */
+    readonly mapPairsAcross: 'A map pairs a reactant atom with a product atom';
+    readonly mapNoNumber: 'No map number is left: the drawing uses 999';
+    /**
+     * The Map tool through a route (spike map-trace, RXN-032; the owner, 2026-11-15): a drag between steps, an intermediate
+     * skipped, refused with the way to go; a number that would mark two atoms of one molecule, or of one side of a step,
+     * refused with both atoms marked (`{n}` the number, `{holder}` the element of the atom that has it, `{atom}` the one
+     * that would take it).
+     */
+    readonly mapAcrossSteps: 'A map pairs atoms across one step: drag from this atom to its intermediate first, then on from there';
+    readonly mapTwiceMolecule: 'Map {n} would be on two atoms of one molecule: the marked {holder} carries it already, the marked {atom} would take it';
+    readonly mapTwiceReactants: 'Map {n} would be on two reactants of one step: the marked {holder} carries it already, the marked {atom} would take it';
+    readonly mapTwiceProducts: 'Map {n} would be on two products of one step: the marked {holder} carries it already, the marked {atom} would take it';
+    /** What a map edit says it did (K3): "Mapped 2 atoms", "Map numbers cleared". */
+    readonly mapCleared: 'Map numbers cleared';
+    readonly mapAutoNothing: 'The mapper mapped nothing';
+    /** An edit's name as undo says it: "Undo: Map atoms". */
+    readonly stepMap: 'Map atoms';
+    /** A reaction arrow as an edit says it (K3): "Added a reaction arrow", "Moved a reaction arrow". */
+    readonly anArrow: 'a reaction arrow';
     /** The Structure Library (spike templates, RING-013): the ring bar's last button and its dialog (Ketcher's title). */
     readonly structureLibrary: 'Structure Library';
     /** The Structure Library while its module loads, and one that did not load (milestone-4-fixes, F10). */
@@ -154,6 +285,8 @@ export declare const STRINGS: {
     readonly cleanUpMenu: 'Clean Up and Layout';
     readonly cleanUpLine: 'Tidy bonds and angles, fit the view';
     readonly layoutLine: 'Redraw from scratch, fit the view';
+    readonly arrange: 'Arrange';
+    readonly arrangeLine: 'Lay the scheme out in rows that break at an arrow';
     /**
      * The explicit hydrogens' commands (spike hydrogens-and-dative, R1; ATOM-028): the top bar's Hydrogens menu button and its
      * menu's name, its items (the context menus' too) and the line under each.
@@ -163,8 +296,13 @@ export declare const STRINGS: {
     readonly removeExplicitHydrogens: 'Remove explicit hydrogens';
     readonly addExplicitHydrogensLine: 'Draw each implicit H as an atom (the selection, if any)';
     readonly removeExplicitHydrogensLine: 'Fold H atoms back into their atoms (the selection, if any)';
-    /** Why Add explicit hydrogens is disabled in query mode (spike milestone-6-fixes, F3, R3): its tooltip in each menu. */
-    readonly addHydrogensQueryMode: 'Not in query mode: each hydrogen drawn would become part of the query';
+    /**
+     * Add explicit hydrogens in query mode (spike query-add-hydrogens, the product owner's choice B of 2026-11-19; it replaces
+     * milestone-6-fixes' F3): what it does on an atom or a selection, the top bar's line and the context menus' tooltip; and
+     * why it is disabled on the whole drawing (the top bar with nothing selected, the canvas's menu), its tooltip.
+     */
+    readonly addExplicitHydrogensQueryLine: 'Draw each implicit H as an atom: the query then asks each atom for at least that many H';
+    readonly addHydrogensWholeQuery: 'Not on the whole query: each hydrogen drawn becomes part of it, so only molecules with no substituent anywhere would pass; select atoms first';
     /** Straighten (spike layout-tools, L5, L9): RDKit's straightenDepiction, in the selection's and the canvas's menus (P1: no button, no key). */
     readonly straighten: 'Straighten';
     /**
@@ -195,6 +333,11 @@ export declare const STRINGS: {
     readonly withHotkey: '{name} ({key})';
     /** A disabled tool's tooltip: no tool is disabled since spike stereo, which enabled the wavy and crossed bonds (BOND-001). */
     readonly notAvailableYet: '{name}: not available yet';
+    /**
+     * Why Copy As cannot write a reaction in a format (spike eval6-polish; EVAL6 #10: the menu offered MOL and InChI for a
+     * reaction): the item's tooltip, disabled.
+     */
+    readonly copyNoReaction: '{name}: holds no reaction (SMILES, SMARTS and CDXML do)';
     /** The inline label editor (ATOM-012). */
     readonly labelEditor: 'Atom label';
     /**
@@ -298,6 +441,18 @@ export declare const STRINGS: {
     readonly readoutDrawing: 'Bond drawn or atoms moved';
     /** Stereocentres with some unspecified: "2 (1 unspecified)". */
     readonly readoutUnspecified: '{count} ({unspecified} unspecified)';
+    /**
+     * A reaction document's readout (spike reaction-fixes-1205; main, 2026-11-15, from the owner's screenshot: a route's
+     * readout summed one molecule's properties over every species): its steps and its species by role, each a label before
+     * its count; the molecules of a document with no step.
+     */
+    readonly readoutSteps: 'Steps';
+    readonly readoutReactants: 'Reactants';
+    readonly readoutIntermediates: 'Intermediates';
+    readonly readoutProducts: 'Products';
+    readonly readoutAgents: 'Agents';
+    readonly readoutUnplaced: 'Not in a step';
+    readonly readoutMolecules: 'Molecules';
     /** The atom under the pointer: its number from 1, its element, its charge and its hydrogens; then its valence, where the engine gives it. */
     readonly readoutAtom: 'Atom {n}: {element}, charge {charge}, {h} H';
     readonly readoutAtomValence: '{atom}, valence {valence}';
@@ -366,9 +521,24 @@ export declare const STRINGS: {
     readonly lossRLabel: 'R labels';
     readonly lossDummy: 'dummy atoms and pseudoatoms';
     readonly lossDative: 'dative bonds';
+    readonly lossReaction: 'a reaction';
+    readonly lossArrowStyle: 'arrow styles';
+    readonly lossFailedReaction: 'a failed reaction';
+    readonly lossResonanceArrows: 'resonance arrows';
+    readonly lossCurvedArrows: 'curved arrows';
+    readonly lossTexts: 'texts';
+    readonly lossCompoundNumbers: 'compound numbers';
+    readonly lossBrackets: 'bracket pairs';
+    readonly lossCycles: 'cycles as drawn';
+    readonly lossShapes: 'shapes (lines, boxes, symbols, curves)';
     readonly lossOther: 'some features';
     /** Copy As of a part a format cannot hold at all (spike inchi, N6): nothing is copied, and the status line says why. */
     readonly copiedNone: 'Not copied: {format} cannot hold {what}';
+    /** Copy As CDXML of a reaction (spike arrows-matrix, P5) until crux-core writes a scheme: nothing is copied. */
+    readonly copiedLater: 'Not copied: a reaction is not written as {format} yet';
+    /** What a copy that wrote the clipboard says, briefly (spike copy-said, CLIP-021): Copy's, and Copy As's in its format. */
+    readonly copied: 'Copied';
+    readonly copiedAs: 'Copied as {format}';
     readonly pasteNotAs: 'Nothing to paste: the clipboard holds no {format}';
     readonly pasteNotAsMol: 'Nothing to paste: the clipboard holds no molfile';
     /** The Paste Special dialog (P2), where the browser does not let the sketcher read the clipboard. */
@@ -503,9 +673,17 @@ export declare const STRINGS: {
     readonly elementNeeded: 'Type an element symbol';
     readonly chargeRange: 'A whole number from -15 to 15';
     readonly isotopeRange: 'A whole number from 1 to 999, or blank';
+    /** Atom Properties' Map number field (spike reaction-map, RXN-020): a reaction document's, over one atom. */
+    readonly fieldMapNumber: 'Map number';
+    readonly mapNumberRange: 'A whole number from 1 to 999, or blank for none';
     readonly valenceRange: 'A whole number from 0 to 8, or blank';
     /** Beside the alias field, and what refuses a longer label or alias from a script (fix round 3; ALIAS_LIMIT). */
     readonly aliasLimit: 'An alias is at most 80 characters';
+    /**
+     * The status line, quietly, when the engine could not do what the user asked even on a fresh engine (spike
+     * engine-recover; the product owner's choice 18): that one action is undone, the drawing is as it was.
+     */
+    readonly engineKept: 'That could not be done; your drawing is kept';
     /** A field's hint while what it holds is not valid, shown as the error it is (fix round 4; WCAG 1.4.1). */
     readonly notValid: 'Not valid: {hint}';
     /** The periodic table (ATOM-009). */
@@ -525,6 +703,37 @@ export declare const STRINGS: {
     readonly editLabel: 'Edit label';
     readonly opensDialog: '{title}…';
     readonly selectStructure: 'Select structure';
+    /** A molecule's menu in a reaction document (spike compound-numbers): its compound number added, the next free one. */
+    readonly addCompoundNumber: 'Add compound number';
+    /**
+     * Continue Route (spike route-steps; the owner, 2026-11-15: "couldn't add a new step"): the menu item of the molecule
+     * that ends a route, and the name of the handle beside it, which draw the next step's arrow after it; the status line's
+     * words after (`{step}` the new step's number).
+     */
+    readonly continueRoute: 'Continue Route';
+    readonly routeContinued: 'Step {step} added: draw or paste its product past the arrow';
+    /**
+     * A step arrow's Add items (spike step-roles, RXN-035), in its menu and in the menu of its "+" handle (`stepAddHandle`
+     * names the handle), and a molecule's Role in Step n submenu (RXN-036) with its four roles.
+     */
+    readonly addReactant: 'Add Reactant';
+    readonly addReagent: 'Add Reagent';
+    readonly addProduct: 'Add Product';
+    readonly stepAddHandle: 'Add to Step {n}';
+    /**
+     * The tooltips of Continue Route's handle and of a step arrow's "+" handle (spike eval6-polish; EVAL6 #7: the handle "has no
+     * tooltip"), shown as a group's is while the pointer is over the handle: what a click on it does.
+     */
+    readonly continueRouteTip: 'Continue Route: add step {n} after this molecule';
+    readonly stepAddTip: 'Add to Step {n}: a reactant, a reagent or a product';
+    readonly roleInStep: 'Role in Step {n}';
+    readonly roleReactant: 'Reactant';
+    readonly roleReagent: 'Reagent';
+    readonly roleProduct: 'Product';
+    readonly roleNone: 'Not in This Step';
+    /** A numbered atom's menu items (spike map-trace, RXN-032): its map number cleared, or every atom's with that number. */
+    readonly clearMapNumber: 'Clear Map Number';
+    readonly clearMapNumberEverywhere: 'Clear Map Number Everywhere';
     readonly selectAll: 'Select all';
     readonly changeDirection: 'Change direction';
     /** The atom's and the selection's Charge submenu (spike charges-checks, K4; context-menus' C3): the charge tools' names. */
@@ -598,6 +807,16 @@ export declare const STRINGS: {
     readonly noRingsToAromatize: 'Nothing to aromatize';
     readonly noRingsToDearomatize: 'No aromatic ring to dearomatize';
     readonly noKekuleStructure: 'no Kekulé structure';
+    /**
+     * crux-core aromatize-queries (2026-11-17, the owner's report): a ring system whose query features (`~`, `-,:`, a list,
+     * ring or chain, a custom SMARTS) stop Aromatize or Dearomatize is left as drawn and refused `query`; said with how many.
+     */
+    readonly queryRingSystems: {
+        readonly one: 'it has query features';
+        readonly other: 'they have query features';
+    };
+    readonly cantAromatizeRings: "Can't aromatize {what}: {why}";
+    readonly cantDearomatizeRings: "Can't dearomatize {what}: {why}";
     readonly aromatized: 'Aromatized {what}';
     readonly dearomatized: 'Dearomatized {what}';
     readonly cantAromatize: "Can't aromatize: {why}";
@@ -858,6 +1077,8 @@ export declare const STRINGS: {
     readonly newDrawing: 'New drawing: {what}';
     /** The names of the edits, as an undo or a redo says them ("Undo: Paste"). */
     readonly stepAdd: 'Add';
+    /** A host's write made as an edit (spike reaction-host-api, API-072): "Undo: Replace drawing". */
+    readonly stepReplace: 'Replace drawing';
     readonly stepDelete: 'Delete';
     readonly stepBond: 'Bond change';
     readonly stepLabel: 'Label';
@@ -901,6 +1122,18 @@ export declare const STRINGS: {
     readonly queryModeItem: 'Query mode';
     readonly queryModeOn: 'Query mode on';
     readonly queryModeOff: 'Query mode off';
+    /**
+     * An empty reaction canvas's hint (spike reaction-bar, RXN-019): one line, `{arrow}` the arrow tool's name as the bar
+     * names it (`reactionArrow`).
+     */
+    readonly reactionHint: 'Draw reactants, a {arrow}, then products';
+    /** Auto-map's quiet line when the mapper paired some molecules with none of its own (spike reaction-map): their SMILES. */
+    readonly mapUnpaired: {
+        readonly one: 'Auto-map could not map {count} molecule: {smiles}';
+        readonly other: 'Auto-map could not map {count} molecules: {smiles}';
+    };
+    /** A map edit (K3): "Mapped 2 atoms". */
+    readonly mapped: 'Mapped {what}';
     readonly settingAtomColours: 'Colour atoms by element';
     readonly settingWarningMarks: 'Mark atoms with problems';
     readonly settingReadout: 'Formula and mass';
@@ -1029,6 +1262,10 @@ export declare const STRINGS: {
     readonly queryOrMore: '{n} or more';
     /** The query tooltip's field (spike polish-look, row 7): its name and its value, in the menus' words ("ring bond count 2"). */
     readonly queryTipField: '{field} {value}';
+    /** The query tooltip of an atom with H count None beside one that may be H (run20, QUERY-036): "[H,Cl,F] beside it is never H". */
+    readonly queryTipNeverH: '{label} beside it is never H';
+    /** The query tooltip of an atom that may be H beside one with H count None (QUERY-036): "never H: the C beside it has H count none". */
+    readonly queryTipNoHBeside: 'never H: the {atom} beside it has {field}';
     readonly queryAromatic: 'Aromatic';
     readonly queryAliphatic: 'Aliphatic';
     readonly clearQueryProperties: 'Clear query properties';
@@ -1087,13 +1324,15 @@ export declare const STRINGS: {
     readonly counterClockwise: 'Counter-clockwise';
     /** A tool or an action while the sketcher is view-only (API-029; spike later-quick). */
     readonly viewOnlyOff: '{name}: off while the sketcher is view-only';
+    /** A tool while the drawing loads (spike pending-guard): the first value, or a host's write waiting for a module. */
+    readonly pendingOff: '{name}: off until the drawing has loaded';
     /** The shortcuts sheet's row for x over an atom (KEY-008, P7). */
     readonly sheetGenericX: 'The generic atom X (query mode)';
 };
 /** A message's name. */
 export type StringKey = keyof typeof STRINGS;
 /** The messages with placeholders or plural forms: read through the catalog's functions, never as text. */
-type FormattedKey = 'readoutUnspecified' | 'readoutAtom' | 'readoutAtomValence' | 'readoutBond' | 'readoutDrawn' | 'readoutMoved' | 'readoutCopyItem' | 'readoutCopied' | 'groupCount' | 'percent' | 'zoomButton' | 'withHotkey' | 'notAvailableYet' | 'noRoomBond' | 'noRoomRing' | 'noRoomChain' | 'noRoomTemplate' | 'noRoomMerge' | 'thisAtom' | 'noRoomForRadical' | 'problemValence' | 'chargeLimitUp' | 'chargeLimitDown' | 'tooClose' | 'cannotFlip' | 'cannotTurn' | 'noFreeAttachment' | 'pasteNotYet' | 'clipboardBlocked' | 'copyAsBlocked' | 'copiedLost' | 'copiedV3000' | 'copiedV3000Lost' | 'copiedV3000Needed' | 'copiedNone' | 'lossAlias' | 'lossRLabelNumbers' | 'lossAttachmentPoints' | 'lossStereoGroups' | 'lossChiralFlag' | 'lossQuery' | 'lossSgroup' | 'lossHydrogenBond' | 'lossZeroOrder' | 'lossAtomMaps' | 'lossStereo' | 'lossRLabel' | 'lossDummy' | 'lossDative' | 'lossOther' | 'pasteNotAs' | 'pasteNotAsMol' | 'pasteSpecialHint' | 'notReadAs' | 'notReadAsMol' | 'dropNothing' | 'dropNotYet' | 'pasteNoText' | 'readPasted' | 'readDropped' | 'readWritten' | 'readLeftOut' | 'readAlso' | 'leftStructure' | 'leftText' | 'leftGraphic' | 'leftArrow' | 'leftPicture' | 'leftBracket' | 'keptAliases' | 'lostRecords' | 'lostSdData' | 'lostRgroupDefinitions' | 'lostCoordinates3d' | 'lostSgroup' | 'lostQuery' | 'lostCxSection' | 'lostMolfile' | 'lostOther' | 'degrees' | 'radicalElectrons' | 'notAnElement' | 'notValid' | 'detailsNumber' | 'detailsMass' | 'opensDialog' | 'atomCount' | 'bondCount' | 'both' | 'description' | 'withFormula' | 'hotAtom' | 'hotBond' | 'selected' | 'added' | 'deleted' | 'pasted' | 'bondNow' | 'bondsNow' | 'atomNow' | 'atomsNow' | 'changed' | 'moved' | 'rotated' | 'flipped' | 'joined' | 'undone' | 'redone' | 'newDrawing' | 'noCentreConfig' | 'noAxisConfig' | 'atomNumber' | 'bondNumber' | 'stereoConfigOf' | 'stereoGroupChip' | 'stereoGroupSaid' | 'stereoGroupOf' | 'stereoGroupOfSelected' | 'groupSizeCentres' | 'groupSizeElements' | 'newAndGroup' | 'newOrGroup' | 'selectAllOfGroup' | 'stereoElements' | 'unspecifiedCount' | 'standsFor' | 'flagSaid' | 'stereoRemoved' | 'wedgesPlaced' | 'centreCount' | 'axisCount' | 'stereoBondCount' | 'aromatized' | 'dearomatized' | 'cantAromatize' | 'cantDearomatize' | 'cantAromatizeSome' | 'cantDearomatizeSome' | 'doneAndRefused' | 'ringCount' | 'ringSystemCount' | 'cleanedAtoms' | 'switchedOn' | 'switchedOff' | 'toolThen' | 'toolChosen' | 'zoomTo' | 'sheetInTurn' | 'cycleFirst' | 'cycleLater' | 'sheetFuse' | 'sheetNudge' | 'sheetRotate' | 'sheetCopyAs' | 'sheetPasteAs' | 'dissolveQuestion' | 'sheetAbbreviation' | 'sgroupNameTooLong' | 'sgroupFieldNameTooLong' | 'sgroupValueTooLong' | 'sgroupCountRange' | 'sgroupLabelTooLong' | 'sgroupContextMismatch' | 'sgroupTipData' | 'sgroupTipSru' | 'sgroupTipMul' | 'sgroupTipSup' | 'sgroupTipOther' | 'queryAtomList' | 'queryAtomNotList' | 'queryAtomGeneric' | 'queryOrMore' | 'queryTipField' | 'smartsNotRead' | 'queryModeOnly' | 'pasteQueryOnly' | 'dropQueryOnly' | 'queryElementOff' | 'viewOnlyOff' | 'noItemsHereFoundOn' | 'notApplied' | 'chargeSaidPlus' | 'chargeSaidMinus' | 'zoomRange';
+type FormattedKey = 'readoutUnspecified' | 'readoutAtom' | 'readoutAtomValence' | 'readoutBond' | 'readoutDrawn' | 'readoutMoved' | 'readoutCopyItem' | 'readoutCopied' | 'groupCount' | 'percent' | 'zoomButton' | 'withHotkey' | 'notAvailableYet' | 'copyNoReaction' | 'noRoomBond' | 'noRoomRing' | 'noRoomChain' | 'noRoomTemplate' | 'noRoomMerge' | 'thisAtom' | 'noRoomForRadical' | 'problemValence' | 'chargeLimitUp' | 'chargeLimitDown' | 'tooClose' | 'cannotFlip' | 'cannotTurn' | 'noFreeAttachment' | 'pasteNotYet' | 'clipboardBlocked' | 'copyAsBlocked' | 'copiedLost' | 'copiedV3000' | 'copiedV3000Lost' | 'copiedV3000Needed' | 'copiedNone' | 'copiedLater' | 'copiedAs' | 'lossReaction' | 'lossArrowStyle' | 'lossFailedReaction' | 'lossResonanceArrows' | 'lossCurvedArrows' | 'lossTexts' | 'lossCompoundNumbers' | 'lossBrackets' | 'lossCycles' | 'lossShapes' | 'lossAlias' | 'lossRLabelNumbers' | 'lossAttachmentPoints' | 'lossStereoGroups' | 'lossChiralFlag' | 'lossQuery' | 'lossSgroup' | 'lossHydrogenBond' | 'lossZeroOrder' | 'lossAtomMaps' | 'lossStereo' | 'lossRLabel' | 'lossDummy' | 'lossDative' | 'lossOther' | 'pasteNotAs' | 'pasteNotAsMol' | 'pasteSpecialHint' | 'notReadAs' | 'notReadAsMol' | 'dropNothing' | 'dropNotYet' | 'pasteNoText' | 'readPasted' | 'readDropped' | 'readWritten' | 'readLeftOut' | 'readAlso' | 'leftStructure' | 'leftText' | 'leftGraphic' | 'leftArrow' | 'leftPicture' | 'leftBracket' | 'keptAliases' | 'lostRecords' | 'lostSdData' | 'lostRgroupDefinitions' | 'lostCoordinates3d' | 'lostSgroup' | 'lostQuery' | 'lostCxSection' | 'lostMolfile' | 'lostOther' | 'degrees' | 'radicalElectrons' | 'notAnElement' | 'notValid' | 'detailsNumber' | 'detailsMass' | 'opensDialog' | 'atomCount' | 'bondCount' | 'both' | 'description' | 'withFormula' | 'hotAtom' | 'hotBond' | 'selected' | 'added' | 'deleted' | 'pasted' | 'bondNow' | 'bondsNow' | 'atomNow' | 'atomsNow' | 'changed' | 'moved' | 'rotated' | 'flipped' | 'joined' | 'undone' | 'redone' | 'newDrawing' | 'noCentreConfig' | 'noAxisConfig' | 'atomNumber' | 'bondNumber' | 'stereoConfigOf' | 'stereoGroupChip' | 'stereoGroupSaid' | 'stereoGroupOf' | 'stereoGroupOfSelected' | 'groupSizeCentres' | 'groupSizeElements' | 'newAndGroup' | 'newOrGroup' | 'selectAllOfGroup' | 'stereoElements' | 'unspecifiedCount' | 'standsFor' | 'flagSaid' | 'stereoRemoved' | 'wedgesPlaced' | 'centreCount' | 'axisCount' | 'stereoBondCount' | 'aromatized' | 'dearomatized' | 'cantAromatize' | 'cantDearomatize' | 'cantAromatizeSome' | 'cantDearomatizeSome' | 'queryRingSystems' | 'cantAromatizeRings' | 'cantDearomatizeRings' | 'doneAndRefused' | 'ringCount' | 'ringSystemCount' | 'cleanedAtoms' | 'switchedOn' | 'switchedOff' | 'toolThen' | 'toolChosen' | 'zoomTo' | 'reactionHint' | 'cycleChosen' | 'cyclePlaced' | 'cycleFilled' | 'cycleTaken' | 'droppedAgent' | 'droppedAgents' | 'routeContinued' | 'stepAddMode' | 'stepRoleReactant' | 'stepRoleProduct' | 'stepRoleOut' | 'textLandsStep' | 'textLeavesStep' | 'textJoinedStep' | 'textLeftStep' | 'slotCycleTip' | 'slotRingTip' | 'slotChosen' | 'stepAddHandle' | 'continueRouteTip' | 'stepAddTip' | 'roleInStep' | 'mapTwiceMolecule' | 'mapTwiceReactants' | 'mapTwiceProducts' | 'mapUnpaired' | 'mapped' | 'sheetInTurn' | 'cycleFirst' | 'cycleLater' | 'sheetFuse' | 'sheetNudge' | 'sheetRotate' | 'sheetCopyAs' | 'sheetPasteAs' | 'dissolveQuestion' | 'sheetAbbreviation' | 'sgroupNameTooLong' | 'sgroupFieldNameTooLong' | 'sgroupValueTooLong' | 'sgroupCountRange' | 'sgroupLabelTooLong' | 'sgroupContextMismatch' | 'sgroupTipData' | 'sgroupTipSru' | 'sgroupTipMul' | 'sgroupTipSup' | 'sgroupTipOther' | 'queryAtomList' | 'queryAtomNotList' | 'queryAtomGeneric' | 'queryOrMore' | 'queryTipField' | 'queryTipNeverH' | 'queryTipNoHBeside' | 'smartsNotRead' | 'queryModeOnly' | 'pasteQueryOnly' | 'dropQueryOnly' | 'queryElementOff' | 'viewOnlyOff' | 'pendingOff' | 'noItemsHereFoundOn' | 'notApplied' | 'chargeSaidPlus' | 'chargeSaidMinus' | 'zoomRange';
 /** The messages read as plain text. */
 export type PlainKey = Exclude<StringKey, FormattedKey>;
 /** What a refused gesture was for, as a refusal says it (F3). */
@@ -1130,6 +1369,10 @@ export type Catalog = {
      * ("unsaturated", "aromatic"). In English the first letter is lower-cased, unless it is a symbol (H).
      */
     queryTipField(field: string, value?: string): string;
+    /** QUERY-036: "[H,Cl,F] beside it is never H", `label` the neighbour's query label. */
+    queryTipNeverH(label: string): string;
+    /** QUERY-036: "never H: the C beside it has H count none", `atom` the neighbour's label, `field` the tooltip's H count None. */
+    queryTipNoHBeside(atom: string, field: string): string;
     noRoomForRadical(symbol: string): string;
     problemValence(symbol: string): string;
     chargeLimit(symbol: string, delta: 1 | -1): string;
@@ -1149,6 +1392,10 @@ export type Catalog = {
     lossName(code: string): string;
     /** Copy As of a part `format` cannot hold at all (spike inchi, N6): "Not copied: InChI cannot hold R labels". */
     copiedNone(format: string, what: readonly string[]): string;
+    /** Copy As of a reaction in a format whose reaction writer is still to come (spike arrows-matrix): "Not copied: a reaction is not written as CDXML yet". */
+    copiedLater(format: string): string;
+    /** A copy as `format` written (spike copy-said, CLIP-021): "Copied as CDXML". */
+    copiedAs(format: string): string;
     pasteNotAs(format: string): string;
     pasteSpecialHint(key: string): string;
     notReadAs(format: string): string;

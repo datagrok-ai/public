@@ -1,6 +1,7 @@
 /**
- * The reaction cell renderer and reaction drawing: RDKit's in both modes (Crux has no reaction drawing yet; engine/
- * README.md, "What stays RDKit"). Its `rdKitModule` is RDKit's.
+ * The reaction cell renderer and reaction drawing: in Crux mode the cells are drawn by Crux (crux-reaction-drawing.ts),
+ * in RDKit mode by RDKit. The reaction previews follow the engine in effect the same way
+ * (utils/reactions/reaction-drawing.ts); `renderReactionToCanvas` is their RDKit side. Its `rdKitModule` is RDKit's.
  */
 import * as DG from 'datagrok-api/dg';
 import {RDModule, RDReaction} from '@datagrok-libraries/chem-meta/src/rdkit-api';
@@ -9,6 +10,9 @@ import {USE_RDKIT_REACTION_RENDERER} from '../utils/reactions/consts';
 import {_convertMolNotationByRdKit} from '../utils/convert-notation-utils';
 import {MESSAGE_MALFORMED} from '../constants';
 import {prepareReactionDepiction} from './reaction-depiction';
+import {CDXML_UNITS, drawCdxmlCell} from './cdxml-reaction-cells';
+import {CruxPictureOptions, chemDrawOptions, cruxDrawsReactions, cruxPictureKey, cruxReactionPixels, cruxReadsReaction}
+  from './crux-reaction-drawing';
 
 const MAX_STEPS_PER_ROW = 3;
 const MIN_STEP_WIDTH = 240;
@@ -38,11 +42,69 @@ export function parseMultiStepReaction(reactionString: string): string[][] {
   return branches.length > 0 ? branches : [[reactionString]];
 }
 
+/** Reaction cell pictures kept, Crux's and RDKit's alike ({@link PictureCache}): at most this many (DG.LruCache's own
+ * size), and at most this many bytes of pixels together. A picture is its cell's w x h x DPR^2 x 4 bytes: 100 cells of
+ * 600 x 150 CSS px hold 36 MB at DPR 1, but 100 cells of 300 x 400 hold 384 MB at DPR 2 (measured). 64 MB
+ * holds three screens of cells at DPR 2 (a 1440 x 900 screen: 21 MB) and the 100 pictures of 600 x 150 cells at
+ * DPR 1, so a grid scrolled back a page or two still copies its pictures. */
+export const CRUX_PICTURES_KEPT = 100;
+export const CRUX_PICTURE_BYTES = 64 * 1048576;
+
+/** What a reaction renderer keeps its pictures in, by key: a {@link PictureCache} (both engines' pictures), or a
+ * DG.LruCache a test puts in its place. */
+export interface PictureStore {
+  getOrCreate(key: string, make: (key: string) => ImageData): ImageData;
+}
+
+/** Pictures by key, the least recently drawn dropped first past `size` of them or `budget` bytes of pixels (the newest
+ * kept whatever its size). */
+export class PictureCache implements PictureStore {
+  private readonly kept = new Map<string, ImageData>();
+  private held = 0;
+
+  constructor(readonly size = CRUX_PICTURES_KEPT, readonly budget = CRUX_PICTURE_BYTES) {}
+
+  /** The bytes of pixels kept. */
+  get bytes(): number {
+    return this.held;
+  }
+
+  /** How many pictures are kept. */
+  get count(): number {
+    return this.kept.size;
+  }
+
+  /** The picture kept for `key` (now the most recently used), else `make`'s, kept. */
+  getOrCreate(key: string, make: (key: string) => ImageData): ImageData {
+    const hit = this.kept.get(key);
+    if (hit !== undefined) {
+      this.kept.delete(key);
+      this.kept.set(key, hit);
+      return hit;
+    }
+    const made = make(key);
+    this.kept.set(key, made);
+    this.held += made.data.byteLength;
+    for (const [k, v] of this.kept) { // the oldest first
+      if (this.kept.size <= 1 || (this.kept.size <= this.size && this.held <= this.budget))
+        break;
+      this.kept.delete(k);
+      this.held -= v.data.byteLength;
+    }
+    return made;
+  }
+}
+
 export class RDKitReactionRenderer extends DG.GridCellRenderer {
   rdKitModule: RDModule;
   canvasCounter: number;
   reactionCache: DG.LruCache<string, RDReaction | null> = new DG.LruCache<string, RDReaction | null>();
-  reactionRendersCache: DG.LruCache<string, ImageData> = new DG.LruCache<string, ImageData>();
+  /** RDKit's pictures (RDKit mode), by size and text: within the same count and byte budget as Crux's, since a picture
+   * is its cell's w x h x 4 bytes and tall cells made 100 of them hundreds of MB ({@link PictureCache}). */
+  reactionRendersCache: PictureStore = new PictureCache();
+  /** Crux's pictures (Crux mode), by cruxPictureKey (text, size, pixel ratio, options): within a byte budget
+   * ({@link PictureCache}). */
+  cruxRendersCache: PictureStore = new PictureCache();
   canvasReused: OffscreenCanvas;
 
   constructor(rdKitModule: RDModule) {
@@ -135,11 +197,28 @@ export class RDKitReactionRenderer extends DG.GridCellRenderer {
     onscreenCanvas.getContext('2d', {willReadFrequently: true})!.putImageData(imageData, Math.round(x), Math.round(y));
   }
 
+  /** `reactionString` drawn by Crux with `options` into the box `x, y, w, h` (device px) of `onscreenCanvas`, at
+   * `pixelRatio` device px per CSS px: its picture drawn once, then copied, as _drawReaction does RDKit's. */
+  _drawReactionByCrux(x: number, y: number, w: number, h: number, onscreenCanvas: HTMLCanvasElement,
+    reactionString: string, pixelRatio: number, options: CruxPictureOptions): void {
+    if (w < 1 || h < 1)
+      return;
+    const [width, height] = [Math.floor(w), Math.floor(h)];
+    const imageData = this.cruxRendersCache.getOrCreate(
+      cruxPictureKey(reactionString, width, height, pixelRatio, options),
+      () => cruxReactionPixels(this.ensureCanvasSize(width, height), reactionString, width, height, pixelRatio,
+        options));
+    onscreenCanvas.getContext('2d', {willReadFrequently: true})!.putImageData(imageData, Math.round(x), Math.round(y));
+  }
+
+  /** A route's steps in panels (device px): drawn by RDKit, or by Crux with `cruxOptions` when given (the steps as
+   * written). */
   _drawMultiStepReaction(
     x: number, y: number, w: number, h: number,
     canvas: HTMLCanvasElement, branches: string[][], pixelRatio = window.devicePixelRatio,
+    cruxOptions?: CruxPictureOptions,
   ): void {
-    const steps = this._prepareSteps(branches.flat());
+    const steps = cruxOptions ? branches.flat() : this._prepareSteps(branches.flat());
     const columns = Math.min(MAX_STEPS_PER_ROW, Math.max(1, Math.floor(w / pixelRatio / MIN_STEP_WIDTH)));
     const numRows = Math.ceil(steps.length / columns);
     const ctx = canvas.getContext('2d', {willReadFrequently: true})!;
@@ -166,8 +245,13 @@ export class RDKitReactionRenderer extends DG.GridCellRenderer {
         for (let i = 0; i < stepsInRow; i++) {
           const stepX = x + Math.floor(i * w / stepsInRow);
           const stepW = Math.floor((i + 1) * w / stepsInRow) - Math.floor(i * w / stepsInRow);
-          this._drawReaction(stepX + gap / 2, rowY + headerH, stepW - gap, rowH - headerH,
-            canvas, steps[rowStart + i]);
+          if (cruxOptions) {
+            this._drawReactionByCrux(stepX + gap / 2, rowY + headerH, stepW - gap, rowH - headerH,
+              canvas, steps[rowStart + i], pixelRatio, cruxOptions);
+          } else {
+            this._drawReaction(stepX + gap / 2, rowY + headerH, stepW - gap, rowH - headerH,
+              canvas, steps[rowStart + i]);
+          }
           if (headerH) {
             ctx.fillStyle = style.getPropertyValue('--blue-1').trim() || style.color;
             ctx.fillText('Step ', stepX + gap, rowY + 4 * pixelRatio);
@@ -228,13 +312,30 @@ export class RDKitReactionRenderer extends DG.GridCellRenderer {
     const reactionString = gridCell.cell.value;
     if (reactionString == null || reactionString === '')
       return;
-
-    const r = window.devicePixelRatio;
-    x = r * x; y = r * y;
-    w = r * w; h = r * h;
+    // Crux mode: a column of CDXML pages (units `cdxml`) is pictured by Crux Sketch, its drawing as drawn
+    if (gridCell.cell.column?.meta.units === CDXML_UNITS && cruxDrawsReactions()) {
+      const ratio = window.devicePixelRatio;
+      drawCdxmlCell(g, ratio * x, ratio * y, ratio * w, ratio * h, gridCell, ratio);
+      return;
+    }
 
     const branches = parseMultiStepReaction(reactionString);
     const totalSteps = branches.reduce((n, b) => n + b.length, 0);
+    const r = window.devicePixelRatio;
+    // Crux mode: a reaction, or a route as one chain, drawn whole by Crux; a route Crux reads no chain
+    // from in today's step panels, each step drawn by Crux; the molecules with the column's draw options, as its
+    // molecule cells would be; each picture kept and copied on the next paint
+    if (cruxDrawsReactions()) {
+      const options = {drawOptions: chemDrawOptions(gridCell.cell.column)};
+      if (totalSteps === 1 || cruxReadsReaction(reactionString))
+        this._drawReactionByCrux(r * x, r * y, r * w, r * h, g.canvas, reactionString, r, options);
+      else
+        this._drawMultiStepReaction(r * x, r * y, r * w, r * h, g.canvas, branches, r, options);
+      return;
+    }
+
+    x = r * x; y = r * y;
+    w = r * w; h = r * h;
     if (totalSteps === 1)
       this._drawReaction(x, y, w, h, g.canvas, this._prepareSteps([branches[0][0]])[0]);
     else
