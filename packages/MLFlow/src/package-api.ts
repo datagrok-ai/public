@@ -11,4 +11,20 @@ export namespace funcs {
   export async function info(): Promise<void> {
     return await grok.functions.call('MLflow:Info', {});
   }
+
+  /**
+   * Lists the MLflow models synced from the MLFlow connections: id, name, target, features, created
+   */
+  export async function mlflowModels(): Promise<DG.DataFrame> {
+    return await grok.functions.call('MLflow:MlflowModels', {});
+  }
+
+  /**
+   * Predicts with an MLflow model in its container, which the first application starts
+   * @param {DG.DataFrame} df - The model's input columns, in its order.
+   * @param {any} model - The model id from MLflow models, as UTF-8 bytes.
+   */
+  export async function applyMlflow(df: DG.DataFrame , model: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('MLflow:ApplyMlflow', { df, model });
+  }
 }

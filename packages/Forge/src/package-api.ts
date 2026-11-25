@@ -23,6 +23,14 @@ export namespace funcs {
   }
 
   /**
+   * Opens the models a method provides, such as the MLflow models the platform syncs (the core's Browse > Platform > Predictive models > MLFlow calls it)
+   * @param {string} method - The method as Forge names it, for example MLflow
+   */
+  export async function forgeMethodModels(method: string ): Promise<DG.View> {
+    return await grok.functions.call('Forge:ForgeMethodModels', { method });
+  }
+
+  /**
    * Opens or focuses the Models view
    */
   export async function forgeModels(): Promise<void> {

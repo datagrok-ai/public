@@ -16,6 +16,7 @@ import {openShareDialog, registerModelActions} from './ui/model-actions';
 import {ModelComparisonHandler} from './ui/model-comparison';
 import {ForgeModelHandler} from './ui/model-handler';
 import {isForgePrediction, predictedByPane} from './ui/prediction-column-panel';
+import {ProvidedModelsView} from './ui/provided-models-view';
 import {tableModelsPane} from './ui/table-models-panel';
 import {TrainView} from './ui/train-view';
 export * from './package.g';
@@ -40,6 +41,14 @@ export function _initForge(): void {
 //output: view result
 export async function forgeApp(): Promise<DG.ViewBase> {
   return ForgeApp.create();
+}
+
+//name: forgeMethodModels
+//description: Opens the models a method provides, such as the MLflow models the platform syncs (the core's Browse > Platform > Predictive models > MLFlow calls it)
+//input: string method {description: The method as Forge names it, for example MLflow}
+//output: view result
+export async function forgeMethodModels(method: string): Promise<DG.ViewBase> {
+  return ProvidedModelsView.create(method);
 }
 
 //name: forgeModels

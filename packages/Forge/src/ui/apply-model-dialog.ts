@@ -30,13 +30,17 @@ export interface ApplyDialogOptions {
   switchToTable?: boolean;
   /** With [modelId]: the table to open on while it is open (the catalog's **Applicable to**). */
   preferredTable?: DG.DataFrame | null;
+  /** A model its method provides: the dialog offers it alone. */
+  provided?: LoadedModel;
 }
 
 export async function applyModelDialog(options: ApplyDialogOptions): Promise<DG.Dialog> {
-  const rows: ApplyModelRow[] = await forgeDb.models.query().select(...APPLY_COLUMNS).top(MAX_MODELS);
+  const provided = options.provided;
+  const rows: ApplyModelRow[] = provided !== undefined ? [provided.row] :
+    await forgeDb.models.query().select(...APPLY_COLUMNS).top(MAX_MODELS);
   if (rows.length === 0)
     throw new ForgeError('No Forge models yet. Train and save one with ML | Models | Train Model... first.');
-  const preset = rows.find((row) => row.id === options.modelId);
+  const preset = provided?.row ?? rows.find((row) => row.id === options.modelId);
   const table = preset === undefined ? options.table : presetTable(options, preset);
   return new ApplyForm(rows, EngineRegistry.discover(), {...options, table}).dialog;
 }
@@ -121,6 +125,7 @@ class ApplyForm {
   private readonly models: Map<string, ApplyModelRow>;
   private readonly engines: Engine[];
   private readonly switchToTable: boolean;
+  private readonly provided: LoadedModel | undefined;
   private readonly tableInput: DG.InputBase<DG.DataFrame | null>;
   private readonly modelInput: DG.ChoiceInput<string | null>;
   private readonly missingValues: MissingValuesInputs;
@@ -147,6 +152,7 @@ class ApplyForm {
     this.engines = engines;
     this.table = options.table;
     this.switchToTable = options.switchToTable ?? false;
+    this.provided = options.provided;
     this.models = modelLabels(rows);
     const order = this.order();
     const preset = [...this.models].find(([, row]) => row.id === options.modelId)?.[0];
@@ -229,7 +235,7 @@ class ApplyForm {
       this.model = null;
       this.modelError = null;
       try {
-        this.model = row === undefined ? null : loadedModelOf(row, this.engines);
+        this.model = row === undefined ? null : this.provided ?? loadedModelOf(row, this.engines);
       } catch (e) {
         if (!(e instanceof ForgeError))
           throw e;

@@ -36,7 +36,9 @@ an EMS schema owned by Forge, and the UI on top.
 - **Missing values reach only a method that handles them.** Rows with gaps are skipped or the gaps are imputed before
   the engine is called, unless the method has `meta.mlnativenans` (see "Missing values"); dates and very large whole
   numbers (bigint) are not numerical features.
-- **Later:** more engines, MLflow models and the migration of existing models.
+- **MLflow models stay the platform's.** The core keeps the MLFlow connections, the sync, the model records and the
+  serving; the MLflow package's method lists and applies them (see "Provided models").
+- **Later:** more engines and the migration of existing models.
 
 ## Components and data flow
 
@@ -2401,9 +2403,11 @@ missing (a restored `models` view shows a one-line note; `grok.ml.applyModel` re
 | `forgeApply` | none (the current table) | `ML \| Models \| Apply Model...` |
 | `forgeApp` | none; output `view` | **Browse > Platform > Predictive models**, the URL `/models` (`urlNodesMapping['models']` highlights the node), a restored `models` view (without Forge: a one-line note) |
 | `applyModel` | `model`, `table`, `columnNamesMap`, `showProgress`, passed by name | `grok.ml.applyModel(name, table, map, showProgress)` for any name that is not a model of the earlier tool |
+| `forgeMethodModels` | `method` (`MLflow`); output `view` | **Browse > Platform > Predictive models > MLFlow** |
 
-The core hides the earlier tool's table pane **Models**, its **Predicted By** row in a column's **Details**, its
-**MLFlow** node and its other panes whether or not Forge is installed; models of the earlier tool are shown without
+The core hides the earlier tool's table pane **Models**, its **Predicted By** row in a column's **Details** and its
+other panes whether or not Forge is installed (its **MLFlow** node is back, see "Provided models"); models of the
+earlier tool are shown without
 commands. `ML | Models` and the Browse node exist only with Forge (the commands register after the package functions
 load). Renaming one of these functions or its inputs silently removes the entry point, or breaks `grok.ml.applyModel`;
 `ui-tests.ts` ("the core's entry points exist; Forge has no menu, app or view function of its own") pins them. Publishing or removing Forge
@@ -2522,8 +2526,8 @@ a data change).
 
 The model's menu has no **Add to** (the built-in tool added a model to an open project): a model reaches a Space by
 the platform's drag (see Sharing). Forge has no Browse node of its own (no app); with Forge installed, the core opens
-Forge's view **Models** from **Browse > Platform > Predictive models** (`/models`); the core no longer has the
-**MLFlow** node (see "Core entry points"). The built-in catalog was the core's card gallery (`DG.CardView`-like, with
+Forge's view **Models** from **Browse > Platform > Predictive models** (`/models`) and Forge's view of the MLflow
+models from its **MLFlow** node (see "Core entry points"). The built-in catalog was the core's card gallery (`DG.CardView`-like, with
 a filter panel, grouping and smart search); Forge's gallery keeps its look (search, list/cards/table, sort, count)
 without those (see "Models view"), and a card's double-click no longer opens Edit.
 There is no catalog menu item (the built-in tool had none either). The Domains view of `model` can be filtered by
@@ -2791,6 +2795,22 @@ Method, Task, Target, Data storage, Training rows, Tags and Created, in this ord
 `setVisible`); `id`, `version`, `updated_on`, `author_id` and the loaded `features`, `options` and `blob` (for the
 card, **Applicable to** and **Download**) stay hidden. "No models yet." is shown while the catalog is empty.
 
+## Provided models
+
+A method may provide ready models instead of training them: a function with `meta.mlrole: models` returns one row
+per model, `id`, `name`, `target`, `features` (the json list `[{name, type, semType?}]`) and, optionally, the date
+`created`. Such a method needs only `apply`, which gets the `id` as the model (UTF-8 bytes); without `train` and
+`isApplicable` it is not a training method (`isComplete`). The MLflow package's method `MLflow` lists the models
+the core syncs from its MLFlow connections (`grok.dapi.models`, source `MLFlow`) and applies one through
+`grok.ml.applyModel`, so the connections, the credentials, the records and the containers stay the core's.
+
+`providedModels(engine)` (`catalog/provided-models.ts`) gives them as a frame with the catalog's column names,
+`providedRow` one of them as a model row, `providedModelOf` (`apply/apply-model.ts`) the `LoadedModel` with its
+`reference`. `ProvidedModelsView` (`ui/provided-models-view.ts`, `Forge:forgeMethodModels`) is the catalog's
+`Gallery` over them with the model cards and **Apply...** only; it reads the list again every minute and on Refresh.
+The Apply dialog (`provided` in its options) offers that model alone. A provided model has no row in `forge.model`:
+its applications are not recorded and its prediction column gets no `predictive.model` tag.
+
 ## Engine contract (methods in the UI)
 
 An engine is the set of functions that share `meta.mlname` (the engine id). `meta.mlrole` gives each function's role:
@@ -2802,6 +2822,7 @@ An engine is the set of functions that share `meta.mlname` (the engine id). `met
 | `isApplicable` | `(df, predictColumn) -> bool` | |
 | `isInteractive` | `(df, predictColumn) -> bool` | Optional. `meta.mlupdate: 'false'` turns off live retraining |
 | `visualize` | `(df, targetColumn, predictColumn, model)` | Optional |
+| `models` | `() -> dataframe` | Optional: the ready models the method provides (see "Provided models") |
 
 Three more `meta` keys on `train`: `mlhasrows: 'true'` (the model file embeds training rows; EDA's SVM and
 k-Nearest Neighbors), `mlserver: 'true'` (the method runs on the server: `isServerEngine`, which also keeps a script

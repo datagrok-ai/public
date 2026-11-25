@@ -35,6 +35,9 @@ export interface LoadedModel {
   features: ColumnSchema[];
   options: PreparationOptions;
   blobPath: string;
+  /** A model its method provides ({@link providedModelOf}): what the method's `apply` takes as the model. Such a model
+   * has no file, and its applications and prediction columns are not recorded. */
+  reference?: Uint8Array;
 }
 
 export interface ApplyRequest {
@@ -94,12 +97,25 @@ export function loadedModelOf(row: ApplyModelRow, engines: Engine[]): LoadedMode
   return {row, engine, features, options: preparationOptionsOf(row.options), blobPath: blob.path};
 }
 
+/** [row] of a model the method [engine] provides (`meta.mlrole: models`), ready to apply: its id is what the method's
+ * `apply` gets as the model. */
+export function providedModelOf(row: ApplyModelRow, engine: Engine): LoadedModel {
+  const features = featureSchemasOf(row.features);
+  if (features === null)
+    throw new ForgeError(`The model '${row.name}' has no feature list.`);
+  return {row, engine, features, options: preparationOptionsOf(row.options), blobPath: '',
+    reference: new TextEncoder().encode(row.id)};
+}
+
 /** Adds the prediction column to the request's table and records the application as completed, failed or
- * cancelled; mapping problems and an empty table are refused first, without a record. */
+ * cancelled; mapping problems and an empty table are refused first, without a record. A provided model's application
+ * is not recorded. */
 export async function applyAndRecord(request: ApplyRequest, source: ApplicationSource,
   progress?: LoopProgress): Promise<ApplyResult> {
   checkApplyRequest(request);
   const {model, table} = request;
+  if (model.reference !== undefined)
+    return predict(request, progress);
   const startedOn = Date.now();
   const record = (outcome: Pick<ApplicationInsert, 'status' | 'column_name' | 'skipped_rows' | 'error'>) =>
     recordApplication({model_id: model.row.id, table_name: table.name, row_count: table.rowCount, source,
@@ -195,7 +211,7 @@ export async function predictRows(request: ApplyRequest, progress?: LoopProgress
       'predicted. Fill the missing values or choose Impute.');
   }
   const columns = replayPreprocessing(prepared.features, model.options);
-  const blob = await grok.dapi.files.readAsBytes(model.blobPath);
+  const blob = model.reference ?? await grok.dapi.files.readAsBytes(model.blobPath);
   const {prediction: raw, probabilities} =
     await predictInBatches(model.engine, columns, rowCount, blob, request.batchSize, progress);
   return {columns, raw, labels: replayPostprocessing(raw, model.options, probabilities), keptRows: prepared.keptRows,
@@ -209,7 +225,8 @@ async function predict(request: ApplyRequest, progress?: LoopProgress): Promise<
   const added = (values: DG.Column, name: string): DG.Column => {
     const column = keptRows === null ? values : scatteredColumn(values, keptRows, table.rowCount);
     column.name = name;
-    column.setTag(PREDICTION_TAG, model.row.id);
+    if (model.reference === undefined)
+      column.setTag(PREDICTION_TAG, model.row.id);
     table.columns.add(column);
     return column;
   };
