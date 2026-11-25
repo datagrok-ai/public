@@ -23,8 +23,6 @@ describe('grok.js argument parsing', () => {
   // Commands such as `grok api` and `grok create` reject any option they do not expect, so a
   // default that grok.js adds for one command breaks every other one (6.7.7: `send-email: false`).
   const defaults: Record<string, Record<string, unknown>> = {
-    test: {dartium: false},
-    stresstest: {dartium: false},
     server: {'send-email': false},
     s: {'send-email': false},
     'connect-folder': {'read-only': false, 'foreground': false, 'force': false, 'follow': false},
@@ -44,10 +42,6 @@ describe('grok.js argument parsing', () => {
     const run = spawnSync(process.execPath, ['-r', stub, grokJs, 's', 'users', 'invite', '--send-email', 'a@b.c'],
       {encoding: 'utf-8'});
     expect(JSON.parse(run.stdout)).toEqual({'send-email': true});
-  });
-
-  it('passes --dartium to grok test', () => {
-    expect(parsedOptions('test', '--dartium')).toEqual({dartium: true});
   });
 });
 

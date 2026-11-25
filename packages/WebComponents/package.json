@@ -29,8 +29,5 @@
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/WebComponents"
   },
-  "category": "General",
-  "meta": {
-    "dartium": false
-  }
+  "category": "General"
 }

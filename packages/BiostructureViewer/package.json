@@ -75,9 +75,6 @@
     "All users"
   ],
   "category": "Bioinformatics",
-  "meta": {
-    "dartium": false
-  },
   "playwrightTests": "playwright",
   "grok": {
     "testDependencies": [

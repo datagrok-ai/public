@@ -479,8 +479,7 @@ export class BigIntColumn extends Column<BigInt> {
     if (v == null)
       return null;
 
-    // @ts-ignore: fallback for the browsers that don't support BigInt, such as Dartium
-    return BigInt ? BigInt(v) : parseInt(v);
+    return BigInt(v);
   }
 
   /**

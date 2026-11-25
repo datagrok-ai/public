@@ -449,10 +449,9 @@ export namespace HtmlUtils {
   }
 }
 
-export function _isDartium() {
-  if (typeof document.head == 'undefined')
-    return false;
-  return document.head.querySelectorAll('script[src*=".dart.js"]').length == 0;
+/** @deprecated Always false: the platform no longer runs in Dartium. Kept for plugins published before its removal. */
+export function _isDartium(): boolean {
+  return false;
 }
 
 

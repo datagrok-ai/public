@@ -36,7 +36,6 @@
   ],
   "category": "Bioinformatics",
   "meta": {
-    "dartium": false,
     "browserFeatures": [
       "wasm"
     ]

@@ -1083,8 +1083,8 @@ export class AddNewColumnDialog {
 
   getColumnNamesAndSelections(formula: string): ColumnNamesAndSelections {
     //first check for parts in quotes and collect indexes outside quotes to check them for column names
-    const leadingSpaces = formula.length - (DG._isDartium() ? formula.trimLeft().length : formula.trimStart().length);
-    const closingSpaces = formula.length - (DG._isDartium() ? formula.trimRight().length : formula.trimEnd().length);
+    const leadingSpaces = formula.length - formula.trimStart().length;
+    const closingSpaces = formula.length - formula.trimEnd().length;
     let isSingleCol = false;
     const columnSelections: {from: number, to: number}[] = [];
     const columnNames: string[] = [];

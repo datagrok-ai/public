@@ -45,8 +45,7 @@
   ],
   "category": "General",
   "meta": {
-    "url": "/usage",
-    "dartium": false
+    "url": "/usage"
   },
   "properties": [
     {
