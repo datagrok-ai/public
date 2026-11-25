@@ -2,6 +2,12 @@
 
 ## v.next
 
+* Formula Lines: Fixed the Delete button of an annotation region listed below formula lines removing another region, or none
+* Formula Lines: Fixed the Delete button removing another item after the items table is sorted
+* Formula Lines: Fixed Clone of an annotation region changing its fill opacity and landing in the formula lines history
+* Formula Lines: Fixed the OK button being enabled while another item is invalid, and staying disabled after the invalid item is removed
+* Formula Lines: Fixed an error on changing the preview's axis while the formula of the line is incomplete
+* Formula Lines: Fixed an error on opening the dialog for a table
 * [public#4668](https://github.com/datagrok-ai/public/issues/4668): Spotlight: Fixed the Recent and Shared with me lists failing with "Cannot read properties of null" when they held an entity the platform cannot show, such as a saved filter; such entities are left out
 * core#1765: Detectors: Declared the column types the semantic type detectors check, so the platform no longer calls them for other columns
 * Spotlight: Packages can add tabs: a function with `meta.role: spotlightTab` that returns a widget becomes a tab after the built-in ones, named by its friendly name; `meta.spotlightDefault: true` opens the Spotlight on it the first time it appears, after which the tab the user last picked is kept. What a tab finds goes to the preview below the Spotlight, as the Workspace tab's previews do, through `PowerPack:showSpotlightPreview(content, title)`
