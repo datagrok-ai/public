@@ -279,7 +279,7 @@ export class Column<T = any, TInit = T> {
       if (v instanceof TypedArray)
         return v;
     }
-    return api.grok_Column_GetRawDataDartium(this.dart);
+    throw new Error(`Column '${this.name}': raw data is not a typed array`);
   }
 
   /** Linearly maps idx-th value to the [0,1] interval, where 0 represents column minimum, and 1 represents maximum. */

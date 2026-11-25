@@ -1512,7 +1512,6 @@ export interface IDartApi {
   grok_Column_Get_Name(c: any): any;
   grok_Column_Set_Name(c: any, name: String): any;
   grok_Column_Get_Version(c: any): any;
-  grok_Column_GetRawDataDartium(c: any): any;
   grok_Column_GetRawData(c: any): any;
   grok_Column_SetRawData(c: any, rawData: any, notify?: Bool): any;
   grok_Column_AsDoubleList(c: any): any;
