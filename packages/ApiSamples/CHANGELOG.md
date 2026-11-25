@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [#4677](https://github.com/datagrok-ai/public/issues/4677): ui/views/unsaved-work.js: a view that asks before its unsaved changes are lost
 * dapi/domains/handler.js creates the issue it shows and deletes it, instead of failing on a tracker with no issues
 * Tests: Skipped the samples a test stand cannot run: the ai/ samples that need a model, dapi/cloud-logs.js (AWS), data-access/db-ddl.js and db-table-writes.js (a writable database) and ui/dialogs/pick-file.js (a dialog only a user closes)
 * [core#637](https://github.com/datagrok-ai/core/issues/637): Added ui/components/color-picker.js (`ui.colorPicker` with an alpha channel) and data-frame/metadata/annotation-region-fill.js (`AnnotationRegionsHelper.getFillColor`); formula-lines.js, inputs.js and scatter-plot.js set opacity through the color alpha (`#rrggbbaa`, `useAlphaChannel`, `viewer.setMarkerOpacity`)
