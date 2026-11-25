@@ -282,26 +282,21 @@ export function createStyledMarkdown(content: string): HTMLElement {
   const markDown = tryMarkdown(content) ?? plainTextEl(content);
   markDown.style.position = 'relative';
   dartLike(markDown.style).set('userSelect', 'text').set('maxWidth', '100%');
-  if (markDown.querySelector('pre > code')) {
-    const copyButton = ui.icons.copy(() => {}, 'Copy Code');
-    copyButton.classList.add('d4-ai-copy-code-button');
-    markDown.appendChild(copyButton);
-    copyButton.addEventListener('click', () => {
-      const codeElement = markDown.querySelector('pre > code');
-      if (codeElement) {
-        const header = markDown.children[0];
-        if (header && header.tagName?.toLowerCase() !== 'pre')
-          (header as HTMLElement).style.marginRight = '16px';
-        copyToClipboard(codeElement.textContent || '').then((ok) => {
-          if (!ok) {
-            grok.shell.error('Failed to copy code to clipboard.');
-            return;
-          }
-          copyButton.classList.add('d4-ai-copy-code-button-copied');
-          setTimeout(() => copyButton.classList.remove('d4-ai-copy-code-button-copied'), 600);
-        });
-      }
-    });
-  }
+  markDown.querySelectorAll('pre > code').forEach((code) =>
+    codeCard(code.parentElement!, /language-(\S+)/.exec(code.className)?.[1] ?? 'Code'));
   return markDown;
+}
+
+export function codeCard(pre: HTMLElement, language: string): HTMLElement {
+  const copy = ui.divH([ui.iconFA('copy'), ui.divText('Copy')], 'grokky-code-copy');
+  copy.onclick = async (): Promise<void> => {
+    if (await copyToClipboard(pre.textContent || ''))
+      grok.shell.info('Code copied to clipboard');
+    else
+      grok.shell.error('Failed to copy code to clipboard');
+  };
+  const card = ui.divV([ui.divH([ui.divText(language), copy], 'grokky-code-head')], 'grokky-code-card');
+  pre.replaceWith(card);
+  card.appendChild(pre);
+  return card;
 }

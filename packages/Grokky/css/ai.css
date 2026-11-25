@@ -31,7 +31,6 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* flexbox `gap` is Chrome 84+ — spacing is done with sibling margins so it works in Chrome 50 too */
 .ai-execute-plan > * + * {
   margin-top: 10px;
 }
@@ -50,6 +49,7 @@
 }
 
 .d4-ai-generation-panel {
+  --grokky-tint: color-mix(in srgb, var(--blue-1) 14%, var(--white));
   height: 100%;
   padding: 8px;
   width: 100%;
@@ -70,16 +70,20 @@
   align-self: center;
 }
 
-.d4-ai-generation-panel:not(.d4-ai-raw-mode) > .d4-ai-panel-input-area {
-  box-sizing: border-box;
-  max-width: 772px;
-}
-
 .d4-ai-generation-panel .d4-ai-panel-input-area {
   display: flex;
   flex-direction: column;
-  padding: 6px;
-  padding-bottom: 16px;
+  box-sizing: border-box;
+  margin-bottom: 8px;
+  padding: 8px 10px 6px;
+  border: 1px solid var(--grey-2);
+  border-radius: 12px;
+  background: var(--white);
+  box-shadow: 0 1px 4px var(--steel-1);
+}
+
+.d4-ai-generation-panel .d4-ai-panel-input-area:focus-within {
+  border-color: var(--blue-1);
 }
 
 .d4-ai-generation-panel .d4-ai-panel-input-area > * + * {
@@ -117,15 +121,13 @@
 .d4-ai-generation-panel textarea.d4-ai-input-textarea {
   resize: none;
   flex-grow: 1;
-  min-height: 80px;
+  min-height: 60px;
   max-height: 200px;
-  font-size: 14px;
-  border: 1px solid var(--grey-1);
+  font: inherit;
+  border: none;
   outline: none;
-  border-radius: 8px;
-  box-shadow: 0px 0px 2px var(--steel-1);
-  background: var(--grey-1);
-  padding: 4px;
+  background: transparent;
+  padding: 0;
 }
 
 .d4-ai-generation-panel .d4-ai-panel-output-area {
@@ -143,7 +145,6 @@
 }
 
 .d4-ai-generation-panel:not(.d4-ai-inline-mode) .d4-ai-panel-output-area {
-  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 12px), transparent);
   mask-image: linear-gradient(to bottom, #000 calc(100% - 12px), transparent);
 }
 
@@ -161,6 +162,10 @@
   flex: none;
   min-height: 120px;
   overflow: visible;
+}
+
+.d4-ai-generation-panel.d4-ai-inline-mode .d4-ai-panel-output-area > * {
+  max-width: none;
 }
 
 .d4-ai-generation-panel.d4-ai-inline-mode .d4-ai-panel-output-area > *:first-child {
@@ -192,7 +197,7 @@
 .d4-ai-generation-panel .d4-ai-user-prompt-container .d4-ai-user-prompt-divtext {
   max-width: 80%;
   border-radius: 16px;
-  background-color: var(--steel-1);
+  background-color: var(--grokky-tint);
   padding: 6px 14px;
   margin: 4px 0;
   overflow-wrap: anywhere;
@@ -214,7 +219,46 @@
   background: var(--grey-1);
   padding: 6px;
   border-radius: 8px;
-  overflow: scroll;
+  overflow: auto;
+}
+
+.grokky-code-card {
+  margin: 4px 0 10px;
+  border: 1px solid var(--grey-2);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.grokky-code-head {
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 10px;
+  border-bottom: 1px solid var(--grey-2);
+  background: var(--grey-1);
+  font-size: 11px;
+  color: var(--grey-5);
+}
+
+.grokky-code-copy {
+  align-items: center;
+  cursor: pointer;
+}
+
+.grokky-code-copy > i {
+  margin-right: 5px;
+}
+
+.grokky-code-copy:hover {
+  color: var(--blue-1);
+}
+
+.grokky-code-card pre,
+.d4-ai-generation-panel .d4-ai-assistant-response-container .grokky-code-card pre {
+  margin: 0 !important;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 0;
+  background: var(--white);
 }
 
 .d4-ai-generation-panel .d4-ai-assistant-response-container pre::-webkit-scrollbar {
@@ -254,6 +298,10 @@
 .d4-ai-generation-panel .d4-ai-panel-controls-container {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+}
+
+.d4-ai-generation-panel .d4-ai-panel-run-controls {
   align-items: center;
 }
 
@@ -302,12 +350,10 @@
 .d4-ai-response-block-collapsed > .d4-ai-messages-accordion-pane {
   max-height: 2.2em;
   overflow: hidden;
-  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent);
   mask-image: linear-gradient(to bottom, #000 55%, transparent);
 }
 
-.d4-ai-response-block-collapsed .d4-ai-panel-feedback-div,
-.d4-ai-response-block-collapsed .d4-ai-copy-code-button {
+.d4-ai-response-block-collapsed .d4-ai-panel-feedback-div {
   display: none !important;
 }
 
@@ -323,38 +369,12 @@
   pointer-events: auto;
 }
 
+.d4-ai-generation-panel .d4-ai-panel-feedback-div i:hover {
+  color: var(--blue-1);
+}
+
 .d4-ai-generation-panel .d4-ai-panel-feedback-div > * + * {
   margin-left: 8px;
-}
-
-.d4-ai-copy-code-button {
-  position: absolute;
-  top: 1px;
-  right: 1px;
-  color: var(--blue-1);
-  opacity: 0.6;
-  cursor: pointer;
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.3s, opacity 0.3s, color 0.3s;
-  display: none;
-}
-
-.d4-ai-copy-code-button:hover {
-  opacity: 1.0;
-}
-
-.d4-markup:hover .d4-ai-copy-code-button {
-  display: flex;
-}
-
-.d4-ai-copy-code-button.d4-ai-copy-code-button-copied {
-  background-color: var(--green-2);
-  color: var(--steel-5);
-  opacity: 0.3;
 }
 
 .grokky-entity-cards {
@@ -379,8 +399,9 @@
 }
 
 .d4-ai-generation-panel.d4-ai-raw-mode .d4-ai-panel-input-area {
-  background: #111;
-  border-top: 1px solid #333;
+  background: #0a0a0a;
+  border-color: #333;
+  box-shadow: none;
 }
 
 .d4-ai-generation-panel.d4-ai-raw-mode textarea.d4-ai-input-textarea {
@@ -415,7 +436,6 @@
 .d4-ai-generation-panel.d4-ai-raw-mode .d4-ai-assistant-response-container pre {
   background: transparent;
   color: #e0e0e0;
-  -webkit-filter: none;
   filter: none;
   border: none;
   padding: 2px 0;
@@ -526,10 +546,6 @@
   padding: 3px 0;
 }
 
-.grokky-stream .d4-ai-copy-code-button {
-  display: flex;
-}
-
 .grokky-search-wand {
   cursor: pointer;
   color: var(--blue-1) !important;
@@ -582,7 +598,6 @@
   border: 1px solid var(--grey-3);
   border-radius: 14px;
   background: var(--grey-1);
-  -webkit-transition: background 0.12s, border-color 0.12s;
   transition: background 0.12s, border-color 0.12s;
 }
 
@@ -631,7 +646,7 @@
 }
 
 .grokky-system-message {
-  text-align: center;
+  text-align: right;
   font-size: 12px;
   color: var(--grey-4);
   font-style: italic;
@@ -680,6 +695,41 @@
   color: var(--grey-5);
 }
 
+.grokky-strip-question {
+  border-left-color: var(--blue-1);
+  background: var(--steel-1);
+  font-weight: 500;
+}
+
+.grokky-question-card {
+  width: 100%;
+  max-width: 520px;
+}
+
+.grokky-question-card > .grokky-strip:last-child {
+  border-bottom: none;
+}
+
+.grokky-question-card .grokky-choice-row {
+  margin-bottom: -8px;
+}
+
+.grokky-question-card .grokky-choice-card {
+  background: var(--white);
+}
+
+.grokky-question-card .grokky-choice-card.grokky-choice-selected {
+  border-color: var(--blue-1);
+  background: var(--grokky-tint);
+  color: var(--blue-1);
+}
+
+.grokky-question-footer {
+  justify-content: flex-end;
+  padding: 6px 12px;
+  border-top: 1px solid var(--grey-1);
+}
+
 .grokky-strip-answer {
   align-items: center;
   gap: 6px;
@@ -713,17 +763,26 @@
 .grokky-exec-icon.grokky-exec-error { color: var(--red-3); }
 
 .grokky-exec-code {
-  margin: 0 0 6px;
-  padding: 6px 8px;
-  border: 1px solid var(--steel-2);
-  border-radius: 6px;
-  background: transparent;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 11px;
   white-space: pre-wrap;
-  overflow-x: auto;
 }
 
-.grokky-hidden {
+.grokky-hidden,
+.grokky-code-card.grokky-hidden {
   display: none;
+}
+
+.d4-ai-generation-panel .d4-ai-panel-controls-container i.grokky-send,
+.d4-ai-generation-panel .d4-ai-panel-controls-container i.grokky-send:hover {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background-color: var(--blue-1);
+  color: var(--white);
+  font-size: 10px;
+}
+
+.d4-ai-generation-panel .d4-ai-panel-controls-container i.grokky-send.fa-stop {
+  background-color: var(--red-3);
 }

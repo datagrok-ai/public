@@ -9,7 +9,7 @@ import {CombinedAISearchAssistant} from './search/combined-search';
 import {fireAIPanelToggleEvent, getAIAbortSubscription, fireBeforeUserPromptEvent,
   fireAfterUserPromptEvent, UserPromptEventArgs, createStyledMarkdown, tryMarkdown, plainTextEl,
   SHORTCUT_HINT, copyToClipboard} from '../utils';
-import {AIPanel, StreamingPanel} from './panel';
+import {AIPanel, StreamingPanel, StripStyle} from './panel';
 import {AIWindowManager} from './ai-window';
 import {ClaudeRuntimeClient, ErrorEvent, FinalEvent, ToolActivityEvent} from '../claude/runtime-client';
 import {executeSingleBlock, runVerification, renderEntityRefList} from '../claude/exec-blocks';
@@ -50,6 +50,33 @@ interface StreamingOpts {
   onFinal: (evt: FinalEvent, host: HTMLElement) => void | Promise<void>;
 }
 
+interface ConfirmInput {
+  action?: string;
+  name?: string;
+  owner?: string;
+  created?: string;
+  details?: string;
+}
+
+type ConfirmOutcome = 'confirmed' | 'cancelled' | 'unanswered';
+
+interface ConfirmCard {
+  root: HTMLElement;
+  close: (outcome: ConfirmOutcome) => void;
+}
+
+const CONFIRM_OUTCOMES: Record<ConfirmOutcome, {style: StripStyle, icon: string, text: string}> = {
+  confirmed: {style: 'success', icon: 'check', text: 'Confirmed'},
+  cancelled: {style: 'muted', icon: 'times', text: 'Cancelled'},
+  unanswered: {style: 'muted', icon: 'minus', text: 'Not answered'},
+};
+
+enum Status {
+  None = '',
+  Tool = 'tool',
+  Writing = 'writing',
+  Revising = 'revising',
+}
 
 export const RENDERED_EVENT = 'grokky-rendered';
 
@@ -300,17 +327,20 @@ export async function runPromptWithLifecycle(
     fireAfterUserPromptEvent({prompt, context: view, handled: false});
 }
 
-function buildConfirmCard(input: any, resolve: (confirmed: boolean) => void): HTMLElement {
-  const answer = (confirmed: boolean) => {
-    const [style, icon, text] = confirmed ? ['success', 'check', 'Confirmed'] : ['muted', 'times', 'Cancelled'];
+function buildConfirmCard(input: ConfirmInput, onClose: (outcome: ConfirmOutcome) => void): ConfirmCard {
+  const close = (outcome: ConfirmOutcome): void => {
+    const {style, icon, text} = CONFIRM_OUTCOMES[outcome];
     buttons.remove();
     strip.classList.replace('grokky-strip-danger', `grokky-strip-${style}`);
     strip.append(ui.divH([ui.iconFA(icon), ui.divText(text)], 'grokky-strip-answer'));
-    resolve(confirmed);
+    onClose(outcome);
   };
   const strip = ui.divH([ui.divText(input.action ?? 'Confirm action')], 'grokky-strip grokky-strip-danger');
-  const buttons = ui.divH([ui.bigButton('OK', () => answer(true)), ui.button('CANCEL', () => answer(false))]);
-  return ui.divV([
+  const buttons = ui.divH([
+    ui.bigButton('OK', () => close('confirmed')),
+    ui.button('CANCEL', () => close('cancelled')),
+  ]);
+  const root = ui.divV([
     strip,
     ui.divV([
       ui.tableFromMap({
@@ -322,6 +352,7 @@ function buildConfirmCard(input: any, resolve: (confirmed: boolean) => void): HT
       buttons,
     ], 'grokky-confirm-body'),
   ], 'grokky-confirm-card');
+  return {root, close};
 }
 
 async function runClaudeStreaming(
@@ -339,13 +370,6 @@ async function runClaudeStreaming(
   }
 }
 
-enum Status {
-  None = '',
-  Tool = 'tool',
-  Writing = 'writing',
-  Revising = 'revising',
-}
-
 async function streamOnce(
   panel: StreamingPanel, userPrompt: string, view: DG.ViewBase,
   systemPromptMode: string | undefined,
@@ -360,7 +384,11 @@ async function streamOnce(
     const execCodes: string[] = [];
     let preRevisionExecCodes: string[] | null = null;
     const subs: {unsubscribe: () => void}[] = [];
-    const cleanup = () => subs.forEach((s) => s.unsubscribe());
+    let dismissConfirm: (() => void) | null = null;
+    const cleanup = () => {
+      subs.forEach((s) => s.unsubscribe());
+      dismissConfirm?.();
+    };
     let resentAfterReset = false;
 
     const forSession = <T extends {sessionId: string}>(
@@ -464,7 +492,8 @@ async function streamOnce(
 
       forSession(client.onAborted, async () => {
         panel.clearStreaming();
-        chatSession.session.addUiMessage('Processing aborted by user', false, {system: true});
+        panel.dismissQuestion();
+        chatSession.session.addUiMessage('Stopped', false, {system: true});
         cleanup();
         resolve();
       });
@@ -507,11 +536,16 @@ async function streamOnce(
         }
         // datagrok_confirm: render the approval card and hold the round-trip until a button is clicked.
         if (evt.toolName === 'datagrok_confirm') {
-          const confirmed = await new Promise<boolean>((resolve) => {
-            panel.appendStreamedElement(buildConfirmCard(evt.input ?? {}, resolve));
+          const outcome = await new Promise<ConfirmOutcome>((resolve) => {
+            const card = buildConfirmCard(evt.input ?? {}, resolve);
+            dismissConfirm = () => card.close('unanswered');
+            panel.appendStreamedElement(card.root);
           });
+          dismissConfirm = null;
+          if (outcome === 'unanswered')
+            return;
           segmentStart = accumulated.length;
-          client.respondToInput(sessionId, evt.requestId, {confirmed});
+          client.respondToInput(sessionId, evt.requestId, {confirmed: outcome === 'confirmed'});
           return;
         }
         // datagrok_show_entities: render entity cards immediately, no user interaction needed.
