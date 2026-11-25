@@ -2511,15 +2511,14 @@
 }
 
 .ff-guide-target {
-  background-color: rgba(255, 162, 74, 0.35) !important;
   outline: 2px solid rgb(255, 162, 74) !important;
   outline-offset: 1px;
   border-radius: 4px;
 }
 
-/* Big targets: outline only — the fill would wash over every row inside. */
-.ff-guide-target-large {
-  background-color: transparent !important;
+/* Big targets: outline only — the fill would wash over every row inside, and a dialog would lose its background. */
+.ff-guide-target:not(.ff-guide-target-large) {
+  background-color: rgba(255, 162, 74, 0.35) !important;
 }
 
 /* Pulsing dot pinned by the runner — body-level so the canvas can't clip it. */

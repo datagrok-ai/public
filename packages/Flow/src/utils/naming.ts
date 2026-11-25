@@ -2,6 +2,17 @@
  *  in `ui.input.forProperty`. One DELIBERATE deviation: an ALL-CAPS word is kept as-is
  *  ('MW' → 'MW', 'maxMW' → 'Max MW') where core folds to 'Mw'. */
 
+// Found by running them through the platform's script wrapper: words reserved only in strict mode (`package`,
+// `static`, …) work. Script outputs are page globals, so `grok` as an output would replace the API for the page.
+const RESERVED_NAMES = new Set(('await break case catch class const continue debugger default delete do else enum ' +
+  'export extends false finally for function if import in instanceof let new null return super switch this throw ' +
+  'true try typeof var void while with undefined NaN Infinity grok DG ui').split(' '));
+
+/** Whether a generated script can't have a variable of that name. */
+export function isReservedName(name: string): boolean {
+  return RESERVED_NAMES.has(name);
+}
+
 const CONJUNCTIONS = new Set(['and', 'or', 'than', 'if', 'but', 'so', 'as', 'that']);
 const DELIMITERS = new Set([' ', ',', '.', '-', '!', '"', '\'', ';']);
 

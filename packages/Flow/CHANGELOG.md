@@ -2,6 +2,14 @@
 
 ## v.next
 
+* [#4675](https://github.com/datagrok-ai/public/issues/4675): Fixed publishing a flow "As a new dashboard" taking the tables of the dashboard it had published before, which then failed to open; a cancelled Save project dialog also no longer makes the flow forget that dashboard
+* [#4676](https://github.com/datagrok-ai/public/issues/4676): Fixed a dashboard published while its flow is saved into a space opening without data until the page was reloaded
+* [#4677](https://github.com/datagrok-ai/public/issues/4677): Closing a flow with unsaved changes asks and offers to save them, as do New…, Open from platform…, Import .flow…, Import from a table's history…, a template and a recent flow opened over it. A flow opened and left as it was asks nothing
+* [#4677](https://github.com/datagrok-ai/public/issues/4677): Fixed a template, or a script imported from a table's history, opened over a saved flow and then saved overwriting that flow; New… no longer keeps the name and description of the flow it replaces
+* [#4680](https://github.com/datagrok-ai/public/issues/4680): Fixed a live node fed by another live node not rerunning on a change with autorun off
+* [#4681](https://github.com/datagrok-ai/public/issues/4681): Check for problems reports an input or output named after a reserved word (`class`, `default`, …), which stopped the flow from running without a word; a step or a SetVar named after one no longer breaks the script, and a run whose script cannot start says why
+* [#4682](https://github.com/datagrok-ai/public/issues/4682): Guides: Fixed a highlighted dialog losing its background
+* Context panel: Fixed opening a node's panel storing the function's own description as the node's
 * [core#239](https://github.com/datagrok-ai/core/issues/239): Projects: A Flow view (a saved flow or an unsaved one) is saved with the project and reopens in its place in the dock layout
 * Auto-pin: Fixed an interaction while the flow view was not the current one disarming the auto-pin for good
 * [core#411](https://github.com/datagrok-ai/core/issues/411): Extract Rows, Delete Columns, Tag Columns, Aggregate and Unpivot: Accept their columns as a column list, which is what the platform passes for `column_list`
@@ -36,7 +44,7 @@
 * Improved: A failed node's card now shows the error's first sentence ("Error — Condition ... is not a true/false expression"), not just the word "Error"; the full text stays in the tooltip and the Execution pane
 * Improved: Removed the success balloons ("Flow execution completed" after every 30 ms run, "Added OpenFile node for: …" on drop) — the green node states, edge counts, and the node itself already say it
 * Fixed: A successful Open File run no longer overwrites a user-renamed node title — only machine-stamped titles ("Open File: <file>") restamp from the path
-* Improved: "Import from a table's history" now asks for confirmation before replacing a non-empty flow (the import is not undoable)
+* Improved: "Import from a table's history" now asks before replacing unsaved changes (the import is not undoable)
 * Improved: Context panel header — node kind and function chips merged into one line with vertical separators, user-facing kind words ("Function", not "func"), the package never named twice, a placeholder and a visible resting border on Description, and the Sheet Name row only shown for .xlsx paths
 * Improved: A collapsed errored node gets a red edge accent (its info line is folded away); viewer nodes' auto-caption reads "Displays a scatter plot" instead of "Runs a function"
 * Improved: Pass-through output rows are labeled after the input they forward ("Table →") instead of an anonymous arrow, so chaining tables past a node's declared outputs no longer takes guesswork

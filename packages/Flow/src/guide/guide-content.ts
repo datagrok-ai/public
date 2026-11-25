@@ -1472,6 +1472,6 @@ export const QUESTIONS: Guide[] = [
     title: 'Re-publish — same project',
     text: 'Just Save again with “Create dashboard” checked: the dashboard remembers its flow, so ' +
       'every publish updates the same project in place — tables, views, and layouts. To start a ' +
-      'fresh project instead, click “publish as new” in the Save dialog\'s Dashboard section.',
+      'fresh project instead, pick “As a new dashboard” under Publish in the Save dialog\'s Dashboard section.',
   }),
 ];

@@ -4,6 +4,7 @@
 import {FlowEditor} from '../rete/flow-editor';
 import {FlowNode, isSetVarNode} from '../rete/scheme';
 import {topologicalSort} from './topological-sort';
+import {isReservedName} from '../utils/naming';
 
 export type ValidationSeverity = 'error' | 'warning';
 
@@ -62,6 +63,8 @@ export function validateGraph(flow: FlowEditor): ValidationResult[] {
         results.push({severity: 'error', message: `Node '${node.label}' has an empty parameter name`, nodeId: node.id});
       else if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(paramName))
         results.push({severity: 'error', message: `Node '${node.label}' has an invalid parameter name '${paramName}' (must be a valid JS identifier)`, nodeId: node.id});
+      else if (isReservedName(paramName))
+        results.push({severity: 'error', message: `'${paramName}' is a reserved word, not a valid ${node.dgNodeType} name (node '${node.label}')`, nodeId: node.id});
     }
   }
 

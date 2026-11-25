@@ -223,6 +223,19 @@ category('Flow: output strip', () => {
     }
   });
 
+  test('an output slot named after a reserved word gets a valid output name', async () => {
+    const e = makeEditor();
+    try {
+      const nameFor = (key: string): string =>
+        (e.flow as unknown as {uniqueOutputParamName(key: string): string}).uniqueOutputParamName(key);
+      expect(nameFor('default'), 'result');
+      expect(nameFor('class__pt'), 'result');
+      expect(nameFor('table__pt'), 'table');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
   test('dropping a scalar output on the strip creates a Value Output typed after the source', async () => {
     const e = makeEditor();
     try {

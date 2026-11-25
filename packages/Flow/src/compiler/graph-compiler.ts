@@ -8,6 +8,7 @@ import {topologicalSort} from './topological-sort';
 import {stringListToArrayLiteral} from '../types/type-map';
 import {effectiveFuncInputs} from '../utils/func-input-overrides';
 import {isInputOptional} from '../utils/dart-proxy-utils';
+import {isReservedName} from '../utils/naming';
 
 export type StepKind = 'input' | 'output' | 'utility' | 'func';
 
@@ -383,8 +384,8 @@ function propertyAccessor(key: string): string {
 
 function uniqueVarName(base: string, used: Set<string>): string {
   if (!base) base = 'v';
-  // `toCamelCase` keeps digits — a leading digit is illegal in a variable name.
-  if (/^[0-9]/.test(base)) base = `_${base}`;
+  // `toCamelCase` keeps a leading digit and makes a reserved word of a node titled "Class": both illegal.
+  if (/^[0-9]/.test(base) || isReservedName(base)) base = `_${base}`;
   if (!used.has(base)) return base;
   let i = 2;
   while (used.has(`${base}${i}`)) i++;

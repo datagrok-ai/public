@@ -715,10 +715,14 @@ export class PropertyPanel {
     label: string, value: string, onChange: (v: string) => void, cosmetic = false, placeholder?: string,
   ): HTMLElement {
     const report = this.changeReporter(value);
+    let last = value;
     const input = ui.input.textArea(label, {
       tooltipText: PropertyPanel.propTip(label),
       onValueChanged: (v) => {
         const s = String(v ?? '');
+        // showing the value fires too: a function's own description is not the node's until the user edits it
+        if (s === last) return;
+        last = s;
         onChange(s);
         if (!cosmetic) report(s);
       },

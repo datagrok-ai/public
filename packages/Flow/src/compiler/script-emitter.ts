@@ -6,6 +6,7 @@ import {FlowNode, isExecKey, isSetVarNode} from '../rete/scheme';
 import {CompiledStep, compileGraph} from './graph-compiler';
 import {NON_HEADER_DEFAULT_TYPES} from '../utils/input-values';
 import {isChoicesRefString} from '../utils/choice-refs';
+import {isReservedName} from '../utils/naming';
 
 export interface ScriptSettings {
   name: string;
@@ -698,7 +699,7 @@ function setVarAsOutput(step: CompiledStep, flow: FlowEditor): {name: string; ty
   const node = flow.getNodeById(step.nodeId);
   if (!node || !isSetVarNode(node)) return null;
   const name = String(step.inputValues['variableName'] ?? '').trim();
-  if (!IDENTIFIER_RE.test(name)) return null;
+  if (!IDENTIFIER_RE.test(name) || isReservedName(name)) return null;
   const src = flow.getInputSource(step.nodeId, 'value');
   if (!src) return null;
   const dgType = (src.node.outputs as Record<string, {socket: {dgType: string}} | undefined>)[src.outputKey]

@@ -356,7 +356,9 @@ category('Flow: output views', () => {
       const view = h.view as unknown as {
         executionController: {state: {setNodeStatus(id: string, s: NodeExecStatus): void}};
         refreshOpenFileTitle(id: string): void;
+        markSaved(): void;
       };
+      view.markSaved();
 
       view.executionController.state.setNodeStatus(node.id, NodeExecStatus.running);
       view.refreshOpenFileTitle(node.id);
@@ -365,6 +367,7 @@ category('Flow: output views', () => {
       view.executionController.state.setNodeStatus(node.id, NodeExecStatus.completed);
       view.refreshOpenFileTitle(node.id);
       expect(node.label, 'Open File: cars.csv', 'the title follows the path after a run');
+      expect(h.view.unsavedWork === null, true, 'a title the editor stamps is not a user change');
     } finally {
       destroyView(h);
     }

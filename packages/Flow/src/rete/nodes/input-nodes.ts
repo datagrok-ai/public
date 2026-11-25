@@ -9,7 +9,7 @@ import {categoricalColor, CAT, dgTypeToSlotType, isStringListType} from '../../t
 import {InputValueControl} from './input-value-control';
 import {isInputOptional, getParamDefault, getParamDescription} from '../../utils/dart-proxy-utils';
 import {isLiteralChoiceList, isChoicesRefString, isChoiceQueryRef} from '../../utils/choice-refs';
-import {propertyNameToFriendly} from '../../utils/naming';
+import {isReservedName, propertyNameToFriendly} from '../../utils/naming';
 
 const COLOR_INPUT = categoricalColor(CAT.green);
 
@@ -243,7 +243,7 @@ export function adoptInputProperty(node: FlowNode, prop: DG.Property, func?: DG.
 
   const prev = String(node.properties['mimicParam'] ?? '');
   const autoTitle = (p: string): string => `${propertyNameToFriendly(p)} Input`;
-  if (String(node.properties['paramName'] ?? '') === (prev || 'value'))
+  if (String(node.properties['paramName'] ?? '') === (prev || 'value') && !isReservedName(name))
     node.properties['paramName'] = name;
   if (node.label === (prev ? autoTitle(prev) : 'Property Input')) node.label = autoTitle(name);
   if (!node.description) node.description = getParamDescription(prop);
