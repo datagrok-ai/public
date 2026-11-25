@@ -449,11 +449,6 @@ export namespace HtmlUtils {
   }
 }
 
-/** @deprecated Always false: the platform no longer runs in Dartium. Kept for plugins published before its removal. */
-export function _isDartium(): boolean {
-  return false;
-}
-
 
 function* _range(length: number): IterableIterator<number> {
   for (let i = 0; i < length; i++)

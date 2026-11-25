@@ -2,7 +2,7 @@
 
 ## v.next
 
-* Removed the Dartium fallbacks (`ui.onSizeChanged`, `ui.tools.waitForElementInDom`, forms, `GridCellWidget`, `BigIntColumn`); `DG._isDartium()` is deprecated and always returns false
+* Removed the Dartium fallbacks (`ui.onSizeChanged`, `ui.tools.waitForElementInDom`, forms, `GridCellWidget`, `BigIntColumn`) and `DG._isDartium()`
 * [#4677](https://github.com/datagrok-ai/public/issues/4677): Views: Added `ViewBase.unsavedWork`, which a view overrides to name the changes a close would lose: a close the user starts then asks first and offers to save them
 * [#4650](https://github.com/datagrok-ai/public/issues/4650): Added `ui.markdown(text, {sanitize: true})` for untrusted text: scripts and event handlers do not run
 * Chem: Fixed a SMILES with stereo centres, an aromatic N-H, a charge or an isotope pasted into a substructure filter's sketcher text box being read as SMARTS (`Nc1ncnc2c1c(Br)cn2[C@@H]3OC[C@@H](O)[C@H]3O`: every atom drawn aromatic- or aliphatic-only, and Similar found nothing). Only an H count a SMILES does not need (`[NH2]c1ccccc1`, `[CH3]c`, `[OH]`) still makes the text SMARTS, so that the H count stays the query's; a canonical SMILES stays a molecule, as when pasted on the canvas. A typed `c1cc[nH]c1` again finds N-substituted pyrroles too
