@@ -1809,6 +1809,8 @@ export interface IDartApi {
   grok_ColumnInfo_Get_SemType(ci: any): any;
   grok_ColumnInfo_Get_LayoutColumnId(ci: any): any;
   grok_ColumnInfo_Get_Tags(ci: any): any;
+  grok_Model_Get_Inputs(m: any): any;
+  grok_Model_Get_Outputs(m: any): any;
   grok_HistoryEntry_Get_Object(e: any): any;
   grok_HistoryEntry_Get_Time(e: any): any;
   grok_Entity_Get_Id(p: any): any;
