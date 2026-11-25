@@ -432,7 +432,7 @@ div.forge-gallery > .forge-gallery-below {
   padding-right: 0;
 }
 
-/* A platform input in a Search options cell (Strategy, Limit, Max time, Max trials, Candidates): its caption is in the
+/* A platform input in a search grid cell (Find's Search, Limit, Max time, Max trials, Candidates): its caption is in the
    grid's label column, so its own label is hidden. */
 .ui-form .forge-tune-grid .ui-input-root.forge-tune-input {
   padding: 0;

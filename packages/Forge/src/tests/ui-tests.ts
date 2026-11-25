@@ -19,7 +19,7 @@ import {trainingEngines, trainPredictionOf} from '../training/train-model';
 import {modelLabels} from '../ui/apply-model-dialog';
 import {ButtonGate} from '../ui/button-gate';
 import {EvaluationView} from '../ui/evaluation-view';
-import {FIND_KEY, FindSettings, MethodEntry} from '../ui/find-settings';
+import {CUSTOM_SEARCH, DEFAULT_SEARCH, FIND_KEY, FindSettings, MethodEntry} from '../ui/find-settings';
 import {ForgeApp} from '../ui/forge-app';
 import {TIME, TRIALS} from '../ui/limit-inputs';
 import {MetricsSummary, MetricsTable, tinyValueText} from '../ui/metrics-table';
@@ -1209,36 +1209,97 @@ category('UI: Cards', () => {
   });
 });
 
+/** A Find best model block outside a view. */
+const newFind = () => new FindSettings(ui.button('Find', () => {}), ui.label('Method'), {onChanged: () => {}});
+
+/** XGBoost (quick), SVM (probabilities as an input) and RealMLP (slow). */
+const findEntries = (): MethodEntry[] => [{name: 'XGBoost', isLive: true, isServer: false, probabilities: 'always'},
+  {name: 'SVM', isLive: true, isServer: false, probabilities: 'input'},
+  {name: 'RealMLP', isLive: false, isServer: false, probabilities: 'always'}];
+
+/** Drops [find]'s subscriptions, which writes its pending save, then its stored settings unless [isKept]. */
+function closeFind(find: FindSettings, isKept = false): void {
+  for (const sub of find.subs)
+    sub.unsubscribe();
+  if (!isKept)
+    grok.userSettings.delete(TuneSettings.storage, FIND_KEY);
+}
+
 category('UI: Find best', () => {
   testStorageHooks();
 
-  test('FindSettings.load: Strategy, the limit and the method toggles; an old stored time becomes whole minutes',
+  test('FindSettings.load: Search, the limit and the method toggles; an old stored time becomes whole minutes',
     async () => {
       const loaded = (value: unknown) => {
         grok.userSettings.add(TuneSettings.storage, FIND_KEY, JSON.stringify(value));
         return FindSettings.load();
       };
       const limits = (value: unknown) => {
-        const {strategy, limit, minutes, trials} = loaded(value);
-        return `${strategy} ${limit} ${minutes} ${trials}`;
+        const {search, limit, minutes, trials} = loaded(value);
+        return `${search} ${limit} ${minutes} ${trials}`;
       };
       try {
-        expectArray([limits({seconds: 30, trials: 70}), limits({strategy: 'halving', limit: TRIALS, minutes: 7,
-          trials: 40}), limits({strategy: 'fast', seconds: 3600.5})],
-        [`equal ${TIME} 1 70`, `halving ${TRIALS} 7 40`, `equal ${TIME} 60 100`]);
+        expectArray([limits({seconds: 30, trials: 70}), limits({search: CUSTOM_SEARCH, strategy: 'halving',
+          limit: TRIALS, minutes: 7, trials: 40}), limits({search: 'custom', expanded: true, seconds: 3600.5})],
+        [`${DEFAULT_SEARCH} ${TIME} 1 70`, `${CUSTOM_SEARCH} ${TRIALS} 7 40`, `${DEFAULT_SEARCH} ${TIME} 60 100`]);
         expectJson(loaded({methods: {XGBoost: false, SVM: 'yes'}}).methods, {XGBoost: false});
       } finally {
         grok.userSettings.delete(TuneSettings.storage, FIND_KEY);
       }
     }, {timeout: TIMEOUT});
 
+  test('FindSettings: Default searches with the defaults whatever is stored; Custom with the stored and edited ' +
+    'settings, kept across switches, its limit checked only there; Search is remembered; equal split', async () => {
+    grok.userSettings.add(TuneSettings.storage, FIND_KEY, JSON.stringify({metric: 'f1', strategy: 'halving',
+      limit: TIME, minutes: 5, trials: 7, methods: {XGBoost: false, RealMLP: true}}));
+    let find = newFind();
+    try {
+      find.setTask('classification');
+      find.setMethods(findEntries());
+      expect(find.search.value, DEFAULT_SEARCH);
+      const defaults = {metric: 'balancedAccuracy', strategy: 'equal', maxTrials: 100, methods: ['XGBoost']};
+      expectJson(find.choice(), defaults);
+      const custom = (minutes: number) => ({metric: 'f1', strategy: 'equal', budgetSeconds: minutes * 60,
+        methods: ['SVM', 'RealMLP']});
+      find.search.value = CUSTOM_SEARCH;
+      expectJson(find.choice(), custom(5));
+      find.limit.minutes.value = 3;
+      expectJson(find.choice(), custom(3));
+      find.search.value = DEFAULT_SEARCH;
+      expectJson(find.choice(), defaults);
+      find.search.value = CUSTOM_SEARCH;
+      expectJson(find.choice(), custom(3));
+
+      find.limit.kind.value = TRIALS;
+      find.limit.trials.value = 1;
+      find.candidates.value = find.candidates.items;
+      expect(find.problem() !== null, true, 'Custom accepts fewer trials than checked methods');
+      find.search.value = DEFAULT_SEARCH;
+      expect(find.problem(), null);
+      expect(find.usedInputs.some((input) => find.limit.inputs.includes(input)), false, 'Default validates the limit');
+      find.search.value = CUSTOM_SEARCH;
+      expect(find.problem() !== null, true, 'Custom lost the limit problem');
+
+      closeFind(find, true);
+      expect(FindSettings.load().search, CUSTOM_SEARCH);
+      find = newFind();
+      expect(find.isCustom, true, 'Custom is not remembered');
+      find.search.value = DEFAULT_SEARCH;
+      find.flushSave();
+      expect(FindSettings.load().search, DEFAULT_SEARCH);
+    } finally {
+      closeFind(find);
+    }
+  }, {timeout: TIMEOUT});
+
   test('FindSettings: Candidates checks the quick methods at a quick limit, every one above it, and lists only the ' +
     'methods the server and probability rules allow', async () => {
     const entry = (name: string, isLive: boolean, probabilities: MethodEntry['probabilities'], isServer = false) =>
       ({name, isLive, isServer, probabilities});
     const noProbabilities = 'forge-test-no-probabilities';
-    const find = new FindSettings(ui.button('Find', () => {}), ui.label('Method'), {onChanged: () => {}});
+    const find = newFind();
     try {
+      find.search.value = CUSTOM_SEARCH;
       find.setTask('classification');
       find.setMethods([entry('XGBoost', true, 'always'), entry('SVM', true, 'input'),
         entry('RealMLP', false, 'always'), entry(noProbabilities, true, 'none'),
@@ -1260,8 +1321,7 @@ category('UI: Find best', () => {
       find.candidates.value = [];
       expect(find.problem(), 'Check at least one method');
     } finally {
-      for (const sub of find.subs)
-        sub.unsubscribe();
+      closeFind(find);
     }
   }, {timeout: TIMEOUT});
 });

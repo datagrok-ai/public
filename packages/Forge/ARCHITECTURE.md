@@ -190,8 +190,8 @@ package.ts ──> ui/forge-app.ts ───> storage/, generated/db.ts    (cata
   (`PreparationInputs`, below; hidden while none of its inputs applies), the group **Method** (Method, whose first item
   is `Auto`, and the method's `TuneSettings`, see "Search": **Settings**, its status, then the hyperparameters in
   Manual or **Search options** and the Tune bar with `tuneButton` in Auto-tune; under Auto the form's `FindSettings`,
-  `form.find`, instead: the status `Not searched`, **Search options** with Metric, Strategy, Limit, Max time or
-  Max trials and Candidates, and the bar
+  `form.find`, instead: the status `Not searched`, **Search** (Default / Custom; Custom shows Metric, Limit, Max time
+  or Max trials and Candidates), and the bar
   with `findButton`), the group **Output** (`OutputInputs`, below; hidden for a target with fewer than two classes)
   and the group **Validation** (`ValidationInputs`, below; collapsed
   at the start), the others expanded at the start, then the row `trainRow` (`forge-train-row`, a
@@ -1014,8 +1014,8 @@ inputs, and nested inputs broke both), so the block follows the reference protot
 with native controls in its own CSS grid (`forge-tune-grid`: the label column, then `minmax(0, 1fr)`, so nothing
 overflows at any width). The label column is the form's: `TuneSettings.alignLabels` copies the width the platform
 gave the Settings label (`captionLabel`, followed by `ui.onSizeChanged`; Find best model's block follows **Method**'s)
-into `--forge-tune-label`, with the labels' 8 px gap. The toggle (`optionsToggle`) and the Metric row (`metricRow`,
-`setMetrics`) are static builders that `FindSettings` shares, and so are the limit rows (`LimitInputs`,
+into `--forge-tune-label`, with the labels' 8 px gap. The status line (`statusLine`) and the Metric row (`metricRow`,
+`setMetrics`) are static builders that `FindSettings` shares (it has no toggle), and so are the limit rows (`LimitInputs`,
 `ui/limit-inputs.ts`): **Limit** (`ui.input.radio`, `Time` / `Trials`, `forge-inline-radio`), then **Max time**
 (`ui.input.int` in whole minutes, `min: 1`, `max: 60`, `nullable: false`, `step: 1`, `showPlusMinus`,
 `addPostfix('min')`, the platform's unit) or **Max trials** (`ui.input.int`, `min: 1`, `max: 10000`, `nullable:
@@ -1023,7 +1023,7 @@ false`, `showPlusMinus: false`, since a range would add the clicker); the platfo
 empty: `'abc' is not an integer.`, `Value must be greater than 1`, `Value must be less than 60`, `Can't be empty`), marks
 an invalid editor `d4-invalid` (a red underline) and shows its messages in the input's tooltip under its description
 (`tooltipText`; a `ui.tooltip.bind` on the editor would hide them). Find's own rule is one `addValidator` on Max
-trials, run only on a count in range; these platform inputs (and Find's Strategy and Candidates) sit in grid cells with
+trials, run only on a count in range; these platform inputs (and Find's Search and Candidates) sit in grid cells with
 `forge-tune-input`: their own labels hidden, the caption a `forge-tune-label` in the grid's label column
 (`LimitInputs.row`), an int editor as wide as its cell (ui.css caps it at 150 px) and at the bottom of the 30 px row
 (`align-self: flex-end`): ui.css puts the options (clicker and unit) there, each with its own underline, so the
@@ -1149,7 +1149,9 @@ candidates without a leader (`candidateOutcomes`) follow in candidate order with
 and the Method tooltip `No completed trial: <note>` / `Abandoned: the budget ran out` / `Not started: the budget ran
 out` above `spaceLines`; a method the halving dropped (`CandidateRecord.eliminatedRound` r) reads `Eliminated in round
 <r + 1>` as its Trials tooltip and in its Method tooltip, one without a space (which leaves the pool after round 0,
-`closeRound`) `No settings to tune` as its Trials tooltip; under an equal split the Trials tooltip explains the count
+`closeRound`) `No settings to tune` as its Trials tooltip (the view no longer starts halving searches, its search is
+always equal, and only the view's own searches reach the Search panel, so this display shows nothing now; it is kept
+for a possible return of the Strategy input); under an equal split the Trials tooltip explains the count
 (`Its space was exhausted` from `outcome.resume.exhausted`, else `Its share of the limit ran out`; nothing for a
 failed method). With a leader, a `DG.Viewer.barChart` over the grid's own frame (so the current row and the selection
 are shared) sits left of the grid in a `ui.splitH` (`forge-results-row`; each viewer in a `forge-panel-fill` box, as
@@ -1182,22 +1184,30 @@ insights, and nothing trains; a method name leaves it. `fillMethod` appends `for
 under Auto, else whether the method gives probabilities, through `OutputInputs.setProbabilityReason`) and the Method tooltip is `AUTO_TOOLTIP`. `form.find` is one `FindSettings` per form
 (`ui/find-settings.ts`), laid out as Auto-tune's block from the same builders (requirement: switching between a method
 and Auto changes nothing visible but the rows): `TuneSettings.statusLine()` reading `Not searched` (`NOT_SEARCHED`,
-tooltip from `STATUS_TOOLTIPS`) right under **Method**, then `forge-tune-auto` with the `optionsToggle` (collapsed at
-first; `setExpanded` saves the state, `expanded` in the stored settings, restored; an invalid limit opens it;
-the Find bar stays shown while it is collapsed) and the `forge-tune-grid` (label column aligned to **Method**'s caption through `alignLabels`, its
-subscription in `find.subs`, which the view keeps in `formSubs`): `metricRow`, **Strategy** (`ui.input.radio` of
-`STRATEGY_LABELS`, `Equal` / `Leaders` (short, so the row fits the 400 px form on one line; the printed name of
-halving stays `limitCaption`'s `Focus on leaders`), Equal by default; option tooltips `Every method gets
-an equal share of the limit: a fair comparison` / `Each round the worse half drops out; the rest get more trials`,
-label `How the checked methods share the limit`), the limit rows (`LimitInputs`: 100 trials by default, Max time 1
-min; its `trialsProblem` validator of Max trials, under Equal, `At least one trial per checked method: <N>` while the
-trials are fewer than the checked methods, re-validated through `updateErrors` on every change of the methods
-(`rebuild` ends with it) or the strategy) and **Candidates**,
+tooltip from `STATUS_TOOLTIPS`) right under **Method**, then `forge-tune-auto` with two `forge-tune-grid`s (label
+column aligned to **Method**'s caption through `alignLabels`, its subscription in `find.subs`, which the view keeps in
+`formSubs`): the first holds **Search** (`search`, `ui.input.radio` `Default` / `Custom` = `DEFAULT_SEARCH` /
+`CUSTOM_SEARCH`, `forge-inline-radio`, Default by default; label `Search settings for the best model`, option
+tooltips `Search with the recommended settings` / `Choose the metric, the limit and the methods yourself`), the second
+(`grid`, shown only while `isCustom`) `metricRow`, the limit rows (`LimitInputs`: 100 trials by default, Max time 1
+min; its `trialsProblem` validator of Max trials, `At least one trial per checked method: <N>` while the
+trials are fewer than the checked methods; every caller of `rebuild` then calls `updateErrors`, which validates the
+limit only in Custom, and the view validates `usedInputs`, the limit inputs only in Custom, so a hidden limit is never
+validated and never reopens the Method group; an error Custom showed stays on the hidden input until Custom validates
+again) and **Candidates**,
 a `forge-tune-label` and the platform `ui.input.multiChoice<string>('Candidates')` (`forge-tune-input
 forge-find-candidates`: its own label hidden, every check shown, the first level with the caption), then the
 `forge-tune-bar` with **Find** (`findButton`, gated by `findGate` / `findBlocker`: the selection's problem, a training,
-or `FindSettings.problem()`: `Check at least one method`, else the limit's (`Max time: ...`, `Max trials: ...`); tooltip
-`searchTooltip('best')`: `Find the best model`, or `Continue the search: <N> trials so far`).
+or `FindSettings.problem()`: `Check at least one method`, else the limit's (`Max time: ...`, `Max trials: ...`; under
+Default the trial rule on 100 trials); tooltip
+`searchTooltip('best')`: `Find the best model`, or `Continue the search: <N> trials so far`). **Default** searches with
+the defaults whatever Custom holds: the task's `defaultMetric`, `DEFAULT_LIMIT` (100 trials, so a quick limit) and the
+listed methods checked by `defaultCheck` alone (`overrides` not applied); **Custom** with the Metric select, the
+limit inputs and the toggles. `metricId`, `usedLimit` (read by `choice()` and `isQuickNow`) and `rebuild` read the
+kind, so `reasonOf`, `probabilityReason`, `problem()` and `choice()` see the settings the search will use; a switch
+shows or hides the grid, rebuilds, validates, saves and tells the view (`onChanged`: the view's `searchInputs` then compare the new metric and methods). Custom's
+values stay as they are under Default. `choice()` is always an equal split (`strategy: 'equal'`): the UI has no
+Strategy, the API's `options.search.strategy` keeps `halving` (focus on leaders).
 `setMethods(entries)` takes `MethodEntry {name, isLive, isServer, probabilities: always | input | none}`; `rebuild`
 lists only the entries without a reason (`reasonOf`: a server method, `<Method>: Runs on the server; not searched in
 the browser`; one with `none` while Predict probability is on, `<Method> gives no class probabilities`; one with
@@ -1210,14 +1220,15 @@ them by the user's toggle (`overrides`, kept only against the default) or the de
 a quick method, `isQuickMethod`: live and, for a classifier, not a probability input);
 it clears the value first (the platform keeps a checked item it no longer lists) and ignores its own value changes
 (`isRebuilding`). A change of the metric rebuilds, validates, saves and tells the view; one of the limit rebuilds only
-when the limit becomes quick or stops being quick (`isQuick`), one of the strategy only validates, saves and tells it.
+when the limit becomes quick or stops being quick (`isQuick`).
 Stored in `grok.userSettings` (`TuneSettings.storage`, key `Find best` = `FIND_KEY`; Tune's and Find's saves go
 through `TuneSettings.saver`, written 300 ms after the last change into the storage of that change, and at once by
-`flushSave`, which the settings' `subs` call when the view drops them): `{expanded, metric, strategy, limit,
-minutes, trials, methods}`, each item checked by `FindSettings.load` over `TuneSettings.storedRecord` (the limit by
+`flushSave`, which the settings' `subs` call when the view drops them): `{search, metric, limit, minutes, trials,
+methods}` (`metric` the select's), each item checked by `FindSettings.load` over `TuneSettings.storedRecord` (`search`
+Custom only when stored as `Custom`, else Default; an old record's `expanded` and `strategy` are ignored; the limit by
 `LimitInputs.load`, an old `seconds` migrated as Tune's). The Candidates caption's `METHODS_TOOLTIP`: `The methods to try, each with its
-defaults first`. `inputs` (Strategy, Limit, Max time, Max trials, Candidates) join `formInputs()` (the lock) and
-`expandOnError`; `setLocked` disables them and Metric. `revalidate` under Auto clears `problems.method` while
+defaults first`. `inputs` (Search, Limit, Max time, Max trials, Candidates) join `formInputs()` (the lock) and
+the Method group's `expandOnError`; `setLocked` disables them and Metric. `revalidate` under Auto clears `problems.method` while
 a method can learn, asks each browser method `retrainsLive` at once (into `interactivity`), lists them
 (cost order) then the server ones, sets Predict probability's reason, validates the find inputs and, instead of
 training, shows `AUTO_HINT` only without a `lastTraining` (`idleHint` under Auto shows the kept training again after a
@@ -2144,8 +2155,9 @@ generated `package-api.ts` types `object`, `map` and `list` as `any`).
   it. No package test reads the published files.
 - `ForgeApp.aiDescription`, the catalog's briefing for the assistant, names the API functions and `agents/skills.md`.
 
-`skills.md` repeats the annotations of `package.ts` and the README's "From scripts and Datagrok AI": a change of a
-function's name, inputs, result keys or error sentences updates it in the same change.
+`skills.md` repeats the annotations of `package.ts` and is the only full description of the API for users (the README
+only names the functions): a change of a function's name, inputs, result keys or error sentences updates it in the
+same change.
 
 ## Models view
 
@@ -2534,8 +2546,8 @@ declared settings, set in **Settings** (Manual / Auto-tune) with per-setting ran
 one limit (time or trials), the **Search** leaderboard and a held out **Test** measurement. **Find best model** (Method
 **Auto**, `Forge:trainModel` with `method: 'auto'`) is new too: where the built-in tool guessed a method from the data
 (`selectBestModelEngine`, ported as Forge's suggestion), it measures the checked methods on the data, trying each
-with its defaults, then an equal share of the limit each (or successive halving down to the best three, tuning
-those), and trains the one with the best score less its standard error. The **Validation** group is new
+with its defaults, then an equal share of the limit each (or, through the API, successive halving down to the best
+three, tuning those), and trains the one with the best score less its standard error. The **Validation** group is new
 too (the built-in tool always validated on five overlapping random samples): the scheme (stratified K-fold by default for a classifier, K-fold, Hold-out), the folds or the test fraction,
 the shuffle and a split seed (42 by default); settings a method ignores are disabled (`meta.mlenabled`).
 
@@ -2607,10 +2619,11 @@ The views publish their state in the DOM, so a test waits on what a view says in
 - Find best model: **Method**'s first item is `Auto` (`TrainView.isAutoMethod` while it is chosen; `findSettings` is
   the form's `FindSettings`, `findButton` its **Find**). The block is `.forge-find` (`style.display` `none` outside
   Auto, as the method's `.forge-tune` root is under Auto): the `.forge-tune-status` row (`statusText`, `Not searched`),
-  the `.forge-tune-toggle` (`toggle`, `aria-expanded`, `false` at first), the `.forge-tune-grid` (`grid`) with the `.forge-tune-label`s
-  `Metric`, `Strategy`, `Limit`, `Max time`, `Max trials`, `Candidates` (`candidatesLabel`, the reasons of the
-  unlisted methods in its tooltip; `Max time` or `Max trials` hidden by Limit), the select `metric`, the platform radios
-  `strategy` and `limit.kind`, the int inputs `limit.minutes` and `limit.trials` (an invalid one has a `validity` and
+  a `.forge-tune-grid` with the `.forge-tune-label` `Search` and the platform radio `search` (`Default` / `Custom`),
+  the `.forge-tune-grid` (`grid`, `style.display` `none` while Search is Default) with the `.forge-tune-label`s
+  `Metric`, `Limit`, `Max time`, `Max trials`, `Candidates` (`candidatesLabel`, the reasons of the
+  unlisted methods in its tooltip; `Max time` or `Max trials` hidden by Limit), the select `metric`, the platform radio
+  `limit.kind`, the int inputs `limit.minutes` and `limit.trials` (an invalid one has a `validity` and
   its editor the platform's `d4-invalid`) and the platform multi-choice `candidates`
   (`.forge-find-candidates`, one `.ui-input-multi-choice-checks > div` with its checkbox per listed method), then the
   `.forge-tune-bar` with **Find**.

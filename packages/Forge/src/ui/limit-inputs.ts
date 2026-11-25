@@ -14,11 +14,11 @@ const TRIALS_TOOLTIP = 'Maximum number of trials, pruned and failed ones include
 /** The one limit of a search as remembered per user. */
 export interface StoredLimit { limit: LimitKind; minutes: number; trials: number }
 
-/** The limit rows of a Search options grid (Tune's and Find best model's): **Limit** (Time / Trials) and under it the
- * one input it shows, **Max time** in whole minutes with a clicker or **Max trials**; each a platform int input with
- * its range (`min`, `max`, not nullable) in a grid cell, its caption in the grid's label column. The platform checks
- * a value and shows a problem (a red underline, the message in the input's tooltip under its description); only the
- * shown input counts. */
+/** The limit rows of Tune's Search options grid and of Find best model's Custom grid: **Limit** (Time / Trials) and
+ * under it the one input it shows, **Max time** in whole minutes with a clicker or **Max trials**; each a platform int
+ * input with its range (`min`, `max`, not nullable) in a grid cell, its caption in the grid's label column. The
+ * platform checks a value and shows a problem (a red underline, the message in the input's tooltip under its
+ * description); only the shown input counts. */
 export class LimitInputs {
   readonly kind: DG.InputBase<string | null>;
   readonly minutes: DG.InputBase<number | null>;

@@ -14,8 +14,9 @@ Predictive modeling (train, apply, catalog) behind the platform's `ML | Models` 
   `ui/model-actions.ts`), `_initForge` (autostart), the column panel
   **Predicted by** and the table panel **Models** (`ui/table-models-panel.ts`).
 - `src/ui/`: `train-view.ts` (+ `runs-panel.ts`, `tune-settings.ts`: Settings and Search options, `find-settings.ts`:
-  the Find best model block of Method Auto, built from Tune's static builders (status line, Search options toggle,
-  Metric row) plus the platform radio Strategy and multi-choice Candidates, `limit-inputs.ts`: both blocks' Limit
+  the Find best model block of Method Auto, built from Tune's static builders (status line, Metric row) plus the
+  platform radio Search (Default: the defaults; Custom: Metric, the limit and the multi-choice Candidates; no Strategy,
+  always an equal split), `limit-inputs.ts`: both blocks' Limit
   and Max time / Max trials rows (platform int inputs with `min`/`max`, the platform's validation) and the
   stored-limit migration, `search-panel.ts`: the Search bar chart
   and leaderboard in a splitter, `preparation-inputs.ts`: the Preparation group, `output-inputs.ts`: the Output group,
@@ -75,7 +76,7 @@ Predictive modeling (train, apply, catalog) behind the platform's `ML | Models` 
   (`PREDICTION_TAG`; `predictRows` adds none; an old model's markup is recognized by `apply/prediction-tag.ts`). Inserts of applications and runs need explicit `source`, `status`.
 - Header defaults (`= 20`) are in `Property.initialValue`, strings in quotes (`'RBF'`): use `defaultValuesOf`.
 - API lists are frames, one-model results objects; `object` outputs describe their keys in the output description
-  (the generated API types them `any`). `agents/skills.md` repeats the API annotations and the README's errors:
+  (the generated API types them `any`). `agents/skills.md` repeats the API annotations and holds the API's error sentences (the README only names the functions):
   a change of an API function's name, inputs, result keys or error sentences updates it too.
 - `deleteModel` deletes only Forge's own: a blob's `forge/model/<uuid>/` folder, a table named `<x> (training data)`.
 - Validators read the form's problems, not their argument, and run only on non-empty values. A dialog validates every

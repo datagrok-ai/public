@@ -48,14 +48,15 @@ overview: |
   Trains a model on a table (a target column and feature columns), measures it by k-fold cross-validation or a hold out
   (stratified for classifiers), tunes a method's settings (Tune, `options.search`), finds the best model among the
   methods (Method Auto and Find, `method: 'auto'`: every method tried, by an equal share of the one limit, time or
-  trials, or by successive halving down to the best three, those tuned), saves it
+  trials, or, through the API only, by successive halving down to the best three, those tuned), saves it
   to the Forge catalog without its training data unless asked, applies it to new tables as a prediction column,
   evaluates it on data with known targets, and manages the catalog (list, describe, rename, tag, share, delete).
 
   UI: ML | Models | Train Model... (the Predictive model view), ML | Models | Apply Model..., the Models view,
   the model catalog (Browse > Platform > Predictive models, address /models), the table's context pane "Models", the model's panes Details / Performance / Activity /
-  Sharing. In the view, Search options' Limit ends the search at a Max time (minutes) or Max trials, Find's Strategy is Equal (equal
-  split) or Leaders (focus on leaders), Tune or Find again continues the last search on the same data and settings (the limit added
+  Sharing. In the view, Limit ends the search at a Max time (minutes) or Max trials (Tune's Search options, Find's Search
+  Custom; Find's Search Default uses the default metric, 100 trials and the default methods), Find always shares the
+  limit equally, Tune or Find again continues the last search on the same data and settings (the limit added
   on top), and after a search of two methods or more the Search panel shows each method's score less one standard error as a bar chart beside the
   leaderboard; splitters separate the results, Search and Runs.
 

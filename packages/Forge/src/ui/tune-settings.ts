@@ -685,9 +685,9 @@ export class TuneSettings {
     return {row: ui.div([ui.label(' ', 'ui-input-label'), text], 'ui-input-root forge-tune-status'), text};
   }
 
-  /** The **Search options** toggle of [grid] (Tune's and Find best model's): an empty chevron box as the groups'
-   * headers have, so the chevron starts where the Method header's text does, the chevron and the caption; [show] shows
-   * or hides the grid. The caller handles the click. */
+  /** Tune's **Search options** toggle of [grid]: an empty chevron box as the groups' headers have, so the chevron
+   * starts where the Method header's text does, the chevron and the caption; [show] shows or hides the grid. The caller
+   * handles the click. */
   static optionsToggle(grid: HTMLElement): {toggle: HTMLButtonElement; show: (isExpanded: boolean) => void} {
     const expandIcon = ui.iconFA('chevron-right');
     const collapseIcon = ui.iconFA('chevron-down');
@@ -707,7 +707,8 @@ export class TuneSettings {
     return {toggle, show};
   }
 
-  /** The Metric row of a Search options grid: its label and its cell with the select, which calls [onChange]. */
+  /** The Metric row of Tune's Search options grid or Find best model's Custom grid: its label and its cell with the
+   * select, which calls [onChange]. */
   static metricRow(onChange: () => void): {label: HTMLElement; cell: HTMLElement; select: HTMLSelectElement} {
     const select: HTMLSelectElement = ui.element('select');
     select.setAttribute('aria-label', 'Metric');

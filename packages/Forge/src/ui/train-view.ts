@@ -703,7 +703,7 @@ export class TrainView extends DG.ViewBase {
     this.showMethods(check);
     const settings = this.form.preparation.missingValues.visibleInputs;
     for (const input of [this.form.target, this.form.features, this.form.method, this.form.output.threshold,
-      ...settings, ...this.form.validation.usedInputs, ...this.activeHyperparameters(), ...this.form.find.inputs])
+      ...settings, ...this.form.validation.usedInputs, ...this.activeHyperparameters(), ...this.form.find.usedInputs])
       input.validate();
     if (check.engines.length > 0)
       this.interactivity.set(this.engine.name, check.isInteractive);
