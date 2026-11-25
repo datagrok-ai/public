@@ -24,6 +24,7 @@ import './shell/ml';
 import './shell/settings';
 import './shell/table-view-ribbon';
 import './shell/view-save-to-project';
+import './shell/view-unsaved-work';
 import './shell/view-layout';
 import './dapi/files';
 import './dapi/files-list';
