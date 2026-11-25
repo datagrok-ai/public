@@ -155,7 +155,6 @@
   ],
   "category": "Cheminformatics",
   "meta": {
-    "dartium": false,
     "browserFeatures": [
       "wasm"
     ]

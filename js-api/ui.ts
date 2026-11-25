@@ -36,7 +36,7 @@ import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
 import $ from 'cash-dom';
 import {__obs, DragDropArgs} from './src/events';
-import {HtmlUtils, _isDartium, _options, Utils} from './src/utils';
+import {HtmlUtils, _options, Utils} from './src/utils';
 import * as rxjs from 'rxjs';
 import {CanvasRenderer, Grid, GridCell, GridCellRenderer, Rect, SemanticValue, Size} from './src/grid';
 import {DataConnection, Entity, FileInfo, Func, Group, Property, User} from './src/entities';
@@ -1308,25 +1308,6 @@ export function schemeInput(gradient: number[]): HTMLElement {
 /**
  * Example: {@link https://public.datagrok.ai/js/samples/ui/ui-events} */
 export function onSizeChanged(element: HTMLElement): rxjs.Observable<any> {
-
-  if (_isDartium()) {
-    // Polyfill for Dartium which does not have a native ResizeObserver
-    return new rxjs.Observable(function(observer: any) {
-      let width = element.clientWidth;
-      let height = element.clientHeight;
-      let interval = setInterval(() => {
-        let newWidth = element.clientWidth;
-        let newHeight = element.clientHeight;
-        if (newWidth !== width || newHeight !== height) {
-          width = newWidth;
-          height = newHeight;
-          observer.next(element);
-        }
-      }, 100);
-      return () => clearInterval(interval);
-    });
-  }
-
   return new rxjs.Observable(function (observer: { next: (arg0: ResizeObserverEntry) => void; }) {
     const resizeObserver = new ResizeObserver(observerEntries => {
       // trigger a new item on the stream when resizes happen
@@ -1406,17 +1387,6 @@ export class tools {
 
   /** Waits until the specified element is in the DOM. */
   static waitForElementInDom(element: HTMLElement): Promise<HTMLElement> {
-    if (_isDartium()) {
-      return new Promise(resolve => {
-        const intervalId = setInterval(function() {
-          if (document.contains(element)) {
-            clearInterval(intervalId);
-            return resolve(element);
-          }
-        }, 100);
-      });
-    }
-
     tools.mutationObserver ??=  new MutationObserver((_) => {
       tools.mutationObserverElements.forEach((item, index) => {
         if (document.contains(item.element)) {
@@ -1437,7 +1407,7 @@ export class tools {
     });
   }
 
-  private static formResizeObserver = _isDartium() || (typeof ResizeObserver == 'undefined') ? null : new ResizeObserver((records, observer) => {
+  private static formResizeObserver = (typeof ResizeObserver == 'undefined') ? null : new ResizeObserver((records, observer) => {
     for (let r of records) {
       setTimeout(() => {
         let shouldHandle = tools.handleFormResize(r.target as HTMLElement);
@@ -1532,8 +1502,7 @@ export class tools {
     this.calcWidths(form);
     this.setLabelsWidth(form, tools.formMinInputWidths.get(form)!);
     this.handleFormResize(form);
-    if (!_isDartium())
-      this.formResizeObserver!.observe(form);
+    this.formResizeObserver!.observe(form);
   }
 
   private static getInputsMinWidths(form: HTMLElement): number[] {

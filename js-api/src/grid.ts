@@ -2,7 +2,7 @@ import {Cell, Column, DataFrame, Row} from './dataframe';
 import {Viewer} from './viewer';
 import {toDart, toJs} from './wrappers';
 import {__obs, _sub, EventData, GridCellArgs, StreamSubscription} from './events';
-import {_identityInt32, _isDartium}  from './utils';
+import {_identityInt32}  from './utils';
 import {_toIterable} from './utils_convert';
 import { MapProxy} from "./proxies";
 import {Observable} from 'rxjs';
@@ -625,8 +625,6 @@ export class GridCellWidget {
     gridCellWidget.root.style.aspectRatio = `${canvasSize.width / canvasSize.height}`;
     gridCellWidget.canvas.width = canvasSize.width;
     gridCellWidget.canvas.height = canvasSize.height;
-    if (_isDartium())
-      gridCellWidget.root.style.height = `${canvasSize.height}px`;
     return gridCellWidget;
   }
 

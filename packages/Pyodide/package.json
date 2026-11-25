@@ -32,7 +32,6 @@
   ],
   "category": "Compute",
   "meta": {
-    "dartium": false,
     "browserFeatures": [
       "wasm"
     ]

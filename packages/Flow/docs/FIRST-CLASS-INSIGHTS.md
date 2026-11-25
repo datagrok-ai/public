@@ -373,9 +373,9 @@ entity name/description/tags). Run of the clean compiled script is fully standal
 
 ## 9. Constraints and gotchas
 
-1. **Dart 1.x** in core: `new` constructors, no generic function types in fields/collections
-   (analyzer stack-overflow — use `Function`), `Map.removeWhere` missing, `Modal.onCancel` is a
-   field. See root `CLAUDE.md` "Dart 1.x gotchas".
+1. **Dart 3** in core: write `new` in constructors, no inline function types in fields of
+   annotated classes (the generators cannot name them: use `Function`), `Modal.onCancel` is a
+   field. See `core/CLAUDE.md`, "Writing Dart" and the gotchas after it.
 2. **Codegen**: adding `FuncOptions` constants (ddt) or `ScriptHandler` fields (grok_shared)
    requires `dart build.dart` in dependency order: ddt → grok_shared → datlas → xamgle → d4.
 3. **Body size**: `scripts.script` is `varchar(262144)` — 256 K chars ceiling for header + ffjson.

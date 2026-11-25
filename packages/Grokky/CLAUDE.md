@@ -28,8 +28,8 @@ The UI targets current Chrome. Dartium (≈ Chromium 50) and Dart 1 are no longe
 modern CSS (flexbox `gap`, unprefixed `filter`/`user-select`/`mask-image`) and modern runtime APIs
 are fine.
 
-`src/polyfills.ts` and the `isEnterKey()` helper are leftovers from the Dartium era; do not add to
-them. Keep using `copyToClipboard()` from `src/utils.ts` rather than `navigator.clipboard.writeText`:
+`src/polyfills.ts` covers only what current browsers lack (the unprefixed `SpeechRecognition`); the
+platform itself polyfills `crypto.randomUUID` outside a secure context. Keep using `copyToClipboard()` from `src/utils.ts` rather than `navigator.clipboard.writeText`:
 the latter is undefined in insecure (plain-HTTP) contexts.
 
 ## Source Structure
@@ -37,8 +37,8 @@ the latter is undefined in insecure (plain-HTTP) contexts.
 ```
 src/
 ├── package.ts              # Entry point — registers functions, init, search providers
-├── polyfills.ts            # Legacy Dartium-era polyfills — imported first from package.ts / package-test.ts
-├── utils.ts                # Shared utilities: viewer/dataframe descriptions, events, isEnterKey/copyToClipboard
+├── polyfills.ts            # SpeechRecognition shim — imported first from package.ts / package-test.ts
+├── utils.ts                # Shared utilities: viewer/dataframe descriptions, events, copyToClipboard
 ├── ai/                     # AI panels, search, and UI wiring
 │   ├── panel.ts            # AIPanel (singleton shell chat), DBAIPanel, ScriptingAIPanel, StreamingPanel
 │   ├── ai-window.ts        # AIWindowManager — mounts panels into grok.shell.windows.ai, Ctrl+I toggle

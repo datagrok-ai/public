@@ -40,8 +40,5 @@
   "canView": [
     "Administrators"
   ],
-  "category": "Development",
-  "meta": {
-    "dartium": false
-  }
+  "category": "Development"
 }

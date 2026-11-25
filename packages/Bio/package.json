@@ -99,7 +99,6 @@
   ],
   "category": "Bioinformatics",
   "meta": {
-    "dartium": false,
     "menu": {
       "Bio": {
         "Analyze": {

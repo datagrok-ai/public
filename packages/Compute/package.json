@@ -43,8 +43,5 @@
   "canView": [
     "All users"
   ],
-  "category": "Compute",
-  "meta": {
-    "dartium": false
-  }
+  "category": "Compute"
 }

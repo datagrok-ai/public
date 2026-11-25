@@ -54,7 +54,9 @@ export class CombinedAISearchAssistant {
   }
 
   public async getResultWidget(prompt: string, provider?: SearchProvider): Promise<DG.Widget | null> {
-    const functionOrder = provider && this.functions[provider] ? [provider] : await this.getRelevantFunctionOrder(prompt);
+    // a provider is the tab's friendly name; the order holds function names, as the ranking returns
+    const direct = provider ? Object.values(this.functions).find((f) => f.friendlyName === provider)?.func.name : undefined;
+    const functionOrder = direct ? [direct] : await this.getRelevantFunctionOrder(prompt);
     console.log(`Function order for execution: ${functionOrder.join(', ')}`);
     const remainingFunctions = Object.keys(this.functions).filter((fn) => !functionOrder.includes(fn));
     let moreBtn: HTMLButtonElement | null = null;
@@ -112,7 +114,7 @@ export class CombinedAISearchAssistant {
 
   private buildFunctionTabContent(funcInfo: AISearchFuncInfo, prompt: string): HTMLElement {
     const host = ui.divV([], 'grokky-ai-search-tab-host');
-    const chat = new AIPanel(`search-${funcInfo.func.name}`, grok.shell.v, {inline: true, feature: SEARCH_FEATURES[funcInfo.func.name]});
+    const chat = new AIPanel(`search-${funcInfo.func.name}`, grok.shell.v, {inline: true, feature: SEARCH_FEATURES[funcInfo.friendlyName]});
     chat.onRunRequest.subscribe((a) => runPromptWithLifecycle(chat, a.currentPrompt.prompt, grok.shell.v, 'search', undefined, a.currentPrompt.isAnswer));
 
     host.appendChild(ui.wait(async () => {

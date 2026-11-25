@@ -10,16 +10,16 @@ Docusaurus 3.10 (React/Node.js) static site that serves the datagrok.ai document
 
 The datagrok.ai website consists of two independently deployed parts on a single EC2 instance behind nginx:
 
-1. **Landing** (Dart 1.x SPA) — marketing/corporate pages at `/`, `/company`, `/login`, `/solutions`, etc.
-   - Source: `landing/` (private repo root)
-   - Deployed by Jenkins → `/home/grok/landing/`
+1. **Landing** (static HTML, CSS and JavaScript) — marketing/corporate pages at `/`, `/company`, `/login`, `/solutions`, etc.
+   - Source: https://github.com/datagrok-ai/landing, `web/`
+   - Deployed by GitHub Actions → `/home/deploy/landing/`
 2. **Docusaurus** (this directory) — documentation and API reference at `/help/*`, `/api/*`
    - Source: `public/docusaurus/`
    - Deployed by GitHub Actions → `/home/grok/docusaurus/`
 
 Nginx routes decide which directory serves each URL path. The two deploys never overwrite each other.
 Any new top-level route served by Docusaurus (e.g. `/blog`) needs a matching nginx `location` in the
-landing repo, otherwise the landing SPA catches it and serves the homepage.
+landing repo, otherwise the landing catch-all takes it and serves the homepage.
 
 For the full architecture, nginx routing rules, search (Typesense), CI/CD pipelines, and deployment details, see `core/docs/LANDING_HOST.md`.
 

@@ -449,12 +449,6 @@ export namespace HtmlUtils {
   }
 }
 
-export function _isDartium() {
-  if (typeof document.head == 'undefined')
-    return false;
-  return document.head.querySelectorAll('script[src*=".dart.js"]').length == 0;
-}
-
 
 function* _range(length: number): IterableIterator<number> {
   for (let i = 0; i < length; i++)
