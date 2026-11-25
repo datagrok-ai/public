@@ -48,6 +48,21 @@ export const clickDialogLink = When('user clicks on the {string} link in {string
   await link.click();
 }, {tier: 'ui', description: 'a link in a dialog\'s text, such as "save the project" in the close dialog, which saves first and then closes'});
 
+const undoHint = (page: Page) => page.locator('.grok-undo-hint').filter({visible: true});
+
+export const undoHintSays = Then('the status bar should offer to undo {string}', (page: Page, text: string) =>
+  expect(undoHint(page), 'the Undo hint in the status bar').toContainText(text),
+{description: 'the short line beside the tasks after an action Ctrl+Z takes back, with an Undo link'});
+
+export const noUndoHint = Then('the status bar should offer no undo', (page: Page) =>
+  expect(undoHint(page), 'the Undo hint in the status bar').toHaveCount(0));
+
+export const clickUndoHint = When('user clicks Undo in the status bar', async (page: Page) => {
+  const link = undoHint(page).locator('a', {hasText: 'Undo'}).first();
+  await expect(link, 'Undo in the status bar').toBeVisible();
+  await link.click();
+}, {tier: 'ui', description: 'the Undo link of the hint, which undoes exactly the action it names'});
+
 export const simpleModeOn = Given('simple mode is on', async (page: Page) => {
   const was = await page.evaluate(() => { const s = grok.shell.windows.simpleMode; grok.shell.windows.simpleMode = true; return s; });
   await expect(page.locator('[name="view selector"]').filter({visible: true}).first(), 'the view selector').toBeVisible({timeout: 15000});
