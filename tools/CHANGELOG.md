@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#1801](https://github.com/datagrok-ai/core/issues/1801): `grok s shares add --access` accepts `Use` (view and use), `Full` and any single permission name
 * `grok claude`: The `scripting` and `full` profiles start the `jkg_python` and `jkg_r` kernel gateways instead of the retired `jupyter_kernel_gateway` image
 * `grok publish`: Fixed uploading a package's `bdd/` folder (its filmed guides, a gigabyte for Bio, and its login token): the walk read only the package's own ignore files, not the repository root's
 * `grok report ticket`: Requests a GitHub issue through the instance (`POST /reports/{id}/ticket`) instead of creating a Jira ticket
