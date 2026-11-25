@@ -42,6 +42,17 @@ type UiType = typeof uiType;
 declare let ui: UiType;
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
+/** What closing a view would lose; see {@link ViewBase.unsavedWork}. */
+export interface UnsavedWork {
+  /** What the user changed, as the question before the close says it: `['Edited the flow']`. */
+  changes: string[];
+  /** Saves the changes.
+   * @returns whether they are saved; the view stays open otherwise. */
+  save: () => Promise<boolean>;
+  /** Text of the link that calls {@link save}; 'save the changes' by default. */
+  saveLink?: string;
+}
+
 /**
  * Subclass ViewBase to implement a Datagrok view in JavaScript.
  * */
@@ -164,6 +175,12 @@ export class ViewBase extends Widget {
   /** Status bar panels to be shown on the bottom */
   get statusBarPanels(): HTMLDivElement[] { return api.grok_View_Get_StatusBarPanels(this.dart); }
   set statusBarPanels(panels: HTMLDivElement[]) { api.grok_View_Set_StatusBarPanels(this.dart, panels); }
+
+  /** Override to name the changes that closing this view would lose, or null when there are none. A close the user
+   * starts then asks first: CLOSE discards the changes, {@link UnsavedWork.saveLink} saves them and closes the view.
+   * A close from code ({@link close}, `grok.shell.closeAll()`) never asks.
+   * Sample: {@link https://public.datagrok.ai/js/samples/ui/views/unsaved-work} */
+  get unsavedWork(): UnsavedWork | null { return null; }
 
   /** Whether the view is currently closing. */
   get closing(): boolean { return this._closing; }
