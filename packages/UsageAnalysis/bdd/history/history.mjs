@@ -39,8 +39,16 @@ function reportFiles(sources) {
     ? readdirSync(s).filter((f) => f.endsWith('.json')).map((f) => join(s, f)) : [s]);
 }
 
+/** A film — every test a guide in demo or tutorial mode (`@guide` with `@demo` or `@tutorial`) — is left out of a
+ * suite run (libraries/bdd/playwright.config.ts), so a full run covers every spec but the films. */
+function isFilm(source) {
+  const tags = [...source.matchAll(/\{tag: \[([^\]]*)\]\}/g)].map((m) => m[1]);
+  return tags.length > 0 && tags.every((t) => t.includes('"@guide"') && /"@(demo|tutorial)"/.test(t));
+}
+
 function specFiles(dir) {
-  return existsSync(dir) ? readdirSync(dir, {recursive: true}).filter((f) => String(f).endsWith('.test.ts')).length : 0;
+  return existsSync(dir) ? readdirSync(dir, {recursive: true}).map(String)
+    .filter((f) => f.endsWith('.test.ts') && !isFilm(readFileSync(join(dir, f), 'utf8'))).length : 0;
 }
 
 const clean = (s) => s?.replace(/\u001b\[[0-9;]*m/g, '').trim();

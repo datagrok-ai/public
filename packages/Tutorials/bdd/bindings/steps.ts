@@ -4,7 +4,7 @@
    cards and the panel are named in elements.ts. */
 import {type Page, test} from '@playwright/test';
 import {Given, Then, When} from '@datagrok-libraries/bdd';
-import {type ElementRef, atFeatureEnd, expect, locate, pollMs, reportedServices, serviceGap} from '@datagrok-libraries/bdd/runtime';
+import {type ElementRef, atFeatureEnd, expect, guideHop, locate, pollMs, reportedServices, serviceGap} from '@datagrok-libraries/bdd/runtime';
 
 declare const grok: any;
 declare const DG: any;
@@ -63,11 +63,14 @@ export const startTutorial = When('user starts the {string} tutorial', async (pa
     closeAtFeatureEnd(page);
     await openTutorialsView(page);
   }
+  await guideHop(page, card);
   await card.click({timeout: pollMs(30000)});
   await expect(page.locator('.tutorials-bar-title'), 'the running tutorial\'s title').toHaveText(name, {timeout: pollMs(60000)});
   await expect(page.locator('.tutorials-bar-step'), 'the first step in the tutorial bar')
     .toHaveText(/\S/, {timeout: pollMs(60000)});
-  await page.locator('.tutorials-bar .fa-list').click();
+  const stepList = page.locator('.tutorials-bar .fa-list');
+  await guideHop(page, stepList);
+  await stepList.click();
   await expect(page.locator('.grok-tutorial-entry[aria-current="step"]').first(), 'the first step of the tutorial').toBeVisible({timeout: pollMs(60000)});
 }, {tier: 'ui', description: 'clicks the tutorial\'s card in the Tutorials view (opening the view first if needed), waits for its first step and opens its step list'});
 
