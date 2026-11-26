@@ -7,6 +7,8 @@ export type RowState = '' | 'new' | 'modified' | 'deleted' | 'restored';
 /** What a landed batch answers: every draft id the writer stamped → the id the server gave. */
 export interface EditSaved {
   assigned: Record<string, string>;
+  /** Rows this writer's transaction wrote. */
+  written: number;
 }
 
 export interface EditState {
@@ -14,18 +16,17 @@ export interface EditState {
   /** Changed cells, as the platform editor counts: an edited row its cells, a new or deleted
    * row once, a pristine draft not at all. */
   readonly changeCount: ReadonlySignal<number>;
-  /** The first blocking problem, null when the batch may be saved. */
+  /** The first problem the client finds, null when the batch may be sent: what keeps Save off. */
   readonly validity: ReadonlySignal<string | null>;
   readonly isSaving: ReadonlySignal<boolean>;
-  /** Why the last save was refused, where the refusal named no column and so reached no cell — a
-   * delete a child's reference vetoes, say. Null until a save is refused that way. */
-  problem?: string | null;
   /** The key of the row that changed, null for a change touching several. */
   readonly onChanged: ObservableLike<string | null>;
   /** A batch landed: the rows are settled and every draft is re-keyed by its real id. */
   readonly onSaved: ObservableLike<EditSaved>;
   isChanged(key: string, column: string): boolean;
   errorOf(key: string, column: string): string | null;
+  /** Whether the cell's error is the server's answer to the last save: shown, never holding Save off. */
+  refused(key: string, column: string): boolean;
   setValue(key: string, column: string, value: unknown): void;
   /** Adds a draft; answers its stamped `~new:` id — the key `RowsLike.byKey` finds it under.
    * `pristine` is the insert-form contract: the draft is saved with the batch but arms nothing
@@ -55,6 +56,38 @@ export interface EditState {
 }
 
 type Row = Record<string, unknown>;
+
+/** A list or map column, which a frame holds as its JSON text. */
+export function isJsonCell(prop: IProperty): boolean {
+  const type = prop.propertyType ?? prop.type;
+  return type === 'string_list' || type === 'map';
+}
+
+/** A value as a frame cell of `prop` holds it: a list or a plain object as its JSON text. */
+export function jsonCell(prop: IProperty, value: unknown): unknown {
+  if (!isJsonCell(prop) || typeof value !== 'object' || value === null)
+    return value;
+  const proto = Object.getPrototypeOf(value);
+  return Array.isArray(value) || proto === Object.prototype || proto === null ? JSON.stringify(value) : value;
+}
+
+/** Whether two cells hold the same JSON value, however its text is spelled. */
+export function sameJson(a: unknown, b: unknown): boolean {
+  const x = jsonOf(a);
+  return x !== undefined && x === jsonOf(b);
+}
+
+// the JSON of a list, an object or their text, keys in order; undefined for anything else
+function jsonOf(v: unknown): string | undefined {
+  try {
+    const value = typeof v !== 'string' ? v : /^\s*[[{]/.test(v) ? JSON.parse(v) : undefined;
+    const sorted = (_: string, x: unknown) => typeof x !== 'object' || x === null || Array.isArray(x) ? x :
+      Object.fromEntries(Object.entries(x).sort(([p], [q]) => p < q ? -1 : 1));
+    return typeof value !== 'object' || value === null ? undefined : JSON.stringify(value, sorted);
+  } catch {
+    return undefined;
+  }
+}
 
 /** One op of the writer's batch with the row it came from — what `applyResults` writes back to. */
 export interface MemoryPendingOp {
@@ -120,6 +153,11 @@ export class MemoryEditState implements EditState {
     return prop === undefined || row === undefined ? null : this._error(row, prop);
   }
 
+  // a refused transaction is thrown whole: no cell carries the server's answer
+  refused(): boolean {
+    return false;
+  }
+
   /** Opens and closes the writer around a transaction, as the platform editor's `setSaving` does
    * (`domains-editor.ts`): a batch in flight is built from the rows as they were sent, so an edit
    * made meanwhile would land in storage under the old value and read clean afterwards. */
@@ -131,9 +169,18 @@ export class MemoryEditState implements EditState {
     if (this._saving.peek())
       return;
     const row = this._row(key);
-    if (row === undefined || Object.is(row[column], value))
+    if (row === undefined)
       return;
     const state = row[Rows.STATE] as RowState | undefined;
+    const prop = this._table.properties.find((p) => p.name === column);
+    if (state !== 'new' && typeof value === 'string' && prop !== undefined && isJsonCell(prop)) {
+      const originals = this._originals.get(row);
+      const original = originals?.has(column) ? originals.get(column) : row[column];
+      if (sameJson(original, value))
+        value = original;
+    }
+    if (Object.is(row[column], value))
+      return;
     if (state !== 'new') {
       const originals = this._originals.get(row) ?? new Map<string, unknown>();
       this._originals.set(row, originals);
@@ -255,38 +302,46 @@ export class MemoryEditState implements EditState {
   }
 
   /** The batch in row order, as the js-api editor builds it: an insert names itself with its
-   * draft id, a value that is a draft id (this writer's or another's) becomes the `$` reference
+   * draft id, a value that is a draft id of `drafts` (by default this writer's own) becomes the `$` reference
    * the server resolves, a literal leading `$` is escaped; `id` is never sent. */
-  buildOps(): MemoryPendingOp[] {
+  buildOps(drafts: ReadonlySet<string> = this.draftIds()): MemoryPendingOp[] {
     const table = this._table.address;
     const pending: MemoryPendingOp[] = [];
     for (const row of this.df.rows) {
       const state = row[Rows.STATE] as RowState | undefined;
       const values: Row = {};
       const writable = this._writable(row);
+      const guard = typeof row.version === 'number' ? {expectedVersion: row.version} : {};
       if (state === 'deleted')
-        pending.push({row, op: {op: 'delete', table, id: String(row.id)}});
+        pending.push({row, op: {op: 'delete', table, id: String(row.id), ...guard}});
       else if (state === 'restored')
-        pending.push({row, op: {op: 'restore', table, id: String(row.id)}});
+        pending.push({row, op: {op: 'restore', table, id: String(row.id), ...guard}});
       else if (state === 'new') {
         for (const name of writable) {
           if (row[name] != null)
-            values[name] = MemoryEditState._reference(row[name]);
+            values[name] = MemoryEditState._reference(row[name], drafts);
+        }
+        // the platform frame holds no empty bool, so its editor always sends one
+        for (const prop of this._table.properties) {
+          if (prop.propertyType === 'bool' && writable.includes(prop.name!))
+            values[prop.name!] ??= false;
         }
         pending.push({row, op: {op: 'insert', table, ref: String(row.id), values}});
       } else if (state === 'modified') {
         for (const name of this._originals.get(row)?.keys() ?? []) {
           if (writable.includes(name))
-            values[name] = MemoryEditState._reference(row[name]);
+            values[name] = MemoryEditState._reference(row[name], drafts);
         }
-        if (Object.keys(values).length > 0) {
-          const version = row.version;
-          pending.push({row, op: {op: 'update', table, id: String(row.id), values,
-            ...(typeof version === 'number' ? {expectedVersion: version} : {})}});
-        }
+        if (Object.keys(values).length > 0)
+          pending.push({row, op: {op: 'update', table, id: String(row.id), values, ...guard}});
       }
     }
     return pending;
+  }
+
+  draftIds(): Set<string> {
+    return new Set(this.df.rows.map((row) => row.id)
+      .filter((id): id is string => typeof id === 'string' && Rows.isDraft(id)));
   }
 
   /** The landed batch written back: deleted rows leave, every other row takes its result (a
@@ -305,6 +360,8 @@ export class MemoryEditState implements EditState {
         Object.assign(row, results[i]);
         if (op.op === 'restore' && Rows.DELETED in row)
           row[Rows.DELETED] = false;
+        for (const prop of this._table.properties)
+          row[prop.name!] = jsonCell(prop, row[prop.name!]);
       }
     }
     this.df.rows.splice(0, this.df.rowCount, ...this.df.rows.filter((row) => !removed.has(row)));
@@ -315,7 +372,7 @@ export class MemoryEditState implements EditState {
       }
     }
     this._settle();
-    this.onSaved.fire({assigned});
+    this.onSaved.fire({assigned, written: pending.length});
   }
 
   /** The draft id of every insert of the batch → the id the backend gave it. */
@@ -351,10 +408,10 @@ export class MemoryEditState implements EditState {
     return null;
   }
 
-  private static _reference(v: unknown): unknown {
+  private static _reference(v: unknown, drafts: ReadonlySet<string>): unknown {
     if (Array.isArray(v))
-      return v.map((x) => MemoryEditState._reference(x));
-    return typeof v === 'string' && (Rows.isDraft(v) || v.startsWith('$')) ? `$${v}` : v;
+      return v.map((x) => MemoryEditState._reference(x, drafts));
+    return typeof v === 'string' && (drafts.has(v) || v.startsWith('$')) ? `$${v}` : v;
   }
 
   private static _resolve(v: unknown, ids: Record<string, string>): unknown {

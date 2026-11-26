@@ -5,7 +5,8 @@ import {register} from 'node:module';
 import {flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {backends, Scope, Rows, notify} from '@datagrok-libraries/u2';
 import {SharedSession} from '../src/core/session.js';
-import {backend} from './domain-fixtures.mjs';
+import {DomainSource} from '../src/core/domain-source.js';
+import {backend, hierarchyBackend} from './domain-fixtures.mjs';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/facade.js');
@@ -134,7 +135,46 @@ scoped('the table validators refuse a save no form ever saw', async () => {
   assert.equal(await source.save(), true);
   assert.equal(emsBackends.domain.tableSync('grit.issue').rows.find((r) => r.id === 'i2').priority, 'high');
   off();
+  const retired = table.validators.add('priority', (value) => value === 'low' ? 'Priority "low" is retired' : null);
+  row.priority = 'low';
+  await flush();
+  assert.equal(source.validity.value, 'Ibuprofen: Priority "low" is retired', 'Save is off before the click');
+  assert.equal(await source.save(), false);
+  assert.equal(source.error.value.message, 'Cannot save: Ibuprofen: Priority "low" is retired',
+    'a message naming its field is not prefixed again');
+  retired();
+  const short = table.validators.add('title', (value) => String(value ?? '').length < 3 ? 'Too short' : null);
+  row.title = 'Ib';
+  await flush();
+  assert.match(source.validity.value, /Too short/);
+  row.title = 'Ibuprofen 2';
+  await flush();
+  assert.equal(source.validity.value, null, 'a fix that leaves the change count as it was turns Save on');
+  row.title = 'Ib';
+  await flush();
+  assert.match(source.validity.value, /Too short/, 'and a valid changed cell made invalid turns it off');
+  short();
   source.dispose();
+});
+
+scoped('text that looks like a draft id or a reference is saved as typed; a move under its own new child is refused', async () => {
+  emsBackends.domain = backend();
+  const issues = testOwner().build(() => new DomainSource({table: 'grit.issue'}));
+  issues.start();
+  await flush();
+  Object.assign(issues.rows.byKey('i1'), {title: '~new:release notes', description: '$5 off'});
+  assert.equal(await issues.save(), true);
+  const {title, description} = emsBackends.domain.tableSync('grit.issue').rows.find((r) => r.id === 'i1');
+  assert.deepEqual([title, description], ['~new:release notes', '$5 off']);
+  emsBackends.domain = hierarchyBackend();
+  const places = testOwner().build(() => new DomainSource({table: 'stock.location'}));
+  places.start();
+  await flush();
+  places.rows.byKey('l2').parent_id = places.newRow({name: 'Crate', parent_id: 'l3'}).id;
+  assert.equal(await places.save(), false, 'the server keeps no hierarchy acyclic: the session does');
+  assert.match(places.summary.value, /Cannot move "Room" under itself/);
+  issues.dispose();
+  places.dispose();
 });
 
 scoped('the writer\'s own cell refusal names the row and the field, and marks the row', async () => {
@@ -142,13 +182,16 @@ scoped('the writer\'s own cell refusal names the row and the field, and marks th
   const table = await domains.table('grit.issue');
   const source = testOwner().build(() => table.source({}));
   await flush();
-  const draft = source.newRow({project_id: 'p1', number: 7});
+  const draft = source.newRow({number: 7});
   await flush();
-  assert.equal(source.validity.value, 'Value can\'t be empty', 'the writer says only what is wrong');
+  assert.equal(source.validity.value, 'New issue: Project id is required');
+  draft.project_id = 'p1';
+  await flush();
+  assert.equal(source.validity.value, 'New issue: Title is required', 'the field still empty, not the one filled');
   assert.equal(await source.save(), false);
-  assert.equal(source.error.value.message, 'Cannot save: New issue: Title: Value can\'t be empty',
+  assert.equal(source.error.value.message, 'Cannot save: New issue: Title is required',
     'the refusal names the row and the field the writer refused over');
-  assert.equal(source.summary.value, 'Cannot save: New issue: Title: Value can\'t be empty');
+  assert.equal(source.summary.value, 'Cannot save: New issue: Title is required');
   assert.equal(source.problemRow.value, draft.id, 'and marks the row');
   draft.title = 'Titled';
   await flush();

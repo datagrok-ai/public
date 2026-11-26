@@ -1,4 +1,4 @@
-import {emsBackends, capital, nounOf} from './domain-backend.js';
+import {emsBackends, capital, nounOf, errorCode, hierarchyCycle, DomainBackendError} from './domain-backend.js';
 import {signal, computed, ReadonlySignal, Emitter, plural, notify, Dialog, Rows, div} from '@datagrok-libraries/u2';
 import type {ObservableLike, SpecInstance, RowView} from '@datagrok-libraries/u2';
 import type {DomainSource} from './domain-source.js';
@@ -6,7 +6,7 @@ import type {DomainSource} from './domain-source.js';
 export interface DomainSession {
   readonly isDirty: ReadonlySignal<boolean>;
   readonly changeCount: ReadonlySignal<number>;
-  /** The first blocking problem, null when the batch may be saved. */
+  /** Why Save is off: the first source's {@link DomainSource.validity}, null when the batch may be sent. */
   readonly validity: ReadonlySignal<string | null>;
   readonly isSaving: ReadonlySignal<boolean>;
   /** A batch landed — the paired form returns the focus to its fields. */
@@ -17,7 +17,7 @@ export interface DomainSession {
   save(): Promise<boolean>;
   discard(): void;
   /** A source joins at construction; the unregister runs at its disposal. */
-  add?(source: DomainSource): () => void;
+  add(source: DomainSource): () => void;
   /** The Save button of the page, when one registered — where Tab from a form's last field goes. */
   primaryButton?: HTMLElement;
 }
@@ -56,7 +56,9 @@ export class SharedSession implements DomainSession {
     this.sources = this._sources;
     this.isDirty = computed(() => this._sources.value.some((s) => s.isDirty.value));
     this.changeCount = computed(() => this._sources.value.reduce((n, s) => n + s.changeCount.value, 0));
-    this.validity = computed(() => this._sources.value.map((s) => s.blocked.value).find((v) => v !== null) ?? null);
+    // a source with nothing pending is not in the batch: what it shows holds no Save
+    this.validity = computed(() => this._sources.value.filter((s) => s.isDirty.value).map((s) => s.validity.value)
+      .find((v) => v !== null) ?? null);
     this.isSaving = computed(() => this._saving.value || this._sources.value.some((s) => s.isSaving.value));
     this.summary = computed(() => {
       const changes = this.changeCount.value;
@@ -87,39 +89,59 @@ export class SharedSession implements DomainSession {
   async save(): Promise<boolean> {
     if (this.isSaving.peek())
       return false;
-    const dirty = this._sources.peek().filter((s) => s.isDirty.peek());
-    if (dirty.length === 0)
+    if (!this.isDirty.peek())
       return false;
     this._saving.value = true;
     try {
-      const changes = this.changeCount.peek();
-      const batch = this._withReferenced(dirty);
+      let dirty: DomainSource[];
+      let batch: DomainSource[];
+      // every source is checked (a check takes back an earlier refusal), and an edit made meanwhile again
+      for (;;) {
+        dirty = this._sources.peek().filter((s) => s.isDirty.peek());
+        batch = this._withReferenced(dirty);
+        const seen = batch.map((s) => s.revision.peek());
+        if (batch.map((s) => s.check()).some((problem) => problem !== null) || this._overlapping(batch) ||
+            await this._cycle(batch).catch((e) => (batch.forEach((s) => s.fail(e)), true)))
+          return false;
+        const now = this._sources.peek().filter((s) => s.isDirty.peek());
+        if (now.length === dirty.length && now.every((s) => dirty.includes(s)) &&
+            batch.every((s, i) => s.revision.peek() === seen[i]))
+          break;
+      }
       // what the batch DOES, read before it lands and empties the pending rows: a batch of deletes
       // alone is not "saved", it is deleted, and one of restores is restored — the balloon has to
       // say so
       const states = new Set(batch.flatMap((s) => s.pending().map((r) => r[Rows.STATE])));
       const verb = states.size !== 1 ? 'saved' : states.has('deleted') ? 'deleted' :
         states.has('restored') ? 'restored' : 'saved';
-      for (const source of batch) {
-        if (source.check() !== null)
-          return false;
-      }
-      if (SharedSession._overlapping(batch))
+
+      // dirty, yet no row carries a change: refused, never announced as saved
+      if (batch.every((s) => s.pending().length === 0)) {
+        SharedSession._unwritten(dirty);
         return false;
+      }
       // every draft id the transaction assigned, over the whole batch: a source's query, defaults
       // or cells may name one (a child collection under a draft parent), and what it reads next
       // must be about the id that parent was given. No prototype: what is read against this map is
       // any string a cell or a literal may hold, `constructor` among them
       const assigned: Record<string, string> = Object.create(null);
-      const heard = batch.map((s) => s.edit.peek()!.onSaved.subscribe((r) => Object.assign(assigned, r.assigned)));
+      const before = new Map(batch.map((s) => [s, {changes: s.changeCount.peek(), rows: s.pending().length}]));
+      const written = new Map<DomainSource, number>();
+      const heard = batch.map((s) => s.edit.peek()!.onSaved.subscribe((r) => {
+        Object.assign(assigned, r.assigned);
+        written.set(s, (written.get(s) ?? 0) + r.written);
+      }));
       try {
-        if (!await emsBackends.domain!.saveAll(batch.map((s) => s.edit.peek()!))) {
-          SharedSession._refused(batch);
-          return false;
-        }
+        await emsBackends.domain!.saveAll(batch.map((s) => s.edit.peek()!));
       } catch (e) {
         for (const source of batch)
           source.fail(e);
+        // every control over those tables follows the re-read access, not only the sources that sent the batch
+        if (errorCode(e) === 'forbidden') {
+          emsBackends.domain!.dropAccess();
+          await Promise.all(this._sources.peek().filter((s) => batch.some((b) => b.table === s.table))
+            .map((s) => s.reloadAccess()));
+        }
         return false;
       } finally {
         for (const sub of heard)
@@ -147,9 +169,23 @@ export class SharedSession implements DomainSession {
       } finally {
         SharedSession._hold(batch, false);
       }
-      const tables = new Set(batch.map((s) => s.table)).size;
-      notify.info(tables > 1 ? `${plural(changes, 'change', 'changes')} saved in ${tables} tables` :
-        SharedSession._landed(batch[0], changes, verb));
+      // a row the conflict dialog reloaded is not written; a writer that built no op for its changes still holds them
+      const unwritten = batch.filter((s) => (written.get(s) ?? 0) === 0);
+      SharedSession._unwritten(unwritten.filter((s) => s.isDirty.peek()));
+      const landing = batch.filter((s) => !unwritten.includes(s)).map((s) => {
+        const was = before.get(s)!;
+        const rows = written.get(s)!;
+        return {source: s, changes: rows >= was.rows ? was.changes : Math.min(rows, was.changes)};
+      });
+      if (landing.length === 0) {
+        if (!this.isDirty.peek())
+          notify.info('Reloaded; your changes were discarded');
+        return false;
+      }
+      const landed = landing.reduce((n, l) => n + l.changes, 0);
+      const tables = new Set(landing.map((l) => l.source.table)).size;
+      notify.info(tables > 1 ? `${plural(landed, 'change', 'changes')} saved in ${tables} tables` :
+        SharedSession._landed(landing[0].source, landed, verb));
       this.onSaved.fire();
       return true;
     } finally {
@@ -169,14 +205,11 @@ export class SharedSession implements DomainSession {
       source.edit.peek()?.setSaving(saving);
   }
 
-  // the platform editor reports the server's error itself and answers false: the summary still says they are stuck
-  private static _refused(batch: readonly DomainSource[]): void {
-    // a refusal naming a column reaches that cell and is the source's validity; one about a whole
-    // row (a delete a child's reference vetoes) reaches nothing, and the writer kept the sentence
-    const problem = batch.map((s) => s.validity.peek() ?? s.edit.peek()?.problem ?? null)
-      .find((v) => v != null) ?? 'the changes were refused';
-    for (const source of batch)
-      source.refuse(problem);
+  private static _unwritten(sources: readonly DomainSource[]): void {
+    for (const source of sources) {
+      source.fail(new DomainBackendError('validation', 'Cannot save: the unsaved changes could not be ' +
+        'written to the rows; reload the page to see the table as it is now'));
+    }
   }
 
   private static _landed(source: DomainSource, changes: number, verb: string): string {
@@ -212,7 +245,7 @@ export class SharedSession implements DomainSession {
   }
 
   // two ops for one row: the second loses to the first's version check and the whole transaction rolls back
-  private static _overlapping(batch: readonly DomainSource[]): boolean {
+  private _overlapping(batch: readonly DomainSource[]): boolean {
     const seen = new Map<string, {source: DomainSource, row: RowView}>();
     for (const source of batch) {
       for (const row of source.pending()) {
@@ -224,11 +257,38 @@ export class SharedSession implements DomainSession {
           seen.set(key, {source, row});
           continue;
         }
-        const problem = `${SharedSession._nameOf(first.source, first.row)} is edited in two places` +
+        const problem = `${SharedSession._subject(first.source, first.row)} is edited in two places` +
           ' — discard one of the two edits and save again';
         first.source.refuseRow(first.row.id, problem);
         source.refuseRow(row.id, problem);
         return true;
+      }
+    }
+    return false;
+  }
+
+  // the server keeps no hierarchy acyclic: a row moved under its own descendant drops out of every tree
+  private async _cycle(batch: readonly DomainSource[]): Promise<boolean> {
+    for (const address of new Set(batch.map((s) => s.table))) {
+      const sources = batch.filter((s) => s.table === address);
+      const column = sources[0].schema.info.parentColumn;
+      if (column == null || sources[0].schema.info.hierarchy !== true)
+        continue;
+      const rows = sources.flatMap((source) => source.pending().map((row) => ({source, row})));
+      const moves = rows.filter(({source, row}) => row[Rows.STATE] === 'modified' &&
+        source.edit.peek()!.isChanged(row.id, column));
+      if (moves.length === 0)
+        continue;
+      const moved = new Map<unknown, unknown>(rows.filter(({row}) => row[Rows.STATE] === 'new' ||
+        moves.some((m) => m.row === row)).map(({row}) => [row.id, row[column]]));
+      const table = await emsBackends.domain!.table(address);
+      for (const {source, row} of moves) {
+        const problem = await hierarchyCycle(table, row[column], (ids) => ids.includes(row.id), moved,
+          source.nameOf(row));
+        if (problem !== null) {
+          source.refuseRow(row.id, problem);
+          return true;
+        }
       }
     }
     return false;
@@ -250,27 +310,20 @@ export class SharedSession implements DomainSession {
       const noun = nounOf(info, true);
       return {title: `Save the new ${noun}?`, body: `The new ${noun} ${lost}`};
     }
-    const caption = source.caption?.(row) ?? SharedSession._rowName(source, row);
+    const caption = source.nameOf(row);
     const edit = source.edit.peek();
     const fields = source.schema.properties.filter((p) => edit?.isChanged(row.id, p.name!))
       .map((p) => p.friendlyName ?? p.name!);
     const named = fields.length > 3 ? [...fields.slice(0, 2), `${fields.length - 2} more fields`] : fields;
     const list = named.length < 2 ? named.join('') : `${named.slice(0, -1).join(', ')} and ${named.at(-1)}`;
-    return {title: `Save changes to "${caption}"?`,
+    return {title: caption === null ? `Save changes to the ${nounOf(info, true)}?` : `Save changes to "${caption}"?`,
       body: fields.length === 0 ? `Your changes ${lost}` :
         `Your ${fields.length === 1 ? 'change' : 'changes'} to ${list} ${lost}`};
   }
 
-  private static _nameOf(source: DomainSource, row: RowView): string {
-    const what = (source.schema.info.singularName || source.table).replace(/_/g, ' ');
-    return `${capital(what)} "${SharedSession._rowName(source, row)}"`;
-  }
-
-  private static _rowName(source: DomainSource, row: RowView): string {
-    const info = source.schema.info;
-    const column = info.nameColumn ?? info.businessKey[0];
-    const name = column === undefined ? undefined : row[column];
-    return String(name ?? row.id);
+  private static _subject(source: DomainSource, row: RowView): string {
+    const name = source.nameOf(row);
+    return `${capital(nounOf(source.schema.info, true))}${name === null ? '' : ` "${name}"`}`;
   }
 }
 
@@ -303,7 +356,8 @@ export function confirmDiscard(session: DomainSession, options: {action?: string
         session.discard();
         decide(true);
       })
-      .addButton('SAVE', () => decide(session.save()), {primary: true, disabled: session.validity})
+      .addButton('SAVE', () => decide(session.save().then((saved) => saved || !session.isDirty.peek())), {primary: true,
+        disabled: session.validity})
       .onCancel(() => decide(false))
       .show({modal: true});
   });

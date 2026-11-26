@@ -1,10 +1,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import {Access, Filters} from '@datagrok-libraries/u2';
 import type {IProperty, DataFrameLike} from '@datagrok-libraries/u2';
 import type {AuditEntryLike, DomainBackend, DomainBatchReportLike, DomainDeletedMode, DomainFrameLike, DomainProbeLike,
   DomainQueryLike, DomainReadScope, DomainSupportLike, DomainTableInfoLike, DomainTableLike, DomainTransactionOpLike,
   DomainTransactionResultLike} from '../core/domain-backend.js';
-import {emsBackends, DomainBackendError, isUnscoped} from '../core/domain-backend.js';
+import {emsBackends, DomainBackendError, isUnscoped, readableInfo} from '../core/domain-backend.js';
 import type {EditState} from '../core/edit-state.js';
 import {EditorEditState} from './editor-state.js';
 
@@ -50,26 +51,29 @@ export class DgDomainBackend implements DomainBackend {
     this._tables.clear();
   }
 
+  dropAccess(): void {
+    grok.dapi.domains.invalidateUiCaches();
+    this.invalidate();
+  }
+
   /** Every writer's batch as ONE `/transaction` through the js-api `DomainSession`, which owns
    * the conflict dialog, the validation mapping and the retry cap; quiet — the u2 session says
    * what was saved. */
-  async saveAll(edits: EditState[]): Promise<boolean> {
-    const states = edits as EditorEditState[];
-    for (const state of states)
-      state.problem = null;
-    const session = new DG.DomainSession(states.map((e) => e.editor), {quiet: true});
+  async saveAll(edits: EditState[]): Promise<void> {
+    const editors = edits.map((edit) => {
+      if (!(edit instanceof EditorEditState))
+        throw new Error('DgDomainBackend.saveAll: the writer is not a platform editor');
+      return edit.editor;
+    });
+    const session = new DG.DomainSession(editors, {quiet: true});
     try {
       if (await session.save())
-        return true;
-      // the platform session works out ONE sentence for a refusal ("Ethanol still has 3
-      // containers") and balloons it; the u2 status line says it on the state whose editor it
-      // names, and on every one for a refusal the batch as a whole answers for
-      const refusal = session.lastRefusal;
-      for (const state of states) {
-        if (refusal !== null && (refusal.editor === null || refusal.editor === state.editor))
-          state.problem = refusal.message;
-      }
-      return false;
+        return;
+      // the platform session worded and ballooned the refusal; one over the cells is the writers' validity
+      const refusal = session.lastRefusal!;
+      const message = refusal.message === DG.DomainSession.CELL_ERRORS ?
+        edits.map((edit) => edit.validity.peek()).find((v) => v !== null) ?? refusal.message : refusal.message;
+      throw new DomainBackendError(refusal.code || 'refused', `Cannot save: ${message}`, true);
     } finally {
       session.dispose();
     }
@@ -99,7 +103,7 @@ export class DgDomainTable implements DomainTableLike {
       this.restore = (id) => this._restore(id);
     if (support.updateWhere) {
       this.updateWhere = (filter, values, options) =>
-        this.client.updateWhere(filter as DG.DomainFilter, values, options);
+        this.client.updateWhere(DgDomainTable.bound(filter) as DG.DomainFilter, values, options);
     }
     if (support.writes) {
       this.batch = (rows, options) => this.client.batch(rows, options as DG.DomainBatchOptions) as
@@ -131,8 +135,16 @@ export class DgDomainTable implements DomainTableLike {
     }
     // the change token is read behind the table-level View grant: a reader who reaches rows
     // through row grants only polls the aggregate over what it may see
-    return new DgDomainTable(address, client, properties, info, access.support,
+    const readable = DgDomainTable.readable(access);
+    return new DgDomainTable(address, client, properties.filter((p) => readable(p.name)),
+      readableInfo(info, properties, readable), access.support,
       access.support.version && access.can.view);
+  }
+
+  /** Whether the caller may read a column: only `access().fields` leaves a restricted one out. */
+  static readable(access: DG.DomainAccess): (name: string) => boolean {
+    const fields = Access.from(access);
+    return (name) => fields.field(name) !== 'hidden';
   }
 
   /** The system columns every row carries, ahead of the declared ones — `names` is what this
@@ -161,7 +173,7 @@ export class DgDomainTable implements DomainTableLike {
   }
 
   count(scope: DomainReadScope = {}): Promise<number> {
-    return this.client.count(scope as DG.DomainReadScope);
+    return this.client.count({...scope, filter: DgDomainTable.bound(scope.filter)} as DG.DomainReadScope);
   }
 
   private async _restore(id: string): Promise<void> {
@@ -182,7 +194,7 @@ export class DgDomainTable implements DomainTableLike {
     }
     const rows = await this.client.aggregate({
       measures: [{fn: 'count'}, {fn: 'max', column: 'updated_on', as: 'last'}],
-      ...(spec.filter === undefined ? {} : {filter: spec.filter as DG.DomainFilter}),
+      ...(spec.filter === undefined ? {} : {filter: DgDomainTable.bound(spec.filter) as DG.DomainFilter}),
       ...(spec.search === undefined ? {} : {search: spec.search}),
       ...(spec.deleted === undefined ? {} : {deleted: spec.deleted}),
     });
@@ -216,8 +228,15 @@ export class DgDomainTable implements DomainTableLike {
       edit,
       append: async (page) => {
         const rows = await this.client.queryDf(DgDomainTable.spec(page));
+        const read = rows.rowCount;
+        const ids = df.col('id');
+        const theirs = rows.col('id');
+        if (ids !== null && theirs !== null) {
+          const held = new Set(ids.toList());
+          rows.rows.removeWhereIdx((i) => held.has(theirs.get(i)));
+        }
         df.append(rows, true);
-        return rows.rowCount;
+        return read;
       },
       dispose: () => edit.dispose(),
     };
@@ -225,7 +244,19 @@ export class DgDomainTable implements DomainTableLike {
 
   /** The seam's query is the js-api spec: same filter tree, same paging keys. */
   static spec(spec: DomainQueryLike): DG.DomainQuerySpec {
-    return spec as DG.DomainQuerySpec;
+    return {...spec, filter: DgDomainTable.bound(spec.filter)} as DG.DomainQuerySpec;
+  }
+
+  /** `$me` bound to the caller: the query an app keeps, its address and its recent searches say `$me`. */
+  static bound(filter: DomainQueryLike['filter']): DomainQueryLike['filter'] {
+    const me = {me: grok.shell.user.id};
+    if (typeof filter === 'string') {
+      const parsed = /\$me\b/.test(filter) ? Filters.parse(filter) : undefined;
+      return parsed === undefined || parsed.problems.length > 0 ? filter :
+        Filters.format(Filters.bind(parsed.root, me));
+    }
+    return filter === undefined || !JSON.stringify(filter).includes('"$param":"me"') ? filter :
+      Filters.toDomainTree(Filters.bind(Filters.fromDomainTree(filter), me));
   }
 
   /** The access a frame's writer is built under: no edit and no insert over deleted rows, nothing

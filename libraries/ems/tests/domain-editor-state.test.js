@@ -3,7 +3,13 @@ import assert from 'node:assert/strict';
 import {flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {Scope, FrameRows, Rows} from '@datagrok-libraries/u2';
 import {DataFrame, Stream} from '@datagrok-libraries/u2/tests/platform-doubles.mjs';
+import {register} from 'node:module';
 import {EditorEditState} from '../src/dg/editor-state.js';
+
+register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
+const DG = await import('datagrok-api/dg');
+const {DgDomainBackend} = await import('../src/dg/backend.js');
+const {MemoryDomainBackend} = await import('../src/core/memory-domain.js');
 
 function scoped(name, body) {
   test(name, async () => {
@@ -24,7 +30,7 @@ function fakeEditor(rows) {
   const states = rows.map(() => '');
   const errors = rows.map(() => ({}));
   const editor = {
-    table: 'grit.issue',
+    table: 'grit.issue', properties: [],
     isDirty: false, changeCount: 0, isSaving: false, detached: 0, calls: [],
     onChanged: new Stream(), onDirtyChanged: new Stream(), onSavingChanged: new Stream(), onSaved: new Stream(),
     get dataFrame() { return df; },
@@ -123,8 +129,8 @@ scoped('a draft is keyed by the ~new: id the editor stamps; onSaved carries the 
   const heard = [];
   const sub = state.onSaved.subscribe((e) => heard.push(e));
   df.set('id', 2, 'i9');
-  editor.onSaved.fire({assigned: {[key]: 'i9'}});
-  assert.deepEqual(heard, [{assigned: {[key]: 'i9'}}]);
+  editor.onSaved.fire({assigned: {[key]: 'i9'}, inserted: 1, updated: 0, deleted: 0});
+  assert.deepEqual(heard, [{assigned: {[key]: 'i9'}, written: 1}]);
   sub.unsubscribe();
   assert.equal(state.indexOf('i9'), 2, 'the index follows the frame\'s cells');
   assert.equal(state.indexOf(key), -1, 'the draft id left with the cell');
@@ -183,4 +189,48 @@ scoped('validity is the first blocking error on a row that is not deleted; a con
   assert.equal(state.validity.value, null, 'a dismissed conflict only marks the cell');
   assert.equal(state.errorOf('i1', 'title'), 'Someone else changed it');
   state.dispose();
+});
+
+scoped('a cell the server refused is shown, holds no Save, and the next save is sent', async () => {
+  const {editor} = fakeEditor(ROWS);
+  const state = new EditorEditState(editor);
+  state.setValue('i1', 'title', 'Aspirin');
+  const real = DG.DomainSession.prototype.save;
+  let sent = 0;
+  // as the platform maps a field error the server answered onto its cell
+  DG.DomainSession.prototype.save = async function() {
+    this.lastRefusal = ++sent > 1 ? null : {message: 'Title already belongs to i7', editor: this.editors[0],
+      code: 'validation'};
+    if (this.lastRefusal)
+      this.editors[0].fail(0, 'title', this.lastRefusal.message, 'refused');
+    return this.lastRefusal === null;
+  };
+  try {
+    const dg = new DgDomainBackend();
+    await assert.rejects(dg.saveAll([state]), (e) => e.code === 'validation' && e.reported &&
+      e.message === 'Cannot save: Title already belongs to i7');
+    assert.equal(state.validity.value, null);
+    assert.equal(state.refused('i1', 'title'), true);
+    assert.equal(state.errorOf('i1', 'title'), 'Title already belongs to i7');
+    await dg.saveAll([state]);
+  } finally {
+    DG.DomainSession.prototype.save = real;
+  }
+  state.dispose();
+});
+
+scoped('JSON-looking text retyped in a plain string column is written as typed, by both writers', async () => {
+  const {df, editor} = fakeEditor([{id: 'i1', title: '{"a":1}'}]);
+  editor.properties = [{name: 'title', propertyType: 'string'}];
+  editor.changesOf = () => ({});
+  const platform = new EditorEditState(editor);
+  platform.setValue('i1', 'title', '{"a": 1}');
+  assert.equal(df.get('title', 0), '{"a": 1}');
+  platform.dispose();
+  const memory = new MemoryDomainBackend({name: 'qa', tables: {item: {columns: {notes: {type: 'string'}}}}},
+    {rows: {item: [{id: 'r1', notes: '{"a":1}'}]}});
+  const frame = await memory.tableSync('qa.item').frame({});
+  frame.edit.setValue('r1', 'notes', '{"a": 1}');
+  assert.equal(frame.df.get('notes', 0), '{"a": 1}');
+  frame.dispose();
 });

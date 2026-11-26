@@ -1,5 +1,6 @@
 import {Control, Scope, button, component, computed} from '@datagrok-libraries/u2';
 import {DomainSource} from '../core/domain-source.js';
+import {DomainTable} from './facade.js';
 import type {DomainSession} from '../core/session.js';
 import type {RowView} from '@datagrok-libraries/u2';
 
@@ -13,7 +14,7 @@ export interface SessionButtonOptions {
 /** A button over a session: a Control rather than a bare button, so the effects it runs have an owner
  * (the view's host disposes ribbon controls with the view). */
 export class SessionButton extends Control {
-  static readonly WAITING = 'Wait for the batch being saved to finish';
+  static readonly WAITING = 'Saving…';
 
   readonly button: HTMLButtonElement;
   readonly session: DomainSession;
@@ -70,14 +71,16 @@ export function discardButton(target: SessionTarget,
  * edits; a function receives the row that was current (the one just saved, say) so an app carries
  * fields over from one entry to the next. The press is a change of its own — the draft counts
  * against the session from the start, unlike the create page's initial row. Permission ⇒ hidden:
- * absent without the `insert` capability; state ⇒ off, saying "Loading…", until the table is loaded. */
+ * absent without the `insert` capability; state ⇒ off, saying "Loading…", until the table is loaded.
+ * `disabled` is the caller's own reason to keep it off; `null` while it has none. */
 export function newButton(source: DomainSource,
   values: Record<string, unknown> | ((last: RowView | null) => Record<string, unknown>) = {},
-  options: SessionButtonOptions = {}): Control {
+  options: SessionButtonOptions & {disabled?: () => string | null} = {}): Control {
   const control = component((self) => {
     const el = button(options.text ?? 'New', () => source.newRow(
       typeof values === 'function' ? values(source.currentRow.peek()) : values),
-    {disabled: computed(() => source.edit.value === undefined ? 'Loading…' : null)});
+    {disabled: computed(() => source.edit.value === undefined ? 'Loading…' :
+      options.disabled?.() ?? DomainTable.noCreate(source))});
     self.effect(() => {
       el.hidden = !source.access.value.can('insert');
     });

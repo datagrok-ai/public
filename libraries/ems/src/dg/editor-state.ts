@@ -1,5 +1,6 @@
 import type * as DG from 'datagrok-api/dg';
 import {signal, computed, ReadonlySignal, Emitter, FrameRows} from '@datagrok-libraries/u2';
+import {isJsonCell, sameJson} from '../core/edit-state.js';
 import type {EditSaved, EditState} from '../core/edit-state.js';
 import type {DataFrameLike} from '@datagrok-libraries/u2';
 
@@ -12,9 +13,6 @@ export class EditorEditState implements EditState {
   readonly isSaving: ReadonlySignal<boolean>;
   readonly onChanged = new Emitter<string | null>();
   readonly onSaved = new Emitter<EditSaved>();
-  /** The sentence the platform session worked out for the last refusal — see `DgDomainBackend`,
-   * which is where it is captured, and `SharedSession._refused`, which says it. */
-  problem: string | null = null;
 
   private readonly _subs: {unsubscribe(): void}[];
   // bumped on every editor change: the validity walk runs when it is read, not per keystroke
@@ -45,7 +43,8 @@ export class EditorEditState implements EditState {
       }),
       editor.onDirtyChanged.subscribe((d) => dirty.value = d),
       editor.onSavingChanged.subscribe((s) => saving.value = s),
-      editor.onSaved.subscribe((r) => this.onSaved.fire({assigned: r.assigned})),
+      editor.onSaved.subscribe((r) =>
+        this.onSaved.fire({assigned: r.assigned, written: r.inserted + r.updated + r.deleted})),
       df.onValuesChanged.subscribe(drop),
       df.onRowsAdded.subscribe(drop),
       df.onRowsRemoved.subscribe(drop),
@@ -77,10 +76,29 @@ export class EditorEditState implements EditState {
     return at < 0 ? null : this.editor.errorOf(at, column)?.message ?? null;
   }
 
+  refused(key: string, column: string): boolean {
+    this._version.value;
+    const at = this.indexOf(key);
+    const kind = at < 0 ? undefined : this.editor.errorOf(at, column)?.kind;
+    return kind !== undefined && kind !== 'error';
+  }
+
   setValue(key: string, column: string, value: unknown): void {
     const at = this.indexOf(key);
-    if (at >= 0)
-      this.editor.setValue(at, column, value);
+    if (at < 0)
+      return;
+    const editor = this.editor;
+    const prop = editor.properties.find((p) => p.name === column);
+    if (typeof value === 'string' && prop !== undefined && isJsonCell(prop)) {
+      const changes = editor.changesOf(at);
+      const changed = Object.hasOwn(changes, column);
+      if (sameJson(changed ? changes[column] : this.df.get(column, at), value)) {
+        if (changed)
+          editor.revertCell(at, column);
+        return;
+      }
+    }
+    editor.setValue(at, column, value);
   }
 
   newRow(values: Record<string, unknown> = {}, options?: {pristine?: boolean}): string {
@@ -138,11 +156,11 @@ export class EditorEditState implements EditState {
     this.editor.detach();
   }
 
-  // what the editor's own save refuses on
+  // a cell the server refused is shown, and the next save asks the server again
   private _validity(): string | null {
     const editor = this.editor;
     for (let row = 0; row < this.df.rowCount; row++) {
-      const state = editor.stateOf(row) as string;
+      const state = editor.stateOf(row);
       if (state === 'deleted' || state === 'restored')
         continue;
       const errors = editor.errorsOf(row);
