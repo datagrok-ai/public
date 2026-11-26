@@ -18,6 +18,7 @@
       "securityMode": "table",
       "businessKey": ["code"],
       "friendlyName": "Hazard Statements",
+      "singularName": "Hazard statement",
       "description": "GHS hazard statements (H2xx physical, H3xx health, H4xx environmental)",
       "columns": {
         "code": {"type": "string", "required": true, "unique": true, "isName": true, "searchable": true},
@@ -35,6 +36,7 @@
       "securityMode": "table",
       "businessKey": ["code"],
       "friendlyName": "Precautionary Statements",
+      "singularName": "Precautionary statement",
       "description": "GHS precautionary statements (P1xx general, P2xx prevention, P3xx response, P4xx storage, P5xx disposal)",
       "columns": {
         "code": {"type": "string", "required": true, "unique": true, "isName": true, "searchable": true},
@@ -156,6 +158,7 @@
       "securityMode": "master",
       "delegate": "substance_id",
       "friendlyName": "Safety Data Sheets",
+      "singularName": "Safety data sheet",
       "columns": {
         "substance_id": {"type": "ref", "ref": "substance", "onDelete": "cascade", "required": true, "friendlyName": "Substance"},
         "file": {"type": "file", "friendlyName": "Document"},

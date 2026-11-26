@@ -1,9 +1,9 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {button, computed, Control, Scope, Section, Splitter, SuggestInput} from '@datagrok-libraries/u2';
+import {button, computed, signal, Control, Scope, Section, Splitter, SuggestInput} from '@datagrok-libraries/u2';
 import type {RowView, Text} from '@datagrok-libraries/u2';
-import {SharedSession} from '@datagrok-libraries/ems';
+import {SharedSession, confirmDiscard, emsBackends} from '@datagrok-libraries/ems';
 import {ViewHost, Editors} from '@datagrok-libraries/u2/dg';
 import {domains, DomainApp} from '@datagrok-libraries/ems/src/dg';
 import type {DomainTable} from '@datagrok-libraries/ems/src/dg';
@@ -25,12 +25,20 @@ Editors.register({
   }}),
 });
 
-/** A view per stockroom table under the Stockroom app, the substances at its root. */
+// a safety data sheet has no name of its own: the substance, the revision and the language name it
+domains.configure('stockroom.sds_document', (sheets) => {
+  sheets.renderer = {...sheets.renderer, caption: (r) =>
+    [r['~caption_substance_id'], r.revision && `rev. ${r.revision}`, r.language].filter((v) => !!v).join(' · ')};
+}, {id: 'stockroom'});
+
+/** A view per stockroom table under `/apps/Stockroom/Stockroom`, the substances at its root; `/apps/Stockroom` is the
+ * Stockroom app too, and `/apps/Stockroom/Locations` the Stockroom locations app. */
 const views = domains.views({
   path: '/apps/Stockroom/Stockroom',
   views: [
     {table: 'stockroom.substance', name: 'Substances', segment: ''},
     {table: 'stockroom.container', name: 'Containers', options: {sort: 'label'}},
+    {table: 'stockroom.location', name: 'Location list', segment: 'Locations'},
     {table: 'stockroom.vendor', name: 'Vendors'},
     {table: 'stockroom.purchase_order', name: 'Purchase Orders'},
     {table: 'stockroom.sds_document', name: 'Safety Data Sheets'},
@@ -45,10 +53,11 @@ const views = domains.views({
 //description: Chemical stockroom on the GHS classification — the zero-code app over databases/stockroom/schema.json
 //tags: app
 //meta.icon: images/flask.svg
+//meta.url: /
 //input: string path {meta.url: true; optional: true}
 //output: view result
 export async function stockroomApp(path?: string): Promise<DG.ViewBase | null> {
-  return views.open(path ?? '');
+  return views.open((path ?? '').replace(/^\/Stockroom(?=[/?]|$)/i, ''));
 }
 
 //name: stockroomTreeBrowser
@@ -76,6 +85,8 @@ export function newContainerAt(containers: DomainTable, location: string,
 }
 
 //name: Locations
+//friendlyName: Stockroom locations
+//meta.url: /Locations
 //description: The stockroom location tree, and the containers stored anywhere under the selected node
 //tags: app
 //meta.icon: images/flask.svg
@@ -91,9 +102,10 @@ export async function stockroomLocations(): Promise<DG.ViewBase> {
     containers.source({session, live: true, pageSize: 100, sort: 'label'})));
   const addAt = (node: RowView) => newContainerAt(containers, node.id,
     {site: typeof node.site === 'string' ? node.site : undefined, caption: locations.renderer.caption(node)});
-  const host = ViewHost.create({name: 'Locations', content: () => {
-    // the "all" row is the way back to every container once a node has been picked
-    const tree = domains.tree(locations, {allNode: 'All locations',
+  const host = ViewHost.create({name: 'Stockroom locations', content: () => {
+    const asked = location.pathname.endsWith('/apps/Stockroom/Locations') ?
+      new URLSearchParams(location.search).get('entity') : null;
+    const tree = domains.tree(locations, {allNode: 'All locations', expandTo: asked ?? undefined,
       actions: [{name: 'New container', icon: 'plus', run: addAt}]});
     const table = domains.dataTable(source,
       {columns: ['label', 'substance_id', 'location_id', 'lot', 'quantity', 'unit', 'expires'],
@@ -116,6 +128,22 @@ export async function stockroomLocations(): Promise<DG.ViewBase> {
         addAt(node);
     }, {disabled: computed(() => tree.selected.value === null ? 'Select a location first' : null)}));
     add.root.dataset.u2 = 'new-container-button';
+    // as an app's Refresh: through the gate, access asked afresh; the containers after the tree settles
+    const refreshing = signal(false);
+    const reload = Control.build(() => button('Refresh', () => void (async () => {
+      if (!await confirmDiscard(session, {action: 'reload the rows'}))
+        return;
+      refreshing.value = true;
+      try {
+        emsBackends.domain?.dropAccess?.();
+        const query = source.query.peek();
+        await tree.refresh();
+        if (source.query.peek() === query)
+          await source.refresh();
+      } finally {
+        refreshing.value = false;
+      }
+    })(), {disabled: computed(() => refreshing.value ? 'Refreshing…' : null)}));
     const section = (title: string, content: Control, hint?: Text): Section => {
       const pane = new Section({title, collapsible: false, hint}).add(content);
       pane.root.classList.add('stockroom-pane');
@@ -124,7 +152,11 @@ export async function stockroomLocations(): Promise<DG.ViewBase> {
     const panes = new Splitter([section('Locations', tree), section('Containers', table, where)],
       {direction: 'horizontal', sizes: [0.22, 0.78]});
     panes.root.classList.add('stockroom-locations');
-    return {root: panes, ribbon: [[add]], path: '/apps/Stockroom/Locations'};
+    const path = computed(() => {
+      const node = tree.selected.value;
+      return node === null ? '/apps/Stockroom/Locations' : `/apps/Stockroom/Locations?entity=${node.id}`;
+    });
+    return {root: panes, ribbon: [[add, reload]], path};
   }});
   // after the chrome: the source outlives the controls reading it
   host.own(() => sourceOwner.dispose());
