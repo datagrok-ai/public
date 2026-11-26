@@ -3,8 +3,6 @@
 --description: Entities the user interacted with most recently (last 30 days)
 --connection: System:Datagrok
 --input: string user [User ID whose recent activity to fetch]
--- Parameter and entity-type filters are id sets rather than joins: the joins were evaluated
--- per parameter value (tens of thousands of lookups per call) and dominated the query.
 -- Only the user's latest 5000 events are looked at: an account with hundreds of thousands of
 -- events a month (a test user) otherwise made every call read all of them.
 WITH user_events AS MATERIALIZED (
@@ -12,10 +10,10 @@ WITH user_events AS MATERIALIZED (
   FROM events e
   WHERE e.event_time > NOW() - INTERVAL '30 days'
     AND EXISTS (
-      SELECT 1 FROM event_parameter_values vu
-      WHERE vu.event_id = e.id
-        AND vu.value_uuid = @user
-        AND vu.parameter_id IN (SELECT id FROM event_parameters WHERE name = 'user'))
+      SELECT 1
+      FROM event_parameter_values vu
+      JOIN event_parameters pu ON pu.id = vu.parameter_id AND pu.name = 'user'
+      WHERE vu.event_id = e.id AND vu.value_uuid = @user)
   ORDER BY e.event_time DESC
   LIMIT 5000
 )
@@ -24,11 +22,11 @@ SELECT
   EXTRACT(EPOCH FROM MAX(ue.event_time) AT TIME ZONE 'UTC') * 1000 AS last_event_time
 FROM user_events ue
 JOIN event_parameter_values v ON v.event_id = ue.id
+JOIN event_parameters p ON p.id = v.parameter_id AND p.type = 'entity_id'
 JOIN entities en ON en.id = v.value_uuid
-WHERE v.parameter_id IN (SELECT id FROM event_parameters WHERE type = 'entity_id')
-  AND en.entity_type_id NOT IN (SELECT id FROM entity_types WHERE name IN (
-    'FuncCall', 'UserGroup', 'User', 'GrokPackage', 'UserReport',
-    'TableInfo', 'PackageFunc', 'Func', 'ViewInfo', 'DataConnection', 'ColumnInfo'))
+JOIN entity_types et ON et.id = en.entity_type_id
+WHERE et.name <> ALL (ARRAY['FuncCall', 'UserGroup', 'User', 'GrokPackage', 'UserReport',
+    'TableInfo', 'PackageFunc', 'Func', 'ViewInfo', 'DataConnection', 'ColumnInfo'])
 GROUP BY en.id
 ORDER BY last_event_time DESC
 LIMIT 16;
