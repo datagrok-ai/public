@@ -1,11 +1,12 @@
-import {signal, computed, batch, Signal, ReadonlySignal, Component, Access, plural, Filters, requireBackend, subBind,
-  Rows, FrameRows} from '@datagrok-libraries/u2';
-import type {FilterCondition, FilterGroup, FilterNode, FilterProperty, FilterScalar, FilterSchema, DomainRowLike,
-  RowsLike, RowValues, RowView, DataFrameLike, BindProp, BindSource, ComponentEnv,
-  ComponentStart} from '@datagrok-libraries/u2';
+import {signal, computed, batch, Signal, ReadonlySignal, Component, Access, plural, Filters, requireBackend,
+  subBind, Rows, FrameRows} from '@datagrok-libraries/u2';
+import type {AccessData, FilterCondition, FilterGroup, FilterNode, FilterProperty, FilterScalar,
+  FilterSchema, DomainRowLike, IProperty, RowsLike, RowValues, RowView, DataFrameLike, BindProp, BindSource,
+  ComponentEnv, ComponentStart} from '@datagrok-libraries/u2';
 import type {EditState} from './edit-state.js';
-import {emsBackends, DomainBackendError, capital, nounOf} from './domain-backend.js';
-import type {DomainBackend, DomainDeletedMode, DomainFrameLike, DomainQueryLike, DomainReadScope,
+import {jsonCell} from './edit-state.js';
+import {emsBackends, errorCode, DomainBackendError, capital, nounOf} from './domain-backend.js';
+import type {DomainBackend, DomainDeletedMode, DomainFrameLike, DomainProbeLike, DomainQueryLike, DomainReadScope,
   DomainTableInfoLike, DomainTableLike} from './domain-backend.js';
 import {SharedSession} from './session.js';
 import type {DomainSession} from './session.js';
@@ -73,6 +74,11 @@ const NO_ENV: ComponentEnv = {designTime: false, subBinds: {}, resolve: () => nu
 const NO_INFO: DomainTableInfoLike = {nameColumn: null, singularName: '', pluralName: '', businessKey: [],
   rowAddress: 'businessKey', searchableColumns: [], constraints: [], refFilters: {}, permissions: [], childTables: []};
 const REF_ADDRESS = /^\w+\.\w+$/;
+
+/** A table property as a filter reads it: a ref column's `ref` is its target address. */
+export function filterProperty(p: IProperty): FilterProperty {
+  return {...p, name: p.name!, ...REF_ADDRESS.test(p.semType ?? '') ? {ref: p.semType} : {}};
+}
 /** A draft id as a VALUE of the string query — quoted, which is the only form the grammar takes
  * one in; `~new:` anywhere else is ordinary text. */
 const DRAFT_LITERAL = new RegExp(`(['"])${Rows.DRAFT_PREFIX}[^'"]*\\1`);
@@ -81,8 +87,6 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   implements BindSource, ComponentStart {
   /** Every source alive — what resolves a draft id to its row across sources ({@link draftOf}). */
   static readonly live = new Set<DomainSource>();
-  /** The `code` of a refusal the backend already reported ({@link refuse}). */
-  static readonly REFUSED = 'refused';
   /** How often a `live` source probes the server by default. */
   static readonly liveMs = 30000;
   /** How many probes may fail in a row before the poll gives up ({@link DomainSource.live}). */
@@ -99,6 +103,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   readonly query: Signal<string | FilterGroup>;
   /** The search text, re-queried on change like {@link query}. */
   readonly search: Signal<string>;
+  /** False once the loaded table has no searchable column: no search is sent or offered. */
+  readonly searchable: ReadonlySignal<boolean>;
   /** The row order — see {@link DomainSourceOptions.sort}; a signal, so a mode that wants its
    * own order (the trash, newest first) is a write and the collection re-reads. */
   readonly sort: Signal<string>;
@@ -107,6 +113,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   readonly deleted: Signal<DomainDeletedMode>;
   /** Whether the collection follows the server — see {@link DomainSourceOptions.live}. */
   readonly live: Signal<boolean>;
+  /** Holds the poll while nothing shows the rows (a list behind an open record); lifting it probes at once. */
+  readonly paused = signal(false);
   /** The rows the source holds are no longer the server's: a live probe saw the collection move
    * while this session had changes of its own to protect. Cleared by the next load. */
   readonly stale: ReadonlySignal<boolean>;
@@ -123,12 +131,14 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   readonly state: ReadonlySignal<DomainSourceState>;
   /** What the last load or save threw — a `DomainBackendError` keeps its `code`. */
   readonly error: ReadonlySignal<unknown>;
+  /** Why the last save was refused — {@link error} when a save raised it; the next edit in the session withdraws it. */
+  readonly refusal: ReadonlySignal<unknown>;
   /** The row the current refusal is about, when one names a row — what a list marks. */
   readonly problemRow: ReadonlySignal<string | null>;
   /** How a refusal the writer raised over one cell is worded; the table's registry sets it (the
    * row's caption and the column's), and without it the writer's own message stands. */
   nameCell: ((row: RowView, column: string, problem: string) => string) | undefined;
-  /** The row's caption as the table's renderer gives it; the registry sets it. */
+  /** The row's caption as the table's renderer gives it, `''` where it names nothing; the registry sets it. */
   caption: ((row: RowView) => string) | undefined;
   /** The ids of the rows one host condition (`FilterOperator.host`) matches — the app's answer, put in place
    * of the condition before every read. */
@@ -140,10 +150,11 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   readonly edit: ReadonlySignal<EditState | undefined>;
   readonly isDirty: ReadonlySignal<boolean>;
   readonly changeCount: ReadonlySignal<number>;
+  /** Why Save is off: a guard's problem, then the writer's, named by row and column. */
   readonly validity: ReadonlySignal<string | null>;
-  /** Why Save stays off: an unanswered refusal, then {@link validity}. */
-  readonly blocked: ReadonlySignal<string | null>;
   readonly isSaving: ReadonlySignal<boolean>;
+  /** Bumped on every write the rows take — what a check over cell values follows. */
+  readonly revision: ReadonlySignal<number>;
   /** "50 of 2,077", "12 issues", "3 unsaved changes" — what a status bar shows. */
   readonly summary: ReadonlySignal<string>;
   /** The unit of work: `save`/`discard` go through it, a paired form follows its events. */
@@ -163,6 +174,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private readonly _selection = signal<readonly RowView<TRow>[]>([]);
   private readonly _isStale = signal(false);
   private readonly _writable = signal(true);
+  private readonly _searchable = signal(true);
   private readonly _errorStep: ReadonlySignal<string>;
   // the `source` step: the resolver walks to a signal, so the source hands itself over in one
   private readonly _self = signal<DomainSource<TRow>>(this);
@@ -171,8 +183,10 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private readonly _rows: FrameRows;
   private readonly _columns = new Map<string, Signal<unknown>>();
   private readonly _guards = new Set<() => string | null>();
+  private readonly _editing = new Set<() => boolean>();
   private readonly _problems = signal<readonly ReadonlySignal<string | null>[]>([]);
   private readonly _unwritten = signal<readonly ReadonlySignal<UnwrittenEdits | null>[]>([]);
+  private readonly _unapplied = signal<ReadonlyMap<string, {value: unknown, message: string}>>(new Map());
   private readonly _captionOption: string[] | undefined;
   private _table: DomainTableLike | undefined;
   private _ready: Promise<DomainTableLike> | undefined;
@@ -182,16 +196,19 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private _gen = 0;
   private _loaded = 0;
   private _done = false;
+  private _shownFor: string | undefined;
   // the loaded window is no longer the server's: the next load starts over, not at the next page
   private _restart = false;
   // the caller of `rebind` re-reads; a refresh here would drop the frame the batch just landed in
   private _rebinding = false;
+  private _regrant = false;
+  private readonly _forbidden = signal(false);
   private readonly _liveMs: number;
   private _timer: ReturnType<typeof setInterval> | undefined;
-  // undefined until the first probe after a load, which only sets the baseline
   private _probed: {count: number, last: string | null} | undefined;
   private _probing = false;
   private _failures = 0;
+  private _accessKey = '';
   // `as`: the query with every host condition replaced by the id list `hosted` gave
   private _served: {query: string | FilterGroup, as: string | FilterGroup} | undefined;
   private _serving: AbortController | undefined;
@@ -208,21 +225,28 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this.isEmpty = options.empty ?? this.isDraft;
     this.query = signal<string | FilterGroup>(options.query ?? '');
     this.search = signal(options.search ?? '');
+    this.searchable = this._searchable;
     this.sort = signal(options.sort ?? '');
     this.deleted = signal<DomainDeletedMode>(options.deleted ?? 'exclude');
     this.live = signal(options.live ?? false);
-    this.stale = this._isStale;
+    // a source that loads no rows has none to be behind
+    this.stale = computed(() => this._isStale.value && !this.isEmpty && !DomainSource._namesDraft(this.query.value));
     this._liveMs = options.liveMs ?? DomainSource.liveMs;
     this.readOnly = computed(() => this.deleted.value !== 'exclude' || !this._writable.value);
     this._backend = requireBackend(this, emsBackends.domain, 'domain tables');
     this.df = this._df;
     this.error = this._error;
+    this.refusal = computed(() => this._state.value !== 'error' && errorCode(this._error.value) !== 'stale' ?
+      this._error.value : undefined);
     this.problemRow = this._problemRow;
     // the upper bound of a trash source (which keeps the Delete grant: Restore rides it), or of a
     // table nothing can be written to, over whatever the server answered for the table
+    // what the re-read access denies after a 403 (never row-secured): no stale row `~can_*` lifts it till grants move
+    const denied = computed(() => !this._forbidden.value || !this._access.value.can('view') ? {} : Object.fromEntries(
+      (['insert', 'edit', 'delete'] as const).filter((c) => !this._access.value.can(c)).map((c) => [c, false])));
     this.access = computed(() => this.readOnly.value ?
       this._access.value.narrow({edit: false, insert: false, ...(this._writable.value ? {} : {delete: false})}) :
-      this._access.value);
+      Object.keys(denied.value).length > 0 ? this._access.value.narrow(denied.value) : this._access.value);
     this.selection = this._selection;
     this.edit = this._edit;
     this.state = this._state;
@@ -230,7 +254,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this._errorStep = computed(() => DomainSource._message(this._error.value));
     this.currentRow = signal<RowView<TRow> | null>(null);
     this._rows = new FrameRows(this._df, {owner: this.scope,
-      onWrite: (id, column, value) => this._edit.peek()?.setValue(id, column, value)});
+      onWrite: (id, column, value) => this._write(id, column, value)});
     this.rows = this._rows as RowsLike<RowView> as RowsLike<RowView<TRow>>;
     this.isDirty = computed(() => (this._edit.value?.isDirty.value ?? false) || this._holding());
     this.changeCount = computed(() => {
@@ -243,23 +267,27 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
         if (problem.value !== null)
           return problem.value;
       }
-      return this._edit.value?.validity.value ?? null;
-    });
-    this.blocked = computed(() => {
-      const error = this._error.value;
-      const code = (error as {code?: unknown} | undefined)?.code;
-      if ((code === 'validation' || code === DomainSource.REFUSED) && this._state.value !== 'error')
-        return DomainSource._message(error);
-      return this.validity.value;
+      // the server answers the same batch the same way: Save waits for an edit; a failure to reach it does not
+      const refusal = this.refusal.value;
+      if (DomainSource.DETERMINISTIC.has(errorCode(refusal)) || errorCode(refusal) === 'forbidden' && this.pending()
+        .some((row) => denied.value[row[Rows.STATE] === 'new' ? 'insert' : row[Rows.STATE] === 'modified' ? 'edit' :
+          'delete'] === false))
+        return DomainSource._message(refusal);
+      const edit = this._edit.value;
+      const problem = edit?.validity.value ?? null;
+      // every required column says "Value can't be empty": which cell says it changes with any write
+      this._version.value;
+      return problem === null ? null : this._name(edit!, problem)?.message ?? problem;
     });
     this.isSaving = computed(() => this._edit.value?.isSaving.value ?? false);
+    this.revision = this._version;
     this.summary = computed(() => this._summary());
     this.session = options.session ?? SharedSession.ambient ?? new SharedSession();
-    const leave = this.session.add?.(this);
+    const leave = this.session.add(this);
     DomainSource.live.add(this);
     this.own(() => {
       DomainSource.live.delete(this);
-      leave?.();
+      leave();
     });
 
     // a row that left the collection — a discarded draft, a saved delete — hands the current row
@@ -275,6 +303,10 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
         return;
       }
       this.currentRow.value = items[Math.min(currentAt, items.length - 1)] ?? null;
+    });
+    this.effect(() => {
+      if (!this._searchable.value && this.search.value !== '')
+        this.search.value = '';
     });
     // the frame's current row and `currentRow` are one thing, written in either direction
     this.effect(() => {
@@ -321,17 +353,24 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       this.search.value;
       this.sort.value;
       this.deleted.value;
-      if (!this.isDirty.peek() && !this._rebinding)
+      // read, not peeked: a re-query skipped over pending edits runs once the source turns clean
+      const dirty = this.isDirty.value;
+      if (!dirty && !this._rebinding && !this.isSaving.peek() &&
+        (this._shownFor === undefined || this._readFor() !== this._shownFor))
         void this.refresh();
     });
+    let held = false;
     this.effect(() => {
       this._stopPolling();
       this._failures = 0;
-      if (this.live.value) {
+      if (this.live.value && !this.paused.value) {
         this._timer = setInterval(() => void this._probe(), this._liveMs);
         // a Node timer keeps the process alive; a browser timer id ignores this
         (this._timer as {unref?(): void}).unref?.();
+        if (held)
+          void this._probe();
       }
+      held = this.live.value && this.paused.value;
     });
     this.own(() => this._stopPolling());
   }
@@ -356,7 +395,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
    * after the source is ready. */
   newRow(values: RowValues<TRow> = {}, options?: {pristine?: boolean}): RowView<TRow> {
     if (this.readOnly.peek())
-      throw new DomainBackendError('forbidden', `${this.table}: ${this._readOnlyReason}`);
+      throw new DomainBackendError('forbidden', `${this.table}: ${this.readOnlyReason}`);
     const edit = this._edit.peek();
     if (edit === undefined)
       throw new Error(`${this.table}: the table is not loaded yet`);
@@ -368,17 +407,18 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     return row;
   }
 
-  /** Reloads from the first page; pending changes are dropped. Stale answers — a load a later
-   * refresh outran — touch nothing. An empty source loads no rows; a draft one starts on a
-   * pristine draft. */
+  /** Reads the collection again, swapping the rows in place (current row and selection kept by id); over unsaved
+   * changes nothing is dropped and the source is marked {@link stale} instead. */
   async refresh(): Promise<void> {
     // after dispose a load would wire subscriptions nothing releases
     if (this.scope.isDisposed)
       return;
     const gen = ++this._gen;
-    this._restart = false;
-    // the rows about to arrive are the server's again, and the next probe baselines on them
-    this._probed = undefined;
+    this._regrant = false;
+    const readFor = this._readFor();
+    const shown = this._frame;
+    const inPlace = readFor === this._shownFor && shown !== undefined;
+    const window = inPlace ? Math.max(this._loaded, this.pageSize) : this.pageSize;
     batch(() => {
       this._error.value = undefined;
       this._state.value = 'loading';
@@ -395,44 +435,72 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       const data = await table.access();
       if (gen !== this._gen)
         return;
-      this._access.value = Access.from(data);
+      this._access.value = this._accessOf(data);
       await this._serve(true);
       if (gen !== this._gen)
         return;
-      const [frame, total] = await Promise.all([
-        table.frame(this._spec(0)), this._noRows ? 0 : this._count(table)]);
+      // the baseline is read BEFORE the rows, so the first poll sees a write made in between
+      const baseline = await this._baseline(table);
+      if (gen !== this._gen)
+        return;
+      const reading = table.frame(this._spec(0, window));
+      const [frame, total] = await Promise.all([reading, this._noRows ? 0 : this._count(table)]).catch((e) => {
+        void reading.then((f) => f.dispose(), () => {});
+        throw e;
+      });
       if (gen !== this._gen) {
         frame.dispose();
         return;
       }
-      // an edit landed on the live frame while this load was in flight: the edited frame stays
-      if (this.isDirty.peek()) {
+      // the query moved back while this read was out, or a save re-based the rows: this read is behind them
+      if (readFor !== this._readFor() || this._frame !== shown) {
         frame.dispose();
-        this._state.value = 'ready';
+        return this.refresh();
+      }
+      // a new query drops a pristine draft; the rows in place keep one the user is on
+      if (inPlace ? this._unsaved() : this.isDirty.peek()) {
+        frame.dispose();
+        batch(() => {
+          this._isStale.value = true;
+          this._state.value = 'ready';
+        });
         return;
       }
-      this._drop();
-      this._frame = frame;
-      this._loaded = frame.df.rowCount;
-      this._done = this._noRows || this._loaded < this.pageSize;
-      this._wire(frame);
-      batch(() => {
-        this._df.value = frame.df;
-        this._edit.value = frame.edit;
+      const landed = () => {
         this._total.value = total;
         this._state.value = 'ready';
-        // cleared where the load LANDS, not where it starts: one that bails over pending changes
-        // leaves the rows behind the server, and the mark has to say so
         this._isStale.value = false;
-      });
-      this._syncCurrent();
-      this._syncSelection();
+      };
+      this._restart = false;
+      if (inPlace)
+        this._swap(frame, window, baseline, this._keep(), landed);
+      else {
+        this._drop();
+        this._shownFor = readFor;
+        this._frame = frame;
+        this._loaded = frame.df.rowCount;
+        this._done = this._noRows || this._loaded < this.pageSize;
+        this._probed = baseline;
+        this._wire(frame);
+        batch(() => {
+          this._df.value = frame.df;
+          this._edit.value = frame.edit;
+          landed();
+        });
+        this._syncCurrent();
+        this._syncSelection();
+      }
       if (this.isDraft)
         this.newRow({}, {pristine: true});
     } catch (e) {
       this._ready = undefined;
       if (gen !== this._gen)
         return;
+      if (readFor !== this._readFor())
+        return this.refresh();
+      // the rows shown answer another query: moving back to it reads them again
+      if (readFor !== this._shownFor)
+        this._shownFor = undefined;
       batch(() => {
         this._error.value = e;
         this._state.value = 'error';
@@ -440,22 +508,29 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     }
   }
 
-  /** Appends the next page into the same frame; pending changes stay. */
+  /** Appends the next page into the same frame; pending changes stay, and a row already held is not added twice. */
   async loadMore(): Promise<void> {
     const frame = this._frame;
-    if (frame === undefined || this._restart)
+    if (frame === undefined || (this._restart && !this._unsaved()))
       return this.refresh();
-    if (this._done || this._state.peek() === 'loading')
+    if (this._done || this._state.peek() === 'loading' || this._readFor() !== this._shownFor)
       return;
     const gen = this._gen;
     this._state.value = 'loading';
     try {
       await this._serve();
-      const added = await frame.append(this._spec(this._loaded));
       if (gen !== this._gen)
         return;
-      this._loaded += added;
-      this._done = added < this.pageSize;
+      const read = await frame.append(this._spec(this._loaded));
+      if (gen !== this._gen)
+        return;
+      // a save's re-base swapped the frame meanwhile: the page belongs after its window
+      if (this._frame !== frame) {
+        this._state.value = 'ready';
+        return this.loadMore();
+      }
+      this._loaded += read;
+      this._done = read < this.pageSize;
       this._state.value = 'ready';
     } catch (e) {
       if (gen !== this._gen)
@@ -465,6 +540,29 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
         this._state.value = 'error';
       });
     }
+  }
+
+  /** Re-reads the table-level access; where it moved, or after a 403, the writer is rebuilt once nothing is pending. */
+  async reloadAccess(): Promise<void> {
+    if (this._ready === undefined)
+      return;
+    const data = await (await this._ready).access().catch(() => undefined);
+    if (data === undefined || this.scope.isDisposed)
+      return;
+    const access = this._accessOf(data);
+    const forbidden = errorCode(this.refusal.peek()) === 'forbidden';
+    this._regrant ||= access !== this._access.peek() || forbidden;
+    this._forbidden.value = forbidden || this._forbidden.peek() && access === this._access.peek();
+    this._access.value = access;
+    this._regranted();
+  }
+
+  private _regranted(): void {
+    // a batch that lands re-reads the rows itself, under the access it was sent with
+    if (!this._regrant || this._unsaved() || this.session.isSaving.peek())
+      return;
+    // published again once the rows are read: what was built over the old rows' `~can_*` is built again
+    this.refresh().then(() => this._access.value = this._access.peek().narrow({}), (e) => this.fail(e));
   }
 
   /** Stages the restore of soft-deleted rows into the session's unit of work — they are pending
@@ -564,6 +662,31 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     return n;
   }
 
+  /** Why the writer threw on the last write of a cell; null while its writes land. */
+  unapplied(id: string, column: string): {value: unknown, message: string} | null {
+    return this._unapplied.value.get(DomainSource._cell(id, column)) ?? null;
+  }
+
+  private _write(id: string, column: string, value: unknown): void {
+    const cell = DomainSource._cell(id, column);
+    try {
+      const prop = this._schema.properties.find((p) => p.name === column);
+      this._edit.peek()?.setValue(id, column, prop === undefined ? value : jsonCell(prop, value));
+    } catch (e) {
+      this._unapplied.value = new Map(this._unapplied.peek()).set(cell, {value, message: DomainSource._message(e)});
+      throw e;
+    }
+    if (this._unapplied.peek().has(cell)) {
+      const left = new Map(this._unapplied.peek());
+      left.delete(cell);
+      this._unapplied.value = left;
+    }
+  }
+
+  private static _cell(id: string, column: string): string {
+    return `${id}\u0000${column}`;
+  }
+
   private _holding(): boolean {
     return this._unwritten.value.some((held) => Object.keys(held.value?.values ?? {}).length > 0);
   }
@@ -575,14 +698,11 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
    * and the app's rules over it hold. */
   check(): string | null {
     if (this.readOnly.peek() && this.pending().some((r) => r[Rows.STATE] !== 'restored'))
-      return this._refuse(this._readOnlyReason);
+      return this._refuse(this.readOnlyReason);
     const edit = this._edit.peek();
     if (edit === undefined)
       return null;
-    batch(() => {
-      this._error.value = undefined;
-      this._problemRow.value = null;
-    });
+    this._withdraw();
     for (const guard of this._guards) {
       const problem = guard();
       if (problem !== null)
@@ -594,15 +714,21 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
 
   // the writer reports the message alone, and "Cannot save: Value can't be empty" names no field
   private _locate(edit: EditState, problem: string): string | null {
+    const named = this._name(edit, problem);
+    if (named === null)
+      return null;
+    this.markProblem(named.row);
+    return named.message;
+  }
+
+  private _name(edit: EditState, problem: string): {row: string, message: string} | null {
     const name = this.nameCell;
     if (name === undefined)
       return null;
     for (const row of this.pending()) {
       for (const prop of this._schema.properties) {
-        if (edit.errorOf(row.id, prop.name) !== problem)
-          continue;
-        this.markProblem(row.id);
-        return name(row, prop.name, problem);
+        if (edit.errorOf(row.id, prop.name) === problem)
+          return {row: row.id, message: name(row, prop.name, problem)};
       }
     }
     return null;
@@ -615,19 +741,35 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     return this._rows.pending() as RowView<TRow>[];
   }
 
+  // what a re-read would drop: a change, or an untyped draft the user is on or a pending row refers to
+  private _unsaved(): boolean {
+    const current = this.currentRow.peek();
+    return this.isDirty.peek() || [...this._editing].some((editing) => editing()) || (this.pending().length > 0 &&
+      (this.session.isDirty.peek() || (current !== null && Rows.isDraft(current))));
+  }
+
+  /** An open cell editor: a reload waits, marking the source stale. Answers the release. */
+  holdReload(editing: () => boolean): () => void {
+    this._editing.add(editing);
+    return () => this._editing.delete(editing);
+  }
+
   /** After a batch this source took part in landed: the loaded window re-read so paging starts
    * from the offset the server agrees with, the total counted again, and every other live source
    * of the same table reloaded — it is holding the rows this batch just rewrote. */
   async afterSave(): Promise<void> {
     const gen = this._gen;
-    // the batch moved the collection itself: the next probe baselines on what we just wrote
+    this._regrant = false;
+    const shown = this._probed;
     this._probed = undefined;
-    await this._rebase();
-    // and the re-base has just re-read the window, so the rows are the server's again — a save
-    // clears the stale mark as a reload does, or "Data changed — Refresh" would stand for good
-    this._isStale.value = false;
+    // a re-base re-reads the window: a save clears the stale mark as a reload does; a held one keeps both
+    if (await this._rebase())
+      this._isStale.value = false;
+    else
+      this._probed ??= shown;
+    // a source that loads no rows (a create form over the row it just made) has none to read again
     for (const source of DomainSource.live) {
-      if (source !== this && source.table === this.table && !source.isDirty.peek())
+      if (source !== this && source.table === this.table && !source._noRows)
         source.refresh().catch((e) => source.fail(e));
     }
     if (!this._noRows && this._table !== undefined) {
@@ -664,52 +806,79 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     return true;
   }
 
-  // a batch that inserted, deleted or moved a row shifts the server's offsets: the next page would skip or repeat
-  private async _rebase(): Promise<void> {
+  private async _rebase(): Promise<boolean> {
     const table = this._table;
     const frame = this._frame;
     if (table === undefined || frame === undefined || this._noRows)
-      return;
+      return false;
     // the window as it was before the batch applied — `_loaded` is what the server answered, and
     // the frame may have just lost every row of it to a delete
     const window = Math.max(this._loaded, frame.df.rowCount) || this.pageSize;
     const gen = this._gen;
-    const selected = this._selection.peek().map((row) => row.id);
-    // read before the swap: a row the replacement does not hold takes `currentRow` with it
-    const current = this.currentRow.peek()?.id ?? null;
+    const readFor = this._readFor();
     await this._serve(true);
+    const baseline = await this._baseline(table);
     const replacement = await table.frame(this._spec(0, window));
-    if (gen !== this._gen) {
+    if (gen !== this._gen || this._unsaved()) {
       replacement.dispose();
-      return;
+      return false;
     }
-    // swapped in place, never through `_drop`: a row's proxy is keyed, reads whatever frame the
-    // source holds, and everything bound to it stays bound
+    if (readFor !== this._readFor()) {
+      replacement.dispose();
+      await this.refresh();
+      return true;
+    }
+    this._shownFor = readFor;
+    this._swap(replacement, window, baseline, this._keep());
+    return true;
+  }
+
+  // swapped in place, never through `_drop`: the current row is never null on the way
+  private _swap(frame: DomainFrameLike, window: number, baseline: DomainProbeLike | undefined,
+    kept: {current: string | null, selected: string[]}, also?: () => void): void {
+    const old = this._frame;
     this._unwire?.();
     this._unwire = undefined;
-    this._frame = replacement;
-    this._loaded = replacement.df.rowCount;
+    this._frame = frame;
+    this._loaded = frame.df.rowCount;
     this._done = this._loaded < window;
-    this._wire(replacement);
+    this._probed = baseline;
+    this._wire(frame);
     batch(() => {
-      this._df.value = replacement.df;
-      this._edit.value = replacement.edit;
+      this._df.value = frame.df;
+      this._edit.value = frame.edit;
+      also?.();
     });
-    frame.dispose();
-    const at = current === null ? -1 : this._rows.indexOf(current);
-    if (at >= 0) {
-      replacement.df.currentRowIdx = at;
-      this._syncCurrent();
-    }
-    const selection = replacement.df.selection as {set?(i: number, value: boolean): void} | null | undefined;
-    if (typeof selection?.set === 'function') {
-      for (const id of selected) {
-        const index = this._rows.indexOf(id);
-        if (index >= 0)
-          selection.set(index, true);
+    old?.dispose();
+    this._restore(kept);
+  }
+
+  private _keep(): {current: string | null, selected: string[]} {
+    return {current: this.currentRow.peek()?.id ?? null, selected: this._selection.peek().map((row) => row.id)};
+  }
+
+  private _restore(kept: {current: string | null, selected: string[]}): void {
+    const df = this._df.peek();
+    if (df === undefined)
+      return;
+    batch(() => {
+      const at = kept.current === null ? -1 : this._rows.indexOf(kept.current);
+      if (at >= 0) {
+        df.currentRowIdx = at;
+        this._syncCurrent();
       }
-    }
-    this._syncSelection();
+      const selection = df.selection as
+        {set?(i: number, value: boolean, notify?: boolean): void, fireChanged?(): void} | null | undefined;
+      if (typeof selection?.set === 'function') {
+        for (const id of kept.selected) {
+          const index = this._rows.indexOf(id);
+          if (index >= 0)
+            selection.set(index, true, false);
+        }
+        selection.fireChanged?.();
+      }
+      this._syncSelection();
+    });
   }
 
   /** What the last save threw — the session hands every dirty source the backend's refusal. */
@@ -726,13 +895,6 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       `Saved; refresh failed: ${DomainSource._message(error)}`);
   }
 
-  /** A refusal the backend answered with `false` instead of an exception ("Cannot save: …"):
-   * carried by the summary like every other, but marked as already reported — the platform
-   * editor balloons its own, and nothing says it twice. */
-  refuse(problem: string): void {
-    this._error.value = new DomainBackendError(DomainSource.REFUSED, `Cannot save: ${problem}`);
-  }
-
   /** A refusal raised over one row before anything was sent — the session's preflight. Shown the
    * way a guard's is ({@link check}), and it names the row. */
   refuseRow(id: string, problem: string): void {
@@ -747,6 +909,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
 
   /** Drops this source's pending changes — what its session calls. */
   revert(): void {
+    this._unapplied.value = new Map();
     this._edit.peek()?.discard();
   }
 
@@ -791,7 +954,24 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     return problem;
   }
 
-  private get _readOnlyReason(): string {
+  private _withdraw(): void {
+    if (this.refusal.peek() === undefined)
+      return;
+    batch(() => {
+      this._error.value = undefined;
+      this._problemRow.value = null;
+    });
+  }
+
+  /** What a message calls the row: its caption, null where that names nothing. */
+  nameOf(row: RowView): string | null {
+    const info = this._schema.info;
+    const column = info.nameColumn ?? info.businessKey[0];
+    const name = this.caption?.(row) ?? (column === undefined ? '' : String(row[column] ?? ''));
+    return name === '' || name === row.id ? null : name;
+  }
+
+  get readOnlyReason(): string {
     return this._writable.peek() ? 'deleted rows are read-only until they are restored' :
       'the table does not accept writes';
   }
@@ -801,13 +981,15 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       return;
     this._table = table;
     this._writable.value = table.support.transaction;
+    const searchable = table.info?.searchableColumns;
+    this._rebinding = true;
+    try {
+      this._searchable.value = !Array.isArray(searchable) || searchable.length > 0;
+    } finally {
+      this._rebinding = false;
+    }
     this._schema = {
-      properties: table.properties.map((p): FilterProperty => {
-        const prop: FilterProperty = {...p, name: p.name!};
-        if (REF_ADDRESS.test(p.semType ?? ''))
-          prop.ref = p.semType;
-        return prop;
-      }),
+      properties: table.properties.map(filterProperty),
       info: table.info,
     };
   }
@@ -817,6 +999,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this._unwire = undefined;
     const frame = this._frame;
     this._frame = undefined;
+    this._shownFor = undefined;
     frame?.dispose();
     batch(() => {
       this._df.value = undefined;
@@ -828,18 +1011,22 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   }
 
   private _wire(frame: DomainFrameLike): void {
+    // what the last writer refused is not this one's verdict
+    this._unapplied.value = new Map();
     const bump = () => this._version.value = this._version.peek() + 1;
     const subs = [
       // the editor removes saved deletes and re-keys saved drafts without a frame event: the
       // row projection follows its onChanged instead
       frame.edit.onChanged.subscribe(() => {
-        // a refusal stands in the summary until the next edit or discard takes it back
-        batch(() => {
-          this._error.value = undefined;
-          this._problemRow.value = null;
-        });
+        // a refusal is about the batch the session sent: any edit to it withdraws the refusal wherever it shows
+        for (const source of [...DomainSource.live]) {
+          if (source.session === this.session)
+            source._withdraw();
+        }
         this._rows.rebuild();
         bump();
+        // a writer built under grants a refusal re-read is rebuilt once its last change goes, however it went
+        this._regranted();
       }),
       // the exact post-save re-point: a current draft is the same row under the id it was given
       frame.edit.onSaved.subscribe(({assigned}) => {
@@ -885,25 +1072,29 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   // nothing is asked while the tab is hidden or mid write-back (the batch moves `updated_on` itself)
   private async _probe(): Promise<void> {
     const table = this._table;
-    if (table === undefined || table.probe === undefined || this._probing || this._noRows ||
+    if (table === undefined || this._probing ||
         this.isSaving.peek() || (typeof document !== 'undefined' && document.hidden))
       return;
     this._probing = true;
     const gen = this._gen;
     try {
+      if (table.probe === undefined || this._noRows || gen !== this._gen)
+        return;
       await this._serve();
       const now = await table.probe(this._scope());
       if (gen !== this._gen)
         return;
       this._failures = 0;
       const before = this._probed;
-      this._probed = now;
-      if (before === undefined || (before.count === now.count && before.last === now.last))
-        return;
-      if (this.isDirty.peek() || this.isSaving.peek())
-        this._isStale.value = true;
-      else
-        await this.refresh();
+      // the baseline moves only with the rows; a token answering in place of a count is a new baseline
+      if (before === undefined || (before.count < 0) !== (now.count < 0))
+        this._probed = now;
+      else if (before.count !== now.count || before.last !== now.last || this._isStale.peek()) {
+        if (this._unsaved())
+          this._isStale.value = true;
+        else
+          await this.refresh();
+      }
     } catch {
       // the baseline stands: the next good probe compares against the last pair that WAS answered,
       // so a change made during an outage is still seen
@@ -911,6 +1102,25 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
         this._stopPolling();
     } finally {
       this._probing = false;
+    }
+  }
+
+  // equal grants keep the one Access: a form rebuilt over a new one would drop the focus and what is typed
+  private _accessOf(data: AccessData): Access {
+    const key = JSON.stringify(data);
+    if (key === this._accessKey)
+      return this._access.peek();
+    this._accessKey = key;
+    return Access.from(data);
+  }
+
+  private async _baseline(table: DomainTableLike): Promise<DomainProbeLike | undefined> {
+    if (!this.live.peek() || table.probe === undefined || this._noRows)
+      return undefined;
+    try {
+      return await table.probe(this._scope());
+    } catch {
+      return undefined;
     }
   }
 
@@ -938,9 +1148,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       return {limit: 0, offset, withAccess: this.withAccess,
         ...(deleted === 'exclude' ? {} : {deleted})};
     }
-    const sort = this.sort.peek();
     const captions = this._captions();
-    return {...this._scope(), ...(sort === '' ? {} : {sort}),
+    return {...this._scope(), ...this._order(),
       limit: this.isEmpty ? 0 : limit, offset, withAccess: this.withAccess,
       ...(captions.length === 0 ? {} : {captions})};
   }
@@ -954,6 +1163,17 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     const refs = this._schema.properties.filter((p) => REF_ADDRESS.test(p.semType ?? '') &&
       access.field(p.name!) !== 'hidden').map((p) => p.name!);
     return listed === undefined ? refs : listed.filter((name) => refs.includes(name));
+  }
+
+  // rows a sort leaves tied come back in any order on each read: the id settles it (the default order has it)
+  private _order(): {sort?: string} {
+    const sort = this.sort.peek();
+    const ordered = /(^|,)\s*!?id\s*(,|$)/.test(sort) || this._table?.support.systemColumns.includes('id') !== true;
+    return sort === '' ? {} : {sort: ordered ? sort : `${sort},id`};
+  }
+
+  private _readFor(): string {
+    return JSON.stringify([this.query.peek(), this.search.peek(), this.sort.peek(), this.deleted.peek()]);
   }
 
   // the one scope `_spec`, `count` and `probe` all take, so none forgets the search or the trash mode
@@ -1084,6 +1304,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     const rebound = copy(query) as FilterGroup;
     return hit ? rebound : query;
   }
+
+  private static readonly DETERMINISTIC = new Set(['validation', 'restrict', 'not-found', 'bad-ref', 'unique']);
 
   private static _message(error: unknown): string {
     return error === undefined ? '' : error instanceof Error ? error.message : String(error);

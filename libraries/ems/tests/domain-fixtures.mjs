@@ -1,3 +1,8 @@
+import assert from 'node:assert/strict';
+import {flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
+import {test} from '@datagrok-libraries/u2/tests/owned-test.js';
+import {backends, notify, Scope} from '@datagrok-libraries/u2';
+import {emsBackends} from '../src/core/domain-backend.js';
 import {MemoryDomainBackend} from '../src/core/memory-domain.js';
 
 export const SCHEMA = {
@@ -80,4 +85,51 @@ export function hierarchyBackend(options = {}) {
 /** The `stock.location` table of a fresh {@link hierarchyBackend}. */
 export function locations(options = {}) {
   return hierarchyBackend(options).tableSync('stock.location');
+}
+
+/** Waits until `cond()` holds, polling, with a generous cap so a loaded machine cannot race a short timer. */
+export async function until(cond, cap = 2000) {
+  const end = Date.now() + cap;
+  while (!cond() && Date.now() < end)
+    await new Promise((r) => setTimeout(r, 5));
+  await flush();
+}
+
+/** Makes the frame reads of `address` wait for `release()` while `hold` is on: a read in flight. */
+export function holdFrames(backend, address) {
+  const gate = {hold: false, waiting: [], frames: 0, release: () => {
+    gate.hold = false;
+    gate.waiting.splice(0).forEach((go) => go());
+  }};
+  const table = backend.tableSync(address);
+  const frame = table.frame.bind(table);
+  table.frame = async (spec) => {
+    gate.frames++;
+    const f = await frame(spec);
+    if (gate.hold)
+      await new Promise((go) => gate.waiting.push(go));
+    return f;
+  };
+  return gate;
+}
+
+/** A test that leaves the backends, the notifications, the DOM and the live scopes as it found them. */
+export function scoped(name, body) {
+  test(name, async () => {
+    const live = Scope.liveCount;
+    const saved = [[backends, {...backends}], [emsBackends, {...emsBackends}]];
+    try {
+      await body();
+    } finally {
+      for (const [target, copy] of saved) {
+        for (const key of Object.keys(target))
+          delete target[key];
+        Object.assign(target, copy);
+      }
+      notify.closeAll();
+      resetDom();
+      await flush();
+    }
+    assert.equal(Scope.liveCount, live, 'live scopes back to baseline');
+  });
 }

@@ -7,7 +7,7 @@ import {backends, Scope, signal, Signal, Registry, SpecContext, renderSpec, regi
 import {registerDomainSources} from '../src/core/registrations.js';
 import {DomainSource} from '../src/core/domain-source.js';
 import {SharedSession} from '../src/core/session.js';
-import {SCHEMA, ROWS, backend} from './domain-fixtures.mjs';
+import {SCHEMA, ROWS, backend, holdFrames, until} from './domain-fixtures.mjs';
 import {MemoryDomainBackend} from '../src/core/memory-domain.js';
 
 /** Every test runs over its own backend and must leave the live-scope count where it was. */
@@ -190,6 +190,27 @@ source('edit → save updates with the expected version; a conflict is an error,
   assert.equal(src.error.value, undefined, 'a later success clears it');
   assert.equal(src.summary.value, '3 issues');
   src.dispose();
+});
+
+source('a delete or a restore of a row another session changed is refused with a version conflict', async () => {
+  emsBackends.domain = backend();
+  const src = await issues();
+  src.edit.value.markDeleted('i2');
+  emsBackends.domain.tableSync('grit.issue').rows[1].version = 2;
+  assert.equal(await src.save(), false);
+  assert.equal(src.error.value.code, 'version-conflict');
+  assert.equal(src.rows.byKey('i2')['~state'], 'deleted', 'the delete stays pending');
+  assert.notEqual(emsBackends.domain.tableSync('grit.issue').rows[1].is_deleted, true);
+  src.dispose();
+  const stored = emsBackends.domain.tableSync('grit.issue').rows[2];
+  stored.is_deleted = true;
+  const trash = await issues({deleted: 'only'});
+  trash.stageRestore(['i3']);
+  stored.version += 1;
+  assert.equal(await trash.save(), false);
+  assert.equal(trash.error.value.code, 'version-conflict');
+  assert.equal(stored.is_deleted, true, 'the restore did not land');
+  trash.dispose();
 });
 
 source('discard: modified values come back, drafts go, deletes are undone', async () => {
@@ -421,7 +442,7 @@ source('session: save and discard go through it, it announces and emits; a given
   const calls = [];
   const session = {isDirty: signal(true), changeCount: signal(1), validity: signal(null), isSaving: signal(false),
     onSaved: {subscribe: () => ({unsubscribe() {}})}, onDiscarded: {subscribe: () => ({unsubscribe() {}})},
-    save: async () => calls.push('save') && true, discard: () => calls.push('discard')};
+    save: async () => calls.push('save') && true, discard: () => calls.push('discard'), add: () => () => {}};
   const shared = await issues({session});
   assert.equal(shared.session, session);
   assert.equal(await shared.save(), true);
@@ -525,7 +546,8 @@ source('containment: an unknown table is an error state; no backend throws at co
 
   let attempts = 0;
   const flaky = backend();
-  emsBackends.domain = {table: (address) => ++attempts === 1 ? Promise.reject(new Error('offline')) : flaky.table(address)};
+  emsBackends.domain = {table: (address) => address === 'grit.issue' && ++attempts === 1 ?
+    Promise.reject(new Error('offline')) : flaky.table(address)};
   const retried = await issues();
   assert.equal(retried.state.value, 'error');
   await retried.refresh();
@@ -604,7 +626,7 @@ source('a draft is written under insert, an existing row under edit as its own c
   assert.deepEqual(columns(inserter), []);
   const fresh = inserter.newRow({project_id: 'p1', title: 'Fresh'});
   assert.deepEqual(columns(inserter), ['project_id', 'number', 'title']);
-  fresh.number = 1;
+  fresh.number = 8;
   assert.equal(await inserter.save(), true);
   assert.equal(emsBackends.domain.tableSync('grit.issue').rows.at(-1).title, 'Fresh');
   inserter.dispose();
@@ -946,7 +968,7 @@ source('sort travels with the query: `!col` descending, dropped from the spec wh
   const src = new DomainSource({table: 'grit.issue', pageSize: 10, sort: '!weight'}, env());
   src.start();
   await flush();
-  assert.equal(specs[0].sort, '!weight');
+  assert.equal(specs[0].sort, '!weight,id');
   assert.deepEqual(src.rows.items.value.map((r) => r.title), ['Naproxen', 'Aspirin', 'Ibuprofen'],
     'heaviest first');
 
@@ -1062,4 +1084,76 @@ source('hosted: a host condition goes to the server as the ids the app answers',
   assert.deepEqual(titles(src), ['Aspirin', 'Naproxen']);
   src.dispose();
   off();
+});
+source('a page asked for just before a new query is not a page of the new query appended to the old rows', async () => {
+  emsBackends.domain = backend();
+  const gate = holdFrames(emsBackends.domain, 'grit.issue');
+  const src = await issues({pageSize: 1});
+  gate.hold = true;
+  const paging = src.loadMore();
+  src.query.value = 'done = false';
+  await paging;
+  assert.deepEqual(titles(src), ['Aspirin'], 'the old rows, with no page of "done = false" behind them');
+  gate.release();
+  await until(() => src.state.value === 'ready');
+  assert.deepEqual(titles(src), ['Ibuprofen']);
+  src.dispose();
+});
+
+const insertFirst = (be) => be.transaction(
+  [{op: 'insert', table: 'grit.issue', values: {project_id: 'p1', number: 7, title: 'Acetaminophen'}}]);
+
+source('another session\'s insert before the window does not repeat a row on the next page', async () => {
+  emsBackends.domain = backend();
+  const src = await issues({pageSize: 2, sort: 'title'});
+  await insertFirst(emsBackends.domain);
+  await src.loadMore();
+  assert.deepEqual(titles(src), ['Aspirin', 'Ibuprofen', 'Naproxen'], 'the insert shows on Refresh');
+  src.dispose();
+});
+
+source('paging a sort full of ties re-reads nothing: every sorted read ends with the row id', async () => {
+  emsBackends.domain = backend();
+  const gate = holdFrames(emsBackends.domain, 'grit.issue');
+  const table = emsBackends.domain.tableSync('grit.issue');
+  const query = table.query.bind(table);
+  const sorts = [];
+  let flip = false;
+  // a server orders the rows a sort leaves tied as it likes, differently from one read to the next
+  table.query = (spec) => {
+    sorts.push(spec.sort);
+    return query(/(^|,)id$/.test(spec.sort) ? spec : {...spec, sort: `${spec.sort},${(flip = !flip) ? '!' : ''}id`});
+  };
+  const src = await issues({pageSize: 1, sort: 'done'});
+  await src.loadMore();
+  await src.loadMore();
+  assert.equal(gate.frames, 1, 'no window read');
+  assert.deepEqual(src.rows.items.value.map((r) => r.id), ['i2', 'i3', 'i1']);
+  assert.deepEqual([...new Set(sorts)], ['done,id']);
+  assert.equal(src.sort.value, 'done');
+  src.dispose();
+});
+
+source('a draft nothing was typed into survives every re-read of the rows it sits among, and stays current', async () => {
+  emsBackends.domain = backend();
+  const src = await issues({pageSize: 2, sort: 'title'});
+  const other = await issues();
+  const draft = src.newRow({}, {pristine: true});
+  await insertFirst(emsBackends.domain);
+  await src.loadMore();
+  assert.equal(src.currentRow.value.id, draft.id, 'a page that shifted');
+  other.rows.byKey('i1').title = 'Saved elsewhere';
+  assert.equal(await other.save(), true);
+  await flush();
+  assert.equal(src.currentRow.value.id, draft.id, 'another source\'s save');
+  await src.refresh();
+  assert.equal(src.currentRow.value.id, draft.id, 'a reload');
+  assert.equal(src.stale.value, true);
+  assert.equal(src.isDirty.value, false);
+  src.currentRow.value = src.rows.byKey('i1');
+  await src.refresh();
+  assert.equal(src.rows.byKey(draft.id), undefined, 'left behind, it goes with the next reload');
+  assert.equal(src.stale.value, false);
+  src.dispose();
+  other.dispose();
 });

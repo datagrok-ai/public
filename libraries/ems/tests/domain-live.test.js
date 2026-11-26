@@ -56,6 +56,7 @@ function counted(options = {}) {
       });
     },
     saveAll: (edits) => inner.saveAll(edits),
+    dropAccess: () => {},
   }};
 }
 
@@ -78,21 +79,21 @@ async function tick(times = 1, ms = 1000) {
   }
 }
 
-scoped('the first probe only baselines; a moved pair reloads a clean source', async () => {
+scoped('the load takes the baseline, the first probe compares; a moved pair reloads a clean source', async () => {
   const be = counted();
   const src = await started(be);
   assert.equal(src.rows.items.value.length, 3);
-  assert.deepEqual(be.probes, [], 'nothing is asked before the first interval');
+  assert.equal(be.probes.length, 1, 'the load asked for the baseline');
 
   await tick();
-  assert.equal(be.probes.length, 1, 'ONE call per interval, not a page of rows');
-  assert.deepEqual(Object.keys(be.probes[0]).sort(), ['filter'], 'the one read scope, the default trash mode left off');
+  assert.equal(be.probes.length, 2, 'ONE call per interval, not a page of rows');
+  assert.deepEqual(Object.keys(be.probes[1]).sort(), ['filter'], 'the one read scope, the default trash mode left off');
   assert.equal(src.stale.value, false);
 
   const issue = await be.backend.table('grit.issue');
   await issue.transaction([{op: 'insert', table: 'issue', values: {project_id: 'p1', number: 9, title: 'New one'}}]);
   await tick();
-  assert.equal(be.probes.length, 2);
+  assert.equal(be.probes.length, 4, 'the poll, then the reload\'s fresh baseline');
   await flush();
   assert.equal(src.rows.items.value.length, 4, 'the collection moved, so the rows were read again');
   assert.equal(src.stale.value, false, 'a source that reloaded is not stale');
@@ -165,7 +166,8 @@ scoped('a probe that fails keeps the baseline, and a run of failures stops the t
   be.backend.table = async (address) => {
     const t = await inner(address);
     return Object.assign(Object.create(Object.getPrototypeOf(t)), t, {
-      probe: (spec) => fail > 0 ? (fail--, Promise.reject(new Error('offline'))) : t.probe(spec),
+      probe: (spec) => address === 'grit.issue' && fail > 0 ? (fail--, Promise.reject(new Error('offline'))) :
+        t.probe(spec),
     });
   };
   const src = await started(be);
@@ -198,16 +200,17 @@ scoped('a probe that fails keeps the baseline, and a run of failures stops the t
 scoped('nothing is asked while the tab is hidden, and nothing after dispose', async () => {
   const be = counted();
   const src = await started(be);
+  assert.equal(be.probes.length, 1, 'the load\'s baseline');
   Object.defineProperty(document, 'hidden', {configurable: true, value: true});
   await tick(3);
-  assert.deepEqual(be.probes, [], 'a background tab is throttled and has no one reading it');
+  assert.equal(be.probes.length, 1, 'a background tab is throttled and has no one reading it');
   delete document.hidden;
   await tick();
-  assert.equal(be.probes.length, 1);
+  assert.equal(be.probes.length, 2);
 
   src.dispose();
   await tick(3);
-  assert.equal(be.probes.length, 1, 'the timer went with the source');
+  assert.equal(be.probes.length, 2, 'the timer went with the source');
 });
 
 scoped('live is a signal: turning it off stops the timer, turning it on starts one', async () => {
@@ -218,7 +221,7 @@ scoped('live is a signal: turning it off stops the timer, turning it on starts o
   src.live.value = true;
   await flush();
   await tick();
-  assert.equal(be.probes.length, 1);
+  assert.equal(be.probes.length, 1, 'the first poll');
   src.live.value = false;
   await flush();
   await tick(2);
@@ -242,6 +245,7 @@ scoped('a backend that cannot probe is simply not polled', async () => {
       return Object.assign(Object.create(Object.getPrototypeOf(t)), t, {probe: undefined});
     },
     saveAll: (edits) => inner.saveAll(edits),
+    dropAccess: () => {},
   };
   const src = new DomainSource({table: 'grit.issue', pageSize: 10, live: true, liveMs: 1000}, env);
   src.start();
@@ -295,6 +299,7 @@ function tokened(options = {}) {
       });
     },
     saveAll: (edits) => inner.saveAll(edits),
+    dropAccess: () => {},
   }};
 }
 
@@ -358,7 +363,7 @@ scoped('a change token that moves refreshes a clean source and marks a dirty one
   const be = tokened();
   const src = await started(be);
   await tick();
-  assert.equal(be.calls.token, 1, 'one token read per interval');
+  assert.equal(be.calls.token, 2, 'the baseline, then one token read per interval');
   await tick();
   assert.equal(src.stale.value, false, 'a token that did not move is not a change');
 
@@ -384,13 +389,13 @@ scoped('narrowing the query re-baselines: the shapes never meet in one compariso
   const be = tokened();
   const src = await started(be);
   await tick();
-  assert.equal(be.calls.token, 1);
+  assert.equal(be.calls.token, 2, 'the load\'s baseline and the first poll');
 
   src.query.value = 'done = false';
   await flush();
   await tick();
-  assert.equal(be.calls.aggregate, 1, 'a narrowed source counts');
-  assert.equal(src.stale.value, false, 'and the first poll after the change only baselines');
+  assert.equal(be.calls.aggregate, 2, 'a narrowed source counts: its reload\'s baseline, then the poll');
+  assert.equal(src.stale.value, false, 'and the first poll after the change compares with the reload\'s baseline');
   const rows = src.rows.items.value.length;
   await tick();
   assert.equal(src.rows.items.value.length, rows, 'no false change out of the shape swap');
@@ -398,7 +403,7 @@ scoped('narrowing the query re-baselines: the shapes never meet in one compariso
   src.query.value = '';
   await flush();
   await tick();
-  assert.equal(be.calls.token, 2, 'back to the whole table, back to the token');
+  assert.equal(be.calls.token, 4, 'back to the whole table, back to the token');
   assert.equal(src.stale.value, false);
   src.dispose();
 });
@@ -448,7 +453,7 @@ scoped('DomainAppOptions.live reaches the list source — the option the apps ac
   await flush();
   assert.equal(app.listSource.live.value, true, 'the app asked for it, so the list polls');
   await tick();
-  assert.equal(be.probes.length, 1);
+  assert.equal(be.probes.length, 2, 'the load\'s baseline, then the first poll');
 
   // the simulated user's scenario: a draft pending here, an insert from another session there
   app.listSource.newRow({title: 'Mine', project_id: 'p1'});
