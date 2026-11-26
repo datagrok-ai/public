@@ -72,7 +72,8 @@ export class KmChart extends Control {
       this.chart.setOption({
         animation: false,
         grid: GRID,
-        legend: {top: 0, data: groups},
+        // one line, paged when the groups don't fit, as the other charts: a second row would sit on the plot
+        legend: {type: 'scroll', top: 0, data: groups},
         tooltip: {trigger: 'axis', valueFormatter: (v: number) => `${Math.round(v)}%`},
         xAxis: {type: 'value', min: 0, max: k.horizon ?? last, name: 'Day after randomization', nameLocation: 'middle',
           nameGap: 24},
