@@ -190,6 +190,43 @@ category('Dapi: permissions', () => {
     }
   });
 
+  test('spaces.all lists the spaces the user can see, each subspace in its parent\'s namespace', async () => {
+    const shared = await grok.dapi.spaces.createRootSpace(`ApiTestsPerm${DG.Utils.randomString(6)}`);
+    const hidden = await grok.dapi.spaces.createRootSpace(`ApiTestsPerm${DG.Utils.randomString(6)}`);
+    try {
+      const child = await grok.dapi.spaces.id(shared.id).addSubspace(`ApiTestsPermSub${DG.Utils.randomString(6)}`);
+      const mine = await grok.dapi.spaces.all();
+      expect(mine.some((s) => s.id === hidden.id), true, 'the owner misses a space');
+      expect(mine.find((s) => s.id === child.id)?.nqName.startsWith(`${shared.nqName}:`), true,
+        'the subspace is not in its parent\'s namespace');
+      await grok.dapi.permissions.grant(shared, grantee.group, false);
+      const seen = (await asGrantee(() => grok.dapi.spaces.all())).map((s) => s.id);
+      expect(seen.includes(shared.id), true, 'the grantee misses the space shared with it');
+      expect(seen.includes(hidden.id), false, 'the grantee sees a space not shared with it');
+    }
+    finally {
+      await grok.dapi.permissions.revoke(shared, grantee.group);
+      await grok.dapi.spaces.delete(shared);
+      await grok.dapi.spaces.delete(hidden);
+    }
+  });
+
+  test('checkMany answers what check answers, for each entity in order', async () => {
+    const space = await grok.dapi.spaces.createRootSpace(`ApiTestsPerm${DG.Utils.randomString(6)}`);
+    try {
+      await grok.dapi.permissions.grant(space, grantee.group, false);
+      expect((await grok.dapi.permissions.checkMany([space, script], 'Edit')).join(), 'true,true');
+      expect((await asGrantee(() => grok.dapi.permissions.checkMany([space, script, space], 'Edit'))).join(),
+        'false,false,false');
+      expect((await asGrantee(() => grok.dapi.permissions.checkMany([script, space], 'View'))).join(), 'false,true');
+      expect((await grok.dapi.permissions.checkMany([], 'Edit')).length, 0);
+    }
+    finally {
+      await grok.dapi.permissions.revoke(space, grantee.group);
+      await grok.dapi.spaces.delete(space);
+    }
+  });
+
   test('a database connection: View and use gives query/schema/files but no edit; Full access gives all', async () => {
     const name = `ApiTestsPerm${DG.Utils.randomString(6)}`;
     const connection = await grok.dapi.connections.save(DG.DataConnection.create(name,

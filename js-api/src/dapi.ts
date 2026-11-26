@@ -1208,6 +1208,13 @@ export class PermissionsDataSource {
     return api.grok_Dapi_Check_Permissions(e.dart, permission);
   }
 
+  /** {@link check} for many entities in one request: whether the current user has {permission} on each, in order.
+   * @param entities - Entities to check the permission for
+   * @param permission - Permission type, or a privilege of the entities' type */
+  checkMany(entities: Entity[], permission: 'Edit' | 'View' | 'Share' | 'Delete' | (string & {})): Promise<boolean[]> {
+    return api.grok_Dapi_Check_Permissions_Many(entities.map((e) => e.id), permission);
+  }
+
   /** Checks if the current user holds a global permission — one granted on no entity, such as
    * `DG.Permission.CREATE_DOMAIN_SCHEMA`. Asks the server every time: a grant since login
    * counts, and an impersonated call answers for the impersonated user. */
@@ -1328,6 +1335,12 @@ export class SpacesDataSource extends HttpDataSource<Project> {
 
   createRootSpace(name: string): Promise<Project> {
     return toJs(api.grok_Dapi_Spaces_CreateRootSpace(this.dart, name));
+  }
+
+  /** Every space the current user can see, the roots and the subspaces, in one request.
+   * A subspace's namespace is its parent's {@link Project.nqName}, which places it in the tree. */
+  all(): Promise<Project[]> {
+    return api.grok_Dapi_Spaces_All(this.dart);
   }
 
   /**

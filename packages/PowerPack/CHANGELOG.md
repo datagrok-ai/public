@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Spaces: The Space row's picker opens without reading every space one by one
 * Spotlight: The Recent list reads only the user's latest 5000 events, so it stays fast for accounts with hundreds of thousands of events a month
 * [public#4668](https://github.com/datagrok-ai/public/issues/4668): Spotlight: Fixed the Recent and Shared with me lists failing with "Cannot read properties of null" when they held an entity the platform cannot show, such as a saved filter; such entities are left out
 * core#1765: Detectors: Declared the column types the semantic type detectors check, so the platform no longer calls them for other columns

@@ -29,9 +29,23 @@ const ARCHIVE = space('arch', 'Archive');
 /** A recording `grok.dapi.spaces` over `children` (subspaces by parent id, `null` for the roots) and `items`
  * (what each space holds); `taken` lists the names each space holds already. */
 function fakeSpaces({children, items = {}, readOnly = [], taken = {}, linked = {}}) {
-  const calls = {created: [], typesAsked: [], linkedAsked: 0};
+  const calls = {created: [], typesAsked: [], linkedAsked: 0, allAsked: 0, editAsked: 0};
   grok.dapi.spaces = {
     list: async () => children[null] ?? [],
+    // every space in one answer, each subspace in its parent's namespace, as the server answers
+    all: async () => {
+      calls.allAsked++;
+      const out = [];
+      const walk = (parent, namespace) => {
+        for (const s of children[parent] ?? []) {
+          s.dart.namespace = namespace;
+          out.push(s);
+          walk(s.id, `${s.nqName}`);
+        }
+      };
+      walk(null, null);
+      return out;
+    },
     createRootSpace: async (name) => {
       calls.created.push([null, name]);
       return space(`new-${name}`, name);
@@ -39,6 +53,7 @@ function fakeSpaces({children, items = {}, readOnly = [], taken = {}, linked = {
     id: (id) => ({
       children: {ofTypes: (types, includeLinked) => ({list: async () => {
         if (types === 'Project') {
+          calls.childrenAsked = (calls.childrenAsked ?? 0) + 1;
           calls.linkedAsked += includeLinked ? 1 : 0;
           return [...children[id] ?? [], ...includeLinked ? linked[id] ?? [] : []];
         }
@@ -52,7 +67,13 @@ function fakeSpaces({children, items = {}, readOnly = [], taken = {}, linked = {
       },
     }),
   };
-  grok.dapi.permissions = {check: async (p) => !readOnly.includes(p.id)};
+  grok.dapi.permissions = {
+    check: async (p) => !readOnly.includes(p.id),
+    checkMany: async (es, permission) => {
+      calls.editAsked++;
+      return es.map((p) => permission === 'Edit' && !readOnly.includes(p.id));
+    },
+  };
   return calls;
 }
 
@@ -102,11 +123,13 @@ async function opened(options = {}) {
   return input;
 }
 
-ui('SpaceTree reads the roots, then each level of subspaces; paths, read-only reason, sorting and under()', async () => {
+ui('SpaceTree reads every space in two requests, whatever the tree; paths, read-only reason, sorting and under()', async () => {
   const mine = space('mine', 'Tester');
-  fakeSpaces({...TREE, children: {...TREE.children, null: [mine, ...TREE.children.null]}});
+  const calls = fakeSpaces({...TREE, children: {...TREE.children, null: [mine, ...TREE.children.null]}});
   grok.shell.dart.user = {...grok.shell.user, project: mine};
   const tree = await SpaceTree.load().finally(() => delete grok.shell.dart.user.project);
+  assert.deepEqual([calls.allAsked, calls.editAsked, calls.childrenAsked ?? 0], [1, 1, 0],
+    'one list of every space and one batch of Edit rights, nothing per space');
   assert.deepEqual(tree.roots.map((e) => e.project.friendlyName), ['Archive', 'Chemistry', 'GPCR'],
     'sorted by name, without the user\'s own namespace');
   assert.deepEqual(tree.path(Q4), ['Chemistry', 'Kinase', 'Q4 screens']);
@@ -122,6 +145,24 @@ test('entityName: the name the platform derives, which the clash check compares'
   assert.equal(entityName('  2024 kinase-panel_v2 '), 'KinasePanelV2', 'leading digits dropped, words capitalized');
   assert.equal(entityName('Q4 screens'), 'Q4Screens');
   assert.equal(entityName('—'), '');
+});
+
+ui('SpaceTree: a subspace whose parent the user cannot see is a root; the user\'s own namespace stays out with what it holds', async () => {
+  const mine = space('mine', 'Tester');
+  const inMine = space('in-mine', 'Drafts');
+  const orphan = space('orphan', 'Shared with me');
+  fakeSpaces({children: {null: [mine, CHEM], mine: [inMine]}});
+  grok.dapi.spaces.all = async () => {
+    mine.dart.namespace = null;
+    inMine.dart.namespace = 'Tester';
+    orphan.dart.namespace = 'Hidden';
+    CHEM.dart.namespace = null;
+    return [mine, inMine, orphan, CHEM];
+  };
+  grok.shell.dart.user = {...grok.shell.user, project: mine};
+  const tree = await SpaceTree.load().finally(() => delete grok.shell.dart.user.project);
+  assert.deepEqual(tree.roots.map((e) => e.project.friendlyName), ['Chemistry', 'Shared with me']);
+  assert.equal(tree.get('in-mine'), null);
 });
 
 ui('SpaceInput: empty shows the placeholder; a click on a space picks it and shows its path', async () => {
@@ -638,15 +679,17 @@ ui('spaceSaveRow: a saved project stays in its space, moves to another, or is li
   fakeSpaces(TREE);
   const row = savingRow(KIN, 'Kinase panel');
   try {
+    // a space reads as its path once the tree is in
+    await until(() => rowText(row) === 'Lives in "Chemistry / Kinase".', 'the home hint');
     assert.deepEqual(await row.resolveTarget(), {spaceId: 'kin', link: false, changed: false});
     row.target = GPCR;
-    await until(() => rowText(row) === 'Moves from "Kinase" to "GPCR".', 'the move hint');
+    await until(() => rowText(row) === 'Moves from "Chemistry / Kinase" to "GPCR".', 'the move hint');
     assert.deepEqual(await row.resolveTarget(), {spaceId: 'gpcr', link: false, changed: true});
     row.mode = 'link';
-    await until(() => rowText(row) === 'Stays in "Kinase"; "GPCR" gets a link to it.', 'the link hint');
+    await until(() => rowText(row) === 'Stays in "Chemistry / Kinase"; "GPCR" gets a link to it.', 'the link hint');
     assert.deepEqual(await row.resolveTarget(), {spaceId: 'gpcr', link: true, changed: true});
     row.target = null;
-    await until(() => rowText(row) === 'Moves out of "Kinase" into your projects.', 'the hint for no space');
+    await until(() => rowText(row) === 'Moves out of "Chemistry / Kinase" into your projects.', 'the hint for no space');
     assert.deepEqual(await row.resolveTarget(), {spaceId: null, link: false, changed: true});
   }
   finally {

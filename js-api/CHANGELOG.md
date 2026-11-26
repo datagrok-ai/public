@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Spaces: Added `grok.dapi.spaces.all()`, every space the user can see in one request, and `grok.dapi.permissions.checkMany()`, one permission for many entities in one request
 * Removed the Dartium fallbacks (`ui.onSizeChanged`, `ui.tools.waitForElementInDom`, forms, `GridCellWidget`, `BigIntColumn`) and `DG._isDartium()`
 * [#4677](https://github.com/datagrok-ai/public/issues/4677): Views: Added `ViewBase.unsavedWork`, which a view overrides to name the changes a close would lose: a close the user starts then asks first and offers to save them
 * [#4650](https://github.com/datagrok-ai/public/issues/4650): Added `ui.markdown(text, {sanitize: true})` for untrusted text: scripts and event handlers do not run

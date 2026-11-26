@@ -82,6 +82,14 @@ count = table.shape[0] * table.shape[1]`);
   await spaceClient.addEntity(script.id);
   console.log(`Added script to space`);
 
+  // === The whole tree ===
+
+  // Every space you can see, the roots and the subspaces, in one request;
+  // a subspace's namespace is its parent's nqName
+  const all = await grok.dapi.spaces.all();
+  const editable = await grok.dapi.permissions.checkMany(all, 'Edit');
+  all.forEach((s, i) => console.log(`  ${s.nqName}${editable[i] ? '' : ' (read-only)'}`));
+
   // === Cleanup ===
 
   // Delete the space (cascades to subspaces and files)

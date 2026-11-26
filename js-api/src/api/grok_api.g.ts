@@ -1255,6 +1255,7 @@ export interface IDartApi {
   grok_Dapi_Get_CurrentUserGroups(): Promise<any>;
   grok_Dapi_Get_Permissions(e: any): Promise<any>;
   grok_Dapi_Check_Permissions(e: any, permission: String): Promise<any>;
+  grok_Dapi_Check_Permissions_Many(ids: any, permission: String): Promise<any>;
   grok_Dapi_Check_Global_Permission(permission: String): Promise<any>;
   grok_Dapi_Set_Permission(e: any, g: any, edit: Bool): Promise<any>;
   grok_Dapi_Delete_Permission(e: any, g: any): Promise<any>;
@@ -1266,6 +1267,7 @@ export interface IDartApi {
   grok_DataSource_WhereSmart(s: any, w: String): any;
   grok_DataSource_Order(s: any, name: String, desc: Bool): any;
   grok_Dapi_Spaces(): any;
+  grok_Dapi_Spaces_All(c: any): Promise<any>;
   grok_Dapi_Spaces_RootSpaceExists(c: any, name: String): Promise<any>;
   grok_Dapi_Spaces_Id(c: any, id: String): any;
   grok_Dapi_Spaces_CreateRootSpace(c: any, name: String): Promise<any>;

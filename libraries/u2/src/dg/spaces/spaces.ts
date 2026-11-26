@@ -71,29 +71,37 @@ export class SpaceTree {
     return this.roots.flatMap((r) => this.under(r.project.id));
   }
 
-  /** Reads the whole tree. */
+  /** Reads the whole tree in two requests, whatever its size: every space the user can see, then the user's Edit
+   * right on each. A subspace's namespace is its parent's nqName; one whose parent the user cannot see is a root. */
   static async load(): Promise<SpaceTree> {
-    // the list includes the user's own namespace, which "Not in a space" already stands for
-    const own = grok.shell.user?.project?.id;
-    const roots = await SpaceTree._entries((await grok.dapi.spaces.list()).filter((p) => p.id !== own), null);
-    let level = roots;
-    while (level.length > 0) {
-      const next = await Promise.all(level.map(async (e) => {
-        const kids = await grok.dapi.spaces.id(e.project.id).children.ofTypes('Project').list();
-        const spaces = kids.filter((k): k is DG.Project => k instanceof DG.Project && k.isSpace);
-        e.children = await SpaceTree._entries(spaces, e);
-        return e.children;
-      }));
-      level = next.flat();
+    const spaces = await grok.dapi.spaces.all();
+    const editable = await grok.dapi.permissions.checkMany(spaces, 'Edit');
+    const byName = new Map<string, SpaceEntry>();
+    const entries = spaces.map((project, i): SpaceEntry =>
+      ({project, parent: null, children: [], readOnly: editable[i] ? null : READ_ONLY}));
+    for (const e of entries)
+      byName.set(e.project.nqName, e);
+    let roots: SpaceEntry[] = [];
+    for (const e of entries) {
+      const name = e.project.nqName;
+      const parent = byName.get(name.substring(0, name.lastIndexOf(':')));
+      if (parent === undefined)
+        roots.push(e);
+      else {
+        e.parent = parent;
+        parent.children.push(e);
+      }
     }
+    // the user's own namespace, with whatever is under it, is what "Not in a space" stands for
+    const own = grok.shell.user?.project?.id;
+    roots = roots.filter((e) => e.project.id !== own);
+    const sort = (list: SpaceEntry[]) => {
+      list.sort((a, b) => COLLATOR.compare(a.project.friendlyName, b.project.friendlyName));
+      for (const e of list)
+        sort(e.children);
+    };
+    sort(roots);
     return new SpaceTree(roots);
-  }
-
-  private static async _entries(projects: DG.Project[], parent: SpaceEntry | null): Promise<SpaceEntry[]> {
-    const editable = await Promise.all(projects.map((p) => grok.dapi.permissions.check(p, 'Edit').catch(() => false)));
-    return projects
-      .map((project, i) => ({project, parent, children: [], readOnly: editable[i] ? null : READ_ONLY}))
-      .sort((a, b) => COLLATOR.compare(a.project.friendlyName, b.project.friendlyName));
   }
 }
 
