@@ -3,19 +3,44 @@
 --description: Entities the user interacted with most recently (last 30 days)
 --connection: System:Datagrok
 --input: string user [User ID whose recent activity to fetch]
--- Only the user's latest 5000 events are looked at: an account with hundreds of thousands of
--- events a month (a test user) otherwise made every call read all of them.
-WITH user_events AS MATERIALIZED (
-  SELECT e.id, e.event_type_id, e.event_time
-  FROM events e
-  WHERE e.event_time > NOW() - INTERVAL '30 days'
-    AND EXISTS (
-      SELECT 1
-      FROM event_parameter_values vu
-      JOIN event_parameters pu ON pu.id = vu.parameter_id AND pu.name = 'user'
-      WHERE vu.event_id = e.id AND vu.value_uuid = @user)
-  ORDER BY e.event_time DESC
-  LIMIT 5000
+-- Looks at the latest 5000 events of the user and never reads all of them: an account with
+-- hundreds of thousands of events a month (a test user) otherwise loaded the database on every call.
+-- The query picks the way itself, so it does not depend on the plan Postgres caches for it:
+-- up to 20000 values with the user's id (n): start from those values;
+-- more: walk the 200000 newest events of the instance and keep the user's.
+-- OFFSET 0 keeps each subquery as written.
+WITH n AS MATERIALIZED (
+  SELECT count(*) AS cnt
+  FROM (SELECT 1 FROM event_parameter_values WHERE value_uuid = @user LIMIT 20001) x
+), user_events AS MATERIALIZED (
+  (SELECT e.id, e.event_type_id, e.event_time
+   FROM (
+     SELECT vu.event_id
+     FROM event_parameter_values vu
+     JOIN event_parameters pu ON pu.id = vu.parameter_id AND pu.name = 'user'
+     WHERE vu.value_uuid = @user AND (SELECT cnt FROM n) <= 20000
+     OFFSET 0) u
+   JOIN events e ON e.id = u.event_id
+   WHERE e.event_time > NOW() - INTERVAL '30 days'
+   ORDER BY e.event_time DESC
+   LIMIT 5000)
+  UNION ALL
+  (SELECT r.id, r.event_type_id, r.event_time
+   FROM (
+     SELECT e.id, e.event_type_id, e.event_time
+     FROM events e
+     WHERE e.event_time > NOW() - INTERVAL '30 days'
+     ORDER BY e.event_time DESC
+     LIMIT 200000) r
+   WHERE (SELECT cnt FROM n) > 20000
+     AND EXISTS (
+       SELECT 1
+       FROM event_parameter_values vu
+       JOIN event_parameters pu ON pu.id = vu.parameter_id AND pu.name = 'user'
+       WHERE vu.event_id = r.id AND vu.value_uuid = @user
+       OFFSET 0)
+   ORDER BY r.event_time DESC
+   LIMIT 5000)
 )
 SELECT
   en.id,
