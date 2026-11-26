@@ -1,0 +1,780 @@
+{
+ "version": "human_exposure_v1",
+ "unit": "ng/mL; AUC in ng·h/mL",
+ "provenance": "PMX Studio reference table: reviewed rows of human_exposure.csv (preclinical bundle, analysis/out_translation/human_exposure_source), from FDA labels (CC0 via openFDA), FDA reviews (public domain) and EMA product information (source: European Medicines Agency)",
+ "drugs": [
+  {
+   "drug": "olaparib",
+   "synonyms": [
+    "Lynparza",
+    "AZD2281"
+   ],
+   "regimen": "300 mg oral twice daily (tablets), continuous",
+   "auc": 98400.0,
+   "aucWindow": "2 × AUCss (τ = 12 h assumed)",
+   "cycleDays": null,
+   "aucCv": 44.0,
+   "cmax": 7600.0,
+   "cmaxCv": 35.0,
+   "fu": 0.18,
+   "analyte": "olaparib (parent)",
+   "matrix": "plasma",
+   "stat": "arith_mean",
+   "tier": "label",
+   "source": "FDA label 12.3 (2025-07-10, DailyMed 741ff3e3 v38)"
+  },
+  {
+   "drug": "vemurafenib",
+   "synonyms": [
+    "Zelboraf",
+    "PLX4032",
+    "RG7204"
+   ],
+   "regimen": "960 mg oral twice daily (every 12 h)",
+   "auc": 1202000.0,
+   "aucWindow": "2 x AUC0-12,ss (960 mg BID, day 15)",
+   "cycleDays": null,
+   "aucCv": 28.0,
+   "cmax": 62000.0,
+   "cmaxCv": 27.0,
+   "fu": null,
+   "analyte": "vemurafenib (parent)",
+   "matrix": "plasma",
+   "stat": "arith_mean",
+   "tier": "label",
+   "source": "FDA label 12.3 (2026-08-28, DailyMed 38eea320 v29)"
+  },
+  {
+   "drug": "alpelisib",
+   "synonyms": [
+    "Piqray",
+    "BYL719"
+   ],
+   "regimen": "300 mg oral once daily with food",
+   "auc": 33224.0,
+   "aucWindow": "AUC at steady state, window not stated; once daily so taken as AUC0-24 (assumption)",
+   "cycleDays": null,
+   "aucCv": 21.0,
+   "cmax": 2480.0,
+   "cmaxCv": 23.0,
+   "fu": 0.11,
+   "analyte": "alpelisib (parent)",
+   "matrix": "plasma",
+   "stat": "arith_mean",
+   "tier": "label",
+   "source": "FDA label 12.3 (2026-10-28, DailyMed b20b4e18 v14)"
+  },
+  {
+   "drug": "talazoparib",
+   "synonyms": [
+    "Talzenna",
+    "BMN 673"
+   ],
+   "regimen": "1 mg oral once daily (single agent, breast cancer)",
+   "auc": 173.0,
+   "aucWindow": "AUC at steady state, window not stated; once daily so taken as AUC0-24 (assumption)",
+   "cycleDays": null,
+   "aucCv": 32.0,
+   "cmax": 19.0,
+   "cmaxCv": 32.0,
+   "fu": 0.26,
+   "analyte": "talazoparib (parent)",
+   "matrix": "plasma",
+   "stat": "arith_mean",
+   "tier": "label",
+   "source": "FDA label 12.3 (2026-10-28, DailyMed c6fd147f v5)"
+  },
+  {
+   "drug": "sonidegib",
+   "synonyms": [
+    "Odomzo",
+    "LDE225"
+   ],
+   "regimen": "200 mg oral once daily, empty stomach",
+   "auc": 22000.0,
+   "aucWindow": "AUC0-24h at steady state (stated; model estimate)",
+   "cycleDays": null,
+   "aucCv": null,
+   "cmax": 1030.0,
+   "cmaxCv": null,
+   "fu": null,
+   "analyte": "sonidegib (parent)",
+   "matrix": "plasma",
+   "stat": "model",
+   "tier": "label",
+   "source": "FDA label 12.3 (2024-12-31, DailyMed 028312dc v14)"
+  },
+  {
+   "drug": "trastuzumab",
+   "synonyms": [
+    "Herceptin"
+   ],
+   "regimen": "8 mg/kg IV loading then 6 mg/kg IV every 3 weeks",
+   "auc": 43056000.0,
+   "aucWindow": "AUCss,0-21 days per 3-week cycle, median (breast cancer, N=1195)",
+   "cycleDays": 21,
+   "aucCv": null,
+   "cmax": 179000.0,
+   "cmaxCv": null,
+   "fu": null,
+   "analyte": "trastuzumab (total serum)",
+   "matrix": "plasma",
+   "stat": "median",
+   "tier": "label",
+   "source": "FDA label 12.3 (2026-05-29, DailyMed 492dbdb2 v27)"
+  },
+  {
+   "drug": "irinotecan",
+   "synonyms": [
+    "Camptosar",
+    "CPT-11"
+   ],
+   "regimen": "125 mg/m2 IV over 90 min weekly x4 every 6 weeks (single-agent weekly regimen)",
+   "auc": 10200.0,
+   "aucWindow": "AUC0-24 counted from the END of one 90-min infusion of 125 mg/m2 (N=64); misses the AUC during the infusion (approx. -10%); AUC per infusion × 4 / 42 days",
+   "cycleDays": 10.5,
+   "aucCv": 32.0,
+   "cmax": 1660.0,
+   "cmaxCv": 48.0,
+   "fu": null,
+   "analyte": "irinotecan (parent); SN-38 is the active metabolite",
+   "matrix": "plasma",
+   "stat": "arith_mean",
+   "tier": "label",
+   "source": "FDA label 12.3 (2026-05-12, DailyMed e518dfc6 v37)"
+  },
+  {
+   "drug": "paclitaxel",
+   "synonyms": [
+    "Taxol"
+   ],
+   "regimen": "175 mg/m2 IV over 3 h every 3 weeks",
+   "auc": 15007.0,
+   "aucWindow": "AUC(0-inf) after one 3-h infusion of 175 mg/m2 (N=5)",
+   "cycleDays": 21,
+   "aucCv": null,
+   "cmax": 3650.0,
+   "cmaxCv": null,
+   "fu": null,
+   "analyte": "paclitaxel (parent)",
+   "matrix": "plasma",
+   "stat": "arith_mean",
+   "tier": "label",
+   "source": "FDA label 12.3 (2025-10-31, DailyMed b4c5d08a v3)"
+  },
+  {
+   "drug": "trametinib",
+   "synonyms": [
+    "Mekinist",
+    "GSK1120212"
+   ],
+   "regimen": "2 mg oral once daily",
+   "auc": 370.0,
+   "aucWindow": "AUC(0-tau), tau = 24 h (QD), steady state",
+   "cycleDays": null,
+   "aucCv": 22.0,
+   "cmax": 22.2,
+   "cmaxCv": 28.0,
+   "fu": 0.026,
+   "analyte": "trametinib (parent)",
+   "matrix": "plasma",
+   "stat": "geo_mean",
+   "tier": "epar",
+   "source": "EMA product information 5.2, Mekinist (retrieved 2026-11-20, sha256 e9740c27); FDA label 12.3 (2026-05-07, DailyMed 0002ad27 v35)"
+  },
+  {
+   "drug": "dabrafenib",
+   "synonyms": [
+    "Tafinlar",
+    "GSK2118436"
+   ],
+   "regimen": "150 mg oral twice daily",
+   "auc": 8682.0,
+   "aucWindow": "2 x AUC(0-tau), tau = 12 h (150 mg BID, repeat dosing; AUC0-12 = 4341)",
+   "cycleDays": null,
+   "aucCv": 38.0,
+   "cmax": 1478.0,
+   "cmaxCv": null,
+   "fu": 0.003,
+   "analyte": "dabrafenib (parent)",
+   "matrix": "plasma",
+   "stat": "geo_mean",
+   "tier": "epar",
+   "source": "EMA product information 5.2, Tafinlar (retrieved 2026-11-20, sha256 90310577); FDA label 12.3 (2026-05-20, DailyMed fee1e6b1 v37)"
+  },
+  {
+   "drug": "binimetinib",
+   "synonyms": [
+    "Mektovi",
+    "MEK162"
+   ],
+   "regimen": "45 mg oral twice daily, in combination with encorafenib (no monotherapy approval)",
+   "auc": 4700.0,
+   "aucWindow": "2 × AUCss (τ = 12 h assumed)",
+   "cycleDays": null,
+   "aucCv": 28.0,
+   "cmax": 654.0,
+   "cmaxCv": 34.7,
+   "fu": 0.03,
+   "analyte": "binimetinib (parent)",
+   "matrix": "plasma",
+   "stat": "model",
+   "tier": "epar",
+   "source": "EMA product information 5.2, Mektovi (retrieved 2026-11-20, sha256 7759acc0); FDA label 12.3 (2025-03-20, DailyMed 6c3408ac v12)"
+  },
+  {
+   "drug": "encorafenib",
+   "synonyms": [
+    "Braftovi",
+    "LGX818"
+   ],
+   "regimen": "450 mg oral once daily, in combination with binimetinib (no monotherapy approval)",
+   "auc": 13100.0,
+   "aucWindow": "AUC0-tau, tau = 24 h (QD), steady state",
+   "cycleDays": null,
+   "aucCv": 35.0,
+   "cmax": 4000.0,
+   "cmaxCv": 49.0,
+   "fu": 0.14,
+   "analyte": "encorafenib (parent)",
+   "matrix": "plasma",
+   "stat": "geo_mean",
+   "tier": "fda_review",
+   "source": "FDA multi-disciplinary review NDA 210496, Braftovi, Reference ID 4282494; FDA label 12.3 (2026-02-26, DailyMed 235dfc38 v23)"
+  },
+  {
+   "drug": "afatinib",
+   "synonyms": [
+    "Gilotrif",
+    "BIBW 2992"
+   ],
+   "regimen": "40 mg oral once daily",
+   "auc": 631.0,
+   "aucWindow": "AUCtau,ss with tau = 24 h (QD), 40 mg, Cycle 1",
+   "cycleDays": null,
+   "aucCv": 85.9,
+   "cmax": 38.0,
+   "cmaxCv": 105.0,
+   "fu": 0.05,
+   "analyte": "afatinib (parent)",
+   "matrix": "plasma",
+   "stat": "geo_mean",
+   "tier": "fda_review",
+   "source": "FDA clinical pharmacology review NDA 201292, Gilotrif, Reference ID 3297231; FDA label 12.3 (2025-11-13, DailyMed fd638e5e v20)"
+  },
+  {
+   "drug": "osimertinib",
+   "synonyms": [
+    "Tagrisso",
+    "AZD9291"
+   ],
+   "regimen": "80 mg oral once daily",
+   "auc": 5624.4968,
+   "aucWindow": "AUC at steady state, window not stated; once daily so taken as AUC0-24 (assumption)",
+   "cycleDays": null,
+   "aucCv": null,
+   "cmax": 250.2996,
+   "cmaxCv": null,
+   "fu": 0.05,
+   "analyte": "osimertinib (parent)",
+   "matrix": "plasma",
+   "stat": "model",
+   "tier": "fda_review",
+   "source": "FDA clinical pharmacology review NDA 208065, Tagrisso, Reference ID 3829213; FDA label 12.3 (2026-09-14, DailyMed 5e81b4a7 v37)"
+  },
+  {
+   "drug": "erlotinib",
+   "synonyms": [
+    "Tarceva",
+    "OSI-774"
+   ],
+   "regimen": "150 mg oral once daily, empty stomach",
+   "auc": 24900.0,
+   "aucWindow": "AUC0-24 after multiple 150 mg QD doses (stated; sampling day not given; review: ss within ~1 week)",
+   "cycleDays": null,
+   "aucCv": null,
+   "cmax": 1670.0,
+   "cmaxCv": null,
+   "fu": 0.07,
+   "analyte": "erlotinib (parent)",
+   "matrix": "plasma",
+   "stat": "median",
+   "tier": "fda_review",
+   "source": "FDA clinical pharmacology and biopharmaceutics review NDA 21-743, Tarceva; FDA label 12.3 (2021-03-17, DailyMed 5d97f401 v7)"
+  },
+  {
+   "drug": "gefitinib",
+   "synonyms": [
+    "Iressa",
+    "ZD1839"
+   ],
+   "regimen": "250 mg oral once daily",
+   "auc": 8896.0,
+   "aucWindow": "AUC24ss (stated), 250 mg QD for 28 days (loading 250 mg BID on Day 1)",
+   "cycleDays": null,
+   "aucCv": 55.13,
+   "cmax": 466.4,
+   "cmaxCv": 52.64,
+   "fu": 0.1,
+   "analyte": "gefitinib (parent)",
+   "matrix": "plasma",
+   "stat": "geo_mean",
+   "tier": "fda_review",
+   "source": "FDA clinical pharmacology review NDA 206995, Iressa, Reference ID 3762549; FDA label 12.3 (2023-02-28, DailyMed 827d60e8 v19)"
+  },
+  {
+   "drug": "ceritinib",
+   "synonyms": [
+    "Zykadia",
+    "LDK378"
+   ],
+   "regimen": "450 mg oral once daily with food",
+   "auc": null,
+   "aucWindow": "",
+   "cycleDays": null,
+   "aucCv": null,
+   "cmax": null,
+   "cmaxCv": null,
+   "fu": 0.03,
+   "analyte": "ceritinib (parent)",
+   "matrix": "plasma",
+   "stat": "",
+   "tier": "label",
+   "source": "FDA label 12.3 (2026-10-28, DailyMed fff5d805 v22)"
+  },
+  {
+   "drug": "capmatinib",
+   "synonyms": [
+    "Tabrecta",
+    "INC280"
+   ],
+   "regimen": "400 mg oral twice daily",
+   "auc": null,
+   "aucWindow": "",
+   "cycleDays": null,
+   "aucCv": null,
+   "cmax": 5447.9,
+   "cmaxCv": null,
+   "fu": 0.04,
+   "analyte": "capmatinib (parent)",
+   "matrix": "plasma",
+   "stat": "arith_mean",
+   "tier": "fda_review",
+   "source": "FDA multi-disciplinary review NDA 213591, Tabrecta, Reference ID 4603952; FDA label 12.3 (2026-10-26, DailyMed 455892c3 v18)"
+  },
+  {
+   "drug": "ruxolitinib",
+   "synonyms": [
+    "Jakafi",
+    "INC424"
+   ],
+   "regimen": "15-20 mg oral twice daily by platelet count (myelofibrosis)",
+   "auc": null,
+   "aucWindow": "",
+   "cycleDays": null,
+   "aucCv": null,
+   "cmax": null,
+   "cmaxCv": null,
+   "fu": 0.03,
+   "analyte": "ruxolitinib (parent)",
+   "matrix": "plasma",
+   "stat": "",
+   "tier": "label",
+   "source": "FDA label 12.3 (2026-07-20, DailyMed f1c82580 v42)"
+  },
+  {
+   "drug": "ribociclib",
+   "synonyms": [
+    "Kisqali",
+    "LEE011"
+   ],
+   "regimen": "600 mg oral once daily, 21 days on / 7 off (advanced breast cancer)",
+   "auc": 23800.0,
+   "aucWindow": "AUC0-24 at steady state (stated), Cycle 1 Day 18 or 21, single agent",
+   "cycleDays": null,
+   "aucCv": 66.0,
+   "cmax": 1820.0,
+   "cmaxCv": 62.4,
+   "fu": 0.3,
+   "analyte": "ribociclib (parent)",
+   "matrix": "plasma",
+   "stat": "geo_mean",
+   "tier": "fda_review",
+   "source": "FDA multi-disciplinary review NDA 209092, Kisqali, Reference ID 4069686; FDA label 12.3 (2026-07-01, DailyMed aaeaef94 v28)"
+  },
+  {
+   "drug": "palbociclib",
+   "synonyms": [
+    "Ibrance",
+    "PD-0332991"
+   ],
+   "regimen": "125 mg oral once daily, 21 days on / 7 off",
+   "auc": 1982.0,
+   "aucWindow": "AUCtau = AUC0-24 (Table 5 footnote b), steady state, Cycle 1 Day 14, 125 mg QD, trial 1003 (n=12)",
+   "cycleDays": null,
+   "aucCv": 29.0,
+   "cmax": 116.0,
+   "cmaxCv": 28.0,
+   "fu": 0.15,
+   "analyte": "palbociclib (parent)",
+   "matrix": "plasma",
+   "stat": "geo_mean",
+   "tier": "fda_review",
+   "source": "FDA clinical pharmacology review NDA 207103, Ibrance, Reference ID 3686997; FDA label 12.3 (2026-07-02, DailyMed e0e6412f v24)"
+  },
+  {
+   "drug": "sunitinib",
+   "synonyms": [
+    "Sutent",
+    "SU11248"
+   ],
+   "regimen": "50 mg oral once daily, 4 weeks on / 2 off",
+   "auc": 1425.0,
+   "aucWindow": "AUC0-24 (stated), Day 28 of 50 mg QD schedule 4/2",
+   "cycleDays": null,
+   "aucCv": 34.0,
+   "cmax": 82.4,
+   "cmaxCv": 34.0,
+   "fu": 0.05,
+   "analyte": "sunitinib (parent only; SU12662 not added)",
+   "matrix": "plasma",
+   "stat": "arith_mean",
+   "tier": "fda_review",
+   "source": "FDA clinical pharmacology and biopharmaceutics review NDA 21-938/21-968, Sutent; FDA label 12.3 (2026-02-20, DailyMed 43a4d7f8 v50)"
+  },
+  {
+   "drug": "sorafenib",
+   "synonyms": [
+    "Nexavar",
+    "BAY 43-9006"
+   ],
+   "regimen": "400 mg oral twice daily without food",
+   "auc": 128600.0,
+   "aucWindow": "2 x AUC(0-12),ss (400 mg BID, >= 7 days of dosing; AUC(0-12),ss = 64.3 mg*hr/L)",
+   "cycleDays": null,
+   "aucCv": 60.8,
+   "cmax": 7700.0,
+   "cmaxCv": 65.3,
+   "fu": 0.005,
+   "analyte": "sorafenib (parent)",
+   "matrix": "plasma",
+   "stat": "geo_mean",
+   "tier": "fda_review",
+   "source": "FDA clinical pharmacology and biopharmaceutics review NDA 21-923, Nexavar; FDA label 12.3 (2023-08-28, DailyMed b50667e4 v40)"
+  },
+  {
+   "drug": "everolimus",
+   "synonyms": [
+    "Afinitor",
+    "RAD001"
+   ],
+   "regimen": "10 mg oral once daily",
+   "auc": 536.0,
+   "aucWindow": "AUC0-24 at steady state (stated; OCR 'AUCo-24')",
+   "cycleDays": null,
+   "aucCv": null,
+   "cmax": 59.7,
+   "cmaxCv": null,
+   "fu": null,
+   "analyte": "everolimus (whole blood)",
+   "matrix": "whole_blood",
+   "stat": "arith_mean",
+   "tier": "fda_review",
+   "source": "FDA clinical pharmacology review NDA 22-334, Afinitor; FDA label 12.3 (2026-06-01, DailyMed 2150f73a v67)"
+  },
+  {
+   "drug": "capecitabine",
+   "synonyms": [
+    "Xeloda"
+   ],
+   "regimen": "1,250 mg/m2 oral twice daily, days 1-14 of 21-day cycle",
+   "auc": 10960.0,
+   "aucWindow": "2 × AUCss (τ = 12 h assumed)",
+   "cycleDays": null,
+   "aucCv": 37.0,
+   "cmax": null,
+   "cmaxCv": null,
+   "fu": null,
+   "analyte": "capecitabine (parent prodrug; 5-FU not used)",
+   "matrix": "plasma",
+   "stat": "geo_mean",
+   "tier": "literature",
+   "source": "Reigner B et al., Clin Pharmacokinet 2001, doi:10.2165/00003088-200140020-00002; FDA label 12.3 (2026-02-05, DailyMed e702d84d v32)"
+  },
+  {
+   "drug": "docetaxel",
+   "synonyms": [
+    "Taxotere"
+   ],
+   "regimen": "100 mg/m2 IV over 1 h every 3 weeks (breast monotherapy dose; 75 mg/m2 in other indications)",
+   "auc": 4600.0,
+   "aucWindow": "AUC per 1-h infusion of 100 mg/m2 (window not stated)",
+   "cycleDays": 21,
+   "aucCv": null,
+   "cmax": 3700.0,
+   "cmaxCv": null,
+   "fu": 0.06,
+   "analyte": "docetaxel (parent)",
+   "matrix": "plasma",
+   "stat": "arith_mean",
+   "tier": "epar",
+   "source": "EMA product information 5.2, Taxotere (retrieved 2026-11-20, sha256 86f9a078); FDA label 12.3 (2024-12-06, DailyMed dd0ca36d v30)"
+  },
+  {
+   "drug": "doxorubicin",
+   "synonyms": [
+    "Adriamycin"
+   ],
+   "regimen": "60 mg/m2 IV every 3 weeks (AC with cyclophosphamide 600 mg/m2; label range 60-75 mg/m2)",
+   "auc": 2092.552,
+   "aucWindow": "AUC0-inf of doxorubicin (parent) per 1-h infusion of 60 mg/m2, first course, sampling to 120 h, n=9",
+   "cycleDays": 21,
+   "aucCv": 10.9,
+   "cmax": null,
+   "cmaxCv": null,
+   "fu": 0.25,
+   "analyte": "doxorubicin (parent)",
+   "matrix": "plasma",
+   "stat": "arith_mean",
+   "tier": "literature",
+   "source": "Swenson CE et al., Anticancer Drugs 2003, doi:10.1097/00001813-200303000-00008; FDA label 12.3 (2024-10-14, DailyMed e0349f98 v5)"
+  },
+  {
+   "drug": "carboplatin",
+   "synonyms": [
+    "Paraplatin"
+   ],
+   "regimen": "dose by Calvert formula to target AUC 5 mg/mL·min, IV over 1 h every 3 weeks (with paclitaxel or gemcitabine; every 4 weeks single agent)",
+   "auc": 93300.0,
+   "aucWindow": "AUC0-inf of free carboplatin per 1-h infusion dosed to target AUC 5, first cycle, n=14",
+   "cycleDays": 21,
+   "aucCv": 16.1,
+   "cmax": null,
+   "cmaxCv": null,
+   "fu": 1.0,
+   "analyte": "carboplatin (free, in plasma ultrafiltrate)",
+   "matrix": "plasma",
+   "stat": "arith_mean",
+   "tier": "literature",
+   "source": "Shimokata T et al., Cancer Sci 2010, doi:10.1111/j.1349-7006.2010.01729.x; FDA label 12.3 (2025-12-26, DailyMed 5484d2f0 v5)"
+  },
+  {
+   "drug": "oxaliplatin",
+   "synonyms": [
+    "Eloxatin"
+   ],
+   "regimen": "85 mg/m2 IV over 2 h every 2 weeks (in combination)",
+   "auc": 2683.0,
+   "aucWindow": "AUC0-inf of intact oxaliplatin per 2-h infusion of 85 mg/m2 (FOLFOX, every 2 weeks), n=10",
+   "cycleDays": 14,
+   "aucCv": 14.3,
+   "cmax": null,
+   "cmaxCv": null,
+   "fu": null,
+   "analyte": "oxaliplatin (intact, in blood ultrafiltrate; not platinum)",
+   "matrix": "plasma",
+   "stat": "arith_mean",
+   "tier": "literature",
+   "source": "Ehrsson H et al., Med Oncol 2002, doi:10.1385/mo:19:4:261; FDA label 12.3 (2017-05-26, DailyMed d6178bc6 v5)"
+  },
+  {
+   "drug": "trastuzumab-deruxtecan",
+   "synonyms": [
+    "Enhertu",
+    "fam-trastuzumab deruxtecan-nxki",
+    "T-DXd",
+    "DS-8201a"
+   ],
+   "regimen": "5.4 mg/kg IV every 3 weeks (breast, NSCLC, HER2+ solid tumours; 6.4 mg/kg q3w in gastric cancer)",
+   "auc": 18528000.0,
+   "aucWindow": "AUC of the conjugate at steady state, 5.4 mg/kg every 3 weeks (window not named by the label: read as one 21-day interval)",
+   "cycleDays": 21,
+   "aucCv": 27.0,
+   "cmax": 132000.0,
+   "cmaxCv": 20.0,
+   "fu": null,
+   "analyte": "fam-trastuzumab deruxtecan-nxki (conjugate, ADC); payload DXd in derivation",
+   "matrix": "plasma",
+   "stat": "arith_mean",
+   "tier": "label",
+   "source": "FDA label 12.3 (2026-05-15, DailyMed 7e67e73e v28)"
+  },
+  {
+   "drug": "trastuzumab-emtansine",
+   "synonyms": [
+    "Kadcyla",
+    "ado-trastuzumab emtansine",
+    "T-DM1"
+   ],
+   "regimen": "3.6 mg/kg IV every 3 weeks (21-day cycle)",
+   "auc": 11400000.0,
+   "aucWindow": "AUC of the ADC to last sampling time in Cycle 4 (q3w, ~21 days), 3.6 mg/kg, EMILIA (TDM4370g/BO21977), n=257",
+   "cycleDays": 21,
+   "aucCv": 26.7,
+   "cmax": 85000.0,
+   "cmaxCv": 39.3,
+   "fu": null,
+   "analyte": "ado-trastuzumab emtansine (conjugate, ADC)",
+   "matrix": "plasma",
+   "stat": "arith_mean",
+   "tier": "fda_review",
+   "source": "FDA clinical pharmacology review BLA 125427, Kadcyla, Reference ID 3245053; FDA label 12.3 (2026-04-01, DailyMed 23f3c1f4 v35)"
+  },
+  {
+   "drug": "fulvestrant",
+   "synonyms": [
+    "Faslodex",
+    "ICI 182,780"
+   ],
+   "regimen": "500 mg IM on Days 1, 15, 29, then once monthly",
+   "auc": 13100.0,
+   "aucWindow": "AUC at steady state, month 3 of 500 mg monthly (window not named by the label: read as one 28-day interval)",
+   "cycleDays": 28,
+   "aucCv": 23.4,
+   "cmax": 28.0,
+   "cmaxCv": 27.9,
+   "fu": 0.01,
+   "analyte": "fulvestrant (parent)",
+   "matrix": "plasma",
+   "stat": "geo_mean",
+   "tier": "label",
+   "source": "FDA label 12.3 (2020-09-25, DailyMed 83d7a440 v43)"
+  },
+  {
+   "drug": "sotorasib",
+   "synonyms": [
+    "Lumakras",
+    "AMG 510"
+   ],
+   "regimen": "960 mg oral once daily",
+   "auc": null,
+   "aucWindow": "",
+   "cycleDays": null,
+   "aucCv": null,
+   "cmax": null,
+   "cmaxCv": null,
+   "fu": 0.11,
+   "analyte": "sotorasib (parent)",
+   "matrix": "plasma",
+   "stat": "",
+   "tier": "label",
+   "source": "FDA label 12.3 (2026-11-03, DailyMed c80a362c v20)"
+  },
+  {
+   "drug": "decitabine",
+   "synonyms": [
+    "Dacogen",
+    "5-aza-2'-deoxycytidine"
+   ],
+   "regimen": "20 mg/m2 IV over 1 h daily x5 days, every 4 weeks (5-day regimen; 3-day regimen in derivation)",
+   "auc": 115.0,
+   "aucWindow": "AUC0-inf per 1-h infusion of 20 mg/m2, 5 infusions per 28-day cycle, N=11",
+   "cycleDays": 5.6,
+   "aucCv": 43.0,
+   "cmax": 147.0,
+   "cmaxCv": 49.0,
+   "fu": null,
+   "analyte": "decitabine (parent)",
+   "matrix": "plasma",
+   "stat": "arith_mean",
+   "tier": "label",
+   "source": "FDA label 12.3 (2021-02-12, DailyMed 40e7ef72 v4)"
+  },
+  {
+   "drug": "fluorouracil",
+   "synonyms": [
+    "5-FU",
+    "Adrucil"
+   ],
+   "regimen": "400 mg/m2 IV bolus + 2400 mg/m2 over 46 h every 2 weeks (modified de Gramont; the 5-FU of FOLFOX6/FOLFIRI)",
+   "auc": 33820.8,
+   "aucWindow": "AUC0-48 h (trapezoidal) of one cycle: bolus + 46-h infusion, n=10",
+   "cycleDays": 14,
+   "aucCv": null,
+   "cmax": null,
+   "cmaxCv": null,
+   "fu": null,
+   "analyte": "fluorouracil (parent)",
+   "matrix": "plasma",
+   "stat": "arith_mean",
+   "tier": "literature",
+   "source": "Cheeseman SL et al., Br J Cancer 2002, doi:10.1038/sj.bjc.6600467; FDA label 12.3 (2026-10-23, DailyMed 1daf714b v8)"
+  },
+  {
+   "drug": "gemcitabine",
+   "synonyms": [
+    "Gemzar"
+   ],
+   "regimen": "1,000 mg/m2 IV over 30 min weekly x3 every 4 weeks",
+   "auc": 9960.0,
+   "aucWindow": "AUC0-inf after the first 30-min infusion of 1000 mg/m2 (dose-normalised by the authors for 4 patients at 800), wild-type cytidine deaminase (n=148, 59% of 250)",
+   "cycleDays": 9.33,
+   "aucCv": null,
+   "cmax": null,
+   "cmaxCv": null,
+   "fu": null,
+   "analyte": "gemcitabine (parent)",
+   "matrix": "plasma",
+   "stat": "median",
+   "tier": "literature",
+   "source": "Sugiyama E et al., J Clin Oncol 2007, doi:10.1200/jco.2006.06.7405; FDA label 12.3 (2026-08-20, DailyMed 44bcc16c v13)"
+  },
+  {
+   "drug": "cisplatin",
+   "synonyms": [
+    "Platinol"
+   ],
+   "regimen": "75 mg/m2 IV over 3 h every 3 weeks (label range by indication 75-100 mg/m2)",
+   "auc": 2380.0,
+   "aucWindow": "AUC0-inf of unbound cisplatin per 3-h infusion of 75 mg/m2, worked out as dose / the clearance measured in 268 patients (not a reported AUC)",
+   "cycleDays": 21,
+   "aucCv": 23.6,
+   "cmax": null,
+   "cmaxCv": null,
+   "fu": null,
+   "analyte": "cisplatin (unbound, ethanol-deproteinized plasma; expressed as cisplatin)",
+   "matrix": "plasma",
+   "stat": "arith_mean",
+   "tier": "literature",
+   "source": "de Jongh FE et al., J Clin Oncol 2001, doi:10.1200/jco.2001.19.17.3733; FDA label 12.3 (2026-06-24, DailyMed 508496cb v4)"
+  },
+  {
+   "drug": "nab-paclitaxel",
+   "synonyms": [
+    "Abraxane"
+   ],
+   "regimen": "260 mg/m2 IV over 30 min every 3 weeks",
+   "auc": 20324.49,
+   "aucWindow": "AUC0-inf per 30-min infusion of 260 mg/m2, first nab-paclitaxel cycle (q3w), n=14",
+   "cycleDays": 21,
+   "aucCv": 19.5,
+   "cmax": null,
+   "cmaxCv": null,
+   "fu": null,
+   "analyte": "paclitaxel (total)",
+   "matrix": "plasma",
+   "stat": "arith_mean",
+   "tier": "literature",
+   "source": "Gardner ER et al., Clin Cancer Res 2008, doi:10.1158/1078-0432.ccr-07-4592; FDA label 12.3 (2022-10-31, DailyMed 24d10449 v37)"
+  },
+  {
+   "drug": "cetuximab",
+   "synonyms": [
+    "Erbitux"
+   ],
+   "regimen": "400 mg/m2 IV loading then 250 mg/m2 weekly",
+   "auc": 24329000.0,
+   "aucWindow": "AUC after the week-4 dose (250 mg/m2) of 400/250 mg/m2 weekly (window not named: read as one 7-day interval), N=11",
+   "cycleDays": 7,
+   "aucCv": 46.0,
+   "cmax": null,
+   "cmaxCv": null,
+   "fu": null,
+   "analyte": "cetuximab (serum)",
+   "matrix": "plasma",
+   "stat": "arith_mean",
+   "tier": "epar",
+   "source": "EMA scientific discussion, Erbitux (retrieved 2026-11-23, sha256 0536de2f); FDA label 12.3 (2026-04-16, DailyMed 8bc6397e v58)"
+  }
+ ]
+}
