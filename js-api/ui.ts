@@ -443,12 +443,13 @@ export function divH(items: (HTMLElement | null)[], options: string | ElementOpt
 }
 
 /** The Space row of the Save project dialog from the {@link FUNC_TYPES.SPACE_SAVE_ROW} function, or null without one.
- * `homeId` is the project's space, `name` is checked against the picked space, `projectId` is the saved project. */
-export async function spaceSaveRow(homeId?: string | null, name?: string, projectId?: string | null):
-  Promise<Widget | null> {
+ * `homeId` is the project's space, `name` is checked against the picked space, `projectId` is the saved project;
+ * `options` replace what the empty space box shows and its tooltip, for a dialog that saves something else. */
+export async function spaceSaveRow(homeId?: string | null, name?: string, projectId?: string | null,
+  options?: {placeholder?: string, tooltip?: string}): Promise<Widget | null> {
   const func = Func.find({meta: {role: FUNC_TYPES.SPACE_SAVE_ROW}})[0];
   return func === undefined ? null :
-    await func.apply({homeId: homeId ?? null, name: name ?? '', projectId: projectId ?? null});
+    await func.apply({homeId: homeId ?? null, name: name ?? '', projectId: projectId ?? null, ...options});
 }
 
 /** Renders content as a card. */

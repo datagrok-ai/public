@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Spaces: `spaceSaveRow()` and `spaceSaveRowFor()` take `SpaceSaveRowOptions` (`placeholder`, `tooltip`) for the empty space box
 * [core#1507](https://github.com/datagrok-ai/core/issues/1507): Spaces: Fixed Open from space drawing an item's name in its icon slot, listing a space's own Files connection not marking a linked item, a cut-off search box and a bare caption as an app's preview, and OPEN doing nothing for an app, a script or a query (they open as in Browse); Down arrow in its search and in the Space picker's goes to the first match. Added `focusRows()` to `VirtualList` and `VirtualTree`
 * [core#1507](https://github.com/datagrok-ai/core/issues/1507): Spaces: Fixed the Space row refusing to move a project into a space that links it: `spaceHasName()` takes the project that does not count
 * [core#1507](https://github.com/datagrok-ai/core/issues/1507): Tree: Added `VirtualTree.rename(id)`, the inline rename F2 opens, for a node added a moment ago too; the rename box is named `Rename <label>` for screen readers

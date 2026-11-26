@@ -108,10 +108,12 @@ export function chatMessageInput(value?: string, placeholder?: string, sendOnEnt
 //input: string homeId { optional: true }
 //input: string name { optional: true }
 //input: string projectId { optional: true }
+//input: string placeholder { optional: true }
+//input: string tooltip { optional: true }
 //output: widget result
 //meta.role: spaceSaveRow
-export async function spaceSaveRow(homeId?: string, name?: string, projectId?: string) : Promise<any> {
-  return await PackageFunctions.spaceSaveRow(homeId, name, projectId);
+export async function spaceSaveRow(homeId?: string, name?: string, projectId?: string, placeholder?: string, tooltip?: string) : Promise<any> {
+  return await PackageFunctions.spaceSaveRow(homeId, name, projectId, placeholder, tooltip);
 }
 
 //input: column col 
