@@ -4,20 +4,21 @@ import {Control, signal, computed, batch, ReadonlySignal, Signal, button, div, d
   icon, Filters, allowedActions, actionsMenu, iconButton, ButtonGroup, Breadcrumbs, Rows, Menu, LabelColumn, Reason,
   text} from '@datagrok-libraries/u2';
 import type {FilterGroup, IWidgetStatus, Action, RowView, Scope} from '@datagrok-libraries/u2';
-import type {DomainSource} from '../core/domain-source.js';
-import {capital, nounOf} from '../core/domain-backend.js';
+import {DomainSource} from '../core/domain-source.js';
+import {capital, nounOf, emsBackends} from '../core/domain-backend.js';
 import type {DomainTableInfoLike} from '../core/domain-backend.js';
 import {SharedSession, confirmDiscard} from '../core/session.js';
-import {domains, DomainTable} from './facade.js';
+import {domains, DomainTable, madeOfIds} from './facade.js';
 import {DomainList} from './list.js';
 import type {DomainListMode} from './list.js';
 import {SAVE_SHORTCUTS, isSaveKey, DomainForm} from './form.js';
 import {DomainFilters} from './filters.js';
-import {SavedSearches} from './saved-searches.js';
+import {SavedSearches, sortable, normalized} from './saved-searches.js';
 import type {DomainFiltersOptions} from './filters.js';
 import type {DomainChildrenOptions} from './children.js';
 import {DomainAddress} from './address.js';
 import {DomainErrors} from './errors.js';
+import {SessionButton} from './buttons.js';
 import {DgDomainTable} from './backend.js';
 import {DomainDataTable} from './grid.js';
 import {domainOutput, outputKey} from './output.js';
@@ -73,13 +74,14 @@ export interface DomainAppOptions {
   /** The list's initial order, `'!number,title'` (`!` descending). */
   sort?: string;
   pageSize?: number;
-  /** Whether the list follows the server (`DomainSourceOptions.live`), ON by default: it probes
-   * the table every {@link liveMs} and reloads while the session is clean, marking the page
-   * {@link DomainApp.stale} while it is not. The entity page is one row and is not polled. */
+  /** Whether the list follows the server (`DomainSourceOptions.live`), ON by default; over unsaved changes the
+   * page is marked {@link DomainApp.stale}. The entity page and its tabs are read again on Refresh only. */
   live?: boolean;
   liveMs?: number;
   mode?: DomainListMode;
   itemHeight?: number;
+  /** A new view of the app over the table as it is now: what {@link DomainApp.rebuild} docks. */
+  reopen?: () => Promise<DG.ViewBase>;
   /** What every draft the app creates starts with — the preset a view that opened the app carries
    * (a location's id on a containers app). Threaded into the entity page's draft source. */
   defaults?: Record<string, unknown>;
@@ -172,6 +174,11 @@ export class DomainApp extends Control {
   readonly output: ReturnType<typeof domainOutput>;
 
   private readonly _mode = signal<DomainAppMode>('live');
+  private readonly _lineage = signal(0);
+  // the table's properties changed under pending changes: the page is rebuilt once they are settled
+  private readonly _outdated = signal(false);
+  private _rebuilding: Promise<void> | undefined;
+  private _rebuildAgain = false;
   private readonly _count = signal('');
   private readonly _filterProblem = signal<string | null>(null);
   private readonly _base: Signal<string>;
@@ -187,6 +194,7 @@ export class DomainApp extends Control {
   private readonly _presets: Action[] = [];
   private readonly _sync: ViewSync;
   private _opening: {address: string, done: Promise<boolean>} | undefined;
+  private _refreshing: Promise<boolean> | undefined;
 
   private static readonly _byView = new WeakMap<DG.ViewBase, DomainApp>();
   private static readonly _views = new WeakMap<DomainApp, DG.ViewBase>();
@@ -218,10 +226,13 @@ export class DomainApp extends Control {
     this.own(() => DomainApp.live.delete(this));
 
     this.listSource = this._source({query: _options.query ?? '', sort: _options.sort, pageSize: _options.pageSize,
+      defaults: _options.defaults,
       live: _options.live ?? true, liveMs: _options.liveMs});
     this.own(() => this.listSource.dispose());
+    this.effect(() => this.listSource.paused.value = this._page.value === 'entity');
     this.list = this.build(() => new DomainList(this.listSource, {mode: _options.mode,
-      itemHeight: _options.itemHeight, create: () => void this.create()}));
+      itemHeight: _options.itemHeight, create: () => void this.create(),
+      active: computed(() => this.view.value !== 'table')}));
     // Enter on a row is the way into the entity page
     let seen = this.listSource.activate.peek();
     this.effect(() => {
@@ -235,11 +246,35 @@ export class DomainApp extends Control {
     });
 
     const title = DomainApp.titleOf(table.info);
+    // a row of a hierarchy is named under its ancestors, each crumb a way to that row
+    const ancestors = signal<{id: string, name: string}[]>([]);
     this.breadcrumbs = this.build(() => new Breadcrumbs({items: [title], onClick: (index) => {
       // in the trash the root crumb reads "Issues › Trash" and is the way back out of it
+      const up = this.trash.peek() ? undefined : ancestors.peek()[index - 1];
       if (index === 0)
         void (this.trash.peek() ? this.setTrash(false) : this.goTo('list'));
+      else if (up !== undefined)
+        void this.goTo('entity', up.id);
     }}));
+    // the server's chain, so asked again once a move is saved
+    this.subscribe(this.session.onSaved, () => this._lineage.value++);
+    let asked = 0;
+    let shownFor: string | null = null;
+    this.effect(() => {
+      this._lineage.value;
+      const row = this._entitySource.value?.currentRow.value ?? null;
+      const mine = ++asked;
+      const id = row === null || Rows.isDraft(row) || !table.info.hierarchy ? null : row.id;
+      if (id !== shownFor)
+        ancestors.value = [];
+      shownFor = id;
+      if (id !== null && table.table.ancestors !== undefined) {
+        void table.table.ancestors(id).then((chain) => {
+          if (mine === asked)
+            ancestors.value = chain;
+        }, () => undefined);
+      }
+    });
     this._formHost = div([], 'u2-domain-app-form u2-form-fill');
     this.panes = div([], 'u2-domain-app-panes');
     this.panes.dataset.u2Part = 'panes';
@@ -277,8 +312,10 @@ export class DomainApp extends Control {
       const trash = this.trash.value;
       const entity = this._page.value === 'entity';
       this.breadcrumbs.root.hidden = !entity && !trash;
+      // the view's own name where an app named it ("Location list")
+      const root = DomainApp._views.get(this)?.name || title;
       if (trash) {
-        this.breadcrumbs.setItems([title, 'Trash']);
+        this.breadcrumbs.setItems([root, 'Trash']);
         return;
       }
       const source = this._entitySource.value;
@@ -286,10 +323,11 @@ export class DomainApp extends Control {
       // them) move under it without `currentRow` changing, so the caption follows the rows tick
       source?.rows.items.value;
       const row = source?.currentRow.value ?? null;
-      // a row the table does not have is named by the address that asked for it
-      const caption = row !== null ? this._caption(source!, row) :
-        source?.state.value === 'ready' && !source.isDraft ? this._entity.peek() ?? '…' : '…';
-      this.breadcrumbs.setItems([title, caption]);
+      // a row the table does not have is named by the address that asked for it, an id by the noun
+      const asked = this._entity.peek();
+      const caption = row !== null ? this._caption(source!, row) : source?.state.value !== 'ready' || source.isDraft ||
+        asked === null ? '…' : DomainAddress.ID.test(asked) ? capital(nounOf(this.table.info, true)) : asked;
+      this.breadcrumbs.setItems([root, ...(row === null ? [] : ancestors.value.map((a) => a.name)), caption]);
     });
     // the entity page over a draft: once saved, the page is the row's
     this.effect(() => {
@@ -389,20 +427,22 @@ export class DomainApp extends Control {
       const count = saved === null || this._count.value === '' ? this._count.value : `${saved} · ${this._count.value}`;
       // what a bulk action would act on, beside the count — the platform grid's own convention
       const selected = entity ? 0 : this.listSource.selection.value.length;
-      const problem = source !== null && source.error.value !== undefined ? source.summary.value : null;
+      const failed = source?.error.value !== undefined ? source :
+        this.session.sources.value.find((s) => s.error.value !== undefined && s.state.value !== 'error');
+      const problem = failed == null ? null : DomainErrors.message(failed.error.value, failed);
       // the rows answer the filter that was applied, not the one in the box: while that one is
       // invalid they are shown stale, and a refusal of the old one is not the news
       if (!entity && this.list.stale.value && !dirty)
         return {count, selected, notice: null, problem: this._filterProblem.value ?? 'Filter not applied'};
       // a live source saw the collection move while this session had changes to protect: what is
       // pending still matters, and so does that the rows under it are no longer the server's
-      if (source !== null && source.stale.value)
+      if (this.stale.value)
         return {count, selected, notice: pending === null ? STALE : `${pending} — ${STALE}`, problem};
       return {count, selected, notice: pending, problem};
     });
     this.summary = computed(() => DomainApp.summaryOf(this.status.value));
-    this.stale = computed(() =>
-      (this._page.value === 'entity' ? this._entitySource.value : this.listSource)?.stale.value ?? false);
+    this.stale = computed(() => this._outdated.value || (this._page.value === 'entity' ?
+      this.session.sources.value.some((s) => s !== this.listSource && s.stale.value) : this.listSource.stale.value));
     this._wireMode();
     this.own(() => this._close());
     const fit = new ResizeObserver(() => {
@@ -479,8 +519,9 @@ export class DomainApp extends Control {
     if (this._ribbon !== undefined)
       return this._ribbon;
     const singular = nounOf(this.table.info, true);
+    const blocked = computed(() => DomainTable.noCreate(this.listSource));
     const add = new Control(this.build(() =>
-      iconButton('plus', () => void this.create(), {tooltip: `New ${singular}`})));
+      iconButton('plus', () => void this.create(), {tooltip: `New ${singular}`, disabled: blocked})));
     add.root.dataset.u2 = 'new-button';
     // in the trash the slot stays, so SAVE and DISCARD do not move
     add.effect(() => {
@@ -492,14 +533,16 @@ export class DomainApp extends Control {
     const pristine = () => !this.session.isDirty.value && this._page.value === 'entity' &&
       DomainApp._isDraft(this._entitySource.value, this._entitySource.value?.currentRow.value ?? null);
     const discard = domains.discardButton(this.session, {leave: {when: pristine, run: () => void this.goTo('list')}});
-    // nothing on a read-only page is saved — the trash until a restore is staged
-    save.effect(() => save.root.hidden = discard.root.hidden = !this.session.isDirty.value &&
-      ((this._page.value === 'entity' ? this._entitySource.value : this.listSource)?.readOnly.value ?? false));
+    save.effect(() => {
+      const source = this._page.value === 'entity' ? this._entitySource.value : this.listSource;
+      save.root.hidden = discard.root.hidden = !this.session.isDirty.value &&
+        (source?.readOnly.value === true || source?.access.value.can('view') === false);
+    });
     const more = this._actionsMenu();
-    // the status bar is text: the way to act on "Data changed" is here, and only while it stands
-    const reload = new Control(button('Refresh', () => void this.refresh()));
+    // the status bar is text: the way to act on "Data changed" is here
+    const reload = new Control(button('Refresh', () => void this.refresh().catch((e) => DomainErrors.report(e)),
+      {disabled: computed(() => this.session.isSaving.value ? SessionButton.WAITING : null)}));
     reload.root.dataset.u2 = 'refresh-button';
-    reload.effect(() => reload.root.hidden = !this.stale.value);
     const search = domains.search(this.listSource);
     const sort = this._sortMenu();
     const switcher = this._viewSwitch();
@@ -522,7 +565,7 @@ export class DomainApp extends Control {
       const table = this.view.value === 'table';
       const columns = this.output.columns.value;
       const extraColumns = this.output.aggregations.value.map((a) => ({name: outputKey(a),
-        header: outputKey(a), align: 'right' as const, render: (row: RowView) => {
+        header: outputKey(a), align: 'right' as const, sortable: false, render: (row: RowView) => {
           const value = this.output.values.peek().get(String(row.id))?.[outputKey(a)];
           return typeof value === 'number' ? DomainDataTable.number(value) : text(value);
         }}));
@@ -588,7 +631,7 @@ export class DomainApp extends Control {
       table.push({text: 'Bulk edit…', icon: 'edit', requires: 'edit',
         run: () => void domains.bulkEdit(this.listSource)});
     }
-    const mode: Action[] = trash || !support.deleted || !support.restore ? [] : [{
+    const mode: Action[] = trash || !this._hasTrash ? [] : [{
       text: 'Show deleted', icon: 'history', requires: 'delete', run: () => void this.setTrash(true)}];
     const presets = this.compact.peek() && this._page.peek() === 'list' && !trash ? this._presets : [];
     const base = [presets, this._rowActions(), table, mode].filter((section) => section.length > 0)
@@ -603,6 +646,8 @@ export class DomainApp extends Control {
     if (mode === this._mode.peek())
       return true;
     const on = mode === 'trash';
+    if (on && !this._hasTrash)
+      return false;
     if (!await confirmDiscard(this.session, {action: on ? 'open the trash' : 'leave the trash'}))
       return false;
     // one move, one history entry: the page and the mode settle together
@@ -620,28 +665,84 @@ export class DomainApp extends Control {
     return this.setMode(on ? 'trash' : 'live');
   }
 
-  /** Reads the page's collection again — what the status bar's "Refresh" stands for while the
-   * page is {@link stale}. Through the gate: a reload drops whatever is pending. */
-  async refresh(): Promise<boolean> {
-    const source = this._page.peek() === 'entity' ? this._entitySource.peek() : this.listSource;
-    if (source === null || !await confirmDiscard(this.session, {action: 'reload the rows'}))
+  /** Reads the page again through the unsaved gate: the list's rows in place, the entity page anew with its
+   * panes. What the ribbon's "Refresh" stands for. */
+  refresh(): Promise<boolean> {
+    return this._refreshing ??= this._refresh().finally(() => this._refreshing = undefined);
+  }
+
+  private async _refresh(): Promise<boolean> {
+    // a grant made elsewhere never drops the cached access: read before the prompt, it lifts a 403's hold on Save
+    emsBackends.domain?.dropAccess();
+    await Promise.all(this.session.sources.peek().map((s) => s.reloadAccess()));
+    if (!await confirmDiscard(this.session, {action: 'reload the rows'}))
       return false;
-    await source.refresh();
+    if (this.scope.isDisposed)
+      return true;
+    const source = this._entitySource.peek();
+    if (this._outdated.peek())
+      await this.rebuild();
+    else if (this._page.peek() === 'list' || source === null)
+      await this.listSource.refresh();
+    else {
+      this._show('entity', this._entity.peek(), source.isDraft ? null : source.query.peek() as FilterGroup,
+        DomainApp._isDraft(source, source.currentRow.peek()));
+    }
     return true;
   }
 
+  /** Docks the view anew over the table's properties as they are now (Edit properties…); over pending changes the
+   * page is marked {@link stale} and rebuilt once they are saved or discarded, or on Refresh. */
+  rebuild(): Promise<void> {
+    this._rebuildAgain = this._rebuilding !== undefined;
+    return this._rebuilding ??= this._rebuild().finally(() => this._rebuilding = undefined);
+  }
+
+  private async _rebuild(): Promise<void> {
+    const old = DomainApp._views.get(this);
+    const reopen = this._options.reopen;
+    if (old === undefined || reopen === undefined)
+      return;
+    if (this.session.isDirty.peek()) {
+      if (!this._outdated.peek()) {
+        this._outdated.value = true;
+        const settled = () => {
+          if (!this.session.isDirty.peek())
+            void this.rebuild().catch((e) => DomainErrors.report(e));
+        };
+        this.subscribe(this.session.onSaved, settled);
+        this.subscribe(this.session.onDiscarded, settled);
+      }
+      return;
+    }
+    this._rebuildAgain = false;
+    const view = await reopen();
+    if (DomainApp._views.get(this) !== old || this.scope.isDisposed) {
+      DomainApp.of(view)?.dispose();
+      return;
+    }
+    if (this.session.isDirty.peek() || this._rebuildAgain) {
+      DomainApp.of(view)?.dispose();
+      return this._rebuild();
+    }
+    void DomainApp.of(view)!.open(this.path.peek());
+    grok.shell.addView(view);
+    old.close();
+  }
+
   /** A query switch for the ribbon — one button per preset, the pressed one writing the list's
-   * query (`$me` is the current user's id); the one matching the query in force is shown pressed.
-   * A press goes through the gate, like the filters. */
+   * query (`$me` is the current user's id, bound only as the request leaves); the one matching the
+   * query in force is shown pressed. A press goes through the gate, like the filters. */
   presets(...entries: [label: string, query: string][]): ButtonGroup {
     const source = this.listSource;
-    const bound = (at: number) => this._bound(entries[at][1]);
+    // parsed against the loaded schema, so a column-typed value round-trips the way the filters' own do
+    const preset = (at: number) => Filters.parse(entries[at][1], source.schema).root;
     const apply = (at: number) => {
       const q = source.query.peek();
       // `ButtonGroup`'s `single` is a radio group and never deselects: a press on the preset in
       // force clears the query here instead, and the effect below drops the pressed look
-      const tree = Filters.equals(bound(at), DomainFilters.treeOf(q, source.schema)) ?
-        Filters.group('and') : bound(at);
+      const tree = Filters.equals(preset(at), DomainFilters.treeOf(q, source.schema)) ?
+        Filters.group('and') : preset(at);
       source.query.value = typeof q === 'string' ? Filters.format(tree) : tree;
     };
     const press = (at: number) =>
@@ -656,13 +757,10 @@ export class DomainApp extends Control {
         return group.selected.peek().includes(String(at));
       }})));
     group.effect(() => {
-      // the schema arrives with the load: read the state so the presets are bound again once it has
+      // the schema arrives with the load: read the state so the presets are parsed again once it has
       source.state.value;
       const current = DomainFilters.treeOf(source.query.value, source.schema);
-      // the box shows a preset as it is written ("assignee = $me"), not the id the query carries
-      for (let i = 0; i < entries.length; i++)
-        DomainFilters.showAs(source, Filters.format(bound(i)), entries[i][1]);
-      const at = entries.findIndex((_, i) => Filters.equals(bound(i), current));
+      const at = entries.findIndex((_, i) => Filters.equals(preset(i), current));
       group.selected.value = at < 0 ? [] : [String(at)];
     });
     this._listOnly(group, () => this.compact.value);
@@ -723,10 +821,14 @@ export class DomainApp extends Control {
       dirty[0].summary.value : this.session.summary.value;
   }
 
+  // a page is never titled with an id: a row named by ids alone is called by its noun
   private _caption(source: DomainSource, row: RowView): string {
-    const shown = this.table.renderer.caption(source.current(row));
-    // an emptied name leaves a saved row nameless (a blank, or the bare id): it keeps the name the row holds
-    return shown === '' || shown === row.id ? this.table.renderer.caption(row) : shown;
+    const current = source.current(row);
+    const shown = this.table.renderer.caption(current);
+    if (!madeOfIds(this.table, current, shown))
+      return shown;
+    const saved = this.table.renderer.caption(row);
+    return madeOfIds(this.table, row, saved) ? capital(nounOf(this.table.info, true)) : saved;
   }
 
   /** How a table is named in a view title, a breadcrumb root or a child tab: the display name
@@ -812,7 +914,7 @@ export class DomainApp extends Control {
         const desc = current.startsWith('!');
         const column = desc ? current.slice(1) : current;
         const menu = new Menu();
-        for (const prop of source.schema.properties.filter((p) => p.ref === undefined && p.name !== 'id')) {
+        for (const prop of source.schema.properties.filter((p) => DomainTable.isSortable(p))) {
           menu.item(DomainTable.captionOf(prop), () => write(`${desc ? '!' : ''}${prop.name}`),
             {check: prop.name === column});
         }
@@ -833,10 +935,11 @@ export class DomainApp extends Control {
     const row = source?.currentRow.peek() ?? null;
     if (source === null || row === null || Rows.isDraft(row))
       return [];
-    return allowedActions([...this.table.actions.for(row), DomainList.deleteAction(() => {
-      this._deleting = source;
-      source.edit.peek()?.markDeleted(row.id);
-    })], {access: source.access.peek(), row});
+    return allowedActions([...this.table.actions.for(row), DomainList.deleteAction(async () => {
+      await DomainList.confirmDelete(source, [row]);
+      if (row[Rows.STATE] === 'deleted')
+        this._deleting = source;
+    })], {access: source.access.peek(), row}).map(({requires: _, ...action}) => action);
   }
 
   private _wireMode(): void {
@@ -857,18 +960,17 @@ export class DomainApp extends Control {
     });
   }
 
+  private get _hasTrash(): boolean {
+    const support = this.table.table.support;
+    return support.deleted && support.restore;
+  }
+
   private _withTrash(path: string): string {
     return this.trash.value ? `${path}${path.includes('?') ? '&' : '?'}trash=1` : path;
   }
 
   private _listOnly(control: Control, folded: () => boolean = () => false): void {
     this.effect(() => control.root.hidden = this._page.value !== 'list' || folded());
-  }
-
-  // parsed against the loaded schema, so a column-typed value round-trips the way the filters' own do
-  private _bound(query: string) {
-    const schema = this.listSource.schema;
-    return Filters.bind(Filters.parse(query, schema).root, {me: grok.shell.user.id}, schema);
   }
 
   /** The browser's own gate: `beforeunload` is armed while anything is pending — a batch in
@@ -959,7 +1061,7 @@ export class DomainApp extends Control {
     const at = address.indexOf('?');
     const params = new URLSearchParams(at < 0 ? '' : address.slice(at + 1));
     // trash mode is the list's own view of the table, and a path is authoritative about it
-    this._mode.value = params.get('trash') === '1' ? 'trash' : 'live';
+    this._mode.value = params.get('trash') === '1' && this._hasTrash ? 'trash' : 'live';
     const segment = DomainAddress.segmentOf(at < 0 ? address : address.slice(0, at), this._bases);
     // the draft sentinel is read off the raw spelling, before the escape comes off: `~new` is the
     // row keyed "new" in a segment and in `?entity=` alike
@@ -974,10 +1076,11 @@ export class DomainApp extends Control {
     }
     if (!await this._goTo('list', null))
       return false;
-    const q = params.get('q') ?? '';
+    const q = normalized(params.get('q') ?? '', this.listSource.schema);
     const search = params.get('search') ?? '';
     const trash = this._mode.peek() === 'trash';
-    const sort = trash ? this.listSource.sort.peek() : params.get('sort') ?? this._options.sort ?? '';
+    const sort = trash ? this.listSource.sort.peek() :
+      sortable(params.get('sort') ?? this._options.sort ?? '', this.table.properties);
     const current = this.listSource.query.peek();
     // already on the list, the gate `goTo` skipped: the query is changing under pending changes
     if ((typeof current === 'string' ? current : Filters.format(current)) === q &&
@@ -1037,22 +1140,47 @@ export class DomainApp extends Control {
     if (page === 'entity' && entity !== null) {
       const source = this.build(() => draft ? this._source({draft: true, defaults: this._options.defaults}) :
         this._source({query: query ?? Filters.group('and', [Filters.cond('id', '=', entity)]), pageSize: 1}));
-      // a source of one has no list to make its row current
+      let rechecked = draft;
       source.effect(() => {
         const rows = source.rows.items.value;
-        if (source.state.value === 'ready' && rows.length > 0 && source.currentRow.peek() === null)
+        if (source.state.value !== 'ready')
+          return;
+        if (!draft)
+          this.panes.hidden = source.total.value === 0 && !source.access.value.can('view');
+        if (rows.length > 0 && source.currentRow.peek() === null)
           source.currentRow.value = rows[0];
+        else if (source.total.value === 0 && !rechecked && source.access.peek().can('view')) {
+          rechecked = true;
+          emsBackends.domain?.dropAccess();
+          void source.reloadAccess();
+        }
       });
       const {children, history, include, exclude} = this._options;
+      const noun = capital(nounOf(this.table.info, true));
+      const empty = `${noun}${DomainAddress.ID.test(entity) ? '' : ` "${entity}"`} was not found.`;
       const form = this.build(() => new DomainForm(source, {system: 'footer', include, exclude,
-        labelColumn: this.labelColumn, empty: `${capital(nounOf(this.table.info, true))} "${entity}" was not found.`}));
+        labelColumn: this.labelColumn, empty}));
       this._panes = this.build(() => [
         ...(children === false ? [] : [domains.children(source, children === true ? undefined : children)]),
         ...(history === false || !this.table.table.support.audit ? [] :
           [domains.history(source, undefined, {include, exclude})]),
       ]);
-      this._formHost.replaceChildren(form.root);
       this.panes.replaceChildren(...this._panes.map((pane) => pane.root));
+      this._formHost.replaceChildren(form.root);
+      if (draft) {
+        const why = div([], 'u2-domain-form-empty');
+        source.effect(() => {
+          const reason = DomainTable.noCreate(source);
+          if (reason === null)
+            why.replaceChildren();
+          else
+            why.replaceChildren(span(reason, 'u2-domain-form-hint'));
+          form.root.hidden = this.panes.hidden = reason !== null;
+          why.hidden = reason === null;
+        });
+        this._formHost.append(why);
+      } else if (this._hasTrash)
+        this._formHost.append(this._deletedNotice(source, form, noun));
       batch(() => {
         this._entitySource.value = source;
         this._form.value = form;
@@ -1062,6 +1190,46 @@ export class DomainApp extends Control {
       this._entity.value = page === 'entity' ? entity : null;
       this._page.value = page;
     });
+  }
+
+  // a row a peer deleted, opened by a link or left behind by Discard, says so and offers Restore
+  private _deletedNotice(source: DomainSource, form: DomainForm, noun: string): HTMLElement {
+    const notice = div([], 'u2-domain-form-empty');
+    notice.hidden = true;
+    let peerDeleted = false;
+    source.effect(() => {
+      if (DomainErrors.isNotFound(source.error.value))
+        peerDeleted = true;
+    });
+    source.subscribe(this.session.onDiscarded, () => {
+      if (peerDeleted)
+        void source.refresh().catch((e) => DomainErrors.report(e));
+      peerDeleted = false;
+    });
+    let gen = 0;
+    source.effect(() => {
+      const empty = source.state.value === 'ready' && source.rows.items.value.length === 0;
+      const mine = ++gen;
+      notice.hidden = true;
+      form.root.hidden = false;
+      if (!empty)
+        return;
+      const filter = Filters.toDomainTree(source.query.peek() as FilterGroup, {schema: source.schema});
+      void this.table.table.query({filter, deleted: 'only', limit: 1}).then(([row]) => {
+        if (mine !== gen || row === undefined)
+          return;
+        const name = this.table.renderer.caption(row as RowView);
+        const restore = button('Restore', () => void this.table.restore(row.id as string)
+          .then(() => source.refresh()).catch((e) => DomainErrors.report(e)));
+        restore.hidden = !source.access.peek().can('delete');
+        const named = madeOfIds(this.table, row as RowView, name) ? noun :
+          name.toLowerCase().startsWith(noun.toLowerCase()) ? `"${name}"` : `${noun} "${name}"`;
+        notice.replaceChildren(span(`${named} was deleted.`, 'u2-domain-form-hint'), restore);
+        notice.hidden = false;
+        form.root.hidden = true;
+      }, () => undefined);
+    });
+    return notice;
   }
 
   private _close(): void {
@@ -1078,6 +1246,7 @@ export class DomainApp extends Control {
     source?.dispose();
     this._formHost.replaceChildren();
     this.panes.replaceChildren();
+    this.panes.hidden = false;
   }
 
   private _source(options: Parameters<DomainTable['source']>[0]): DomainSource {

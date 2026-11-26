@@ -1,8 +1,8 @@
 import {Control, signal, button, iconButton, div, divH, span, timestamp, text, VirtualList, allowedActions, rowActions,
-  loader, emptyState, Rows, Reason} from '@datagrok-libraries/u2';
+  loader, emptyState, Rows, Reason, confirmDialog} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, Signal, ObjectRenderer, Action, RowView} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
-import {nounOf} from '../core/domain-backend.js';
+import {nounOf, withArticle} from '../core/domain-backend.js';
 import {ActionRegistry, DomainTable} from './facade.js';
 import type {DomainAction} from './facade.js';
 import {DomainErrors} from './errors.js';
@@ -23,6 +23,8 @@ export interface DomainListOptions {
   empty?: string;
   /** What an empty, unfiltered list offers as its primary action. */
   create?: () => void;
+  /** False while another control shows the same source and owns its current row and selection. */
+  active?: ReadonlySignal<boolean>;
 }
 
 /** A card is the handler's card — a title, a description line and the creation time. */
@@ -37,6 +39,10 @@ export class DomainList extends Control {
   /** The rows are not the ones the filter box reads as — set while that filter is invalid, so
    * they are shown dimmed instead of as the answer (`DomainApp` wires it to `DomainFilters`). */
   readonly stale: Signal<boolean> = signal(false);
+  // a second Delete while the first still asks is the same delete
+  /** The name of the delete action, whatever its caption. */
+  static readonly DELETE = 'Delete';
+  private static readonly _asking = new WeakSet<DomainSource>();
 
   private readonly _table: DomainTable | undefined;
   private _default: ObjectRenderer<RowView> | undefined;
@@ -63,12 +69,17 @@ export class DomainList extends Control {
       contextGroups: (row) => this._selected().length < 2 ? [] :
         [{text: this.renderer.caption(row), actions: this.actionsFor(row)}],
       onEnter: () => source.activate.value = source.activate.peek() + 1,
-      onDelete: (row) => this.actionsFor(row).find((a) => a.text === 'Delete')?.run(),
+      onDelete: (row) => {
+        const selected = this._selected();
+        const actions = selected.length > 1 && selected.includes(row) ? this.selectionActions(selected) :
+          this.actionsFor(row);
+        actions.find((a) => a.name === DomainList.DELETE)?.run();
+      },
     }));
     this.list.root.classList.add('u2-domain-list-rows', 'u2-list-no-ring');
     this.list.setItems(source.rows.items as ReadonlySignal<RowView[]>);
 
-    collectionSelection(source, this.list, {owner: this});
+    collectionSelection(source, this.list, {owner: this, active: _options.active});
     // a list over a table starts on its first row; a draft source is a form's, not a list's
     let seeded = source.isDraft;
     this.effect(() => {
@@ -134,23 +145,70 @@ export class DomainList extends Control {
   actionsFor(row: RowView): Action[] {
     const source = this.source;
     const table = this._table;
+    if (row[Rows.STATE] === 'restored' || row[Rows.STATE] === 'deleted' || Rows.isDeleted(row))
+      return DomainList.stagedDelete(source, row);
+    const extra = this._options.actions ?? [];
+    const actions = table === undefined ? ActionRegistry.bind(extra, row) :
+      table.rowActions(row, extra, 'Enter');
+    return [...allowedActions(actions, {access: source.access.peek(), row}), ...DomainList.stagedDelete(source, row)];
+  }
+
+  static stagedDelete(source: DomainSource, row: RowView): Action[] {
     if (row[Rows.STATE] === 'restored')
       return [{text: 'Undo restore', icon: 'undo', run: () => source.unstageRestore([row.id])}];
     if (row[Rows.STATE] === 'deleted')
       return [{text: 'Restore', icon: 'undo', run: () => source.edit.peek()?.unmarkDeleted(row.id)}];
-    if (Rows.isDeleted(row)) {
-      return allowedActions([{text: 'Restore', icon: 'undo', requires: 'delete',
-        run: () => source.stageRestore([row.id])}], {access: source.access.peek(), row});
-    }
-    const extra = this._options.actions ?? [];
-    const actions = table === undefined ? ActionRegistry.bind(extra, row) :
-      table.rowActions(row, extra, 'Enter');
-    return allowedActions([...actions, DomainList.deleteAction(() => source.edit.peek()?.markDeleted(row.id))],
-      {access: source.access.peek(), row});
+    const run: Action = Rows.isDeleted(row) ?
+      {text: 'Restore', icon: 'undo', requires: 'delete', run: () => source.stageRestore([row.id])} :
+      DomainList.deleteAction(() => DomainList.confirmDelete(source, [row]));
+    return allowedActions([run], {access: source.access.peek(), row});
   }
 
-  static deleteAction(run: () => void): Action {
-    return {text: 'Delete', icon: 'trash-alt', requires: 'delete', shortcut: 'Del', destructive: true, run};
+  /** Marks `rows` deleted once the user agrees to what the delete leaves without its link: the rows a `setnull`
+   * reference holds them by, counted per table. */
+  static async confirmDelete(source: DomainSource, rows: readonly RowView[]): Promise<void> {
+    if (DomainList._asking.has(source))
+      return;
+    DomainList._asking.add(source);
+    try {
+      if (await DomainList._agreed(source, rows)) {
+        for (const row of rows)
+          source.edit.peek()?.markDeleted(row.id);
+      }
+    } finally {
+      DomainList._asking.delete(source);
+    }
+  }
+
+  private static async _agreed(source: DomainSource, rows: readonly RowView[]): Promise<boolean> {
+    const ids = rows.map((row) => row.id);
+    const saved = ids.filter((id) => !Rows.isDraft(id));
+    const info = source.schema.info;
+    // a setnull reference loses its link; a restrict one is the server's to refuse, a cascade deletes with the row
+    const unlinking = saved.length === 0 ? [] : info.childTables.filter((c) => c.onDelete === 'setnull');
+    const counts = await Promise.allSettled(unlinking.map(async (c) => {
+      const child = await DomainTable.shared(`${c.schema}.${c.table}`);
+      const n = await child.table.count({filter: [{property: c.fkColumn, operator: '=', value: saved}, 'and',
+        {property: 'id', operator: '!=', value: saved}]});
+      return n === 0 ? '' : `${n.toLocaleString()} ${nounOf(child.info, n === 1)}`;
+    }));
+    const unlinked = counts.flatMap((c) => c.status === 'fulfilled' && c.value ? [c.value] : []);
+    const failed = counts.find((c): c is PromiseRejectedResult => c.status === 'rejected');
+    const caption = rows.length === 1 ? DomainTable.of(source)?.renderer.caption(rows[0]) : undefined;
+    const what = caption ? `"${caption}"` : rows.length === 1 ? `the ${nounOf(info, true)}` :
+      `${rows.length.toLocaleString()} ${nounOf(info)}`;
+    const lead = unlinked.length === 0 ? null : `Deleting ${what} leaves ` +
+      `${new Intl.ListFormat('en').format(unlinked)} without ${withArticle(nounOf(info, true))}.`;
+    const doubt = failed === undefined ? null : 'The rows that refer to it could not be counted: ' +
+      `${DomainErrors.message(failed.reason).replace(/\.$/, '')}.`;
+    const message = lead === null && doubt === null ? null : lead === null ? `Delete ${what}? ${doubt}` :
+      `${[lead, doubt].filter((s) => s !== null).join(' ')} Delete anyway?`;
+    return message === null || confirmDialog({title: 'Delete', destructive: true, confirmText: 'Delete', message});
+  }
+
+  static deleteAction(run: () => void | Promise<void>): Action {
+    return {text: 'Delete', name: DomainList.DELETE, icon: 'trash-alt', requires: 'delete', shortcut: 'Del',
+      destructive: true, run};
   }
 
   /** The context menu of a row that is part of a multi-selection: every action that applies to ALL
@@ -167,27 +225,33 @@ export class DomainList extends Control {
       return same !== undefined && Reason.now(same.disabled) === null;
     }));
     const detail = `${rows.length} ${nounOf(this.source.schema.info)}`;
-    return shared.map((action) => ({text: action.text, icon: action.icon, detail, destructive: action.destructive,
-      run: () => {
-        for (const actions of per)
-          actions.find((a) => a.text === action.text)!.run();
-      }}));
+    const each = (action: Action) => () => {
+      for (const actions of per)
+        actions.find((a) => a.text === action.text)!.run();
+    };
+    return shared.map((action) => ({text: action.text, name: action.name, icon: action.icon, detail,
+      destructive: action.destructive,
+      run: action.name === DomainList.DELETE ? () => DomainList.confirmDelete(this.source, rows) : each(action)}));
   }
 
   private _empty(filtered: boolean, clearFilter: () => HTMLElement): HTMLElement {
     const source = this.source;
+    const denied = DomainErrors.noView(source, filtered);
     const search = source.search.value;
     const info = source.schema.info;
     const what = nounOf(info);
     const trash = source.deleted.value === 'only';
     const create = this._options.create;
-    const actions = search !== '' ? [button('Clear search', () => source.search.value = '')] :
+    const noCreate = DomainTable.noCreate(source);
+    const actions = denied !== null ? [] : search !== '' ? [button('Clear search', () => source.search.value = '')] :
       filtered ? [clearFilter()] :
-        create !== undefined && !trash && source.access.value.can('insert') ?
+        create !== undefined && !trash && noCreate === null && source.access.value.can('insert') ?
           [button(`New ${nounOf(info, true)}`, () => create(), {primary: true})] : [];
-    const said = this._options.empty ?? (search !== '' ? `No ${what} match "${search}"` :
-      filtered ? `No ${what} match the filter` : trash ? 'Trash is empty' : `No ${what} yet`);
-    const state = emptyState(said, {icon: search !== '' ? 'search' : trash ? 'trash-alt' : 'inbox', actions});
+    const said = denied ?? this._options.empty ?? (search !== '' ? `No ${what} match "${search}"` :
+      filtered ? `No ${what} match the filter` : trash ? 'Trash is empty' :
+        `No ${what} yet${create !== undefined && noCreate !== null ? `. ${noCreate}` : ''}`);
+    const state = emptyState(said,
+      {icon: denied !== null ? 'lock' : search !== '' ? 'search' : trash ? 'trash-alt' : 'inbox', actions});
     state.classList.add('u2-domain-list-nothing');
     return state;
   }

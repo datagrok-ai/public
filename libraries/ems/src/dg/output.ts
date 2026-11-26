@@ -9,15 +9,22 @@ import {DomainTable} from './facade.js';
 import {DomainApp} from './app.js';
 import {SYSTEM_COLUMNS} from './backend.js';
 import {DomainErrors} from './errors.js';
+import {DomainDataTable} from './grid.js';
 
 const LIMIT = 100000;
+// the statistics in the field's own unit: a count, a variance or a shape has another one, or none
+const IN_UNIT: string[] = [DG.AGG.FIRST, DG.AGG.MIN, DG.AGG.MAX, DG.AGG.SUM, DG.AGG.MED, DG.AGG.AVG, DG.AGG.STDEV,
+  DG.AGG.Q1, DG.AGG.Q2, DG.AGG.Q3, 'geomean'];
+// all else is computed from the values, so it means nothing across units
+const COUNTS: string[] = [DG.AGG.TOTAL_COUNT, DG.AGG.VALUE_COUNT, DG.AGG.UNIQUE_COUNT, DG.AGG.MISSING_VALUE_COUNT];
 
 /** Where an aggregated field lives: its table, the column naming the list's row (`batch_id.compound_id` one table
- * away), and the field. */
+ * away), the field, and whether it is a quantity measured in the row's `unit`. */
 interface Linked {
   address: string;
   path: string;
   column: string;
+  measured: boolean;
 }
 
 const own = (p: IProperty) => !SYSTEM_COLUMNS.some(([name]) => name === p.name) && !Rows.isService(p.name!);
@@ -37,12 +44,15 @@ export function domainOutput(source: DomainSource, table: DomainTable, exclude: 
   const aggregations = signal<ColumnAggregation[]>([]);
   const values = signal(new Map<string, Record<string, unknown>>());
   const linked = new Map<string, Linked>();
+  // a key names a row: typed as text, it is counted, never summed — and never the new row's first pick
+  const keys = new Set<string>();
   let built = false;
   let gen = 0;
 
   // a domain property's type is a column type: the pickers offer each field what the platform offers its type
   const frame = (fields: [string, IProperty][]) => DG.DataFrame.fromColumns(fields.map(([name, p]) =>
-    DG.Column.fromType((p.propertyType ?? DG.COLUMN_TYPE.STRING) as DG.ColumnType, name, 0)));
+    DG.Column.fromType((keys.has(name) ? DG.COLUMN_TYPE.STRING : p.propertyType ?? DG.COLUMN_TYPE.STRING) as
+      DG.ColumnType, name, 0)));
 
   // the tables that refer to this one, and theirs: `Batches.Purity (%)`, `Assay Results.Reported CLint`; one that
   // cannot be opened is left out, and one reached twice is told apart by the link, as the children tabs do
@@ -67,9 +77,13 @@ export function domainOutput(source: DomainSource, table: DomainTable, exclude: 
     for (const {from, path, via} of reached) {
       const title = DomainApp.titleOf(from.info);
       const name = reached.filter((r) => r.from.address === from.address).length > 1 ? `${title} (${via})` : title;
+      const units = from.properties.some((p) => p.name === 'unit');
       for (const p of from.properties.filter((p) => own(p) && !DomainTable.isReference(p))) {
-        linked.set(`${name}.${DomainTable.captionOf(p)}`, {address: from.address, path, column: p.name!});
+        linked.set(`${name}.${DomainTable.captionOf(p)}`, {address: from.address, path, column: p.name!,
+          measured: units && /(^|_)quantity$/.test(p.name!)});
         fields.push([`${name}.${DomainTable.captionOf(p)}`, p]);
+        if (from.info.businessKey.includes(p.name!))
+          keys.add(`${name}.${DomainTable.captionOf(p)}`);
       }
     }
     return fields;
@@ -95,11 +109,19 @@ export function domainOutput(source: DomainSource, table: DomainTable, exclude: 
         groups.add(a.aggregation as DG.AggregationType,
           a.aggregation === DG.AGG.TOTAL_COUNT ? null : linked.get(a.column)!.column, outputKey(a));
       }
+      const measured = list.filter((a) => linked.get(a.column)!.measured && !COUNTS.includes(a.aggregation));
+      if (measured.length > 0)
+        groups.add(DG.AGG.UNIQUE_COUNT, 'unit', '#units').add(DG.AGG.FIRST, 'unit', '#unit');
       const result = groups.aggregate();
       for (let i = 0; i < result.rowCount; i++) {
         const row = found.get(String(result.get(path, i))) ?? {};
-        for (const a of list)
-          row[outputKey(a)] = result.get(outputKey(a), i);
+        for (const a of list) {
+          const value = result.get(outputKey(a), i);
+          // the first value is one value, in the first row's unit
+          const mixed = result.get('#units', i) > 1 && a.aggregation !== DG.AGG.FIRST;
+          row[outputKey(a)] = !measured.includes(a) ? value : mixed ? 'mixed units' :
+            IN_UNIT.includes(a.aggregation) ? `${DomainDataTable.number(value)} ${result.get('#unit', i)}` : value;
+        }
         found.set(String(result.get(path, i)), row);
       }
     }

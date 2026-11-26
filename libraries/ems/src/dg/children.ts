@@ -2,7 +2,7 @@ import {Control, Scope, signal, computed, untracked, ReadonlySignal, Signal, div
   Rows} from '@datagrok-libraries/u2';
 import type {RowView} from '@datagrok-libraries/u2';
 import {DomainSource} from '../core/domain-source.js';
-import {toPlural, nounOf} from '../core/domain-backend.js';
+import {toPlural, nounOf, withArticle} from '../core/domain-backend.js';
 import {domains, DomainTable} from './facade.js';
 import {DomainApp} from './app.js';
 import {DomainErrors} from './errors.js';
@@ -143,10 +143,13 @@ export class DomainChildren extends Control {
 
   // a failed load is the pane's to show
   private static _problem(source: DomainSource | undefined): string | null {
-    const error = source?.error.value;
-    const code = DomainErrors.codeOf(error);
-    return error === undefined || source!.state.value === 'error' ||
-      (code !== 'validation' && code !== DomainSource.REFUSED) ? null : DomainErrors.message(error, source);
+    const refusal = source?.refusal.value;
+    return refusal === undefined ? null : DomainErrors.message(refusal, source);
+  }
+
+  private _denied(entry: ChildEntry): string | null {
+    return entry.table.access.field(entry.fk) !== 'hidden' ? null :
+      DomainErrors.noLink(entry.table.info, this.parent.schema.info);
   }
 
   private async _count(entries: readonly ChildEntry[], row: RowView | null, pick: boolean): Promise<void> {
@@ -155,8 +158,10 @@ export class DomainChildren extends Control {
     if (row === null || Rows.isDraft(row))
       return;
     const opened = this.tabs.activeTab.peek();
-    const counts = await Promise.all(entries.map((e) =>
-      e.table.table.count({filter: `${e.fk} = "${row.id}"`}).catch(() => null)));
+    // a table the caller may not view answers a count of 0: not a count to show
+    const counts = await Promise.all(entries.map((e) => this._denied(e) !== null ? null :
+      e.table.table.count({filter: `${e.fk} = "${row.id}"`})
+        .then((n) => n === 0 && !e.table.access.can('view') ? null : n, () => null)));
     if (this.scope.isDisposed || this.parent.currentRow.peek()?.id !== row.id)
       return;
     for (const [i, e] of entries.entries())
@@ -184,8 +189,8 @@ export class DomainChildren extends Control {
       const state = this._tabStates.get(entry.id)!;
       state.current.value = undefined;
       if (row === null) {
-        pane.replaceChildren(span(`Select a ${nounOf(this.parent.schema.info, true)}.`,
-          'u2-domain-children-hint'));
+        const noun = nounOf(this.parent.schema.info, true);
+        pane.replaceChildren(span(`Select ${withArticle(noun)}.`, 'u2-domain-children-hint'));
         state.blank.value = true;
         return;
       }
@@ -193,8 +198,10 @@ export class DomainChildren extends Control {
       const pending = scope = new Scope();
       pending.build(() => untracked(() => {
         const draft = Rows.isDraft(row);
-        const child = entry.table.source({query: draft ? '' : `${entry.fk} = "${row.id}"`,
-          defaults: {[entry.fk]: row.id}, session: this.parent.session, empty: draft});
+        const denied = this._denied(entry);
+        const child = entry.table.source({query: draft || denied !== null ? '' : `${entry.fk} = "${row.id}"`,
+          defaults: denied !== null ? {} : {[entry.fk]: row.id}, session: this.parent.session,
+          empty: draft || denied !== null});
         this._sources.set(entry.id, child);
         state.current.value = child;
         // the parent's id is the same on every row here, and the column is not the user's to edit
@@ -204,19 +211,30 @@ export class DomainChildren extends Control {
           ...(open === undefined ? {} : {open: {column: open, run: (r: RowView) => entry.table.open(r)}})}) : null;
         const body = grid?.root ??
           divH([domains.list(child).root, domains.form(child).root], 'u2-domain-children-split');
-        const empty = span(`No ${entry.label.toLowerCase()}.`, 'u2-domain-children-empty');
-        const add = domains.newButton(child);
+        const empty = span('', 'u2-domain-children-empty');
+        // a child saved under a parent the same Save deletes would land live under a row in the trash
+        const add = domains.newButton(child, {}, {disabled: () => {
+          this.parent.changeCount.value;
+          this.parent.rows.items.value;
+          return this.parent.currentRow.value?.[Rows.STATE] !== 'deleted' ? null :
+            `This ${nounOf(this.parent.schema.info, true)} is deleted on Save: ` +
+            `undo the deletion to add ${entry.label.toLowerCase()}`;
+        }});
         // a list's form takes the focus itself; the grid needs it handed over once the button's own click has refocused it
         if (grid !== null)
           add.root.addEventListener('click', () => queueMicrotask(() => grid.grid.root.focus()));
-        pane.replaceChildren(divH([add.root], 'u2-domain-children-toolbar'), body, empty);
+        const toolbar = divH([add.root], 'u2-domain-children-toolbar');
+        pane.replaceChildren(toolbar, body, empty);
         pending.effect(() => {
           const ready = child.state.value === 'ready';
-          const none = ready && child.rows.items.value.length === 0;
+          const blocked = denied ?? (ready ? DomainErrors.noView(child) : null);
+          const none = blocked !== null || (ready && child.rows.items.value.length === 0);
+          empty.textContent = blocked ?? `No ${entry.label.toLowerCase()}.`;
+          toolbar.hidden = denied !== null || blocked !== null && !child.access.value.can('insert');
           empty.hidden = !none;
           body.hidden = none;
           state.blank.value = none;
-          if (ready && !draft)
+          if (ready && !draft && blocked === null)
             state.count.value = child.total.value;
         });
       }));

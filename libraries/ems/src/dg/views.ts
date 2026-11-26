@@ -1,11 +1,13 @@
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
+import {emsBackends} from '../core/domain-backend.js';
 import {domains, DomainTable} from './facade.js';
 import type {DomainAppViewOptions} from './facade.js';
 import {DomainApp} from './app.js';
 import {DomainAddress} from './address.js';
 import {SavedSearches} from './saved-searches.js';
 import {rawEffect} from 'datagrok-api/u2core';
+import {DomainErrors} from './errors.js';
 
 /** What `DomainTable.app()` takes for one view, less what the views decide: its name and path. */
 export type DomainViewOptions = Omit<DomainAppViewOptions, 'name' | 'path'>;
@@ -37,7 +39,6 @@ export interface DomainViewsOptions {
 export class DomainViews {
   // where each table's rows open: the views made over it last
   private static readonly _byTable = new Map<string, DomainViews>();
-  private static _deleteSaved: {unsubscribe(): void} | undefined;
 
   constructor(private readonly _options: DomainViewsOptions) {
     for (const entry of _options.views)
@@ -59,6 +60,10 @@ export class DomainViews {
    * plain view for its path), and the open view answered again would be docked twice. */
   async open(address = ''): Promise<DG.ViewBase | null> {
     const {entry, rest} = this._route(address);
+    const segment = /^\/?([^/?]*)/.exec(address)![1];
+    const key = DomainViews._key(segment);
+    if (key !== '' && key !== DomainViews._key(this._segment(entry)) && key !== DomainViews._key(entry.name))
+      grok.shell.warning(`This app has no ${segment} view: showing ${entry.name}`);
     return DomainApp.openAt(this.baseOf(entry.table), this._at(entry, rest)) === undefined ? this._new(address) : null;
   }
 
@@ -66,6 +71,8 @@ export class DomainViews {
    * docks. */
   async show(address: string): Promise<DG.ViewBase> {
     const {entry, rest} = this._route(address);
+    // any click makes its view current: bring this one forward only once the click that asked for it is done
+    await new Promise((resolve) => setTimeout(resolve));
     return DomainApp.openAt(this.baseOf(entry.table), rest) ?? grok.shell.addView(await this._new(address));
   }
 
@@ -77,23 +84,21 @@ export class DomainViews {
   /** A new view of a table's list, not docked. */
   async view(table: string): Promise<DG.ViewBase> {
     const entry = this._entry(table);
+    emsBackends.domain?.dropAccess();
     const handle = await (this._options.handle ?? domains.table)(table);
-    const view = handle.app({...entry.options, name: entry.name, path: this.baseOf(table)});
+    const view = handle.app({...entry.options, name: entry.name, path: this.baseOf(table),
+      reopen: () => this.view(table)});
     this._options.ready?.(DomainApp.of(view)!, table);
     return view;
   }
 
+  /** Rebuilds every open view of the schema's tables over the properties they have now ({@link DomainApp.rebuild});
+   * one that fails is reported and the others go on. */
   static async reload(schema: string): Promise<void> {
     DomainTable.forget(schema);
     for (const app of [...DomainApp.live]) {
-      const old = DomainApp.viewOf(app);
-      if (!app.table.address.startsWith(`${schema}.`) || old === undefined || app.session.isDirty.peek())
-        continue;
-      const views = DomainViews._byTable.get(app.table.address);
-      const view = views !== undefined ? await views._new(app.path.peek().slice(views._options.path.length)) :
-        (await domains.table(app.table.address)).app({path: app.base});
-      grok.shell.addView(view);
-      old.close();
+      if (app.table.address.startsWith(`${schema}.`))
+        await app.rebuild().catch((e) => DomainErrors.report(e));
     }
   }
 
@@ -104,21 +109,14 @@ export class DomainViews {
       node.item(entry.name).onSelected.subscribe(() => void this.show(this._segment(entry)));
     const saved = node.group('Saved searches', null, false);
     rawEffect(() => {
-      SavedSearches.changed.value;
       for (const child of [...saved.children])
         child.remove();
       for (const entry of this._options.views) {
         for (const [name, search] of SavedSearches.saved(entry.table)) {
-          saved.item(`${entry.name}: ${name}`, {savedSearch: {table: entry.table, name}})
+          saved.item(`${entry.name}: ${name}`)
             .onSelected.subscribe(() => void this.show(`${this._segment(entry)}${SavedSearches.query(search)}`));
         }
       }
-    });
-    type ContextMenu = {args: {item?: DG.TreeViewNode, menu: DG.Menu}};
-    DomainViews._deleteSaved ??= grok.events.onContextMenu.subscribe((e: ContextMenu) => {
-      const saved = e.args.item?.value?.savedSearch;
-      if (saved !== undefined)
-        e.args.menu.item('Delete', () => SavedSearches.remove(saved.table, saved.name));
     });
   }
 
@@ -137,7 +135,11 @@ export class DomainViews {
 
   // the router hands over the path alone: where the address bar is this view's, its query is replayed from there
   private _at(entry: DomainViewEntry, rest: string): string {
-    const own = window.location.pathname.toLowerCase().endsWith(this.baseOf(entry.table).toLowerCase());
+    // a package's main app answers at `/apps/<Package>` for views that live under `/apps/<Package>/<Package>`
+    const base = this.baseOf(entry.table);
+    const short = base.replace(this._options.path, this._options.path.replace(/(\/[^/]+)\1$/i, '$1'));
+    const path = window.location.pathname.toLowerCase();
+    const own = path.endsWith(base.toLowerCase()) || path.endsWith(short.toLowerCase());
     return rest || (own ? `${window.location.pathname}${window.location.search}` : '');
   }
 
@@ -149,10 +151,14 @@ export class DomainViews {
     return entry.segment ?? entry.name.replace(/ /g, '');
   }
 
+  private static _key(segment: string): string {
+    return segment.replace(/ /g, '').toLowerCase();
+  }
+
   private _route(address: string): {entry: DomainViewEntry, rest: string} {
     const [, segment, rest] = /^\/?([^/?]*)(.*)$/.exec(address)!;
     const views = this._options.views;
-    const entry = views.find((v) => this._segment(v).toLowerCase() === segment.toLowerCase());
+    const entry = views.find((v) => DomainViews._key(this._segment(v)) === DomainViews._key(segment));
     return entry === undefined ? {entry: views[0], rest: address.startsWith('?') ? address : ''} : {entry, rest};
   }
 }

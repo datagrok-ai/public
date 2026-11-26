@@ -13,7 +13,6 @@ register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/facade.js');
 const {Rows} = await import('@datagrok-libraries/u2');
 const {DomainList} = await import('../src/dg/list.js');
-const {DomainErrors} = await import('../src/dg/errors.js');
 const {allowedActions} = await import('@datagrok-libraries/u2');
 const {registerDomainComponents} = await import('../src/dg/registrations.js');
 const DG = await import('datagrok-api/dg');
@@ -116,7 +115,7 @@ scoped('actions: Open on saved rows through the handler, Delete under the row\'s
   emsBackends.domain = backend({rows: {issue: rows, project: ROWS.project.map((r) => ({...r}))}});
   const {table, src} = await issues();
   table.actions.add({name: 'Escalate', icon: 'arrow-up', requires: 'edit', when: (r) => r.title !== 'Naproxen',
-    run: (r) => r.title = `${r.title}!`});
+    disabledFor: (r) => r.done ? 'Already done' : null, run: (r) => r.title = `${r.title}!`});
   const list = testOwner().build(() => domains.list(src, {actions: [{name: 'Copy id', run: () => {}}]}));
   assert.deepEqual(names(list, src.rows.byKey('i1')), ['Open', 'Escalate', 'Copy id', 'Delete']);
   assert.deepEqual(names(list, src.rows.byKey('i2')), ['Open', 'Escalate', 'Copy id'], 'no ~can_delete');
@@ -125,6 +124,8 @@ scoped('actions: Open on saved rows through the handler, Delete under the row\'s
   assert.deepEqual(names(list, draft), ['Escalate', 'Copy id', 'Delete'], 'a draft has no address to open');
   list.actionsFor(src.rows.byKey('i1')).find((a) => a.text === 'Escalate').run();
   assert.equal(src.rows.byKey('i1').title, 'Aspirin!', 'bound to the row');
+  assert.deepEqual(['i1', 'i2'].map((id) => list.actionsFor(src.rows.byKey(id)).find((a) => a.text === 'Escalate')
+    .disabled), ['Already done', null], 'a reason per row');
   list.actionsFor(src.rows.byKey('i1')).find((a) => a.text === 'Open').run();
   await flush();
   assert.equal(DG.DomainObjectHandler.opened.length, 1);
@@ -297,6 +298,44 @@ scoped('keyboard: Enter hands the row to the form through the source, Delete del
   fire(list.list.root, 'keydown', {key: 'Delete'});
   await flush();
   assert.equal(src.rows.byKey('i2')['~state'], 'deleted');
+  fire(rows[0], 'click');
+  fire(rows[2], 'click', {ctrlKey: true});
+  await flush();
+  fire(list.list.root, 'keydown', {key: 'Delete'});
+  for (let i = 0; i < 4; i++)
+    await flush();
+  assert.deepEqual(['i1', 'i3'].map((id) => src.rows.byKey(id)['~state']), ['deleted', 'deleted'],
+    'the key deletes the whole selection, as its menu does');
+  list.dispose();
+  src.dispose();
+});
+
+scoped('a delete that empties references on other rows says how many per table and asks first', async () => {
+  const memory = new MemoryDomainBackend({name: 'stock', tables: {
+    location: {columns: {name: {type: 'string', isName: true},
+      parent_id: {type: 'ref', ref: 'location', onDelete: 'setnull'}}},
+    container: {columns: {location_id: {type: 'ref', ref: 'location', onDelete: 'setnull'}}},
+    label: {columns: {location_id: {type: 'ref', ref: 'location', onDelete: 'restrict'}}},
+  }}, {rows: {location: [{id: 'a', name: 'Shelf A'}, {id: 'b', name: 'Box', parent_id: 'a'},
+    {id: 'c', name: 'Tray', parent_id: 'a'}, {id: 'd', name: 'Empty'}],
+  container: [{location_id: 'a'}, {location_id: 'a'}, {location_id: 'b'}], label: [{location_id: 'a'}]}});
+  emsBackends.domain = memory;
+  const table = await domains.table('stock.location');
+  const src = testOwner().build(() => table.source({pageSize: 10}));
+  await flush();
+  const list = testOwner().build(() => domains.list(src));
+  const remove = async (id) => {
+    list.actionsFor(src.rows.byKey(id)).find((a) => a.text === 'Delete').run();
+    for (let i = 0; i < 4; i++)
+      await flush();
+  };
+  await remove('d');
+  assert.equal(document.body.textContent, '', 'nothing refers to it');
+  await remove('a');
+  assert.match(document.body.textContent,
+    /Deleting "Shelf A" leaves 2 locations and 2 containers without a location\. Delete anyway\?/);
+  fire([...document.querySelectorAll('button')].find((b) => b.textContent === 'CANCEL'), 'click');
+  await flush();
   list.dispose();
   src.dispose();
 });
@@ -585,9 +624,5 @@ scoped('a vetoed restore is worded as a restore: the row, and what to bring back
   await flush();
   assert.equal(document.body.querySelector('.u2-notify-error')?.textContent,
     'Cannot restore "Aspirin": its project was deleted too. Restore the project first.');
-  // over the platform the session hands the sentence on under its own code: the shape decides
-  assert.equal(DomainErrors.message({code: 'refused',
-    message: 'Cannot save: Column "project_id" references a deleted row in "project"'}, trash),
-  'Cannot restore "Aspirin": its project was deleted too. Restore the project first.');
   trash.dispose();
 });

@@ -6,7 +6,7 @@ import {flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {backends, Scope, signal, Rows, Registry, SpecContext, renderSpec, registerAll, notify} from '@datagrok-libraries/u2';
 import {MemoryDomainBackend} from '../src/core/memory-domain.js';
 import {Property, WidgetDescriptor, platform} from '@datagrok-libraries/u2/tests/platform-doubles.mjs';
-import {backend} from './domain-fixtures.mjs';
+import {backend, holdFrames} from './domain-fixtures.mjs';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/facade.js');
@@ -310,6 +310,58 @@ scoped('a New from the children toolbar is an unsaved change of its own: the gat
   assert.equal(Rows.isDraft(contacts.currentRow.value), true, 'the draft is current');
   assert.equal(parent.session.isDirty.value, true, 'the press is the change — Ctrl+S and the leave gate answer');
   assert.equal(parent.session.summary.value, '1 unsaved change');
+  const other = testOwner().build(() => companies.source({pageSize: 10}));
+  await flush();
+  other.rows.byKey('c2').name = 'Elsewhere';
+  assert.equal(await other.save(), true);
+  await settle();
+  assert.equal(children.child(CONTACTS) === contacts, true, 'the child source is not rebuilt');
+  assert.equal(Rows.isDraft(contacts.currentRow.value), true, 'the draft is still pending');
+  other.dispose();
+  children.dispose();
+  parent.dispose();
+});
+
+scoped('a Save that deletes the parent and adds a child under it is refused whole', async () => {
+  const memory = emsBackends.domain = crm();
+  // a company with no children: only the new child stands in the way of its delete
+  memory.tableSync('crm.company').rows.push({id: 'c3', name: 'Initech'});
+  const companies = await domains.table('crm.company');
+  const parent = testOwner().build(() => companies.source({pageSize: 10}));
+  await flush();
+  parent.currentRow.value = parent.rows.byKey('c3');
+  const children = testOwner().build(() => domains.children(parent, {mode: 'list'}));
+  await settle();
+  children.child(CONTACTS).newRow({name: 'Peter'});
+  parent.edit.value.markDeleted('c3');
+  assert.equal(await parent.session.save(), false);
+  assert.equal(memory.tableSync('crm.company').rows.find((r) => r.id === 'c3').is_deleted, undefined, 'the parent stays');
+  assert.deepEqual(memory.tableSync('crm.contact').rows.filter((r) => r.name === 'Peter'), [], 'nothing landed');
+  children.dispose();
+  parent.dispose();
+});
+
+scoped('a child row typed while the clean parent\'s reload is in flight survives it landing', async () => {
+  emsBackends.domain = crm();
+  const gate = holdFrames(emsBackends.domain, 'crm.company');
+  const companies = await domains.table('crm.company');
+  const parent = testOwner().build(() => companies.source({query: 'id = "c1"', pageSize: 1}));
+  await flush();
+  parent.currentRow.value = parent.rows.byKey('c1');
+  const children = testOwner().build(() => domains.children(parent, {mode: 'list'}));
+  await settle();
+  await flush();
+  const contacts = children.child(CONTACTS);
+  gate.hold = true;
+  const reload = parent.refresh();
+  await settle();
+  contacts.newRow({name: 'Typed during reload'});
+  await flush();
+  gate.release();
+  await reload;
+  await settle();
+  assert.equal(children.child(CONTACTS), contacts, 'the child source with its pending row is still the one shown');
+  assert.equal(parent.session.changeCount.value, 1);
   children.dispose();
   parent.dispose();
 });

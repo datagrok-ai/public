@@ -1,4 +1,5 @@
-import {Control, computed, signal, ReadonlySignal, div, span, VirtualTree, loader} from '@datagrok-libraries/u2';
+import {Access, Control, computed, signal, ReadonlySignal, div, span, VirtualTree, loader}
+  from '@datagrok-libraries/u2';
 import type {TreeNode, Action, DomainRowLike, RowView} from '@datagrok-libraries/u2';
 import {DomainBackendError} from '../core/domain-backend.js';
 import type {DomainQueryLike} from '../core/domain-backend.js';
@@ -24,6 +25,8 @@ export interface DomainTreeOptions<TRow extends DomainRowLike = DomainRowLike> {
 const PAGE_SIZE = 500;
 /** The id of the synthetic {@link DomainTreeOptions.allNode} row — no row of the table carries it. */
 const ALL = '~all';
+/** An id no node carries: `expandPath` to it opens every branch on the way and selects nothing. */
+const NONE = '~none';
 
 /** A `VirtualTree` over a hierarchy table, a branch loaded when it is opened. Nodes are plain rows: no frame, no
  * writer and no editor per node, which is what makes a tree over a large table affordable. `selected` feeds a
@@ -38,6 +41,7 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
 
   private readonly _error = signal<string | null>(null);
   private readonly _loading = signal(true);
+  private _read = false;
   private readonly _status = div([], 'u2-domain-tree-status');
   private readonly _ready: Promise<DomainTable<TRow>>;
   private _table: DomainTable<TRow> | undefined;
@@ -109,20 +113,32 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     return this._table?.info.parentColumn ?? null;
   }
 
-  /** Reads the roots again; the children of a branch are re-read when it is opened again. */
+  /** Reads the roots and every open branch again; the selected row stays selected while the tree still reaches it. */
   async refresh(): Promise<void> {
+    const first = !this._read;
     this._loading.value = true;
     this._error.value = null;
     try {
       const table = await this._ready;
       DomainTree.requireHierarchy(table);
       this._table = table;
-      this.tree.setRoots(await this._children(null));
+      const roots = await this._children(null);
+      if (this.scope.isDisposed)
+        return;
+      // taken as the new roots land: a node the user picked or opened during the read is the one kept
+      const {open, selected} = this._shape();
+      this.tree.setRoots(roots);
+      this._read = true;
+      for (const path of open)
+        await this.tree.expandPath([...path, NONE]);
       const reveal = this._options.expandTo;
-      if (reveal !== undefined)
+      if (first && reveal !== undefined)
         await this.expandTo(reveal);
-      else if (this.tree.selectedNode.peek() === null)
+      else if (selected === null || !await this._reselect(selected, table))
         this._clear();
+      // the server answers a reader without View with no rows: only the access tells it from an empty table
+      if (roots.every((node) => node.data === undefined) && !Access.from(await table.table.access()).can('view'))
+        this._error.value = DomainErrors.noAccess(table.info);
     } catch (e) {
       this._error.value = DomainErrors.message(e);
     } finally {
@@ -134,17 +150,48 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
    * running through a node the caller cannot see stops there, as the server's path does. */
   async expandTo(id: string): Promise<void> {
     const handle = await this._ready;
-    const table = handle.table;
-    if (table.ancestors === undefined) {
+    if (handle.table.ancestors === undefined) {
       throw new DomainBackendError('unsupported',
         `${handle.address}: the backend cannot answer a row's ancestors`);
     }
-    const path = await table.ancestors(id);
-    await this.tree.expandPath([...path.map((a) => a.id), id]);
     // `expandPath` walks down from the roots and stops where a step is missing — which is exactly
     // what a chain truncated at an ancestor the caller cannot see looks like from here
-    if (this.tree.selectedNode.peek()?.data?.id !== id)
-      this._error.value = `${id} is not reachable from here — an ancestor is not visible to you`;
+    if (!await this._select(id, handle))
+      this._error.value = 'The row this address names is not in the tree, or an ancestor of it is not visible to you';
+  }
+
+  private async _select(id: string, table: DomainTable<TRow>): Promise<boolean> {
+    const path = await table.table.ancestors!(id);
+    if (this.scope.isDisposed)
+      return false;
+    await this.tree.expandPath([...path.map((a) => a.id), id]);
+    return this.tree.selectedNode.peek()?.data?.id === id;
+  }
+
+  // the keys from the root down to every open branch (parents first) and to the selected node
+  private _shape(): {open: string[][], selected: string[] | null} {
+    const chain: string[] = [];
+    const open: string[][] = [];
+    const at = this.tree.selectedNode.peek()?.id;
+    let selected: string[] | null = null;
+    for (const item of this.tree.getItems({all: true}).list) {
+      chain.length = (item.level ?? 1) - 1;
+      chain.push(item.key);
+      if (item.expanded === true && item.key !== ALL)
+        open.push([...chain]);
+      if (item.key === at)
+        selected = [...chain];
+    }
+    return {open, selected};
+  }
+
+  // where it was; a row moved since is found by its ancestors
+  private async _reselect(path: string[], table: DomainTable<TRow>): Promise<boolean> {
+    await this.tree.expandPath(path);
+    const id = path[path.length - 1];
+    if (this.tree.selectedNode.peek()?.id === id)
+      return true;
+    return id !== ALL && table.table.ancestors !== undefined && this._select(id, table);
   }
 
   /** Every action that applies to the node's row and that the caller may run on it: Open, the
@@ -158,7 +205,9 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
   static requireHierarchy<T extends DomainRowLike>(table: DomainTable<T>): void {
     const parent = table.info.parentColumn;
     if (table.info.hierarchy !== true || parent === null || parent === undefined) {
-      throw new DomainBackendError('filter',
+      const unseen = table.info.childTables.some((c) => `${c.schema}.${c.table}` === table.address &&
+        !table.properties.some((p) => p.name === c.fkColumn));
+      throw new DomainBackendError('filter', unseen ? DomainErrors.noLink(table.info, table.info) :
         `${table.address} is not a hierarchy table — declare "hierarchy": true and one ref column to itself`);
     }
   }
@@ -167,7 +216,7 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     if (this._options.allNode === undefined)
       this.tree.clearSelection();
     else
-      void this.tree.expandPath([ALL]);
+      void this.tree.expandPath([ALL]).catch((e) => this._error.value = DomainErrors.message(e));
   }
 
   // `id` null is the roots: what the `is empty` operator compiles to

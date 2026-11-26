@@ -123,7 +123,8 @@ scoped('a path truncated at an ancestor out of sight opens nothing, and says so'
   const {tree: t} = await tree({expandTo: 'l5'}, orphan);
   assert.equal(t.selected.value, null, 'nothing was reached, so nothing is selected');
   assert.deepEqual(labels(t), ['Other site', 'Site'], 'and the roots are all that opened');
-  assert.match(t.error.value, /l5 is not reachable from here — an ancestor is not visible to you/);
+  assert.match(t.error.value, /not in the tree, or an ancestor of it is not visible to you/);
+  assert.doesNotMatch(t.error.value, /l5/);
   t.dispose();
 });
 
