@@ -186,7 +186,8 @@ function makeDeepEqual({abs, rel}: Tolerance) {
     createCustomConfig: () => ({areNumbersEqual, areObjectsEqual}),
   });
 
-  const equal = (a: any, b: any): boolean => (a == null && b == null) || fastEqual(a, b);
+  // treat empty strings as null/undefined
+  const equal = (a: any, b: any): boolean => ((a == null || a === '') && (b == null || b === '')) || fastEqual(a, b);
   return equal;
 }
 
