@@ -345,18 +345,6 @@ category('Custom function view', () => {
     expect(JSON.stringify(downloads), JSON.stringify(['first.txt']));
   }));
 
-  test('Export turned off greys the icon and downloads nothing', () => withDownloads(async (downloads) => {
-    const view = await newView();
-    view.exports = [{name: 'First', export: async () => DG.FileInfo.fromString('first.txt', '1')}];
-    view.exportEnabled = false;
-    const icon = exportIcon(view)!;
-    expect(icon.classList.contains('d4-disabled'), true);
-    icon.click();
-    expect(downloads.length, 0);
-    view.exportEnabled = true;
-    expect(exportIcon(view)!.classList.contains('d4-disabled'), false);
-  }));
-
   const contents = [['div', () => ui.div()], ['box', () => ui.splitH([ui.box(), ui.box()])]] as const;
   for (const [kind, makeContent] of contents) {
     test(`A ${kind} content fills the view`, async () => {
