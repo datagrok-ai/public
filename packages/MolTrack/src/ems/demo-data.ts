@@ -51,7 +51,7 @@ export class DemoData {
         source: r['Source']};
     }));
     const ids: (string | null)[] = verdicts.map((v) => v.existing ?? null);
-    inserted.rows.forEach((row) => ids[fresh[row.index]] = row.id);
+    inserted.rows.forEach(({index, id}) => index === undefined || (ids[fresh[index]] = id));
     verdicts.forEach((v, i) => {
       if (v.sameAs !== undefined)
         ids[i] = ids[v.sameAs];

@@ -37,8 +37,11 @@ export class Compounds {
       verdicts: new Map()};
     pane.section.root.classList.add('moltrack-identity');
     self.own(DomainFilters.registerOperators(app.table.address, StructureSearch.operators()));
-    self.own((app.table as DomainTable<CompoundRow>).validators.add('original_structure', (_, row) =>
-      pane.verdicts.get(row.id)?.problem ?? null));
+    // the verdict on the structure it was derived from: a field never refuses a new drawing on the last one's
+    self.own((app.table as DomainTable<CompoundRow>).validators.add('original_structure', (value, row) => {
+      const verdict = pane.verdicts.get(row.id);
+      return verdict !== undefined && verdict.input === (value ?? '') ? verdict.problem : null;
+    }));
     app.listSource.hosted = (condition, signal) => StructureSearch.matching(condition, signal);
     // a saved compound shows the identity stored with it; only a draft's is derived
     self.effect(() => {

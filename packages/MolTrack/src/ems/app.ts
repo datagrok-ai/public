@@ -2,6 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {domains} from '@datagrok-libraries/ems/src/dg';
+import {DomainErrors} from '@datagrok-libraries/ems/src/dg/errors';
+import {nounOf} from '@datagrok-libraries/ems/src/core/domain-backend';
 import type {DomainApp, DomainViewEntry} from '@datagrok-libraries/ems/src/dg';
 import {moltrackDb} from '../generated/db';
 import {Compounds} from './compounds';
@@ -57,17 +59,24 @@ export class MolTrackEms {
   static home(): DG.View {
     const rows = ENTRIES.map((entry) => {
       const count = ui.link('', () => void MolTrackEms.show(entry.name.replace(/ /g, '')));
-      void grok.dapi.domains.table(entry.table).count()
-        .then((n) => count.textContent = String(n), () => count.textContent = '?');
+      void MolTrackTables.table(entry.table.slice(SCHEMA.length + 1)).then(async (table) => {
+        if (table.access.can('view'))
+          count.textContent = String(await table.table.count());
+        else {
+          count.textContent = '—';
+          ui.tooltip.bind(count, DomainErrors.noAccess(table.info));
+        }
+      }).catch(() => count.textContent = '?');
       return [entry.name, count];
     });
     const counts = ui.table(rows, (row) => row);
     counts.classList.add('moltrack-home-counts');
     const actions = MolTrackEms._quickActions([
-      {label: 'Register compound', run: () => void VIEWS.create(`${SCHEMA}.compound`)},
-      {label: 'Register batch', run: () => void VIEWS.create(`${SCHEMA}.compound_batch`)},
-      {label: 'Register assay', run: () => void VIEWS.create(`${SCHEMA}.assay`)},
-      {label: 'Register bulk', run: async () => void await domains.import(await MolTrackTables.compounds())},
+      {label: 'Register compound', table: 'compound', run: () => void VIEWS.create(`${SCHEMA}.compound`)},
+      {label: 'Register batch', table: 'compound_batch', run: () => void VIEWS.create(`${SCHEMA}.compound_batch`)},
+      {label: 'Register assay', table: 'assay', run: () => void VIEWS.create(`${SCHEMA}.assay`)},
+      {label: 'Register bulk', table: 'compound',
+        run: async () => void await domains.import(await MolTrackTables.compounds())},
       {label: 'Search', run: () => void MolTrackEms.show('Compounds')},
     ]);
     void domains.extensible(SCHEMA).then((tables) => {
@@ -118,14 +127,29 @@ export class MolTrackEms {
     }).root;
   }
 
-  private static _quickActions(links: {label: string; run: () => void}[]): HTMLElement {
+  private static _quickActions(links: {label: string; table?: string; run: () => void}[]): HTMLElement {
     const boltIcon = ui.iconFA('bolt');
     boltIcon.classList.add('moltrack-bolt-icon');
     const quickActionsLabel = ui.label('Quick Actions');
     quickActionsLabel.classList.add('moltrack-quick-label');
     const quickActionsTitle = ui.divH([boltIcon, quickActionsLabel]);
     quickActionsTitle.classList.add('moltrack-quick-actions');
-    const quickLinks = ui.divV(links.map((link) => ui.link(link.label, link.run)));
+    const quickLinks = ui.divV(links.map((link) => {
+      const el = ui.link(link.label, link.run);
+      if (link.table !== undefined) {
+        void MolTrackTables.table(link.table).then((table) => !table.access.can('view') ?
+          DomainErrors.noAccess(table.info) : !table.access.can('insert') ?
+            `You cannot register ${nounOf(table.info)}. Ask the table's owner to let you edit them.` : null,
+        (e) => DomainErrors.message(e)).then((refused) => {
+          if (refused === null)
+            return;
+          const disabled = ui.label(link.label);
+          ui.tooltip.bind(disabled, refused);
+          el.replaceWith(disabled);
+        });
+      }
+      return el;
+    }));
     quickLinks.classList.add('moltrack-quick-links');
     const container = ui.divV([quickActionsTitle, quickLinks]);
     container.classList.add('moltrack-quick-container');

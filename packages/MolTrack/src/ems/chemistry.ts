@@ -2,18 +2,8 @@
 import initCrux, * as crux from '../../vendor/crux/crux_wasm.js';
 import initInchi, * as inchi from '../../vendor/crux/inchi_wasm.js';
 import * as DG from 'datagrok-api/dg';
-
-export const MATCH_RULES = ['ALL_LAYERS', 'STEREO_INSENSITIVE_LAYERS', 'TAUTOMER_INSENSITIVE_LAYERS'] as const;
-
-export type MatchRule = typeof MATCH_RULES[number];
-
-export type HashColumn = 'hash_all_layers' | 'hash_stereo_insensitive' | 'hash_tautomer_insensitive';
-
-export const HASH_COLUMNS: Record<MatchRule, HashColumn> = {
-  ALL_LAYERS: 'hash_all_layers',
-  STEREO_INSENSITIVE_LAYERS: 'hash_stereo_insensitive',
-  TAUTOMER_INSENSITIVE_LAYERS: 'hash_tautomer_insensitive',
-};
+import {MATCH_RULES} from './lookup';
+import type {MatchRule} from './lookup';
 
 export interface CompoundIdentity {
   structure: string;
@@ -157,7 +147,7 @@ export class Chemistry {
   private static _read(input: string): Mol {
     const mol = Chemistry._parse(input);
     if (mol === null)
-      throw new Error('Cannot read the structure');
+      throw new Error('Structure cannot be read');
     return mol;
   }
 

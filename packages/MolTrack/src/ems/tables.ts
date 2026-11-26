@@ -5,10 +5,11 @@ import {Filters, Rows, divH, divV, isEmpty, span} from '@datagrok-libraries/u2';
 import type {FilterGroup, RowView} from '@datagrok-libraries/u2';
 import type {AssayResultRow, CompoundBatchRow, CompoundRow} from '../generated/db';
 import {moltrackDb} from '../generated/db';
-import {Chemistry, HASH_COLUMNS, MATCH_RULES} from './chemistry';
+import {Chemistry} from './chemistry';
+import {HASH_COLUMNS, MATCH_RULES} from './lookup';
 import {BulkRegistration} from './registration';
 import {StructureSearch} from './structure-search';
-import type {MatchRule} from './chemistry';
+import type {MatchRule} from './lookup';
 
 export const SCHEMA = 'moltrack';
 
@@ -30,10 +31,8 @@ export class MolTrackTables {
   }
 
   static keyNumber(table: DomainTable, column: string, text: string): number | null {
-    const {prefix} = MolTrackTables.keyFormat(table, column);
-    const typed = text.trim().toUpperCase();
-    const digits = typed.startsWith(prefix) ? typed.slice(prefix.length) : typed;
-    return /^\d+$/.test(digits) ? Number(digits) : null;
+    const prop = table.properties.find((p) => p.name === column);
+    return prop === undefined ? null : DomainTable.parseKey(prop, text);
   }
 
   // the server captions a reference by the bare number

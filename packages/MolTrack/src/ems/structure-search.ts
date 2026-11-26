@@ -2,7 +2,8 @@ import * as DG from 'datagrok-api/dg';
 import {Filters, KIND} from '@datagrok-libraries/u2';
 import type {FilterCondition, FilterGroup, FilterOperator} from '@datagrok-libraries/u2';
 import {moltrackDb} from '../generated/db';
-import {Chemistry, HASH_COLUMNS} from './chemistry';
+import {Chemistry} from './chemistry';
+import {HASH_COLUMNS} from './lookup';
 import {MolTrackTables} from './tables';
 
 // answered in the browser with Crux: the server has no chemistry
