@@ -22,9 +22,7 @@ export class PackageFunctions {
   static async syncMlflow(): Promise<string> {
     if (DG.Func.find({package: 'Forge', name: 'registerModel'}).length === 0)
       return '';
-    // One sync per user at a time, so two tabs do not write a model twice; a page without Web Locks runs unlocked.
-    return navigator.locks === undefined ? syncModels() :
-      navigator.locks.request(`mlflow-sync-${DG.User.current().id}`, syncModels);
+    return syncModels();
   }
 
   @grok.decorators.func({
