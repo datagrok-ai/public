@@ -6,7 +6,7 @@
 -- Only the user's latest 5000 events are looked at: an account with hundreds of thousands of
 -- events a month (a test user) otherwise made every call read all of them.
 WITH user_events AS MATERIALIZED (
-  SELECT e.id, e.event_time
+  SELECT e.id, e.event_type_id, e.event_time
   FROM events e
   WHERE e.event_time > NOW() - INTERVAL '30 days'
     AND EXISTS (
@@ -21,8 +21,8 @@ SELECT
   en.id,
   EXTRACT(EPOCH FROM MAX(ue.event_time) AT TIME ZONE 'UTC') * 1000 AS last_event_time
 FROM user_events ue
-JOIN event_parameter_values v ON v.event_id = ue.id
-JOIN event_parameters p ON p.id = v.parameter_id AND p.type = 'entity_id'
+JOIN event_parameters p ON p.event_type_id = ue.event_type_id AND p.type = 'entity_id'
+JOIN event_parameter_values v ON v.event_id = ue.id AND v.parameter_id = p.id
 JOIN entities en ON en.id = v.value_uuid
 JOIN entity_types et ON et.id = en.entity_type_id
 WHERE et.name <> ALL (ARRAY['FuncCall', 'UserGroup', 'User', 'GrokPackage', 'UserReport',
