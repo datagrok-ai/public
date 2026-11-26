@@ -5,13 +5,19 @@
 --input: string user [User ID whose recent activity to fetch]
 -- Parameter and entity-type filters are id sets rather than joins: the joins were evaluated
 -- per parameter value (tens of thousands of lookups per call) and dominated the query.
-WITH user_events AS (
+-- Only the user's latest 5000 events are looked at: an account with hundreds of thousands of
+-- events a month (a test user) otherwise made every call read all of them.
+WITH user_events AS MATERIALIZED (
   SELECT e.id, e.event_time
   FROM events e
-  JOIN event_parameter_values vu ON vu.event_id = e.id
-  WHERE vu.parameter_id IN (SELECT id FROM event_parameters WHERE name = 'user')
-    AND vu.value_uuid = @user
-    AND e.event_time > NOW() - INTERVAL '30 days'
+  WHERE e.event_time > NOW() - INTERVAL '30 days'
+    AND EXISTS (
+      SELECT 1 FROM event_parameter_values vu
+      WHERE vu.event_id = e.id
+        AND vu.value_uuid = @user
+        AND vu.parameter_id IN (SELECT id FROM event_parameters WHERE name = 'user'))
+  ORDER BY e.event_time DESC
+  LIMIT 5000
 )
 SELECT
   en.id,
