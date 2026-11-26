@@ -1,14 +1,14 @@
 import {uuid4} from 'datagrok-api/u2core';
-import {Filters, notify, Access, MemoryFrame, Rows, isEmpty, Component} from '@datagrok-libraries/u2';
+import {Filters, Access, MemoryFrame, Rows, isEmpty, Component} from '@datagrok-libraries/u2';
 import type {FilterCondition, FilterGroup, IProperty, AccessData, FieldAccess,
   MemoryColumn} from '@datagrok-libraries/u2';
-import {DomainBackendError, isUnscoped, toPlural, toSingular} from './domain-backend.js';
+import {DomainBackendError, isUnscoped, toPlural, toSingular, readableInfo} from './domain-backend.js';
 import type {AuditEntryLike, DomainBackend, DomainBatchOptionsLike, DomainBatchReportLike,
   DomainBatchValidationLike, DomainBatchValidationRowLike, DomainFrameLike, DomainProbeLike,
   DomainQueryLike, DomainReadScope, DomainSupportLike, DomainTableInfoLike, DomainTableLike,
   DomainTransactionOpLike, DomainTransactionResultLike} from './domain-backend.js';
 import type {EditState} from './edit-state.js';
-import {MemoryEditState} from './edit-state.js';
+import {MemoryEditState, isJsonCell, jsonCell} from './edit-state.js';
 
 /** A history line as kept: its `seq` is where it stands in the table's history. */
 type AuditLine = Omit<AuditEntryLike, 'seq'>;
@@ -27,6 +27,8 @@ export interface MemoryColumnJson {
   searchable?: boolean;
   /** A ref column's grammar filter over its target (`$<column>` = this table's sibling). */
   filter?: string;
+  /** A ref column's referential action, as the server's `onDelete`. */
+  onDelete?: 'cascade' | 'setnull' | 'restrict';
   semType?: string;
   default?: unknown;
 }
@@ -79,6 +81,9 @@ const CORE_REF_SEM_TYPES: Record<string, string> = {user: 'User', group: 'Group'
  * `Rows.DELETED`; not a declared property, so no form or filter sees it. */
 const IS_DELETED = 'is_deleted';
 
+const TEXT_OPERATORS = new Set(['like', '!like', 'starts', 'ends', 'matches', '!matches']);
+const TEXT = '::text';
+
 /** `DomainBackend` over a schema.json in memory, meaning what the server means: filters through the filter
  * feature's own `toMask`, a transaction ordered as the server orders it and landing on every table or none. */
 export class MemoryDomainBackend implements DomainBackend {
@@ -94,7 +99,8 @@ export class MemoryDomainBackend implements DomainBackend {
     for (const child of this._tables.values()) {
       for (const [column, target] of Object.entries(child.refs)) {
         this._tables.get(target)?.info.childTables.push({schema: child.schema, table: child.name, fkColumn: column,
-          label: child.properties.find((p) => p.name === column)?.friendlyName ?? column});
+          label: child.properties.find((p) => p.name === column)?.friendlyName ?? column,
+          onDelete: schema.tables[child.name].columns[column].onDelete ?? 'restrict'});
       }
     }
   }
@@ -113,12 +119,16 @@ export class MemoryDomainBackend implements DomainBackend {
   /** Every writer's batch concatenated into one transaction, the results sliced back; every
    * writer learns every draft id the batch resolved, so a child's reference to another
    * writer's draft becomes the real id in its frame too. */
-  async saveAll(edits: EditState[]): Promise<boolean> {
-    if (edits.some((edit) => edit.isSaving.peek())) {
-      notify.warning('The batch is already being saved.');
-      return false;
-    }
-    const parts = edits.map((edit) => ({edit: edit as MemoryEditState, pending: (edit as MemoryEditState).buildOps()}));
+  async saveAll(edits: EditState[]): Promise<void> {
+    if (edits.some((edit) => edit.isSaving.peek()))
+      throw new DomainBackendError('validation', 'The batch is already being saved.');
+    const writers = edits.map((edit) => {
+      if (!(edit instanceof MemoryEditState))
+        throw new Error('MemoryDomainBackend.saveAll: the writer is not a memory one');
+      return edit;
+    });
+    const drafts = new Set(writers.flatMap((edit) => [...edit.draftIds()]));
+    const parts = writers.map((edit) => ({edit, pending: edit.buildOps(drafts)}));
     // every participant closed for the whole transaction, as the platform session closes its
     // editors (`domains-session.ts`): an edit made meanwhile is not in the batch being sent
     for (const part of parts)
@@ -132,12 +142,13 @@ export class MemoryDomainBackend implements DomainBackend {
         part.edit.applyResults(part.pending, results.slice(offset, offset + part.pending.length), resolved);
         offset += part.pending.length;
       }
-      return true;
     } finally {
       for (const part of parts)
         part.edit.setSaving(false);
     }
   }
+
+  dropAccess(): void {}
 
   /** The server's `/transaction`: ops may target any table (`<schema>.<table>`, or a bare name in
    * this schema); they run in a stable topological order — a `$ref` use after the insert that
@@ -232,11 +243,23 @@ export class MemoryDomainBackend implements DomainBackend {
     const audit: [MemoryTable, AuditLine][] = [];
     const tx = uuid4();
     const ts = new Date().toISOString();
+    const parentsLive = (table: MemoryTable, row: Row, columns: string[]): void => {
+      for (const column of columns) {
+        const parentTable = this._tables.get(table.refs[column]);
+        const parent = parentTable === undefined || row[column] == null ? undefined :
+          rowsOf(parentTable).find((r) => r.id === row[column]);
+        if (parent?.[IS_DELETED] === true) {
+          throw new DomainBackendError('restrict',
+            `Column "${column}" references a deleted row in "${parentTable!.name}" ("${String(row[column])}")`);
+        }
+      }
+    };
     for (const index of order) {
       const op = ops[index];
       const table = tables[index];
       const rows = rowsOf(table);
-      const values = Object.fromEntries(Object.entries(op.values ?? {}).map(([k, v]) => [k, resolve(v, index)]));
+      const values = Object.fromEntries(Object.entries(op.values ?? {})
+        .map(([k, v]) => [k, table.decode(k, resolve(v, index), index)]));
       const id = op.op === 'insert' ? undefined : String(resolve(op.id, index));
       const at = rows.findIndex((row) => row.id === id);
       const entry = (name: string, rowId: string, prior: Row | null, next: Row | null): void => {
@@ -245,6 +268,8 @@ export class MemoryDomainBackend implements DomainBackend {
       if (op.op === 'insert') {
         const row = table.stamp(table.withDefaults(values), 1);
         table.check(row, index);
+        table.checkKey(rows, row, index);
+        parentsLive(table, row, Object.keys(table.refs));
         rows.push(row);
         if (op.ref !== undefined)
           refs.set(op.ref, row.id as string);
@@ -252,7 +277,12 @@ export class MemoryDomainBackend implements DomainBackend {
         entry(op.op, row.id as string, null, {...row});
       } else if (at < 0)
         throw new DomainBackendError('not-found', `Operation ${index}: no row "${id}"`);
-      else if (op.op === 'delete') {
+      else if (op.op === 'restore' && rows[at][IS_DELETED] !== true)
+        throw new DomainBackendError('not-found', `Operation ${index}: no deleted row "${id}"`);
+      else if (op.expectedVersion !== undefined && rows[at].version !== op.expectedVersion) {
+        throw new DomainBackendError('version-conflict',
+          `Operation ${index}: row "${id}" is at version ${rows[at].version}, expected ${op.expectedVersion}`);
+      } else if (op.op === 'delete') {
         // the server's FK veto the child-first ordering exists to beat; a child already in the
         // trash holds nothing back
         for (const child of this._tables.values()) {
@@ -267,26 +297,12 @@ export class MemoryDomainBackend implements DomainBackend {
         rows[at] = table.stamp({...rows[at], [IS_DELETED]: true}, (rows[at].version as number) + 1);
         results[index] = {id};
       } else if (op.op === 'restore') {
-        if (rows[at][IS_DELETED] !== true)
-          throw new DomainBackendError('not-found', `Operation ${index}: no deleted row "${id}"`);
-        for (const [column, target] of Object.entries(table.refs)) {
-          const parentTable = this._tables.get(target);
-          const parent = parentTable === undefined ? undefined :
-            rowsOf(parentTable).find((r) => r.id === rows[at][column]);
-          if (parent?.[IS_DELETED] === true) {
-            throw new DomainBackendError('restrict',
-              `Column "${column}" references a deleted row in "${parentTable!.name}"`);
-          }
-        }
+        parentsLive(table, rows[at], Object.keys(table.refs));
         const row = table.stamp({...rows[at], [IS_DELETED]: false}, (rows[at].version as number) + 1);
         entry('undelete', id!, {...rows[at]}, {...row});
         rows[at] = row;
         results[index] = MemoryDomainBackend._stamped(row, row.version as number);
       } else {
-        if (op.expectedVersion !== undefined && rows[at].version !== op.expectedVersion) {
-          throw new DomainBackendError('version-conflict',
-            `Operation ${index}: row "${id}" is at version ${rows[at].version}, expected ${op.expectedVersion}`);
-        }
         const moved = Object.keys(op.expected ?? {})
           .filter((c) => rows[at][c] !== resolve(op.expected![c], index));
         if (moved.length > 0) {
@@ -294,7 +310,9 @@ export class MemoryDomainBackend implements DomainBackend {
             `Operation ${index}: row "${id}" changed since it was read: ${moved.join(', ')}`);
         }
         const row = table.stamp({...rows[at], ...values}, (rows[at].version as number) + 1);
-        table.check(row, index);
+        table.check(row, index, Object.keys(values));
+        table.checkKey(rows, row, index, Object.keys(values));
+        parentsLive(table, row, Object.keys(values).filter((column) => column in table.refs));
         entry(op.op, id!, {...rows[at]}, {...row});
         rows[at] = row;
         results[index] = MemoryDomainBackend._stamped(row, row.version as number);
@@ -339,12 +357,17 @@ export class MemoryDomainBackend implements DomainBackend {
 export class MemoryTable implements DomainTableLike {
   /** The server's `maxUpdateWhereRows` (= `maxDeleteWhereRows`). */
   static readonly maxUpdateWhereRows = 1000;
+  /** The server's `maxBatchReportRows`: a batch report itemizes at most this many rows. */
+  static readonly maxBatchReportRows = 1000;
   /** How deep `ancestors` walks before it gives up — the server's recursion cap. */
   static readonly maxPathDepth = 64;
 
   readonly address: string;
   readonly properties: IProperty[];
   readonly info: DomainTableInfoLike;
+  private readonly _columns: IProperty[];
+  private readonly _info: DomainTableInfoLike;
+  private readonly _hidden: string[];
   readonly support: DomainSupportLike;
   /** Installed only for a hierarchy table, as the seam's rule says — see {@link _ancestors}. */
   readonly ancestors?: DomainTableLike['ancestors'];
@@ -367,7 +390,7 @@ export class MemoryTable implements DomainTableLike {
     this.address = `${schema}.${name}`;
     this._author = author;
     const columns = Object.entries(json.columns);
-    this.properties = [
+    this._columns = [
       ...SYSTEM.map(([column, type]) => MemoryTable._property(column, type,
         {get: (row) => row[column], semType: column === 'author_id' ? 'User' : undefined})),
       ...columns.map(([column, c]) => MemoryTable._column(schema, column, c)),
@@ -379,7 +402,7 @@ export class MemoryTable implements DomainTableLike {
     const singular = json.singularName ?? toSingular(name);
     const searchable = columns.filter(([, c]) => c.searchable === true).map(([n]) => n);
     const permissions = Array.isArray(json.permissions) ? json.permissions : Object.keys(json.permissions ?? {});
-    this.info = {
+    this._info = {
       nameColumn: named ?? null, businessKey: json.businessKey ?? [], rowAddress: 'businessKey',
       singularName: singular, pluralName: json.pluralName ?? toPlural(singular),
       ...(json.friendlyName === undefined ? {} : {friendlyName: json.friendlyName}),
@@ -395,19 +418,24 @@ export class MemoryTable implements DomainTableLike {
     // `watch` is false and means it: there are no subscriptions here, and declaring that is the
     // point — a control gates on what the backend says, not on which backend it is
     this.support = {systemColumns: SYSTEM.map(([column]) => column), writes: true, deleted: true,
-      restore: true, audit: true, ancestors: this.info.hierarchy === true, probe: true, version: true,
+      restore: true, audit: true, ancestors: this._info.hierarchy === true, probe: true, version: true,
       watch: false, updateWhere: true, captions: true, transaction: true, concurrency: 'version', filters: 'full',
       // what `_plan` honours: the upsert merge needs a business key to match on
-      batch: {upsert: this.info.businessKey.length > 0, partial: true, validate: true, skipDuplicates: true}};
+      batch: {upsert: this._info.businessKey.length > 0, partial: true, validate: true, skipDuplicates: true}};
     if (this.support.ancestors)
       this.ancestors = (id) => this._ancestors(id);
     this.rows = rows.map((row) => this.stamp({...row}, 1));
     const granted = Object.fromEntries(permissions.map((p) => [p, true]));
     this._access = access ? {can: {...granted, ...access.can}, fields: access.fields} : {
       can: {view: true, insert: true, edit: true, delete: true, share: true, ...granted},
-      fields: Object.fromEntries(this.properties.map((p): [string, FieldAccess] =>
+      fields: Object.fromEntries(this._columns.map((p): [string, FieldAccess] =>
         [p.name!, SYSTEM.some(([column]) => column === p.name) ? 'readonly' : 'editable'])),
     };
+    const readable = (name: string) => Access.from(this._access).field(name) !== 'hidden';
+    this.properties = this._columns.filter((p) => readable(p.name!));
+    this._hidden = this._columns.map((p) => p.name!)
+      .filter((name) => !readable(name) && !SYSTEM.some(([column]) => column === name));
+    this.info = readableInfo(this._info, this._columns, readable);
   }
 
   access(): Promise<AccessData> {
@@ -415,6 +443,7 @@ export class MemoryTable implements DomainTableLike {
   }
 
   async query(spec: DomainQueryLike = {}): Promise<Row[]> {
+    this._checkColumns(spec);
     const captions = this._captionTargets(spec.captions);
     let rows = await this._where(spec);
     if (spec.sort)
@@ -422,8 +451,8 @@ export class MemoryTable implements DomainTableLike {
     const offset = spec.offset ?? 0;
     rows = rows.slice(offset, spec.limit === undefined ? undefined : offset + spec.limit);
     return rows.map((row) => {
-      const out: Row = spec.columns ?
-        Object.fromEntries(spec.columns.filter((c) => c in row).map((c) => [c, row[c]])) : {...row};
+      const out: Row = spec.columns ? Object.fromEntries([...SYSTEM.map(([c]) => c), ...spec.columns]
+        .filter((c) => c in row).map((c) => [c, row[c]])) : {...row};
       // as the server off row mode: edit and delete are the table's answer, share is not
       // carried (null); a seed row carrying its own boolean is a row-mode table
       if (spec.withAccess) {
@@ -432,6 +461,8 @@ export class MemoryTable implements DomainTableLike {
       }
       if (spec.deleted !== undefined && spec.deleted !== 'exclude')
         out[Rows.DELETED] = row[IS_DELETED] === true;
+      for (const name of this._hidden)
+        delete out[name];
       // the server's LEFT JOIN under the target's own View predicate: a null FK and a target the
       // caller may not see are the same null, and nothing says which
       for (const [name, target] of captions) {
@@ -441,6 +472,20 @@ export class MemoryTable implements DomainTableLike {
       }
       return out;
     });
+  }
+
+  private _checkColumns(spec: DomainQueryLike): void {
+    for (const key of (spec.sort ?? '').split(',')) {
+      if (this._hidden.includes(key.trim().replace(/^!/, '')))
+        throw new DomainBackendError('filter', `Unknown or inaccessible sort column "${key.trim()}"`);
+    }
+    for (const c of spec.columns ?? []) {
+      const declared = !SYSTEM.some(([s]) => s === c) && this.properties.some((p) => p.name === c) &&
+        this._access.fields[c] !== 'hidden';
+      if (!declared && !(spec.withAccess === true && Access.ROW_COLUMNS.some(([name]) => name === c)) &&
+          !(spec.deleted !== undefined && spec.deleted !== 'exclude' && c === Rows.DELETED))
+        throw new DomainBackendError('filter', `Unknown or inaccessible column "${c}"`);
+    }
   }
 
   // the server's `_compileCaptionExpand` refusals word for word: unknown, hidden and non-ref share one (no oracle)
@@ -466,13 +511,14 @@ export class MemoryTable implements DomainTableLike {
   async frame(spec: DomainQueryLike): Promise<DomainFrameLike> {
     const [rows, access] = await Promise.all([this.query(spec), this.access()]);
     const columns: MemoryColumn[] = [
-      ...this.properties.map((p) => ({name: p.name!, type: p.propertyType ?? p.type ?? 'string', semType: p.semType})),
+      ...this._columns.map((p) => ({name: p.name!,
+        type: isJsonCell(p) ? 'string' : p.propertyType ?? p.type ?? 'string', semType: p.semType})),
       {name: Rows.STATE, type: 'string'},
       ...(spec.withAccess ? Access.ROW_COLUMNS.map(([name]) => ({name, type: 'bool'})) : []),
       ...(spec.deleted === undefined || spec.deleted === 'exclude' ? [] : [{name: Rows.DELETED, type: 'bool'}]),
       ...(spec.captions ?? []).map((name) => ({name: Rows.caption(name), type: 'string'})),
     ];
-    const df = new MemoryFrame(columns, rows);
+    const df = new MemoryFrame(columns, rows.map((row) => this._frameRow(row)));
     // a frame over deleted rows is read-only until they are restored — the same upper bound
     // `DomainSource.access` publishes, so the writer and the controls agree
     const bound = Access.from(access);
@@ -483,12 +529,22 @@ export class MemoryTable implements DomainTableLike {
       edit,
       append: async (page) => {
         const more = await this.query(page);
-        df.rows.push(...more);
+        const held = new Set(df.rows.map((row) => row.id));
+        df.rows.push(...more.filter((row) => row.id === undefined || !held.has(row.id))
+          .map((row) => this._frameRow(row)));
         df.onRowsAdded.fire(undefined);
         return more.length;
       },
       dispose: () => edit.dispose(),
     };
+  }
+
+  private _frameRow(row: Row): Row {
+    for (const prop of this.properties) {
+      if (prop.name! in row)
+        row[prop.name!] = jsonCell(prop, row[prop.name!]);
+    }
+    return row;
   }
 
   async count(scope: DomainReadScope = {}): Promise<number> {
@@ -543,7 +599,7 @@ export class MemoryTable implements DomainTableLike {
       throw new DomainBackendError('validation', `${this.address}: a filter is required`);
     if (Object.keys(values).length === 0)
       throw new DomainBackendError('validation', `${this.address}: updateWhere requires non-empty values`);
-    const writable = new Set(this.properties.map((p) => p.name!)
+    const writable = new Set(this._columns.map((p) => p.name!)
       .filter((name) => this._access.fields[name] === 'editable'));
     for (const column of Object.keys(values)) {
       if (!writable.has(column))
@@ -557,7 +613,8 @@ export class MemoryTable implements DomainTableLike {
     const matched = (await this._where({filter})).filter((row) => this._canEdit(row) &&
       Object.entries(values).some(([column, value]) => !Component.sameValue(plain(row[column]), plain(value))));
     const ids = matched.slice(0, cap).map((row) => String(row.id));
-    await this.transaction(ids.map((id) => ({op: 'update' as const, table: this.address, id, values})));
+    const sent = MemoryTable._literal(values);
+    await this.transaction(ids.map((id) => ({op: 'update' as const, table: this.address, id, values: sent})));
     return {updated: ids.length, hasMore: matched.length > cap};
   }
 
@@ -571,9 +628,14 @@ export class MemoryTable implements DomainTableLike {
   async batch(rows: Record<string, unknown>[],
     options: DomainBatchOptionsLike = {}): Promise<DomainBatchReportLike> {
     const {errors, duplicate, ops, posted, failed} = this._plan(rows, options);
-    if (options.allOrNothing !== false && errors.size > 0)
-      return {error: 'validation', inserted: 0, updated: 0, skipped: 0, errorCount: errors.size, rows: failed};
-    const results = await this.transaction(ops);
+    const cap = MemoryTable.maxBatchReportRows;
+    if (options.allOrNothing !== false && errors.size > 0) {
+      return {error: 'validation', inserted: 0, updated: 0, skipped: 0, errorCount: errors.size,
+        rows: failed.slice(0, cap)};
+    }
+    const results = await this.transaction(ops.map((op) => ({...op, values: MemoryTable._literal(op.values!)})));
+    const landed = posted.map((index, i) => ({index, id: results[i].id ?? null,
+      status: ops[i].op === 'insert' ? 'inserted' : 'updated'}));
     return {
       inserted: ops.filter((op) => op.op === 'insert').length,
       updated: ops.filter((op) => op.op === 'update').length,
@@ -582,8 +644,8 @@ export class MemoryTable implements DomainTableLike {
       rows: [...failed,
         ...[...duplicate.entries()].sort(([a], [b]) => a - b).map(([index, existingId]) =>
           ({index, id: existingId, status: 'duplicate', ...(existingId === null ? {} : {existingId})})),
-        ...posted.map((index, i) => ({index, id: results[i].id ?? null,
-          status: ops[i].op === 'insert' ? 'inserted' : 'updated'}))],
+        ...landed.filter((r) => r.status === 'updated'), ...landed.filter((r) => r.status === 'inserted')]
+        .slice(0, cap),
     };
   }
 
@@ -615,11 +677,11 @@ export class MemoryTable implements DomainTableLike {
   // shared by the dry run and the commit: resolves the ops, writes nothing
   private _plan(rows: Record<string, unknown>[], options: DomainBatchOptionsLike) {
     const upsert = options.mode === 'upsert';
-    const key = this.info.businessKey;
-    const writable = new Set(this.properties.map((p) => p.name!)
+    const key = this._info.businessKey;
+    const writable = new Set(this._columns.map((p) => p.name!)
       .filter((name) => this._access.fields[name] === 'editable'));
     for (const column of new Set(rows.flatMap((row) => Object.keys(row)))) {
-      if (!this.properties.some((p) => p.name === column))
+      if (!this._columns.some((p) => p.name === column))
         throw new DomainBackendError('validation', `Unknown column "${column}"`);
       if (!writable.has(column))
         throw new DomainBackendError('validation', `Column "${column}" is not writable`);
@@ -641,7 +703,7 @@ export class MemoryTable implements DomainTableLike {
       errors.set(index, list);
     };
     for (const [index, row] of rows.entries()) {
-      for (const prop of this.properties) {
+      for (const prop of this._columns) {
         const problem = MemoryEditState.problemOf(prop, row[prop.name!]);
         if (problem !== null)
           addError(index, prop.name!, 'invalid-value', problem);
@@ -689,7 +751,7 @@ export class MemoryTable implements DomainTableLike {
 
   // the seed alone may be deleted, so a row opened from a trash list still has its breadcrumb
   private async _ancestors(id: string): Promise<{id: string, name: string}[]> {
-    const parent = this.info.parentColumn!;
+    const parent = this._info.parentColumn!;
     const visible = (key: unknown) => typeof key !== 'string' ? undefined :
       this.rows.find((row) => row.id === key && row[IS_DELETED] !== true);
     // no-oracle: a row the caller cannot see answers no path, never that it exists
@@ -709,17 +771,57 @@ export class MemoryTable implements DomainTableLike {
     return chain.reverse();
   }
 
-  /** The schema's rules — required, choices, min, max — as the server's `_validateRow` refuses on. */
-  check(row: Row, index: number): void {
-    for (const prop of this.properties) {
+  /** The schema's rules as the server refuses on them; an update is checked over the columns it sends alone. */
+  check(row: Row, index: number, columns?: string[]): void {
+    for (const prop of this._columns) {
+      if (columns !== undefined && !columns.includes(prop.name!))
+        continue;
       const problem = MemoryEditState.problemOf(prop, row[prop.name!]);
       if (problem !== null)
         throw new DomainBackendError('validation', `Operation ${index}: column "${prop.name}": ${problem}`);
     }
   }
 
+  /** The business key's unique index over the live rows; an update is checked when it sends a key column. */
+  checkKey(rows: Row[], row: Row, index: number, columns?: string[]): void {
+    const key = this._info.businessKey;
+    if (key.length > 0 && (columns === undefined || key.some((c) => columns.includes(c))) &&
+        rows.some((r) => r.id !== row.id && r[IS_DELETED] !== true &&
+          key.every((c) => row[c] != null && r[c] === row[c])))
+      throw new DomainBackendError('validation', `Operation ${index}: duplicate business key (${key.join(', ')})`);
+  }
+
+  // a bulk edit and an upload carry values, never `$` references
+  private static _literal(values: Row): Row {
+    const escape = (v: unknown): unknown => Array.isArray(v) ? v.map(escape) :
+      typeof v === 'string' && v.startsWith('$') ? `$${v}` : v;
+    return Object.fromEntries(Object.entries(values).map(([k, v]) => [k, escape(v)]));
+  }
+
+  /** A written value as the server coerces it, for the cells the frame holds as text. */
+  decode(column: string, value: unknown, index: number): unknown {
+    const prop = this.properties.find((p) => p.name === column);
+    if (prop === undefined || !isJsonCell(prop) || value === null || value === undefined)
+      return value;
+    if (value === '')
+      return null;
+    const type = prop.propertyType ?? prop.type;
+    let decoded: unknown;
+    try {
+      decoded = JSON.parse(typeof value === 'string' ? value : JSON.stringify(value));
+    } catch {
+      decoded = undefined;
+    }
+    if (type === 'string_list' && Array.isArray(decoded) && !decoded.some((x) => typeof x === 'object' && x !== null))
+      return decoded.map((x) => `${x}`);
+    if (type === 'map' && typeof decoded === 'object' && decoded !== null && !Array.isArray(decoded))
+      return decoded;
+    throw new DomainBackendError('validation',
+      `Operation ${index}: Cannot convert "${typeof value === 'string' ? value : JSON.stringify(value)}" to ${type}`);
+  }
+
   withDefaults(values: Row): Row {
-    for (const prop of this.properties) {
+    for (const prop of this._columns) {
       if (isEmpty(values[prop.name!]) && prop.defaultValue != null)
         values[prop.name!] = prop.defaultValue;
     }
@@ -750,8 +852,16 @@ export class MemoryTable implements DomainTableLike {
     const {filter, search, deleted = 'exclude'} = scope;
     let rows = this.rows;
     if (filter !== undefined && filter !== '') {
-      const mask = await Filters.toMask(Filters.recordsFrame(this.rows, this.properties),
-        this._resolved(MemoryTable._tree(filter)));
+      const root = this._resolved(Filters.bind(MemoryTable._tree(filter), {me: this._author}));
+      Filters.walk(root, (n) => {
+        if (!Filters.isGroup(n) && this._hidden.includes(n.property.replace(TEXT, '')))
+          throw new DomainBackendError('filter', `Unknown or inaccessible column "${n.property.replace(TEXT, '')}"`);
+      });
+      const frame = Filters.recordsFrame(this.rows, this._columns);
+      const texts = Filters.recordsFrame(this.rows,
+        this._columns.map((p) => ({...p, propertyType: 'string', type: 'string'})));
+      const mask = await Filters.toMask({...frame, column: (name) => name.endsWith(TEXT) ?
+        texts.column(name.slice(0, -TEXT.length)) : frame.column(name)}, root);
       rows = rows.filter((_, i) => mask.get(i));
     }
     if (deleted !== 'include')
@@ -766,10 +876,13 @@ export class MemoryTable implements DomainTableLike {
     return rows;
   }
 
-  // `under` is the only operator with no DataFrame form, so the mask never sees one
+  // `under` becomes its ids, `fuzzy` a substring match; a text operator reads any column as text (`::text`)
   private _resolved(root: FilterGroup): FilterGroup {
+    const cast = (name: string) => this._columns.some((p) => p.name === name && p.propertyType !== 'string_list');
     return {...root, nodes: root.nodes.map((node) => 'nodes' in node ? this._resolved(node) :
-      node.operator === 'under' ? this._subtree(node) : node)};
+      node.operator === 'under' ? this._subtree(node) :
+        node.operator === 'fuzzy' ? {...node, operator: 'like'} :
+          TEXT_OPERATORS.has(node.operator) && cast(node.property) ? {...node, property: node.property + TEXT} : node)};
   }
 
   // walks the target's live rows, as the server does: a deleted branch truncates the subtree instead of leaking it

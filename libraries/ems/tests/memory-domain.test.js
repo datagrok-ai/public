@@ -66,7 +66,14 @@ test('query: copies of the store, filtered by the grammar or a tree, sorted, pag
   assert.deepEqual(await titles({sort: '!priority'}), ['Aspirin', 'Ibuprofen', 'Naproxen'], 'first descending, as Postgres');
   assert.deepEqual(await titles({limit: 2}), ['Aspirin', 'Ibuprofen']);
   assert.deepEqual(await titles({limit: 2, offset: 2}), ['Naproxen']);
-  assert.deepEqual(await issue.query({columns: ['id', 'title'], limit: 1}), [{id: 'i1', title: 'Aspirin'}]);
+  const [picked] = await issue.query({columns: ['title'], limit: 1});
+  assert.deepEqual(Object.keys(picked).sort(), ['author_id', 'created_on', 'id', 'title', 'updated_on', 'version'],
+    'the system columns always ride along, as on the server');
+  assert.deepEqual(await issue.query({columns: [], limit: 1}).then((rows) => rows.map((r) => r.id)), ['i1'],
+    'no declared column: the system ones alone');
+  await assert.rejects(issue.query({columns: ['id']}), /Unknown or inaccessible column "id"/,
+    'a system column is not one `columns` takes (the server refuses it)');
+  await assert.rejects(issue.query({columns: ['nope']}), /Unknown or inaccessible column "nope"/);
   assert.equal(await issue.count(), 3);
   assert.equal(await issue.count({filter: 'done = false'}), 2);
   await assert.rejects(issue.query({filter: 'title starts'}), (e) => e.code === 'validation');
@@ -156,7 +163,7 @@ test('transaction: choices, min and max refuse the batch; author_id and the time
     (e) => e.code === 'validation' && /column "priority": Must be one of: low, high/.test(e.message));
   await assert.rejects(issue.transaction([{op: 'update', table: 'issue', id: 'i1', values: {number: 0}}]),
     (e) => e.code === 'validation' && /column "number": Must be at least 1/.test(e.message));
-  const [inserted] = await issue.transaction([{op: 'insert', table: 'issue', values: {project_id: 'p1', title: 'x', number: 1}}]);
+  const [inserted] = await issue.transaction([{op: 'insert', table: 'issue', values: {project_id: 'p1', title: 'x', number: 9}}]);
   const [row] = await issue.query({filter: `id = "${inserted.id}"`});
   assert.equal(row.author_id, 'u7');
   assert.equal(typeof row.created_on, 'string');
@@ -283,7 +290,8 @@ test('info: constraints, refFilters, permissions and childTables from the schema
   const project = await be.table('grit.project');
   assert.deepEqual(issue.info.constraints, [{name: 'weight_positive', expr: 'weight >= 0', message: 'Weight is positive'}]);
   assert.deepEqual(issue.info.permissions, ['escalate']);
-  assert.deepEqual(project.info.childTables, [{schema: 'grit', table: 'issue', fkColumn: 'project_id', label: 'project_id'}]);
+  assert.deepEqual(project.info.childTables, [{schema: 'grit', table: 'issue', fkColumn: 'project_id', label: 'project_id',
+    onDelete: 'restrict'}]);
   assert.deepEqual(issue.info.childTables, []);
   assert.equal((await issue.access()).can.escalate, true);
   const denied = backend({access: {can: {view: true, escalate: false}, fields: {}}});
@@ -295,7 +303,8 @@ test('info: constraints, refFilters, permissions and childTables from the schema
       city_id: {type: 'ref', ref: 'city', filter: 'country_id = $country_id', friendlyName: 'City'}}},
   }});
   assert.deepEqual(filtered.tableSync('s.person').info.refFilters, {city_id: 'country_id = $country_id'});
-  assert.deepEqual(filtered.tableSync('s.city').info.childTables, [{schema: 's', table: 'person', fkColumn: 'city_id', label: 'City'}]);
+  assert.deepEqual(filtered.tableSync('s.city').info.childTables, [{schema: 's', table: 'person', fkColumn: 'city_id', label: 'City',
+    onDelete: 'restrict'}]);
   assert.deepEqual(filtered.tableSync('s.country').info.childTables.map((c) => c.table), ['city', 'person']);
 });
 
@@ -328,11 +337,11 @@ test('saveAll: every writer\'s batch as one transaction, the results sliced back
   const p = projects.edit.newRow({key: 'S', name: 'Session'});
   issues.edit.newRow({project_id: p, title: 'Child of a draft'});
   issues.edit.setValue('i1', 'title', 'Aspirin 100');
-  const ops = issues.edit.buildOps();
+  const ops = issues.edit.buildOps(new Set([p])); // the batch's drafts, as saveAll passes them
   assert.deepEqual(ops.map((x) => x.op.op), ['update', 'insert']);
   assert.deepEqual(ops[1].op, {op: 'insert', table: 'grit.issue', ref: ops[1].row.id,
-    values: {project_id: `$${p}`, title: 'Child of a draft'}}, 'the draft reference is the server\'s $ref');
-  assert.equal(await be.saveAll([projects.edit, issues.edit]), true);
+    values: {project_id: `$${p}`, title: 'Child of a draft', done: false}}, 'the draft reference is the server\'s $ref');
+  await be.saveAll([projects.edit, issues.edit]);
   assert.equal(projects.edit.isDirty.value, false);
   assert.equal(issues.edit.isDirty.value, false);
   const saved = projects.df.rows.at(-1);
@@ -355,7 +364,7 @@ test('saveAll: every writer is closed for the whole transaction — an edit made
   issues.edit.markDeleted('i2');
   assert.throws(() => issues.edit.newRow({project_id: 'p1', title: 'Third'}),
     /cannot add a row while the batch is being saved/);
-  assert.equal(await saving, true);
+  await saving;
   assert.equal(issues.edit.isSaving.value, false);
   assert.equal(issue.rows[0].title, 'First', 'what was sent is what landed');
   assert.equal(issues.df.get('title', 0), 'First', 'and the frame says so — no edit was lost silently');
@@ -496,7 +505,7 @@ test('updateWhere: the Edit predicate narrows the selection silently', async () 
   assert.deepEqual((await issue.query()).map((r) => r.priority), ['low', undefined]);
 
   const readOnly = new MemoryDomainBackend(SCHEMA,
-    {rows, access: {can: {view: true, edit: false}, fields: {priority: 'editable'}}}).tableSync('grit.issue');
+    {rows, access: {can: {view: true, edit: false}, fields: {priority: 'editable', number: 'readonly'}}}).tableSync('grit.issue');
   assert.deepEqual(await readOnly.updateWhere('number >= 1', {priority: 'low'}), {updated: 1, hasMore: false},
     'a row\'s own ~can_edit is the truth the table-level denial cannot override');
 });
@@ -555,4 +564,20 @@ test('ancestors: the chain stops at an ancestor out of sight, at a cycle and at 
   const chain = await deep.ancestors('d79');
   assert.equal(chain.length, MemoryTable.maxPathDepth);
   assert.equal(chain.at(-1).id, 'd78', 'root-first, truncated at the far end');
+});
+
+test('as the platform: a taken business key is refused, a leading $ in a bulk value is text', async () => {
+  const be = backend();
+  const project = be.tableSync('grit.project');
+  const taken = (e) => e.code === 'validation' && /duplicate business key \(key\)/.test(e.message);
+  await assert.rejects(project.transaction([{op: 'insert', table: 'project', values: {key: 'GRIT', name: 'Dup'}}]), taken);
+  await assert.rejects(project.transaction([{op: 'update', table: 'project', id: 'p2', values: {key: 'GRIT'}}]), taken);
+  assert.equal(project.rows.length, 2);
+
+  await project.updateWhere('key = "DG"', {name: '$100'});
+  await project.batch([{key: 'X', name: '$$5 off'}]);
+  assert.deepEqual(project.rows.slice(1).map((r) => r.name), ['$100', '$$5 off']);
+
+  const report = await project.batch(Array.from({length: 1100}, (_, i) => ({key: `K${i}`, name: `N${i}`})));
+  assert.deepEqual([report.inserted, report.rows.length], [1100, 1000], 'the report itemizes 1000 rows at most');
 });
