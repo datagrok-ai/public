@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Spotlight: The Recent list reads only the user's latest 5000 events, so it stays fast for accounts with hundreds of thousands of events a month
 * Search: Fixed missing PDB structure images: RCSB moved them to `cdn.rcsb.org/images/structures/pdb/`
 * [core#1507](https://github.com/datagrok-ai/core/issues/1507): Fixed Down arrow in the Space row's search not moving to the first matching space
 * Spotlight: Fixed notifications staying bold after being clicked, and the Notifications tab showing the oldest notifications instead of the newest
