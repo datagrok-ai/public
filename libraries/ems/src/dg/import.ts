@@ -2,16 +2,24 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import type * as DG from 'datagrok-api/dg';
 import {signal, computed, Control, div, divH, divV, span, plural, text, link, Wizard, DataTable, ChoiceInput,
-  BoolInput, badge, dot, statusLine, Form, notify, Scope} from '@datagrok-libraries/u2';
+  BoolInput, badge, dot, statusLine, Form, notify, Scope, isEmpty} from '@datagrok-libraries/u2';
 import type {IProperty, ChoiceItem, BadgeVariant, RowView} from '@datagrok-libraries/u2';
 import {capital, nounOf} from '../core/domain-backend.js';
-import type {DomainBatchOptionsLike, DomainBatchReportLike, DomainBatchValidationLike} from '../core/domain-backend.js';
+import {MemoryEditState} from '../core/edit-state.js';
+import type {DomainBatchOptionsLike, DomainBatchReportLike, DomainBatchRowLike, DomainBatchValidationLike}
+  from '../core/domain-backend.js';
 import {fromDartInput} from '@datagrok-libraries/u2/dg';
 import {DomainTable} from './facade.js';
 import {DomainDataTable} from './grid.js';
 import {DomainErrors} from './errors.js';
 import {ImportLinks} from './import-links.js';
+import {DomainAddress} from './address.js';
 import type {ImportLink, LinkField, LinkMatch} from './import-links.js';
+
+/** A report line once it is placed: on its row of the batch. */
+type Placed = DomainBatchRowLike & {index: number, id: string | null};
+/** A report whose statement-level refusals are notes, every line on its row. */
+type Report = Omit<DomainBatchReportLike, 'rows'> & {rows: Placed[]};
 
 export interface DomainImportOptions {
   /** The frame to import, when the caller already has one; the picker still offers the rest. */
@@ -31,7 +39,7 @@ export interface DomainImporter {
    * the number of rows done. */
   prepare?(rows: Record<string, unknown>[], progress: (done: number) => void): Promise<DomainImportVerdict[]>;
   /** The columns of the preview or the report, given the ones the import would show: `~row`,
-   * `~result`, each mapped target by its name and `~note` in the preview; `~row`, `~result`, `~key` and
+   * `~result`, `~note` and each mapped target by its name in the preview; `~row`, `~result`, `~key` and
    * `~note` in the report. */
   columns?(defaults: DomainImportColumn[], step: DomainImportStep): DomainImportColumn[];
   /** The height of a preview or report row, for columns that draw. */
@@ -125,6 +133,10 @@ const OUTCOMES: Record<string, {label: string, variant: BadgeVariant}> = {
 };
 /** Rows of the report's key lookup per query. */
 const KEY_CHUNK = 500;
+/** A users filter rides in the URL encoded twice: this keeps each read well under what a proxy allows. */
+const USER_FILTER_BYTES = 6000;
+/** User reads at once. */
+const USER_READS = 4;
 
 /** One row of the mapping step — the target is the choice input the flow keeps for that column. */
 interface Mapping {column: string}
@@ -133,32 +145,57 @@ interface Mapping {column: string}
  * cancelled. Exported as `domains.import` — `import` cannot name a function. Only the mapped columns are posted,
  * under their target names, plus what the table's {@link DomainImporter} derives; the preview is the server's
  * dry run, the commit's own checks inside a rolled-back transaction. */
-export function openImport(table: DomainTable, options: DomainImportOptions = {}):
+export async function openImport(table: DomainTable, options: DomainImportOptions = {}):
   Promise<DomainBatchReportLike | null> {
   if (table.table.batch === undefined) {
     notify.error(`${table.address}: the backend does not support batch import`);
-    return Promise.resolve(null);
+    return null;
   }
   if (!table.table.support.transaction) {
     notify.error(`${table.address}: the table does not accept writes`);
-    return Promise.resolve(null);
+    return null;
   }
   // an import inserts: the draft policy, so a key typed once on insert is a target too
   const writable = table.access.columnPolicy().forDraft();
   const derived = table.importer?.derives ?? [];
-  const targets = table.properties.filter((p) => writable.field(p.name!) === 'editable' && !derived.includes(p.name!));
+  const stuck = DomainTable.unsettable(table.properties, table.info, table.access, derived);
+  // a row the caller cannot fill every required column of can only update
+  const inserts = stuck.length === 0 && !table.info.hiddenRequired;
+  const key = table.info.businessKey;
+  const updates = table.table.support.batch.upsert && key.length > 0 &&
+    key.every((k) => table.properties.some((p) => p.name === k)) && !stuck.some((p) => key.includes(p.name!));
+  // the column the server numbers is still how Add or update finds a row
+  const auto = updates ? await autoNumbered(table) : null;
+  const targets = table.properties.filter((p) => !derived.includes(p.name!) &&
+    (writable.field(p.name!) === 'editable' || p.name === auto));
   if (targets.length === 0) {
     notify.warning(`There is no column of ${table.address} you may write.`);
-    return Promise.resolve(null);
+    return null;
+  }
+  if (!inserts && !updates) {
+    notify.warning(DomainTable.noRequired(table.info, stuck, table.access));
+    return null;
   }
   // the wizard opens after the linked tables load: past that await it is a tree of its own
-  return ImportLinks.of(targets).then((links) => new Promise((resolve) => {
+  const links = await ImportLinks.of(targets);
+  return new Promise((resolve) => {
     const owner = Scope.root('import wizard');
-    owner.build(() => new ImportFlow(table, targets, links, options, (report) => {
-      owner.dispose();
-      resolve(report);
-    }).open());
-  }));
+    owner.build(() => new ImportFlow(table, targets, links, options, inserts, auto ?? null, auto === undefined,
+      (report) => {
+        owner.dispose();
+        resolve(report);
+      }).open());
+  });
+}
+
+// the registry does not say which key column the server numbers; the schema's manifest does (undefined: unread)
+async function autoNumbered(table: DomainTable): Promise<string | null | undefined> {
+  const at = table.address.indexOf('.');
+  const manifest = await grok.dapi.domains.schema(table.address.slice(0, at)).manifest().catch(() => null);
+  if (manifest === null)
+    return undefined;
+  const columns = manifest.tables[table.address.slice(at + 1)]?.columns ?? {};
+  return table.info.businessKey.find((k) => columns[k]?.['autoNumber'] != null) ?? null;
 }
 
 class ImportFlow {
@@ -174,10 +211,10 @@ class ImportFlow {
   private _writeBack?: BoolInput;
   private _wizard!: Wizard;
   private _committed = false;
-  private _result: DomainBatchReportLike | null = null;
+  private _result: Report | null = null;
   private _settled = false;
   // the preview posts again only when the key (the mapping, the mode and the flags) changed
-  private _checked: {key: string, report: Promise<DomainBatchValidationLike>} | undefined;
+  private _checked: {key: string, report: Promise<DomainBatchValidationLike | DomainBatchReportLike>} | undefined;
   // once per source and mapping: the importer can be slow, and the preview and the commit read the same plan
   private _planned: {frame: DG.DataFrame, key: string, plan: Promise<Planned[]>} | undefined;
   // an older dry run answering last must not paint over a newer one
@@ -185,12 +222,14 @@ class ImportFlow {
   // '' while the dry run runs, a reason where all-or-nothing would abort
   private readonly _previewBlock = signal<string | null>(null);
   private readonly _importText = signal('Import');
+  private _refusal: string[] = [];
   private readonly _aborted = signal(false);
   private _linked: {frame: DG.DataFrame, key: string, matches: Promise<Map<string, LinkMatch[]>>} | undefined;
   private readonly _linkStatus = signal<{text: string, ok: boolean}[]>([]);
 
   constructor(private readonly _table: DomainTable, private readonly _targets: IProperty[],
     private readonly _links: Map<string, ImportLink>, private readonly _options: DomainImportOptions,
+    private readonly _inserts: boolean, private readonly _auto: string | null, private readonly _autoUnread: boolean,
     private readonly _resolve: (report: DomainBatchReportLike | null) => void) {}
 
   open(): void {
@@ -238,9 +277,10 @@ class ImportFlow {
       picker.value = open[0];
     const summary = span('', 'u2-domain-import-picked u2-form-note');
     const batch = this._table.table.support.batch;
-    if (batch.upsert) {
-      this._mode = new ChoiceInput({label: 'Mode', name: 'mode', value: 'insert', nullable: false,
-        items: [{value: 'insert', label: 'Add new rows'}, {value: 'upsert', label: 'Add or update'}]});
+    if (batch.upsert && this._table.info.businessKey.length > 0) {
+      const upsert = {value: 'upsert', label: 'Add or update'};
+      this._mode = new ChoiceInput({label: 'Mode', name: 'mode', value: this._inserts ? 'insert' : 'upsert',
+        nullable: false, items: this._inserts ? [{value: 'insert', label: 'Add new rows'}, upsert] : [upsert]});
     }
     if (batch.partial) {
       this._allOrNothing = new BoolInput({label: 'All or nothing', value: true, name: 'allOrNothing',
@@ -296,7 +336,8 @@ class ImportFlow {
     table.root.classList.add('u2-domain-import-mapping');
     const links = divV([]);
     links.dataset.u2Part = 'import-links';
-    const step = divV([table.root, links, statusLine(signal(null), computed(() => this._mappingStatus()))],
+    const hints = divV([]);
+    const step = divV([table.root, links, hints, statusLine(signal(null), computed(() => this._mappingStatus()))],
       'u2-domain-import-mapping-step');
     const control = new Control(step);
     control.effect(() => {
@@ -304,6 +345,12 @@ class ImportFlow {
       const frame = this._frame.value;
       if (frame !== null && this._links.size > 0)
         void this._checkLinks(frame);
+    });
+    control.effect(() => {
+      this._recheck.value;
+      const mapped = this._mapping();
+      hints.replaceChildren(...this._targets.filter((p) => mapped.has(p.name!))
+        .flatMap((p) => ImportLinks.idHint(p) ?? []).map((line) => divH([dot('accent'), span(line)])));
     });
     control.effect(() => links.replaceChildren(...this._linkStatus.value.map((line) =>
       divH([dot(line.ok ? 'success' : 'error'), span(line.text)]))));
@@ -316,7 +363,7 @@ class ImportFlow {
     if (this._frame.peek() !== frame || mapping !== JSON.stringify([...this._mapping()]))
       return;
     const byLink = this._linkMapping([...this._mapping()]);
-    this._linkStatus.value = [...byLink.keys()].map((column) => {
+    const status = await Promise.all([...byLink.keys()].map(async (column) => {
       const link = this._links.get(column)!;
       const by = byLink.get(column)!.map(([field]) => DomainTable.captionOf(field.prop)).join(' + ');
       const title = `${DomainTable.captionOf(link.prop)} by ${by}`;
@@ -325,8 +372,26 @@ class ImportFlow {
       const named = matches.get(column)!.filter((m) => m.id !== null || m.error !== null);
       const hit = named.filter((m) => m.id !== null).length;
       const found = `${hit === named.length ? 'all ' : `${hit} of `}${plural(named.length, 'row', 'rows')} found`;
-      return {text: `${title}: ${found}`, ok: hit === named.length && hit > 0};
-    });
+      const byKey = hit === 0 && named.length > 0 ? await this._foundByKey(frame, link, byLink.get(column)!) : null;
+      return {text: `${title}: ${found}${byKey ?? ''}`, ok: hit === named.length && hit > 0};
+    }));
+    if (this._frame.peek() === frame && mapping === JSON.stringify([...this._mapping()]))
+      this._linkStatus.value = status;
+  }
+
+  // a file column of keys mapped to the name finds nothing: what mapping it to the key would find
+  private async _foundByKey(frame: DG.DataFrame, link: ImportLink, fields: [LinkField, string][]):
+    Promise<string | null> {
+    const key = link.target.info.businessKey;
+    const field = key.length === 1 && fields.length === 1 && fields[0][0].path !== key[0] ?
+      link.fields.find((f) => f.path === key[0]) : undefined;
+    if (field === undefined)
+      return null;
+    const column = frame.columns.byName(fields[0][1]);
+    const values = Array.from({length: frame.rowCount}, (_, i) => [ImportFlow._valueOrNull(column, i)]);
+    const hit = (await ImportLinks.resolve(link, [field], values).catch(() => [])).filter((m) => m.id !== null).length;
+    return hit === 0 ? null : `; as ${DomainTable.captionOf(link.prop)} › ${DomainTable.captionOf(field.prop)}, ` +
+      `${plural(hit, 'row', 'rows')} would be found`;
   }
 
   // per link, the fields mapped to it and the file column each comes from
@@ -410,17 +475,26 @@ class ImportFlow {
     host.replaceChildren(status);
     let plan: Planned[];
     let report: DomainBatchValidationLike | null = null;
+    let refusal: string | null = null;
+    let notes: string[] = [];
     try {
       plan = await this._plan(frame, mapping,
         (done) => status.textContent = `Checking rows: ${done} of ${frame.rowCount}`);
       const sent = ImportFlow._sent(plan);
       if (this._table.table.validate !== undefined) {
         const key = JSON.stringify([mapping, options]);
-        if (this._checked?.key !== key) {
-          const scanned = sent.slice(0, PREVIEW_ROWS).map((i) => plan[i].payload!);
-          this._checked = {key, report: this._table.table.validate(scanned, options)};
-        }
-        report = await this._checked.report;
+        const scanned = sent.slice(0, PREVIEW_ROWS);
+        const payloads = scanned.map((i) => plan[i].payload!);
+        if (this._checked?.key !== key)
+          this._checked = {key, report: this._table.table.validate(payloads, options)};
+        const answer = await this._checked.report;
+        if (ImportFlow._refused(answer)) {
+          refusal = ImportFlow._refusalText(answer);
+          const judged = await this._attributed(answer.rows, payloads);
+          notes = ImportFlow._refusalNotes(judged.notes, scanned);
+          report = ImportFlow._predicted(judged.rows, scanned.length);
+        } else
+          report = answer;
       }
       if (gen !== this._previewGen)
         return;
@@ -437,8 +511,25 @@ class ImportFlow {
     if (owner.scope.isDisposed)
       return;
     const sent = ImportFlow._sent(plan);
-    if (report === null)
-      this._previewBlock.value = null;
+    const kept = plan.filter((p) => p.payload === null);
+    const keptErrors = kept.filter((p) => p.verdict.error !== undefined).length;
+    const errors = (report?.errorCount ?? 0) + keptErrors;
+    const keys = this._writeBack?.peek() !== true ? 0 :
+      kept.filter((p) => p.verdict.existing !== undefined).length +
+      (report?.rows.filter((r) => r.predicted === 'skip' && r.existingId !== undefined).length ?? 0);
+    // what would land: every row sent where there is no dry run, null where the dry run did not see them all
+    const valid = report === null ? sent.length : sent.length > PREVIEW_ROWS ? null :
+      report.willInsert + report.willUpdate;
+    const noun = (n: number) => plural(n, nounOf(this._table.info, true), nounOf(this._table.info));
+    // the counts are what the batch WOULD do row by row; all-or-nothing makes one bad row the verdict on all of them
+    const aborts = options.allOrNothing !== false && errors > 0;
+    this._importText.value = refusal !== null ? 'Import' :
+      aborts ? `Nothing to import while ${plural(errors, 'row has', 'rows have')} errors` :
+        valid === 0 && keys > 0 ? `Write back ${plural(keys, 'key', 'keys')}` : `Import ${noun(valid ?? sent.length)}`;
+    this._previewBlock.value = refusal !== null ? (notes.length > 0 ? 'Nothing would be imported until that is fixed.' :
+      `The server refuses the whole batch — ${refusal}. Nothing would be imported until that is fixed.`) :
+      plan.length === 0 ? 'Nothing would be imported — the file has no rows.' :
+        aborts ? this._abortReason(errors, valid) : valid === 0 && keys === 0 ? ImportFlow._nothing(errors) : null;
     const judged = report !== null || this._table.importer?.prepare !== undefined;
     const rows = this._previewRows(plan, sent, report).slice(0, PREVIEW_SHOWN);
     host.replaceChildren(this._rowsTable(owner, 'preview', rows, judged ? this._previewColumns(mapping) :
@@ -450,24 +541,77 @@ class ImportFlow {
         'u2-domain-import-summary'));
       return;
     }
-    const kept = plan.filter((p) => p.payload === null);
-    const keptErrors = kept.filter((p) => p.verdict.error !== undefined).length;
-    const errors = report.errorCount + keptErrors;
     const checked = sent.length > PREVIEW_ROWS ? `Checked the first ${PREVIEW_ROWS.toLocaleString()} of ` +
       `${sent.length.toLocaleString()} rows — the rest are checked on import:` : '';
     host.prepend(ImportFlow._headline(ImportFlow._counts([[report.willInsert, 'to add', 'success'],
       [report.willUpdate, 'to update', 'success'], [report.willSkip + kept.length - keptErrors, 'to skip', 'default'],
-      [errors, errors === 1 ? 'error' : 'errors', 'error']]), 'Nothing to import'));
+      [errors, errors === 1 ? 'error' : 'errors', 'error']]), refusal === null ? 'Nothing to import' :
+      'Refused by the server'));
     if (checked !== '')
       host.prepend(span(checked, 'u2-domain-import-summary'));
     if (showing !== '')
       host.append(span(`${showing}.`, 'u2-domain-import-summary'));
-    const valid = sent.length > PREVIEW_ROWS ? null : report.willInsert + report.willUpdate;
-    const noun = (n: number) => plural(n, nounOf(this._table.info, true), nounOf(this._table.info));
-    this._importText.value = `Import ${noun(valid ?? sent.length)}`;
-    // the counts are what the batch WOULD do row by row; all-or-nothing makes one bad row the
-    // verdict on all of them
-    this._previewBlock.value = options.allOrNothing !== false && errors > 0 ? this._abortReason(errors, valid) : null;
+    host.append(...notes.map((note) => span(note, 'u2-domain-import-problem')));
+  }
+
+  private static _nothing(errors: number): string {
+    return `Nothing would be imported — ${errors > 0 ? `${plural(errors, 'row has errors', 'rows have errors')}, ` +
+      'and no row is valid' : 'no row would be added or updated'}.`;
+  }
+
+  // a batch the server refuses whole answers even a dry run with `error` set and no counts
+  private static _refused(answer: DomainBatchValidationLike | DomainBatchReportLike): answer is DomainBatchReportLike {
+    return !('validateOnly' in answer);
+  }
+
+  private static _refusalText(refusal: DomainBatchReportLike): string {
+    const messages = [...new Set(refusal.rows.flatMap((r) => (r.errors ?? []).map((e) => e.message)))];
+    return messages.length > 0 ? messages.join('; ') : refusal.error ?? 'no reason given';
+  }
+
+  private static _predicted(rows: Placed[], rowCount: number): DomainBatchValidationLike {
+    const refused = rows.filter((r) => r.errors?.length);
+    return {validateOnly: true, rowCount, willInsert: 0, willUpdate: 0, willSkip: 0, errorCount: refused.length,
+      rows: refused.map((r) => ({index: r.index, predicted: 'error', errors: r.errors}))};
+  }
+
+  // a refusal of the whole statement names no row: a CHECK is judged per row here, anything else is a note
+  private async _attributed(rows: DomainBatchRowLike[], payloads: Record<string, unknown>[]):
+    Promise<{rows: Placed[], notes: {message: string, at: number[]}[]}> {
+    const out = new Map<number, Placed>();
+    const notes: {message: string, at: number[]}[] = [];
+    const at = (index: number, from?: DomainBatchRowLike): Placed => {
+      const row = out.get(index) ?? {...from, index, id: from?.id ?? null, errors: []};
+      out.set(index, row);
+      return row;
+    };
+    for (const row of rows) {
+      if (row.index !== undefined) {
+        at(row.index, row).errors!.push(...row.errors ?? []);
+        continue;
+      }
+      for (const error of row.errors ?? []) {
+        const breaking = error.code === 'check' ? await this._breaking(error.constraint, payloads) ?? [] : [];
+        notes.push({message: this._describe([error]), at: breaking});
+        for (const index of breaking)
+          at(index).errors!.push(error);
+      }
+    }
+    return {rows: [...out.values()].sort((a, b) => a.index - b.index), notes};
+  }
+
+  private async _breaking(name: string | undefined, payloads: Record<string, unknown>[]): Promise<number[] | null> {
+    const admitted = await this._table.constraints.find((c) => c.name === name)?.admits(payloads);
+    return admitted == null ? null : payloads.flatMap((_, i) => admitted[i] ? [] : [i]);
+  }
+
+  private static _refusalNotes(notes: {message: string, at: number[]}[], sent: number[]): string[] {
+    return notes.map(({message, at}) => {
+      const shown = at.slice(0, 10).map((i) => (sent[i] + 1).toLocaleString()).join(', ');
+      const more = at.length > 10 ? ` and ${(at.length - 10).toLocaleString()} more` : '';
+      return `The server refuses the whole batch — ${message}` + (at.length === 0 ? '; it does not say which row.' :
+        ` (${at.length === 1 ? 'row' : 'rows'} ${shown}${more}).`);
+    });
   }
 
   private static _headline(items: [string, BadgeVariant][], none: string): HTMLElement {
@@ -510,8 +654,11 @@ class ImportFlow {
 
   private _row(index: number, planned: Planned, kind: string, note: string, errors: DomainImportError[]):
     DomainImportRow {
-    return {index, values: {...planned.cells, ...planned.payload}, kind, label: planned.verdict.label ?? '', note,
-      errors, id: null, key: ''};
+    // a user named by login or name reads as typed; the payload carries the id
+    const typed = Object.fromEntries(this._targets.filter((p) => p.semType === 'User' && p.name! in planned.cells)
+      .map((p) => [p.name!, planned.cells[p.name!]]));
+    return {index, values: {...planned.cells, ...planned.payload, ...typed}, kind, label: planned.verdict.label ?? '',
+      note, errors, id: null, key: ''};
   }
 
   private _rowsTable(owner: Control, step: DomainImportStep, rows: DomainImportRow[],
@@ -542,8 +689,8 @@ class ImportFlow {
   }
 
   private _previewColumns(mapping: [string, string][]): DomainImportColumn[] {
-    return [ImportFlow._numberColumn(), ImportFlow._resultColumn(VERDICTS),
-      ...mapping.map(([target]) => this._valueColumn(target)), ImportFlow._noteColumn()];
+    return [ImportFlow._numberColumn(), ImportFlow._resultColumn(VERDICTS), ImportFlow._noteColumn(),
+      ...mapping.map(([target]) => this._valueColumn(target))];
   }
 
   private _reportColumns(saved: Map<string, RowView>): DomainImportColumn[] {
@@ -581,7 +728,8 @@ class ImportFlow {
 
   private _keyLink(row: DomainImportRow, saved: Map<string, RowView>): HTMLElement | string {
     const target = row.id === null ? undefined : saved.get(row.id);
-    return target === undefined ? '' : link(row.key, () => {
+    const name = this._table.info.nameColumn;
+    return target === undefined ? (name == null ? '' : text(row.values[name])) : link(row.key, () => {
       this._settle(this._result);
       this._table.open(target);
     });
@@ -615,35 +763,116 @@ class ImportFlow {
     const cells = this._payload(frame, mapping, frame.rowCount);
     // what is sent: a link's id in place of the fields that found it; a row naming no record leaves the link alone
     const rows = cells.map((row) => Object.fromEntries(Object.entries(row).filter(([key]) => !key.includes('.'))));
-    const missed: (string | null)[] = rows.map(() => null);
+    const missed: string[][] = rows.map(() => []);
     for (const [column, matches] of await this._resolveLinks(frame, mapping)) {
       for (const [i, row] of rows.entries()) {
         if (matches[i].id !== null)
           row[column] = matches[i].id;
-        missed[i] ??= matches[i].error;
+        if (matches[i].error !== null)
+          missed[i].push(matches[i].error!);
       }
     }
+    await this._namedUsers(rows);
     const prepare = this._table.importer?.prepare;
     const verdicts = prepare === undefined ? [] : await prepare(rows, progress);
     return cells.map((cell, i): Planned => {
-      const verdict = missed[i] !== null ? {error: missed[i]!} : verdicts[i] ?? {};
+      // a row the server never sees has every problem said here, the ones it would have found too
+      const verdict = missed[i].length > 0 ?
+        {error: [...missed[i], ...this._validate(rows[i]), ...this._valueProblems(rows[i])].join('; ')} :
+        verdicts[i] ?? {};
       if (verdict.error !== undefined || verdict.existing !== undefined || verdict.sameAs !== undefined)
         return {cells: cell, payload: null, verdict};
       const payload = {...rows[i], ...verdict.values};
-      const problem = this._validate(payload);
-      return problem === null ? {cells: cell, payload, verdict} :
-        {cells: cell, payload: null, verdict: {error: problem}};
+      const problems = this._validate(payload);
+      return problems.length === 0 ? {cells: cell, payload, verdict} :
+        {cells: cell, payload: null, verdict: {error: problems.join('; ')}};
     });
   }
 
-  private _validate(row: Record<string, unknown>): string | null {
-    const validators = this._table.validators;
-    for (const column of validators.columns) {
-      const problem = validators.check(column, row[column], row as RowView);
-      if (problem !== null)
-        return `${ImportFlow._caption(this, column)}: ${problem}`;
+  // a user column takes a login or a name too, where exactly one user answers to it
+  private async _namedUsers(rows: Record<string, unknown>[]): Promise<void> {
+    const columns = this._targets.filter((p) => p.semType === 'User');
+    const named = [...new Set(rows.flatMap((row) => columns.flatMap((p) => {
+      const said = ImportLinks.idProblem(p, row[p.name!]) === null ? '' : String(row[p.name!]).trim();
+      return said === '' ? [] : [said];
+    })))];
+    const users = new Map<string, DG.User>();
+    const filters = ImportFlow._userFilters(named);
+    for (let at = 0; at < filters.length; at += USER_READS) {
+      await Promise.all(filters.slice(at, at + USER_READS).map(async (filter) => {
+        for (const user of await grok.dapi.users.filter(filter).list())
+          users.set(user.id, user);
+      }));
     }
-    return null;
+    const ids = new Map<string, string | null>();
+    for (const user of users.values()) {
+      const key = user.friendlyName?.toLowerCase();
+      if (key)
+        ids.set(key, ids.has(key) ? null : user.id);
+    }
+    for (const user of [...users.values()].filter((u) => !!u.login))
+      ids.set(user.login.toLowerCase(), user.id);
+    for (const row of rows) {
+      for (const p of columns) {
+        const id = ImportLinks.idProblem(p, row[p.name!]) === null ? null :
+          ids.get(String(row[p.name!]).trim().toLowerCase());
+        if (id)
+          row[p.name!] = id;
+      }
+    }
+  }
+
+  // a login as typed or lowercased; a name as a first name, a last name, or both split at a space
+  private static _userClauses(v: string): string[] {
+    const q = (s: string) => JSON.stringify(s);
+    const words = v.split(/\s+/);
+    return [...new Set([v, v.toLowerCase()])].map((login) => `login = ${q(login)}`).concat(
+      `firstName = ${q(v)}`, `lastName = ${q(v)}`, ...words.slice(1).map((_, i) =>
+        `(firstName = ${q(words.slice(0, i + 1).join(' '))} and lastName = ${q(words.slice(i + 1).join(' '))})`));
+  }
+
+  // the names in filters that fit the URL, measured as sent: encoded twice
+  private static _userFilters(named: string[]): string[] {
+    const size = (s: string) => encodeURIComponent(encodeURIComponent(s)).length;
+    const or = size(' or ');
+    const filters: string[][] = [];
+    let bytes = Infinity;
+    for (const v of named) {
+      const clauses = ImportFlow._userClauses(v);
+      const more = clauses.reduce((n, c) => n + size(c) + or, 0);
+      // a value too long for any URL is not looked up: its row says it names no single user
+      if (more > USER_FILTER_BYTES)
+        continue;
+      if (bytes + more > USER_FILTER_BYTES) {
+        filters.push([]);
+        bytes = 0;
+      }
+      filters[filters.length - 1].push(...clauses);
+      bytes += more;
+    }
+    return filters.map((clauses) => clauses.join(' or '));
+  }
+
+  private _validate(row: Record<string, unknown>): string[] {
+    const validators = this._table.validators;
+    const problems = this._targets.map((prop) => [prop.name!, ImportLinks.idProblem(prop, row[prop.name!])]);
+    // the server numbers new rows only outside Add or update, which needs the number on every row
+    if (this._auto !== null && this._auto in row && isEmpty(row[this._auto]))
+      problems.push([this._auto, 'A new row needs Add new rows mode']);
+    for (const column of validators.columns)
+      problems.push([column, validators.check(column, row[column], row as RowView)]);
+    return problems.filter(([, problem]) => problem !== null)
+      .map(([column, problem]) => `${ImportFlow._caption(this, column!)}: ${problem}`);
+  }
+
+  private _valueProblems(row: Record<string, unknown>): string[] {
+    return this._targets.filter((prop) => prop.name! in row && !ImportLinks.isLink(prop)).flatMap((prop) => {
+      const value = row[prop.name!];
+      const numeric = ['int', 'bigint', 'double', 'float'].includes(prop.propertyType ?? prop.type ?? '');
+      const problem = numeric && typeof value === 'string' && !Number.isFinite(Number(value)) ?
+        `"${value}" is not a number` : MemoryEditState.problemOf(prop, value);
+      return problem === null ? [] : [`${ImportFlow._caption(this, prop.name!)}: ${problem}`];
+    });
   }
 
   // a sent row's place in the batch is its index here
@@ -657,8 +886,14 @@ class ImportFlow {
     const rows: Record<string, unknown>[] = Array.from({length: count}, () => ({}));
     for (const [target, name] of mapping) {
       const column = frame.columns.byName(name);
-      for (let i = 0; i < count; i++)
-        rows[i][target] = ImportFlow._valueOrNull(column, i);
+      // a key as the app shows it (`C10-0042`) is the number it stands for
+      const key = this._table.info.businessKey.includes(target) ? this._targets.find((p) => p.name === target &&
+        p.format && ['int', 'bigint'].includes(p.propertyType ?? p.type ?? '')) : undefined;
+      for (let i = 0; i < count; i++) {
+        const value = ImportFlow._valueOrNull(column, i);
+        rows[i][target] = key !== undefined && typeof value === 'string' ? DomainTable.parseKey(key, value) ?? value :
+          value;
+      }
     }
     return rows;
   }
@@ -782,8 +1017,32 @@ class ImportFlow {
     const names = (p: IProperty) => [plain(p.name ?? ''), plain(p.friendlyName ?? '')].filter((n) => n !== '');
     const hit = (test: (a: string) => boolean) => this._targets.find((p) => names(p).some(test))?.name;
     const typed = column.semType ? this._targets.filter((p) => p.semType === column.semType) : [];
-    return hit((a) => a === want) ?? hit((a) => a.startsWith(want) || want.startsWith(a)) ??
+    const found = hit((a) => a === want) ?? hit((a) => a.startsWith(want) || want.startsWith(a)) ??
       hit((a) => a.includes(want) || want.includes(a)) ?? (typed.length === 1 ? typed[0].name! : SKIP);
+    // an exported key re-imported to add rows would stop the mapping step: the server numbers those
+    const target = found === this._auto && this._mode?.peek() !== 'upsert' ? SKIP : found;
+    const link = this._links.get(target);
+    if (link === undefined || plain(link.prop.name!) === want || ImportFlow._ids(column))
+      return target;
+    const ref = names(link.prop).flatMap((n) => [n, n.replace(/id$/, '')]).filter((r) => r !== '' && want.includes(r))
+      .sort((x, y) => y.length - x.length)[0];
+    if (ref === undefined)
+      return target;
+    const rest = want.slice(want.indexOf(ref) + ref.length);
+    const info = link.target.info;
+    const field = (name?: string | null) => link.fields.find((f) => f.prop.name === name);
+    const bare = want === ref && !/[^\x20-\x7e]/.test(column.name);
+    const by = rest !== '' ? link.fields.find((f) => names(f.prop).includes(rest)) :
+      bare ? field(info.nameColumn) ?? field(info.businessKey[0]) : undefined;
+    return by === undefined ? target : `${target}.${by.prop.name}`;
+  }
+
+  private static _ids(column: DG.Column): boolean {
+    for (let i = 0; i < column.length; i++) {
+      if (!column.isNone(i) && !DomainAddress.ID.test(text(column.get(i))))
+        return false;
+    }
+    return true;
   }
 
   private _mapping(): Map<string, string> {
@@ -817,13 +1076,19 @@ class ImportFlow {
     }
     if (seen.size === 0)
       problems.push('Map at least one column.');
-    const upsert = this._mode?.peek() === 'upsert';
+    const upsert = this._mode?.value === 'upsert';
+    if (!upsert && this._auto !== null && seen.has(this._auto)) {
+      problems.push(`"${ImportFlow._caption(this, this._auto)}" is assigned on save — choose "Add or update", or set ` +
+        `it to "${SKIP_LABEL}".`);
+    }
     for (const name of this._required()) {
       if (ImportFlow._covers(seen, name))
         continue;
       const caption = ImportFlow._caption(this, name);
-      problems.push(upsert ? `Add or update matches rows by ${caption} — map a column to "${caption}".` :
-        `Required column "${caption}" is not mapped — rows without a value will fail.`);
+      const unread = upsert && this._autoUnread && !this._targets.some((p) => p.name === name);
+      problems.push(unread ? `Could not read which key the server numbers: Add or update by ${caption} is off.` :
+        upsert ? `Add or update matches rows by ${caption} — map a column to "${caption}".` :
+          `Required column "${caption}" is not mapped — rows without a value will fail.`);
     }
     return problems;
   }
@@ -833,7 +1098,7 @@ class ImportFlow {
   }
 
   private _required(): string[] {
-    return this._mode?.peek() === 'upsert' ? this._table.info.businessKey : this._targets
+    return this._mode?.value === 'upsert' ? this._table.info.businessKey : this._targets
       .filter((p) => p.nullable === false && (p.defaultValue ?? null) === null).map((p) => p.name!);
   }
 
@@ -853,9 +1118,13 @@ class ImportFlow {
       const sent = ImportFlow._sent(plan);
       // a row the plan refuses is an error like the server's: all-or-nothing sends nothing then
       const refused = plan.some((p) => p.verdict.error !== undefined) && options.allOrNothing !== false;
-      const report = refused ? {inserted: 0, updated: 0, skipped: 0, errorCount: 0, error: 'validation', rows: []} :
-        await this._table.table.batch!(sent.map((i) => plan[i].payload!), options);
-      this._result = ImportFlow._merged(report, sent, plan);
+      const payloads = sent.map((i) => plan[i].payload!);
+      const answer: DomainBatchReportLike = refused ?
+        {inserted: 0, updated: 0, skipped: 0, errorCount: 0, error: 'validation', rows: []} :
+        await this._table.table.batch!(payloads, options);
+      const judged = await this._attributed(answer.rows, payloads);
+      this._refusal = ImportFlow._refusalNotes(judged.notes, sent);
+      this._result = ImportFlow._merged({...answer, rows: judged.rows}, sent, plan);
     } catch (e) {
       this._report.replaceChildren(span(DomainErrors.message(e), 'u2-domain-import-problem'));
       this._wizard.setStepFailed('report', true);
@@ -867,8 +1136,8 @@ class ImportFlow {
     await this._render(this._result, plan, frame);
   }
 
-  private static _merged(report: DomainBatchReportLike, sent: number[], plan: Planned[]): DomainBatchReportLike {
-    const kept = plan.flatMap((p, i): DomainBatchReportLike['rows'] => p.payload !== null ? [] :
+  private static _merged(report: Report, sent: number[], plan: Planned[]): Report {
+    const kept = plan.flatMap((p, i): Placed[] => p.payload !== null ? [] :
       [p.verdict.error !== undefined ? {index: i, id: null, status: 'error', errors: [{message: p.verdict.error}]} :
         {index: i, id: null, status: 'skipped', existingId: p.verdict.existing}]);
     const errors = kept.filter((r) => r.status === 'error').length;
@@ -877,41 +1146,60 @@ class ImportFlow {
       rows: [...report.rows.map((r) => ({...r, index: sent[r.index]})), ...kept].sort((a, b) => a.index - b.index)};
   }
 
-  private async _render(report: DomainBatchReportLike, plan: Planned[], frame: DG.DataFrame): Promise<void> {
+  private async _render(report: Report, plan: Planned[], frame: DG.DataFrame): Promise<void> {
     const failed = report.error !== undefined;
     // a warehouse refusal carries the failing rows and no totals
     const errorCount = report.errorCount ?? report.rows.filter((row) => row.errors?.length).length;
     const counts = ImportFlow._counts(ImportFlow._landed(report, errorCount));
-    const aborted = `Import aborted — ${plural(errorCount, 'row has errors', 'rows have errors')}; ` +
-      'nothing was committed.';
+    const aborted = errorCount === 0 && this._refusal.length > 0 ?
+      'Import aborted — the server refused the whole batch; nothing was committed.' :
+      `Import aborted — ${plural(errorCount, 'row has errors', 'rows have errors')}; nothing was committed.`;
     this._report.replaceChildren(ImportFlow._headline(failed ? [[aborted, 'error']] : counts, 'Nothing was imported'));
     this._report.classList.toggle('u2-domain-import-aborted', failed);
     this._wizard.setStepFailed('report', failed || errorCount > 0);
-    const outcomes = this._outcomes(report, plan, failed);
+    if (failed)
+      this._report.append(...this._refusal.map((note) => span(note, 'u2-domain-import-problem')));
+    let itemized = report;
     let saved = new Map<string, RowView>();
     try {
-      saved = await this._rowsById([...new Set(outcomes.map((o) => o.id).filter((id): id is string => id !== null))]);
+      itemized = await this._itemized(report, plan);
+    } catch (e) {
+      this._report.append(span(`The rows the server did not itemize could not be read: ${DomainErrors.message(e)}`,
+        'u2-domain-import-problem'));
+    }
+    const outcomes = this._outcomes(itemized, plan, failed);
+    try {
+      saved = await this._rowsBy('id', outcomes.map((o) => o.id).filter((id) => id !== null));
     } catch (e) {
       this._report.append(span(`The keys could not be read: ${DomainErrors.message(e)}`, 'u2-domain-import-problem'));
     }
     for (const row of outcomes)
       row.key = row.id === null || !saved.has(row.id) ? '' : this._keyOf(saved.get(row.id)!);
+    const unitemized = failed ?
+      Math.max(0, errorCount - report.rows.filter(ImportFlow._isError).length) :
+      outcomes.filter((o) => o.kind === '').length;
+    if (unitemized > 0) {
+      this._report.append(span(`${plural(unitemized, 'row is', 'rows are')} not itemized by the server: ` +
+        (failed ? 'their errors are not listed.' : 'their outcome and key are unknown.'), 'u2-domain-import-problem'));
+    }
     // a dialog closed while the keys were read has no report to show; the write-back and the balloon still follow
     if (!this._wizard.scope.isDisposed)
       this._report.append(this._rowsTable(this._wizard, 'report', outcomes, this._reportColumns(saved)));
     const column = this._keyColumn();
-    if (!failed && column !== null && this._writeBack?.peek()) {
+    const keyed = outcomes.some((o) => o.key !== '');
+    if (!failed && keyed && column !== null && this._writeBack?.peek()) {
       if (frame.columns.names().includes(column))
         frame.columns.remove(column);
       // column names ignore case: a source's own "sku" keeps its values beside the "Sku" written back
       const added = frame.columns.addNewString(frame.columns.getUnusedName(column)).init((i) => outcomes[i].key);
-      this._report.append(span(`Added a "${added.name}" column to ${frame.name} with each row's ${this._keyHeader()}.`,
+      this._report.append(span(`Added a "${added.name}" column to ${frame.name} with each row's ${this._keyHeader()}` +
+        (unitemized > 0 ? `; it is empty for the ${plural(unitemized, 'row', 'rows')} not itemized.` : '.'),
         'u2-domain-import-summary'));
     }
     if (failed) {
-      const refused = report.rows.filter((r) => r.status === 'error' && plan[r.index].payload !== null).length;
+      const refused = report.rows.filter((r) => ImportFlow._isError(r) && plan[r.index].payload !== null).length;
       const valid = ImportFlow._sent(plan).length - refused;
-      if (this._allOrNothing?.peek() && valid > 0) {
+      if (this._allOrNothing?.peek() && valid > 0 && this._refusal.length === 0) {
         this._report.append(span(`Uncheck "All or nothing" to import the ${plural(valid, 'valid row', 'valid rows')} ` +
           'and skip the rest.', 'u2-domain-import-summary'));
       }
@@ -925,20 +1213,26 @@ class ImportFlow {
       notify.info(`Imported: ${counts.map(([words]) => words).join(', ')}`);
   }
 
+  private static _isError(row: DomainBatchRowLike): boolean {
+    return row.status === 'error' || (row.errors?.length ?? 0) > 0;
+  }
+
   // a repeat takes its first row's id
-  private _outcomes(report: DomainBatchReportLike, plan: Planned[], failed: boolean): DomainImportRow[] {
+  private _outcomes(report: Report, plan: Planned[], failed: boolean): DomainImportRow[] {
     const bySource = new Map(report.rows.map((r) => [r.index, r]));
     const outcomes = plan.map((p, i): DomainImportRow => {
       const row = bySource.get(i);
       const errors = row?.errors ?? [];
-      if (row?.status === 'error')
+      if (row !== undefined && ImportFlow._isError(row))
         return this._row(i, p, 'error', p.payload === null ? p.verdict.error ?? '' : this._describe(errors), errors);
       if (row?.status === 'duplicate')
         return {...this._row(i, p, 'skip', this._duplicate(), errors), id: row.existingId ?? null};
       if (p.payload === null)
         return this._kept(i, p);
-      if (failed || row === undefined)
-        return this._row(i, p, failed ? 'aborted' : '', failed ? 'Another row has errors' : '', errors);
+      if (failed || row === undefined) {
+        return this._row(i, p, failed ? 'aborted' : '',
+          failed ? 'Another row has errors' : 'Not itemized by the server', errors);
+      }
       return {...this._row(i, p, row.status === 'inserted' ? 'insert' : 'update', p.verdict.note ?? '', errors),
         id: row.id};
     });
@@ -949,13 +1243,47 @@ class ImportFlow {
     return outcomes;
   }
 
-  private async _rowsById(ids: string[]): Promise<Map<string, RowView>> {
+  // the server itemizes at most 1,000 rows; splitting the batch would let an all-or-nothing import land in part
+  private async _itemized(report: Report, plan: Planned[]): Promise<Report> {
+    const listed = new Set(report.rows.map((r) => r.index));
+    const missing = plan.flatMap((p, i) => p.payload === null || listed.has(i) ? [] : [i]);
+    const key = this._table.info.businessKey;
+    if (report.error !== undefined || missing.length === 0)
+      return report;
+    const sent = report.rows.filter((r) => plan[r.index].payload !== null);
+    const keptErrors = plan.filter((p) => p.payload === null && p.verdict.error !== undefined).length;
+    const keptSkips = plan.filter((p) => p.payload === null).length - keptErrors;
+    const listedAs = (status: string) => sent.filter((r) => r.status === status).length;
+    const left = ([['error', (report.errorCount ?? 0) - keptErrors], ['duplicate', (report.skipped ?? 0) - keptSkips],
+      ['updated', report.updated ?? 0], ['merged', report.merged ?? 0], ['inserted', report.inserted ?? 0]] as const)
+      .map(([status, total]) => [status, total - listedAs(status)] as const).filter(([, count]) => count > 0);
+    if (left.length !== 1 || left[0][1] !== missing.length)
+      return report;
+    const status = left[0][0];
+    if (status === 'error') {
+      return {...report, rows: [...report.rows, ...missing.map((index) => ({index, id: null, status,
+        errors: [{message: 'The server did not itemize this row\'s errors'}]}))]};
+    }
+    if (key.length !== 1)
+      return report;
+    const value = (index: number) => plan[index].payload![key[0]];
+    const rows = await this._rowsBy(key[0], missing.map(value).filter((v) => v !== null && v !== undefined));
+    const found = missing.flatMap((index) => {
+      const row = rows.get(String(value(index)));
+      const id = String(row?.id);
+      return row === undefined ? [] : [{index, id, status, ...(status === 'duplicate' ? {existingId: id} : {})}];
+    });
+    return {...report, rows: [...report.rows, ...found]};
+  }
+
+  private async _rowsBy(column: string, values: unknown[]): Promise<Map<string, RowView>> {
     const rows = new Map<string, RowView>();
-    for (let at = 0; at < ids.length; at += KEY_CHUNK) {
-      const chunk = ids.slice(at, at + KEY_CHUNK);
-      const filter = {property: 'id', operator: '=', value: chunk};
+    const unique = [...new Set(values)];
+    for (let at = 0; at < unique.length; at += KEY_CHUNK) {
+      const chunk = unique.slice(at, at + KEY_CHUNK);
+      const filter = {property: column, operator: '=', value: chunk};
       for (const row of await this._table.table.query({filter, limit: chunk.length}))
-        rows.set(String(row.id), row as RowView);
+        rows.set(String(row[column]), row as RowView);
     }
     return rows;
   }

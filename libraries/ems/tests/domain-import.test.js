@@ -11,6 +11,9 @@ import {SCHEMA, backend} from './domain-fixtures.mjs';
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/facade.js');
 const DG = await import('datagrok-api/dg');
+const grok = await import('datagrok-api/grok');
+// a project id as the platform has them: an import maps a reference column of non-uuids to its find-by field
+const P1 = '9b2c4f1a-3e5d-4a7b-8c6e-1f0a2d3b4c5e';
 
 function scoped(name, body) {
   test(name, async () => {
@@ -42,6 +45,7 @@ const importButton = () => [...document.body.querySelectorAll('.u2-dialog button
 const named = (name) => Control.forElement(document.querySelector(`[data-u2-name="${name}"]`));
 const reason = () => document.body.querySelector('.u2-wizard-reason')?.textContent ?? '';
 const mapping = () => document.body.querySelector('.u2-domain-import-mapping');
+const reportText = () => document.body.querySelector('.u2-domain-import-report').textContent;
 const issues = (memory) => memory.tableSync('grit.issue').rows;
 /** The outcome a step leads with, one entry per count. */
 const counts = (step) => [...document.body.querySelectorAll(`.u2-domain-import-${step} .u2-domain-import-count`)]
@@ -126,7 +130,7 @@ scoped('a frame handed in as an option is mapped while the wizard is still being
   emsBackends.domain = memory;
   const handle = await domains.table('grit.issue');
   const running = testOwner().build(() => domains.import(handle,
-    {source: frame(['project_id', 'title'], [{project_id: 'p1', title: 'Handed in'}])}));
+    {source: frame(['project_id', 'title'], [{project_id: P1, title: 'Handed in'}])}));
   await flush();
   await toMapping();
   assert.equal(named('title').value, 'title', 'the mapping is there without a pick');
@@ -137,7 +141,7 @@ scoped('a frame handed in as an option is mapped while the wizard is still being
 scoped('every blocking problem the wizard gates on', async () => {
   const memory = backend();
   const {running} = await opened(memory,
-    frame(['project_id', 'title', 'name2'], [{project_id: 'p1', title: 'A', name2: 'B'}]));
+    frame(['project_id', 'title', 'name2'], [{project_id: P1, title: 'A', name2: 'B'}]));
   await toMapping();
   const proceed = async () => {
     fire(buttonNamed('NEXT'), 'click');
@@ -175,8 +179,8 @@ scoped('the preview is the backend\'s dry run: its verdicts, its counts, its iss
   const memory = backend();
   const {running} = await opened(memory,
     frame(['project_id', 'title', 'number', 'priority'],
-      [{project_id: 'p1', title: 'A', number: '3', priority: 'low'},
-        {project_id: 'p1', title: 'B', number: '3.0', priority: 'urgent'}]));
+      [{project_id: P1, title: 'A', number: '3', priority: 'low'},
+        {project_id: P1, title: 'B', number: '3.0', priority: 'urgent'}]));
   await toMapping();
   await toPreview();
   const preview = document.body.querySelector('.u2-domain-import-preview');
@@ -199,11 +203,11 @@ scoped('the dry run is posted once per entry into the step, not per keystroke', 
     return real(rows, options);
   };
   const {running} = await opened(memory,
-    frame(['project_id', 'title', 'note'], [{project_id: 'p1', title: 'A', note: 'x'}]));
+    frame(['project_id', 'title', 'note'], [{project_id: P1, title: 'A', note: 'x'}]));
   await toMapping();
   await toPreview();
   assert.equal(posts.length, 1, 'one post on the way in');
-  assert.deepEqual(posts[0].rows, [{project_id: 'p1', title: 'A'}], 'the mapped columns only');
+  assert.deepEqual(posts[0].rows, [{project_id: P1, title: 'A'}], 'the mapped columns only');
   assert.equal(posts[0].options.mode, 'insert');
 
   fire(buttonNamed('BACK'), 'click');
@@ -222,7 +226,7 @@ scoped('the dry run is posted once per entry into the step, not per keystroke', 
   await flush();
   await toPreview();
   assert.equal(posts.length, 2, 'a mapping the run did not cover is posted again');
-  assert.deepEqual(posts[1].rows, [{project_id: 'p1', title: 'A', description: 'x'}]);
+  assert.deepEqual(posts[1].rows, [{project_id: P1, title: 'A', description: 'x'}]);
   fire(buttonNamed('CANCEL'), 'click');
   assert.equal(await running, null);
 });
@@ -231,7 +235,7 @@ scoped('a dry run that cannot reach the backend shows why and never blocks the i
   const memory = backend();
   memory.tableSync('grit.issue').validate = () => Promise.reject(new Error('the stand is down'));
   const {running} = await opened(memory,
-    frame(['project_id', 'title'], [{project_id: 'p1', title: 'Regardless'}]));
+    frame(['project_id', 'title'], [{project_id: P1, title: 'Regardless'}]));
   await toMapping();
   await toPreview();
   const preview = document.body.querySelector('.u2-domain-import-preview');
@@ -250,7 +254,7 @@ scoped('a storage with no dry run previews the mapped rows without verdicts, and
   issue.support = {...issue.support, batch: {...issue.support.batch, validate: false}};
   issue.validate = undefined;
   const {running} = await opened(memory,
-    frame(['project_id', 'title', 'note'], [{project_id: 'p1', title: 'Unchecked', note: 'x'}]));
+    frame(['project_id', 'title', 'note'], [{project_id: P1, title: 'Unchecked', note: 'x'}]));
   await toMapping();
   await toPreview();
   const preview = document.body.querySelector('.u2-domain-import-preview');
@@ -262,7 +266,7 @@ scoped('a storage with no dry run previews the mapped rows without verdicts, and
   assert.deepEqual([...rows.querySelectorAll('.u2-data-table-head')].map((c) => c.textContent),
     ['Project id', 'Title'], 'the mapped columns under their captions, no verdict column');
   assert.deepEqual([...rows.querySelectorAll('.u2-data-table-row')]
-    .map((r) => [...r.children].map((c) => c.textContent).join('|')), ['p1|Unchecked']);
+    .map((r) => [...r.children].map((c) => c.textContent).join('|')), [`${P1}|Unchecked`]);
   assert.equal(reason(), '', 'nothing gates NEXT');
   fire(importButton(), 'click');
   await flush();
@@ -273,19 +277,42 @@ scoped('a storage with no dry run previews the mapped rows without verdicts, and
   assert.notEqual(issues(memory).find((r) => r.title === 'Unchecked'), undefined, 'the row landed through batch');
 });
 
+scoped('with no dry run, a row the client refuses holds Import under all-or-nothing', async () => {
+  const memory = backend();
+  noDryRun(memory);
+  const users = grok.dapi.users;
+  grok.dapi.users = {...users, filter: () => ({list: async () => []})};
+  const {running} = await opened(memory, frame(['project_id', 'title', 'reporter'],
+    [{project_id: P1, title: 'Fine', reporter: ''}, {project_id: P1, title: 'Unknown', reporter: 'nobody'}]));
+  await toMapping();
+  await toPreview();
+  grok.dapi.users = users;
+  assert.match(reason(), /^1 row has errors/, 'nothing would be sent: the import is held, not run and aborted');
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null);
+});
+
 scoped('only the mapped columns are posted, under their target names', async () => {
   const memory = backend();
-  const {running} = await opened(memory,
-    frame(['project_id', 'title', 'note'], [{project_id: 'p1', title: 'Imported', note: 'skipped'}]));
+  const users = grok.dapi.users;
+  const tester = '1f2e3d4c-5b6a-4789-8abc-def012345678';
+  // the users the file names are read by a filter, never the whole list
+  grok.dapi.users = {...users, filter: (f) => ({list: async () =>
+    f.includes('firstName = "Tester"') ? [{id: tester, login: 'tester', friendlyName: 'Tester'}] : []})};
+  const {running} = await opened(memory, frame(['project_id', 'title', 'note', 'reporter'],
+    [{project_id: P1, title: 'Imported', note: 'skipped', reporter: 'Tester'}]));
   await toMapping();
   assert.equal(named('note').value, '(skip)');
   fire(buttonNamed('NEXT'), 'click');
   await flush();
+  assert.equal(document.body.textContent.includes(tester), false, 'the preview shows the user as typed');
   fire(importButton(), 'click');
   await flush();
   const landed = issues(memory).find((r) => r.title === 'Imported');
   assert.notEqual(landed, undefined, 'the row was inserted');
   assert.equal('note' in landed, false, 'a skipped source column never reached the backend');
+  assert.equal(landed.reporter, tester, 'a user column takes a login or a name');
+  grok.dapi.users = users;
   assert.deepEqual(counts('report'), ['1 added']);
   fire(buttonNamed('CLOSE'), 'click');
   const result = await running;
@@ -295,8 +322,9 @@ scoped('only the mapped columns are posted, under their target names', async () 
 
 scoped('upsert merges by the business key instead of inserting again', async () => {
   const memory = backend();
+  issues(memory).find((r) => r.id === 'i2').project_id = P1;
   const {running} = await opened(memory,
-    frame(['project_id', 'number', 'title'], [{project_id: 'p1', number: 2, title: 'Renamed'}]));
+    frame(['project_id', 'number', 'title'], [{project_id: P1, number: 2, title: 'Renamed'}]));
   await toMapping();
   named('mode').value = 'upsert';
   await flush();
@@ -316,14 +344,14 @@ scoped('a refused row leaves nothing behind and the report says so', async () =>
   const memory = backend();
   noDryRun(memory);
   const {running} = await opened(memory,
-    frame(['project_id', 'title'], [{project_id: 'p1', title: 'Fine'}, {project_id: 'p1', title: ''}]));
+    frame(['project_id', 'title'], [{project_id: P1, title: 'Fine'}, {project_id: P1, title: ''}]));
   await toMapping();
   fire(buttonNamed('NEXT'), 'click');
   await flush();
   fire(importButton(), 'click');
   await flush();
   assert.equal(issues(memory).length, 3, 'nothing was committed');
-  const shown = document.body.querySelector('.u2-domain-import-report').textContent;
+  const shown = reportText();
   assert.match(shown, /Import aborted — 1 row has errors/);
   assert.match(shown, /Uncheck "All or nothing" to import the 1 valid row and skip the rest\./,
     'an aborted all-or-nothing run says what to change');
@@ -344,7 +372,7 @@ scoped('a table-level insert denial still opens the wizard; no visible column re
     fields: {project_id: 'editable', title: 'editable'}}});
   const open = await domains.table('grit.issue');
   const running = testOwner().build(() => domains.import(open,
-    {source: frame(['project_id', 'title'], [{project_id: 'p1', title: 'A'}])}));
+    {source: frame(['project_id', 'title'], [{project_id: P1, title: 'A'}])}));
   await flush();
   await toMapping();
   assert.equal(named('title').value, 'title', 'the writable columns are offered');
@@ -362,8 +390,8 @@ scoped('a table-level insert denial still opens the wizard; no visible column re
 scoped('the preview draws the rows as they would land, each under its verdict, refused cells marked', async () => {
   const memory = backend();
   const {running} = await opened(memory,
-    frame(['project_id', 'title', 'priority'], [{project_id: 'p1', title: 'A', priority: 'low'},
-      {project_id: 'p1', title: 'B', priority: 'urgent'}]));
+    frame(['project_id', 'title', 'priority'], [{project_id: P1, title: 'A', priority: 'low'},
+      {project_id: P1, title: 'B', priority: 'urgent'}]));
   await toMapping();
   await toPreview();
   const rows = document.body.querySelector('.u2-domain-import-rows');
@@ -371,10 +399,10 @@ scoped('the preview draws the rows as they would land, each under its verdict, r
   fire(rows, 'scroll');
   await flush();
   assert.deepEqual([...rows.querySelectorAll('.u2-data-table-head')].map((c) => c.textContent),
-    ['#', 'Result', 'Project id', 'Title', 'Priority', 'Note'], 'the verdict leads, then the target captions and why');
+    ['#', 'Result', 'Note', 'Project id', 'Title', 'Priority'], 'the verdict and why lead, then the target captions');
   const cells = [...rows.querySelectorAll('.u2-data-table-row')]
     .map((r) => [...r.children].map((c) => c.textContent).join('|'));
-  assert.deepEqual(cells, ['1|Add|p1|A|low|', '2|Error|p1|B|urgent|Priority: Must be one of: low, high'],
+  assert.deepEqual(cells, [`1|Add||${P1}|A|low`, `2|Error|Priority: Must be one of: low, high|${P1}|B|urgent`],
     'what the backend said it would do with the row, beside the row as it would be sent');
   const bad = rows.querySelector('.u2-cell-error');
   assert.notEqual(bad, null, 'the cell the backend refuses is marked, by the column it named');
@@ -386,7 +414,7 @@ scoped('the preview draws the rows as they would land, each under its verdict, r
 scoped('the report step is terminal: no BACK, no CANCEL, and the button reads CLOSE', async () => {
   const memory = backend();
   const {running} = await opened(memory,
-    frame(['project_id', 'title'], [{project_id: 'p1', title: 'Terminal'}]));
+    frame(['project_id', 'title'], [{project_id: P1, title: 'Terminal'}]));
   await toMapping();
   assert.notEqual(buttonNamed('BACK'), undefined, 'BACK is there while the work can still be undone');
   fire(buttonNamed('NEXT'), 'click');
@@ -406,7 +434,7 @@ scoped('a source column is matched the way a person reads it, not byte for byte'
   // 'Chemical title' → title, 'Project ID' → project_id, 'Weight (kg)' → weight, and a column
   // naming nothing is skipped — case, spaces and punctuation are not identity
   const {running} = await opened(memory, frame(['Project ID', 'Chemical title', 'Weight (kg)', 'Batch'],
-    [{'Project ID': 'p1', 'Chemical title': 'A', 'Weight (kg)': '2', 'Batch': 'x'}]));
+    [{'Project ID': P1, 'Chemical title': 'A', 'Weight (kg)': '2', 'Batch': 'x'}]));
   await toMapping();
   assert.equal(named('Project ID').value, 'project_id');
   assert.equal(named('Chemical title').value, 'title');
@@ -420,7 +448,7 @@ scoped('an aborted all-or-nothing run is not a dead end: BACK, the flag off, and
   const memory = backend();
   noDryRun(memory);
   const {running} = await opened(memory,
-    frame(['project_id', 'title'], [{project_id: 'p1', title: 'Fine'}, {project_id: 'p1', title: ''}]));
+    frame(['project_id', 'title'], [{project_id: P1, title: 'Fine'}, {project_id: P1, title: ''}]));
   await toMapping();
   fire(buttonNamed('NEXT'), 'click');
   await flush();
@@ -461,7 +489,7 @@ scoped('the options offered are the ones the storage declares, and an option not
     return real(rows, options);
   };
   const {running} = await opened(memory,
-    frame(['project_id', 'title'], [{project_id: 'p1', title: 'Declared'}]));
+    frame(['project_id', 'title'], [{project_id: P1, title: 'Declared'}]));
   assert.equal(document.body.querySelector('[data-u2-name="allOrNothing"]'), null, 'no "All or nothing"');
   assert.equal(document.body.querySelector('[data-u2-name="errorOnDuplicate"]'), null, 'no "Error on duplicate"');
   assert.equal(document.body.querySelector('[data-u2-name="mode"]'), null, 'no upsert: no mode to choose');
@@ -479,7 +507,7 @@ scoped('an aborted run on a storage without partial imports never recommends the
   const issue = memory.tableSync('grit.issue');
   issue.support = {...issue.support, batch: {...issue.support.batch, partial: false}};
   const {running} = await opened(memory,
-    frame(['project_id', 'title'], [{project_id: 'p1', title: 'Fine'}, {project_id: 'p1', title: ''}]));
+    frame(['project_id', 'title'], [{project_id: P1, title: 'Fine'}, {project_id: P1, title: ''}]));
   await toMapping();
   await toPreview();
   assert.equal(reason(), '1 row has errors, and this import is all or nothing.', 'the fixed flag reads as on, unnamed');
@@ -489,7 +517,7 @@ scoped('an aborted run on a storage without partial imports never recommends the
   await toPreview();
   fire(importButton(), 'click');
   await flush();
-  const shown = document.body.querySelector('.u2-domain-import-report').textContent;
+  const shown = reportText();
   assert.match(shown, /Import aborted — 1 row has errors/);
   assert.doesNotMatch(shown, /Uncheck "All or nothing"/);
   assert.notEqual(reportBack(), undefined, 'the way back is still the mapping');
@@ -503,8 +531,8 @@ scoped('an upsert on a storage that cannot tell insert from update reports merge
   issue.batch = async (rows) => ({inserted: 0, updated: 0, merged: rows.length, skipped: 0, errorCount: 0,
     rows: rows.map((_, index) => ({index, id: `k${index}`, status: 'merged'}))});
   const {running} = await opened(memory,
-    frame(['project_id', 'number', 'title'], [{project_id: 'p1', number: 1, title: 'One'},
-      {project_id: 'p1', number: 2, title: 'Two'}]));
+    frame(['project_id', 'number', 'title'], [{project_id: P1, number: 1, title: 'One'},
+      {project_id: P1, number: 2, title: 'Two'}]));
   await toMapping();
   named('mode').value = 'upsert';
   await flush();
@@ -525,12 +553,12 @@ scoped('a warehouse refusal — the failing rows and no totals — still renders
   issue.batch = async () => ({error: 'validation', rows: [{index: 1, id: null, status: 'error',
     errors: [{column: 'title', code: 'unique', message: 'duplicate key value violates unique constraint'}]}]});
   const {running} = await opened(memory,
-    frame(['project_id', 'title'], [{project_id: 'p1', title: 'One'}, {project_id: 'p1', title: 'One'}]));
+    frame(['project_id', 'title'], [{project_id: P1, title: 'One'}, {project_id: P1, title: 'One'}]));
   await toMapping();
   await toPreview();
   fire(importButton(), 'click');
   await flush();
-  const shown = document.body.querySelector('.u2-domain-import-report').textContent;
+  const shown = reportText();
   assert.match(shown, /Import aborted — 1 row has errors; nothing was committed\./);
   assert.match(shown, /Title is already used/, 'the row error is listed, a unique refusal in words');
   assert.notEqual(reportBack(), undefined, 'the way back stands');
@@ -574,4 +602,104 @@ scoped('an importer maps, derives and keeps rows out, and makes the preview its 
   const report = await running;
   assert.deepEqual(report.rows.map((r) => [r.index, r.status]), [[0, 'inserted'], [1, 'skipped'], [2, 'skipped'], [3, 'error']]);
   assert.equal(memory.tableSync('grit.project').rows.find((r) => r.key === 'NEW')?.description, 'About New');
+});
+
+scoped('a commit past the 1,000 rows the server itemizes still writes back every row\'s key', async () => {
+  const memory = emsBackends.domain = backend();
+  const table = memory.tableSync('grit.project');
+  const batch = table.batch.bind(table);
+  // the server's report: errors, then duplicates, then inserts, the first 1,000 of them
+  const rank = {error: 0, duplicate: 1, inserted: 3};
+  table.batch = async (rows, options) => {
+    const report = await batch(rows, options);
+    return {...report, rows: [...report.rows].sort((a, b) => rank[a.status] - rank[b.status] || a.index - b.index)
+      .slice(0, 1000)};
+  };
+  const rows = [...Array.from({length: 1200}, (_, i) => ({key: `BIG-${i}`, name: `Project ${i}`})),
+    {key: 'GRIT', name: 'Grit again'}];
+  const source = frame(['key', 'name'], rows);
+  const written = [];
+  source.columns.getUnusedName = (name) => `${name} (2)`;
+  source.columns.addNewString = (name) => ({name, init(value) {
+    for (let i = 0; i < source.rowCount; i++)
+      written.push(value(i));
+    return this;
+  }});
+  const running = testOwner().build(async () => domains.import(await domains.table('grit.project'), {source}));
+  await flush();
+  named('allOrNothing').value = false;
+  await toMapping();
+  await toPreview();
+  fire(importButton(), 'click');
+  for (let i = 0; i < 5; i++)
+    await flush();
+  assert.match(reportText(), /1,200 added/);
+  assert.deepEqual(written, rows.map((r) => r.key));
+  fire(buttonNamed('CLOSE'), 'click');
+  await running;
+});
+
+// a failed table CHECK aborts the statement: the server answers 409 with an entry on no row, whichever broke it
+scoped('a dry run the server refuses whole over a CHECK puts it on the rows that break it, as SQL reads NULL', async () => {
+  const memory = backend();
+  // a row's own refusal carries its status, an insert's without an id: it stays on its row
+  const own = {index: 2, id: null, status: 'error', errors: [{column: 'title', code: 'unique', message: 'Duplicate'}]};
+  memory.tableSync('grit.issue').validate = async () => ({error: 'validation', rows: [{errors: [
+    {column: null, code: 'check', message: 'Weight is positive', constraint: 'weight_positive'},
+    {column: 'title', code: 'unique', message: 'Duplicate value'}]}, own]});
+  const {running} = await opened(memory, frame(['project_id', 'title', 'weight'],
+    ['1', '-1', '', '-3'].map((weight, i) => ({project_id: P1, title: `QA-${i + 1}`, weight}))));
+  await toMapping();
+  await toPreview();
+  const rows = document.body.querySelector('.u2-domain-import-preview .u2-domain-import-rows');
+  layout(rows, {clientHeight: 400});
+  fire(rows, 'scroll');
+  await flush();
+  assert.deepEqual([...rows.querySelectorAll('.u2-data-table-row')].map((r) => /Error/.test(r.textContent)),
+    [false, true, true, true]);
+  assert.match(rows.parentElement.textContent, /Title is already used; it does not say which row/, 'not on row 1');
+  assert.equal(importButton().disabled, true, 'nothing would land');
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null);
+});
+
+scoped('an import refuses up front when a required column cannot be written, unless the importer derives it or ' +
+  'rows can only be updated', async () => {
+  emsBackends.domain = backend({access: {can: {view: true, insert: true, edit: true, delete: true, share: true},
+    fields: {project_id: 'readonly', title: 'editable', number: 'editable'}}});
+  const table = await domains.table('grit.issue');
+  const source = frame(['number'], [{number: '1'}]);
+  const warn = notify.warning;
+  const said = [];
+  notify.warning = (text) => said.push(text);
+  try {
+    assert.equal(await domains.import(table, {source}), null);
+  } finally {
+    notify.warning = warn;
+  }
+  assert.match(said[0], /^You cannot create issues: they need a value for Project id/);
+  assert.equal(buttonNamed('CANCEL'), undefined, 'no wizard');
+  table.importer = {derives: ['project_id'], prepare: async (rows) => rows.map(() => ({values: {project_id: 'p1'}}))};
+  const running = testOwner().build(() => domains.import(table, {source}));
+  await flush();
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null);
+  // a required column outside the key the caller cannot set: every insert would be refused; a key the server
+  // assigns is still how a row is found
+  emsBackends.domain = backend({access: {can: {view: true, insert: true, edit: true, delete: true, share: true},
+    fields: {project_id: 'editable', title: 'readonly', number: 'readonly'}}});
+  noDryRun(emsBackends.domain);
+  grok.dapi.domains.manifests.grit = {name: 'grit', tables: {issue: {columns: {number: {autoNumber: {}}}}}};
+  const keyed = await domains.table('grit.issue');
+  const updating = testOwner().build(() => domains.import(keyed, {source: frame(['project_id', 'number'],
+    [{project_id: P1, number: '1'}, {project_id: P1, number: ''}])}));
+  await flush();
+  delete grok.dapi.domains.manifests.grit;
+  assert.deepEqual(named('mode').items.map((i) => i.value), ['upsert']);
+  await toMapping();
+  assert.equal(named('number').value, 'number');
+  await toPreview();
+  assert.match(reason(), /^1 row has errors/, 'a row without its number is not sent');
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await updating, null);
 });
