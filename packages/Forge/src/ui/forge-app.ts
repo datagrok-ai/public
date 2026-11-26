@@ -124,6 +124,7 @@ export class ForgeApp extends DG.ViewBase {
       syncStatus.subscribe(({checking, message}) => {
         const isWarning = !checking && message !== '';
         refreshIcon.classList.toggle('fa-spin', checking);
+        void this.showChecking(checking);
         refreshIcon.classList.toggle('forge-card-warn', isWarning);
         // The toolbar's icon colour outweighs the class.
         refreshIcon.style.color = isWarning ? 'var(--orange-3)' : '';
@@ -224,6 +225,18 @@ export class ForgeApp extends DG.ViewBase {
 
   /** A newer load is due: a load still running is superseded and shows nothing, and the pane is busy until the due load
    * is shown. */
+  /** While the models of an empty catalog are checked the view shows only the loader, then its content. */
+  private async showChecking(checking: boolean): Promise<void> {
+    if (checking && this.models.rowCount > 0)
+      return;
+    if (!checking && this.models.rowCount === 0 && syncStatus.value.changed) {
+      this.markStale();
+      await this.refresh();
+    }
+    this.modelsGallery.root.style.visibility = checking ? 'hidden' : '';
+    ui.setUpdateIndicator(this.root, checking, 'Loading models...');
+  }
+
   private markStale(): void {
     this.catalogLoad++;
     this.modelsGallery.root.setAttribute('aria-busy', 'true');
