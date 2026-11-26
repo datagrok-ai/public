@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Fitting: `acceptedFitting$` answers null when the function has no scalar outputs and the view closes at once; it used to never answer
+* Sensitivity analysis: Fixed the help link of the view, which opened a missing page
 * Custom function view: Added `HistoryInput`, an input for a saved run of a model, picked in Compute2's Open dialog
 * [core#1407](https://github.com/datagrok-ai/core/issues/1407): Fitting: Fixed the loss table built from an untyped empty array when no extrema are found
 * Export: The Excel report renders all charts at once and captures each as soon as it is drawn instead of after a fixed 1 s delay, several times faster; fixed charts being squashed vertically

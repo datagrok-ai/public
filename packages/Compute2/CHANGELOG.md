@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Analyses: Added `SensitivityAnalysisOfRun` and `FittingOfRun` (role `functionAnalysis`), which the platform's function view offers on functions whose `meta.features` turn on `sens-analysis` or `fitting`, as RFV does; fitting returns the accepted fit
 * Custom function view: Added `OpenRunDialog` and `SaveRunDialog`, the Open and Save run dialogs, which custom function views and `historyInput` call; the editor no longer gives the view its dialogs
 * Custom function view: Packages get `CustomFunctionView` and `historyInput` from `window.compute2`, so every custom view runs Compute2's one version
 * [core#1407](https://github.com/datagrok-ai/core/issues/1407): Run comparison: Fixed date, time and big integer columns compared as platform objects instead of by their values

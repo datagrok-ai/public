@@ -29,6 +29,27 @@ export function modelCatalogTreeBrowser(treeNode: any, browseView: DG.ViewBase) 
   PackageFunctions.modelCatalogTreeBrowser(treeNode, browseView);
 }
 
+//description: Shows how the outputs of a function change with its inputs, around the values of a run
+//input: funccall call 
+//meta.role: functionAnalysis
+//meta.feature: sens-analysis
+//meta.icon: files/icons/icon-chart-sensitivity.svg
+//friendlyName: Sensitivity analysis
+export async function SensitivityAnalysisOfRun(call: DG.FuncCall) : Promise<void> {
+  await PackageFunctions.SensitivityAnalysisOfRun(call);
+}
+
+//description: Fits the inputs of a function to target outputs, from the values of a run; returns the accepted fit
+//input: funccall call 
+//output: funccall fitted
+//meta.role: functionAnalysis
+//meta.feature: fitting
+//meta.icon: files/icons/icon-chart-dots.svg
+//friendlyName: Fitting
+export async function FittingOfRun(call: DG.FuncCall) : Promise<any> {
+  return await PackageFunctions.FittingOfRun(call);
+}
+
 //name: Custom Function View Editor
 //input: funccall call 
 //output: view result
