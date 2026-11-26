@@ -328,6 +328,25 @@ export const viewDockedBeside = Then('the {string} view should be docked {word} 
   });
 }, {description: 'right-of / left-of: their panels touch side by side and overlap in height; below / above: they touch one over the other and overlap in width (8 px slack for the splitter)'});
 
+export const viewSpansPair = Then('the {string} view should span the {string} and {string} views', async (page: Page, name: string, first: string, second: string) => {
+  let why = '';
+  await expect.poll(async () => {
+    const boxes = [await readViewBox(page, name), await readViewBox(page, first), await readViewBox(page, second)];
+    const missing = boxes.filter((b): b is string => typeof b === 'string');
+    if (missing.length > 0) {
+      why = missing.join('; ');
+      return false;
+    }
+    const [a, f, s] = boxes as ViewBox[];
+    why = `${describeBox(name, a)}; ${describeBox(first, f)}; ${describeBox(second, s)}`;
+    const left = Math.min(f.x, s.x);
+    const right = Math.max(f.x + f.width, s.x + s.width);
+    return !a.floating && Math.abs(a.x - left) <= DOCK_SLACK && Math.abs(a.x + a.width - right) <= DOCK_SLACK;
+  }, {message: `the "${name}" view spanning the "${first}" and "${second}" views`}).toBe(true).catch(() => {
+    throw new Error(`the "${name}" view does not span exactly the "${first}" and "${second}" views: ${why}`);
+  });
+}, {description: 'its panel starts where the leftmost of the two starts and ends where the rightmost ends (8 px slack): docked across those two views and no side panel'});
+
 type Axis = 'width' | 'height';
 
 function axisOf(word: string): Axis {

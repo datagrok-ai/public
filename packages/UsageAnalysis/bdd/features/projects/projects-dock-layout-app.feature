@@ -5,7 +5,8 @@ Feature: A dashboard saves an app view with its state and starts it only when op
   Execution time with the date filter set to "this month", and docked to the right of cars. The Save
   project dialog lists it left out, and its "+" includes it; the reopened dashboard brings it back to the right of cars, on Execution time, with the date filter it had. A
   Browse preview of the dashboard (a single click on it under My stuff) shows the table and does not
-  start the app; pinning the preview (a double click on its tab) does.
+  start the app: a placeholder named after the view holds its place to the right of cars. Pinning the
+  preview (a double click on its tab) starts the app into that place, on the sub-view it had.
 
   The Projects tab of Usage Analysis is not used: its loaders never finish on a local stand. The
   dashboard is named with the run's time (letters and digits only: the gallery search misses "-") and
@@ -56,7 +57,7 @@ Feature: A dashboard saves an app view with its state and starts it only when op
     And Date text input should have value "this month"
     And no errors should have been logged
 
-  Scenario: A Browse preview of the dashboard does not start the app, and pinning it does
+  Scenario: A Browse preview of the dashboard holds the app's place without starting it, and pinning it starts the app there
     When user closes all views
     Then no table should be left in the workspace
     Given the browse panel is open
@@ -64,7 +65,11 @@ Feature: A dashboard saves an app view with its state and starts it only when op
     When user expands the "Dashboards" bucket of My stuff
     And user clicks on "BDDLayoutApp{time}" in the "Dashboards" bucket of My stuff
     Then "cars" view should be visible
-    And "Functions" view should be absent
+    And the "Functions" view should be docked right-of the "cars" view
+    Given user switches to the "Functions" view
+    Then the current view should show the text "Opens when you pin or open the dashboard"
     When user double-clicks on cars view
-    Then "Functions" view should be visible
+    Then the "Functions" view should be docked right-of the "cars" view
+    Given user switches to the "Functions" view
+    Then "Execution time" button should be disabled
     And no errors should have been logged
