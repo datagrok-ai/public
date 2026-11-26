@@ -5,7 +5,7 @@ import {BehaviorSubject} from 'rxjs';
 import {CUSTOM_VIEW_OPTION, deepCopy} from '../../shared-utils/utils';
 import {historyUtils} from '../../history-utils';
 import type {RunMetadata, SaveTarget} from '../../history-utils/src/history-utils';
-import {initNewCall} from '../../reactive-tree-driver/src/runtime/funccall-utils';
+import {initNewCall, OUTPUT_OUTDATED_PATH, readOutputOutdated, RUN_ERROR_PATH} from '../../reactive-tree-driver/src/runtime/funccall-utils';
 
 /** Whether Compute2, which has the Save and Open dialogs, is installed. */
 export const hasRunDialogs = () => DG.Func.find({package: 'Compute2', name: 'OpenRunDialog'}).length > 0;
@@ -30,6 +30,8 @@ export abstract class CustomFunctionView extends DG.ViewBase {
   public funcCall?: DG.FuncCall;
 
   private _exportEnabled = true;
+  private _isOutputOutdated: boolean | undefined;
+  private _runError: string | undefined;
 
   /** The function that opens this view, recorded on saved runs so that they open here again; set by the editor. */
   public customView?: string;
@@ -37,7 +39,6 @@ export abstract class CustomFunctionView extends DG.ViewBase {
   /** The Export menu; the ribbon's Export icon runs the first one. */
   exports: ViewExport[] = [];
 
-  /** Off greys out the Export icon and menu, for runs the view can't export yet. */
   get exportEnabled(): boolean {
     return this._exportEnabled;
   }
@@ -46,6 +47,24 @@ export abstract class CustomFunctionView extends DG.ViewBase {
     this._exportEnabled = enabled;
     if (this.funcCall)
       this.buildRibbonPanels();
+  }
+
+  get outputOutdated(): boolean | undefined {
+    return this._isOutputOutdated;
+  }
+
+  set outputOutdated(isOutdated: boolean) {
+    this._isOutputOutdated = isOutdated;
+    if (this.funcCall)
+      this.buildRibbonPanels();
+  }
+
+  get runError(): string | undefined {
+    return this._runError;
+  }
+
+  set runError(error: string) {
+    this._runError = error;
   }
 
   constructor(public funcNqName: string) {
@@ -82,6 +101,9 @@ export abstract class CustomFunctionView extends DG.ViewBase {
 
   public linkFunccall(funcCall: DG.FuncCall) {
     this.funcCall = funcCall;
+    const outdatedRaw = funcCall.options[OUTPUT_OUTDATED_PATH];
+    this._isOutputOutdated = outdatedRaw ? JSON.parse(outdatedRaw) : undefined;
+    this._runError = funcCall.options[RUN_ERROR_PATH] || undefined;
     this.path = funcCall.author ? `?id=${funcCall.id}` : '?';
     const modelName = funcCall?.func?.friendlyName ?? funcCall?.func?.name;
     this.name = modelName;
@@ -99,6 +121,10 @@ export abstract class CustomFunctionView extends DG.ViewBase {
     if (callCopy.id) callCopy.newId();
     if (this.customView)
       callCopy.options[CUSTOM_VIEW_OPTION] = this.customView;
+    if (this._isOutputOutdated != null)
+      callCopy.options[OUTPUT_OUTDATED_PATH] = this._isOutputOutdated;
+    if (this._runError != null)
+      callCopy.options[RUN_ERROR_PATH] = this._runError;
 
     const savedCall = await historyUtils.saveRun(callCopy, {metadata, target});
     const loadedCall = await historyUtils.loadRun(savedCall.id);
@@ -155,10 +181,10 @@ export abstract class CustomFunctionView extends DG.ViewBase {
     const historyButton = ui.iconFA('history', () => this.openRunWithDialog(), 'Open a saved run');
     const saveButton = ui.iconFA('save', () => this.funcCall ? this.saveRunWithDialog(this.funcCall) : undefined, 'Save');
     const exportButton = ui.iconFA('arrow-to-bottom', () => {
-      if (this.exportEnabled)
+      if (!this.outputOutdated && this.exportEnabled)
         this.exportRun(this.exports[0]);
     }, this.exports[0]?.name);
-    exportButton.classList.toggle('d4-disabled', !this.exportEnabled);
+    exportButton.classList.toggle('d4-disabled', this.outputOutdated && !this.exportEnabled);
     const newRibbonPanels: HTMLElement[][] =
       [[...(hasRunDialogs() ? [historyButton, saveButton] : []), ...(this.exports.length > 0 ? [exportButton] : [])]];
     this.setRibbonPanels(newRibbonPanels);
@@ -202,7 +228,8 @@ export abstract class CustomFunctionView extends DG.ViewBase {
         .group('Export')
         .items(this.exports, (item) => this.exportRun(item), {
           toString: (item) => item.name,
-          isValid: () => this.exportEnabled ? null : 'Export is turned off for this run',
+          isValid: () => this.outputOutdated ? 'Output outdated' :
+            (this.exportEnabled ? null : 'Export is turned off for this run'),
         })
         .endGroup();
     }
