@@ -351,8 +351,15 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
     margin-bottom: 10px;
 }
 
+.power-pack-welcome-search-clear {
+    margin-left: 8px;
+    color: var(--grey-4);
+    cursor: pointer;
+}
+
 .power-search-help-text-container {
     margin-left: 12px;
+    margin-right: 12px;
     white-space: nowrap;
     font-size: 10px;
     font-style: italic;

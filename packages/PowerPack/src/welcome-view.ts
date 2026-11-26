@@ -22,20 +22,33 @@ export function welcomeView(): DG.View | undefined {
   const inputContainer = ui.div([
     input,
   ], 'ui-input-root,ui-input-type-ahead');
+  const clearIcon = ui.iconFA('times', () => {
+    doSearch('');
+    input.focus();
+  }, 'Clear');
+  clearIcon.classList.add('power-pack-welcome-search-clear');
   const inputHost = ui.div([
     ui.iconFA('search'),
     inputContainer,
+    clearIcon,
   ], 'd4-search-bar,power-pack-welcome-search');
   const helpDiv = ui.divText('Use Ctrl+Space to see suggestions', 'power-search-help-text-container');
   inputHost.appendChild(helpDiv);
 
-  const updateHelp = () => {helpDiv.style.visibility = input.value ? 'visible' : 'hidden';};
+  const updateHelp = () => {
+    helpDiv.style.visibility = input.value ? 'visible' : 'hidden';
+    clearIcon.style.visibility = input.value ? 'visible' : 'hidden';
+  };
   updateHelp();
   input.addEventListener('input', updateHelp);
   input.addEventListener('keydown', (e) => {
     if (e.ctrlKey && e.code === 'Space') {
       e.preventDefault();
       showSearchSuggestions(input);
+    }
+    else if (e.key === 'Escape' && input.value) {
+      e.preventDefault();
+      doSearch('');
     }
   });
   suggestionMenuKeyNavigation(inputContainer);
