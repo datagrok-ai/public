@@ -31,7 +31,7 @@ export class PackageFunctions {
     if (DG.Func.find({package: 'Forge', name: 'registerModel'}).length === 0)
       return '';
     const sync = async (): Promise<string> => {
-      const listed: ListedModel[] = rowsOf(await grok.functions.call('MlflowModels', {}),
+      const listed: ListedModel[] = rowsOf(await grok.functions.call('mlflowModels', {}),
         {connection_id: 'connectionId', connection: 'connection', name: 'name', version: 'version',
           description: 'description', inputs: 'inputs', outputs: 'outputs', error: 'error'});
       const own = rowsOf(await grok.functions.call('Forge:listModels', {method: ENGINE, own: true, limit: MAX_MODELS}),
@@ -47,7 +47,8 @@ export class PackageFunctions {
           description: row?.description ?? model.description, engine: ENGINE,
           task: ['string', 'bool'].includes(target.type) ? 'classification' : 'regression', target,
           features: {columns: columnsOf(model.inputs)},
-          options: {connectionId: model.connectionId, name: model.name, version: model.version}}));
+          options: {connectionId: model.connectionId, name: model.name, version: model.version,
+            type: target.type}}));
       }
       for (const row of remove)
         await write(row.name, grok.functions.call('Forge:deleteModel', {model: row.id}));
@@ -73,7 +74,12 @@ export class PackageFunctions {
     @grok.decorators.param({'type': 'dynamic',
       'options': {'description': 'The model reference as UTF-8 json bytes.'}})
       model: Uint8Array): Promise<DG.DataFrame> {
-    const {connectionId, name} = JSON.parse(new TextDecoder().decode(model));
-    return grok.functions.call('MlflowApply', {connectionId, name, table: df});
+    const {connectionId, name, type} = JSON.parse(new TextDecoder().decode(model));
+    const result: DG.DataFrame = await grok.functions.call('mlflowApply', {connectionId, name, table: df});
+    // Core types a column by its values: whole numbers of a double output come as int.
+    const prediction = result.columns.byIndex(0);
+    if (type && prediction.type !== type)
+      result.columns.replace(prediction, prediction.convertTo(type));
+    return result;
   }
 }

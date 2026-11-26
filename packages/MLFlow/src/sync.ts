@@ -1,4 +1,4 @@
-/** A row of Core's `MlflowModels`: a published model, or with [error] a model that cannot be used or, without a
+/** A row of Core's `mlflowModels`: a published model, or with [error] a model that cannot be used or, without a
  * [name], a connection that could not be listed. */
 export interface ListedModel {
   connectionId: string;
@@ -20,15 +20,20 @@ export interface OwnRow {
   target: string;
   /** The feature names, joined by ", ". */
   features: string;
-  options: {connectionId?: string; name?: string; version?: string};
+  /** The reference: the model in its registry and the declared [type] of its first output. */
+  options: {connectionId?: string; name?: string; version?: string; type?: string};
 }
 
 export interface Column { name: string; type: string; semType?: string }
 
+/** MLflow's type names as Datagrok's; any other type is a string. */
+const TYPES: {[type: string]: string} = {boolean: 'bool', integer: 'int', long: 'int', int: 'int', float: 'double',
+  double: 'double', datetime: 'datetime'};
+
 export function columnsOf(json: string): Column[] {
   try {
     const columns: unknown = JSON.parse(json);
-    return Array.isArray(columns) ? columns : [];
+    return Array.isArray(columns) ? columns.map((c: Column) => ({...c, type: TYPES[c.type] ?? 'string'})) : [];
   } catch {
     return [];
   }
@@ -64,8 +69,9 @@ export function syncDiff(listed: ListedModel[], rows: OwnRow[]): {register: {mod
     if (model.error !== '')
       continue;
     // A registered version never changes, so the feature names are enough to see a new signature.
-    const isSame = row !== undefined && row.options.version === model.version &&
-      row.target === targetOf(model).name && row.features === columnsOf(model.inputs).map((c) => c.name).join(', ');
+    const target = targetOf(model);
+    const isSame = row !== undefined && row.options.version === model.version && row.options.type === target.type &&
+      row.target === target.name && row.features === columnsOf(model.inputs).map((c) => c.name).join(', ');
     if (!isSame)
       register.push({model, row});
   }

@@ -5,9 +5,10 @@ category('Sync', () => {
   test('syncDiff registers new models, updates changed ones and deletes the gone ones', async () => {
     const listed = (connectionId: string, name: string, version: string, error = ''): ListedModel => ({connectionId,
       connection: connectionId, name, version, description: '', error, inputs: '[{"name": "a", "type": "double"}]',
-      outputs: '[{"name": "y", "type": "double"}]'});
+      outputs: '[{"name": "y", "type": "float"}]'});
     const row = (id: string, connectionId: string, name: string, version: string, rowName = name): OwnRow =>
-      ({id, name: rowName, description: '', target: 'y', features: 'a', options: {connectionId, name, version}});
+      ({id, name: rowName, description: '', target: 'y', features: 'a',
+        options: {connectionId, name, version, type: 'double'}});
     const {register, remove} = syncDiff(
       [listed('c1', 'same', '1'), listed('c1', 'newer', '2'), listed('c1', 'new', '1'), listed('c2', '', '', 'down'),
         listed('c1', 'unsigned', '', 'no signature')],
