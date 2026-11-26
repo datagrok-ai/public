@@ -587,7 +587,7 @@ category('Catalog', () => {
         ...(func?.outputs ?? []).map((p) => `-> ${p.propertyType}`)];
     };
     expectArray(signature('listModels'), ['name: string', 'target: string', 'task: string', 'method: string',
-      'tags: string', 'table: dataframe', 'limit: int', '-> dataframe']);
+      'tags: string', 'table: dataframe', 'limit: int', 'own: bool', '-> dataframe']);
     expectArray(signature('getModel'), ['model: string', '-> object']);
     expectArray(signature('updateModel'), ['model: string', 'name: string', 'description: string', 'tags: string',
       '-> object']);

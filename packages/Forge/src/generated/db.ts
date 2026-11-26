@@ -7,7 +7,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import type {Dayjs} from 'dayjs';
 
-export type ModelEngineKind = 'function' | 'script';
+export type ModelEngineKind = 'function' | 'script' | 'external';
 
 export type ModelTask = 'regression' | 'classification';
 

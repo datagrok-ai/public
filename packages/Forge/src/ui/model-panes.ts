@@ -75,7 +75,7 @@ export function modelFacts(model: FactsRow, lastRun: () => Promise<ModelActivity
     author: ui.wait(async () => ui.render(await userOf(model.author_id))),
     created: model.created_on.format(MINUTE_FORMAT),
     updated: model.updated_on.format(MINUTE_FORMAT),
-    table: `${model.dataset_name ?? ''}${model.row_count === undefined ? '' : ` (${model.row_count} rows)`}`,
+    table: `${model.dataset_name ?? ''}${model.row_count == null ? '' : ` (${model.row_count} rows)`}`,
     lastRun: lastRunCell(lastRun),
     features: names,
     applicableTo: tables.map((t) => t.name).join(', '),

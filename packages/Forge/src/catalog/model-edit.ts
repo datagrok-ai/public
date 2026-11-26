@@ -1,7 +1,12 @@
+import * as DG from 'datagrok-api/dg';
+import {EngineRegistry} from '../engines/engine-registry';
 import {ForgeError} from '../forge-error';
-import {forgeDb, ModelRow} from '../generated/db';
+import {forgeDb, ModelInsert, ModelRow} from '../generated/db';
 import {modelNameOf, tagsOf, tagsText} from '../storage/model-fields';
-import {findModelRow, modelsChanged} from '../storage/model-store';
+import {findModelRow, isExternal, modelsChanged} from '../storage/model-store';
+import {engineNamed} from '../training/train-api';
+import {FeaturesSchema, TargetSchema} from '../training/train-model';
+import {modelTaskOf} from './list-models';
 
 export interface ModelInfo { name: string; description: string; tags: string[] }
 
@@ -43,4 +48,36 @@ export async function updateModelInfo(id: string, version: number | undefined,
   const result = await forgeDb.models.update(id, values, version === undefined ? undefined : {version});
   modelsChanged.next();
   return result.version;
+}
+
+/** The inputs of `Forge:registerModel`; a missing optional input is null or undefined. */
+export interface RegisterModelInput {
+  id?: string | null;
+  name: string;
+  description?: string | null;
+  engine: string;
+  task: string;
+  target: TargetSchema;
+  features: FeaturesSchema;
+  options: {[key: string]: unknown};
+}
+
+/** The body of `Forge:registerModel`: writes the caller's own row of a model without a file and returns its id. */
+export async function runRegisterModel(input: RegisterModelInput): Promise<string> {
+  const engine = engineNamed(EngineRegistry.discover(), input.engine);
+  const fields: ModelInsert = {name: input.name, description: input.description ?? '', engine_name: engine.name,
+    engine_namespace: engine.namespace, engine_kind: 'external', task: modelTaskOf(input.task),
+    target_name: input.target.name, target: input.target, features: input.features,
+    feature_count: input.features.columns.length, options: input.options, storage_mode: 'none'};
+  let id = input.id;
+  if (id) {
+    // A row the caller cannot see is not found.
+    const row: ModelRow | null = await forgeDb.models.get(id);
+    if (row?.author_id !== DG.User.current().id || !isExternal(row))
+      throw new ForgeError(`The model '${id}' is not a model you registered.`);
+    await forgeDb.models.update(id, fields);
+  } else
+    id = (await forgeDb.models.insert(fields))[0].id;
+  modelsChanged.next();
+  return id;
 }

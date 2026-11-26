@@ -68,6 +68,20 @@ category('Dapi: models', () => {
     }
   });
 
+  test('A model reports its input and output columns', async () => {
+    const id = await saveModel();
+    try {
+      const model = await grok.dapi.models.find(id);
+      expect(model.inputs.map((c) => `${c.name}:${c.type}`).join(','), 'AGE:int,WEIGHT:double');
+      expect(model.outputs.map((c) => `${c.name}:${c.type}`).join(','), 'outcome:double');
+      const listed = (await grok.dapi.models.filter(`friendlyName = "${model.friendlyName}"`).list())[0];
+      expect(listed.inputs.length, 2, 'a listed model has no inputs');
+    }
+    finally {
+      await deleteModel(id);
+    }
+  });
+
   test('Blobs and images round-trip, and the zip holds them with the model', async () => {
     const id = await saveModel();
     try {

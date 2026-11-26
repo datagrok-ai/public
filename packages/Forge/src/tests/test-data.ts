@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {expect, expectArray, expectFloat, waitUntil} from '@datagrok-libraries/test/src/test';
-import {defaultHyperparameters, DOCKER_FUNC, Engine} from '../engines/engine';
+import {defaultHyperparameters, DOCKER_FUNC, Engine, EngineKind} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
 import {ForgeError} from '../forge-error';
 import {forgeDb, ModelInsert, TrainingRunRow} from '../generated/db';
@@ -30,7 +30,7 @@ export const REGRESSORS = EDA_METHODS.filter((name) => !['Softmax', 'Naive Bayes
 /** The EDA methods with `meta.mlnativenans`. */
 export const NATIVE_NANS = ['XGBoost', 'Random Forest', 'Extra Trees', 'Hist Gradient Boosting', 'CatBoost',
   'Decision Tree', 'TabM'];
-export const XGBOOST_FIELDS: Pick<ModelInsert, 'engine_name' | 'engine_namespace' | 'engine_kind'> =
+export const XGBOOST_FIELDS: {engine_name: string; engine_namespace: string; engine_kind: EngineKind} =
   {engine_name: 'XGBoost', engine_namespace: 'Eda', engine_kind: 'function'};
 export const IMPUTE: MissingValuesSettings = {mode: 'impute', impute: {neighbors: 4, distance: 'Euclidean'}};
 export const NO_PREPARATION_STEPS: PreparationSteps =

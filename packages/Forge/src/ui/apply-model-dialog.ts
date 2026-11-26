@@ -11,8 +11,9 @@ import {MAX_MODELS, MINUTE_FORMAT, SECOND_FORMAT} from '../constants';
 import {Engine, featureSemTypesOf} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
 import {ForgeError} from '../forge-error';
-import {forgeDb, ModelRow} from '../generated/db';
+import {ModelRow} from '../generated/db';
 import {missingColumnsOf, missingValuesProblems} from '../preparation/missing-values';
+import {storedModels, syncStatus} from '../storage/model-store';
 import {ColumnSchema} from '../training/train-model';
 import {ButtonGate} from './button-gate';
 import {CollapsibleGroup} from './collapsible-group';
@@ -22,6 +23,7 @@ import {reportError} from './report-error';
 const MAX_BATCH_SIZE = 100000;
 const ROWS_HEIGHT_SHARE = 0.4;
 const MIN_ROWS_HEIGHT = 160;
+const NO_MODELS = 'No Forge models yet. Train and save one with ML | Models | Train Model... first.';
 
 export interface ApplyDialogOptions {
   table: DG.DataFrame;
@@ -32,10 +34,26 @@ export interface ApplyDialogOptions {
   preferredTable?: DG.DataFrame | null;
 }
 
+const applyRows = (): PromiseLike<ApplyModelRow[]> => storedModels().select(...APPLY_COLUMNS).top(MAX_MODELS);
+
+/** The sync's state beside a list of models: a spinner while it runs, then a check or a warning. */
+export function syncIcon(): {root: HTMLElement; sub: rxjs.Subscription} {
+  const root = ui.div([], 'forge-sync-icon');
+  const sub = syncStatus.subscribe(({checking, message, finished}) => {
+    const [name, look, text] = checking ? ['spinner', 'fa-spin', 'Checking for new models'] :
+      message !== '' ? ['exclamation-triangle', 'forge-card-warn', message] : ['check', 'forge-card-ok',
+        'Models are up to date'];
+    const icon = ui.iconFA(name);
+    icon.classList.add(look);
+    ui.tooltip.bind(icon, text);
+    root.replaceChildren(...(checking || finished ? [icon] : []));
+  });
+  return {root, sub};
+}
+
+/** Opens without models too: a sync may bring the first ones. */
 export async function applyModelDialog(options: ApplyDialogOptions): Promise<DG.Dialog> {
-  const rows: ApplyModelRow[] = await forgeDb.models.query().select(...APPLY_COLUMNS).top(MAX_MODELS);
-  if (rows.length === 0)
-    throw new ForgeError('No Forge models yet. Train and save one with ML | Models | Train Model... first.');
+  const rows = await applyRows();
   const preset = rows.find((row) => row.id === options.modelId);
   const table = preset === undefined ? options.table : presetTable(options, preset);
   return new ApplyForm(rows, EngineRegistry.discover(), {...options, table}).dialog;
@@ -118,7 +136,7 @@ async function applyAndReport(request: ApplyRequest, switchToTable: boolean): Pr
 class ApplyForm {
   readonly dialog: DG.Dialog;
   /** The models by their list labels, which are unique. */
-  private readonly models: Map<string, ApplyModelRow>;
+  private models: Map<string, ApplyModelRow>;
   private readonly engines: Engine[];
   private readonly switchToTable: boolean;
   private readonly tableInput: DG.InputBase<DG.DataFrame | null>;
@@ -142,6 +160,7 @@ class ApplyForm {
   private problems: MappingProblem[] = [];
   private blocker: string | null = null;
   private isUpdating = false;
+  private isReloading = false;
 
   constructor(rows: ApplyModelRow[], engines: Engine[], options: ApplyDialogOptions) {
     this.engines = engines;
@@ -172,6 +191,15 @@ class ApplyForm {
         sub.unsubscribe();
     });
     this.subscribeTable();
+    const opened = syncStatus.value;
+    const sync = syncIcon();
+    this.modelInput.addOptions(sync.root);
+    this.subs.push(sync.sub, syncStatus.subscribe((status) => {
+      if (status !== opened && !status.checking && status.changed)
+        this.reloadModels().catch(reportError).finally(() => this.update());
+      else if (status !== opened)
+        this.update();
+    }));
     // The rows are given to the dialog before the other inputs: on show() the dialog focuses the input it was given
     // last, and a focused row would scroll the rows block down. The last one is Batch size, folded and unfocusable.
     this.render();
@@ -200,6 +228,30 @@ class ApplyForm {
     });
     entries.sort((a, b) => a.isSuggested === b.isSuggested ? b.created - a.created : a.isSuggested ? -1 : 1);
     return entries.map((e) => e.label);
+  }
+
+  /** The picked model stays picked unless it is gone. */
+  private async reloadModels(): Promise<void> {
+    this.isReloading = true;
+    let rows: ApplyModelRow[];
+    try {
+      rows = await applyRows();
+    } finally {
+      this.isReloading = false;
+    }
+    const picked = this.models.get(this.modelInput.value ?? '');
+    this.models = modelLabels(rows);
+    const order = this.order();
+    const [label, row] = [...this.models].find(([, r]) => r.id === picked?.id) ?? [];
+    this.isUpdating = true;
+    try {
+      this.modelInput.items = order;
+      this.modelInput.value = label ?? order[0] ?? null;
+    } finally {
+      this.isUpdating = false;
+    }
+    if (JSON.stringify([row?.features, row?.options]) !== JSON.stringify([picked?.features, picked?.options]))
+      this.render();
   }
 
   private changeTable(table: DG.DataFrame | null): void {
@@ -300,12 +352,16 @@ class ApplyForm {
       const inputs = this.visibleInputs();
       for (const input of inputs)
         input.validate();
-      this.blocker = model === null ? this.modelError ?? 'Choose a model.' : this.problems[0]?.message ??
+      this.blocker = model === null ? this.modelError ?? this.noModelReason() : this.problems[0]?.message ??
         inputs.map((input) => input.validity).find((v): v is string => v !== null) ?? null;
     } finally {
       this.isUpdating = false;
     }
     this.okGate.update();
+  }
+
+  private noModelReason(): string {
+    return this.models.size === 0 && !syncStatus.value.checking && !this.isReloading ? NO_MODELS : 'Choose a model.';
   }
 
   private mapping(): ColumnMapping {

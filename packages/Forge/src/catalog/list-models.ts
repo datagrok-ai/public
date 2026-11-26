@@ -12,6 +12,13 @@ import {metricColumns} from './compare-models';
 const DEFAULT_LIMIT = 100;
 const TASKS: readonly ModelTask[] = ['regression', 'classification'];
 
+export function modelTaskOf(task: string): ModelTask {
+  const known = TASKS.find((t) => t === task);
+  if (known === undefined)
+    throw new ForgeError('The task must be regression or classification.');
+  return known;
+}
+
 /** The `model` columns `Forge:listModels` reads (the system columns come with any query). */
 const LIST_COLUMNS = ['name', 'description', 'engine_name', 'task', 'target_name', 'features', 'options',
   'row_count', 'storage_mode', 'tags', 'metrics'] as const;
@@ -26,16 +33,15 @@ export interface ListModelsInput {
   tags?: string | null;
   table?: DG.DataFrame | null;
   limit?: number | null;
+  own?: boolean | null;
 }
 
 /** The body of `Forge:listModels`: the visible models, newest first, at most [ListModelsInput.limit]; `task` and
  * `method` filter on the server, the name part, the target, the tags and the table in the browser over at most
  * {@link MAX_MODELS} rows. Nothing is uploaded. */
 export async function runListModels(input: ListModelsInput): Promise<DG.DataFrame> {
-  const task = input.task || null;
-  if (task !== null && !TASKS.some((t) => t === task))
-    throw new ForgeError('The task must be regression or classification.');
-  const limit = input.limit ?? DEFAULT_LIMIT;
+  const task = input.task ? modelTaskOf(input.task) : null;
+  const limit = input.limit ?? (input.own ? MAX_MODELS : DEFAULT_LIMIT);
   if (!Number.isInteger(limit) || limit < 1)
     throw new ForgeError('The limit must be a whole number of at least 1.');
   const query = forgeDb.models.query();
@@ -43,6 +49,8 @@ export async function runListModels(input: ListModelsInput): Promise<DG.DataFram
     query.where('task', '=', task);
   if (input.method)
     query.where('engine_name', '=', input.method);
+  if (input.own)
+    query.where('author_id', '=', DG.User.current().id);
   const name = input.name?.toLowerCase();
   const target = input.target?.toLowerCase();
   const tags = tagsOf(input.tags).map((t) => t.toLowerCase());
@@ -76,8 +84,8 @@ export async function loginsOf(ids: string[]): Promise<Map<string, string>> {
 }
 
 /** **Forge models**: one row per model with **Id**, **Name**, **Description**, **Method**, **Task**, **Target**,
- * **Features**, **Training rows**, **Data storage**, **Tags**, **Author**, **Created**, then `<metric> (validation)`
- * for every metric a listed model has. */
+ * **Features**, **Training rows**, **Data storage**, **Tags**, **Author**, **Created**, **Options** (json
+ * text), then `<metric> (validation)` for every metric a listed model has. */
 function modelsFrame(rows: ListModelRow[], logins: Map<string, string>): DG.DataFrame {
   const df = DG.DataFrame.fromColumns([
     textColumn('Id', rows.map((r) => r.id)),
@@ -92,6 +100,7 @@ function modelsFrame(rows: ListModelRow[], logins: Map<string, string>): DG.Data
     textColumn('Tags', rows.map((r) => tagsText(tagsOf(r.tags)))),
     textColumn('Author', rows.map((r) => logins.get(r.author_id))),
     DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME, 'Created', rows.map((r) => r.created_on)),
+    textColumn('Options', rows.map((r) => JSON.stringify(r.options ?? {}))),
     ...metricColumns(rows, ['validation']),
   ]);
   df.name = 'Forge models';

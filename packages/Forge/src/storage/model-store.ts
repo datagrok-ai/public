@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import {Engine} from '../engines/engine';
-import {ForgeError} from '../forge-error';
+import {errorMessage, ForgeError} from '../forge-error';
 import {forgeDb, ModelColumn, ModelRow} from '../generated/db';
 import {TrainingResult} from '../training/train-model';
 import {DatasetFingerprint} from './dataset-fingerprint';
@@ -15,6 +15,7 @@ const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 const FILE_PREFIX = 'file://';
 const OWN_BLOB = new RegExp(`^${FILE_PREFIX}${BLOB_ROOT}/(${UUID})/([^/]+)$`, 'i');
 const MODEL_ID = new RegExp(`^${UUID}$`, 'i');
+const SYNC_GAP_MS = 30000;
 
 /** A trained model to save: what its row describes, the user's feature and target columns a `copy` uploads, and
  * the training run to link. */
@@ -34,11 +35,58 @@ export interface TrainedModel {
 /** Fires after a model is saved, edited or deleted. */
 export const modelsChanged = new rxjs.Subject<void>();
 
+export function isExternal(row: Pick<ModelRow, 'engine_kind'>): boolean {
+  return row.engine_kind === 'external';
+}
+
+export interface SyncStatus {
+  checking: boolean;
+  /** What the last sync could not refresh. */
+  message: string;
+  /** The last sync wrote a row. */
+  changed: boolean;
+  finished: boolean;
+}
+
+export const syncStatus = new rxjs.BehaviorSubject<SyncStatus>(
+  {checking: false, message: '', changed: false, finished: false});
+let syncRun: Promise<void> | null = null;
+let syncEndedAt = 0;
+
+/** Runs the `meta.mlrole: sync` functions, at most once in {@link SYNC_GAP_MS}; never fails. */
+export function syncModels(): Promise<void> {
+  if (syncRun !== null)
+    return syncRun;
+  const funcs = DG.Func.find({meta: {mlrole: 'sync'}});
+  if (funcs.length === 0 || Date.now() - syncEndedAt < SYNC_GAP_MS)
+    return Promise.resolve();
+  return syncRun = runSync(funcs);
+}
+
+async function runSync(funcs: DG.Func[]): Promise<void> {
+  let changed = false;
+  const writes = modelsChanged.subscribe(() => changed = true);
+  syncStatus.next({...syncStatus.value, checking: true, changed: false});
+  const messages: string[] = await Promise.all(funcs.map((func) => func.apply({}).then(
+    (message: unknown) => typeof message === 'string' ? message : '',
+    (e: unknown) => `${func.options['mlname']}: ${errorMessage(e)}`)));
+  writes.unsubscribe();
+  syncRun = null;
+  syncEndedAt = Date.now();
+  syncStatus.next({checking: false, message: messages.filter((m) => m !== '').join(' '), changed, finished: true});
+}
+
+/** Every list of models starts here: the stored rows at once, a sync in the background. */
+export function storedModels() {
+  void syncModels();
+  return forgeDb.models.query();
+}
+
 /** The visible model with the id or the unique name [idOrName], with its [columns] (the system columns come with any
  * query). */
 export async function findModelRow<K extends ModelColumn & keyof ModelRow>(idOrName: string, columns: readonly K[]):
   Promise<Pick<ModelRow, K | DG.DomainSystemColumn>> {
-  const rows = await forgeDb.models.query()
+  const rows = await storedModels()
     .where(MODEL_ID.test(idOrName) ? 'id' : 'name', '=', idOrName)
     .select(...columns)
     .top(2);

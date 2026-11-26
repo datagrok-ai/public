@@ -2,6 +2,7 @@
 
 ## v.next
 
+* core#1518: Models kept outside Forge: a package's `meta.mlrole: sync` function writes them into the catalog as the user's own rows (`Forge:registerModel`), refreshed in the background
 * GROK-20932: Train view: SVM always trains with class probabilities (Platt scaling): ROC Curve, PR Curve and the probability metrics for two classes; Predict probability no longer retrains it
 * GROK-20932: Find best model: SVM is unchecked by default on a table of more than 1000 rows (also the API's default with method auto)
 * GROK-20932: Metrics: Overfitting is judged per metric: more than 0.05 below the training value for a 0-1 score, 0.1 for MCC and R2, 1.5 times for an error, on the values rounded to 3 decimals as shown (an error's ratio to the 2 decimals it is shown with)
