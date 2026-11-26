@@ -13,6 +13,7 @@ import type {Schedule} from './schedule';
 import {StudyMeta, armParts} from './study-meta';
 import {drugKey} from './arm-name';
 import {okNamed, showCentred} from './ui';
+import {plural} from './wide-table';
 
 /** The concentrations NCA read: its table and mapping (subject, time, concentration, blq, lloq and their units), and
  *  the column that names the group, if any. */
@@ -294,17 +295,16 @@ export function modellingDataset(s: StudyInputs, meta: StudyMeta | null, pk: PkS
         seen.add(key);
         n++;
       }
-      (n ? held : notes).push(n ? `${n} concentrations of ${seen.size} animal${seen.size === 1 ? '' : 's'} from ` +
-        `${t.name} in ` +
+      (n ? held : notes).push(n ? `${n} concentrations of ${plural(seen.size, 'animal')} from ${t.name} in ` +
         `${several ? 'their drug\'s compartment' : 'compartment 2'} (${m.units?.concentration ?? 'their unit'}), ` +
         `their hours counted from the dose of day ${doseDay}.` :
         `No animal of ${t.name} is one of the study's (PK animals apart, as satellites): no PK rows.`);
       if (unplaced) {
-        notes.push(`${unplaced} concentration${unplaced === 1 ? '' : 's'} of animals given several drugs left out: ` +
+        notes.push(`${plural(unplaced, 'concentration')} of animals given several drugs left out: ` +
           `${t.name} does not say which drug each is.`);
       }
       if (low) {
-        notes.push(`${low} concentration${low === 1 ? '' : 's'} at or below 0 or below the limit of quantification ` +
+        notes.push(`${plural(low, 'concentration')} at or below 0 or below the limit of quantification ` +
           'left out.');
       }
     }

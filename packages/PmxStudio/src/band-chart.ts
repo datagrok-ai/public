@@ -186,8 +186,8 @@ function chartOption(bands: Band[], colors: string[], refs: RefLine[], look: Loo
       ...(yTop !== undefined ? {max: yTop, interval: niceStep(yTop)} : {}),
       // a log axis ends on round values (1, 2 or 5 times a power of ten), never on the data's own extremes
       ...(look.log ? {min: (e: {min: number}) => niceFloor(Math.max(e.min, yMin ?? 0)),
-        max: (e: {max: number}) => niceCeil(e.max)} : {}),
-      ...(look.log ? {axisLabel: {formatter: (v: number) => String(Number(v.toPrecision(3)))},
+        max: (e: {max: number}) => niceCeil(e.max),
+        axisLabel: {formatter: (v: number) => String(Number(v.toPrecision(3)))},
         minorTick: {show: true, splitNumber: 2},
         minorSplitLine: {show: true, lineStyle: {opacity: 0.4}}} : {})},
     series,

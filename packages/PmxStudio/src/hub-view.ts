@@ -9,7 +9,7 @@ import {BasicTable, computed, effect, signal} from '@datagrok-libraries/u2';
 import {ViewHost} from '@datagrok-libraries/u2/dg';
 import type {ViewContent} from '@datagrok-libraries/u2/dg';
 
-import {markStage, plainError, stageOf} from './ui';
+import {isoToday, markStage, plainError, setUserSetting, stageOf, userSetting} from './ui';
 import {esc} from './sheet';
 import {steps} from './study-header';
 import type {Stage} from './ui';
@@ -62,6 +62,7 @@ const comparable = (e: LibraryEntry) => e.kind === 'study' && e.day !== null;
 import {dayToday} from './calendar';
 import {Brought, OPENED_EXTS, OpenStage, bring, fileText, readFile, suggestedStage} from './open-study';
 import {Question, studySummary, waiting} from './study-reader';
+import {plural} from './wide-table';
 import {mergedWarning} from './xlsx-raw';
 
 /** The home view. */
@@ -258,13 +259,12 @@ function stageMarker(e: LibraryEntry): HTMLElement {
 
 /** The study day today is, from its day 0 (null: day 0 not fixed): the calendar's own count. */
 const todayOf = (e: LibraryEntry) => dayToday(e.start);
-const shortDate = (iso: string) => new Date(`${iso}T00:00`).toLocaleDateString('en-GB',
-  {weekday: 'short', day: 'numeric', month: 'short'});
+const shortDate = (d: Date) => d.toLocaleDateString('en-GB', {weekday: 'short', day: 'numeric', month: 'short'});
 
 /** How far a study is: a followed one, its last day measured of the planned end (a bar); a plan, when it starts. */
 function progressOf(e: LibraryEntry): HTMLElement {
   if (e.kind === 'plan')
-    return h('span', 'pmx-muted', [e.start ? `starts ${shortDate(e.start)}` : 'not started']);
+    return h('span', 'pmx-muted', [e.start ? `starts ${shortDate(new Date(`${e.start}T00:00`))}` : 'not started']);
   if (e.stage === 3)
     return h('span', 'pmx-muted', [`finished, day ${e.day}`]);
   const share = e.day !== null && e.end ? Math.min(1, e.day / e.end) : 0;
@@ -282,8 +282,7 @@ function todayLine(entries: LibraryEntry[]): string {
     return '';
   const due = followed.filter((e) => todayOf(e) !== null && e.next === todayOf(e)).length;
   const measured = followed.filter((e) => todayOf(e) !== null && e.day === todayOf(e)).length;
-  const date = new Date().toLocaleDateString('en-GB', {weekday: 'short', day: 'numeric', month: 'short'});
-  return [`Today, ${date}: ${followed.length} ${followed.length === 1 ? 'study' : 'studies'} followed`,
+  return [`Today, ${shortDate(new Date())}: ${followed.length} ${followed.length === 1 ? 'study' : 'studies'} followed`,
     due ? `${due} to measure today` : '', measured ? `${measured} measured today` : ''].filter((s) => s).join(' · ');
 }
 
@@ -294,8 +293,7 @@ async function ctdSummary(entries: LibraryEntry[], drug: string): Promise<void> 
   const kept = [...texts].map(([e, t]) => ({e, s: ctdOfSaved(parseStudy(t))}));
   const included = m4sOrder(kept.flatMap((x) => x.s ? [x.s] : []));
   const left = [...kept.filter((x) => !x.s).map((x) => x.e.name || x.e.id), ...skipped];
-  const sub = `${drug} · ${included.length} stud${included.length === 1 ? 'y' : 'ies'} · prepared ` +
-    new Date().toISOString().slice(0, 10);
+  const sub = `${drug} · ${included.length} stud${included.length === 1 ? 'y' : 'ies'} · prepared ${isoToday()}`;
   checklistDialog({title: `CTD summary for ${drug}`, guide: 'ICH M4S(R2)', url: M4S_URL, asker: 'The summary',
     download: !included.length ? undefined : async () => download(`${drug} - CTD summary.docx`,
       await docx(ctdBlocks(included, {sub, drug}), {title: CTD_TITLE, landscape: true}), DOCX_TYPE)},
@@ -351,9 +349,8 @@ function yourStudies(): {root: HTMLElement, reload: () => void} {
   // the first time with rows on, the user's files are brought in before the list is read (only read, once: the
   // list shows the studies they had); if that fails, the Bring your files in link stays to try again
   let bringLink: HTMLElement | null = null;
-  let firstRead = domainStorageOn() && !grok.userSettings.getValue('PmxStudio', FILES_IN) ? firstOpen().then((r) => {
-    grok.userSettings.add('PmxStudio', FILES_IN, 'yes');
-    void grok.userSettings.flush();
+  let firstRead = domainStorageOn() && !userSetting(FILES_IN) ? firstOpen().then((r) => {
+    setUserSetting(FILES_IN, 'yes');
     const {info, warning} = firstOpenNotice(r.report);
     // (they name the user's files: a toast reads HTML)
     if (info)
@@ -511,8 +508,7 @@ function yourStudies(): {root: HTMLElement, reload: () => void} {
   const bring = ui.link('Bring your files in', () => {
     bring.hidden = true;
     void importFolders().then((r) => {
-      grok.userSettings.add('PmxStudio', FILES_IN, 'yes');
-      void grok.userSettings.flush();
+      setUserSetting(FILES_IN, 'yes');
       const parts = [`${r.imported} brought in`, ...r.already ? [`${r.already} already in`] : [],
         ...r.renumbered.length ? [`${r.renumbered.length} under a new ID, one with theirs being there already ` +
           `(${r.renumbered.join(', ')})`] : []];
@@ -662,21 +658,22 @@ export function openStudyDialog(first?: File[]): void {
       void take([...input.files ?? []]);
       input.value = '';
     });
-    const zone = h('label', 'pmx-dz' + (small ? ' pmx-dz-small' : ''), small ?
+    return h('label', 'pmx-dz' + (small ? ' pmx-dz-small' : ''), small ?
       [h('span', 'pmx-ico', [icon(ICON.add, 14, 2)]), text, input] :
       [h('span', 'pmx-ico', [icon(ICON.open)]),
         h('span', 'pmx-dz-main', ['Drag a file here, or ', h('b', '', ['browse'])]),
         h('span', 'pmx-exts', [OPENED_EXTS.filter((x) => x !== 'txt').map((x) => '.' + x).join(' · ')]), input]);
-    return zone;
   };
+  const errorLine = () => h('div', 'pmx-error', [icon(ICON.warn, 16, 1.8), h('span', '', [error])]);
+  const savedPlansLink = () => h('div', 'pmx-alts', [ui.link('Saved plans', () => void pickPlan(),
+    'Your plans saved in Plan')]);
 
   const render = () => {
     const parts: HTMLElement[] = [];
     if (phase === 'drop' || phase === 'error') {
       if (phase === 'error')
-        parts.push(h('div', 'pmx-error', [icon(ICON.warn, 16, 1.8), h('span', '', [error])]));
-      const saved = ui.link('Saved plans', () => void pickPlan(), 'Your plans saved in Plan');
-      parts.push(dropZone(false, ''), h('div', 'pmx-alts', [saved]));
+        parts.push(errorLine());
+      parts.push(dropZone(false, ''), savedPlansLink());
     } else if (phase === 'loading') {
       parts.push(h('div', 'pmx-loading', [
         h('div', 'pmx-file-row', [icon(ICON.file, 20), h('div', '', [h('b', '', [loadingName])])]),
@@ -713,13 +710,13 @@ export function openStudyDialog(first?: File[]): void {
       if (hint)
         parts.push(h('div', 'pmx-hint', [icon(ICON.info, 16, 1.8), h('span', '', [hint])]));
       if (error)
-        parts.push(h('div', 'pmx-error', [icon(ICON.warn, 16, 1.8), h('span', '', [error])]));
+        parts.push(errorLine());
       const missing = table && !plan ? 'Add its .pmxplan' : plan && !table && !study ? 'Add its measurements' : '';
       if (missing)
         parts.push(dropZone(true, missing));
       // measurements without their plan: a plan saved in PMX Studio links as well as a .pmxplan file
       if (table && !plan)
-        parts.push(h('div', 'pmx-alts', [ui.link('Saved plans', () => void pickPlan(), 'Your plans saved in Plan')]));
+        parts.push(savedPlansLink());
     }
     body.replaceChildren(h('div', 'pmx-in', parts));
     const pick = selected();
@@ -812,8 +809,8 @@ function holdsOf(b: Brought): HTMLElement[] {
   const out: HTMLElement[] = [];
   if (b.table) {
     const t = b.table;
-    const facts = [t.animals !== null ? `${t.animals} animal${t.animals === 1 ? '' : 's'}` : '',
-      t.groups !== null ? `${t.groups} group${t.groups === 1 ? '' : 's'}` : '',
+    const facts = [t.animals !== null ? plural(t.animals, 'animal') : '',
+      t.groups !== null ? plural(t.groups, 'group') : '',
       t.lastDay !== null ? `day 0–${t.lastDay}` : ''].filter(Boolean);
     const what = facts.join(' · ') || 'Measurements';
     if (t.read.error)

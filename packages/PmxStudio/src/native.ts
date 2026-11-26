@@ -6,6 +6,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import type {ViewHost} from '@datagrok-libraries/u2/dg';
 
+import {okNamed} from './ui';
+
 /** How a study table is saved, by the Monitor view it is followed in: Analyze, which changes the same table (the
  *  patients' exposure, the effect it keeps, exclusions), saves it the same way. */
 type Saver = () => Promise<void>;
@@ -17,9 +19,7 @@ export function offerCopy(copy: () => Promise<unknown>): void {
   const d = ui.dialog('Shared with you to read')
     .add(ui.divText('You can open it but not change it. Save your changes as your own copy?'))
     .onOK(() => void copy().catch((e) => grok.shell.error(`The copy could not be saved: ${e?.message ?? e}`)));
-  const ok = d.getButton('OK');
-  if (ok)
-    ok.textContent = 'Save as my copy';
+  okNamed(d, 'Save as my copy');
   d.show();
 }
 
@@ -76,9 +76,7 @@ export function saveGate(host: ViewHost, what: string, save: () => Promise<unkno
         d.close();
         close();
       });
-    const ok = d.getButton('OK');
-    if (ok)
-      ok.textContent = 'Save';
+    okNamed(d, 'Save');
     d.show();
   });
   const release = () => {

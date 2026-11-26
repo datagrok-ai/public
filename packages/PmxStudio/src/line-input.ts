@@ -2,12 +2,12 @@
    grouped by class (Syngeneic, CDX, PDX), filtered by class and found by name, tumor type or organ, each with the
    papers and animals its growth prior comes from. The value is the line's name, as the functions' `line` param;
    last, a model not in the atlas, planned from its own history (history-dialog.ts), whose value is its key. */
-import * as grok from 'datagrok-api/grok';
 import {ButtonGroup, div, icon, Input, InputOptions, Reason, signal, span, Tooltip} from '@datagrok-libraries/u2';
 import type {ReadonlySignal} from '@datagrok-libraries/u2';
 
 import {historyDialog} from './history-dialog';
 import {HISTORY_PREFIX, TumorModel, enginePriors, historyModelName, tumorModels} from './priors';
+import {setUserSetting, userSetting} from './ui';
 
 export type ModelClass = TumorModel['class'];
 export const CLASSES: {cls: ModelClass, label: string, tip: string}[] = [
@@ -34,7 +34,7 @@ export function modelsFound(models: {[line: string]: TumorModel}, cls: ModelClas
 const LAST = 'lastLine';
 /** The model the user picked last (Plan opens on it), or null. */
 export const lastLine = (): string | null => {
-  const line = grok.userSettings.getValue('PmxStudio', LAST) || null;
+  const line = userSetting(LAST) || null;
   // a model planned from its history is not kept for the next plan: its history lives in its plan file
   return line?.startsWith(HISTORY_PREFIX) ? null : line;
 };
@@ -126,10 +126,8 @@ export class LineInput extends Input<string | null, InputOptions<string | null>>
     const visible = () => modelsFound(this._models.peek() ?? {}, cls.peek(), query.peek()).flatMap((g) => g.lines);
     const pick = (line: string) => {
       this.value = line;
-      if (!line.startsWith(HISTORY_PREFIX)) {
-        grok.userSettings.add('PmxStudio', LAST, line);
-        void grok.userSettings.flush();
-      }
+      if (!line.startsWith(HISTORY_PREFIX))
+        setUserSetting(LAST, line);
       open.value = false;
       field.focus();
     };
@@ -148,7 +146,7 @@ export class LineInput extends Input<string | null, InputOptions<string | null>>
       this.scope.listen(search, 'input', () => query.value = search.value);
       this.scope.listen(own, 'click', () => {
         open.value = false;
-        historyDialog((key) => pick(key));
+        historyDialog(pick);
       });
       this.scope.listen(panel, 'keydown', (ev) => {
         const e = ev as KeyboardEvent;

@@ -12,7 +12,7 @@ import {esc} from './sheet';
 import {provenance} from './plan-file';
 import type {LogEntry} from './study-file';
 import {StudyMeta, animalsLine, dateOf, dateText, ofGroups} from './study-meta';
-import {plainError} from './ui';
+import {isoToday, plainError} from './ui';
 
 /** A menu item: its name, what it does, its group (Export unless named) and, for one not always available, why
  *  it is not now (null: it is). */
@@ -163,7 +163,9 @@ async function imageOf(el: HTMLElement): Promise<string | null> {
   }
 }
 
-const table =(head: string[], rows: unknown[][]) => `<table><tr>${head.map((h) => `<th>${esc(h)}</th>`).join('')}` +
+/** A table as HTML: its header row, then its rows, every cell as text. */
+export const htmlTable = (head: string[], rows: unknown[][]) =>
+  `<table><tr>${head.map((h) => `<th>${esc(h)}</th>`).join('')}` +
   `</tr>${rows.map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</table>`;
 
 /** The report: `content` (the stage's results) as shown, its charts as images, after a title; then the study's
@@ -227,23 +229,23 @@ export async function reportHtml(o: {title: string, stage: string, meta: StudyMe
     'Strain not recorded in the study\'s details';
   const sub = [m?.id, o.stage, strain, mismatch ?? (day0 ? `Day 0: ${dateText(day0, true)}` : ''),
     prov ? `PMX Studio ${prov.app}, atlas ${prov.atlas.slice(0, 12)}${planSaid}` : '',
-    `Exported ${new Date().toISOString().slice(0, 10)} by ${grok.shell.user?.login ?? ''}`].filter((x) => x);
+    `Exported ${isoToday()} by ${grok.shell.user?.login ?? ''}`].filter((x) => x);
   const groups = m ? ofGroups(m, o.groups) : [];
   const details = !m ? '' : '<h2>Study details</h2>' + [m.description ? `<p>${esc(m.description)}</p>` : '',
-    table(['Owner', 'Project', 'Tags', 'Blinded entry'], [[m.owner, m.project, m.tags.join(', '),
+    htmlTable(['Owner', 'Project', 'Tags', 'Blinded entry'], [[m.owner, m.project, m.tags.join(', '),
       m.blinded ? 'yes' : 'no']]),
     // the animals as the details give them (species, strain, sex, age, weight, source)
-    animalsLine(m.animals).filled ? table(['Animals'], [[animalsLine(m.animals).filled]]) : '',
-    groups.length ? table(['Group', 'Compound', 'Dose', 'Route', 'Schedule'], groups.map((g) =>
+    animalsLine(m.animals).filled ? htmlTable(['Animals'], [[animalsLine(m.animals).filled]]) : '',
+    groups.length ? htmlTable(['Group', 'Compound', 'Dose', 'Route', 'Schedule'], groups.map((g) =>
       [g.group, g.compound, g.dose === null ? '' : `${g.dose} ${g.unit}`, g.route, g.schedule])) : ''].join('');
-  const notes = !m?.notes.length ? '' : '<h2>Notebook</h2>' + table(['Day', 'Kind', 'Animal', 'Note', 'Who'],
+  const notes = !m?.notes.length ? '' : '<h2>Notebook</h2>' + htmlTable(['Day', 'Kind', 'Animal', 'Note', 'Who'],
     [...m.notes].sort((a, b) => a.day - b.day).map((n) => {
       const d = day0 ? dateOf(m.start, n.day) : null;
       return [`${n.day}${d ? ` (${dateText(d)})` : ''}`, n.kind, n.animal, n.text, n.who];
     }));
   // what the stage keeps off screen (text and tables, no charts): under its title
   const annex = (o.annex ?? []).map(([h, el]) => `<h2>${esc(h)}</h2>${el.outerHTML}`).join('');
-  const log = !o.log?.length ? '' : '<h2>Log</h2>' + table(['When', 'Who', 'What'],
+  const log = !o.log?.length ? '' : '<h2>Log</h2>' + htmlTable(['When', 'Who', 'What'],
     o.log.map((l) => [l.when.slice(0, 16).replace('T', ' '), l.who, l.what]));
   // the app's own styles, so the panels read as on screen
   const styles = [...document.querySelectorAll('style, link[rel="stylesheet"]')].map((s) => s.outerHTML).join('\n');

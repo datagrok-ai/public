@@ -6,12 +6,11 @@
 import '../css/studio.css';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
 import {div, span} from '@datagrok-libraries/u2';
 
 import {block, okNamed, showCentred} from './ui';
 import {_package} from './package';
-import {canEditLabRules} from './outlier-rules';
+import {canEditLabRules, saveLabSetting} from './outlier-rules';
 
 /** A panel's width in twelfths: a quarter, a third, a half, two thirds, the row. */
 export type Span = 3 | 4 | 6 | 8 | 12;
@@ -375,9 +374,7 @@ function layoutDialog(stage: string, name: string, defaults: Slot[], now: Slot[]
     if (!can)
       return;
     d.addButton('Save as the lab\'s', () => {
-      // every setting kept: the lab's rules and group live there too
-      // @ts-ignore (setSettings is declared with a Map; the platform takes the plain object, as ApiTests does)
-      void _package.setSettings({..._package.settings, [keyOf(stage)]: JSON.stringify(work)}, DG.Group.allUsers)
+      void saveLabSetting(keyOf(stage), JSON.stringify(work))
         .then(() => {
           grok.userSettings.delete(SETTINGS, keyOf(stage));
           void grok.userSettings.flush();

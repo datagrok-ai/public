@@ -189,8 +189,7 @@ export const activityOf = (a: ArmAnalysis): Activity =>
 export function intervalNote(groups: {activity: string, tcLower: number | null, tcUpper: number | null}[],
   day: number): string | null {
   const crosses = (g: {tcLower: number | null, tcUpper: number | null}) => g.tcLower! <= 100 && g.tcUpper! >= 100;
-  const known = groups.filter((g) => g.tcLower !== null && g.tcUpper !== null &&
-    Number.isFinite(g.tcLower) && Number.isFinite(g.tcUpper));
+  const known = groups.filter((g) => Number.isFinite(g.tcLower) && Number.isFinite(g.tcUpper));
   const lead = 'The result is decided on the growth curves over the whole study.';
   if (known.some((g) => g.activity !== 'No clear effect' && crosses(g)))
     return `${lead} The T/C interval describes day ${day} alone, so it is wider.`;
@@ -403,22 +402,7 @@ async function warm(): Promise<void> {
 
 /** The last studies' twins by their inputs: a rerun that only changes the correction, α or the limits keeps them (they
  *  depend on nothing else), and going back to an evaluation day or endpoint just seen finds its twins. */
-const twinCache = new Map<string, Promise<Twins>>();
-
-function twinOf(window: Window, params: object) {
-  const key = JSON.stringify([window.animal, window.group, Array.from(window.day), Array.from(window.volume), params]);
-  let result = twinCache.get(key);
-  if (result)
-    twinCache.delete(key); // re-inserted below: most recently used last
-  else {
-    const mine = result = fastTwin(window, params);
-    result.catch(() => twinCache.get(key) === mine && twinCache.delete(key));
-    if (twinCache.size >= 8) // ponytail: 8 twins, the least recently used out
-      twinCache.delete(twinCache.keys().next().value!);
-  }
-  twinCache.set(key, result);
-  return result;
-}
+const twinOf = remembered(([window, params]: [Window, {[k: string]: any}]) => fastTwin(window, params), 8);
 
 export async function analyzeStudy(d: AnalysisDeclaration): Promise<StudyAnalysis> {
   const groups = [...new Set(d.data.group)];
@@ -445,7 +429,7 @@ export async function analyzeStudy(d: AnalysisDeclaration): Promise<StudyAnalysi
   // the twin is the analysis's longest call and needs nothing from the others
   const twinned = d.twin !== false;
   const twinning = !twinned ? null :
-    twinModel(d.line).then((m) => twinOf(window, {...m, control: d.control, day: end.day}));
+    twinModel(d.line).then((m) => twinOf([window, {...m, control: d.control, day: end.day}]));
   twinning?.catch(() => null); // (awaited below; a failure of the calls before it is the one reported)
   const tgi = await crux('stats.tgi', window, {control: d.control, change: 'paired', rate_floor: V_LOD,
     endpoint_volume: d.endpoint, days: String(end.day)});
@@ -545,16 +529,16 @@ export async function analyzeStudy(d: AnalysisDeclaration): Promise<StudyAnalysi
       `${c.outside} of its ${c.measurements} measurements fall outside their range. It stays in the analysis`);
   }
   const inside = checks.filter((r) => r.inside).length;
-  const versusPlan = await compareWithPlan(d, treated, arms, sloped.filter((a) => a.group === d.control).length);
+  const nControl = sloped.filter((a) => a.group === d.control).length;
+  const versusPlan = await compareWithPlan(d, treated, arms, nControl);
   return {declaration: d, twinned, treated, evaluationDay: end.day, fromEndpoint: end.fromEndpoint, versusPlan,
-    nControl: sloped.filter((a) => a.group === d.control).length,
-    controlMedianTte: finite(delay.find((r) => r.group === d.control)?.median), arms, animals, volumes,
+    nControl, controlMedianTte: finite(delay.find((r) => r.group === d.control)?.median), arms, animals, volumes,
     twins, effects, checks, controlCoverage: checks.length ? inside / checks.length : null, oddControls, notes};
 }
 
-/** fn's results by its input (a failure not kept, so the next call tries again): a rerun (another correction, a tab
- *  opened again) does not compute them again. */
-function remembered<A, R>(fn: (a: A) => Promise<R>, keep = 16): (a: A) => Promise<R> {
+/** fn's results by its input (a failure not kept, so the next call tries again), the `keep` most recently used: a
+ *  rerun (another correction, a tab opened again) does not compute them again. */
+export function remembered<A, R>(fn: (a: A) => Promise<R>, keep = 16): (a: A) => Promise<R> {
   const seen = new Map<string, Promise<R>>();
   return (a) => {
     const key = JSON.stringify(a);
@@ -682,10 +666,10 @@ async function compareWithPlan(d: AnalysisDeclaration, treated: string[], arms: 
 
   // the first measurement day the median control reached the endpoint, whatever evaluation day was chosen; a study
   // that never did is later than planned only if it was measured beyond the range's top
-  const reached = evaluationDay({...d, endpoint: p.endpoint});
-  const lastDay = Math.max(...volumeDays(d.data));
-  const end: PlanComparison['end'] = {observed: reached.fromEndpoint ? reached.day : null, range: c.end,
-    notReached: c.notReached, verdict: endVerdict(reached.fromEndpoint ? reached.day : null, lastDay, c.end)};
+  const at = evaluationDay({...d, endpoint: p.endpoint});
+  const reached = at.fromEndpoint ? at.day : null;
+  const end: PlanComparison['end'] = {observed: reached, range: c.end, notReached: c.notReached,
+    verdict: endVerdict(reached, Math.max(...volumeDays(d.data)), c.end)};
 
   const pairs = d.plan ? pairGroups(treated, p.arms, notes) : new Map<string, SavedPlan['predicted']['arms'][0]>();
   const groups = arms.map((a) => {
@@ -695,9 +679,10 @@ async function compareWithPlan(d: AnalysisDeclaration, treated: string[], arms: 
       [a.tc, a.tcLower, a.tcUpper];
     const own = planned ? c.arms.find((x) => x.name === planned.name) : undefined;
     const expected = own ? (metric === 'TGI' ? own.tgi : own.tc) : null;
+    const activity = activityOf(a);
     return {group: a.arm, plannedAs: planned?.name ?? null, metric, assumed: planned?.effect ?? null, observed,
-      lower, upper, expected, verdict: expected ? verdictOf(metric, observed, activityOf(a), expected) : null,
-      activity: activityOf(a), p: a.p, n: a.n, power: planned?.power?.length ? powerAt(planned.power, a.n) : null,
+      lower, upper, expected, verdict: expected ? verdictOf(metric, observed, activity, expected) : null,
+      activity, p: a.p, n: a.n, power: planned?.power?.length ? powerAt(planned.power, a.n) : null,
       nNeeded: planned?.nNeeded ?? null, mde: mde.get(a.arm) ?? null};
   });
   // the plan's power, as its form gave it: a percent, or a share
@@ -706,8 +691,6 @@ async function compareWithPlan(d: AnalysisDeclaration, treated: string[], arms: 
   return {plan: d.plan?.name ?? null, controls: c.controls, controlSlope, end, groups, powerTarget, notes};
 }
 
-/** The analysis (one row), the comparisons (one row per treated arm), the animals, the observed volumes, and the
- *  twin's bands, paired effects and control check. */
 /** Days for a tumor growing at `slope` (ln V per day) to double; null when it does not grow. */
 export const doublingOf = (slope: number | null | undefined) => slope && slope > 0 ? Math.LN2 / slope : null;
 
@@ -787,6 +770,20 @@ export function controlsTo(controls: ControlBand[], day: number): ControlBand[] 
   return [...kept, {day, q025: at(a.q025, b.q025), median: at(a.median, b.median), q975: at(a.q975, b.q975)}];
 }
 
+/** The columns of `cols` the table has as volumes: in mm³, to one decimal in every viewer's tooltip and cell (Crux's
+ *  floats carry a dozen). */
+export function inMm3(df: DG.DataFrame, cols: readonly string[]): void {
+  for (const q of cols) {
+    const c = df.col(q);
+    if (c) {
+      c.meta.units = 'mm³';
+      c.meta.format = '0.0';
+    }
+  }
+}
+
+/** The analysis (one row), the comparisons (one row per treated arm), the animals, the observed volumes, and the
+ *  twin's bands, paired effects and control check. */
 export async function analysisFrames(d: AnalysisDeclaration): Promise<AnalysisFrames> {
   const [s, {tolerability, weights}] = await Promise.all([analyzeStudy(d), tolerabilityFrames(d)]);
   const vp = s.versusPlan;
@@ -853,15 +850,8 @@ export async function analysisFrames(d: AnalysisDeclaration): Promise<AnalysisFr
       c.meta.units = 'd';
   }
   for (const [df, cols] of [[volumes, ['median', 'lower', 'upper']], [twins, ['observed', 'twin_q05', 'twin_median',
-    'twin_q95']], [checks, ['observed', 'q05', 'median', 'q95']], [predicted, ['lower', 'upper', 'median']]] as const) {
-    for (const q of cols) {
-      const c = df.col(q);
-      if (c) {
-        c.meta.units = 'mm³';
-        c.meta.format = '0.0';
-      }
-    }
-  }
+    'twin_q95']], [checks, ['observed', 'q05', 'median', 'q95']], [predicted, ['lower', 'upper', 'median']]] as const)
+    inMm3(df, cols);
   for (const q of ['effect', 'effect_lower', 'effect_upper']) {
     const c = effects.col(q);
     if (c)

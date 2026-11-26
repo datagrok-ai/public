@@ -17,15 +17,23 @@ import {dialogLine, okNamed, pValue, showCentred, swatch} from './ui';
 export interface Synergy {slopes: {control: number, a: number, b: number, ab: number}, dif: number, se: number,
   z: number, p: number, pTwoSided: number}
 
-/** The test over `groups`' measurements up to `lastDay`. */
-export async function synergyOf(s: StudyInputs, groups: {control: string, a: string, b: string, ab: string},
-  lastDay = Infinity): Promise<Synergy> {
+/** A combination's groups: the control, drug A, drug B and A+B. */
+export type Combination = {control: string, a: string, b: string, ab: string};
+
+/** The study's columns and the rows of `groups` (`keep`) from randomization to `lastDay` whose volume passes `ok`. */
+function readRows(s: StudyInputs, groups: Combination, lastDay: number, ok: (volume: number) => boolean) {
   const [an, gr] = [s.animal, s.group].map((c) => s.study.col(c)!);
   const [dy, vol] = [s.day, s.volume].map((c) => numbersOf(s.study.col(c)!));
   const wanted = new Set(Object.values(groups));
   const keep = Array.from({length: s.study.rowCount}, (_, i) => i).filter((i) => wanted.has(String(gr.get(i))) &&
-    // from randomization on, as the analysis: growth before any dose would pull every rate together
-    Number.isFinite(dy[i]) && dy[i] >= 0 && dy[i] <= lastDay && vol[i] > 0);
+    Number.isFinite(dy[i]) && dy[i] >= 0 && dy[i] <= lastDay && ok(vol[i]));
+  return {an, gr, dy, vol, keep};
+}
+
+/** The test over `groups`' measurements up to `lastDay`. */
+export async function synergyOf(s: StudyInputs, groups: Combination, lastDay = Infinity): Promise<Synergy> {
+  // from randomization on, as the analysis: growth before any dose would pull every rate together
+  const {an, gr, dy, vol, keep} = readRows(s, groups, lastDay, (v) => v > 0);
   const r = await crux('stats.tumor_growth_synergy', {group: keep.map((i) => String(gr.get(i))),
     animal: keep.map((i) => String(an.get(i))), time: Float64Array.from(keep, (i) => dy[i]),
     volume: Float64Array.from(keep, (i) => vol[i])}, groups);
@@ -35,20 +43,13 @@ export async function synergyOf(s: StudyInputs, groups: {control: string, a: str
   pTwoSided: t.get('p_two_sided')!};
 }
 
-/** A combination's groups: the control, drug A, drug B and A+B. */
-export type Combination = {control: string, a: string, b: string, ab: string};
-
 /** The smallest volume Crux measures (its default floor, mm³): a tumor at or under it counts as gone. */
 const FLOOR = 3.4;
 
 /** Crux stats.tumor_combination_effects on `groups`' measurements from day 0 to `lastDay`, and the rows it read. */
 async function effectsOf(s: StudyInputs, groups: Combination, beta: number, lastDay: number) {
-  const [an, gr] = [s.animal, s.group].map((c) => s.study.col(c)!);
-  const [dy, vol] = [s.day, s.volume].map((c) => numbersOf(s.study.col(c)!));
-  const wanted = new Set(Object.values(groups));
-  const keep = Array.from({length: s.study.rowCount}, (_, i) => i).filter((i) => wanted.has(String(gr.get(i))) &&
-    // a 0 kept: a tumor gone (Crux floors it, and it counts as gone)
-    Number.isFinite(dy[i]) && dy[i] >= 0 && dy[i] <= lastDay && vol[i] >= 0);
+  // a 0 kept: a tumor gone (Crux floors it, and it counts as gone)
+  const {an, gr, dy, vol, keep} = readRows(s, groups, lastDay, (v) => v >= 0);
   // an animal is its group and its ID: studies number the animals in each group from 1, and Crux refuses an ID in
   // two groups
   const id = (i: number) => `${gr.get(i)}\u0000${an.get(i)}`;

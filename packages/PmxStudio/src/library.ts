@@ -59,15 +59,14 @@ export function entryOf(text: string, updated: number, file: DG.FileInfo | null 
     const shown = !study || savedGroupsShown(study);
     // what the groups receive: the details, else the plan's arms, else (a study opened from a table) its own groups
     const groups = study ? [...new Set(study.rows.map((r) => r.group).filter((g): g is string => !!g))] : [];
-    const compounds = !shown ? '' : compoundsOf(meta) || (plan?.predicted.arms ?? []).map((a) => a.name).join(', ') ||
-      groups.join(', ');
-    const names = [...new Set([...(meta?.groups ?? []).map((g) => g.group),
-      ...(plan?.predicted.arms ?? []).map((a) => a.name), ...groups])];
+    const arms = (plan?.predicted.arms ?? []).map((a) => a.name);
+    const compounds = !shown ? '' : compoundsOf(meta) || arms.join(', ') || groups.join(', ');
+    const names = [...new Set([...(meta?.groups ?? []).map((g) => g.group), ...arms, ...groups])];
     const drugs = !shown ? '' : [...new Set(names.flatMap((n) => armParts(n, meta).map((p) => p.drug)))].join(', ');
     // what each treated group receives, the groups apart by "; " as treatmentOf writes them (a ", " or " + " between
     // groups read as one list of drugs, or as a combination): else the plan's arms, else the study's treated groups
     const control = controlOf(groups, meta);
-    const treatment = !shown ? '' : treatmentOf(meta) || (plan?.predicted.arms ?? []).map((a) => a.name).join('; ') ||
+    const treatment = !shown ? '' : treatmentOf(meta) || arms.join('; ') ||
       groups.filter((g) => g !== control).join('; ');
     // the model: the plan's, else the one chosen for the study
     const line = plan?.history?.name ?? plan?.predicted.line ?? study?.history?.name ?? study?.line ?? '';

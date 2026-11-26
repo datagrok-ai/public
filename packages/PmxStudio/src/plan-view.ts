@@ -10,7 +10,7 @@ import * as ui from 'datagrok-api/ui';
 import {BasicTable, buttonWithIcon, ChoiceInput, computed, Dialog, div, divH, divV, dot, effect, emptyState, icon,
   loader, Menu, NumberInput, Reason, Form, Section, signal, span, tableFromMap,
   TextInput, Tooltip} from '@datagrok-libraries/u2';
-import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
+import type {ReadonlySignal} from '@datagrok-libraries/u2';
 import {funcForm, ViewHost, viewers} from '@datagrok-libraries/u2/dg';
 import type {ViewContent} from '@datagrok-libraries/u2/dg';
 
@@ -20,10 +20,10 @@ import {StudyLink, armColors, follow, hasOwnColors, linkStudy, paint, resetColor
 import {ARCHETYPES, Therapy} from './archetypes';
 import {Arm, ArmsInput, CorrectionInput, KIND_WORDS, armsFrame, lackingImmunity} from './arms-input';
 import {ENDPOINT_RISK, MIN_GROUP, StudyDeclaration, combinationFailed, combinationN, combinationsOf, designCombination,
-  LAB_SENSITIVE, diameterOf, finite, labSpreadGroup, safeEndpoint, synergyClause} from './engine';
+  LAB_SENSITIVE, diameterOf, finite, isFiniteNumber, labSpreadGroup, safeEndpoint, synergyClause} from './engine';
 import {askedOf, autoRun, block, callInputs, cardGrid, closeNamed, copyRow, fixedValue, hintLink, infoNote, notes,
   notesBox, num, pct, settleForm, showCentred, sized, markStage, statCard, swatch, volumeAxis, wrapCells, stagePanes,
-  whenSettled} from './ui';
+  whenSettled, docSubtitle, metricWord, setUserSetting, userSetting} from './ui';
 import {checklistBlocks, checklistDialog} from './arrive';
 import {PREPARE_CREDIT, prepareDialog, prepareItems} from './prepare';
 import {ethicsParts, ethicsText} from './ethics-text';
@@ -70,8 +70,6 @@ const SIZED_BY_SIMULATION = 'estimated by simulation, accurate to about one anim
 const monitorNote = () => infoNote('<b>From randomization on, in Monitor.</b> Follow this study to form the groups, ' +
   'balanced on tumor volume, and to see each session who needs attention and how the study is going.');
 
-
-/** What a section with nothing to compare says: no arm reaches the target power with any group size. */
 /** An arm's power: at its group size; with none (no size up to 40 reaches the target), the power at the largest size
  *  simulated, said so; '—' when there is none. */
 export function powerText(n: number | null, power: number | null, curve: DG.DataFrame, arm: string): string {
@@ -86,10 +84,16 @@ export function powerText(n: number | null, power: number | null, curve: DG.Data
   return at ? `${pct(at.p)} with ${at.n}` : '—';
 }
 
+/** What a section with nothing to compare says: no arm reaches the target power with any group size. */
 const UNREACHABLE = 'No group size up to 40 reaches the target power: lower it, or set the animals per arm.';
 
 /** Where a study's total has no number: the limit is per group, and totals over 40 are common. */
 const OVER_40 = 'over 40 per group';
+
+/** A count of the plan `p` (its column `name`): with some arm unsized, the control's and the sized arms' (the
+ *  `_sized` column); null: no group size reaches the power. */
+const countOf = (p: DG.DataFrame, name: string): number | null =>
+  finite(p.get(name, 0)) ?? (p.col(`${name}_sized`) ? finite(p.get(`${name}_sized`, 0)) : null);
 
 /** The analyzable animals per group, as the card says it: "13 per group", or "13–14 per group" when each arm is
  *  sized for its own effect (the control as the largest); null: a group with no size. */
@@ -200,7 +204,7 @@ function calendarGrid(p: DG.DataFrame, calendar: DG.DataFrame, startDay: HTMLEle
 
   // above the weeks: the randomization weekday (picked in the sentence), the end and the closer watch
   const q90 = v('duration_q90');
-  const range = typeof q90 === 'number' && Number.isFinite(q90) ? `day ${Math.round(v('duration_q10'))} to ` +
+  const range = isFiniteNumber(q90) ? `day ${Math.round(v('duration_q10'))} to ` +
     `${Math.round(q90)}` : `from day ${Math.round(v('duration_q10'))}`;
   const first = divH([mark('Randomize', BLUE, true), span('Randomize on a'), startDay,
     span(`(day 0${meta.start ? `, ${dateText(date(0)!, true)}` : ''}) · ${measured.size} measurement days.`)]);
@@ -366,6 +370,9 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   // the study's details (header's name, the calendar's dates, doses and notes); an ID once the plan leaves Plan
   // (saved, downloaded or followed)
   const meta = signal<StudyMeta>(initial?.study ?? emptyMeta());
+  // a plan's arms by name, and the study's colours for its groups
+  const armsIn = (r: PlanFrames) => r.armResults.col('arm')!.toList() as string[];
+  const colorsIn = (r: PlanFrames, m = meta.peek()) => armColors(armsIn(r), m.colors, m.slots);
   // the form's and the calendar's replans share the call, one run at a time: a change made during a run is planned
   // next, and the run it overtook is never shown
   let running: Promise<void> | null = null;
@@ -498,12 +505,10 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
       [];
   });
   // the animals in the order the study uses them, then its end; what each count covers in its tooltip
-  const card = (label: string | ReadonlySignal<string>, value: ReadonlySignal<StatValue | undefined>,
-    tip: () => string, format?: (x: StatValue) => string) => statCard(form, label, value, tip, format);
+  const card = statCard.bind(null, form);
   // a count no group size reaches has no number (a column with no value reads as an empty string); with only some
   // arm unsized, the control's and the sized arms' (the unsized one says why in the groups table)
-  const count = (name: string) => computed(() => !plan.value ? undefined : finite(plan.value.get(name, 0)) ??
-    finite(plan.value.col(`${name}_sized`) ? plan.value.get(`${name}_sized`, 0) : null) ?? '—');
+  const count = (name: string) => computed(() => plan.value ? countOf(plan.value, name) ?? '—' : undefined);
   // the arms no group size reaches, named in the cards' tooltips while the cards count the others
   const unsizedNote = () => {
     const out = groupSizes.peek().filter(([g, n]) => g !== 'Control' && n === null).map(([g]) => g);
@@ -513,11 +518,15 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   // the animals per group and the end of study are computed, or set from their cards (a click asks the value); set,
   // the card says so and a click offers to change it or go back to the computed one (the function's `n` and
   // `lastDay`, not in the form)
-  const apply = (name: string, value: number | null) => {
+  // a field of the form and its parameter of the call, set together (`n` and `lastDay`: the call's alone)
+  const setInput = (name: string, value: unknown) => {
     const field = form.getInput(name);
     if (field)
       field.value = value;
     call.setParamValue(name, value);
+  };
+  const apply = (name: string, value: number | null) => {
+    setInput(name, value);
     // one plan, now, and only with every field of the form valid (the deferred run's own gate)
     auto.changed(0);
   };
@@ -529,7 +538,6 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
       throw new Error('error' in r ? r.error : 'Enter a number');
     apply(name, r.value);
   };
-  const back = (name: string) => apply(name, null);
   const settable = (el: HTMLElement, name: 'n' | 'lastDay', set: () => boolean, ask: {title: string, label: string,
     now: () => number | undefined, min: number, max: number, back: string}) => {
     // a button for the keyboard too
@@ -554,8 +562,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
         return;
       if (!set())
         return open();
-      Menu.popup().item('Change…', open).item(ask.back, () => back(name))
-        .show({anchor});
+      Menu.popup().item('Change…', open).item(ask.back, () => apply(name, null)).show({anchor});
     };
     el.addEventListener('click', () => act(el));
     el.addEventListener('keydown', (e) => {
@@ -601,8 +608,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   settable(cardOf.n_total, 'n', nSet, {title: 'Animals per group', label: 'Analyzable animals per group',
     // the largest group (the control's): what every group then has; with some arm unsized, the control as the cards
     // count it (the largest sized arm), not the field's minimum
-    now: () => finite(cell('n_control').peek()) ?? (plan.peek()?.col('n_control_sized') ?
-      finite(plan.peek()!.get('n_control_sized', 0)) : null) ?? undefined, min: 2, max: 100,
+    now: () => (plan.peek() && countOf(plan.peek()!, 'n_control')) ?? undefined, min: 2, max: 100,
     back: 'Back to what the power needs'});
   settable(cardOf.study_end, 'lastDay', endSet, {title: 'End of study', label: 'Last day of study',
     now: () => cell('study_end').peek(), min: 5, max: 120, back: 'Back to when the controls reach the endpoint'});
@@ -644,7 +650,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   const HINT_KEY = 'calendarHintViews';
   let views = 0;
   try {
-    views = Number(grok.userSettings.getValue('PmxStudio', HINT_KEY));
+    views = Number(userSetting(HINT_KEY));
   } catch {} // the settings unreadable: the hint, as for a new user
   const hintViews = Number.isFinite(views) && views > 0 ? views : 0;
   const calendarHint = div(['Click a weekday to measure on it, or skip it; double-click a day to note what ' +
@@ -654,8 +660,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     calendarHint.style.display = 'none';
   else {
     try {
-      grok.userSettings.add('PmxStudio', HINT_KEY, String(hintViews + 1));
-      void grok.userSettings.flush();
+      setUserSetting(HINT_KEY, String(hintViews + 1));
     } catch {} // not counted: the hint once more next time
   }
   calendarBox.addEventListener('mouseenter', () => calendarHint.style.visibility = 'visible');
@@ -699,10 +704,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   // the calendar sets two of the form's own fields, the randomization weekday and the measurement weekdays, and
   // the plan follows the field
   const setField = (name: string, value: string) => {
-    const field = form.getInput(name);
-    if (field)
-      field.value = value;
-    call.setParamValue(name, value);
+    setInput(name, value);
     const before = result.peek();
     void replan(true).then(() => {
       const after = result.peek();
@@ -756,7 +758,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   // the plan's arms as groups, before a save stamps them: the calendar shows their doses and offers their exceptions
   const armed = (m: StudyMeta) => {
     const r = result.peek();
-    return r ? withGroups(m, ['Control', ...r.armResults.col('arm')!.toList() as string[]]) : m;
+    return r ? withGroups(m, ['Control', ...armsIn(r)]) : m;
   };
   const {addNote, menu: dayMenu} = dayActions(() => armed(meta.peek()), (m) => meta.value = m, undefined,
     {last: () => (result.peek()?.plan.get('study_end', 0) as number | undefined) ?? 0});
@@ -834,17 +836,10 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
         void safeEndpoint(d).then((x) => {
           if (offerOf?.line !== line || result.peek() !== r)
             return;
-          const use = (x: number) => {
-            const field = form.getInput('endpoint');
-            if (field)
-              field.value = x;
-            call.setParamValue('endpoint', x);
-            auto.changed(0);
-          };
           line.replaceChildren(...(x === null ?
             [`No lower endpoint avoids it: plan to end on day ${v('study_end')} even if they have not reached it`] :
             [`A ${x} mm³ endpoint avoids it: `,
-              hintLink('use it', () => use(x), `Sets the endpoint volume to ${x} mm³`)]));
+              hintLink('use it', () => apply('endpoint', x), `Sets the endpoint volume to ${x} mm³`)]));
         }, () => {}); // a failed search leaves the line empty: it costs that line only
       }
       offerOf.line.style.visibility = stale.peek() ? 'hidden' : '';
@@ -854,24 +849,22 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     // the control first, then each arm: what it expects, the animals it gets and the power they give (a table built
     // in this run is disposed with it)
     const a = r.armResults;
-    const colors = armColors(a.col('arm')!.toList(), meta.peek().colors, meta.peek().slots);
+    const colors = colorsIn(r);
     type Row = {name: string, cells: (string | HTMLElement)[]};
     const fixed = v('n_fixed');
     // the smallest detectable effects arrive after the plan (their search takes several times as long)
     const known = detectable.value?.of === r ? detectable.value.mde : null;
     // with some arm unsized, the control as the cards count it: as large as the largest sized arm
-    const sized = (c: string) => r.plan.col(`${c}_sized`) ? finite(v(`${c}_sized`)) : null;
     const rows: Row[] = [{name: 'Control', cells: [swatch('Control', colors['Control']), '—', '—',
-      animals(finite(v('n_control')) ?? sized('n_control') ?? 'over 40', true),
-      animals(finite(v('randomise_control')) ?? sized('randomise_control'), false), '—',
+      animals(countOf(r.plan, 'n_control') ?? 'over 40', true),
+      animals(countOf(r.plan, 'randomise_control'), false), '—',
       ...(fixed ? ['—'] : [])]}];
     // a combination by its two arms, not by the kind its growth is modelled with (the more variable of the two)
-    const {dc: cdc, found: cfound} = combinationsIn(r);
-    const comboOf = new Map(cdc ? cfound.map((c) =>
-      [cdc.arms[c.ab].name, `${cdc.arms[c.a].name} + ${cdc.arms[c.b].name}`]) : []);
+    const comboOf = new Map(dc ? found.map((c) =>
+      [dc.arms[c.ab].name, `${dc.arms[c.a].name} + ${dc.arms[c.b].name}`]) : []);
     for (let i = 0; i < a.rowCount; i++) {
       const g = (c: string) => a.get(c, i);
-      const metric = g('metric') === 'TC' ? 'T/C' : 'TGI';
+      const metric = metricWord(g('metric'));
       // the therapy's short name (its kind in brackets on hover): the table stays compact
       const pair = comboOf.get(g('arm'));
       const therapy = span(pair ? 'Combination' : String(g('therapy')).split(' (')[0]);
@@ -894,10 +887,10 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     // under the table, quietly: what each dosed arm adds up to over the study, for its randomized animals
     const doseLines = Array.from({length: a.rowCount}, (_, i) => {
       const arm = a.get('arm', i) as string;
-      const d = armDoses(arm, meta.value, v('study_end') as number, finite(a.get('randomise', i)), null);
+      const end = v('study_end') as number;
+      const d = armDoses(arm, meta.value, end, finite(a.get('randomise', i)), null);
       if (!d)
         return null;
-      const end = v('study_end') as number;
       const text = span(d.text);
       text.title = d.tip;
       // a one-time help: the dose per administration that gives a total over this arm's doses (it is never
@@ -1005,8 +998,8 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     const pairOf = new Map(combined.map((c) => [c.name, `combination of ${c.a} and ${c.b}`]));
     const armRows = Array.from({length: ar.rowCount}, (_, i) => ({name: ar.get('arm', i) as string,
       therapy: pairOf.get(ar.get('arm', i)) ?? KIND_WORDS[ar.get('therapy_key', i) as Therapy],
-      effect: `${ar.get('metric', i) === 'TC' ? 'T/C' : 'TGI'} ` +
-        `${num(ar.get('effect', i))}%`, n: finite(ar.get('n', i)), power: ar.get('assurance', i)}));
+      effect: `${metricWord(ar.get('metric', i))} ${num(ar.get('effect', i))}%`, n: finite(ar.get('n', i)),
+      power: ar.get('assurance', i)}));
     const unsized = armRows.filter((x) => x.n === null).map((x) => x.name);
     // a model not in the atlas, by its readable name (its line is its key)
     const own = historyModelName(v('line'));
@@ -1091,8 +1084,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
       perGroup: [{name: 'Control', n: armRows.some((x) => x.n === null) ? null : nMax},
         ...armRows.map((x) => ({name: x.name, n: x.n}))],
       // (some arm unsized: the animals the cards count, the control's and the sized arms')
-      implant: finite(v('implant_total')) ?? (r.plan.col('implant_total_sized') ? finite(v('implant_total_sized')) :
-        null), measurements: String(v('measurement_days')).split(',').length,
+      implant: countOf(r.plan, 'implant_total'), measurements: String(v('measurement_days')).split(',').length,
       therapies: armRows.map((x) => x.therapy)};
   });
 
@@ -1109,7 +1101,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     const r = result.value;
     if (!r?.curves.col('arm'))
       return null;
-    const colors = armColors(r.armResults.col('arm')!.toList(), meta.value.colors, meta.value.slots);
+    const colors = colorsIn(r, meta.value);
     paint(r.curves, 'arm', colors);
     return colors;
   });
@@ -1137,7 +1129,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
         'Power': 100 * pc.get('assurance', i), 'Arm': label.get(pc.get('arm', i))})))!;
     df.col('Power')!.meta.units = '%';
     df.col('Power')!.meta.format = '0.0';
-    const colors = armColors(a.col('arm')!.toList(), meta.peek().colors, meta.peek().slots);
+    const colors = colorsIn(r);
     paint(df, 'Arm', Object.fromEntries([...label].map(([arm, l]) => [l, colors[arm]])),
       Object.fromEntries([...label].map(([arm, l]) => [l, arm])));
     df.meta.formulaLines.addLine({title: ' ', formula: `\${Power} = ${target * 100}`, color: '#9aa3ad'});
@@ -1155,7 +1147,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     if (!r || r.duration.rowCount === 0)
       return undefined;
     const t = r.duration;
-    const colors = armColors(r.armResults.col('arm')!.toList(), meta.peek().colors, meta.peek().slots);
+    const colors = colorsIn(r);
     const [ENDPOINT, HUMANE] = [`Controls over the endpoint (${r.plan.get('endpoint', 0)} mm³)`,
       `Controls removed (over ${r.plan.get('humane_limit', 0)} mm³)`];
     // one curve after another (each arm's power, then the controls' two shares), one decimal in the tooltips
@@ -1295,7 +1287,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   // the study's colours: a colour changed in a chart is the plan's, and its frames follow it
   const link: StudyLink = {meta: () => meta.peek(), setMeta: (m) => meta.value = m, colors: () => {
     const r = result.peek();
-    return armColors(r ? r.armResults.col('arm')!.toList() : [], meta.peek().colors, meta.peek().slots);
+    return armColors(r ? armsIn(r) : [], meta.peek().colors, meta.peek().slots);
   }, plan: () => planKey(initial)};
   self.own(linkStudy(link));
   form.effect(() => {
@@ -1406,7 +1398,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     const saved = initial?.inputs;
     const savedArms = saved?.arms as Arm[] | null | undefined;
     const effects = saved && saved.effectAs === undefined && savedArms?.length ?
-      {effectAs: savedArms[0].metric === 'TC' ? 'T/C' : 'TGI'} : {};
+      {effectAs: metricWord(savedArms[0].metric)} : {};
     // only what the function takes: setParamValue throws on any other name, and the inputs after it went unset (a
     // plan saved by a build whose pmxPlanStudy had "looks", opened where the registered function lacks it)
     const params = new Set(call.func.inputs.map((p) => p.name));
@@ -1416,11 +1408,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
         console.warn(`PMX Studio: the plan's "${name}" is not an input of ${call.func.name}: not set`);
         continue;
       }
-      const v = name === 'arms' && value ? armsFrame(value as SavedPlan['inputs']['arms']) : value;
-      const field = form.getInput(name);
-      if (field)
-        field.value = v;
-      call.setParamValue(name, v);
+      setInput(name, name === 'arms' && value ? armsFrame(value as SavedPlan['inputs']['arms']) : value);
     }
     auto.cancel();
     return replan();
@@ -1451,7 +1439,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   // an ID, and each group's details with its empty cells read from its name
   // (with domain storage the ID is the lab's counter's, taken once, when the plan is first saved or downloaded)
   const stamped = async (r: PlanFrames) => meta.value =
-    await withCode(withGroups(meta.peek(), ['Control', ...r.armResults.col('arm')!.toList() as string[]]));
+    await withCode(withGroups(meta.peek(), ['Control', ...armsIn(r)]));
   const planFor = async (name: string, r: PlanFrames) => planOf(name, call, r, await stamped(r));
   // with domain storage: the plan's row (opened from it, or saved to it); a save updates it at its version
   let planRow = rowOfPlan(initial);
@@ -1566,20 +1554,25 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     }]);
   }
   const saving = signal(false);
+  // the plan in view as a saved plan, handed to `to` (Download, Follow); the ribbon's buttons wait meanwhile
+  const withPlan = (r: PlanFrames, to: (p: SavedPlan) => unknown) => {
+    saving.value = true;
+    void planFor(defaultName(r), r).then(to).catch((e) => grok.shell.error(String(e?.message ?? e)))
+      .finally(() => saving.value = false);
+  };
   // the plan as a file, from Export (as Monitor's study file)
   const downloadFile = () => {
     const r = ready();
-    if (!r)
-      return;
-    saving.value = true;
-    void planFor(defaultName(r), r).then(downloadPlan).catch((e) => grok.shell.error(String(e?.message ?? e)))
-      .finally(() => saving.value = false);
+    if (r)
+      withPlan(r, downloadPlan);
   };
   const copyProtocol = () => {
     if (!ready())
       return;
     return void navigator.clipboard.writeText(protocolText).then(() => grok.shell.info('Study protocol copied'));
   };
+  // under a document's title: the study's ID, the plan it comes from and today's date
+  const docSub = (plan: string) => docSubtitle(meta.peek().id, `From the plan ${plan}`);
   exports.push(['Report (PDF)…', async () => {
     const r = ready();
     if (r) {
@@ -1588,7 +1581,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
       folded?.classList.add('pmx-noprint');
       try {
         printSheet(await reportHtml({title: defaultName(r), stage: 'Plan', meta: meta.peek(), content,
-          groups: ['Control', ...r.armResults.col('arm')!.toList() as string[]]}));
+          groups: ['Control', ...armsIn(r)]}));
       } finally {
         folded?.classList.remove('pmx-noprint');
       }
@@ -1635,8 +1628,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
         humaneLimit: r.plan.get('humane_limit', 0), lastDay: r.plan.get('study_end', 0),
         toImplant: finite(r.plan.get('implant_total', 0)), meta: meta.peek()});
       const plan = defaultName(r);
-      const sub = [meta.peek().id, `From the plan ${plan}`, `prepared ${new Date().toISOString().slice(0, 10)}`]
-        .filter((x) => x).join(' · ');
+      const sub = docSub(plan);
       prepareDialog(items, {details: () => head.details(prepare), protocol: copyProtocol},
         async () => download(`${plan} - PREPARE checklist.docx`, await docx(checklistBlocks({title: 'PREPARE ' +
           'checklist', sub, items, credit: PREPARE_CREDIT, last: ['Notes', 'notes']}),
@@ -1648,8 +1640,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
    *  it opened close. */
   const ethicsDocument = (plan: string, title: string, sections: FormSection[], credit: string,
     o: {guide: string, url: string, asker: string, reopen: () => void, options?: HTMLElement}) => {
-    const sub = [meta.peek().id, `From the plan ${plan}`, `prepared ${new Date().toISOString().slice(0, 10)}`]
-      .filter((x) => x).join(' · ');
+    const sub = docSub(plan);
     return checklistDialog({title, guide: o.guide, url: o.url, asker: o.asker, options: o.options,
       download: async () => download(`${plan} - ${title}.docx`,
         await docx(formBlocks({title, sub, sections, credit}), {title}), DOCX_TYPE)},
@@ -1660,11 +1651,9 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     const r = ready();
     if (!r)
       return;
-    saving.value = true;
     doseDialog?.close();
     doseDialog = null;
-    void planFor(defaultName(r), r).then(followPlan).catch((e) => grok.shell.error(String(e?.message ?? e)))
-      .finally(() => saving.value = false);
+    withPlan(r, followPlan);
   }, {primary: true, iconRight: true});
   followButton.title = 'Start following this study in Monitor, with this plan';
   form.effect(() => {
@@ -1678,9 +1667,8 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     const r = result.value;
     if (!r)
       return undefined;
-    const arms = r.armResults.col('arm')!.toList() as string[];
-    const colors = armColors(arms, meta.peek().colors, meta.peek().slots);
-    return {name: defaultName(r), groups: ['Control', ...arms].map((name) => ({name, color: colors[name]})),
+    const colors = colorsIn(r);
+    return {name: defaultName(r), groups: ['Control', ...armsIn(r)].map((name) => ({name, color: colors[name]})),
       status: `${modelName(r.plan.get('line', 0))} · planned`, meta: () => meta.value, setMeta: (m) => meta.value = m};
   }), (s) => void openStage(s));
   return {

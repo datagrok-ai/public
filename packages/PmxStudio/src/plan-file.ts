@@ -152,7 +152,6 @@ export async function planOf(name: string, call: DG.FuncCall, f: PlanFrames, stu
   ...await provenance().then((x) => ({provenance: x}), () => ({})), ...history ? {history} : {}};
 }
 
-/** A plan read from a file someone may have edited or sent: checked before use. */
 /** A plan as one text whatever its file's spacing or its study's details since: its name and inputs
  *  (StudyLink.plan). */
 export const planKey = (p: {name: string, inputs: unknown} | null | undefined): string | null =>
@@ -168,6 +167,7 @@ export function planKeyOf(df: DG.DataFrame | null | undefined): string | null {
   }
 }
 
+/** A plan read from a file someone may have edited or sent: checked before use. */
 export function parsePlan(text: string): SavedPlan {
   let p: any;
   try {

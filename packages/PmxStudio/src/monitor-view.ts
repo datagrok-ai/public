@@ -9,23 +9,23 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {badge, BasicTable, button, buttonWithIcon, computed, div, divH, divV, signal,
   span} from '@datagrok-libraries/u2';
-import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
+import type {ReadonlySignal} from '@datagrok-libraries/u2';
 import {funcForm, ViewHost} from '@datagrok-libraries/u2/dg';
 import type {TableInput, ViewContent} from '@datagrok-libraries/u2/dg';
 
 import {analyzeView} from './analyze-view';
 import {BandChart} from './band-chart';
-import {WEEKDAY_NAMES, weekdaysOf} from './frames';
+import {weekdaysOf} from './frames';
+import {isFiniteNumber} from './engine';
 import {StudyLink, groupColors, hasOwnColors, linkStudy, paint, resetColors} from './colors';
-import {allocateGroups, balanceNote, MonitorFrames, monitorFrames, MonitorInputs, latestReadings, outsideBand,
-  naturalCompare, promptsByChance, weightMissing} from './monitor';
+import {allocateGroups, balanceNote, day0Weekday, MonitorFrames, monitorFrames, MonitorInputs, latestReadings,
+  outsideBand, naturalCompare, promptsByChance, weightMissing} from './monitor';
 import {FROZEN_ATLAS_NOTE, PLAN_TAG, SavedPlan, atlasNote, parsePlan, planKeyOf, shownPath} from './plan-file';
 import {planInput} from './plan-vs-observed';
 import {openStage, showStage} from './stages';
-import {LIMITS_TAG, LINE_TAG, LOOKS_TAG, REVEALED, WEIGHT_TAG, addLog, groupsShown, logOf, newStudyTable, parseStudy,
-  EXCLUDED, EXPOSURE_TAG, exposureOfTag, stamped,
+import {LIMITS_TAG, LINE_TAG, LOG_TAG, LOOKS_TAG, REVEALED, VOLUME_TAG, WEIGHT_TAG, addLog, groupsShown, logOf,
+  newStudyTable, parseStudy, EXCLUDED, EXPOSURE_TAG, exposureOfTag, stamped, lineOf, setHistoryOn,
   restoreFields, roleColumns, saveStudy, studyNameOf, studyOf, tableOf, ticked} from './study-file';
-import {lineOf, setHistoryOn} from './study-file';
 import {TWIN_NOTE, savedHistory} from './history-models';
 import {markLine} from './ui';
 import {WeightRow, groupWeights, readSchedule} from './schedule';
@@ -35,9 +35,8 @@ import {animalMarks, animalPanel as panelOfAnimal, blindColumn, emptyStudy, open
   studyOf as studyNamesOf,
   keepStudyField, tagStudy, withoutExcluded} from './study-table';
 import {EmptyState, NoControl} from './crux';
-import {StudyMeta, armDoses, dateOf, dateText, decisionEntry, emptyMeta, metaOf, renamedGroups, setMetaOn, stopsOf,
-  weekdayOf, withGroups, withId}
-  from './study-meta';
+import {META_TAG, StudyMeta, armDoses, dateOf, dateText, decisionEntry, emptyMeta, metaOf, renamedGroups, setMetaOn,
+  stopsOf, withGroups, withId} from './study-meta';
 import {renamedExposure} from './exposure';
 import {Saved, domainStorageOn, isReadOnly, markTableFromFile, newRowNote, ownerOf, rowOfTable, save, saveCopy,
   saveError, setRowOn, tableFileOwner, withCode} from './store';
@@ -47,7 +46,7 @@ import {LineInput} from './line-input';
 import {esc, printSheet, sheetHtml} from './sheet';
 import {Exports, download, exportMenu, reportHtml} from './report';
 import {studyInputsOf} from './explore';
-import {tolerabilityTab} from './tolerability';
+import {rowsOf, tolerabilityTab} from './tolerability';
 import {findCombinations, parseArmName} from './arm-name';
 import {linePrior, modelName} from './priors';
 import {IndependenceBand, bandWhy, bandWords, independenceBand, notCombined} from './synergy';
@@ -82,12 +81,6 @@ export function chanceWords(success: number, tgiLower: number): string {
 
 interface AnimalRow {[c: string]: any}
 
-const rowsOf = (df: DG.DataFrame): AnimalRow[] => Array.from({length: df.rowCount}, (_, i) =>
-  Object.fromEntries(df.columns.names().map((c) => {
-    const col = df.col(c)!;
-    return [c, col.isNone(i) ? null : col.get(i)];
-  })));
-
 /** The details as a blinded study shows them before its groups are revealed: each group's doses under "Group 1",
  *  "Group 2"… (the calendar and its .ics say when to dose, not what) */
 const unnamed = (m: StudyMeta, revealed: boolean): StudyMeta => {
@@ -108,8 +101,8 @@ const unnamed = (m: StudyMeta, revealed: boolean): StudyMeta => {
  *  combination has a row per drug). */
 const blindName = (m: StudyMeta) => (group: string) =>
   `Group ${[...new Set(m.groups.map((g) => g.group))].indexOf(group) + 1}`;
-const grams = (x: unknown) => typeof x === 'number' && Number.isFinite(x) ? x.toFixed(1) : '—';
-const mm3 = (x: unknown) => typeof x === 'number' && Number.isFinite(x) ? `${Math.round(x)}` : '—';
+const grams = (x: unknown) => isFiniteNumber(x) ? x.toFixed(1) : '—';
+const mm3 = (x: unknown) => isFiniteNumber(x) ? `${Math.round(x)}` : '—';
 function fill<R>(host: HTMLElement, items: R[], key: (r: R) => string,
   columns: [string, (r: R) => string | HTMLElement][], onRowClick?: (r: R) => void): void {
   const t = new BasicTable<R>({items, keyOf: key, columns: columns.map(([header, render], j) =>
@@ -130,7 +123,7 @@ export function exportName(df: DG.DataFrame): string {
 }
 
 /** The tags a study is saved from (studyOf), besides its measurements. */
-const SAVED_TAGS = [PLAN_TAG, 'pmx.meta', LIMITS_TAG, LINE_TAG, 'pmx.volume', EXPOSURE_TAG, LOOKS_TAG, 'pmx.log'];
+const SAVED_TAGS = [PLAN_TAG, META_TAG, LIMITS_TAG, LINE_TAG, VOLUME_TAG, EXPOSURE_TAG, LOOKS_TAG, LOG_TAG];
 
 /** A file opened in place of a study just followed from Plan (still empty) is that study: it takes the plan, the
  *  details and the reviews the followed table carried, unless it carries a plan of its own. True when it took them. */
@@ -186,6 +179,11 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     const v = call.getParamValue('study');
     return v instanceof DG.DataFrame ? v : null;
   };
+  // the plan's text: the one picked in the form, else the study table's own
+  const planText = () => call.getParamValue('plan') || studyTable()?.getTag(PLAN_TAG);
+  // the study as it is saved: its table with the form's limits
+  const savedStudy = (df: DG.DataFrame) =>
+    studyOf(df, call.getParamValue('humane') ?? null, call.getParamValue('weightLimit') ?? null);
   // the groups, unless the study is blinded and no one has revealed them
   const revealed = computed(() => {
     void result.value;
@@ -350,8 +348,7 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     const s = status.value;
     return (s && !s.col(name)?.isNone(0) ? s.get(name, 0) ?? undefined : undefined) as T | undefined;
   });
-  const card = (label: string | ReadonlySignal<string>, value: ReadonlySignal<StatValue | undefined>, tip: () => string,
-    format?: (x: StatValue) => string) => statCard(form, label, value, tip, format);
+  const card = statCard.bind(null, form);
   const metaVersion = signal(0);
   const meta = computed(() => {
     void result.value;
@@ -652,7 +649,7 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
       return;
     const control = r.status.get('control', 0) as string;
     const treated = [...new Set(r.days.col('group')!.toList() as string[])].filter((g) => g !== control);
-    const off = notCombined(call.getParamValue('plan') || studyTable()?.getTag(PLAN_TAG));
+    const off = notCombined(planText());
     // the band reads A and B alone as they act inside A+B: not for drugs started on other days (a staggered design)
     const starts = (g: string) => parseArmName(g).map((p) => readSchedule(p.schedule)?.first ?? 0);
     const combos = findCombinations(treated).filter((c) => !off.includes(treated[c.ab]) &&
@@ -780,7 +777,7 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
       groupsBefore.set(df, animalsByGroup(df));
   });
   const studyPlan = (): SavedPlan | null => {
-    const text = call.getParamValue('plan') || studyTable()?.getTag(PLAN_TAG);
+    const text = planText();
     try {
       return text ? parsePlan(text) : null;
     } catch {
@@ -815,8 +812,7 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     }
     const latest = r.status.get('day', 0) as number;
     const plan = studyPlan();
-    const startWeekday = m.start ? weekdayOf(m.start) :
-      Math.max(0, WEEKDAY_NAMES.indexOf(String(plan?.inputs.startWeekday ?? 'Monday')));
+    const startWeekday = day0Weekday(m.start, plan);
     const weekdays = new Set(weekdaysOf(plan?.inputs.measurementDays as string | undefined));
     // the plan's measurement days: day 0 and its weekdays (no plan: only the days measured count)
     const planned = (d: number) => plan !== null && (d === 0 || weekdays.has((startWeekday + d) % 7));
@@ -1056,15 +1052,14 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     if (!domainStorageOn()) {
       setMeta(withId(details));
       const said = (p: string) => grok.shell.info(`Study saved: ${shownPath(p)}`);
-      void Promise.resolve().then(() => saveStudy(studyOf(df, call.getParamValue('humane') ?? null,
-        call.getParamValue('weightLimit') ?? null), df.name)).then(said, failed('The study could not be saved'));
+      void Promise.resolve().then(() => saveStudy(savedStudy(df), df.name))
+        .then(said, failed('The study could not be saved'));
       return Promise.resolve();
     }
     // a row: the one the table was opened from or saved to, at its version (another's save since is refused)
     return withCode(details).then(async (m) => {
       setMeta(m);
-      const s = await stamped(studyOf(df, call.getParamValue('humane') ?? null,
-        call.getParamValue('weightLimit') ?? null));
+      const s = await stamped(savedStudy(df));
       const at = rowOfTable(df);
       try {
         const saved = await save('study', s, at, {fileOwner: tableFileOwner(df)});
@@ -1224,7 +1219,7 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     ['Study file (.pmxstudy)', () => {
       const df = needStudy();
       remember();
-      void stamped(studyOf(df, call.getParamValue('humane') ?? null, call.getParamValue('weightLimit') ?? null))
+      void stamped(savedStudy(df))
         .then((s) => download(`${exportName(df)}.pmxstudy`, JSON.stringify(s), 'application/json'),
           failed('The study file could not be made'));
     }],
@@ -1274,7 +1269,7 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     // the header's Analyze step is this study's analysis (unless that would reveal a blinded study's groups: the
     // button does that, and says so); Plan opens with the study's plan, but not on a blinded study's hidden groups
   }), (s) => s === 'analyze' && studyTable() && revealed.peek() ? analyzeThis() : void openStage(s,
-    revealed.peek() ? call.getParamValue('plan') || studyTable()?.getTag(PLAN_TAG) : null));
+    revealed.peek() ? planText() : null));
   // saving is always in reach, as in Plan: a study's measurements, log and notes live in the table until saved
   form.effect(() => [saveButton, analyzeButton].forEach((b) => b.hidden = !result.value));
   return {

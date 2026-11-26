@@ -9,9 +9,7 @@ import {parseStudy, savedGroupsShown} from './study-file';
 import type {SavedStudy} from './study-file';
 import {parseMeta} from './study-meta';
 import {esc} from './sheet';
-
-/** `n` with its noun, singular or plural: "1 animal", "4 groups". */
-const count = (n: number, noun: string) => `${n} ${noun}${n === 1 ? '' : 's'}`;
+import {plural} from './wide-table';
 
 /** What a plan says, in a few lines: its model and end, each group with its animals, who saved it. */
 export function planSummary(p: SavedPlan): string[] {
@@ -36,15 +34,15 @@ export function studySummary(s: SavedStudy): string[] {
   const groups = [...new Set(s.rows.map((r) => r.group).filter((g): g is string => !!g))];
   const animalsOf = (g: string) => new Set(s.rows.filter((r) => r.group === g).map((r) => r.animal)).size;
   const [flagged, excluded] = [s.rows.filter((r) => r.flagged).length, s.rows.filter((r) => r.excluded).length];
-  const animals = count(new Set(s.rows.map((r) => r.animal)).size, 'animal');
+  const animals = plural(new Set(s.rows.map((r) => r.animal)).size, 'animal');
   return [
     ...parseMeta(s.meta)?.id ? [parseMeta(s.meta)!.id] : [],
-    `${animals}${shown && groups.length ? ` in ${count(groups.length, 'group')}` : ''}, measured on ` +
-      `${count(days.length, 'day')}${days.length ? `, the last day ${Math.max(...days)}` : ''}`,
+    `${animals}${shown && groups.length ? ` in ${plural(groups.length, 'group')}` : ''}, measured on ` +
+      `${plural(days.length, 'day')}${days.length ? `, the last day ${Math.max(...days)}` : ''}`,
     ...!shown ? ['Blinded: the groups are shown in Monitor once someone reveals them'] :
-      groups.map((g) => `${g}: ${count(animalsOf(g), 'animal')}`),
+      groups.map((g) => `${g}: ${plural(animalsOf(g), 'animal')}`),
     ...s.rows.some((r) => typeof r.weight === 'number') ? ['Body weight measured'] : [],
-    ...flagged || excluded ? [`${count(flagged, 'value')} flagged to look at, ${excluded} excluded`] : [],
+    ...flagged || excluded ? [`${plural(flagged, 'value')} flagged to look at, ${excluded} excluded`] : [],
     !s.plan ? 'No plan attached' : shown && typeof s.plan.name === 'string' && s.plan.name ? `Plan: ${s.plan.name}` :
       'A plan attached',
   ];

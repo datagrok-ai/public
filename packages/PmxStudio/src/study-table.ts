@@ -18,7 +18,7 @@ import {DEFAULT_RULES, Finding, OutlierRules, RULE_LIMITS, RulesSource, canEditL
 import {groupsByAnimal} from './animal-group';
 import {StudyInputs as StudyNames} from './explore';
 import type {MenuAt} from './calendar';
-import {ROLES, WEIGHT, pastedNumber} from './wide-table';
+import {ROLES, WEIGHT, pastedNumber, plural} from './wide-table';
 import {EXCLUDED, FLAGGED, MARK_REASON, STUDY_TAG, addLog, groupsShown, roleColumns, ticked} from './study-file';
 import {metaOf} from './study-meta';
 import {colorsOfTable, paint} from './colors';
@@ -181,8 +181,8 @@ export function animalPanel(n: StudyNames, animal: string, o: {color?: string, s
     // a gain with its "+", as Needs attention writes it (signed() marks only a loss)
     ...r.weights ? [{label: 'Body weight', value: `${r.weights[1].toFixed(1)} g (${gain(100 *
       (r.weights[1] / r.weights[0] - 1))})`}] : [],
-    ...r.excluded ? [{label: 'Excluded', value: `${r.excluded} reading${r.excluded === 1 ? '' : 's'}`}] : [],
-    ...r.flagged ? [{label: 'Flagged', value: `${r.flagged} reading${r.flagged === 1 ? '' : 's'}`}] : [],
+    ...r.excluded ? [{label: 'Excluded', value: plural(r.excluded, 'reading')}] : [],
+    ...r.flagged ? [{label: 'Flagged', value: plural(r.flagged, 'reading')}] : [],
     ...r.reasons.length ? [{label: 'Why', value: r.reasons.join('; ')}] : [],
     ...o.extra ?? []];
   return objectPanel({title: animal, color: o.showGroup ? o.color : undefined, facts});
@@ -243,7 +243,7 @@ export function studyMenu(n: StudyNames | null, role: 'animal' | 'group', value:
   const col = n ? n.study.col(n[role]) : null;
   if (n && col) {
     const rows = Array.from({length: n.study.rowCount}, (_, i) => i).filter((i) => String(col.get(i)) === value);
-    const what = `${role} ${value} (${rows.length} row${rows.length === 1 ? '' : 's'})`;
+    const what = `${role} ${value} (${plural(rows.length, 'row')})`;
     const these = new Set(rows);
     popup.item('Select its rows', () => n.study.selection.init((i) => these.has(i)));
     popup.item(`Flag ${role === 'animal' ? 'this animal' : 'every animal of the group'}…`,
@@ -294,12 +294,13 @@ export function findingsOf(n: StudyNames): Map<number, Finding[]> {
     return c ? Array.from({length: n.study.rowCount}, (_, i) => c.isNone(i) ? null : c.get(i)) : null;
   };
   const text = (name: string) => (values(name) ?? []).map((a) => a === null ? null : String(a));
-  const groups = groupsByAnimal(text(n.animal), text(n.group));
+  const animal = text(n.animal);
+  const groups = groupsByAnimal(animal, text(n.group));
   // an excluded row is out of the rules too: it is neither looked at again nor what the others are compared with
   const out = n.study.col(EXCLUDED);
   const kept = <T>(xs: (T | null)[] | null) => xs && xs.map((x, i) => ticked(out, i) ? null : x);
   const found = new Map<number, Finding[]>();
-  for (const f of findOutliers({animal: kept(text(n.animal))!, group: groups, day: values(n.day) ?? [],
+  for (const f of findOutliers({animal: kept(animal)!, group: groups, day: values(n.day) ?? [],
     volume: kept(values(n.volume)) ?? [], weight: kept(values(n.bodyWeight))}, rulesInForce().rules))
     found.set(f.row, [...(found.get(f.row) ?? []), f]);
   return found;
@@ -396,7 +397,7 @@ export function appendPasted(df: DG.DataFrame, text: string): number {
     return x;
   }));
   if (unread.length > 0) {
-    throw new Error(`Nothing added: ${unread.length} value${unread.length === 1 ? '' : 's'} could not be read as ` +
+    throw new Error(`Nothing added: ${plural(unread.length, 'value')} could not be read as ` +
       `numbers (${unread.slice(0, 4).join('; ')}${unread.length > 4 ? '; …' : ''}). Write them as plain numbers, ` +
       'without units or thousands separators');
   }
@@ -588,7 +589,7 @@ export function decorateStudyView(view: DG.TableView): void {
   const pasted = (text: string) => {
     try {
       const n = appendPasted(df, text);
-      grok.shell.info(n ? `${n} row${n === 1 ? '' : 's'} added from the clipboard` : 'Nothing to paste');
+      grok.shell.info(n ? `${plural(n, 'row')} added from the clipboard` : 'Nothing to paste');
     } catch (e: any) {
       grok.shell.warning(String(e?.message ?? e));
     }
@@ -717,7 +718,7 @@ export function studyDataLine(names: () => StudyNames | null): {root: HTMLElemen
     const flagged = marks.filter((m) => m.state === 'flagged').length;
     const excluded = marks.filter((m) => m.state === 'excluded').length;
     head.textContent = `Study data: ${n.study.rowCount} measurements · `;
-    check.textContent = `${findings} value${findings === 1 ? '' : 's'} to check`;
+    check.textContent = `${plural(findings, 'value')} to check`;
     tail.textContent = ` · ${flagged} flagged · ${excluded} excluded. Right-click a value in the table to flag or ` +
       'exclude it.';
   };

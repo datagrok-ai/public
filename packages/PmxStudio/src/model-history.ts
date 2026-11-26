@@ -73,6 +73,8 @@ const GAP = 21; // days: a curve is cut at its first gap longer than this (the a
 const MIN_POINTS = 4;
 const MIN_RATE = 1e-3; // per day: slower is no growth (no take), left out as in the atlas
 
+const mean = (xs: number[]) => xs.reduce((t, x) => t + x, 0) / xs.length;
+
 /** The exponential growth rate of one curve: the least-squares slope of ln V on day over its positive points, cut at
  *  the first gap > GAP days; null with fewer than MIN_POINTS points or a rate <= MIN_RATE. */
 export function curveRate(points: {day: number, volume: number}[]): number | null {
@@ -82,7 +84,7 @@ export function curveRate(points: {day: number, volume: number}[]): number | nul
   if (q.length < MIN_POINTS)
     return null;
   const [t, y] = [q.map((x) => x.day), q.map((x) => Math.log(x.volume))];
-  const [mt, my] = [t.reduce((s, x) => s + x, 0) / t.length, y.reduce((s, x) => s + x, 0) / y.length];
+  const [mt, my] = [mean(t), mean(y)];
   const sxx = t.reduce((s, x) => s + (x - mt) ** 2, 0);
   const rate = t.reduce((s, x, i) => s + (x - mt) * (y[i] - my), 0) / sxx;
   return sxx > 0 && rate > MIN_RATE ? rate : null;
@@ -98,10 +100,7 @@ export function historyStudy(rows: HistoryRow[], meansOnly: boolean, animalsPerG
   for (const r of rows)
     byAnimal.set(r.animal, [...byAnimal.get(r.animal) ?? [], r]);
   const ln = [...byAnimal.values()].map(curveRate).filter((r): r is number => r !== null).map(Math.log);
-  if (!ln.length)
-    return null;
-  const lnRate = ln.reduce((s, x) => s + x, 0) / ln.length;
-  return {lnRate, n: meansOnly ? animalsPerGroup ?? nAssumed : ln.length};
+  return ln.length ? {lnRate: mean(ln), n: meansOnly ? animalsPerGroup ?? nAssumed : ln.length} : null;
 }
 
 /** The history weighed against the PDX reference, in ln rate (the scale d1 (a) validated): the model's own mean
@@ -123,8 +122,6 @@ export function weighHistory(a: HistoryAnchor, studies: HistoryStudy[], otherLab
   return {mean: a.mu + weight * (ybar - a.mu), sd: Math.sqrt(post + a.tau_study ** 2 + lab), weight};
 }
 
-const mean = (xs: number[]) => xs.reduce((t, x) => t + x, 0) / xs.length;
-
 /** Each numeric leaf the mean over `xs` (objects recursed; anything else the first's). */
 function meanOf<T>(xs: T[]): T {
   const first = xs[0] as any;
@@ -135,54 +132,9 @@ function meanOf<T>(xs: T[]): T {
   return Object.fromEntries(Object.keys(first).map((k) => [k, meanOf(xs.map((x: any) => x?.[k]))])) as T;
 }
 
-/** A new study's (log alpha, log beta) as the engine's bivariate normal. */
-export interface StudyGrowth {mean_log_alpha: number, sd_log_alpha: number, mean_log_beta: number,
-  sd_log_beta: number, rho: number}
-
-const GRID = 201; // nodes per axis
-const SPAN = 8; // sds each side
-/** Standard normal nodes and their normalised weights on a fixed grid: deterministic, no data, no seed. */
-const NODES = (() => {
-  const z = Array.from({length: GRID}, (_, i) => -SPAN + 2 * SPAN * i / (GRID - 1));
-  const w = z.map((x) => Math.exp(-x * x / 2));
-  const t = w.reduce((s, x) => s + x, 0);
-  return {z, w: w.map((x) => x / t)};
-})();
-
-/** REJECTED by an independent local contrast (D681): the route that converts the rate
- *  to the engine's log alpha is CLOSED. Kept, not called, until it is removed; historyPrior uses the exponential.
- *  The weighed ln rate as a new study's (log alpha, log beta) (fix B', D676). A history measures a rate at a
- *  volume: it fixes alpha - beta c (c = ln V_window - log_v_ref), not alpha alone. So alpha is converted within each
- *  draw: alpha = rate + beta c, ln rate ~ N(w.mean, w.sd), log beta ~ N(beta.mean, beta.sd), independent; the
- *  bivariate normal of (log alpha, log beta) with those moments, integrated on a fixed grid. The earlier conversion
- *  (mean beta, delta method) was REJECTED too (D674). Not to be wired. */
-export function rateToLogAlpha(w: {mean: number, sd: number}, a: HistoryAnchor, logVRef: number,
-  beta: {mean: number, sd: number}): StudyGrowth {
-  const c = Math.log(a.window_volume_mm3) - logVRef;
-  if (!(c > 0)) // the fix assumes the history's rate was measured above the reference volume
-    throw new Error('This history’s growth could not be placed on PMX Studio’s growth model.');
-  let [wa, sa, saa, sb, sbb, sab] = [0, 0, 0, 0, 0, 0];
-  for (let i = 0; i < GRID; i++) {
-    const rate = Math.exp(w.mean + w.sd * NODES.z[i]);
-    for (let j = 0; j < GRID; j++) {
-      const lb = beta.mean + beta.sd * NODES.z[j];
-      const alpha = rate + Math.exp(lb) * c;
-      const p = NODES.w[i] * NODES.w[j];
-      if (!(alpha > 0)) {
-        if (p > 1e-12)
-          throw new Error('This history’s growth could not be placed on PMX Studio’s growth model.');
-        continue;
-      }
-      const la = Math.log(alpha);
-      [wa, sa, saa, sb, sbb, sab] = [wa + p, sa + p * la, saa + p * la * la, sb + p * lb, sbb + p * lb * lb,
-        sab + p * la * lb];
-    }
-  }
-  const [ma, mb] = [sa / wa, sb / wa];
-  const [va, vb] = [saa / wa - ma * ma, sbb / wa - mb * mb];
-  return {mean_log_alpha: ma, sd_log_alpha: Math.sqrt(va), mean_log_beta: mb, sd_log_beta: Math.sqrt(vb),
-    rho: (sab / wa - ma * mb) / Math.sqrt(va * vb)};
-}
+// (Converting the weighed rate to the engine's log alpha, alpha = rate + beta c, was REJECTED by an independent local
+// contrast, D681, as was the delta method before it, D674: that route is closed and its code, never called, is in
+// git history, rateToLogAlpha. historyPrior uses the exponential.)
 
 /** log beta of a history's growth: a deceleration so small (about 8e-7 per day) that the engine's reduced Gompertz
  *  is the exponential the history measured, ln V(t) = ln V0 + alpha t (it departs by under 1e-4 in ln V over four

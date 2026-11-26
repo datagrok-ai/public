@@ -108,9 +108,6 @@ const metaIn = (kind: Kind, doc: SavedPlan | SavedStudy): StudyMeta =>
 const myNames = (me?: string): string[] => (me !== undefined ? [me] : [grok.shell.user?.login,
   grok.shell.user?.friendlyName]).filter((n): n is string => !!n);
 
-/** A plan or study about to become a new row, from wherever it came (a file, a drop, the Open dialog, a view): one
- *  of someone else's (its owner is not the user) becomes the user's copy, with a new ID and whose it was in copyOf;
- *  the user's own keeps its ID unless a row of its kind has it already, when it gets a new one. */
 /** Who a plan or study names as its owner. */
 export const ownerOf = (kind: Kind, doc: SavedPlan | SavedStudy): string => kind === 'study' ?
   (doc as SavedStudy).meta?.owner ?? '' : (doc as SavedPlan).study?.owner || (doc as SavedPlan).author || '';
@@ -123,6 +120,10 @@ export const fileOwnerOf = (start: object | null | undefined): string | undefine
 export const FROM_FILE_TAG = 'pmx.fromFile';
 export const markTableFromFile = (df: DG.DataFrame, owner: string) => df.setTag(FROM_FILE_TAG, owner);
 export const tableFileOwner = (df: DG.DataFrame): string | undefined => df.getTag(FROM_FILE_TAG) || undefined;
+
+/** A plan or study about to become a new row, from wherever it came (a file, a drop, the Open dialog, a view): one
+ *  of someone else's (its owner is not the user) becomes the user's copy, with a new ID and whose it was in copyOf;
+ *  the user's own keeps its ID unless a row of its kind has it already, when it gets a new one. */
 async function firstSave<T extends SavedPlan | SavedStudy>(kind: Kind, doc: T, t: Tables, me?: string,
   fileOwner?: string): Promise<{doc: T, code?: string, copyOf?: string}> {
   // a copy only for a file someone else owned; a record made in the app is the user's, whatever its owner field says

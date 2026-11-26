@@ -166,10 +166,10 @@ export function findCombinations(names: string[]): Combination[] {
 export function combinationHint(text: string, others: string[], detected: boolean): string | null {
   if (detected || others.length < 2)
     return null;
-  const theirs = others.flatMap(parseArmName);
+  const [mine, theirs] = [parseArmName(text), others.flatMap(parseArmName)];
   const pointing = /\+|\bplus\b|\bcombo|\bcombin|\bsynerg/i.test(text) ||
-    parseArmName(text).some((p) => theirs.some((q) => sameDrug(p, q)));
-  const two = parseArmName(text).find((p) => !p.dose && theirs.filter((q) => q.dose && sameDrug(p, q)).length > 1);
+    mine.some((p) => theirs.some((q) => sameDrug(p, q)));
+  const two = mine.find((p) => !p.dose && theirs.filter((q) => q.dose && sameDrug(p, q)).length > 1);
   if (pointing && two)
     return `Write the dose of ${two.drug} in the combination's name: the other arms give it at more than one dose.`;
   return pointing ? 'Name it with both drugs, as in "Cpd-A + Cpd-B", and Plan treats it as their combination.' : null;

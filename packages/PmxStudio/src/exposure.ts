@@ -6,8 +6,8 @@ import {drugKey, parseArmName, therapyOf} from './arm-name';
 import type {ArmPart} from './arm-name';
 import type {Therapy} from './archetypes';
 import {crux, rows as cruxRows} from './crux';
-import {finite, median, SEED} from './engine';
-import {FIRST_DOSE_DAY, readDayOf} from './study-effect';
+import {finite, isFiniteNumber, median, SEED} from './engine';
+import {FIRST_DOSE_DAY, readDayOf, unitKey as unitOf} from './study-effect';
 import type {PreviousStudy} from './study-effect';
 import {dosesPerDay, readSchedule} from './schedule';
 import type {DosingRules} from './schedule';
@@ -42,7 +42,15 @@ const ROUTE_OF: {[arm: string]: string} = {'i.v.': 'IV', 'p.o.': 'PO', 's.c.': '
   'i.t.': 'other'};
 const sameRoute = (arm: string | null, theirs: string) => arm === null ||
   (ROUTE_OF[arm] ?? arm) === (theirs.startsWith('IV') ? 'IV' : theirs);
-const unitOf = (u: string) => u.replace(/[µμ]/g, 'u').toLowerCase();
+/** Three significant figures: "1,230". */
+export const sig = (x: number) => Number(x.toPrecision(3)).toLocaleString('en-US');
+
+/** NCA's units, and the column among its summary's keys that names the drug (null: none). */
+function ncaColumns(results: DG.DataFrame, summary: DG.DataFrame, groupCol: string | null) {
+  const keys: string[] = JSON.parse(summary.getTag('nca.keyColumns') || '[]');
+  return {units: JSON.parse(results.getTag('nca.units') || '{}'),
+    drugCol: keys.find((k) => k !== groupCol && !/^(study|period|visit|occasion)/i.test(k)) ?? null};
+}
 
 /** NCA's mapping of `table`, or null when it does not read as concentrations over time; `issues`, what NCA missed. */
 export async function concentrationMapping(table: DG.DataFrame, issues: string[] = []): Promise<any | null> {
@@ -114,10 +122,8 @@ const float32 = (x: number | null) => x === null ? null : Number(x.toPrecision(7
 /** An arm's exposure in NCA's results and summary (`part`: one drug of a combination arm, null: the arm alone). */
 function ncaReader(results: DG.DataFrame, summary: DG.DataFrame, groupCol: string | null,
   meta: StudyMeta | null): (arm: string, part: ArmPart | null) => ArmExposure {
-  const keys: string[] = JSON.parse(summary.getTag('nca.keyColumns') || '[]');
-  const units = JSON.parse(results.getTag('nca.units') || '{}');
+  const {units, drugCol} = ncaColumns(results, summary, groupCol);
   const doseUnit = typeof units.dose === 'string' ? unitOf(units.dose) : null;
-  const drugCol = keys.find((k) => k !== groupCol && !/^(study|period|visit|occasion)/i.test(k)) ?? null;
   const str = (df: DG.DataFrame, c: string, i: number) => df.col(c)?.getString(i) ?? '';
   const num = (df: DG.DataFrame, c: string, i: number): number | null => {
     const col = df.col(c);
@@ -185,9 +191,8 @@ function ncaReader(results: DG.DataFrame, summary: DG.DataFrame, groupCol: strin
 
 /** "1,230 (CV 18%)": three significant figures; no CV for a single profile. */
 export const meanCv = (mean: number, cv: number | null) =>
-  `${Number(mean.toPrecision(3)).toLocaleString('en-US')}${cv === null ? '' : ` (CV ${Math.round(cv)}%)`}`;
+  `${sig(mean)}${cv === null ? '' : ` (CV ${Math.round(cv)}%)`}`;
 
-/** A drug's PK as NCA summarised it: its dose levels and, by dose, the mean AUClast as a line of text. */
 /** A drug's PK as NCA read it: its doses, their unit, the AUC text per dose (for a tooltip) and whether exposure rises
  *  in step with the dose (pk_proportional of Crux's function). */
 export interface DrugPk {doses: number[], unit: string, auc: Map<number, string>, proportional: Proportional,
@@ -211,9 +216,7 @@ export function proportionalOf(aucByDose: Map<number, number>): Proportional {
  *  its blocked profiles out of the summary; those still to review are in it, and the AUC text says how many. */
 export function drugPkOf(key: string, results: DG.DataFrame, summary: DG.DataFrame,
   groupCol: string | null, route: string | null = null): DrugPk | null {
-  const keys: string[] = JSON.parse(summary.getTag('nca.keyColumns') || '[]');
-  const units = JSON.parse(results.getTag('nca.units') || '{}');
-  const drugCol = keys.find((k) => k !== groupCol && !/^(study|period|visit|occasion)/i.test(k)) ?? null;
+  const {units, drugCol} = ncaColumns(results, summary, groupCol);
   const dose = summary.col('DOSE');
   if (!dose || typeof units.dose !== 'string' || (!drugCol && !groupCol))
     return null;
@@ -398,8 +401,8 @@ function referenceCaveats(r: ReferenceRow): string[] {
 /** The units the human exposure can be typed in: a concentration, the AUC in it times hours. */
 export const HUMAN_UNITS = ['ng/mL', 'µg/mL', 'mg/L'];
 
-/** A group's exposure against the human's: the ratio and its tooltip, or why there is none. */
-/** `weekly`: the study's no-dosing-at-weekends rule lowered the doses a day, so the multiple is averaged over the
+/** A group's exposure against the human's: the ratio and its tooltip, or why there is none.
+ *  `weekly`: the study's no-dosing-at-weekends rule lowered the doses a day, so the multiple is averaged over the
  *  week; its line ("Mouse daily AUC: … × 0.714 doses a day (QD, no dosing at weekends) = …"), for the report. */
 export type HumanMultiple = {ratio: number, tip: string, range?: 'above' | 'below', why?: undefined,
   weekly?: string} |
@@ -408,10 +411,6 @@ export type HumanMultiple = {ratio: number, tip: string, range?: 'above' | 'belo
 /** A CV % of the human AUC that is used: from 5 to under 300 (below 5, likely typed as a fraction). */
 export const cvOk = (cv: number | null | undefined): cv is number => cv != null && cv >= 5 && cv < 300;
 
-/** Whether a multiple of the typed human exposure (a label's arithmetic mean) lies outside the patients' spread:
- *  with the AUC's CV %, outside the 5th–95th percentiles of a log-normal with that CV centred on its geometric mean
- *  (mean/√(1+CV²)), exp(±1.645·√ln(1+CV²)); without it, beyond 3-fold either way, by convention. `notes` qualify
- *  the text. null: within. */
 /** The patients' range as multiples of their (mean) exposure: the 5th to 95th percentile of a log-normal around the
  *  geometric mean when the CV is known, else the 3-fold convention. */
 export function patientsRange(cv: number | null | undefined): {lo: number, hi: number} {
@@ -423,6 +422,10 @@ export function patientsRange(cv: number | null | undefined): {lo: number, hi: n
   return {lo: m / edge, hi: m * edge};
 }
 
+/** Whether a multiple of the typed human exposure (a label's arithmetic mean) lies outside the patients' spread:
+ *  with the AUC's CV %, outside the 5th–95th percentiles of a log-normal with that CV centred on its geometric mean
+ *  (mean/√(1+CV²)), exp(±1.645·√ln(1+CV²)); without it, beyond 3-fold either way, by convention. `notes` qualify
+ *  the text. null: within. */
 export function exposureRange(ratio: number, cv: number | null | undefined, notes: string[] = []):
 {dir: 'above' | 'below', text: string} | null {
   const known = cvOk(cv);
@@ -437,7 +440,6 @@ export function exposureRange(ratio: number, cv: number | null | undefined, note
     `more than 3-fold ${dir} the patients' exposure ${how}`};
 }
 
-const sig = (x: number) => Number(x.toPrecision(3)).toLocaleString('en-US');
 export const fuOk = (x: number | null): x is number => x !== null && Number.isFinite(x) && x > 0 && x <= 1;
 
 /** The AUC of a group's NCA exposure that the multiple uses: AUCinf when NCA gives one, else AUClast. */
@@ -844,7 +846,7 @@ export function exposureJson(humans: Map<string, HumanExposure>, nca: NcaByArm |
  *  study: nothing). */
 export function parseExposure(x: unknown): {humans: Map<string, HumanExposure>, nca: NcaByArm | null} {
   const s = (x && typeof x === 'object' ? x : {}) as SavedExposure;
-  const isNum = (v: unknown) => v === null || (typeof v === 'number' && Number.isFinite(v));
+  const isNum = (v: unknown) => v === null || isFiniteNumber(v);
   const humans = new Map(Object.entries(s.humans && typeof s.humans === 'object' ? s.humans : {})
     .filter(([, h]) => h && typeof h.drug === 'string' && typeof h.unit === 'string' && isNum(h.auc) &&
       isNum(h.cmax) && isNum(h.fuMouse) && isNum(h.fuHuman) && (h.source === 'measured' || h.source === 'projected'))
@@ -1011,9 +1013,8 @@ export function patientsDose(arm: string, kept: SavedExposure | undefined, study
     const dose = x ? parseArmName(`x ${x.dose}`)[0]?.dose : null;
     if (!x || q.length !== 1 || q[0].key !== p.key || !dose || !(dose.value > 0) || !sameRoute(p.route, x.route))
       continue;
-    const inf = x.aucInf !== null && x.aucInf > 0;
-    const f = aucFactor(inf ? x.aucInfUnit || x.aucUnit : x.aucUnit);
-    const auc = inf ? x.aucInf! : x.auc;
+    const {auc, unit: aucUnit, inf} = aucUsed(x);
+    const f = aucFactor(aucUnit);
     if (f !== null && auc > 0 && (!groups.length || unitText(dose.unit) === unitText(groups[0].unit))) {
       groups.push({dose: dose.value, unit: dose.unit, route: x.route.startsWith('IV') ? 'IV' : x.route,
         schedule: q[0].schedule ?? x.schedule, auc: auc * f, inf});
@@ -1122,6 +1123,6 @@ export function savedEffect(x: SavedExposure | undefined): {day: number | null, 
   const e = x?.effect;
   if (!e || typeof e !== 'object' || !e.tgi || typeof e.tgi !== 'object')
     return null;
-  return {day: typeof e.day === 'number' && Number.isFinite(e.day) ? e.day : null, tgi: new Map(Object.entries(e.tgi)
-    .filter((t): t is [string, number] => typeof t[1] === 'number' && Number.isFinite(t[1])))};
+  return {day: isFiniteNumber(e.day) ? e.day : null, tgi: new Map(Object.entries(e.tgi)
+    .filter((t): t is [string, number] => isFiniteNumber(t[1])))};
 }

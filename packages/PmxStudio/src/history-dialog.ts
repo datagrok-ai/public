@@ -70,9 +70,10 @@ export function historyDialog(done: (key: string) => void): void {
 
   const d = ui.dialog('Model not in the atlas');
   let ok: HTMLButtonElement | null = null; // named once onOK has made it
-  const hasGroups = () => !!read && groupsOf(read.rows).length > 0;
+  // the control's measurements of the history read (with no group column, every row); none read: none
+  const controls = () => read ? controlRows(read.rows, groupsOf(read.rows).length ? control.value : null) : [];
   const refresh = () => {
-    const rows = read ? controlRows(read.rows, hasGroups() ? control.value : null) : [];
+    const rows = controls();
     const animals = new Set(rows.map((r) => r.animal)).size;
     const days = rows.map((r) => r.day);
     if (read) {
@@ -94,7 +95,7 @@ export function historyDialog(done: (key: string) => void): void {
     if (!name.value || name.value === named)
       name.value = named = defaultName(from);
     // one curve in the control: a group's mean, not an animal
-    means.value = new Set(controlRows(rows, groups.length ? control.value : null).map((r) => r.animal)).size === 1;
+    means.value = new Set(controls().map((r) => r.animal)).size === 1;
     refresh();
   };
 
@@ -147,8 +148,7 @@ export function historyDialog(done: (key: string) => void): void {
     .add(ui.inputs([...tables.length ? [table] : [], name, control, lab, host, passage, frozen, means, perGroup,
       take]));
   d.onOK(async () => {
-    const h: SavedHistory = {name: name.value.trim(), take: take.value ?? null,
-      rows: controlRows(read!.rows, hasGroups() ? control.value : null),
+    const h: SavedHistory = {name: name.value.trim(), take: take.value ?? null, rows: controls(),
       source: {sameLab: ANSWERS[lab.value!], sameHost: ANSWERS[host.value!], passage: PASSAGES[passage.value!],
         frozen: frozen.value, meansOnly: means.value, animalsPerGroup: means.value ? perGroup.value ?? null : null}};
     const key = registerHistory(h);

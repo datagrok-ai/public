@@ -13,17 +13,17 @@ import type {FuncCallForm} from '@datagrok-libraries/u2/dg';
 import {_package} from './package';
 import {cruxWake} from './crux';
 import {addColorItem} from './colors';
+import {isFiniteNumber} from './engine';
 
 /** A fraction as a whole percent: 0.734 → "73%". */
-export const pct = (x: unknown) => typeof x === 'number' && Number.isFinite(x) ? `${Math.round(x * 100)}%` : '—';
+export const pct = (x: unknown) => isFiniteNumber(x) ? `${Math.round(x * 100)}%` : '—';
 
 /** A number to `digits` significant digits (an integer as it is). */
 export const num = (v: unknown, digits = 3) =>
   typeof v === 'number' && !Number.isInteger(v) ? Number(v.toPrecision(digits)) : v;
 
 /** A p-value: two significant digits, below 0.001 as "< 0.001". */
-export const pValue = (p: unknown) => typeof p !== 'number' || !Number.isFinite(p) ? '—' :
-  p < 0.001 ? '< 0.001' : String(num(p, 2));
+export const pValue = (p: unknown) => !isFiniteNumber(p) ? '—' : p < 0.001 ? '< 0.001' : String(num(p, 2));
 
 /** A change in whole percent with a true minus sign: -4.2 → "−4%". */
 export const signed = (x: number) => pct(x / 100).replace('-', '−');
@@ -37,7 +37,25 @@ export function percentRange(lo: number, hi: number): string {
 }
 
 /** A study day: whole, as the calendar counts them. */
-export const dayText = (d: unknown) => typeof d === 'number' && Number.isFinite(d) ? `Day ${Math.round(d)}` : '—';
+export const dayText = (d: unknown) => isFiniteNumber(d) ? `Day ${Math.round(d)}` : '—';
+
+/** An effect's metric as the app writes it: "T/C", else "TGI". */
+export const metricWord = (metric: unknown) => metric === 'TC' ? 'T/C' : 'TGI';
+
+/** Today's date (UTC): "2026-11-26". */
+export const isoToday = () => new Date().toISOString().slice(0, 10);
+
+/** Under a document's title: the study's ID (when it has one), where the document comes from and today's date. */
+export const docSubtitle = (id: string | undefined, from: string) =>
+  [id, from, `prepared ${isoToday()}`].filter((x) => x).join(' · ');
+
+/** One of the user's own settings of the app (grok.userSettings, kept per user). */
+export const userSetting = (key: string) => grok.userSettings.getValue('PmxStudio', key);
+/** Sets it, sent at once: a reload before the 10 s sync would read the old value. */
+export function setUserSetting(key: string, value: string): void {
+  grok.userSettings.add('PmxStudio', key, value);
+  void grok.userSettings.flush();
+}
 
 /** Narrowest the declaration pane gets. */
 export const DECLARATION_MIN = 260;
@@ -68,7 +86,7 @@ export function statCard(owner: {build: <T>(f: () => T) => T}, label: string | R
     effect(() => {
       const v = value.value;
       const pin = pinned.value;
-      const x = typeof v === 'number' && Number.isFinite(v) ? v : undefined;
+      const x = isFiniteNumber(v) ? v : undefined;
       if (pin !== wasPinned) {
         wasPinned = pin;
         base = pin ? x ?? last : undefined;
@@ -379,12 +397,9 @@ export function hintLink(text: string, onClick: (e: MouseEvent | KeyboardEvent) 
  *  (the chart's `log`). */
 export function volumeAxis(): {input: RadioInput, row: HTMLElement, log: ReadonlySignal<boolean>} {
   const input = new RadioInput({items: ['Linear', 'Log'], buttons: true,
-    value: grok.userSettings.getValue('PmxStudio', 'volumeAxis') === 'Log' ? 'Log' : 'Linear',
+    value: userSetting('volumeAxis') === 'Log' ? 'Log' : 'Linear',
     itemTooltips: {Linear: 'Linear volume axis', Log: 'Logarithmic volume axis'},
-    onInput: (v) => {
-      grok.userSettings.add('PmxStudio', 'volumeAxis', String(v));
-      void grok.userSettings.flush();
-    }});
+    onInput: (v) => setUserSetting('volumeAxis', String(v))});
   const row = divH([span('Volume axis'), input.root], 'pmx-noprint');
   Object.assign(row.style, {justifyContent: 'flex-end', alignItems: 'center', gap: 'var(--dg-space-m)'});
   return {input, row, log: computed(() => input.value === 'Log')};

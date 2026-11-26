@@ -3,7 +3,8 @@
    forecasts and the checks are Crux's; here only the translation and the reasons a person reads. */
 import * as DG from 'datagrok-api/dg';
 
-import {AnalysisInputs, analysisDeclarationOf, pairGroups, tolerabilityFrames, twinModel} from './analyze';
+import {AnalysisInputs, analysisDeclarationOf, inMm3, pairGroups, remembered, tolerabilityFrames, twinModel}
+  from './analyze';
 import {ARCHETYPES} from './archetypes';
 import {crux, CruxResult, EmptyState, named, NoControl, rows} from './crux';
 import {HUMANE, LAB_WEEKDAYS, TEST, designStudy, finite} from './engine';
@@ -32,21 +33,7 @@ async function fastMonitor(study: Study, params: {[k: string]: any}): Promise<Cr
 
 /** The last forecasts by their inputs, as twinOf keeps the twins: a value set back (a limit tried and undone) costs
  *  nothing. */
-const monitorCache = new Map<string, Promise<CruxResult>>();
-function monitorOf(study: Study, params: {[k: string]: any}): Promise<CruxResult> {
-  const key = JSON.stringify([study.animal, study.group, Array.from(study.day), Array.from(study.volume), params]);
-  let result = monitorCache.get(key);
-  if (result)
-    monitorCache.delete(key); // re-inserted below: most recently used last
-  else {
-    const mine = result = fastMonitor(study, params);
-    result.catch(() => monitorCache.get(key) === mine && monitorCache.delete(key));
-    if (monitorCache.size >= 8) // ponytail: 8 forecasts, the least recently used out
-      monitorCache.delete(monitorCache.keys().next().value!);
-  }
-  monitorCache.set(key, result);
-  return result;
-}
+const monitorOf = remembered(([study, params]: [Study, {[k: string]: any}]) => fastMonitor(study, params), 8);
 
 /** Chance of passing the limit by the next measurement from which an animal is listed. */
 export const LIMIT_ALERT = 0.2;
@@ -107,14 +94,17 @@ export function parseLooks(text: string | null | undefined): number[] {
   return [...new Set(days)].sort((a, b) => a - b);
 }
 
+/** Day 0's weekday (Monday 0): the study's date's, else the plan's start weekday (Monday with neither). */
+export const day0Weekday = (start: string | null | undefined, plan: SavedPlan | null | undefined): number =>
+  start ? weekdayOf(start) : Math.max(0, WEEKDAY_NAMES.indexOf(String(plan?.inputs.startWeekday ?? 'Monday')));
+
 /** The days to come: the plan's measurement weekdays; without a plan, the study's own usual gap (ponytail: a
  *  2-3-2 week reads as every 2 days). */
 export function futureDays(days: number[], plan?: SavedPlan | null, start?: string | null): number[] {
-  // with a plan, its measurement weekdays from day 0's (the study's date, else the plan's start weekday)
+  // with a plan, its measurement weekdays from day 0's
   if (plan && days.length) {
     const on = new Set(weekdaysOf(plan.inputs.measurementDays as string | undefined));
-    const day0 = start ? weekdayOf(start) :
-      Math.max(0, WEEKDAY_NAMES.indexOf(String(plan.inputs.startWeekday ?? 'Monday')));
+    const day0 = day0Weekday(start, plan);
     const from = Math.max(...days);
     return Array.from({length: 60}, (_, i) => from + i + 1).filter((d) => on.has((day0 + d) % 7));
   }
@@ -253,11 +243,11 @@ export async function monitorFrames(x: MonitorInputs): Promise<MonitorFrames> {
     tolerabilityFrames(d), linePrior(d.line).then((lp) => checkChance(lp.twin?.next_ranges))]);
   const latest = Math.max(...day);
   const future = futureDays(day, d.plan, metaOf(x.study)?.start);
-  const r = await monitorOf({animal, group, day: Float64Array.from(day),
+  const r = await monitorOf([{animal, group, day: Float64Array.from(day),
     volume: Float64Array.from(volume)}, {...model, control: d.control,
     ...arms.length ? {arms: JSON.stringify(arms)} : {}, future: future.join(','), endpoint: d.endpoint,
     humane: d.humane, alpha: d.alpha, correction: d.correction, test: TEST,
-    ...d.day === null ? {} : {last_day: d.day}});
+    ...d.day === null ? {} : {last_day: d.day}}]);
 
   // each animal's last measurement, which the forecast does not repeat
   const last = new Map<string, {day: number, volume: number}>();
@@ -268,7 +258,7 @@ export async function monitorFrames(x: MonitorInputs): Promise<MonitorFrames> {
   });
   const previous = [...new Set(day)].sort((p, q) => q - p)[1] ?? null;
   // an id with its group in it shows the group on every list, hidden or not
-  if ([...new Set(animal.map((a, i) => a.toLowerCase().includes(group[i].toLowerCase())))].includes(true))
+  if (animal.some((a, i) => a.toLowerCase().includes(group[i].toLowerCase())))
     notes.push('Some animal ids contain their group\'s name, so the lists below show the group');
   // the body weight is optional: without it, none of this says anything
   const baseline = new Map(weighed.map((w) => [String(w.animal), w.baseline as number | null]));
@@ -327,16 +317,8 @@ export async function monitorFrames(x: MonitorInputs): Promise<MonitorFrames> {
   days.col('day')!.meta.units = 'd';
   // volumes to one decimal in every viewer's tooltip and cell (Crux's floats carry a dozen)
   const animalsDf = DG.DataFrame.fromObjects(animals)!;
-  for (const [df, cols] of [[days, ['lower', 'median', 'upper']], [animalsDf, ['last_volume', 'next_lower',
-    'next_median', 'next_upper', 'check_lower', 'check_upper']]] as const) {
-    for (const q of cols) {
-      const c = df.col(q);
-      if (c) {
-        c.meta.units = 'mm³';
-        c.meta.format = '0.0';
-      }
-    }
-  }
+  inMm3(days, ['lower', 'median', 'upper']);
+  inMm3(animalsDf, ['last_volume', 'next_lower', 'next_median', 'next_upper', 'check_lower', 'check_upper']);
   return {
     status: DG.DataFrame.fromObjects([{line: d.line, control: d.control, day: latest, next_day: future[0],
       // (the likely range never starts before the day the study is on)

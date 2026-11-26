@@ -6,7 +6,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {okNamed, showCentred} from './ui';
+import {okNamed, setUserSetting, showCentred, userSetting} from './ui';
 import {domainStorageOn} from './storage-setting';
 import {ArmPart, controlByName, describeArm, drugKey, parseArmName} from './arm-name';
 import {DoseException, DosingRules, Schedule, doseLine, dosedDays, doseTotal, excepted, readSchedule, validDay}
@@ -16,15 +16,13 @@ import {DoseException, DosingRules, Schedule, doseLine, dosedDays, doseTotal, ex
 export interface AnimalDetails {species: string, strain: string, sex: string, age: string, weight: string,
   source: string}
 
-/** Each animal field and the word a checklist names it by. */
-const ANIMAL_FIELDS: [keyof AnimalDetails, string][] = [['species', 'species'], ['strain', 'strain'], ['sex', 'sex'],
-  ['age', 'age'], ['weight', 'weight'], ['source', 'source']];
+/** The animal fields, each also the word a checklist names it by. */
+const ANIMAL_FIELDS: (keyof AnimalDetails)[] = ['species', 'strain', 'sex', 'age', 'weight', 'source'];
 
 /** The animals in one line ('mouse, C57BL/6, female, 8 weeks, 20 g, Charles River') and the fields still empty. */
 export function animalsLine(a: AnimalDetails | undefined): {filled: string, missing: string[]} {
-  const has = ANIMAL_FIELDS.filter(([k]) => (a?.[k] ?? '').trim());
-  return {filled: has.map(([k]) => a![k].trim()).join(', '),
-    missing: ANIMAL_FIELDS.filter((f) => !has.includes(f)).map(([, w]) => w)};
+  const has = ANIMAL_FIELDS.filter((k) => (a?.[k] ?? '').trim());
+  return {filled: has.map((k) => a![k].trim()).join(', '), missing: ANIMAL_FIELDS.filter((k) => !has.includes(k))};
 }
 
 /** What one group receives. */
@@ -111,7 +109,7 @@ export function parseMeta(x: unknown): StudyMeta | null {
   exceptions: list(m.exceptions).filter((e) => e.change === 'skip' || e.change === 'add').map((e) => ({day: e.day,
     group: e.group, change: e.change, note: text(e.note), who: text(e.who), when: text(e.when)})),
   given: list(m.given).map((g) => ({day: g.day, group: g.group, who: text(g.who), when: text(g.when)})),
-  animals: Object.fromEntries(ANIMAL_FIELDS.map(([k]) => [k, text((m.animals as any)?.[k]) ||
+  animals: Object.fromEntries(ANIMAL_FIELDS.map((k) => [k, text((m.animals as any)?.[k]) ||
     (k === 'species' ? 'mouse' : '')])) as unknown as AnimalDetails,
   colors: m.colors && typeof m.colors === 'object' ? Object.fromEntries(Object.entries(m.colors)
     .filter(([, c]) => typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c))) : {},
@@ -124,19 +122,21 @@ export function parseMeta(x: unknown): StudyMeta | null {
 const list = (x: unknown): any[] => Array.isArray(x) ?
   x.filter((e) => e && Number.isInteger(e.day) && typeof e.group === 'string') : [];
 
+/** Who writes an entry, and when: now. */
+const stamp = () => ({who: grok.shell.user?.login ?? '', when: new Date().toISOString()});
+
 /** `m` with `group`'s exception on `day` set to `change` (null: none); one a day and group, the latest wins. */
 export function withException(m: StudyMeta, day: number, group: string, change: 'skip' | 'add' | null, note = ''):
   StudyMeta {
   const rest = m.exceptions.filter((e) => !(e.day === day && e.group === group));
-  return {...m, exceptions: change === null ? rest : [...rest, {day, group, change, note,
-    who: grok.shell.user?.login ?? '', when: new Date().toISOString()}]};
+  return {...m, exceptions: change === null ? rest : [...rest, {day, group, change, note, ...stamp()}]};
 }
 
 /** `m` with the doses of `day` logged as given for exactly `groups` (the other groups' logs of that day removed). */
 export function withGiven(m: StudyMeta, day: number, groups: string[]): StudyMeta {
   const kept = m.given.filter((g) => g.day !== day || groups.includes(g.group));
   const fresh = groups.filter((g) => !kept.some((k) => k.day === day && k.group === g))
-    .map((group) => ({day, group, who: grok.shell.user?.login ?? '', when: new Date().toISOString()}));
+    .map((group) => ({day, group, ...stamp()}));
   return {...m, given: [...kept, ...fresh]};
 }
 
@@ -204,7 +204,7 @@ export function noteDialog(day: number, label: string, animals: string[], save: 
   // what is noted first (typed at once), then its kind and, if any, its animal
   const d = ui.dialog(`Note on ${label}`).add(ui.inputs([text, kind, ...(animals.length ? [animal] : [])]));
   d.onOK(() => save({day, kind: kind.value as NoteKind, animal: animal.value ?? '', text: text.value.trim(),
-    who: grok.shell.user?.login ?? '', when: new Date().toISOString()}));
+    ...stamp()}));
   const ok = okNamed(d, 'Add note');
   text.onChanged.subscribe(() => ok.disabled = text.value.trim() === '');
   ok.disabled = true;
@@ -258,9 +258,8 @@ export const setMetaOn = (df: DG.DataFrame, m: StudyMeta) => df.setTag(META_TAG,
 export function nextStudyId(): string {
   const year = new Date().getFullYear();
   const key = `lastStudyId-${year}`;
-  const n = (Number(grok.userSettings.getValue('PmxStudio', key)) || 0) + 1;
-  grok.userSettings.add('PmxStudio', key, String(n));
-  void grok.userSettings.flush(); // at once: a reload before the 10 s sync would give the same ID again
+  const n = (Number(userSetting(key)) || 0) + 1;
+  setUserSetting(key, String(n)); // sent at once: a reload before the 10 s sync would give the same ID again
   return `PMX-${year}-${String(n).padStart(3, '0')}`;
 }
 
@@ -550,7 +549,7 @@ export function detailsForm(meta: StudyMeta, groups: string[], hideGroups = fals
         compound: cell('compound', i), dose: table.col('dose')!.isNone(i) ? null : f32(table.get('dose', i)),
         unit: cell('unit', i), route: cell('route', i), schedule: cell('schedule', i)})), notes: meta.notes,
       blinded: blinded.value, weekendsOff: weekends.value, exceptions: meta.exceptions, given: meta.given,
-      animals: Object.fromEntries(ANIMAL_FIELDS.map(([k]) => [k, (animal[k].value ?? '').trim()])) as unknown as
+      animals: Object.fromEntries(ANIMAL_FIELDS.map((k) => [k, (animal[k].value ?? '').trim()])) as unknown as
         AnimalDetails, colors: meta.colors, ...meta.slots ? {slots: meta.slots} : {},
       ...meta.copyOf ? {copyOf: meta.copyOf} : {}};
   };

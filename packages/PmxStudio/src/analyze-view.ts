@@ -15,13 +15,12 @@ import {domainStorageOn, isReadOnly, markTableFromFile, newRowNote, open, rowOfT
   setRowOn, tableFileOwner, withCode} from './store';
 import {FINISHED_TAG, LINE_TAG, STUDY_TAG, setHistoryOn, studyOf as savedStudyOf, stamped} from './study-file';
 import {roleOf} from './study-reader';
-import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
 import {funcForm, TableInput, ViewHost, viewers} from '@datagrok-libraries/u2/dg';
 import type {ViewContent} from '@datagrok-libraries/u2/dg';
 
-import {AnalysisFrames, AnalysisInputs, PREDICTED, analysisDeclarationOf, analysisFrames, doublingOf, intervalNote,
-  warmTwin} from './analyze';
-import {median} from './engine';
+import {AnalysisFrames, AnalysisInputs, PREDICTED, analysisDeclarationOf, analysisFrames, doublingOf, inMm3,
+  intervalNote, warmTwin} from './analyze';
+import {isFiniteNumber, median} from './engine';
 import {EmptyState, NoControl} from './crux';
 import {StudyLink, follow, groupColors, hasOwnColors, linkStudy, paint, resetColors} from './colors';
 import {CorrectionInput} from './arms-input';
@@ -30,7 +29,7 @@ import {askedOf, autoRun, axisAt, callInputs, cardGrid, dayText, keepSame, onTab
   keepNamedColumns,
   sized, markStage,
   statCard, swatch, volumeAxis, wrapCells, stagePanes, whenSettled, hintLink, PanelFact, PanelSection,
-  showDepth, textLines, factList} from './ui';
+  showDepth, textLines, factList, docSubtitle} from './ui';
 import {groupsShown, lineOf, logOf, planAtlas, restoreFields} from './study-file';
 import {TWIN_NOTE, savedHistory} from './history-models';
 import {markLine} from './ui';
@@ -45,7 +44,7 @@ import {editLayout, panelTabs, Tab} from './panels';
 import {stagePage, studyHeader} from './study-header';
 import {AnimalSelection, exclusionsOf, mirrorSelection, studyDataLine, studyMenu, studyOf, tagStudy,
   keepStudyField, withoutExcluded, animalLine, animalMarks, animalPanel as panelOfAnimal} from './study-table';
-import {armParts, emptyMeta, metaOf, parseLine, setMetaOn} from './study-meta';
+import {META_TAG, armParts, emptyMeta, metaOf, parseLine, setMetaOn} from './study-meta';
 import {ExposureSection, GroupDetails, detailsElement, exposureSection, groupDetails, sectionElement}
   from './translation-report';
 import {Exports, download, exportMenu, reportHtml} from './report';
@@ -140,18 +139,17 @@ function animalFrame(twins: DG.DataFrame, animal: string, color: string): DG.Dat
   // the twin in the control's slate, the animal in its group's colour
   df.col('series')!.meta.colors.setCategorical({[TWIN]: '#9aa5b1', [MEASURED]: color});
   df.col('day')!.meta.units = 'd';
-  for (const q of ['lower', 'upper', 'median']) {
-    df.col(q)!.meta.units = 'mm³';
-    df.col(q)!.meta.format = '0.0';
-  }
+  inMm3(df, ['lower', 'upper', 'median']);
   return df;
 }
+
+/** An effect against the twin (%), in words: how much smaller, or larger. */
+const sideOf = (x: number) => x >= 0 ? `${pct(x / 100)} smaller` : `${pct(-x / 100)} larger`;
 
 /** A treated animal against its twin on the evaluation day, in words: smaller (or larger) by how much, and its 90%
  *  range. */
 function effectWords(effect: number, lower: number, upper: number): string {
-  const side = (x: number) => x >= 0 ? `${pct(x / 100)} smaller` : `${pct(-x / 100)} larger`;
-  return `${side(effect)} than it would be untreated (90% range: ${side(lower)} to ${side(upper)})`;
+  return `${sideOf(effect)} than it would be untreated (90% range: ${sideOf(lower)} to ${sideOf(upper)})`;
 }
 
 /** An animal's effect and its 90% range as a bar on a shared axis from `lo` to 100% (the twin's size at 0): the dot
@@ -288,6 +286,9 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   // first twin slower); here and not when the app opens, which starts no engine
   void warmTwin().catch(() => null);
   const call = DG.Func.byName('PmxStudio:pmxAnalyzeStudy').prepare();
+  const studyDf = () => call.getParamValue('study') as DG.DataFrame | null;
+  // the plan the analysis uses, as text: the one picked in the form, else the study's own
+  const planText = () => call.getParamValue('plan')?.trim() || studyDf()?.getTag(PLAN_TAG);
   // the engine itself on the form's inputs, not the registered function's FuncCall (see callInputs)
   const run = (extra: object) =>
     analysisFrames(analysisDeclarationOf(withoutExcluded(callInputs<AnalysisInputs>(call, extra))));
@@ -369,21 +370,11 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       const twinSent = askedOf(call, TWIN_INPUTS);
       const removal = call.getParamValue('removalReason');
       const data = `${twinSent}\u0000${removal instanceof DG.Column ? removal.name : removal ?? ''}`;
-      // the twin unchanged (cached): one call, with it
-      if (twinsCached.includes(twinSent)) {
-        const frames = await run({withTwin: true});
-        if (mine !== latest)
-          return;
-        error.value = null;
-        stale.value = askedOf(call) !== sent;
-        shown(reads);
-        result.value = keepSame(result.peek(), frames);
-        dataRead.value = data;
-        return;
-      }
-      // else the analysis first; then the same inputs with the twins (seconds), whatever the form holds by then
-      const withTwin = withoutExcluded(callInputs<AnalysisInputs>(call, {withTwin: true}));
-      const frames = await run({withTwin: false});
+      // the twin unchanged (cached): one call, with it; else the analysis first, then the same inputs with the twins
+      // (seconds), whatever the form holds by then
+      const cached = twinsCached.includes(twinSent);
+      const withTwin = cached ? null : withoutExcluded(callInputs<AnalysisInputs>(call, {withTwin: true}));
+      const frames = await run({withTwin: cached});
       if (mine !== latest)
         return;
       error.value = null;
@@ -391,6 +382,8 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       shown(reads);
       result.value = keepSame(result.peek(), frames);
       dataRead.value = data;
+      if (!withTwin)
+        return;
       void analysisFrames(analysisDeclarationOf(withTwin)).then((done) => {
         if (mine !== latest)
           return;
@@ -503,7 +496,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   let humansSeen = '';
   const humansOnTag = (df: DG.DataFrame | null) => JSON.stringify(exposureOfTag(df)?.humans ?? null);
   const keepExposure = (nca: NcaByArm | null, typedHere = false) => {
-    const df = call.getParamValue('study') as DG.DataFrame | null;
+    const df = studyDf();
     if (!typedHere && df && humansOnTag(df) !== humansSeen) {
       humans.value = parseExposure(exposureOfTag(df)).humans;
       if (humanField)
@@ -534,7 +527,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       if (humanField)
         humanField.value = humanExposureSummary(m);
       keepExposure(shownNca, true);
-    }, metaOf(call.getParamValue('study') as DG.DataFrame | null))
+    }, metaOf(studyDf()))
       .catch((e) => grok.shell.error(plainError(e, 'The patients\' exposure could not be kept. Try again.')));
   };
   if (humanField) {
@@ -549,7 +542,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   form.effect(() => {
     if (!result.value)
       return;
-    const df = call.getParamValue('study') as DG.DataFrame | null;
+    const df = studyDf();
     if (df === exposureStudy)
       return;
     // another study's NCA run is not this one's: the field emptied (not a clear: what this study kept stays); the
@@ -655,8 +648,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   const analyzed = computed(() => treatedAnalyzed.value === undefined ? undefined :
     treatedAnalyzed.value + (cell('n_control').value ?? 0));
   // the study's answers first, what each figure covers in its tooltip
-  const card = (label: string, value: ReadonlySignal<StatValue | undefined>, tip: () => string,
-    format?: (x: StatValue) => string) => statCard(form, label, value, tip, format);
+  const card = statCard.bind(null, form);
   const cards = cardGrid([
     card('Treated groups that slow growth', significant, () => 'Treated groups whose tumors grew slower than the ' +
       `control's up to day ${cell('evaluation_day').value}`),
@@ -672,13 +664,12 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   const groupsTable = div([]);
   const openSynergy = () => {
     const r = result.peek();
-    const df = call.getParamValue('study') as DG.DataFrame | null;
     if (!r || !keptStudy)
       return;
-    // the plan's α if a plan is attached (the one picked in the form, else the study's), else Analyze's
-    const planText = call.getParamValue('plan')?.trim() || df?.getTag(PLAN_TAG);
+    // the plan's α if a plan is attached, else Analyze's
+    const plan = planText();
     synergyDialog(keptStudy, r.analysis.get('control', 0), r.comparisons.col('arm')!.toList() as string[],
-      r.analysis.get('evaluation_day', 0), synergyAlpha(planText, r.analysis.get('alpha', 0)), notCombined(planText));
+      r.analysis.get('evaluation_day', 0), synergyAlpha(plan, r.analysis.get('alpha', 0)), notCombined(plan));
   };
   // each combination found in the groups' names (unless the plan unticked it): where it stands against its two drugs,
   // under its result; computed after the analysis, shown when it arrives
@@ -692,9 +683,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     const r = result.value;
     const s = keptStudy;
     const treated = (r?.comparisons.col('arm')!.toList() ?? []) as string[];
-    const planText = call.getParamValue('plan')?.trim() ||
-      (call.getParamValue('study') as DG.DataFrame | null)?.getTag(PLAN_TAG);
-    const off = notCombined(planText);
+    const off = notCombined(planText());
     const key = r && s ? [...treated, '|', ...off, r.analysis.get('control', 0), r.analysis.get('line', 0),
       r.analysis.get('evaluation_day', 0)].join('\u0000') : '';
     if (s === laddered.s && key === laddered.key)
@@ -802,7 +791,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
         volume: volume.get(i)}));
     const groups = p.map((x) => ({arm: x.arm, auc: x.auc}));
     // each group's dose from its details first, then its name
-    const studyMeta = metaOf(call.getParamValue('study') as DG.DataFrame | null);
+    const studyMeta = metaOf(studyDf());
     const axis = exposureAxis(groups, studyMeta);
     const points = p.flatMap((x, i) => {
       const tgi = medianTgi(rows, x.arm, control, lastDay);
@@ -884,7 +873,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   const groupsOf = (r: AnalysisFrames) => [r.analysis.get('control', 0),
     r.comparisons.col('arm')!.toList().join('\u0000')];
   const colorsOf = (r: AnalysisFrames) => {
-    const m = metaOf(call.getParamValue('study') as DG.DataFrame | null);
+    const m = metaOf(studyDf());
     return groupColors(r.comparisons.col('arm')!.toList(), r.analysis.get('control', 0), m?.colors, m?.slots);
   };
   form.effect(() => {
@@ -896,6 +885,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     void error.value;
     treatedGroups.value = v('treated_arms');
     const control = v('control');
+    const arms = r.comparisons.col('arm')!.toList() as string[];
     const colors = colorsOf(r);
     const steps = ladder.value;
     const allNotes = String(v('notes') ?? '').split(' | ').filter((n) => n);
@@ -906,12 +896,11 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     // each treated group's exposure, matched to it by NCA's group name or its drug, dose and route
     // (NCA read again replaces what the study kept, and is kept in its place)
     const run = ncaRun.value;
-    const meta = metaOf(call.getParamValue('study') as DG.DataFrame | null);
-    const nca = run ? ncaByArm(r.comparisons.col('arm')!.toList(), run, ncaSource?.table.name ?? '', meta) :
-      savedNca.value;
+    const meta = metaOf(studyDf());
+    const nca = run ? ncaByArm(arms, run, ncaSource?.table.name ?? '', meta) : savedNca.value;
     shownNca = nca;
-    shownEffect = {day: v('evaluation_day') ?? null, tgi: Object.fromEntries((r.comparisons.col('arm')!.toList() as
-      string[]).map((a, i) => [a, r.comparisons.get('tgi', i)]).filter(([, t]) => Number.isFinite(t))),
+    shownEffect = {day: v('evaluation_day') ?? null, tgi: Object.fromEntries(arms
+      .map((a, i) => [a, r.comparisons.get('tgi', i)]).filter(([, t]) => Number.isFinite(t))),
     ctd: ctdStudyOf(r, meta, r.analysis.name, nca, stepsInWords(steps))};
     keepExposure(nca);
     const exposure = nca?.arms ?? null;
@@ -919,14 +908,15 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     const drugX = nca?.drugs ?? new Map<string, DrugExposure[]>();
     // each treated group's exposure as a multiple of the human's, once a human exposure is typed for its drug
     const human = humans.value;
+    const typed = [...human.values()].some((h) => h.auc !== null);
     const multiples = new Map<string, ReturnType<typeof humanMultiple>>();
-    if (nca && [...human.values()].some((h) => h.auc !== null)) {
+    if (nca && typed) {
       for (const arm of nca.arms.keys())
         multiples.set(arm, humanMultiple(arm, nca.arms.get(arm)?.exposure, nca.pk.get(arm) ?? null, human, meta));
     }
     // a combination's drugs, each against its own patients' exposure
     const drugMs = new Map<string, ReturnType<typeof drugMultiples>>();
-    if ([...human.values()].some((h) => h.auc !== null)) {
+    if (typed) {
       for (const [arm, ds] of drugX)
         drugMs.set(arm, drugMultiples(arm, ds, human, meta));
     }
@@ -935,7 +925,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       [...drugMs.values()].some((ds) => ds.some((d) => d.m !== null));
     // exposure kept under a group name the table no longer has (renamed before Monitor saved the study): said
     const unmatched = !run && exposure ? [...exposure].filter(([a, x]) => x.exposure && a !== control &&
-      !(r.comparisons.col('arm')!.toList() as string[]).includes(a)).map(([a]) => a) : [];
+      !arms.includes(a)).map(([a]) => a) : [];
     exposureNotes.replaceChildren(...ncaSays.value ? [noteLine(ncaSays.value)] : [], ...!exposure ? [] :
       [...!run && nca ? [muted(`Exposure from NCA, saved with the study (table ${nca.table || 'not named'})`)] : [],
         ...unmatched.length ? [noteLine(`Exposure kept for ${unmatched.join(', ')}: no group has that name now, so ` +
@@ -945,7 +935,6 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
         ...[...multiples.values()].filter((m) => m?.why).map((m) => noteLine(m!.why!)),
         ...drugWhys.map((w) => noteLine(w))]);
     // one sentence on exposure and effect, and the one thing that would add to it
-    const arms = r.comparisons.col('arm')!.toList() as string[];
     const said = readout(arms.map((arm, i) => {
       const x = exposure?.get(arm)?.exposure;
       const m = multiples.get(arm);
@@ -1008,10 +997,10 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     }
     hintLine.replaceChildren(...hint ? [muted(hint.text), ...hint.add ? [ui.button('Add…', () =>
       hint.add === 'patients' ? openHumans() : addConcentrations())] : []] : []);
-    exposurePoints.value = !exposure ? null : Array.from({length: r.comparisons.rowCount}, (_, i) => i)
-      .filter((i) => exposure.get(r.comparisons.get('arm', i))?.exposure)
-      .map((i) => ({arm: r.comparisons.get('arm', i) as string, tgi: r.comparisons.get('tgi', i) as number,
-        color: colors[r.comparisons.get('arm', i)], ...exposure.get(r.comparisons.get('arm', i))!.exposure!}));
+    exposurePoints.value = !exposure ? null : arms.flatMap((arm, i) => {
+      const x = exposure.get(arm)?.exposure;
+      return x ? [{arm, tgi: r.comparisons.get('tgi', i) as number, color: colors[arm], ...x}] : [];
+    });
 
     // the control first, then each treated group: its effect on the evaluation day, its animals against their
     // twins and its result (a table built in this run is disposed with it)
@@ -1111,7 +1100,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       const i = armRow.get(s.name);
       return {[statHeaders[0]]: s.cells[0], ...Object.fromEntries(headline.map((k, j) => {
         const x = i === undefined ? null : c.get(k, i);
-        return [headlineHeaders[j], typeof x === 'number' && Number.isFinite(x) ? num(x) : ''];
+        return [headlineHeaders[j], isFiniteNumber(x) ? num(x) : ''];
       })), ...Object.fromEntries(statHeaders.slice(1).map((h, j) => [h, s.cells[j + 1]]))};
     }))!.toCsv();
 
@@ -1251,7 +1240,11 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       alignItems: 'center', padding: '3px var(--dg-space-s)'});
     return row;
   };
-  const sideOf = (x: number) => x >= 0 ? `${pct(x / 100)} smaller` : `${pct(-x / 100)} larger`;
+  // the row of the animal drawn against its twin, marked (the others not)
+  const press = (row: HTMLElement, on: boolean) => {
+    row.setAttribute('aria-pressed', String(on));
+    row.style.background = on ? 'color-mix(in srgb, var(--dg-accent, #2083d5) 12%, transparent)' : '';
+  };
   // an animal's details in the context panel: how it ends against its twin, the reading folded
   // each treated animal against its twin, as the list below last read them
   const twins = new Map<string, AnimalRow>();
@@ -1259,7 +1252,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     'Within its twin\'s range';
   // an animal in the context panel: its curve, readings and marks, then how it ends against its twin
   const showAnimal = (animal: string, color: string) => {
-    const n = studyOf(call.getParamValue('study') as DG.DataFrame | null);
+    const n = studyOf(studyDf());
     if (!n)
       return;
     const a = twins.get(animal);
@@ -1282,7 +1275,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   // a group's animals for its context panel: each one's curve, last volume and status; a click shows the animal
   const MARK_WORDS: {[m: string]: string} = {excluded: 'Excluded', partly: 'Some excluded', flagged: 'Flagged'};
   animalsOf = (group, color) => {
-    const n = studyOf(call.getParamValue('study') as DG.DataFrame | null);
+    const n = studyOf(studyDf());
     if (!n)
       return [];
     const [g, an] = [n.study.col(n.group)!, n.study.col(n.animal)!];
@@ -1337,10 +1330,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     Object.assign(scale.style, {paddingTop: '0', borderBottom: '1px solid var(--dg-border-color, #e1e6ec)'});
     const rows: HTMLElement[] = [head, scale];
     const buttons = new Map<string, HTMLElement>();
-    const mark = (animal: string | undefined) => buttons.forEach((b, a) => {
-      b.setAttribute('aria-pressed', String(a === animal));
-      b.style.background = a === animal ? 'color-mix(in srgb, var(--dg-accent, #2083d5) 12%, transparent)' : '';
-    });
+    const mark = (animal: string | undefined) => buttons.forEach((b, a) => press(b, a === animal));
     for (const g of r.comparisons.col('arm')!.toList() as string[]) {
       const own = all.filter((a) => a.group === g).sort((a, b) => b.effect - a.effect);
       if (own.length === 0)
@@ -1379,7 +1369,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
         row.addEventListener('click', choose);
         row.addEventListener('contextmenu', (ev) => {
           ev.preventDefault();
-          studyMenu(studyOf(call.getParamValue('study') as DG.DataFrame | null), 'animal', a.animal,
+          studyMenu(studyOf(studyDf()), 'animal', a.animal,
             {causedBy: ev}, [['Show against its twin', pick]]);
         });
         row.addEventListener('keydown', (ev) => {
@@ -1414,11 +1404,8 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     if ((listed && one !== picked.peek()) || untwinned.peek() !== undefined) {
       if (listed)
         picked.value = one;
-      animalList.querySelectorAll<HTMLElement>('.pmx-forest-row').forEach((b) => {
-        const at = listed && b.dataset.animal === one;
-        b.setAttribute('aria-pressed', String(at));
-        b.style.background = at ? 'color-mix(in srgb, var(--dg-accent, #2083d5) 12%, transparent)' : '';
-      });
+      animalList.querySelectorAll<HTMLElement>('.pmx-forest-row')
+        .forEach((b) => press(b, listed && b.dataset.animal === one));
     }
   });
   const twinsOnly = only(result, ['twins', 'effects'], groupsOf);
@@ -1513,7 +1500,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     return bars.length ? {bars, colors: colorsOf(r), title: by.title, order: by.order, groups} : undefined;
   });
   const waterfall = new WaterfallChart(waterfallData, (animal, e) =>
-    studyMenu(studyOf(call.getParamValue('study') as DG.DataFrame | null), 'animal', animal, {causedBy: e}),
+    studyMenu(studyOf(studyDf()), 'animal', animal, {causedBy: e}),
   selection);
   const waterfallMissing = infoNote('');
   form.effect(() => {
@@ -1722,7 +1709,6 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   ], ANALYZE_TABS, 'pmx-analyze-panels', 'analyze');
   exports.push(['Layout…', () => editLayout(panels.root), 'View']);
   // the study's colours: a colour changed in a chart is the study's, in every stage open on it
-  const studyDf = () => call.getParamValue('study') as DG.DataFrame | null;
   const link: StudyLink = {meta: () => metaOf(studyDf()), setMeta: (m) => {
     const df = studyDf();
     if (df)
@@ -1771,7 +1757,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     return navigator.clipboard.writeText(text).then(() => grok.shell.info(`${what} copied`));
   };
   const studyNow = () => {
-    const df = call.getParamValue('study') as DG.DataFrame | null;
+    const df = studyDf();
     const r = result.value;
     if (!df || !r)
       throw new Error('Analyze a study first');
@@ -1786,8 +1772,8 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       const section = sectionNow();
       printSheet(await panels.all(() => reportHtml({title: r.analysis.name, stage: 'Analyze', meta: metaOf(df),
         groups: [r.analysis.get('control', 0), ...r.comparisons.col('arm')!.toList() as string[]],
-        // the plan the analysis used: the one picked in the form, else the study's (analyze.ts)
-        content, log: logOf(df), planAtlas: planAtlas(call.getParamValue('plan')?.trim() || df?.getTag(PLAN_TAG)),
+        // the plan the analysis used (analyze.ts)
+        content, log: logOf(df), planAtlas: planAtlas(planText()),
         annex: [['Results', summary], ...section ? [['Exposure and patients', sectionElement(section)] as
           [string, HTMLElement]] : [], ['Statistics', statsTable], ['Analysis protocol', protocol]],
         lastDay: lastMeasured()})));
@@ -1812,8 +1798,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
           arrive(x !== 'Essential 10');
         }});
       const title = full ? 'ARRIVE 2.0 checklist' : 'ARRIVE Essential 10 checklist';
-      const sub = [metaOf(df)?.id, `From the analysis of ${df.name}`,
-        `prepared ${new Date().toISOString().slice(0, 10)}`].filter((x) => x).join(' · ');
+      const sub = docSubtitle(metaOf(df)?.id, `From the analysis of ${df.name}`);
       const d = arriveDialog(items, {full, details: () => head.details(() => arrive(full)), options: which.root,
         download: async () => download(`${df.name} - ${title}.docx`, await docx(checklistBlocks({title, sub, items,
           credit: ARRIVE_CREDIT, last: ['Section, line', 'where']}), {title, landscape: true}), DOCX_TYPE)});
@@ -1822,8 +1807,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     ['Regulatory (CTD) table…', function ctd() {
       const {df, r} = studyNow();
       const s = ctdStudyOf(r, metaOf(df), r.analysis.name, shownNca, stepsInWords(ladder.peek()));
-      const sub = [s.id, `From the analysis of ${df.name}`, `prepared ${new Date().toISOString().slice(0, 10)}`]
-        .filter((x) => x).join(' · ');
+      const sub = docSubtitle(s.id, `From the analysis of ${df.name}`);
       checklistDialog({title: 'Regulatory (CTD) table', guide: 'ICH M4S(R2)', url: M4S_URL, asker: 'The table',
         download: async () => download(`${df.name} - CTD table.docx`,
           await docx(ctdBlocks([s], {sub}), {title: CTD_TITLE, landscape: true}), DOCX_TYPE)},
@@ -1870,21 +1854,20 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     const colors = colorsOf(r);
     const control = r.analysis.get('control', 0) as string;
     const arms = r.comparisons.col('arm')!.toList() as string[];
-    const df = call.getParamValue('study') as DG.DataFrame | null;
+    const df = studyDf();
     // the study's own name, as Monitor's header (the analysis table's name says only what was compared)
     return {name: df?.name || r.analysis.name, groups: [control, ...arms].map((name) => ({name, color: colors[name]})),
       status: `${modelName(r.analysis.get('line', 0))} · evaluated on ${dayText(r.analysis.get('evaluation_day', 0))}`,
       meta: () => metaOf(df), setMeta: df ? (m) => setMetaOn(df, m) : undefined,
       groupMenu: (g, e) => studyMenu(studyOf(df), 'group', g, {causedBy: e})};
     // Plan opens with the plan the analysis uses: the one picked, else the study's own
-  }), (s) => void openStage(s, call.getParamValue('plan')?.trim() ||
-    (call.getParamValue('study') as DG.DataFrame | null)?.getTag(PLAN_TAG)));
+  }), (s) => void openStage(s, planText()));
   // Save (and Ctrl+S): what Analyze changes on the study's table (the patients' exposure, the effect kept, exclusions).
   // A table followed in Monitor is saved by that view; any other (from a file, a drop), with rows on, is saved here as
   // its row: the one it came from (its limits kept), else a new one, the first time it is saved
   const savedAs = new WeakMap<DG.DataFrame, string>();
   const snapshot = (df: DG.DataFrame) =>
-    [df.toCsv(), df.getTag(EXPOSURE_TAG) ?? '', df.getTag('pmx.meta') ?? ''].join('|');
+    [df.toCsv(), df.getTag(EXPOSURE_TAG) ?? '', df.getTag(META_TAG) ?? ''].join('|');
   const saveHere = async (df: DG.DataFrame): Promise<void> => {
     const at = rowOfTable(df);
     const was = at ? (await open('study', at.id)).doc : null;
@@ -1967,6 +1950,6 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     ribbon: [[head.steps], [saveButton]],
     path: '/analyze',
     status: computed(() => busy.value ? 'Analyzing the study…' : result.value ?
-      (call.getParamValue('study') as DG.DataFrame | null)?.name || result.value.analysis.name : ''),
+      studyDf()?.name || result.value.analysis.name : ''),
   };
 }

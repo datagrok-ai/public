@@ -1,4 +1,5 @@
-import {SUMMARY, SUMMARY_LIKE, dayOf, dayWord, letter, numberOf, readWide} from './wide-table';
+import {SUMMARY, SUMMARY_LIKE, counted, dayOf, dayWord, letter, listed, numberOf, plural, readWide, summaryWord}
+  from './wide-table';
 
 /** The answers given to the reader's questions, by question id. */
 export type Answers = {[id: string]: string};
@@ -181,22 +182,14 @@ const median = (xs: number[]) => {
 
 // ---- the reader ----------------------------------------------------------------------------------------------------
 
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 /** At most six cells named, the rest counted. */
 const fewOf = (xs: string[]) =>
   xs.length > 6 ? `${xs.slice(0, 6).join(', ')}, … and ${xs.length - 6} more` : xs.join(', ');
-const listed = (xs: string[]) => `${xs.slice(0, 6).join(', ')}${xs.length > 6 ? ', …' : ''}`;
 const andList = (xs: string[]) => xs.length > 1 ? `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}` : xs[0];
 const empty = (shape: TableRead['shape']): TableRead => ({shape, rows: [], groups: [], notes: [], ignored: [],
   extra: [], volume: null, questions: [], error: null});
 const refused = (shape: TableRead['shape'], error: string): TableRead => ({...empty(shape), error});
 const has = (x: number | null | undefined): x is number => x !== null && x !== undefined;
-
-function counted(rows: StudyRow[]): [string, number][] {
-  const seen = new Map<string, Set<string>>();
-  rows.forEach((x) => seen.set(x.group, (seen.get(x.group) ?? new Set()).add(x.animal)));
-  return [...seen].map(([g, a]) => [g, a.size]);
-}
 
 /** The questions on a unit assumed, asked when the volumes come out as no study's. */
 const UNIT_QUESTIONS: {[kind in 'volume' | 'length' | 'weight' | 'weightBig']: Question} = {
@@ -401,7 +394,7 @@ function readLong(cells: string[][], answers: Answers, decimalComma: boolean): T
     const day = dayCol !== undefined ? dayOf(at(r, dayCol)) : null;
     const when = dayCol !== undefined ? day === null ? null : day * weeks : dateOf(at(r, dateCol!), order);
     if (SUMMARY.test(id))
-      leave(`a summary row (${id.replace(/[\s=]+$/, '')})`);
+      leave(`a summary row (${summaryWord(id)})`);
     else if (SUMMARY_LIKE.test(id))
       leave(`a summary row (${/^[a-z]+/i.exec(id)![0]})`);
     else if (id === '')
@@ -419,7 +412,7 @@ function readLong(cells: string[][], answers: Answers, decimalComma: boolean): T
           notNumbers.push(`${letter(c)}${r + 1}`);
         else if (x !== null)
           placed.add(`${r},${c}`);
-        m[role] = x !== null && Number.isNaN(x) ? null : x === null ? null : x * factor(role);
+        m[role] = x === null || Number.isNaN(x) ? null : x * factor(role);
       }
       if (measured.some((role) => has(m[role]))) {
         const start = startCol !== undefined && at(r, startCol) !== '' ? dateOf(at(r, startCol), order) : null;

@@ -8,9 +8,10 @@ import {ArriveItem} from './arrive';
 import {findCombinations} from './arm-name';
 import {AnalysisFrames, BASES, intervalNote} from './analyze';
 import {Block, Cell, fill} from './docx';
+import {isFiniteNumber as has} from './engine';
 import {GroupDetails, StudyMeta, rowsOf} from './study-meta';
 import type {SavedStudy} from './study-file';
-import {aucUsed} from './exposure';
+import {aucUsed, sig as sig3} from './exposure';
 import type {NcaByArm} from './exposure';
 import {modelName} from './priors';
 
@@ -71,7 +72,6 @@ export const CTD_CREDIT = 'Layout after ICH M4S(R2) Appendix B (2.6.3.1; columns
 const r0 = (x: number) => String(Math.round(x));
 const signed = (x: number) => `${x > 0 ? '+' : x < 0 ? '−' : ''}${Math.abs(x).toFixed(1)}%`;
 const pText = (p: number) => p < 0.001 ? '<0.001' : p.toFixed(3);
-const has = (x: number | null | undefined): x is number => typeof x === 'number' && Number.isFinite(x);
 const routes = (s: CtdStudy) => [...new Set(s.groups.filter((g) => !g.control).map((g) => g.route).filter((r) => r))]
   .join(', ');
 
@@ -108,7 +108,6 @@ export function ctdRows(studies: CtdStudy[]): Cell[][] {
 }
 
 const withPk = (studies: CtdStudy[]) => studies.some((s) => s.groups.some((g) => g.pk));
-const sig3 = (x: number) => Number(x.toPrecision(3)).toLocaleString('en-US');
 const pkOf = (g: CtdGroup): CtdPk | null => g.pk && !('why' in g.pk) ? g.pk : null;
 /** A group's AUC and Cmax; never one read from another dose: — with the reason in the notes. */
 function pkCell(g: CtdGroup): string {

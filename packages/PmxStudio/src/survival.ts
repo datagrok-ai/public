@@ -65,17 +65,16 @@ export async function competingOf(s: StudyInputs, removal: string | null, contro
     // no event on one side: the fit gives a degenerate 0 (or infinite) ratio with a tiny p, not an estimate
     const none = !sub.some((x) => x.group === g && status(x) === '1') ? 'group' as const :
       !sub.some((x) => x.group === control && status(x) === '1') ? 'control' as const : null;
-    if (none) {
-      return {group: g, shr: NaN, lower: NaN, upper: NaN, p: NaN,
-        competing: sub.filter((x) => status(x) === '2').length, none};
-    }
+    const competing = sub.filter((x) => status(x) === '2').length;
+    if (none)
+      return {group: g, shr: NaN, lower: NaN, upper: NaN, p: NaN, competing, none};
     try {
       const r = await crux('survival.fine_gray', {duration: Float64Array.from(sub, (x) => x.reached ?? x.last),
         status: sub.map(status), treated: Float64Array.from(sub, (x) => x.group === g ? 1 : 0)},
       {failcode: '1', cencode: '0'});
       const k = rows(r.main as any)[0];
       return {group: g, shr: k.subdistribution_hazard_ratio, lower: k.shr_ci_lower, upper: k.shr_ci_upper, p: k.p,
-        competing: sub.filter((x) => status(x) === '2').length} as Competing;
+        competing} as Competing;
     } catch {
       return null; // a pair the fit cannot take (no event in it): left out
     }

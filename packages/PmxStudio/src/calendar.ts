@@ -10,8 +10,8 @@ import {div, divV, span, Tooltip} from '@datagrok-libraries/u2';
 import {groupColors} from './colors';
 import {WEEKDAY_NAMES} from './frames';
 import {okNamed, showCentred} from './ui';
-import {DayNote, StudyMeta, dateOf, dateText, dosingDays, noteDialog, schedulesOf, startFrom, withException,
-  withGiven} from './study-meta';
+import {StudyMeta, dateOf, dateText, dosingDays, noteDialog, schedulesOf, startFrom, withException, withGiven}
+  from './study-meta';
 
 /** Where a day's menu opens (DG.Menu.show's options): at the mouse, or next to the focused day. */
 export type MenuAt = {causedBy?: MouseEvent, element?: HTMLElement, nextToElement?: boolean};
@@ -72,15 +72,13 @@ export function weeksGrid(o: {meta: StudyMeta, startWeekday: number, last: numbe
     if (days.length && late && Math.min(...days) > 0)
       starts.set(Math.min(...days), [...starts.get(Math.min(...days)) ?? [], g]);
   }
-  const notesOn = new Map<number, DayNote[]>();
-  for (const n of meta.notes)
-    notesOn.set(n.day, [...notesOn.get(n.day) ?? [], n]);
   const by = <T extends {day: number}>(xs: T[]) => {
     const on = new Map<number, T[]>();
     for (const x of xs)
       on.set(x.day, [...on.get(x.day) ?? [], x]);
     return on;
   };
+  const notesOn = by(meta.notes);
   // those of a group no longer in the study are not shown
   const known = (x: {group: string}) => meta.groups.some((g) => g.group === x.group);
   const changesOn = by((meta.exceptions ?? []).filter(known));

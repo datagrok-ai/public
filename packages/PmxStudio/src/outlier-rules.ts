@@ -206,11 +206,16 @@ export function saveUserRules(r: OutlierRules | null): void {
   void grok.userSettings.flush();
 }
 
+/** A setting of the lab's (its rules, a stage's layout), for every user: every other setting kept, the lab's group
+ *  and what else lives there. */
+export async function saveLabSetting(key: string, value: string): Promise<void> {
+  // @ts-ignore (setSettings is declared with a Map; the platform takes the plain object, as ApiTests does)
+  await _package.setSettings({..._package.settings, [key]: value}, DG.Group.allUsers);
+}
+
 /** The lab's rules, for every user (who has none of their own). */
 export async function saveLabRules(r: OutlierRules): Promise<void> {
-  // every setting kept, as panels.ts does: the lab's group and its layouts live there too
-  // @ts-ignore (setSettings is declared with a Map; the platform takes the plain object, as ApiTests does)
-  await _package.setSettings({..._package.settings, [LAB_RULES]: JSON.stringify(r)}, DG.Group.allUsers);
+  await saveLabSetting(LAB_RULES, JSON.stringify(r));
 }
 
 /** Whether this user may change the lab's rules: an Administrator, or a member of the lab's group (by name, set in

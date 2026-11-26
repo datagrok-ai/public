@@ -12,8 +12,8 @@ import {combinationHint, findCombinations, moreVariable, parseArmName, therapyOf
 import {StudyMeta, detailsName, parseLine} from './study-meta';
 import {armColors} from './colors';
 import {contextHint, hintLink, noteLine} from './ui';
-import {Anchor, FromStudy, SIMPLIFIED, anchorsIn, assumedText, effectText, fromStudyOf, offerText, silence,
-  sizingEffect, undosedText} from './study-effect';
+import {Anchor, FromStudy, SIMPLIFIED, anchorsIn, assumedText, doseText, effectText, fromStudyOf, offerText, rangeAs,
+  silence, sizingEffect, undosedText} from './study-effect';
 
 /** `noCombination`: the user said this arm is not the combination the app found in its name.
  *  `therapySource`: "name", Plan reads the kind from the name (and the host); "user", the one chosen (a table
@@ -387,13 +387,12 @@ class ArmCard extends Control {
       tick.append(box, caption);
       this.effect(() => tick.style.display = pair.value ? 'flex' : 'none');
 
-      const effect = new NumberInput({name: 'effect',
-        label: computed(() => `Expected ${study.metric.value === 'TC' ? 'T/C' : 'TGI'}`),
+      const metricWord = () => study.metric.value === 'TC' ? 'T/C' : 'TGI';
+      const effect = new NumberInput({name: 'effect', label: computed(() => `Expected ${metricWord()}`),
         value: arm.effect, min: 5, max: 95, postfix: '%', nullable: false,
         tooltipText: 'The effect expected when the median control reaches the endpoint (TGI or T/C: the study\'s, ' +
           'under Advanced)'});
       // a combination kept: its effect follows its two drugs acting independently until the user types one
-      const metricWord = () => study.metric.value === 'TC' ? 'T/C' : 'TGI';
       const indep = computed(() => {
         const m = ctx.monos();
         return m && combined.value ? independentEffect(m[0], m[1], study.metric.value) : null;
@@ -436,6 +435,8 @@ class ArmCard extends Control {
       noImmunity.dataset.pmx = 'no-immunity';
       // the effect from an earlier study of the same drug: offered quietly under the card, taken with a click
       const prev = study.previous;
+      // a name as the arm's line reads it: the plan's details first, then the name
+      const asRead = (n: string) => detailsName(n, prev?.meta?.() ?? null);
       // the study's group that can anchor the name, looked up as it changes (the last lookup wins)
       const offer = signal<Anchor | null>(null);
       // or, with none, a study of the drug that says no dose
@@ -444,8 +445,8 @@ class ArmCard extends Control {
       const patients = signal<{text: string, tip: string} | null>(null);
       let looked = 0;
       this.effect(() => {
-        // as the line reads it: the plan's details first, then the name (again when either changes)
-        const n = detailsName(settled.value, prev?.meta?.() ?? null);
+        // (again when the details or the name change)
+        const n = asRead(settled.value);
         // (and when the model changes: a study of the plan's own model comes first)
         void prev?.line.value;
         const k = ++looked;
@@ -476,8 +477,7 @@ class ArmCard extends Control {
         const k = ++asked;
         if (!l || !prev)
           return;
-        // as the line reads the arm: the plan's details first, then the name
-        const read = detailsName(n, prev.meta?.() ?? null);
+        const read = asRead(n);
         const doseNew = parseArmName(read)[0]?.dose?.value ?? l.doseNew;
         // the group it was linked to, even when another dose of the study is now nearer the name's (the offer)
         const mine = a && a.study.name === l.study ?
@@ -502,8 +502,7 @@ class ArmCard extends Control {
         const a = offer.peek()!;
         now.value = null;
         link.value = {study: a.study.name, arm: a.arm, dosePrev: a.part.dose!.value, unit: a.part.dose!.unit,
-          doseNew: parseArmName(detailsName(name.peek(), prev?.meta?.() ?? null))[0]?.dose?.value ??
-            a.part.dose!.value, point: null, range: null};
+          doseNew: parseArmName(asRead(name.peek()))[0]?.dose?.value ?? a.part.dose!.value, point: null, range: null};
       };
       const offered = contextHint(() => {
         const [a, u] = [offer.value, undosed.value];
@@ -512,7 +511,7 @@ class ArmCard extends Control {
         if (link.value || lackingImmunity(settled.value, therapy.value, study.host.value).length)
           return null;
         if (!a) {
-          const drug = parseArmName(detailsName(settled.value, prev?.meta?.() ?? null))[0]?.drug ?? 'this drug';
+          const drug = parseArmName(asRead(settled.value))[0]?.drug ?? 'this drug';
           return u ? [undosedText(drug, u.study, u.group)] : null;
         }
         return [`${offerText(a, prev?.line.value ?? null)} `, hintLink('Use it to estimate this arm', use,
@@ -557,9 +556,8 @@ class ArmCard extends Control {
           said.title = 'Set the effect by hand.';
           return [said];
         }
-        const [lo, hi, point] = study.metric.value === 'TC' ? [100 - x.range[1], 100 - x.range[0], 100 - x.point] :
-          [x.range[0], x.range[1], x.point];
-        const said = span(`Scaled from your ${`${x.dosePrev} ${x.unit}`.trim()} study and its PK: between ` +
+        const [lo, hi, point] = rangeAs(x.range, x.point, study.metric.value);
+        const said = span(`Scaled from your ${doseText(x)} study and its PK: between ` +
           `${Math.round(lo)} and ${Math.round(hi)}% (≈ ${Math.round(point)}%)`);
         said.title = howTip(x);
         return [said];
@@ -712,9 +710,9 @@ export class ArmsInput extends Input<DG.DataFrame | null, ArmsInputOptions> {
     }, color: () => armColors(this._names.value, study.previous?.meta?.()?.colors,
       study.previous?.meta?.()?.slots)[this._names.value[i]]})));
     this._list.replaceChildren(...this._cards.peek().map((c) => c.root));
-    const full = this._arms.length >= MAX_ARMS;
-    Reason.apply(this._add, full ? `At most ${MAX_ARMS} treated arms` : null);
-    this._add.title = full ? `At most ${MAX_ARMS} treated arms` : 'Add another treated arm';
+    const full = this._arms.length >= MAX_ARMS ? `At most ${MAX_ARMS} treated arms` : null;
+    Reason.apply(this._add, full);
+    this._add.title = full ?? 'Add another treated arm';
     this.count.value = this._arms.length;
     if (commit)
       this._commit();

@@ -112,7 +112,10 @@ export interface WideRead {
 /** A spreadsheet column's letter (0: A). */
 export const letter = (c: number): string => (c >= 26 ? letter(Math.floor(c / 26) - 1) : '') +
   String.fromCharCode(65 + c % 26);
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+/** `n` with its noun, singular or plural: "1 animal", "4 groups". */
+export const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+/** At most six named, then an ellipsis. */
+export const listed = (xs: string[]) => `${xs.slice(0, 6).join(', ')}${xs.length > 6 ? ', …' : ''}`;
 /** A cell that holds a number, readable or not. */
 const isValue = (s: string) => /^[+-]?\d[\d.,]*$/.test(s);
 /** A cell that names a role by its word (a name with a number in it is a value, "Mouse 1"). */
@@ -121,7 +124,7 @@ const names = (s: string, ...roles: string[]) => !/\d/.test(s) && roles.some((r)
 export const SUMMARY = /^(mean|average|sem|se|sd|std|total|n|median)\s*=?\s*$/i;
 /** A label that starts as a summary's and goes on ("Mean Vehicle", "n=5"): neither an animal nor read as a summary. */
 export const SUMMARY_LIKE = /^((mean|average|median|total|sem|sd|std)[\s(:=,]|(n|se)\s*[(:=])/i;
-const summaryWord = (s: string) => s.replace(/[\s=]+$/, '');
+export const summaryWord = (s: string) => s.replace(/[\s=]+$/, '');
 /** A row that names the columns of a long table (animal, group, volume, day) without a day in it. */
 const LONG_ROLES = [/^(animal|mouse|subject)\b|^id$/i, role('Group'), /^(tumou?r )?vol|^tv$/i,
   /^(day|days|study day|time|timepoint|visit|week)s?\b/i];
@@ -160,8 +163,8 @@ export function unplaced(cells: string[][], rows: WideRow[], label: (r: number, 
   }));
   if (pairs.size < rows.length)
     return 'Nothing read: an animal was read twice on one day';
-  return lost.length === 0 ? null : `Nothing read: ${plural(lost.length, 'number')} could not be placed ` +
-    `(${lost.slice(0, 6).join(', ')}${lost.length > 6 ? ', …' : ''})`;
+  return lost.length === 0 ? null :
+    `Nothing read: ${plural(lost.length, 'number')} could not be placed (${listed(lost)})`;
 }
 
 /** A wide table of tumor volumes read into long rows (one per animal and day), in one of two shapes only, or a
@@ -234,7 +237,8 @@ function animalNames(ids: string[], groups: string[]): {names: string[], notes: 
       [`Animal ids repeat across groups: read as different animals (${plural(shared.size, 'id')}).`]};
 }
 
-function counted(rows: WideRow[]): [string, number][] {
+/** The animals of each group among `rows`, in the order the groups first appear. */
+export function counted(rows: {group: string, animal: string}[]): [string, number][] {
   const seen = new Map<string, Set<string>>();
   rows.forEach((x) => seen.set(x.group, (seen.get(x.group) ?? new Set()).add(x.animal)));
   return [...seen].map(([g, a]) => [g, a.size]);
@@ -364,7 +368,7 @@ function readByDay(cells: string[][], filled: number[], decimalComma: boolean): 
 
   const rows: WideRow[] = [];
   const summary: [number, string][] = [];
-  const animals: {id: string, group: string, r: number}[] = [];
+  const animals: {id: string, group: string, r: number, values: (number | null)[]}[] = [];
   let group = '';
   for (const r of rest) {
     const id = at(r, animalCol);
@@ -388,17 +392,14 @@ function readByDay(cells: string[][], filled: number[], decimalComma: boolean): 
       return no(values);
     if (values.every((v) => v === null))
       return no(`row ${r + 1} has no measurements`);
-    animals.push({id: at(r, animalCol), group, r});
+    animals.push({id, group, r, values});
   }
   const named = animalNames(animals.map((a) => a.id), animals.map((a) => a.group));
   if (!named)
     return no('an animal id is there twice in one group');
   const nameOf = named.names;
-  animals.forEach((a, k) => {
-    const values = valuesOf(cells, a.r, dayCols, decimalComma) as (number | null)[];
-    values.forEach((v, j) => v !== null && rows.push({animal: nameOf[k], group: a.group, day: dayOf(head[dayCols[j]])!,
-      volume: v, from: [a.r, dayCols[j]]}));
-  });
+  animals.forEach((a, k) => a.values.forEach((v, j) => v !== null && rows.push({animal: nameOf[k], group: a.group,
+    day: dayOf(head[dayCols[j]])!, volume: v, from: [a.r, dayCols[j]]})));
   if (rows.length === 0)
     return no('no measurements under the days');
   const left = unplaced(cells, rows, (r, c) => r === h || c < first, (r, c) => summary.some(([s]) => s === r) ||

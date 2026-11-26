@@ -14,8 +14,8 @@ import {BandChart} from './band-chart';
 import {finite} from './engine';
 import {PLAN_TAG, SavedPlan, parsePlan, plansFolder, shownPath} from './plan-file';
 import {domainStorageOn, savedPlans} from './store';
-import {axisAt, block, guide, infoNote, noteLine, notes, notesBox, pct, percentRange, plainError, pValue, sized,
-  swatch, volumeAxis, whenSettled} from './ui';
+import {axisAt, block, guide, infoNote, metricWord, noteLine, notes, notesBox, pct, percentRange, plainError, pValue,
+  sized, swatch, volumeAxis, whenSettled} from './ui';
 import {esc} from './sheet';
 
 /** A treated group's effect against the plan's on a shared percent axis from `lo` to 100: the range a study run as
@@ -268,6 +268,8 @@ export function planTab(form: FuncCallForm, result: ReadonlySignal<AnalysisFrame
     };
     const planned = v('plan') !== null && v('plan') !== undefined && v('plan') !== '';
     const source = planned ? 'the plan' : `the ${v('line')} atlas`;
+    // "a study run as planned", "a study run as the MC38 atlas predicts"
+    const asRun = planned ? 'planned' : `${source} predicts`;
     noPlan.hidden = planned;
     (noPlan.lastElementChild as HTMLElement).innerHTML = '<b>No plan linked.</b> To compare each group\'s effect ' +
       'with the one assumed, save the plan in Plan (<i>Save plan</i>) and pick it in the Plan field, or drop its ' +
@@ -278,9 +280,9 @@ export function planTab(form: FuncCallForm, result: ReadonlySignal<AnalysisFrame
     // interval, on one axis, and the verdict against the plan
     const g = r.versusPlan;
     const colors = colorsOf(r);
-    const head = planRow(['Group', 'Result', 'Assumed', 'Observed (95% CI)', planned ? percentAxis(-50) : '',
-      planned ? 'Against the plan' : ''], 'pmx-plan-head');
     const LO = -50;
+    const head = planRow(['Group', 'Result', 'Assumed', 'Observed (95% CI)', planned ? percentAxis(LO) : '',
+      planned ? 'Against the plan' : ''], 'pmx-plan-head');
     Object.assign(head.style, {fontWeight: '500', borderBottom: '1px solid var(--dg-border-color, #e1e6ec)'});
     const rows: HTMLElement[] = [head];
     let held = 0;
@@ -291,7 +293,7 @@ export function planTab(form: FuncCallForm, result: ReadonlySignal<AnalysisFrame
     for (let i = 0; i < g.rowCount; i++) {
       const x = (c: string) => g.get(c, i);
       const nx = (c: string) => finite(x(c));
-      const metric = x('metric') === 'TC' ? 'T/C' : 'TGI';
+      const metric = metricWord(x('metric'));
       const [obs, lo, hi, assumed] = [nx('observed'), nx('lower'), nx('upper'), nx('assumed')];
       // the range a study run as planned shows (an open top: drawn to the axis's end)
       const [eLo, eHi] = [nx('expected_q025'), nx('expected_q975') ?? 100];
@@ -338,8 +340,7 @@ export function planTab(form: FuncCallForm, result: ReadonlySignal<AnalysisFrame
     const [sLo, sHi] = [n('control_slope_q025'), n('control_slope_q975')];
     controlLine.replaceChildren(verdictBadge(v('control_verdict') || null), said(slope === null ? 'No control ' +
       `grew long enough to compare with ${source}.` : `The controls grew ${daily(slope)} a day; a study run as ` +
-      `${source === 'the plan' ? 'planned' : `${source} predicts`} grows ${daily(sLo)} to ` +
-      `${sHi === null ? 'more' : daily(sHi)} a day.`));
+      `${asRun} grows ${daily(sLo)} to ${sHi === null ? 'more' : daily(sHi)} a day.`));
 
     // the day the median control reached the endpoint, against a study run as planned
     // (the range only: its median falls on a later measurement day than Plan's end of study, the median lab's day,
@@ -349,9 +350,8 @@ export function planTab(form: FuncCallForm, result: ReadonlySignal<AnalysisFrame
       `between day ${Math.round(eLo)} and day ${Math.round(eHi)}`;
     // an open top: more than 2.5% of such studies never get there, said with their share
     const never = n('end_not_reached');
-    const expected = `a study run as ${source === 'the plan' ? 'planned' : `${source} predicts`} reaches it ` +
-      `${range}` + (eLo !== null && eHi === null && never !== null && never > 0 ?
-      `, and ${pct(never)} of such studies never do` : '');
+    const expected = `a study run as ${asRun} reaches it ${range}` + (eLo !== null && eHi === null && never !== null &&
+      never > 0 ? `, and ${pct(never)} of such studies never do` : '');
     endLine.replaceChildren(verdictBadge(v('end_verdict') || null), said(obs === null ? 'The median control never ' +
       `reached ${v('endpoint')} mm³ in the study; ${expected}.` :
       `The median control reached ${v('endpoint')} mm³ on day ${obs}; ${expected}.`));

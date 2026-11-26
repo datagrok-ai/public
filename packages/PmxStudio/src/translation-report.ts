@@ -1,7 +1,9 @@
 /* The report's section on exposure and patients (Analyze's report, Compare's): what was measured and where each value
    comes from, then what it does not say. Pure: the content as text, built into the report by report.ts. */
-import {ArmExposure, HumanExposure, HumanMultiple, aucUsed, fuOk, meanCv, multipleText, referenceLine, sourceText}
-  from './exposure';
+import {ArmExposure, HumanExposure, HumanMultiple, aucUsed, fuOk, meanCv, multipleText, referenceLine, sig as num,
+  sourceText} from './exposure';
+import {htmlTable} from './report';
+import {esc} from './sheet';
 import {PanelSection, objectPanel, percentRange, signed, textLines} from './ui';
 
 /** One treated group's line. */
@@ -17,8 +19,6 @@ export interface ExposureSection {
   sentence: string | null, warning: string | null, head: string[], rows: string[][], curve: string | null,
   notes: string[], sources: string[],
 }
-
-const num = (x: number) => Number(x.toPrecision(3)).toLocaleString('en-US');
 
 /** Where the patients' exposure of a drug came from (exposure.ts sourceText). */
 export const humanSource = (h: HumanExposure | undefined) => h ? sourceText(h) : 'Not given';
@@ -89,15 +89,11 @@ export function exposureSection(o: {sentence: string | null, rows: ExposureRow[]
     curve: o.curve ? 'Within the tested doses only.' : null, notes, sources};
 }
 
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'})[c]!);
-
 /** The section as an element of the report (report.ts reportHtml's annex). */
 export function sectionElement(s: ExposureSection): HTMLElement {
   const el = document.createElement('div');
   el.innerHTML = [s.sentence ? `<p>${esc(s.sentence)}</p>` : '', s.warning ? `<p><i>${esc(s.warning)}</i></p>` : '',
-    `<table><tr>${s.head.map((h) => `<th>${esc(h)}</th>`).join('')}</tr>${s.rows.map((r) =>
-      `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</table>`,
-    s.curve ? `<p>${esc(s.curve)}</p>` : '',
+    htmlTable(s.head, s.rows), s.curve ? `<p>${esc(s.curve)}</p>` : '',
     `<h3>What this does not say</h3><ul>${s.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>`,
     `<h3>Sources</h3><p>${s.sources.map(esc).join(' ')}</p>`].join('');
   return el;

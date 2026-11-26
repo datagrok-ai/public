@@ -22,7 +22,7 @@ export {FORMAT as STUDY_FORMAT};
 export const STUDY_TAG = 'pmx.study';
 /** The tags of a measurements table that carry the study's reviews and log. */
 export const LOOKS_TAG = 'pmx.looks';
-const LOG_TAG = 'pmx.log';
+export const LOG_TAG = 'pmx.log';
 /** The name of the table's body weight column, and the protocol's limits ({humane, weightLimit}). */
 export const WEIGHT_TAG = 'pmx.weight';
 export const LIMITS_TAG = 'pmx.limits';

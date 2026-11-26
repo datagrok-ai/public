@@ -5,7 +5,7 @@
    treatment. Without a body weight column, how to add one. This file only shows it. */
 import * as DG from 'datagrok-api/dg';
 import {badge, BasicTable, BoolInput, computed, div, divH, divV, dot, span, Tooltip} from '@datagrok-libraries/u2';
-import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
+import type {ReadonlySignal} from '@datagrok-libraries/u2';
 import {FuncCallForm} from '@datagrok-libraries/u2/dg';
 
 import {AnalysisFrames, BASES, DENSITY_TAG, DensityUsed, NCI} from './analyze';
@@ -17,7 +17,7 @@ import {block, cardGrid, dayText, infoNote, noteLine, num, pct, signed, sized, s
 type Row = {[k: string]: any};
 
 /** The rows of a table as objects, an empty cell as null (an integer column holds its own null value). */
-const rowsOf = (df: DG.DataFrame): Row[] => Array.from({length: df.rowCount}, (_, i) =>
+export const rowsOf = (df: DG.DataFrame): Row[] => Array.from({length: df.rowCount}, (_, i) =>
   Object.fromEntries(df.columns.toList().map((c) => [c.name, c.isNone(i) ? null : c.get(i)])));
 
 /** Why a group's animals left early, in words: "1 dead, 1 weight, 2 tumor". */
@@ -139,8 +139,7 @@ export function tolerabilityTab<R extends TolerabilityFrames>(form: FuncCallForm
   const atEndpoint = () => groups.value.reduce((t, g) => t + g.removed_volume, 0);
 
   // the study's answers first, what each figure covers in its tooltip
-  const card = (label: string | ReadonlySignal<string>, value: ReadonlySignal<StatValue | undefined>,
-    tip: () => string, format?: (x: StatValue) => string) => statCard(form, label, value, tip, format);
+  const card = statCard.bind(null, form);
   const worst = computed(() => treated.value.reduce<Row | undefined>((w, g) =>
     g.mean_nadir !== null && (w === undefined || g.mean_nadir < w.mean_nadir) ? g : w, undefined));
   const losing10 = computed(() => treated.value.length === 0 ? undefined :
@@ -163,10 +162,9 @@ export function tolerabilityTab<R extends TolerabilityFrames>(form: FuncCallForm
         reasons({...g, removed_volume: 0}) || 'none')}. Not counted: ${atEndpoint()} removed with the tumor at the ` +
       'endpoint.'),
     card('Treated groups over welfare limits', computed(() => !has.value ? undefined :
-      `${toxic.value.length} of ${treated.value.length}`), () => {
-      return (toxic.value.length ? `Over welfare limits: ${toxic.value.map((g) => g.group).join(', ')}` :
-        'No treated group is over welfare limits') + ` (the NCI limits, Plowman et al. 1997: ${NCI_RULE})`;
-    }),
+      `${toxic.value.length} of ${treated.value.length}`), () =>
+      (toxic.value.length ? `Over welfare limits: ${toxic.value.map((g) => g.group).join(', ')}` :
+        'No treated group is over welfare limits') + ` (the NCI limits, Plowman et al. 1997: ${NCI_RULE})`),
   ], 'pmx-tolerability-cards', 150);
 
   // each group's mean change from day 0 and its range, in the chosen reading
@@ -184,9 +182,8 @@ export function tolerabilityTab<R extends TolerabilityFrames>(form: FuncCallForm
   const toggleRow = divH([corrected.root]);
   Object.assign(toggleRow.style, {justifyContent: 'flex-end', alignItems: 'center'});
   // what the weight includes: the median control tumor on its last day, in grams
-  const chartNote = span('', 'pmx-weight-note');
-  Object.assign(chartNote.style, {display: 'block', fontSize: '12px', color: 'var(--dg-text-color-muted, #68727f)',
-    lineHeight: '1.45'});
+  const chartNote = muted(span('', 'pmx-weight-note'));
+  chartNote.style.display = 'block';
   form.effect(() => {
     const r = result.value;
     const on = corrected.value;

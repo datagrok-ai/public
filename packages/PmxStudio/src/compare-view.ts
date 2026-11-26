@@ -11,7 +11,7 @@ import {ViewHost} from '@datagrok-libraries/u2/dg';
 
 import {HumanExposure, HumanMultiple, cvOk, drugMultiples, fuOk, humanMultiple, humansInto, medianTgi, multipleText,
   parseExposure, patientsRange, savedEffect, sourceText} from './exposure';
-import type {CurveRow} from './exposure';
+import type {ArmExposure, CurveRow} from './exposure';
 import {PreviousStudy, controlOf, readDayOf} from './study-effect';
 import {armParts, detailsName, metaOf} from './study-meta';
 import {describeArm} from './arm-name';
@@ -20,7 +20,6 @@ import {entryText, open, save, saveError} from './store';
 import {EXPOSURE_TAG, exposureOfTag, parseStudy} from './study-file';
 import {humanExposureDialog} from './human-exposure';
 import type {LibraryEntry} from './library';
-import type {ArmExposure} from './exposure';
 import {boundText, exposureSection, sectionElement} from './translation-report';
 import {reportHtml} from './report';
 import {esc, printSheet} from './sheet';
@@ -47,10 +46,13 @@ export interface CompareRow {
   drugs?: {drug: string, m: HumanMultiple | null, x?: ArmExposure, human?: HumanExposure}[],
 }
 
+/** A study's groups, in the order of its rows. */
+const groupsIn = (s: PreviousStudy) => [...new Set(s.rows.map((r) => r.group).filter((g): g is string => !!g))];
+
 /** A study's treated groups: each with the analysis's TGI when the study kept it (else 1 − T/C of the medians on
  *  the last day with 3 animals in it and its control), and its exposure as a multiple of the patients'. */
 export function compareRows(s: PreviousStudy, model: string): CompareRow[] {
-  const groups = [...new Set(s.rows.map((r) => r.group).filter((g): g is string => !!g))];
+  const groups = groupsIn(s);
   const control = controlOf(groups, s.meta);
   const rows = s.rows.filter((r): r is CurveRow => r.group !== null && r.day !== null && r.volume !== null);
   const {humans, nca} = parseExposure(s.exposure);
@@ -337,8 +339,7 @@ export async function compareView(entries: LibraryEntry[],
         const {file, row} = e;
         if (!file && !row)
           return grok.shell.warning('This study is not saved in your files: open it in Analyze to keep it');
-        const names = [...new Set(s.rows.map((r) => r.group).filter((g): g is string => !!g))]
-          .map((g) => detailsName(g, s.meta));
+        const names = groupsIn(s).map((g) => detailsName(g, s.meta));
         // the study as it is now, changed and written back: its file, or its row at the version just read
         const update = async (change: (now: string) => string): Promise<string> => {
           if (file) {
@@ -375,7 +376,7 @@ export async function compareView(entries: LibraryEntry[],
       return el;
     });
     const footnote = tgiFootnote(rows);
-    const page = ui.divV([...noprint([report]), ...noprint([...sentence ? [ui.divText(sentence)] : [],
+    const page = ui.divV([...noprint([report, ...sentence ? [ui.divText(sentence)] : [],
       ...warning ? [muted(warning)] : [], ...skipped.map((n) => muted(`${n} could not be read (moved, deleted or ` +
         'damaged): left out.'))]), ...chart ? [chart] : [], ...noprint([table.root,
       ...footnote ? [muted(footnote)] : [], ...hints, muted(compareFooter(rows))])],

@@ -7,7 +7,7 @@ import {div, divV, span} from '@datagrok-libraries/u2';
 import type {Child} from '@datagrok-libraries/u2';
 import type {ReadonlySignal} from '@datagrok-libraries/u2';
 
-import {showCentred, Stage, STAGES} from './ui';
+import {okNamed, showCentred, Stage, STAGES} from './ui';
 import {StudyMeta, detailsForm, emptyMeta} from './study-meta';
 import {myEntries} from './store';
 
@@ -71,8 +71,7 @@ export function studyHeader(owner: {effect: (fn: () => void) => unknown, own?: (
         colors: now?.colors ?? edited.colors});
       showId(s);
     });
-    const save = dialog.getButton('OK');
-    save.textContent = 'Save';
+    const save = okNamed(dialog, 'Save');
     const allow = () => save.disabled = form.problem() !== null;
     form.onProblem(allow);
     allow();

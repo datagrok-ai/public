@@ -467,7 +467,6 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
   if (d.arms.length === 0)
     throw new Error('Add at least one treatment arm');
   const {lp, me, prior, params} = await lineModel(d.line, undefined, d.labScale);
-  const armParams = (arm: ArmDeclaration, model: Row) => armCallParams(d, arm, model);
   const armError = (arm: ArmDeclaration) => (e: any) => {
     // an engine failure stays one, so Monitor shows it in plain words (ui.ts plainError)
     throw new (e instanceof EngineError ? EngineError : Error)(`${arm.name}: ${e?.message ?? e}`);
@@ -492,12 +491,12 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
     return q;
   };
   const [results, underOthers]: [ArmTables[], ArmTables[][]] = await Promise.all([
-    Promise.all(d.arms.map((arm) => designArm(prior, armParams(arm, params), shards, d.power, d.n)
+    Promise.all(d.arms.map((arm) => designArm(prior, armCallParams(d, arm, params), shards, d.power, d.n)
       .catch(armError(arm)))),
     Promise.all(others.map(async (fit, j) => {
       const m = await lineModel(d.line, fit, d.labScale);
       return Promise.all(d.arms.map((arm) =>
-        designArm(m.prior, powerOnly(armParams(arm, m.params), j), 1, d.power, null).catch(armError(arm))));
+        designArm(m.prior, powerOnly(armCallParams(d, arm, m.params), j), 1, d.power, null).catch(armError(arm))));
     }))]);
 
   // every arm with its own n (the treatments differ in what they need); the control as large as the largest arm,

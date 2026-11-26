@@ -230,9 +230,9 @@ export function doseTotal(doses: number, dose: {value: number, unit: string} | n
   weightKg: number | null): DoseTotal {
   const mgkg = dose && dose.value > 0 && /^mg\s*\/\s*kg$/i.test(dose.unit.trim());
   const perKg = mgkg ? dose!.value * doses : null;
-  const w = weightKg !== null && weightKg > 0 ? weightKg : DEFAULT_WEIGHT_KG;
-  return {doses, perKg, mg: perKg !== null && animals !== null && animals > 0 ? perKg * animals * w * (1 + OVERAGE) :
-    null, assumedWeight: !(weightKg !== null && weightKg > 0)};
+  const known = weightKg !== null && weightKg > 0;
+  return {doses, perKg, mg: perKg !== null && animals !== null && animals > 0 ?
+    perKg * animals * (known ? weightKg : DEFAULT_WEIGHT_KG) * (1 + OVERAGE) : null, assumedWeight: !known};
 }
 
 const amount = (x: number) => x >= 100 ? Math.round(x).toLocaleString('en-US') : String(Number(x.toPrecision(2)));

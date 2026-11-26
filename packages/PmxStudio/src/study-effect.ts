@@ -5,7 +5,7 @@
    the model and the days it checks here, without calling Crux; the rest Crux's function checks. */
 import {ArmPart, controlByName, parseArmName} from './arm-name';
 import {crux, rows} from './crux';
-import {finite, median, SEED} from './engine';
+import {finite, isFiniteNumber as num, median, SEED} from './engine';
 import type {DrugPk, SavedExposure} from './exposure';
 import {StudyMeta, armParts} from './study-meta';
 
@@ -32,7 +32,6 @@ export interface FromStudy {
 /** A link as a file or a table cell may give it (null: none, or damaged). */
 export function fromStudyOf(x: unknown): FromStudy | null {
   const f = x as Partial<FromStudy> | null;
-  const num = (v: unknown) => typeof v === 'number' && Number.isFinite(v);
   if (!f || typeof f !== 'object' || typeof f.study !== 'string' || typeof f.arm !== 'string' ||
     !num(f.dosePrev) || !num(f.doseNew))
     return null;
@@ -85,8 +84,9 @@ export function controlOf(groups: string[], meta: StudyMeta | null): string | un
   return declared ?? controlByName(groups);
 }
 
-/** What a group received: its details when they name a compound (empty cells from its name), else its name. */
-const partOf = (group: string, meta: StudyMeta | null): ArmPart[] => armParts(group, meta);
+/** The groups of a study's rows, in their order. */
+const groupsIn = (study: PreviousStudy) =>
+  [...new Set(study.rows.map((r) => r.group).filter((g): g is string => !!g))];
 
 /** The day of the first dose: day 0, the app's convention (study-meta.ts: day 0 is randomization and first dose). */
 export const FIRST_DOSE_DAY = 0;
@@ -127,12 +127,13 @@ export function anchorsIn(study: PreviousStudy, armName: string): Anchor[] {
   const mine = parseArmName(armName);
   if (mine.length !== 1)
     return [];
-  const groups = [...new Set(study.rows.map((r) => r.group).filter((g): g is string => !!g))];
+  const groups = groupsIn(study);
   const control = controlOf(groups, study.meta);
   if (control === undefined)
     return [];
   return groups.filter((g) => g !== control).flatMap((arm): Anchor[] => {
-    const parts = partOf(arm, study.meta);
+    // what the group received: its details when they name a compound (empty cells from its name), else its name
+    const parts = armParts(arm, study.meta);
     if (parts.length !== 1 || parts[0].key !== mine[0].key || !parts[0].dose)
       return [];
     const days = readDaysOf(study, arm, control);
@@ -142,7 +143,7 @@ export function anchorsIn(study: PreviousStudy, armName: string): Anchor[] {
     // the analysis's own TGI first, so Plan says what Analyze said of that study (the medians' ratio is another number)
     const kept = study.exposure?.effect;
     const own = kept?.tgi?.[arm];
-    if (typeof own === 'number' && Number.isFinite(own))
+    if (num(own))
       return [{study, arm, control, part: parts[0], readDay, days, tgi: own, analyzed: true,
         tgiDay: kept!.day ?? null}];
     const tgi = readDay === null ? null : 100 * (1 - median(at(arm)) / median(at(control)));
@@ -155,12 +156,12 @@ export function anchorsIn(study: PreviousStudy, armName: string): Anchor[] {
  *  Plan cannot scale from it until the study says the dose, so it says so rather than drop the study. */
 export function undosedIn(study: PreviousStudy, armName: string): string | null {
   const mine = parseArmName(armName);
-  const groups = [...new Set(study.rows.map((r) => r.group).filter((g): g is string => !!g))];
+  const groups = groupsIn(study);
   const control = controlOf(groups, study.meta);
   if (mine.length !== 1 || control === undefined)
     return null;
   return groups.find((g) => {
-    const p = g === control ? [] : partOf(g, study.meta);
+    const p = g === control ? [] : armParts(g, study.meta);
     return p.length === 1 && p[0].key === mine[0].key && !p[0].dose;
   }) ?? null;
 }
@@ -215,17 +216,19 @@ export function silence(armName: string, anchor: Anchor, planLine: string | null
 const same = (mine: string | null, theirs: string | null) =>
   mine === null || mine.replace(/\s+/g, '').toLowerCase() === (theirs ?? '').replace(/\s+/g, '').toLowerCase();
 
+/** The earlier study's dose as the texts say it: "10 mg/kg". */
+export const doseText = (x: Pick<FromStudy, 'dosePrev' | 'unit'>) => `${x.dosePrev} ${x.unit}`.trim();
+
 /** What Plan assumed of a name that says no schedule or route, for the effect's tooltip: "Assumes the same schedule
  *  and route as your 10 mg/kg study." (empty: the name says both) */
 export function assumedText(armName: string, x: Pick<FromStudy, 'dosePrev' | 'unit'>): string {
   const p = parseArmName(armName)[0];
   const missing = [!p?.schedule && 'schedule', !p?.route && 'route'].filter((w) => w);
-  return missing.length ? `Assumes the same ${missing.join(' and ')} as your ${`${x.dosePrev} ${x.unit}`.trim()} ` +
-    'study.' : '';
+  return missing.length ? `Assumes the same ${missing.join(' and ')} as your ${doseText(x)} study.` : '';
 }
 
 /** The doses' unit as the names and NCA write it, compared. */
-const unitKey = (u: string) => u.replace(/[µμ]/g, 'u').toLowerCase();
+export const unitKey = (u: string) => u.replace(/[µμ]/g, 'u').toLowerCase();
 
 /** Said with every range: Crux scales it with its 2 structures, without the drug's exposure over time (the curve from
  *  NCA failed its sealed check, plan_pk/v1/SELLO_NCA_1CMT.md). */
@@ -295,8 +298,12 @@ const REASONS: {[code: string]: string} = {
 /** Crux's reason code in the user's words; one it does not know, the general one. */
 export const plainReason = (code: string) => REASONS[code.trim()] ?? 'no basis to scale from your study';
 
-const round = (x: number) => Math.round(x);
-const doseText = (x: FromStudy) => `${x.dosePrev} ${x.unit}`.trim();
+const round = Math.round;
+
+/** A range and its point (percent TGI) as `metric` says them, [low, high, point]: in T/C, 100 - TGI, the range turned
+ *  round. */
+export const rangeAs = ([lo, hi]: [number, number], point: number, metric: 'TGI' | 'TC'): [number, number, number] =>
+  metric === 'TC' ? [100 - hi, 100 - lo, 100 - point] : [lo, hi, point];
 
 /** What the effect field shows for a linked arm: "≈ 65%, between 55 and 80%, from your 10 mg/kg study", in T/C when
  *  the study's effects are (T/C = 100 - TGI, the range turned round); or why Plan is silent. */
@@ -305,8 +312,7 @@ export function effectText(x: FromStudy, metric: 'TGI' | 'TC'): string {
     return `Estimating from your ${doseText(x)} study…`;
   if (!x.range || x.point === null)
     return `No basis to scale from your ${doseText(x)} study: ${x.why}`;
-  const [lo, hi, point] = metric === 'TC' ? [100 - x.range[1], 100 - x.range[0], 100 - x.point] :
-    [x.range[0], x.range[1], x.point];
+  const [lo, hi, point] = rangeAs(x.range, x.point, metric);
   return `≈ ${round(point)}%, between ${round(lo)} and ${round(hi)}%, from your ${doseText(x)} study`;
 }
 
