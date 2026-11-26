@@ -26,8 +26,8 @@ import {IDartApi} from '../../api/grok_api.g';
 import {COLUMN_TYPE, ColumnType, TYPE} from '../../const';
 import {DomainRegistryClient, DomainTableClient} from '../../dapi';
 import {Column, DataFrame} from '../../dataframe';
-import {DomainAccess, DomainConditionTree, DomainError, DomainQuerySpec, DomainRestrictError,
-  DomainTableInfo, DomainTransactionOp, DomainValidationError, DomainVersionConflictError,
+import {DomainAccess, DomainConditionTree, DomainError, DomainForbiddenError, DomainNotFoundError, DomainQuerySpec,
+  DomainRestrictError, DomainTableInfo, DomainTransactionOp, DomainValidationError, DomainVersionConflictError,
   DOMAIN_ACCESS_COLUMNS, DOMAIN_DELETED_COLUMN} from '../../domains';
 import {DomainObjectHandler} from '../../domains-ui';
 import {Property} from '../../entities/property';
@@ -51,12 +51,11 @@ const registry = new DomainRegistryClient();
  * delete, as `'deleted'` is the undo of a live row. */
 export type DomainRowState = '' | 'new' | 'modified' | 'deleted' | 'restored';
 
-/** One cell-level problem, as stored in {@link DomainFrameEditor.ERRORS_COLUMN}: `'error'` blocks
- * {@link DomainFrameEditor.save}, `'conflict'` (a dismissed version conflict)
- * only marks the cell. */
+/** One cell-level problem ({@link DomainFrameEditor.ERRORS_COLUMN}): only `'error'` blocks
+ * {@link DomainFrameEditor.save}; `'refused'` and `'conflict'` mark the cell until its next edit. */
 export interface DomainCellError {
   message: string;
-  kind: 'error' | 'conflict';
+  kind: 'error' | 'refused' | 'conflict';
 }
 
 /** An edit the host refused because the cell may not be edited
@@ -366,10 +365,9 @@ export class DomainFrameEditor implements IFrameEditor {
   /** Running {@link changeCount}: kept per row so a keystroke costs one row
    * recount instead of a scan of the frame. */
   private _contributions = new Map<number, number>();
-  /** `'new'` rows nobody has written to yet — see {@link addRow}. Reset with the
-   * other per-row caches, which is the safe direction: a pristine row that lost
-   * its mark counts as a change, never the other way round. */
-  private _pristine = new Set<number>();
+  /** The draft ids of `'new'` rows nobody has written to yet — see {@link addRow}. By id, not
+   * by index: a row removed above one leaves its mark where it was. */
+  private _pristine = new Set<string>();
   private _changeCount = 0;
   private _suspend = false;
   private _saving = false;
@@ -465,9 +463,12 @@ export class DomainFrameEditor implements IFrameEditor {
 
   /** Why [column] cannot be written on a persisted row, in the table's own vocabulary. */
   private _fieldRefusal(column: string): string {
-    return this.access.fields[column] === 'immutable'
-      ? `${this._captionOf(column)} cannot change once the row exists`
+    return this.access.fields[column] === 'immutable' ? this._frozenText(column)
       : `${this._captionOf(column)} is read-only`;
+  }
+
+  private _frozenText(column: string): string {
+    return `${this._captionOf(column)} cannot change once the row exists`;
   }
 
   /** {@link IFrameEditor}: an edit the HOST refused ({@link refusalOf} said why) — reported on
@@ -555,12 +556,14 @@ export class DomainFrameEditor implements IFrameEditor {
    *
    * Numeric properties take a dart2js-safe path (under dart2js every whole number
    * `is double`, which would reject every integer), and `string_list` values are
-   * left to the server, which coerces them. Returns null when the value is fine.
+   * left to the server, which coerces them, as is a `json` value given as its JSON
+   * text. Returns null when the value is fine.
    */
   static validateCellValue(p: Property, value: any): string | null {
     if (!p.nullable && (value == null || value === ''))
       return "Value can't be empty";
-    if (value == null || p.propertyType === TYPE.STRING_LIST)
+    if (value == null || p.propertyType === TYPE.STRING_LIST ||
+        (p.propertyType === TYPE.MAP && typeof value === 'string'))
       return null;
     const type = valueTypeOf(value);
     if (isNumerical(p))
@@ -753,8 +756,8 @@ export class DomainFrameEditor implements IFrameEditor {
     this._df.rows.insertAt(row, 0, true);
     // After the notification: its cache reset would otherwise drop the mark this
     // line makes.
-    if (options?.pristine === true)
-      this._pristine.add(row);
+    if (options?.pristine === true && this._df.columns.contains('id'))
+      this._pristine.add(this._wire(row, 'id'));
     this._recount(row);
     this._fire();
     return row;
@@ -837,6 +840,7 @@ export class DomainFrameEditor implements IFrameEditor {
       }
     });
     this._unguarded.clear();
+    this._pristine.clear();
     this._resetCaches();
     this._df.rows.requestFilter();
     this._fire();
@@ -882,12 +886,12 @@ export class DomainFrameEditor implements IFrameEditor {
    * the row's `expectedVersion`, `'expected'` the ORIGINAL values of the changed columns
    * ({@link _guardOf} — a partial guard: only the columns whose declared type the warehouse can
    * compare, so an edit touching floats, datetimes, refs or empty originals alone carries none),
-   * `'none'` nothing. `'deleted'` rows delete, `'restored'` rows carry their id alone and undo a
-   * landed soft delete. Exposed so a caller can inspect or extend the
+   * `'none'` nothing. `'deleted'` rows delete, `'restored'` rows undo a landed soft delete, both
+   * with the row's `expectedVersion` under `'version'`. Exposed so a caller can inspect or extend the
    * payload; a {@link DomainSession} concatenates several editors' into one
    * transaction.
    *
-   * A value equal to a draft id — this editor's or another's — goes out as the
+   * A value equal to a draft id of [drafts] (by default this editor's own) goes out as the
    * `'$<draftId>'` reference the server resolves; a literal leading `$` is
    * escaped as `$$`. An empty cell of a NEW row is LEFT OUT of the insert rather
    * than sent as an explicit null, so the column takes its server-side default (a
@@ -899,7 +903,7 @@ export class DomainFrameEditor implements IFrameEditor {
    * Every insert carries `onDuplicate: 'error'`: a business-key conflict fails
    * the whole transaction (409) instead of silently merging the new row into an
    * existing one. */
-  buildOps(): DomainPendingOp[] {
+  buildOps(drafts: ReadonlySet<string> = this.draftIds()): DomainPendingOp[] {
     const table = this.client.table;
     const writable = DomainFrameEditor.writableColumns(this.access);
     const insertable = DomainFrameEditor.writableColumns(this.access, {draft: true});
@@ -910,19 +914,19 @@ export class DomainFrameEditor implements IFrameEditor {
       if (state === 'deleted') {
         // A row that was added and then deleted never reached the server.
         if (this._isPersisted(row))
-          pending.push({row: row, op: {op: 'delete', table: table, id: `${id}`}});
+          pending.push({row: row, op: {op: 'delete', table: table, id: `${id}`, ...this._versionGuard(row)}});
       }
       else if (state === 'restored') {
         // A draft cannot have been deleted on the server.
         if (this._isPersisted(row))
-          pending.push({row: row, op: {op: 'restore', table: table, id: `${id}`}});
+          pending.push({row: row, op: {op: 'restore', table: table, id: `${id}`, ...this._versionGuard(row)}});
       }
       else if (state === 'new') {
         const values: {[column: string]: any} = {};
         for (const name of insertable) {
           const v = this._wire(row, name);
           if (v != null && name !== 'id')
-            values[name] = DomainFrameEditor._refValue(v);
+            values[name] = DomainFrameEditor._refValue(v, drafts);
         }
         const op: DomainTransactionOp = {op: 'insert', table: table, values: values, onDuplicate: 'error'};
         if (DomainFrameEditor.isDraftId(id))
@@ -933,25 +937,27 @@ export class DomainFrameEditor implements IFrameEditor {
         const values: {[column: string]: any} = {};
         for (const name of Object.keys(this.changesOf(row)))
           if (writable.includes(name))
-            values[name] = DomainFrameEditor._refValue(this._wire(row, name));
+            values[name] = DomainFrameEditor._refValue(this._wire(row, name), drafts);
         if (Object.keys(values).length === 0)
           continue;
         const op: DomainTransactionOp = {op: 'update', table: table, id: `${id}`, values: values};
-        const concurrency = this.access.support.concurrency;
-        if (concurrency === 'expected') {
+        if (this.access.support.concurrency === 'expected') {
           const expected = this._guardOf(row, values);
           if (Object.keys(expected).length > 0 && !this._unguarded.has(`${id}`))
             op.expected = expected;
         }
-        else if (concurrency === 'version') {
-          const version = this._wire(row, 'version');
-          if (typeof version === 'number')
-            op.expectedVersion = version;
-        }
+        else
+          Object.assign(op, this._versionGuard(row));
         pending.push({row: row, op: op});
       }
     }
     return pending;
+  }
+
+  /** `{expectedVersion}` of [row] on a version-guarded table; empty otherwise. */
+  private _versionGuard(row: number): {expectedVersion?: number} {
+    const version = this.access.support.concurrency === 'version' ? this._wire(row, 'version') : null;
+    return typeof version === 'number' ? {expectedVersion: version} : {};
   }
 
   /** A uuid-shaped string original does not guard: the connector binds such a literal as a uuid,
@@ -984,12 +990,22 @@ export class DomainFrameEditor implements IFrameEditor {
     return guard;
   }
 
-  /** [v] as the transaction wire wants it: a draft id becomes a `$ref`, a literal
-   * leading `$` is doubled (the server's `$$` escape), lists element-wise. */
-  private static _refValue(v: any): any {
+  /** The id of every draft row the batch inserts — the drafts it may reference. */
+  draftIds(): Set<string> {
+    const ids = new Set<string>();
+    for (let row = 0; row < this._df.rowCount; row++) {
+      const id = this._wire(row, 'id');
+      if (DomainFrameEditor.isDraftId(id) && this.stateOf(row) !== 'deleted')
+        ids.add(id);
+    }
+    return ids;
+  }
+
+  /** [v] as the transaction wire wants it: a draft id becomes a `$ref`, a literal leading `$` is doubled. */
+  private static _refValue(v: unknown, drafts: ReadonlySet<string>): unknown {
     if (Array.isArray(v))
-      return v.map((x) => DomainFrameEditor._refValue(x));
-    return typeof v === 'string' && (DomainFrameEditor.isDraftId(v) || v.startsWith('$')) ? '$' + v : v;
+      return v.map((x) => DomainFrameEditor._refValue(x, drafts));
+    return typeof v === 'string' && (drafts.has(v) || v.startsWith('$')) ? '$' + v : v;
   }
 
   /**
@@ -1021,8 +1037,8 @@ export class DomainFrameEditor implements IFrameEditor {
    * {@link buildOps} — after a row added and then deleted in the same batch has
    * been resolved LOCALLY (removed from the frame: it never reached the server, so
    * it can neither survive the save as phantom pending state nor hold the batch
-   * dirty). */
-  prepareSave(): DomainPendingOp[] | null {
+   * dirty). [drafts]: the batch's draft ids, as {@link buildOps} takes them. */
+  prepareSave(drafts?: ReadonlySet<string>): DomainPendingOp[] | null {
     const blocking = this._firstBlockingError();
     if (blocking != null) {
       balloon.error(`Cannot save: ${blocking}`);
@@ -1041,7 +1057,7 @@ export class DomainFrameEditor implements IFrameEditor {
       this._df.rows.requestFilter();
       this._fire();
     }
-    return this.buildOps();
+    return this.buildOps(drafts);
   }
 
   /** Lands this editor's slice of a successful transaction: returned ids and
@@ -1106,6 +1122,8 @@ export class DomainFrameEditor implements IFrameEditor {
       for (const row of removed)
         this._df.rows.removeAt(row, 1, false);
     });
+    for (const draft of Object.keys(result.assigned))
+      this._pristine.delete(draft);
     this._resetCaches();
     this.rebind(ids);
     this._df.rows.requestFilter();
@@ -1185,15 +1203,19 @@ export class DomainFrameEditor implements IFrameEditor {
         for (const name of Object.keys(fresh)) {
           if (!this._df.columns.contains(name) || DomainFrameEditor.SERVICE_COLUMNS.includes(name))
             continue;
-          const v = fresh[name];
-          // jsonb cells travel as objects; the frame holds them as text. dayjs passes through.
-          const plain = v != null && typeof v === 'object' && typeof v.toISOString !== 'function';
-          this._df.set(name, row, plain ? JSON.stringify(v) : v);
+          this._df.set(name, row, DomainFrameEditor._cellOf(fresh[name]));
         }
       }
     });
     this._resetCaches();
     this._fire();
+  }
+
+  /** A server value as the frame holds it: json and string_list values as JSON text. */
+  private static _cellOf(v: unknown): unknown {
+    const plain = v != null && typeof v === 'object'
+      && typeof (v as {toISOString?: unknown}).toISOString !== 'function';
+    return plain ? JSON.stringify(v) : v;
   }
 
   /** The reload/overwrite dialog for a version conflict on [failing], with the outcome applied:
@@ -1202,7 +1224,7 @@ export class DomainFrameEditor implements IFrameEditor {
    * external shape — its own dialog, showing what was read, what is there now and what is
    * pending per guard column) sends this row's changed values UNGUARDED on the retry, and on that
    * retry only. Resolves to whether the batch should be rebuilt and retried; false when the
-   * user dismissed it, in which case the row's changed cells say why. */
+   * user dismissed it, the edits kept and their cells marked as a conflict: the next save asks again. */
   async resolveConflict(e: DomainVersionConflictError, failing: DomainPendingOp): Promise<boolean> {
     this._onConflict.next(e);
     const row = failing.row;
@@ -1211,31 +1233,36 @@ export class DomainFrameEditor implements IFrameEditor {
     // The op's guard decides the shape, not the body: a 409 without `current` must still not
     // reach the version dialog, whose Overwrite would retry the same stale guard.
     const guarded = failing.op.expected != null;
+    const kind = failing.op.op === 'delete' || failing.op.op === 'restore' ? failing.op.op : undefined;
     const decision = guarded ? await this._expectedConflictDialog(e, row, subject)
-      : await DomainObjectHandler.showConflictDialog(subject);
+      : await DomainObjectHandler.showConflictDialog(subject, kind);
     if (decision === 'reload') {
       // a gone row resolves null and is reported; a read that FAILED keeps the edit, as Cancel does
       let fresh: any = null;
       let read = true;
       try {
-        fresh = await this.client.get(id);
+        fresh = await this.client.get(id, kind === 'restore' ? {deleted: 'include'} : undefined);
       } catch (x: any) {
         balloon.error(`${subject} could not be reloaded: ${x?.message ?? x}`);
         read = false;
       }
       if (read) {
-        if (fresh == null)
+        if (fresh == null) {
           balloon.error(`${subject} no longer exists.`);
-        else
+          this._write(() => this._df.rows.removeAt(row, 1, false));
+          this._resetCaches();
+        }
+        else {
           this._write(() => {
             for (const name of Object.keys(fresh))
               if (this._df.columns.contains(name))
-                this._df.set(name, row, fresh[name]);
+                this._df.set(name, row, DomainFrameEditor._cellOf(fresh[name]));
           });
-        this._clearRowState(row);
-        // The pre-reload values are gone: a snapshot of them would make the next
-        // in-grid edit record an "original" the cell never held.
-        this._snapshots.delete(row);
+          this._clearRowState(row);
+          // A pre-reload snapshot would record an "original" the cell never held.
+          this._snapshots.delete(row);
+        }
+        this._df.rows.requestFilter();
         this._fire();
         return true;
       }
@@ -1247,8 +1274,11 @@ export class DomainFrameEditor implements IFrameEditor {
         this._write(() => this._df.set('version', row, e.currentVersion));
       return true;
     }
+    // a reload whose read failed has said why already
+    if (kind != null && decision !== 'reload')
+      balloon.warning(`${subject} changed since you read it: its ${kind} is still pending`);
     for (const column of Object.keys(this.changesOf(row)))
-      this._setError(row, column, {message: e.message, kind: 'conflict'});
+      this._setError(row, column, {message: `${subject} changed since you read it`, kind: 'conflict'});
     this._fire();
     return false;
   }
@@ -1289,18 +1319,19 @@ export class DomainFrameEditor implements IFrameEditor {
   mapValidationError(e: DomainValidationError, failing: DomainPendingOp, duplicateText?: string): void {
     const row = failing.row;
     const errors = e.rows?.[0]?.errors ?? [];
-    const duplicate = duplicateText ?? this._duplicateText();
+    const duplicate = duplicateText ?? this._uniqueText(row, e) ?? this._duplicateText();
     let mapped = false;
     for (const columnError of errors)
       if (columnError.column != null && this._df.columns.contains(columnError.column)) {
-        const message = columnError.code === 'unique' ? duplicate : columnError.message;
-        this._setError(row, columnError.column, {message: message, kind: 'error'});
+        const message = columnError.code === 'unique' ? duplicate
+          : columnError.code === 'immutable' ? this._frozenText(columnError.column) : columnError.message;
+        this._setError(row, columnError.column, {message: message, kind: 'refused'});
         mapped = true;
       }
     if (!mapped) {
       const message = e.isDuplicate ? duplicate : e.message;
       for (const column of Object.keys(this.changesOf(row)))
-        this._setError(row, column, {message: message, kind: 'error'});
+        this._setError(row, column, {message: message, kind: 'refused'});
     }
     this._fire();
   }
@@ -1312,7 +1343,22 @@ export class DomainFrameEditor implements IFrameEditor {
     if (e instanceof DomainValidationError && e.isDuplicate)
       return this.duplicateRefusal(failing.row, e);
     if (e instanceof DomainRestrictError)
-      return this.restrictRefusal(e);
+      return typeof e.body['column'] === 'string' ? this._deletedParentRefusal(e, failing)
+        : this.restrictRefusal(e);
+    const frozen = e instanceof DomainValidationError
+      ? e.rows[0]?.errors?.find((x) => x.code === 'immutable')?.column : undefined;
+    if (frozen != null)
+      return this._frozenText(frozen);
+    const named = this._displayOf(failing.row);
+    const noun = this._info.singularName.toLowerCase();
+    if (e instanceof DomainVersionConflictError)
+      return `${named ?? `This ${noun}`} changed since you read it`;
+    if (e instanceof DomainNotFoundError && failing.op.op === 'update')
+      return `${named ?? `This ${noun}`} was deleted by someone else: discard your changes to it`;
+    if (e instanceof DomainForbiddenError && `${e.message}`.toLowerCase() === 'forbidden') {
+      const verb = {insert: 'add', update: 'change', delete: 'delete', restore: 'restore'}[failing.op.op];
+      return `You do not have permission to ${verb} ${named ?? `this ${noun}`}`;
+    }
     return `${e?.message ?? e}`;
   }
 
@@ -1321,6 +1367,9 @@ export class DomainFrameEditor implements IFrameEditor {
    * the key itself where it carries none: on the UPDATE path the id is the row being SAVED
    * (`repository.dart` `_mapPgError(rt, x, id: id)`), which names the wrong row. */
   async duplicateRefusal(row: number, e?: DomainValidationError): Promise<string> {
+    const unique = this._uniqueText(row, e);
+    if (unique !== null)
+      return unique;
     const key = this._info.businessKey ?? [];
     const values = key.map((c) => this._wire(row, c)).filter((v) => v != null && `${v}` !== '');
     if (values.length !== key.length)
@@ -1328,8 +1377,9 @@ export class DomainFrameEditor implements IFrameEditor {
     const self = `${this._wire(row, 'id') ?? ''}`;
     const id = `${e?.rows?.[0]?.id ?? ''}`;
     const owner = id !== '' && id !== self ? await this._nameOf(id) : await this._keyHolder(key, values, self);
-    return owner == null ? this._duplicateText()
-      : `${key.map((c) => this._captionOf(c)).join(', ')} ${values.join(', ')} already belongs to ${owner}`;
+    const said = `${key.map((c) => this._captionOf(c)).join(', ')} ${values.join(', ')}`;
+    return owner == null ? this._duplicateText() :
+      owner === values.join(', ') ? `${said} is already used` : `${said} already belongs to ${owner}`;
   }
 
   /** "Ethanol still has 3 containers; remove or reassign them first": the server names the child
@@ -1356,6 +1406,36 @@ export class DomainFrameEditor implements IFrameEditor {
       .toLowerCase().replace(/_/g, ' ');
     return `${subject} still has ${count === 0 ? '' : `${count} `}${noun};`
       + ` remove or reassign ${count === 1 ? 'it' : 'them'} first`;
+  }
+
+  /** "Location "Shelf 2" of "Box 7" was deleted: pick another location", on the cell as well. */
+  private async _deletedParentRefusal(e: DomainError, failing: DomainPendingOp): Promise<string> {
+    const column = e.body['column'];
+    const table = `${e.body['table'] ?? 'row'}`;
+    let parent = table.replace(/_/g, ' ');
+    let message = `${this._captionOf(column)} refers to a deleted ${parent}: restore that ${parent} first`;
+    if (failing.op.op !== 'restore' && e.body['table'] != null) {
+      let name = '';
+      try {
+        const info = await registry.tableInfo(`${this.client.schema}.${table}`);
+        parent = info.singularName.toLowerCase();
+        if (info.nameColumn != null && e.body['parentId'] != null) {
+          const row = await new DomainTableClient(api.grok_Dapi_Domains(), this.client.schema, table)
+            .get(`${e.body['parentId']}`, {deleted: 'include'}) as {[column: string]: unknown};
+          name = `${row?.[info.nameColumn] ?? ''}`;
+        }
+      } catch (x) {
+        log.warning(`${this.table}: naming the deleted ${parent} failed — ${x}`);
+      }
+      const child = this._displayOf(failing.row);
+      message = `${this._captionOf(column)}${name === '' ? '' : ` "${name}"`}${child == null ? '' : ` of "${child}"`}`
+        + ` was deleted: pick another ${parent}`;
+    }
+    if (this._df.columns.contains(column)) {
+      this._setError(failing.row, column, {message: message, kind: 'refused'});
+      this._fire();
+    }
+    return message;
   }
 
   /** Opens/closes the editor around a transaction (see {@link save}); a
@@ -1482,7 +1562,6 @@ export class DomainFrameEditor implements IFrameEditor {
     this._parsed.clear();
     this._contributions.clear();
     this._snapshots.clear();
-    this._pristine.clear();
     this._changeCount = 0;
     for (let row = 0; row < this._df.rowCount; row++)
       this._recount(row);
@@ -1493,7 +1572,7 @@ export class DomainFrameEditor implements IFrameEditor {
    * counts its changed cells. */
   private _recount(row: number): void {
     const state = this.stateOf(row);
-    const now = state === 'new' ? (this._pristine.has(row) ? 0 : 1)
+    const now = state === 'new' ? (this._pristine.has(this._wire(row, 'id')) ? 0 : 1)
       : state === 'deleted' || state === 'restored' ? 1 : Object.keys(this.changesOf(row)).length;
     this._changeCount += now - (this._contributions.get(row) ?? 0);
     if (now === 0)
@@ -1554,7 +1633,7 @@ export class DomainFrameEditor implements IFrameEditor {
 
   private _track(row: number, column: string, original: any): void {
     // The first write into a pristine new row is what makes it a pending change.
-    this._pristine.delete(row);
+    this._pristine.delete(this._wire(row, 'id'));
     const invalid = this._invalidValue(row, column);
     if (this.stateOf(row) !== 'new') {
       const changes = this.changesOf(row);
@@ -1713,8 +1792,12 @@ export class DomainFrameEditor implements IFrameEditor {
         continue;
       // A deleted row carries no originals — there is nothing between '' and
       // 'restored' for it to go back to.
-      state.set(row, restored ? 'restored' : '', false);
-      this._recount(row);
+      if (restored) {
+        state.set(row, 'restored', false);
+        this._recount(row);
+      }
+      else
+        this._clearRowState(row);
     }
     this._fire();
   }
@@ -1753,13 +1836,19 @@ export class DomainFrameEditor implements IFrameEditor {
     }
   }
 
-  /** The row's display value for a dialog caption: the registry's declared name
-   * column when the frame carries it — the same identity every other platform
-   * surface shows. Null falls the caller back to the id. */
   /** The caption a user knows [column] by. */
   private _captionOf(column: string): string {
     const caption = this._propByName.get(column)?.friendlyName;
     return caption == null || caption === '' ? column : caption;
+  }
+
+  /** "Name Ethanol is already used": a unique column other than the business key, as the server names it
+   * (`repository.dart` `_mapPgError`, the `ux_` constraint); null where it names none or the key. */
+  private _uniqueText(row: number, e?: DomainValidationError): string | null {
+    const column = e?.rows?.[0]?.errors?.find((x) => x.code === 'unique')?.column;
+    if (column == null || !this._df.columns.contains(column) || (this._info.businessKey ?? []).includes(column))
+      return null;
+    return `${this._captionOf(column)} ${this._wire(row, column) ?? ''} is already used`;
   }
 
   /** The refusal a business-key clash gets where the row already holding the key is unknown. */
@@ -1819,12 +1908,15 @@ export class DomainFrameEditor implements IFrameEditor {
     return -1;
   }
 
+  /** What a message calls [row]: its name, else its single business key ("Chemical K-1"); null
+   * falls the caller back to its own words. */
   private _displayOf(row: number): string | null {
-    const name = this._info.nameColumn;
-    if (name == null || !this._df.columns.contains(name))
-      return null;
-    const v = this._wire(row, name);
-    return v == null || `${v}` === '' ? null : `${v}`;
+    const text = (column: string | null | undefined): string =>
+      column == null || !this._df.columns.contains(column) ? '' : `${this._wire(row, column) ?? ''}`;
+    const name = text(this._info.nameColumn);
+    const key = this._info.businessKey ?? [];
+    const keyed = key.length === 1 ? text(key[0]) : '';
+    return name !== '' ? name : keyed === '' ? null : `${this._info.singularName} ${keyed}`;
   }
 }
 

@@ -17,7 +17,8 @@ import * as rxjs from 'rxjs';
 
 import {IDartApi} from '../../api/grok_api.g';
 import {DomainsDataSource} from '../../dapi';
-import {DomainTransactionOp, DomainValidationError, DomainVersionConflictError} from '../../domains';
+import {DomainNotFoundError, DomainTransactionOp, DomainValidationError,
+  DomainVersionConflictError} from '../../domains';
 import {Balloon} from '../../widgets/menu';
 import {DomainFrameEditor} from './domains-editor';
 import type {DomainPendingOp, DomainSaveResult, IEditorHost} from './domains-editor';
@@ -60,6 +61,8 @@ export interface DomainSessionRefusal {
   editor: DomainFrameEditor | null;
   /** The transaction-wide index of the failing op, where the server named one. */
   opIndex?: number;
+  /** The server's error code (`DomainError.code`). */
+  code?: string;
 }
 
 /**
@@ -157,11 +160,12 @@ export class DomainSession implements IEditorHost {
 
   /** Every editor's batch (`prepareSave`), in editor order — what {@link save}
    * concatenates; null when any editor refused (a blocking cell error, already
-   * reported). */
+   * reported). A value is a reference when it is the draft id of any editor's row. */
   buildOps(): DomainSessionPart[] | null {
     const parts: DomainSessionPart[] = [];
+    const drafts = new Set(this.editors.flatMap((editor) => [...editor.draftIds()]));
     for (const editor of this.editors) {
-      const pending = editor.prepareSave();
+      const pending = editor.prepareSave(drafts);
       if (pending == null)
         return null;
       parts.push({editor: editor, pending: pending});
@@ -206,6 +210,7 @@ export class DomainSession implements IEditorHost {
     for (const editor of this.editors)
       editor.setSaving(true);
     try {
+      const gone = new Map<DomainFrameEditor, DomainPendingOp[]>();
       for (let attempt = 0; ; attempt++) {
         if (attempt > CONFLICT_RETRY_LIMIT) {
           balloon.error('Cannot save: too many version conflicts in a row');
@@ -213,20 +218,30 @@ export class DomainSession implements IEditorHost {
         }
         let results: any[];
         try {
-          results = await domains().transaction(schema, this._ops(parts, schema));
+          const ops = this._ops(parts, schema);
+          results = ops.length === 0 ? [] : await domains().transaction(schema, ops);
         } catch (e: any) {
           const at = this._locate(parts, e?.opIndex);
           if (e instanceof DomainVersionConflictError && at != null) {
             if (!(await at.editor.resolveConflict(e, at.failing)))
-              return this._refuse(e?.message ?? `${e}`, at.editor, e?.opIndex);
+              return this._refuse(await at.editor.refusalFor(e, at.failing), at.editor, e?.opIndex, e?.code);
             parts = this.buildOps();
             if (parts == null)
               return this._refuse(DomainSession.CELL_ERRORS);
+            gone.clear();
             continue;
           }
           if (at == null) {
             balloon.error(e?.message ?? `${e}`);
-            return this._refuse(e?.message ?? `${e}`, null, e?.opIndex);
+            return this._refuse(e?.message ?? `${e}`, null, e?.opIndex, e?.code);
+          }
+          // a row someone else already deleted: this delete has landed, the rest of the batch goes on
+          if (e instanceof DomainNotFoundError && at.failing.op.op === 'delete') {
+            const pending = parts.find((p) => p.editor === at.editor)!.pending;
+            pending.splice(pending.indexOf(at.failing), 1);
+            gone.set(at.editor, [...(gone.get(at.editor) ?? []), at.failing]);
+            attempt--;
+            continue;
           }
           // ONE sentence for all four surfaces: the cells, the status line that reads them,
           // the balloon, and `lastRefusal` for a host that words it itself
@@ -234,7 +249,7 @@ export class DomainSession implements IEditorHost {
           if (e instanceof DomainValidationError)
             at.editor.mapValidationError(e, at.failing, message);
           balloon.error(message);
-          return this._refuse(message, at.editor, e?.opIndex);
+          return this._refuse(message, at.editor, e?.opIndex, e?.code);
         }
         const total: DomainSaveResult = {inserted: 0, updated: 0, deleted: 0, assigned: Object.create(null)};
         const slices: any[][] = [];
@@ -250,7 +265,8 @@ export class DomainSession implements IEditorHost {
         for (let i = 0; i < parts.length; i++)
           Object.assign(assigned, DomainFrameEditor.assignedOf(parts[i].pending, slices[i]));
         for (let i = 0; i < parts.length; i++) {
-          const r = await parts[i].editor.applyResults(parts[i].pending, slices[i], assigned);
+          const r = await parts[i].editor.applyResults(
+            [...parts[i].pending, ...(gone.get(parts[i].editor) ?? [])], slices[i], assigned);
           total.inserted += r.inserted;
           total.updated += r.updated;
           total.deleted += r.deleted;
@@ -283,9 +299,9 @@ export class DomainSession implements IEditorHost {
       editor.discard();
   }
 
-  private _refuse(message: string, editor?: DomainFrameEditor | null, opIndex?: unknown): false {
+  private _refuse(message: string, editor?: DomainFrameEditor | null, opIndex?: unknown, code?: unknown): false {
     this._lastRefusal = {message: message, editor: editor ?? null,
-      opIndex: typeof opIndex === 'number' ? opIndex : undefined};
+      opIndex: typeof opIndex === 'number' ? opIndex : undefined, code: typeof code === 'string' ? code : undefined};
     return false;
   }
 

@@ -561,9 +561,11 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
    * row's display value). Resolves to the user's decision — `'reload'` (discard
    * my changes, take the server's), `'overwrite'` (retry against the current
    * version), or null when the dialog is dismissed. The caller applies it; the
-   * platform's own editors resolve their conflicts through this same dialog. */
-  static showConflictDialog(subject: string): Promise<'reload' | 'overwrite' | null> {
-    return domainCall(api.grok_DomainConflictDialog_Show(subject));
+   * platform's own editors resolve their conflicts through this same dialog. [op] words it for a
+   * stale delete or restore. */
+  static showConflictDialog(subject: string, op?: 'delete' | 'restore'): Promise<'reload' | 'overwrite' | null> {
+    return domainCall(op != null && api.grok_DomainConflictDialog_ShowFor != null
+      ? api.grok_DomainConflictDialog_ShowFor(subject, op) : api.grok_DomainConflictDialog_Show(subject));
   }
 
   /** The row's audit trail as an embeddable element: who / when / what, newest

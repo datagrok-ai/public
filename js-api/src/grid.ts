@@ -915,7 +915,7 @@ export interface IFrameEditor {
   beginEdit(row: number): void;
   commitEdit(row: number, column: string): void;
   isChanged(row: number, column: string): boolean;
-  errorOf(row: number, column: string): {message: string; kind: 'error' | 'conflict'} | null;
+  errorOf(row: number, column: string): {message: string; kind: 'error' | 'refused' | 'conflict'} | null;
   /** Whether this one cell may be edited — the row dimension {@link writableColumns}
    * cannot express (a per-row right, a draft the caller may not insert). */
   canEdit(row: number, column: string): boolean;
