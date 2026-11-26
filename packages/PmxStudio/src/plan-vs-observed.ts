@@ -162,7 +162,8 @@ export function planInput(form: FuncCallForm, call: DG.FuncCall, state: {stale: 
       return;
     }
     DG.Menu.popup().items(plans.map((p) => p.name), (name: string) => void plans.find((p) => p.name === name)?.read()
-      .then((f) => planField.value = f, (e) => grok.shell.error(plainError(e, `"${esc(name)}" could not be read.`)))).show();
+      .then((f) => planField.value = f,
+        (e) => grok.shell.error(plainError(e, `"${esc(name)}" could not be read.`)))).show();
   }, (e) => grok.shell.error(plainError(e, 'Your saved plans could not be listed. Try again in a moment.'))),
   {tooltip: 'Choose one of your saved plans'})));
   // ponytail: u2's FileInput keeps its last file when the box is emptied (it reports the empty path as missing), so

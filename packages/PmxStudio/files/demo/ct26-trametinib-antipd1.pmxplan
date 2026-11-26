@@ -3,11 +3,11 @@
   "version": 1,
   "name": "CT26 trametinib + anti-PD-1",
   "created": "2026-11-24T20:39:12.584Z",
-  "author": "gcanudobarreras",
+  "author": "demo",
   "study": {
     "id": "PMX-2026-0004",
     "description": "",
-    "owner": "gcanudobarreras",
+    "owner": "demo",
     "project": "",
     "tags": [],
     "start": "2026-11-30",
@@ -75,7 +75,7 @@
         "kind": "Observation",
         "animal": "",
         "text": "cage change",
-        "who": "gcanudobarreras",
+        "who": "demo",
         "when": "2026-11-24T20:36:31.152Z"
       }
     ],

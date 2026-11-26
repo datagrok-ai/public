@@ -13,7 +13,8 @@ import {LIMITS_TAG, LOOKS_TAG, REVEALED, WEIGHT_TAG, addLog, logOf, newStudyTabl
 import {panelTabs} from '../panels';
 import {EmptyState, NoControl} from '../crux';
 import {chanceWords, monitorView, takeOverFollowed} from '../monitor-view';
-import {decisionEntry, dosingDays, emptyMeta, impossibleDate, metaOf, setMetaOn, stopsOf} from '../study-meta';
+import {decisionEntry, dosingDays, emptyMeta, impossibleDate, metaOf, setMetaOn, stopsOf, weightChangeText}
+  from '../study-meta';
 import {groupsByAnimal} from '../animal-group';
 import {blindColumn, mark, openStudyTable, tagStudy} from '../study-table';
 import {analysisDeclarationOf} from '../analyze';
@@ -197,6 +198,13 @@ category('Monitor', () => {
 
   test('a loss near the limit is not rounded onto it; animal IDs in natural order', async () => {
     expect(weightReasons({change: -19.6, lastDay: 10}, 10, 7, 20, true)[0], 'Losing weight: 19.6%, limit 20%');
+    // the table and the panel say the same number as the reason
+    expect(weightChangeText(-19.6, 20), '−19.6%');
+    expect(weightChangeText(-19.97, 20), '−19.9%');
+    expect(weightChangeText(-16.4, 20), '−16%');
+    expect(weightChangeText(-21, 20), '−21%');
+    expect(weightChangeText(4.6, 20), '+5%');
+    expect(weightChangeText(0.2, 20), '0%');
     expect(weightReasons({change: -16.4, lastDay: 10}, 10, 7, 20, true)[0], 'Losing weight: 16%, limit 20%');
     expect(weightReasons({change: -19.57, lastDay: 10}, 10, 7, 20, true)[0], 'Losing weight: 19.6%, limit 20%',
       'rounded, not truncated');

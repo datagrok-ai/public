@@ -3,11 +3,11 @@
   "version": 1,
   "name": "PDX-SYN-01 pilot plan",
   "created": "2026-11-24T20:44:24.569Z",
-  "author": "gcanudobarreras",
+  "author": "demo",
   "study": {
     "id": "PMX-2026-0005",
     "description": "",
-    "owner": "gcanudobarreras",
+    "owner": "demo",
     "project": "",
     "tags": [],
     "start": null,

@@ -8,10 +8,11 @@ import * as DG from 'datagrok-api/dg';
 import {Arm, armsOf} from './arms-input';
 import {PlanFrames, PlanInputs, declarationOf} from './frames';
 import {PlanChecks, planChecks} from './plan-checks';
-import {finite, isFiniteNumber as fin} from './engine';
+import {StudyDeclaration, finite, isFiniteNumber as fin} from './engine';
 import {StudyMeta, parseMeta} from './study-meta';
 import {_package} from './package';
 import {priorsText} from './priors';
+import {cruxManifestText} from './crux';
 import {SavedHistory, historyOf, registerHistory, savedHistory} from './history-models';
 
 export const PLAN_EXT = 'pmxplan';
@@ -89,7 +90,82 @@ export interface SavedPlan {
     arms: (Arm & {n: number | null, nNeeded?: number | null, power?: PowerAt[], killRate?: number | null})[];
     /** what a study run as planned should observe, as 95% ranges: the end, the controls' growth, each arm's effect */
     checks: PlanChecks;
+    /** the plan as Plan showed it, to show it again at once: its tables (d42, base64, by PlanFrames key), the inputs
+     *  they were computed from (the file's own, as JSON) and the declaration Crux was given. Plan recomputes when
+     *  the inputs, the atlas or the app differ (a plan saved before these were kept has none of them: computed as it
+     *  opens) */
+    shown?: SavedShown;
   };
+}
+
+export interface SavedShown {frames: {[key: string]: string}, asked: string, declared: StudyDeclaration,
+  /** what computed them (engineFingerprint): reopened elsewhere, they are computed again */
+  engine: string}
+
+/** Bumped when this package's maths of a plan (frames.ts, engine.ts) change what its tables hold: tables kept by
+ *  an earlier one are computed again. */
+export const SHOWN_VERSION = 1;
+
+let engineHash: Promise<string> | null = null;
+
+/** What a plan's tables are computed with, as one hash: SHOWN_VERSION, the app's version, the atlas, the bundled
+ *  Crux modules (their manifest carries the wasm's hash), the end's band calibration and the PDX history; computed
+ *  once, a failed read not kept. */
+export function engineFingerprint(): Promise<string> {
+  const lf = (t: string) => t.replace(/\r\n/g, '\n');
+  engineHash ??= Promise.all([provenance(), cruxManifestText(), _package.files.readAsText('band_calibration_v1.json'),
+    _package.files.readAsText('pdx_history_v1.json')]).then(([p, ...texts]) =>
+    sha256Hex([SHOWN_VERSION, p.app, p.atlas, ...texts.map(lf)].join('\n'))).catch((e) => {
+    engineHash = null;
+    throw e;
+  });
+  return engineHash;
+}
+
+/** A saved plan's text for a study table's tag: without the tables the .pmxplan keeps (the study reads its plan's
+ *  predictions, not its tables). */
+export function planTag(p: SavedPlan | string): string {
+  const x = typeof p === 'string' ? (() => {
+    try {
+      return JSON.parse(p);
+    } catch {
+      return null;
+    }
+  })() : p;
+  if (!x?.predicted?.shown)
+    return typeof p === 'string' ? p : JSON.stringify(p);
+  const {shown: _, ...predicted} = x.predicted;
+  return JSON.stringify({...x, predicted});
+}
+
+const FRAME_KEYS: (keyof PlanFrames)[] = ['plan', 'armResults', 'powerCurve', 'curves', 'duration', 'schedules',
+  'calendar', 'scenarios'];
+
+/** A plan's tables as a file keeps them. */
+export function shownOf(f: PlanFrames, asked: string, declared: StudyDeclaration, engine: string): SavedShown {
+  const b64 = (b: Uint8Array) => {
+    let s = '';
+    for (let i = 0; i < b.length; i += 0x8000)
+      s += String.fromCharCode(...b.subarray(i, i + 0x8000));
+    return btoa(s);
+  };
+  return {frames: Object.fromEntries(FRAME_KEYS.map((k) => [k, b64(f[k].toByteArray())])), asked, declared, engine};
+}
+
+/** The tables a file kept, read back; null when any is missing, does not read or lacks what Plan reads first (Plan
+ *  then computes them). */
+export function framesOf(s: SavedShown | undefined): PlanFrames | null {
+  if (!s?.frames || typeof s.asked !== 'string' || !s.declared || typeof s.engine !== 'string' ||
+    !FRAME_KEYS.every((k) => typeof s.frames[k] === 'string'))
+    return null;
+  try {
+    const f = Object.fromEntries(FRAME_KEYS.map((k) => [k, DG.DataFrame.fromByteArray(
+      Uint8Array.from(atob(s.frames[k]), (c) => c.charCodeAt(0)))])) as unknown as PlanFrames;
+    const has = (df: DG.DataFrame, cols: string[]) => df.rowCount > 0 && cols.every((c) => !!df.col(c));
+    return has(f.plan, ['line', 'study_end', 'endpoint', 'n_control']) && has(f.armResults, ['arm']) ? f : null;
+  } catch {
+    return null;
+  }
 }
 
 /** An arm's power with n analysable animals per group: the share of the atlas's labs whose study detects it. */
@@ -183,11 +259,15 @@ export function parsePlan(text: string): SavedPlan {
       'administrator to update the PMX Studio package.');
   }
   const range = (r: any) => fin(r?.q025) && fin(r.median) && (r.q975 === null || fin(r.q975));
+  // the end: none of it when the median control does not reach the endpoint in the study (a slow model, a high
+  // endpoint: Panc02 at 2000 mm³), as the engine says it
+  const open = (x: unknown) => x === null || fin(x);
+  const endOk = (r: any) => !!r && open(r.q025) && open(r.median) && open(r.q975);
   const pr = p.predicted;
   const ch = pr?.checks;
   const ok = pr && typeof pr.line === 'string' && fin(pr.endpoint) && fin(pr.studyEnd) && Array.isArray(pr.arms) &&
     pr.arms.every((a: any) => typeof a?.name === 'string' && ['TGI', 'TC'].includes(a.metric) && fin(a.effect)) &&
-    ch && range(ch.end) && range(ch.controlSlope) && Array.isArray(ch.controls) &&
+    ch && endOk(ch.end) && range(ch.controlSlope) && Array.isArray(ch.controls) &&
     ch.controls.every((b: any) => fin(b?.day) && fin(b.median)) && Array.isArray(ch.arms) &&
     ch.arms.every((a: any) => typeof a?.name === 'string' && range(a.tgi) && range(a.tc)) &&
     p.inputs && typeof p.inputs === 'object';

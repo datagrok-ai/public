@@ -12,6 +12,9 @@ import type {StudyMeta} from './study-meta';
 export type GroupColors = {[group: string]: string};
 
 export const CONTROL_COLOR = '#5b6b7f';
+/** The atlas's predicted control, in a lighter grey than the study's own (Analyze's Predicted controls, Compare's
+ *  atlas). */
+export const PREDICTED_COLOR = '#9aa5b1';
 
 /** The platform's categorical colour `k` (0-based). */
 export const armColor = (k: number) => DG.Color.toHtml(DG.Color.getCategoricalColor(k));
@@ -163,7 +166,8 @@ export const resetColors = (link: StudyLink) => setColors(link, {});
 function norm(c: unknown): string {
   if (typeof c === 'number')
     return DG.Color.toHtml(c).toLowerCase();
-  return typeof c === 'string' ? DG.Color.toHtml(DG.Color.fromHtml(c)).toLowerCase() : '';
+  // (a short hex, #888, reads back as null: kept as written)
+  return typeof c === 'string' ? (DG.Color.toHtml(DG.Color.fromHtml(c)) ?? c).toLowerCase() : '';
 }
 
 const parse = (s: string | null | undefined): {[k: string]: unknown} => {
@@ -249,11 +253,16 @@ function check(p: Painted | undefined): void {
 
 /** The open study whose group `group` is drawn in `color` (ponytail: two open studies with a group of one name and
  *  colour: the first). */
-const linkOfColor = (group: string, color: string) => [...links].find((l) => norm(l.colors()[group]) === norm(color));
+const linkOfColor = (group: string, color: string, df?: DG.DataFrame | null) => {
+  const drawing = [...links].filter((l) => norm(l.colors()[group]) === norm(color));
+  // two open studies with a group of one name and colour: the one whose table it is
+  return (df ? drawing.find((l) => l.table?.()?.dart === df.dart) : undefined) ?? drawing[0];
+};
 
-/** What sets the group `group`, drawn in `color`, to another colour in its study; null: no open study draws it so. */
-export function recolorOf(group: string, color: string): ((to: string) => void) | null {
-  const link = linkOfColor(group, color);
+/** What sets the group `group`, drawn in `color`, to another colour in its study (`df`'s, when given); null: no
+ *  open study draws it so. */
+export function recolorOf(group: string, color: string, df?: DG.DataFrame | null): ((to: string) => void) | null {
+  const link = linkOfColor(group, color, df);
   return link ? (to) => setColors(link, ownWith(link, {...link.meta()?.colors}, group, norm(to))) : null;
 }
 

@@ -8,6 +8,7 @@ import {crux, rows} from './crux';
 import {finite, isFiniteNumber as num, median, SEED} from './engine';
 import type {DrugPk, SavedExposure} from './exposure';
 import {StudyMeta, armParts} from './study-meta';
+import {entered} from './sheet';
 
 /** An arm linked to an earlier study: the study and its group, the doses, and what Crux made of them (percent TGI),
  *  or why Plan stays silent. */
@@ -143,9 +144,10 @@ export function anchorsIn(study: PreviousStudy, armName: string): Anchor[] {
     // the analysis's own TGI first, so Plan says what Analyze said of that study (the medians' ratio is another number)
     const kept = study.exposure?.effect;
     const own = kept?.tgi?.[arm];
-    if (num(own))
+    if (num(own)) {
       return [{study, arm, control, part: parts[0], readDay, days, tgi: own, analyzed: true,
         tgiDay: kept!.day ?? null}];
+    }
     const tgi = readDay === null ? null : 100 * (1 - median(at(arm)) / median(at(control)));
     return [{study, arm, control, part: parts[0], readDay, days, tgi: Number.isFinite(tgi) ? tgi : null,
       analyzed: false, tgiDay: readDay}];
@@ -205,9 +207,10 @@ export function silence(armName: string, anchor: Anchor, planLine: string | null
     return null;
   const before = anchor.days.filter((d) => d < day).pop();
   const after = anchor.days.find((d) => d > day);
-  if (after === undefined)
+  if (after === undefined) {
     return `your study's last day with ${MIN_ANIMALS} animals in each group is day ${before}, this plan reads ` +
       `its effect on day ${day}`;
+  }
   return `your study did not measure day ${day}, the day this plan reads its effect` +
     (before === undefined ? ` (its first day is ${after})` : ` (it measured days ${before} and ${after})`);
 }
@@ -217,7 +220,8 @@ const same = (mine: string | null, theirs: string | null) =>
   mine === null || mine.replace(/\s+/g, '').toLowerCase() === (theirs ?? '').replace(/\s+/g, '').toLowerCase();
 
 /** The earlier study's dose as the texts say it: "10 mg/kg". */
-export const doseText = (x: Pick<FromStudy, 'dosePrev' | 'unit'>) => `${x.dosePrev} ${x.unit}`.trim();
+export const doseText = (x: Pick<FromStudy, 'dosePrev' | 'unit'>) =>
+  `${entered(x.dosePrev)} ${x.unit}`.trim();
 
 /** What Plan assumed of a name that says no schedule or route, for the effect's tooltip: "Assumes the same schedule
  *  and route as your 10 mg/kg study." (empty: the name says both) */

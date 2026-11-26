@@ -52,6 +52,8 @@ priors file).
 | `plan-view.ts`, `arms-input.ts` | the Plan view and its arms and multiple-comparisons editors |
 | `analyze.ts` | translates a study into Crux `stats.tgi`, `stats.contrast`, `stats.tumor_twin` and `stats.tumor_body_weight` calls and combines them |
 | `analyze-view.ts` | the Analyze view |
+| `compare-view.ts` | the Compare view: studies side by side, each control against the atlas |
+| `handlers.ts`, `pmx-objects.ts` | animals, groups and figures as Datagrok objects: their handlers and actions |
 | `tolerability.ts` | its Tolerability tab |
 | `plan-file.ts` | the saved plan (`.pmxplan`): built from Plan's call and outputs, checked when read, saved to Home or downloaded |
 | `ui.ts` | what the views share: formats, blocks, notes, the volume axis, a stage's two panes and the recompute on every change (no Run) |
@@ -83,9 +85,10 @@ dates say it belongs, the others in the other stages it may open in.
 Every dialog opens once: a second click while it is open brings the open one to the front (`ui.ts` `modal`).
 
 Opening PMX Studio leaves Datagrok's Browse tree, toolbox and help as they were. Pin the PMX Studio view to give it
-the whole screen: Browse closes while the pinned view is current and comes back as it was when you leave it or unpin
-it. The context panel stays closed in the app's views (F4 opens it). The Overview's toolbox has the app's actions:
-Open a study, New plan and Compare saved studies; the demo data; and this help.
+the whole screen: Browse closes while the pinned view is current (about a second after you pin it) and comes back as
+it was when you leave it or unpin it. The context panel stays closed in the app's views (F4 opens it). The Overview's toolbox has the app's actions:
+Open a study, New plan and Compare saved studies (all your studies with measurements; with fewer than two, it shows
+Your studies); the demo data; and this help.
 
 ## Saved plans
 
@@ -163,6 +166,76 @@ With a **Body weight** column (grams, weighed with the tumor, on the rows of the
   MC38's density with each animal's own spread, removal at 20% loss), and so are its tumor weights, one per animal
   after its last measurement: the atlas has no body weights yet.
 
+## Analyze: exposure and effect
+
+With NCA's exposure kept for the study (its AUClast per group), Analyze's Results tab has an **Exposure and effect**
+panel of its own: each treated group's TGI against its mouse exposure, or against its dose when no exposure was kept.
+The panel is hidden while there is nothing to draw. Given the patients' exposure of a drug (measured or projected,
+typed in Compare or in the panel), the groups table gains a **× patients' exposure** column: the group's mouse AUC as
+a multiple of the patients', its tooltip saying which AUC was used, whether it was corrected for protein binding, and
+where the patients' figure came from. Exposures, AUCs, Cmax, concentrations, doses and multiples are shown to 2–3
+significant figures (`sig` in `sheet.ts`), with thousands separators.
+
+**Animals by day**: the growth chart's tooltip gives each point's animals ("8 of 10 animals"), and a stretch where
+fewer than 3 remain is dashed (a median of one or two animals is no group's). Under the chart, one line names the
+groups that lost animals. The full per-day table is in the group's context panel, in the report (when a group lost
+animals) and under **Data > Open as table > Animals by day**.
+
+## Compare
+
+Compare (the Overview's **Compare saved studies**, or two demo studies) puts studies with measurements side by side,
+in panels laid out as a stage's (**View > Layout…**):
+
+- **The studies**: how many, of which models, their treated groups, how many are placed against the patients'
+  exposure, and how many controls grew within the atlas. When the studies are of more than one model, a line says that
+  tumour growth inhibition is not directly comparable across models.
+- **Tumor growth**: every group's median and range (smallest to largest tumor) by day, coloured by its treatment, each
+  study after the first dashed; **Linear**, **Log**, or **Relative V/V0** (each animal over its first volume, for
+  studies randomized at different sizes).
+- **Dose and effect**: each drug alone at each dose it was given, across the studies (a drug given in two units: two
+  curves). A dose is read from the group's details, or its name.
+- **Exposure and effect** (the title of Analyze's
+  panel too): each treated group's TGI against its multiple of the patients' exposure, the
+  patients' range shaded, with the same wording as Analyze. A drug without the patients' exposure has an **Add
+  patients' exposure…** button, which saves it with its study.
+- **Controls against the atlas**: each study's median control over the atlas's prediction for its model (the 95%
+  range Analyze draws in grey, randomized at the study's day-0 median), and a table: day 0, the control's doubling
+  time (its animals' mean growth rate of log volume), the atlas range, and whether it is within it or how many times
+  faster or slower. A control outside the range gets one plain sentence. Studies record no passage, so there is no
+  passage column.
+- **Treated groups**: study, model, group, TGI (the analysis's, or 1 − T/C of the medians, starred), day, ×
+  patients' exposure, the analysis's result when the study kept it, and where the patients' exposure came from.
+
+**Report (PDF)…** prints the page with the exposure section.
+
+## Toolbox
+
+Plan, Monitor, Analyze and Compare have the platform's toolbox on the left. It holds the same items as the view's menu,
+grouped as **Study** (Open…, Study details…, Save…; Monitor's Propose groups… and the randomization sheet),
+**Export**, **Documents** (ARRIVE, the CTD summary, the ethics documents), **View** (the layout, the tables to open),
+and **Help** (the demo, the example study, PMX Studio's help). Analyze's Export also has the study file (`.pmxstudy`)
+and the calendar (`.ics`).
+
+## Right-click and the context panel
+
+Animals, groups and figures are Datagrok objects (`handlers.ts`: a `DG.ObjectHandler` for each of `PmxAnimal`,
+`PmxGroup` and `PmxFigure`, in `pmx-objects.ts`). Their actions are registered once, with `registerParamFunc`, so a
+right click on one and the context panel's **Actions** pane offer the same ones, and an action shows only where it
+applies:
+
+- **An animal** (Analyze's twin list, waterfall bars, Monitor's lists): Show against its twin, Flag this animal…,
+  Exclude from the analysis… or Include in the analysis, Clear the flag, Select the animal's rows, Copy the animal's
+  name.
+- **A group** (its chip in the study header, its name in the groups table): Change color…, Flag every animal of the
+  group…, Exclude the group from the analysis…, Clear its marks, Select the group's rows, Copy the group's name.
+- **A figure** (a chart, or a stage's figure cards): Save as PNG, Copy as image; the cards: Pin these figures to
+  compare, or Unpin.
+
+The details a click shows (the animal's readings, the group's) are the object's context panel, with its main action
+as a button. A chart's bar or a legend item cannot be bound to an object: its right click opens a menu of the same
+actions (a legend item adds Change color…). The colour swatches and the calendar's days keep their small menus (a
+swatch's Change color… is also the group's).
+
 ## Where plans and studies are saved
 
 Plans and studies are saved in PMX Studio itself, as rows of its domain tables (`databases/pmx/schema.json`,
@@ -231,15 +304,19 @@ Exposure needs the NCA package, whose own demo data is in **App Data > Nca**.
 
 ## Crux modules
 
-The two Crux modules the package's functions are routed to (`nonclinical`: crate tgi's `stats.tumor_*`; `stats`:
-`stats.contrast`, `stats.dist_eval`), built from crux-core main (`crux-modules/VERSION` names the
-commit) and kept in git, as Chem keeps `vendor/crux-sketch`, so the package builds and publishes without Rust. To
-update them:
+One Crux module, `pmx`: the functions this package calls (crate tgi's `stats.tgi` and `stats.tumor_*`, synergy,
+`stats.contrast`, `stats.posthoc`, `stats.dist_eval`, `survival.fine_gray`) and the other functions of the Crux
+features they belong to (tgi, synergy, LS-means, post-hoc tests, scipy.stats, competing risks), which Crux's
+`nonclinical` and `stats` modules own and `pmx` carries, so the package ships 5.6 MB of wasm instead of their 21 MB. Built from crux-core
+(`crux-modules/VERSION` names the commit) and kept in git, as Chem keeps `vendor/crux-sketch`, so the package
+builds and publishes without Rust. To update it:
 
 ```bash
 cd ~/crux-core
-python3 tools/parity/wasm-modules/modules.py build --bindgen web --out ~/crux-modules-web --modules nonclinical,stats
-# copy manifest.json, the loader's *.mjs renamed to .js with their imports of each other rewritten to match (Datagrok serves .mjs as text/plain), and <module>/crux_wasm{.js,_bg.wasm} of nonclinical and stats into crux-modules/
+python3 tools/parity/wasm-modules/modules.py build --bindgen web --out ~/crux-modules-web --modules pmx
+# copy manifest.json and pmx/crux_wasm{.js,_bg.wasm} into crux-modules/; the loader (crux-modules.js and the files
+# it imports) is crates/crux-wasm/js/*.mjs renamed to .js, their imports of each other rewritten to match (Datagrok
+# serves .mjs as text/plain): copy it again when it changes
 ```
 
 Needs Rust 1.95 with the `wasm32-unknown-unknown` target, `wasm-bindgen-cli` 0.2.129, binaryen 133 and Node.

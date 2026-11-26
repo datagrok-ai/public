@@ -19,11 +19,12 @@ import {PlanFrames, PlanInputs, WEEKDAY_NAMES, declarationOf, planFrames, tgisOf
 import {StudyLink, armColors, follow, hasOwnColors, linkStudy, paint, resetColors, slotsAfter} from './colors';
 import {ARCHETYPES, Therapy} from './archetypes';
 import {Arm, ArmsInput, CorrectionInput, KIND_WORDS, armsFrame, lackingImmunity} from './arms-input';
-import {ENDPOINT_RISK, MIN_GROUP, StudyDeclaration, combinationFailed, combinationN, combinationsOf, designCombination,
+import {ENDPOINT_RISK, MIN_GROUP, StudyDeclaration, combinationFailed, combinationN, combinationNote, combinationsOf,
+  designCombination,
   LAB_SENSITIVE, diameterOf, finite, isFiniteNumber, labSpreadGroup, safeEndpoint, synergyClause} from './engine';
 import {askedOf, autoRun, block, callInputs, cardGrid, closeNamed, copyRow, fixedValue, hintLink, infoNote, notes,
   notesBox, num, pct, settleForm, showCentred, sized, markStage, statCard, swatch, volumeAxis, wrapCells, stagePanes,
-  whenSettled, docSubtitle, metricWord, setUserSetting, userSetting, modal} from './ui';
+  whenSettled, docSubtitle, metricWord, setUserSetting, userSetting, modal, showOnce} from './ui';
 import {checklistBlocks, checklistDialog} from './arrive';
 import {PREPARE_CREDIT, prepareDialog, prepareItems} from './prepare';
 import {ethicsParts, ethicsText} from './ethics-text';
@@ -33,12 +34,12 @@ import {ARRIVE_STUDY_PLAN_URL, FormSection, NTS_CREDIT, NTS_URL, NtsLanguage, Pl
 import {openStage, showStage} from './stages';
 import {editLayout, panelGrid, Slot} from './panels';
 import {stagePage, studyHeader} from './study-header';
-import {openButton, takesFiles} from './hub-view';
+import {openButton, stageLinks, takesFiles} from './hub-view';
 import type {OpenAt} from './hub-view';
 import {historyDialog} from './history-dialog';
 import {followPlan} from './monitor-view';
-import {PLAN_ATLAS_NOTE, SavedPlan, atlasNote, downloadPlan, parsePlan, planOf, planSaved, plansFolder,
-  planKey, savePlan, shownPath} from './plan-file';
+import {PLAN_ATLAS_NOTE, SavedPlan, SavedShown, atlasNote, downloadPlan, framesOf, parsePlan, planOf, planSaved,
+  plansFolder, planKey, savePlan, shownOf, shownPath, engineFingerprint} from './plan-file';
 import {labHumane} from './study-file';
 import {domainStorageOn, fileOwnerOf, isReadOnly, newRowNote, rowOfPlan, save, saveCopy, saveError, withCode}
   from './store';
@@ -47,8 +48,8 @@ import {StudyMeta, armDoses, dateOf, dateText, doseForTotal, dosingDays, emptyMe
   withGroups}
   from './study-meta';
 import {CAL, MenuAt, WEEKDAYS, dayActions, icsOf, mark, marked, weeksGrid} from './calendar';
-import {Exports, download, exportMenu, reportHtml} from './report';
-import {esc, printSheet} from './sheet';
+import {Exports, download, exportMenu, reportHtml, stageToolbox} from './report';
+import {esc, printSheet, sig} from './sheet';
 import {LineInput, lastLine, tumorsOf} from './line-input';
 import {historyNotesOf} from './history-models';
 import {historyModelName, hostClassOf, modelName} from './priors';
@@ -58,7 +59,7 @@ import {effectFromStudy} from './study-effect';
 import {drugPkInWorkspace, forgetNca} from './exposure';
 
 // where Plan's ethics documents sit in its Export menu
-const ETHICS = 'Export > Ethics application';
+const ETHICS = 'Documents';
 
 /** Plan's panels, in order and width (twelfths), as the demo reads: the growth and under it the calendar, then what
  *  a smaller effect would need beside the power by group size (one height), then the groups, the trade-offs of the
@@ -186,7 +187,7 @@ export function labMark(owner: {build: <T>(f: () => T) => T}, plan: ReadonlySign
  *  calendar); call it in a scope, which owns the tooltips. */
 function calendarGrid(p: DG.DataFrame, calendar: DG.DataFrame, startDay: HTMLElement,
   toggle: (weekday: number) => void, study: {meta: StudyMeta, onMenu: (day: number, at: MenuAt) => void,
-    onNote: (day: number) => void}): HTMLElement {
+    onNote: (day: number) => void, onSelect?: (day: number) => void}): HTMLElement {
   const v = (c: string) => p.get(c, 0);
   const end = v('study_end') as number;
   const endpointDay = v('endpoint_day') as number;
@@ -256,6 +257,7 @@ function calendarGrid(p: DG.DataFrame, calendar: DG.DataFrame, startDay: HTMLEle
     return h;
   });
   const grid = weeksGrid({meta, startWeekday: start, last: end, header, onMenu: study.onMenu, onNote: study.onNote,
+    onSelect: study.onSelect,
     day: (day, own) => ({detail: details.get(day),
       marks: [...day === 0 ? [mark('Randomize', BLUE, true)] : [], ...measured.has(day) ?
         [mark('Measure', SLATE, false)] : [], ...own, ...day === watch ? [mark('Watch controls', RED, false)] : [],
@@ -340,12 +342,23 @@ export async function openPlanFile(content: string): Promise<DG.DataFrame[]> {
 }
 
 /** What Plan opens with: a saved plan, or only its name, details and form. */
-export type PlanStart = Pick<SavedPlan, 'name' | 'study' | 'provenance'> & {inputs: {[param: string]: unknown}};
+export type PlanStart = Pick<SavedPlan, 'name' | 'study' | 'provenance'> & {inputs: {[param: string]: unknown},
+  predicted?: {shown?: SavedShown}};
 
 // each Plan view's call (its form's inputs, hidden ones too), by its host: what the package's tests read
 const planCalls = new WeakMap<ViewHost, DG.FuncCall>();
 /** The call behind a Plan view: its inputs as the next plan takes them (for the package's tests). */
 export const planCallOf = (view: DG.ViewBase): DG.FuncCall | undefined => planCalls.get(ViewHost.of(view));
+type PlanFileFn = (name: string) => Promise<SavedPlan>;
+const planFiles = new WeakMap<ViewHost, PlanFileFn>();
+/** The plan a Plan view shows, as its file would keep it (for the package's tests). */
+// the plans Plan has made, in any view (a remade arm is the engine's cache's, so Crux's calls do not count them)
+let plansMade = 0;
+/** How many plans Plan has made since the page opened (for the package's tests). */
+export const plansMadeCount = () => plansMade;
+
+export const planFileOf = (view: DG.ViewBase, name: string): Promise<SavedPlan> =>
+  planFiles.get(ViewHost.of(view))!(name);
 
 export async function planView(initial?: PlanStart): Promise<DG.ViewBase> {
   const exports: Exports = [];
@@ -363,8 +376,10 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   // each plan's declaration, for what is computed from it after it shows (the endpoint offered)
   const declared = new WeakMap<PlanFrames, StudyDeclaration>();
   const designed = (extra: object = {}) => Promise.resolve().then(async () => {
+    plansMade++;
     const x = callInputs<PlanInputs & {tgiScenarios?: string | null}>(call, extra);
-    const d = declarationOf(x);
+    // (the combinations' sentences asked after the plan shows: their Crux calls kept off the plan's own wait)
+    const d: StudyDeclaration = {...declarationOf(x), combinationNotes: false};
     const frames = await planFrames(d, tgisOf(x.tgiScenarios));
     declared.set(frames, d);
     return frames;
@@ -430,7 +445,11 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   const stale = signal(false);
   // captions above every field: the panel reads top to bottom, left-aligned, at any width
   // no Run: each change replans once the changes stop
-  const auto = autoRun(() => form, () => replan());
+  // the inputs the plan in view was made with: a form that settles back to them (filled again as the view opens, a
+  // list of models read late) is no change, so no plan is made again under the page's bar
+  let shownAsked: string | null = null;
+  const auto = autoRun(() => form, () => result.peek() && !error.peek() && askedOf(call) === shownAsked ?
+    stale.value = false : replan());
   // a change of the form since the plan was opened or saved (domain storage: what closing the view asks about)
   let edited = false;
   // the form's values as last saved here (null: not saved yet): the app refilling the form after a save (the details
@@ -444,9 +463,12 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   const form = funcForm(call, {layout: 'tall', skipTableAutoFill: true,
     overrides: {arms: {input: armsInput}, correction: {input: correction}, line: {input: lineInput}},
     onInputChanged: (name) => {
-      // (the form filling itself as the view opens is no change: only one made once a plan is shown; nor is the
-      // view switching on the schedules' comparison after the first plan)
-      edited ||= result.peek() !== undefined && name !== 'compareSchedules';
+      // (the schedules' comparison switched on is no change of the plan: Plan makes it again itself, the remade effect,
+      // and a plan reopened on its saved tables, schedules compared, is not out of date for it)
+      if (name === 'compareSchedules')
+        return;
+      // (the form filling itself as the view opens is no change: only one made once a plan is shown)
+      edited ||= result.peek() !== undefined;
       stale.value = result.peek() !== undefined;
       auto.changed();
     }});
@@ -457,13 +479,17 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   // a change made on the calendar replans the study too (the measurement days set the power and the animals), but
   // under a loader of the calendar's own, the page left in view
   const refreshing = signal(false);
-  const busy = computed(() => planning.value || refreshing.value);
-  const replan = (fromCalendar = false): Promise<void> => {
+  // the plan made again for the schedules' comparison: under that section's own loader, not the page's bar
+  const scheduling = signal(false);
+  const busy = computed(() => planning.value || refreshing.value || scheduling.value);
+  const replan = (under: 'plan' | 'calendar' | 'schedules' = 'plan'): Promise<void> => {
+    const flag = under === 'calendar' ? refreshing : under === 'schedules' ? scheduling : planning;
     if (running) {
       again = true;
+      // a change of the form meanwhile is planned next, under the bar it would have had
+      flag.value = true;
       return running;
     }
-    const flag = fromCalendar ? refreshing : planning;
     flag.value = true;
     const once = (): Promise<void> => {
       // no treated arm yet (a new plan): nothing to design, the page says what to add
@@ -483,6 +509,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
           return next();
         error.value = null;
         stale.value = askedOf(call) !== sent;
+        shownAsked = sent;
         result.value = c;
       }, (e) => {
         if (again)
@@ -492,7 +519,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     };
     running = once().finally(() => {
       running = null;
-      flag.value = false;
+      planning.value = refreshing.value = scheduling.value = false;
     });
     return running;
   };
@@ -548,7 +575,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     el.style.cursor = 'pointer';
     // its label underlined in dots, the app's one mark of what can be changed (the study's name, the arms' hints)
     el.classList.add('pmx-stat-settable');
-    const open = () => self.show(self.build(() => {
+    const open = () => showOnce(self, `set-${name}`, () => {
       // the computed value as the start, within the field's range (a computed end past it would block OK)
       const start = Math.min(ask.max, Math.max(ask.min, ask.now() ?? ask.min));
       const input = new NumberInput({label: ask.label, value: start, min: ask.min, max: ask.max,
@@ -559,7 +586,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
           throw new Error('Enter a number');
         setParam(name, input.value, ask.min, ask.max);
       }, {text: 'Set'});
-    }));
+    });
     const act = (anchor: HTMLElement) => {
       if (!result.peek())
         return;
@@ -627,6 +654,11 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   const growthNotes = notesBox();
   // the last drawing that asked for a history model's notes
   let historyAsked = 0;
+  // each plan's combination sentences, once in the notes (the synergy completes them after)
+  const sentencesOf = new WeakMap<PlanFrames, Promise<HTMLElement[]>>();
+  // the plan whose combination sentences and their synergy are in (or failed): the plan's other work after it shows
+  // (the schedules made again, the detectable effects) waits for them, so they are not queued behind its calls
+  const sentenced = signal<PlanFrames | null>(null);
   growthNotes.style.margin = 'var(--dg-space-s) 0 var(--dg-space-m)';
   const analysis = div([], 'pmx-protocol');
   let protocolText = '';
@@ -709,7 +741,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   const setField = (name: string, value: string) => {
     setInput(name, value);
     const before = result.peek();
-    void replan(true).then(() => {
+    void replan('calendar').then(() => {
       const after = result.peek();
       if (before && after && after !== before)
         reportChange(before, after);
@@ -763,8 +795,14 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     const r = result.peek();
     return r ? withGroups(m, ['Control', ...armsIn(r)]) : m;
   };
-  const {addNote, menu: dayMenu} = dayActions(() => armed(meta.peek()), (m) => meta.value = m, undefined,
-    {last: () => (result.peek()?.plan.get('study_end', 0) as number | undefined) ?? 0});
+  const {addNote, menu: dayMenu, select: daySelect} = dayActions(() => armed(meta.peek()), (m) => meta.value = m,
+    undefined,
+    {last: () => (result.peek()?.plan.get('study_end', 0) as number | undefined) ?? 0,
+      // (the days the calendar's cells mark as measured, day 0 too)
+      measured: () => {
+        const r = result.peek();
+        return r ? String(r.plan.get('measurement_days', 0)).split(', ').map(Number) : [];
+      }});
   // the calendar: the plan's days with the study's dates, doses and notes; built in its own scope, so its tooltips
   // go with the next build
   // the calendar's events, for the .ics export: randomization, the measurement days and the end
@@ -778,7 +816,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
         .map(Number).filter((d) => d > 0 && d < end).map((d): [number, string] => [d, 'Measure tumors']),
       [end, 'End of study (measure)']]};
       calendarBox.replaceChildren(calendarGrid(r.plan, r.calendar, startDay.root, toggleWeekday,
-        {meta: armed(m), onMenu: dayMenu, onNote: addNote}));
+        {meta: armed(m), onMenu: dayMenu, onNote: addNote, onSelect: daySelect}));
     }
   });
   // an offered endpoint is for the plan in view: an edit hides it (its line keeps its place, the notes their height)
@@ -799,23 +837,48 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   Object.assign(endSummary.style, {margin: '0 0 var(--dg-space-s)', lineHeight: '1.45'});
   // the endpoint offer of the plan shown: its line is held while its search runs, so the notes keep their height
   let offerOf: {r: PlanFrames, line: HTMLElement} | null = null;
+  // each combination against its drugs alone, asked once the plan shows (cached: one plan asks once), first among
+  // the notes as the engine wrote it, marked (the synergy finds its line by the mark, not by the text, which an arm's
+  // name may echo); one the engine could not work out says so, unmarked (no synergy). The notes and the synergy wait
+  // on the same promise, which puts the lines in first
+  const placeSentences = (r: PlanFrames, lines: HTMLElement[]) => {
+    if (result.peek() === r && lines.length && !lines[0].isConnected)
+      groupNotes.prepend(...lines);
+  };
+  const sentencesFor = (r: PlanFrames): Promise<HTMLElement[]> => {
+    let p = sentencesOf.get(r);
+    if (p)
+      return p;
+    const {dc, rates, found} = combinationsIn(r);
+    p = (!dc || !found.length ? Promise.resolve([]) : Promise.all(found.map((c) =>
+      designCombination({...dc, n: combinationN(dc, rates, c) ?? null}, rates[c.a], rates[c.b], dc.arms[c.ab].metric,
+        c.interaction, false).then((row) => row ? combinationNote(dc.arms[c.ab].name, row, dc.power,
+        `${dc.arms[c.a].name} and ${dc.arms[c.b].name}`) : null, (e) => {
+        console.error('PMX Studio:', e);
+        return null;
+      })))
+      .then((texts) => found.map((c, i) => {
+        const [line] = notes(texts[i] ?? combinationFailed(dc!.arms[c.ab].name)) as HTMLElement[];
+        if (texts[i])
+          line.dataset.pmxCombination = String(c.ab);
+        return line;
+      })))
+      .then((lines) => {
+        placeSentences(r, lines);
+        return lines;
+      });
+    sentencesOf.set(r, p);
+    return p;
+  };
   form.effect(() => {
     const r = result.value;
     if (!r)
       return;
     const v = (c: string) => r.plan.get(c, 0);
     groupNotes.replaceChildren(...notes(v('notes_groups')));
-    // the combinations' sentences, marked where they are rendered (the synergy finds its line by the mark, not by the
-    // text, which an arm's name may echo); a combination the engine could not work out has none
+    // the combinations' sentences, first among the notes once asked (drawn again: put back)
+    void sentencesFor(r).then((lines) => placeSentences(r, lines));
     const {dc, found} = combinationsIn(r);
-    if (dc) {
-      for (const c of found) {
-        const name = dc.arms[c.ab].name;
-        const line = [...groupNotes.children].find((e) => e.textContent?.startsWith(`${name}: `));
-        if (line instanceof HTMLElement && line.textContent !== combinationFailed(name))
-          line.dataset.pmxCombination = String(c.ab);
-      }
-    }
     growthNotes.replaceChildren(...notes(v('notes_growth')));
     // a model not in the atlas: what its history gave and what it assumes, where the user decides
     // (only the last drawing's: two drawings of one plan before the notes arrive would each add them)
@@ -907,7 +970,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
             'group details to use it.');
           const show = () => {
             const per = total.value ? doseForTotal(arm, meta.peek(), end, total.value) : null;
-            answer.textContent = per === null ? '' : `= ${Number(per.toPrecision(3))} mg/kg per dose`;
+            answer.textContent = per === null ? '' : `= ${sig(per)} mg/kg per dose`;
           };
           total.onChanged.subscribe(show);
           doseDialog?.close();
@@ -930,28 +993,27 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     if (!r || stale.value)
       return;
     const {dc, rates, found} = combinationsIn(r);
-    for (const c of dc ? found : []) {
-      const mark = () => [...groupNotes.children].find((e): e is HTMLElement => e instanceof HTMLElement &&
-        e.dataset.pmxCombination === String(c.ab) && e.dataset.pmxSynergy === undefined);
-      if (!mark()) // no sentence from the engine (it failed): nothing to complete
-        continue;
+    // the search for each combination's smallest synergy, then that synergy's own row (the effect it asks of the
+    // combination), started with its sentence, not after it: the clause completes the sentence once both are in
+    const searches = (dc ? found : []).map((c) => (async () => {
       const at = {...dc!, n: combinationN(dc!, rates, c) ?? null};
       const metric = dc!.arms[c.ab].metric;
-      // the search for the smallest synergy, then that synergy's own row (the effect it asks of the combination)
-      void (async () => {
-        const row = await designCombination(at, rates[c.a], rates[c.b], metric, c.interaction, true);
-        const m = finite(row?.['mde_synergy']);
-        const needed = m !== null && m > 0 ?
-          await designCombination(at, rates[c.a], rates[c.b], metric, m, false) : null;
-        if (!row || result.peek() !== r || stale.peek())
-          return;
-        // the engine's sentence stays as it is: the synergy is added to its end, once
-        const line = mark();
-        line?.lastElementChild?.append(synergyClause(row, needed, metric));
-        if (line)
-          line.dataset.pmxSynergy = '1';
-      })().catch((e) => console.error('PMX Studio:', e)); // a failed search leaves the sentence without its synergy
-    }
+      const row = await designCombination(at, rates[c.a], rates[c.b], metric, c.interaction, true);
+      const m = finite(row?.['mde_synergy']);
+      const needed = m !== null && m > 0 ?
+        await designCombination(at, rates[c.a], rates[c.b], metric, m, false) : null;
+      await sentencesFor(r);
+      if (!row || result.peek() !== r || stale.peek())
+        return;
+      // the engine's sentence stays as it is: the synergy is added to its end, once (no sentence, as when the engine
+      // failed on it: nothing to complete)
+      const line = [...groupNotes.children].find((e): e is HTMLElement => e instanceof HTMLElement &&
+        e.dataset.pmxCombination === String(c.ab) && e.dataset.pmxSynergy === undefined);
+      line?.lastElementChild?.append(synergyClause(row, needed, metric));
+      if (line)
+        line.dataset.pmxSynergy = '1';
+    })().catch((e) => console.error('PMX Studio:', e))); // a failed search leaves the sentence without its synergy
+    void Promise.all([sentencesFor(r), ...searches]).finally(() => sentenced.value = r);
   });
   form.effect(() => {
     const sc = schedules.value;
@@ -1367,10 +1429,11 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   let remade: PlanFrames | null = null;
   form.effect(() => {
     const r = result.value;
-    if (!scheduleOpen.value || schedules.value || !r || stale.value || busy.value || remade === r)
+    if (!scheduleOpen.value || schedules.value || !r || stale.value || busy.value || remade === r ||
+      sentenced.value !== r)
       return;
     remade = r; // once per plan: a run that fails says so, and is not tried again in a loop
-    void replan();
+    void replan('schedules');
   });
 
   // with the animals per arm set, the plan shows first and each arm's smallest detectable effect fills in after it,
@@ -1378,7 +1441,8 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   let searching: PlanFrames | null = null;
   form.effect(() => {
     const r = result.value;
-    if (!r || !r.plan.get('n_fixed', 0) || stale.value || busy.value || searching === r || detectable.peek()?.of === r)
+    if (!r || !r.plan.get('n_fixed', 0) || stale.value || busy.value || searching === r ||
+      detectable.peek()?.of === r || sentenced.value !== r)
       return;
     searching = r;
     const fill = designed({compareSchedules: false, detectableEffect: true, tgiScenarios: null});
@@ -1417,7 +1481,21 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
       setInput(name, name === 'arms' && value ? armsFrame(value as SavedPlan['inputs']['arms']) : value);
     }
     auto.cancel();
-    return replan();
+    // a plan saved with its tables, opened on the same inputs and computed by this app, atlas and engine: shown at
+    // once as saved; otherwise (or edited meanwhile) computed, the busy overlay up, as any plan
+    const shown = initial?.predicted?.shown;
+    const kept = shown?.asked === JSON.stringify(initial!.inputs) ? framesOf(shown) : null;
+    if (!kept)
+      return replan();
+    return engineFingerprint().then((e) => e === shown!.engine, () => false).then((same) => {
+      if (!same || stale.peek() || result.peek() !== undefined)
+        return replan();
+      declared.set(kept, shown!.declared);
+      error.value = null;
+      shownAsked = askedOf(call);
+      result.value = kept;
+      planning.value = false;
+    });
   });
 
   // the plan in view as a file: saved to the user's plans (shared from Files like any file) or downloaded, to send
@@ -1432,9 +1510,11 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   const ready = (): PlanFrames | null => {
     const r = result.peek();
     const problem = formProblem.peek();
-    if (!r || stale.peek() || problem) {
-      grok.shell.warning(problem ?? (r ? 'The plan does not match the form yet: wait for it to update' :
-        'The plan is not ready yet'));
+    // (nor while it is being computed: a save then would keep tables the page is replacing)
+    if (!r || stale.peek() || problem || busy.peek()) {
+      grok.shell.warning(problem ?? (!r ? 'The plan is not ready yet' : busy.peek() ?
+        'The plan is being updated: save it in a moment' :
+        'The plan does not match the form yet: wait for it to update'));
       return null;
     }
     return r;
@@ -1446,7 +1526,15 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   // (with domain storage the ID is the lab's counter's, taken once, when the plan is first saved or downloaded)
   const stamped = async (r: PlanFrames) => meta.value =
     await withCode(withGroups(meta.peek(), ['Control', ...armsIn(r)]));
-  const planFor = async (name: string, r: PlanFrames) => planOf(name, call, r, await stamped(r));
+  // (with the plan's tables as shown: the file reopens on them, not recomputed)
+  const planFor = async (name: string, r: PlanFrames): Promise<SavedPlan> => {
+    const [p, d] = [await planOf(name, call, r, await stamped(r)), declared.get(r)];
+    // (the inputs as the file keeps them: what it reopens with, so the same text then)
+    const engine = d ? await engineFingerprint().catch(() => null) : null;
+    return d && engine ? {...p, predicted: {...p.predicted, shown: shownOf(r, JSON.stringify(p.inputs), d, engine)}} :
+      p;
+  };
+  planFiles.set(self, (name) => planFor(name, ready()!));
   // with domain storage: the plan's row (opened from it, or saved to it); a save updates it at its version
   let planRow = rowOfPlan(initial);
   // opened from someone else's file (Open dialog, drop, a file in the Overview): its first save is the user's copy
@@ -1481,18 +1569,42 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     savedInputs = inputsNow();
     grok.shell.info('Plan saved');
   };
-  const saveDialog = () => {
-    const r = ready();
-    if (!r)
+  // a save asked while the plan is being made waits for it (the button says so), then saves; a plan that fails says
+  // it was not saved
+  const pendingSave = signal<((r: PlanFrames) => void) | null>(null);
+  const whenReady = (act: (r: PlanFrames) => void) => {
+    if (busy.peek() || stale.peek() && !formProblem.peek()) {
+      pendingSave.value = act;
       return;
+    }
+    const r = ready();
+    if (r)
+      act(r);
+  };
+  form.effect(() => {
+    const act = pendingSave.value;
+    const failed = error.value;
+    if (!act || busy.value || stale.value && !failed)
+      return;
+    pendingSave.value = null;
+    // (outside the effect: the save reads signals of its own)
+    queueMicrotask(() => {
+      if (failed)
+        return void grok.shell.error(`The plan could not be computed, so it was not saved: ${failed}`);
+      const r = ready();
+      if (r)
+        act(r);
+    });
+  });
+  const saveDialog = () => whenReady((r) => {
     // a row saved before keeps its name: Save writes it at once (Save as… is the dialog, for another name)
     if (domainStorageOn() && planRow && named.peek() !== null)
       return void saveRow(named.peek()!, r).catch((e) => grok.shell.error(saveError(e, 'plan')));
-    return saveAsDialog(r);
-  };
+    saveAsDialog(r);
+  });
   const saveAsDialog = (r: PlanFrames) => {
     if (domainStorageOn()) {
-      self.show(self.build(() => {
+      showOnce(self, 'save-plan', () => {
         const name = new TextInput({label: 'Name', value: defaultName(r), nullable: false});
         const note = span('Saved in PMX Studio, yours until you share it; pick it in Analyze\'s Plan field.');
         Object.assign(note.style, {color: 'var(--dg-text-color-muted, #68727f)', maxWidth: '360px'});
@@ -1507,7 +1619,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
             throw new Error(saveError(e, 'plan'));
           });
         }, {text: 'Save'});
-      }));
+      });
       return;
     }
     const where = span(`Saved to ${shownPath(plansFolder())}. Share it from Files, or pick it in Analyze's ` +
@@ -1515,7 +1627,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     Object.assign(where.style, {color: 'var(--dg-text-color-muted, #68727f)', maxWidth: '360px', lineHeight: '1.45'});
     // a plan of the same name is replaced only when Save is pressed again for it (the dialog says so and stays open)
     let replacing: string | null = null;
-    self.show(self.build(() => {
+    showOnce(self, 'save-plan', () => {
       const name = new TextInput({label: 'Name', value: defaultName(r), nullable: false});
       return new Dialog('Save plan').add(name).add(where).onOK(async () => {
         const chosen = name.value.trim() || defaultName(r);
@@ -1530,13 +1642,18 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
         named.value = chosen;
         grok.shell.info(`Plan saved: ${shownPath(path)}`);
       }, {text: 'Save'});
-    }));
+    });
   };
-  const saveButton = buttonWithIcon('Save plan', 'save', saveDialog);
+  const saveButton = self.build(() => buttonWithIcon(computed(() => pendingSave.value ?
+    'Saving when the plan is ready…' : 'Save plan'), 'save', saveDialog));
   // Ctrl+S, and closing with the form changed since the last save asks first (a plan never saved: Save opens its
   // name dialog, and the view stays)
   if (domainStorageOn()) {
     queueMicrotask(() => saveGate(self, 'plan', async () => {
+      if (busy.peek() || stale.peek() && !formProblem.peek()) {
+        saveDialog();
+        throw new Error('saved once the plan is ready');
+      }
       const r = ready();
       if (!r)
         throw new Error('not ready');
@@ -1552,13 +1669,8 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   }
   saveButton.title = domainStorageOn() ? 'Save the plan in PMX Studio (Ctrl+S), to compare the study with it in ' +
     'Analyze' : 'Save the plan to your files, to compare the study with it in Analyze';
-  if (domainStorageOn()) {
-    exports.unshift(['Save plan as…', () => {
-      const r = ready();
-      if (r)
-        saveAsDialog(r);
-    }]);
-  }
+  if (domainStorageOn())
+    exports.unshift(['Save plan as…', () => whenReady(saveAsDialog), 'Study']);
   const saving = signal(false);
   // the plan in view as a saved plan, handed to `to` (Download, Follow); the ribbon's buttons wait meanwhile
   const withPlan = (r: PlanFrames, to: (p: SavedPlan) => unknown) => {
@@ -1666,7 +1778,11 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     const off = armsInput.count.value === 0 ? 'Add a treatment arm first' : formProblem.value ??
       (!result.value ? 'The plan is not ready yet' : busy.value ? 'The plan is being updated' :
         saving.value ? 'The plan is being prepared' : null);
-    [saveButton, followButton].forEach((b) => Reason.apply(b, off));
+    Reason.apply(followButton, off);
+    // (Save is taken while the plan is updated: it waits for it, and says so)
+    const waiting = pendingSave.value !== null;
+    Reason.apply(saveButton, waiting ? 'Saving when the plan is ready…' :
+      off === 'The plan is being updated' ? null : off);
   });
 
   const head = studyHeader(form, 'plan', computed(() => {
@@ -1681,9 +1797,11 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   // model does)
   const at: OpenAt = {stage: 'plan', history: (t) => historyDialog((key) => lineInput.value = key,
     {rows: t.read.rows, from: t.file})};
+  const links = stageLinks(at, () => head.details());
   return {
     root: takesFiles(stagePage(head.row, panes), at),
     ribbon: [[head.steps], [openButton(at), saveButton, followButton]],
+    toolbox: stageToolbox(exports, links.study, links.help),
     path: '/plan',
     status: computed(() => busy.value ? 'Designing the study…' : result.value ? result.value.plan.name : ''),
   };

@@ -14,6 +14,7 @@ import type {DosingRules} from './schedule';
 import {armParts} from './study-meta';
 import type {StudyMeta} from './study-meta';
 import type {CtdStudy} from './ctd';
+import {entered, sig} from './sheet';
 
 /** A group's exposure as NCA computed it: AUClast and Cmax (mean and CV%, as NCA labels and units them). */
 export interface Exposure {
@@ -42,8 +43,8 @@ const ROUTE_OF: {[arm: string]: string} = {'i.v.': 'IV', 'p.o.': 'PO', 's.c.': '
   'i.t.': 'other'};
 const sameRoute = (arm: string | null, theirs: string) => arm === null ||
   (ROUTE_OF[arm] ?? arm) === (theirs.startsWith('IV') ? 'IV' : theirs);
-/** Three significant figures: "1,230". */
-export const sig = (x: number) => Number(x.toPrecision(3)).toLocaleString('en-US');
+// (the app's one number format, here as every exposure text has always imported it)
+export {sig};
 
 /** NCA's units, and the column among its summary's keys that names the drug (null: none). */
 function ncaColumns(results: DG.DataFrame, summary: DG.DataFrame, groupCol: string | null) {
@@ -433,7 +434,7 @@ export function exposureRange(ratio: number, cv: number | null | undefined, note
   const dir = ratio > hi ? 'above' : ratio < lo ? 'below' : null;
   if (!dir)
     return null;
-  const basis = known ? `${dir === 'above' ? '95th' : '5th'} percentile, CV ${cv}%` :
+  const basis = known ? `${dir === 'above' ? '95th' : '5th'} percentile, CV ${sig(cv!)}%` :
     'a convention, not patients\' spread';
   const how = `(${[basis, ...notes].join('; ')})`;
   return {dir, text: known ? `${dir} the range seen in patients ${how}` :
@@ -471,20 +472,21 @@ function mouseAuc(arm: string, p: ArmPart, x: Exposure | undefined, pk: DrugPk |
     return {auc: at.auc, unit: at.unit, which: whichOf(at.inf), scaled: ''};
   const doses = all.map(([d]) => d);
   if (!all.length || dose < Math.min(...doses) || dose > Math.max(...doses)) {
-    return `${arm}: ${dose} ${p.dose.unit} is outside NCA's doses${doses.length ? ` (${Math.min(...doses)} to ` +
-      `${Math.max(...doses)})` : ''}, and exposure is not extrapolated`;
+    return `${arm}: ${entered(dose)} ${p.dose.unit} is outside NCA's doses${doses.length ?
+      ` (${entered(Math.min(...doses))} ` +
+      `to ${entered(Math.max(...doses))})` : ''}, and exposure is not extrapolated`;
   }
   if (new Set(all.map(([, v]) => `${v.inf}|${v.unit}`)).size !== 1)
-    return `${arm}: NCA's doses give their AUC in different ways, so it is not scaled to ${dose}`;
+    return `${arm}: NCA's doses give their AUC in different ways, so it is not scaled to ${entered(dose)}`;
   // proportionality judged on the AUC used
   const proportional = proportionalOf(new Map(all.map(([d, v]) => [d, v.auc])));
   if (proportional !== 'yes') {
-    return `${arm}: NCA has no exposure at ${dose} ${p.dose.unit}, and the drug's exposure ` +
+    return `${arm}: NCA has no exposure at ${entered(dose)} ${p.dose.unit}, and the drug's exposure ` +
       `${proportional === 'no' ? 'does not rise in step with the dose' : 'is known at one dose only'}, so it is ` +
       'not scaled';
   }
   return {auc: all.reduce((t, [d, v]) => t + v.auc / d, 0) / all.length * dose, unit: all[0][1].unit,
-    which: whichOf(all[0][1].inf), scaled: `, scaled to ${dose} ${p.dose.unit} from NCA's doses (the ` +
+    which: whichOf(all[0][1].inf), scaled: `, scaled to ${entered(dose)} ${p.dose.unit} from NCA's doses (the ` +
       'exposure rises in step with the dose)'};
 }
 
@@ -563,7 +565,8 @@ function partMultiple(arm: string, p: ArmPart, x: Exposure | undefined, pk: Drug
   ...cycle ? [`Per administration: the mouse's AUC per dose against the patients' AUC per administration is ` +
     `${sig((unbound ? m.auc * mouseF * h.fuMouse! : m.auc * mouseF) / (patientsDaily(h, unbound)! * cycle))}× ` +
     '(the multiple above compares daily averages).'] : [],
-  unbound ? `On unbound exposure: unbound fraction ${h.fuMouse} in mouse and ${h.fuHuman} in patients' plasma.` :
+  unbound ? `On unbound exposure: unbound fraction ${sig(h.fuMouse!)} in mouse and ${sig(h.fuHuman!)} in ` +
+    `patients' plasma.` :
     'On total exposure (give both unbound fractions to compare unbound exposure).'];
   const notes = [...h.source === 'projected' ? ['projected'] : [], ...unbound ? [] : ['total, not free']];
   const range = exposureRange(ratio, h.cv, notes);
@@ -590,8 +593,12 @@ function partMultiple(arm: string, p: ArmPart, x: Exposure | undefined, pk: Drug
 }
 
 /** "3.2×": two significant figures under 10, whole numbers from 10. */
-export const multipleText = (r: number) =>
-  `${r >= 10 ? Math.round(r).toLocaleString('en-US') : Number(r.toPrecision(2))}×`;
+export const multipleText = (r: number) => `${r >= 10 ? sig(Math.round(r), 15) : sig(r, 2)}×`;
+
+/** A multiple as the tables show it: its arrow, and averaged over the week when no dose is given at weekends (the
+ *  daily AUC is then the dose's times 5/7, as Analyze says: the AUC per dose alone would not give it). */
+export const shownMultiple = (m: HumanMultiple & {ratio: number}) => multipleText(m.ratio) +
+  (m.range === 'above' ? ' ↑' : m.range === 'below' ? ' ↓' : '') + (m.weekly ? ', averaged over the week' : '');
 
 // ---- exposure against effect: a curve within the doses tested (a description: nothing saved, nothing analyzed) ----
 // The composition validated in the preclinical bundle's analysis/out_translation/exposure_target (REPORT.md, M-ER):
@@ -825,7 +832,11 @@ export interface SavedExposure {
   humans?: {[key: string]: HumanExposure},
   /** the analysis's effect, kept for Compare: its evaluation day and each treated group's TGI (%); `ctd` the study's
    *  rows of the regulatory table, for the Overview's summary of a compound */
-  effect?: {day: number | null, tgi: {[arm: string]: number}, ctd?: CtdStudy},
+  effect?: {day: number | null, tgi: {[arm: string]: number}, ctd?: CtdStudy,
+    /** the controls' growth rate as the analysis read it (to the evaluation day), its predicted range and the
+     *  endpoint: Compare reads the control as Analyze did */
+    control?: {slope: number | null, q025: number | null, median: number | null, q975: number | null,
+      endpoint: number | null}},
   nca?: {table: string, arms: {[arm: string]: ArmExposure}, pk: {[arm: string]: SavedPk},
     /** a combination group's drugs (NcaByArm.drugs) */
     drugs?: {[arm: string]: (Omit<DrugExposure, 'pk'> & {pk: SavedPk | null})[]}},
@@ -927,7 +938,7 @@ export function readout(groups: ReadoutGroup[], meta: StudyMeta | null = null): 
   const usable = groups.map((g) => ({g, p: armParts(g.arm, meta)}))
     .filter(({g, p}) => p.length === 1 && p[0].dose && g.tgi !== null && Number.isFinite(g.tgi) &&
       (g.auc !== null || g.multiple))
-    .map(({g, p}) => ({...g, tgi: g.tgi!, part: p[0], dose: `${sig(p[0].dose!.value)} ${p[0].dose!.unit}`}));
+    .map(({g, p}) => ({...g, tgi: g.tgi!, part: p[0], dose: `${entered(p[0].dose!.value)} ${p[0].dose!.unit}`}));
   if (!usable.length)
     return null;
   // the drug with the most groups (each drug its own sentence would be a paragraph)
@@ -965,8 +976,8 @@ export function readout(groups: ReadoutGroup[], meta: StudyMeta | null = null): 
     return null;
   const [lo, hi] = [withAuc[0], withAuc[withAuc.length - 1]];
   const aucs = withAuc.map((g) => g.auc!);
-  return `${lead}The groups gave a TGI of ${tgi(lo.tgi)} at ${sig(lo.part.dose!.value)} and ${tgi(hi.tgi)} at ` +
-    `${hi.dose} (AUC ${Number(Math.min(...aucs).toPrecision(2))}–${Number(Math.max(...aucs).toPrecision(2))} ` +
+  return `${lead}The groups gave a TGI of ${tgi(lo.tgi)} at ${entered(lo.part.dose!.value)} and ${tgi(hi.tgi)} at ` +
+    `${hi.dose} (AUC ${sig(Math.min(...aucs), 2)}–${sig(Math.max(...aucs), 2)} ` +
     `${lo.aucUnit}).`;
 }
 
@@ -1042,15 +1053,15 @@ export function patientsDose(arm: string, kept: SavedExposure | undefined, study
     const auc = used.reduce((s, g) => s + g.auc, 0) / used.length;
     return {d, inf, auc, daily: auc * perDay * (unbound ? h.fuMouse! : 1)};
   });
-  const round = (x: number) => Number(x.toPrecision(2));
+  const round = (x: number) => sig(x, 2);
   const who = `${h.source === 'projected' ? 'projected ' : ''}patients' exposure`;
   const Who = who[0].toUpperCase() + who.slice(1);
-  const tip = [`Mouse AUC of one dose from "${study}": ${pts.map((x) => `${x.d} ${unit}, ${x.inf ? 'AUCinf' :
+  const tip = [`Mouse AUC of one dose from "${study}": ${pts.map((x) => `${entered(x.d)} ${unit}, ${x.inf ? 'AUCinf' :
     'AUClast'} ${sig(x.auc)} mg/L·h`).join('; ')}; × ${sig(perDay)} dose${perDay === 1 ? '' : 's'} a day ` +
     `(${schedule}).`, ...pts.some((x) => !x.inf) ? ['AUClast: may underestimate exposure, so the dose may be ' +
       'lower.'] : [], `Patients' daily AUC, ${h.source}: ${sig(daily)} mg/L·h` +
     `${cycle ? ` (AUC per administration ÷ ${cycle} days between administrations, on average)` : ''}.`,
-  unbound ? `On unbound exposure: unbound fraction ${h.fuMouse} in mouse and ${h.fuHuman} in patients.` :
+  unbound ? `On unbound exposure: unbound fraction ${sig(h.fuMouse!)} in mouse and ${sig(h.fuHuman!)} in patients.` :
     'On total exposure (both unbound fractions are needed to compare unbound exposure).'].join(' ');
   const from = `from ${study}'s PK`;
   // the mouse dose that gives the patients' exposure: proportional from a single dose, log-log between two, none
@@ -1062,7 +1073,7 @@ export function patientsDose(arm: string, kept: SavedExposure | undefined, study
     rank = 1;
     equal = pts[0].d * patients / pts[0].daily;
     old = `${Who} ≈ ${round(equal)} ${unit} ${on} (assuming exposure proportional to dose, ${from} at ` +
-      `${pts[0].d} ${unit})`;
+      `${entered(pts[0].d)} ${unit})`;
   } else {
     const i = pts.findIndex((a, k) => k + 1 < pts.length && a.daily !== pts[k + 1].daily &&
       patients >= Math.min(a.daily, pts[k + 1].daily) && patients <= Math.max(a.daily, pts[k + 1].daily));
@@ -1071,11 +1082,11 @@ export function patientsDose(arm: string, kept: SavedExposure | undefined, study
       rank = 100 + pts.length;
       equal = Math.exp(Math.log(a.d) + (Math.log(patients) - Math.log(a.daily)) * (Math.log(b.d) - Math.log(a.d)) /
         (Math.log(b.daily) - Math.log(a.daily)));
-      old = `${Who} ≈ ${round(equal)} ${unit} ${on} (between ${a.d} and ${b.d} ${unit}, ${from})`;
+      old = `${Who} ≈ ${round(equal)} ${unit} ${on} (between ${entered(a.d)} and ${entered(b.d)} ${unit}, ${from})`;
     } else {
       const above = patients > Math.max(...pts.map((x) => x.daily));
       const edge = above ? pts[pts.length - 1] : pts[0];
-      old = `The ${who} is ${above ? 'above' : 'below'} what ${edge.d} ${unit} ${on} reached ` +
+      old = `The ${who} is ${above ? 'above' : 'below'} what ${entered(edge.d)} ${unit} ${on} reached ` +
         `(${multipleText(edge.daily / patients)}, ${from})`;
     }
   }
@@ -1091,9 +1102,9 @@ export function patientsDose(arm: string, kept: SavedExposure | undefined, study
   const near = dose < a.d ? a : b;
   const mine = beyond ? near.daily * dose / near.d : Math.exp(Math.log(a.daily) + (Math.log(dose) - Math.log(a.d)) *
     (Math.log(b.daily) - Math.log(a.daily)) / (Math.log(b.d) - Math.log(a.d)));
-  return {rank, tip: `${tip} Mouse doses with PK: ${pts.map((x) => x.d).join(', ')} ${unit} (${on}, ${from})` +
+  return {rank, tip: `${tip} Mouse doses with PK: ${pts.map((x) => entered(x.d)).join(', ')} ${unit} (${on}, ${from})` +
     `${beyond ? '; this dose is beyond them, its exposure taken in step with the dose' : ''}.`,
-  text: `At ${dose} ${unit}, mice get about ${multipleText(mine / patients)} the ${who}` +
+  text: `At ${entered(dose)} ${unit}, mice get about ${multipleText(mine / patients)} the ${who}` +
     `${equal === null ? '' : `; ${round(equal)} ${unit} would match it`}`};
 }
 

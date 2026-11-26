@@ -10,7 +10,8 @@ import {BoolInput, buttonWithIcon, computed, Control, div, divH, Form, iconButto
 import {THERAPIES, Therapy} from './archetypes';
 import {combinationHint, findCombinations, moreVariable, parseArmName, therapyOf} from './arm-name';
 import {StudyMeta, detailsName, parseLine} from './study-meta';
-import {armColors} from './colors';
+import {addColorItem, armColors} from './colors';
+import {entered} from './sheet';
 import {contextHint, hintLink, noteLine} from './ui';
 import {Anchor, FromStudy, SIMPLIFIED, anchorsIn, assumedText, doseText, effectText, fromStudyOf, offerText, rangeAs,
   silence, sizingEffect, undosedText} from './study-effect';
@@ -262,7 +263,25 @@ class ArmCard extends Control {
       this.scope.own(() => clearTimeout(pause));
       name.root.style.fontWeight = '500';
       const remove = iconButton('times', () => onRemove(), {tooltip: 'Remove this arm'});
-      const head = divH([name.root, remove]);
+      // the arm's colour in its charts before its name (colors.ts armColors: a recolour, rename, add or remove
+      // redraws it); a click offers Change color… as a legend's swatch does. Hidden while the combination dot, in the
+      // same colour, stands there
+      const chip = document.createElement('span');
+      chip.dataset.pmx = 'arm-swatch';
+      chip.style.cssText = 'flex: none; width: 10px; height: 10px; border-radius: 2px; cursor: pointer';
+      const recolor = (e: MouseEvent) => {
+        const menu = DG.Menu.popup();
+        if (!addColorItem(menu, area.value, ctx.color()))
+          return;
+        e.preventDefault();
+        e.stopPropagation();
+        menu.show({causedBy: e});
+      };
+      chip.addEventListener('click', recolor);
+      chip.addEventListener('contextmenu', recolor);
+      chip.title = 'Its colour in the charts: click to change it';
+      this.effect(() => chip.style.background = ctx.color());
+      const head = divH([chip, name.root, remove]);
       Object.assign(head.style, {alignItems: 'center', gap: 'var(--dg-space-s)'});
 
       // the kind of treatment: read from the name (and the host) until the user picks one
@@ -374,6 +393,7 @@ class ArmCard extends Control {
         const color = ctx.color();
         dot.style.background = color;
         dot.style.display = on ? '' : 'none';
+        chip.style.display = on ? 'none' : '';
         this.root.dataset.combination = on ? 'yes' : 'no';
         // 1px more border, 1px less padding: the card does not shift
         this.root.style.border = on ? `2px solid ${color}` : '';
@@ -523,7 +543,7 @@ class ArmCard extends Control {
       // how the estimate was made, on hover of its line
       const howTip = (x: FromStudy) => {
         let tip = `Scaled from the effect of ${x.arm}${x.anchorTgi === undefined ? '' :
-          ` (TGI ${Math.round(x.anchorTgi)}%)`} in "${x.study}" to ${x.doseNew} ${x.unit}, with the same ` +
+          ` (TGI ${Math.round(x.anchorTgi)}%)`} in "${x.study}" to ${entered(x.doseNew)} ${x.unit}, with the same ` +
           'schedule, route, tumor model and day. The field holds the low end of the range, what the groups are ' +
           'sized on. The rule behind it was checked on 8 dose changes from published studies.';
         // what Plan took from the earlier study because the name does not say it
@@ -681,7 +701,7 @@ export class ArmsInput extends Input<DG.DataFrame | null, ArmsInputOptions> {
     this._effects.value = this._arms.map((a) => a.effect);
     // the two arms by their drugs ("Cisplatin 5 mg/kg and anti-PD-1"), with the dose when the name has one
     const drugs = (k: number) => parseArmName(this._names.value[k])
-      .map((p) => p.dose ? `${p.drug} ${p.dose.value} ${p.dose.unit}` : p.drug).join(' + ');
+      .map((p) => p.dose ? `${p.drug} ${entered(p.dose.value)} ${p.dose.unit}` : p.drug).join(' + ');
     const pair = (i: number) => {
       const c = this._found.value.find((x) => x.ab === i);
       return c ? `${drugs(c.a)} and ${drugs(c.b)}` : null;

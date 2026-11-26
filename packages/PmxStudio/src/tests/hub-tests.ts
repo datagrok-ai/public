@@ -241,7 +241,8 @@ category('Hub', () => {
     expect(reads, 2);
   });
 
-  test('the app opens on its home without the engine: no calculation, no workers', async () => {
+  // (its workers may be made ready once the home is idle, cruxWarm: no calculation runs on them)
+  test('the app opens on its home without the engine: no calculation', async () => {
     // what earlier tests left running settles first (their calls counted before the app opens)
     let seen = -1;
     for (let i = 0; i < 60 && cruxCalls() !== seen; i++) {

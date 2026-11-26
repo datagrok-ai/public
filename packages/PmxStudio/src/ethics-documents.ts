@@ -27,8 +27,11 @@ export function formItems(sections: FormSection[]): ArriveItem[] {
     const left = b.fields.filter(([, v]) => v === null).map(([l]) => lower(l));
     const said = b.fields.filter(([, v]) => v !== null).map(([l, v]) => `${l}: ${textOf(v!)}`);
     const done = !left.length;
+    // a block partly filled says what the plan filled first, then what is left to complete
+    const from = b.fields.filter(([, v]) => v !== null).map(([l]) => lower(l));
     return {n: ++n, item: b.short ?? b.name, done, status: done ? 'met' : 'todo', group: s.title,
-      says: done ? textOf(b.fields[0][1]!).split('\n')[0] : `To fill: ${left.join(', ')}`,
+      says: done ? textOf(b.fields[0][1]!).split('\n')[0] : from.length ?
+        `From the plan: ${from.join(', ')} · to complete: ${left.join(', ')}` : `To complete: ${left.join(', ')}`,
       detail: said.length ? said.join('\n') : undefined, asks: b.fields.map(([l]) => l).join(', '),
       fix: b.fix};
   }));
@@ -96,7 +99,9 @@ export function studyPlanForm(f: PlanDocFacts): FormSection[] {
         ['Project licence or permit number', null], ['Project lead', nonEmpty(m?.owner)], ['Protocol numbers', null],
         ['Expected severity', null], ['Primary responsible person and contact', null], ['Secondary contact', null]]},
       {name: 'Experimental animals', fix: animalsMissing ? 'details' : undefined, fields: [
-        ['Species', nonEmpty(a?.species)], ['Strain or genotype', nonEmpty(a?.strain)], ['Sex', nonEmpty(a?.sex)],
+        // (the atlas's models are all grown in mice)
+        ['Species', nonEmpty(a?.species) ?? 'Mouse'], ['Strain or genotype', nonEmpty(a?.strain)],
+        ['Sex', nonEmpty(a?.sex)],
         ['Age', nonEmpty(a?.age)], ['Weight', nonEmpty(a?.weight)], ['Source', nonEmpty(a?.source)],
         ['Number', f.protocol['Animals'] ?? null]]},
       {name: 'Experimental procedures', fix: receives ? undefined : 'details', fields: [
@@ -133,7 +138,9 @@ export function studyPlanForm(f: PlanDocFacts): FormSection[] {
         ['Strategy to minimise confounders', ['Groups balanced on tumor volume at randomization; every group ' +
           'measured on the same days. ', fill('other confounders, e.g. cage position, order of measurement')]],
         ['Blinding strategy', m?.blinded ? ['Measurements are entered blind to the groups; the study log records ' +
-          'when the groups are revealed. ', fill('who is blinded at dosing and analysis')] : null]]},
+          'when the groups are revealed. ', fill('who is blinded at dosing and analysis')] :
+          ['Measurements are not entered blind (blinded entry is off in the study’s details). ',
+            fill('who knows the groups at each step, or why not blinded')]]]},
       {name: 'Outcome measures and statistics', fields: [['Outcome measures', 'Tumor volume and body weight'],
         ['Primary outcome', 'Tumor growth rate (slope of log tumor volume) of each animal'],
         ['Analysis plans', [f.protocol['Outcome and analysis'], f.protocol['Multiple comparisons']]

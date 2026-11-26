@@ -8,6 +8,7 @@ import type * as DG from 'datagrok-api/dg';
 import {Block, fill} from './docx';
 import {HUMANE} from './engine';
 import {GroupDetails, StudyMeta, animalsLine} from './study-meta';
+import {entered} from './sheet';
 import {closeNamed, num, plainError, showCentred, modal, modalOf} from './ui';
 
 /** An item: met, to do, or known only once the study is analyzed (`later`); `says` one short line, `detail` the full
@@ -49,7 +50,7 @@ export function receivesLine(groups: GroupDetails[]): {says: string, detail: str
   const given = groups.filter((g) => g.compound.trim() !== '');
   if (!given.length)
     return null;
-  const dose = (g: GroupDetails) => g.dose === null ? '' : `${g.dose} ${g.unit}`.trim();
+  const dose = (g: GroupDetails) => g.dose === null ? '' : `${entered(g.dose)} ${g.unit}`.trim();
   // each drug with its dose, route and schedule (ARRIVE item 9 asks for all three)
   const full = (g: GroupDetails) => [g.compound.trim(), dose(g), g.route.trim(), g.schedule.trim()]
     .filter((x) => x).join(' ');

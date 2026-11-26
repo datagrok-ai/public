@@ -991,13 +991,13 @@
       "deepImports": 0,
       "controlBuild": 0,
       "newAppHeader": 0,
-      "rawSubscribe": 17,
+      "rawSubscribe": 19,
       "tsInternalSelectors": 2,
       "subclassU2": 8,
       "subclassEms": 0,
       "classBuildsUi": 0,
       "cssFiles": 2,
-      "cssLines": 501,
+      "cssLines": 508,
       "cssInternalLines": 5,
       "cssImportant": 19,
       "commentLines": 4454,
@@ -1518,6 +1518,21 @@
       "reason": "PmxStudio 0.1.1: the Overview cards' demo foot and the read-file summary in the Open a study dialog (hub.css)",
       "grown": [
         "packages/PmxStudio cssLines: 478 → 501"
+      ]
+    },
+    {
+      "date": "2026-11-26",
+      "reason": "PmxStudio 0.1.1: a dialog's own onClose frees its purpose in modal() (ui.ts); it ends with the dialog",
+      "grown": [
+        "packages/PmxStudio rawSubscribe: 17 → 18"
+      ]
+    },
+    {
+      "date": "2026-11-26",
+      "reason": "PmxStudio 0.1.2: rawSubscribe +1 is the app-lifetime onCurrentViewChanged handler in handlers.ts (clears a stage's object when another view becomes current; registered once as the module loads, nothing owns it but the app); cssLines +7 are the context panel's verdict mark and the Actions pane separator",
+      "grown": [
+        "packages/PmxStudio rawSubscribe: 18 → 19",
+        "packages/PmxStudio cssLines: 501 → 508"
       ]
     }
   ]

@@ -68,7 +68,8 @@ category('Effect from an earlier study', () => {
   test('the note says the analysis\'s TGI when the study kept one, else its medians\' ratio, never called TGI',
     async () => {
       const never = anchorsIn(earlier(), 'Cpd-X 20 mg/kg')[0];
-      expect(offerText(never, 'MC38'), 'You have a study of Cpd-X at 10 mg/kg (median volume 50% of the control\'s, day 21).');
+      expect(offerText(never, 'MC38'),
+        'You have a study of Cpd-X at 10 mg/kg (median volume 50% of the control\'s, day 21).');
       const analyzed = {...earlier(), exposure: {effect: {day: 12, tgi: {'Cpd-X 10 mg/kg i.p. QD': 18.4}}}} as
         PreviousStudy;
       const a = anchorsIn(analyzed, 'Cpd-X 20 mg/kg')[0];

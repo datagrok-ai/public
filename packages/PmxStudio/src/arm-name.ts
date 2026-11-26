@@ -93,6 +93,19 @@ export function describeArm(parts: ArmPart[]): string {
     .filter(Boolean).join(' · ')).join(' + ');
 }
 
+const ROUTE_WORDS: {[code: string]: string} = {'p.o.': 'by mouth', 'i.p.': 'into the abdomen', 'i.v.': 'into a vein',
+  's.c.': 'under the skin', 'i.t.': 'into the tumor', 'i.m.': 'into a muscle'};
+const SCHEDULE_WORDS: {[code: string]: string} = {QD: 'once a day', BID: 'twice a day', TID: '3 times a day',
+  QOD: 'every other day', QW: 'once a week', BIW: 'twice a week', TIW: '3 times a week', Q7D: 'once a week',
+  Q2D: 'every other day'};
+
+/** describeArm's words with its codes in plain words ("Cpd-A · 30 mg/kg · once a day · by mouth"); a code it does
+ *  not know stays as written. */
+export function plainArm(read: string): string {
+  return read.split(' + ').map((p) => p.split(' · ').map((w) => ROUTE_WORDS[w] ?? SCHEDULE_WORDS[w.toUpperCase()] ??
+    (/^Q[0-9]+D$/i.test(w) ? `every ${w.slice(1, -1)} days` : w)).join(' · ')).join(' + ');
+}
+
 /** What the reading of a treated arm lacks, in a few words ('100 ug: no dose in mg/kg', 'anti-PD-1: no dose' in a
  *  combination); '' when nothing: each drug has a dose per kg, or one that is not a weight (Gy, cells...). */
 export function readProblem(parts: ArmPart[]): string {

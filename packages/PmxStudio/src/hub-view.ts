@@ -9,26 +9,28 @@ import {BasicTable, buttonWithIcon, computed, effect, signal} from '@datagrok-li
 import {ViewHost} from '@datagrok-libraries/u2/dg';
 import type {ViewContent} from '@datagrok-libraries/u2/dg';
 
-import {STAGES, isoToday, markLine, markStage, modal, modalOf, noteLine, plainError, preparing, setUserSetting,
-  stageOf, userSetting} from './ui';
+import {STAGES, isoToday, markLine, markStage, modal, modalOf, noteLine, plainError, preparing, releaseModal,
+  setUserSetting, stageOf, userSetting, downloadExample, EXAMPLE_SOURCE, showHelp, objectPanel} from './ui';
+import {PmxSavedStudy} from './handlers';
 import {studySummary as savedSummary} from './file-preview';
 import {esc} from './sheet';
 import {steps} from './study-header';
 import type {Stage} from './ui';
 import {openStage, showStage} from './stages';
 import {_package} from './package';
+import {cruxWarm} from './crux';
 import {planView} from './plan-view';
-import {analyzeView} from './analyze-view';
+import {analyzeView, keptEffect} from './analyze-view';
 import {monitorView, openStudyFile} from './monitor-view';
-import {EXPOSURE_TAG, FINISHED_TAG, newStudyTable, parseStudy, roleColumns, saveStudy, studyOf as savedStudyOf,
-  tableOf} from './study-file';
+import {EXPOSURE_TAG, FINISHED_TAG, LINE_TAG, newStudyTable, parseStudy, roleColumns, saveStudy,
+  studyOf as savedStudyOf, studyNameOf, tableOf, type SavedStudy} from './study-file';
 import {concentrationMapping, exposureJson, ncaByArm, ncaInstalled, runNca} from './exposure';
-import {controlOf} from './study-effect';
-import {PLAN_TAG, parsePlan} from './plan-file';
+import {analysisDeclarationOf, analysisFrames} from './analyze';
+import {PLAN_TAG, parsePlan, planTag} from './plan-file';
 import {domainStorageOn, entryText, firstOpen, firstOpenNotice, importFolders, keptRows, keptRowsLine, list,
   markFromFile, markTableFromFile, myEntries, open, ownerOf, remove, restore, save, savedPlans, saveError, share}
   from './store';
-import {metaOf} from './study-meta';
+import {emptyMeta, metaOf, setMetaOn} from './study-meta';
 
 /** The Overview table's column widths in percent, adding up to 100 (fixed layout: more would push the last column
  *  out of view). With domain storage, a last column for Share and Delete (Restore among the deleted). */
@@ -63,7 +65,7 @@ import {compareTexts, compareView} from './compare-view';
 import {checklistDialog} from './arrive';
 import {CTD_TITLE, M4S_URL, commonDrug, ctdBlocks, ctdOfSaved, m4sOrder, summaryItems} from './ctd';
 import {DOCX_TYPE, docx} from './docx';
-import {download} from './report';
+import {ToolLink, download, toolbox} from './report';
 
 /** A study Compare can read: one followed, with measurements. */
 const comparable = (e: LibraryEntry) => e.kind === 'study' && e.day !== null;
@@ -207,6 +209,8 @@ function card(c: Card, onOpen: () => void, onDemo: () => void, onHover: (on: boo
   const el = h('div', 'pmx-card pmx-rise', [main, h('div', 'pmx-card-foot', [demo])], {'data-stage': c.stage});
   for (const [ev, on] of [['mouseenter', true], ['focusin', true], ['mouseleave', false], ['focusout', false]] as const)
     el.addEventListener(ev, () => onHover(on));
+  // a stage about to be opened: the engine made ready, if the idle Overview has not done it yet
+  el.addEventListener('mouseenter', cruxWarm, {once: true});
   return el;
 }
 
@@ -268,49 +272,130 @@ function hubContent(self: ViewHost): ViewContent {
   const layer = dropLayer();
   const root = h('div', 'pmx-hub', [growthArt(), page, layer]);
   takeDrops(root, (on) => layer.classList.toggle('is-open', on), (files) => openStudyDialog(files));
+  // the Overview drawn, the browser idle: the engine made ready for the stage the user opens next (once a session)
+  const idle = (window as any).requestIdleCallback ?? ((f: () => void) => setTimeout(f, 1500));
+  idle(() => cruxWarm(), {timeout: 5000});
 
   // no path of its own: opened as the app, the platform gives it the app's; opened later, showStage does
   return {root, ribbon: [[h('div', 'pmx-head', [steps('home', (s) => void openStage(s))])]],
-    toolbox: hubToolbox(() => {
-      // Compare starts from the studies picked in the list: shown, with what to do
-      studies.root.scrollIntoView({behavior: 'smooth', block: 'start'});
-      grok.shell.info('Tick two studies with measurements or more in Your studies, then Compare.');
-    })};
+    toolbox: hubToolbox(() => void compareSaved(studies.root))};
 }
 
-/** The README, the app's help (Datagrok shows it in the help panel of the package). */
-export const HELP_URL = 'https://github.com/datagrok-ai/public/tree/master/packages/PmxStudio#readme';
+/** Compare with the user's studies that have measurements, when there are two or more; else the list (`studies`)
+ *  shown, with what Compare needs. */
+async function compareSaved(studies: HTMLElement): Promise<void> {
+  try {
+    const eligible = (await myEntries()).filter(comparable);
+    if (eligible.length >= 2) {
+      const view = await showStage('home', await compareView(eligible));
+      view.name = 'PMX Studio · Compare';
+      return;
+    }
+  } catch (e) {
+    grok.shell.error(plainError(e, 'Your studies could not be read. Try again in a moment.'));
+    return;
+  }
+  studies.scrollIntoView({behavior: 'smooth', block: 'start'});
+  grok.shell.info('Compare needs two studies with measurements or more: save them from Monitor or Analyze, or ' +
+    'try the demo studies.');
+}
+
+/** The data attribute of a view opened from the Overview for one thing (a study, the demo Compare): its key. */
+const OPENED_AS = 'pmxOpenedAs';
+
+/** Brings the open view opened for `key` to the front; false when none is open. */
+export function showOpened(key: string): boolean {
+  const v = [...grok.shell.views].find((x) => x.root.dataset[OPENED_AS] === key);
+  if (v)
+    grok.shell.v = v;
+  return !!v;
+}
+
+/** Runs `open`, and marks the app's views it opened as opened for `key`. */
+async function openedAs(key: string, open: () => Promise<unknown>): Promise<void> {
+  const had = new Set([...grok.shell.views].map((v) => v.root));
+  await open();
+  for (const v of grok.shell.views) {
+    if (!had.has(v.root) && stageOf(v))
+      v.root.dataset[OPENED_AS] = key;
+  }
+}
+
+/** The app's help, in the platform's help panel (as F1 shows it for every view of the app). */
+const HELP_LINK: ToolLink = ['PMX Studio help', showHelp,
+  'What each stage does, the files it opens and saves'];
 
 /** The Overview's toolbox: the page's ways in, as links (PMX Studio, the demo data, help). */
 function hubToolbox(compareSaved: () => void): HTMLElement {
-  const links = (items: [string, () => void, string][]) => ui.divV(items.map(([text, run, tip]) =>
-    ui.link(text, () => run(), tip)), {style: {gap: '6px'}});
-  const acc = ui.accordion('pmx-toolbox');
-  acc.addPane('PMX Studio', () => links([
-    ['Open a study…', () => void openStudyDialog(), 'A plan, a followed study or a table of measurements'],
-    ['New plan', () => void planView().then((v) => showStage('plan', v)), 'Plan a new study'],
-    ['Compare saved studies', compareSaved, 'Studies with measurements, side by side'],
-  ]), true);
-  acc.addPane('Demo', () => links([
-    ['Plan: ' + DEMO.plan.what, () => void openDemo('plan'), 'Opens the demo plan in Plan'],
-    ['Monitor: ' + DEMO.monitor.what, () => void openDemo('monitor'), 'Opens the demo study in Monitor'],
-    ['Analyze: ' + DEMO.analyze.what, () => void openDemo('analyze'), 'Opens the finished demo study in Analyze'],
-    ['Compare two demo studies', () => void compareDemo(), 'CT26 and MC38 trametinib, saved for you and opened ' +
-      'in Compare'],
-  ]), true);
-  acc.addPane('Help', () => {
-    const a = ui.link('PMX Studio help', HELP_URL, 'What each stage does, the files it opens and saves');
-    a.target = '_blank';
-    return ui.divV([a]);
-  }, true);
-  return acc.root;
+  return toolbox([
+    ['PMX Studio', [
+      ['Open a study…', () => void openStudyDialog(), 'A plan, a followed study or a table of measurements'],
+      ['New plan', () => void planView().then((v) => showStage('plan', v)), 'Plan a new study'],
+      ['Compare saved studies', compareSaved, 'Your studies with measurements, side by side']]],
+    ['Demo', [
+      ['Plan: ' + DEMO.plan.what, () => void openDemo('plan'), 'Opens the demo plan in Plan'],
+      ['Monitor: ' + DEMO.monitor.what, () => void openDemo('monitor'), 'Opens the demo study in Monitor'],
+      ['Analyze: ' + DEMO.analyze.what, () => void openDemo('analyze'), 'Opens the finished demo study in Analyze'],
+      ['Compare two demo studies', () => void compareDemo(), 'CT26 and MC38 trametinib, saved for you and opened ' +
+        'in Compare']]],
+    ['Help', [HELP_LINK]]]);
 }
+
+/** A stage's toolbox links of its own: in Study, Open… (for this stage) and the study's details; in Help, its demo,
+ *  the example study (Monitor, Analyze) and the app's help. */
+export function stageLinks(at: OpenAt, details: () => void): {study: ToolLink[], help: ToolLink[]} {
+  return {study: [['Open…', () => void openStudyDialog(undefined, at), `Open a study in ${labelOf(at.stage)}. ` +
+    `${TAKES[at.stage]}.`], ['Study details…', details, 'Its ID, dates, people, groups and notes']],
+  help: [[`Demo: ${DEMO[at.stage].what}`, () => void openDemo(at.stage), `Opens the demo in ${labelOf(at.stage)}`],
+    ...at.stage === 'plan' ? [] : [['Download an example study', downloadExample, EXAMPLE_SOURCE] as ToolLink],
+    HELP_LINK]};
+}
+
+/** Compare's help links: its demo and the app's help. */
+export const compareHelp = (): ToolLink[] => [['Compare two demo studies', () => void compareDemo(),
+  'CT26 and MC38 trametinib, saved for you and opened in Compare'], HELP_LINK];
 
 /** What shows over a page while files are dragged over it. */
 function dropLayer(): HTMLElement {
   return h('div', 'pmx-drop', [h('div', 'pmx-drop-frame'),
     h('div', 'pmx-drop-text', [h('span', 'pmx-ico', [icon(ICON.drop, 26, 1.7)]), 'Drop to open'])],
   {'aria-hidden': 'true'});
+}
+
+/** A saved study in the context panel: what it is and how far it got, its answer only when the study kept its
+ *  analysis (read from what it saved: no analysis is run for the panel), its model, groups and animals, progress and
+ *  date (not its owner's login). `text` reads its saved record. */
+export function savedStudyPanel(e: LibraryEntry, text: () => Promise<string>): HTMLElement {
+  const updated = e.updated ? new Date(e.updated).toLocaleDateString('en-GB', {day: 'numeric', month: 'short',
+    year: 'numeric'}) : '';
+  const build = (s: ReturnType<typeof parseStudy> | null) => {
+    const ctd = s ? ctdOfSaved(s) : null;
+    const tgi = s?.exposure?.effect?.tgi ?? {};
+    const treated = ctd ? ctd.groups.filter((g) => !g.control) : [];
+    // (a group that grew more than the control is never the best: then none slows growth)
+    const best = Object.entries(tgi).filter(([, x]) => Number.isFinite(x) && x > 0).sort((a, b) => b[1] - a[1])[0];
+    const slow = treated.filter((g) => g.activity === 'Slows growth').length;
+    // the groups as Analyze counts them (its kept analysis), else the named groups of its details, each once
+    const groups = ctd?.groups.length || new Set((s?.meta?.groups ?? []).map((g) => g.group.trim()).filter((g) => g))
+      .size;
+    const animals = ctd ? ctd.groups.reduce((t, g) => t + (g.n || 0), 0) : 0;
+    const sub = treated.length ? `${slow} of ${treated.length} treated groups slow growth` : undefined;
+    return objectPanel({title: e.name, subtitle: `${e.id ? `${e.id} · ` : ''}${e.stage === 3 ? 'Finished' :
+      e.stage === 1 ? 'Planned' : `Running, day ${e.day ?? 0}`}`,
+    verdict: best ? {text: `Best group: ${best[0]}, TGI ${Math.round(best[1])}%`, sub,
+      tone: slow > 0 ? 'ok' : 'neutral'} :
+      Object.keys(tgi).length ? {text: 'No group slows growth', sub, tone: 'warn'} : null,
+    facts: [{label: 'Model', value: e.model || e.line || ctd?.line || '—'},
+      ...groups ? [{label: 'Groups', value: `${groups}${animals ? `, ${animals} animals` : ''}`}] : [],
+      // (never "day 21 of 14": a finished study, or one run past its planned end, says so)
+      {label: 'Progress', value: e.stage === 1 ? 'Not started' : e.stage === 3 ? `Day ${e.day ?? 0}, finished` :
+        !e.end ? `Day ${e.day ?? 0}` : (e.day ?? 0) > e.end ? `Day ${e.day}, past the planned ${e.end}` :
+          `Day ${e.day ?? 0} of ${e.end}`},
+      ...updated ? [{label: 'Updated', value: updated}] : []]});
+  };
+  const el = ui.div([build(null)]);
+  void text().then((t) => el.replaceChildren(build(parseStudy(t))), (err) => console.warn('PMX Studio:', err));
+  return el;
 }
 
 /** How far a study has gone: Plan — Monitor — Analyze, the stages behind it filled. */
@@ -474,6 +559,18 @@ function yourStudies(): {root: HTMLElement, reload: () => void} {
   // studies picked to compare: those with measurements
   const keyOf = (e: LibraryEntry) => e.file?.fullPath ?? e.row?.id ?? e.id + e.name;
   const picked = signal<Set<string>>(new Set());
+  const openRow = (e: LibraryEntry) => {
+    // (a deleted one does not open: Restore brings it back first)
+    if (opening || trash)
+      return;
+    // open already (a double click, or opened before): that view comes to the front
+    if (showOpened(keyOf(e)))
+      return;
+    opening = true;
+    void openedAs(keyOf(e), () => openEntry(e)).catch((err) => grok.shell.error(esc(plainError(err,
+      `"${e.name}" could not be opened. Try again; if it fails again, reload the page.`))))
+      .finally(() => opening = false);
+  };
   const pick = (e: LibraryEntry) => {
     const box = document.createElement('input');
     box.type = 'checkbox';
@@ -489,6 +586,15 @@ function yourStudies(): {root: HTMLElement, reload: () => void} {
       else
         next.delete(keyOf(e));
       picked.value = next;
+      // the study last ticked in the context panel (a click on its row still opens it); unticked, it leaves
+      if (box.checked) {
+        grok.shell.windows.showContextPanel = true;
+        grok.shell.o = new PmxSavedStudy(e.name, {key: keyOf(e), stage: ['Plan', 'Monitor', 'Analyze'][e.stage - 1],
+          details: () => savedStudyPanel(e, () => e.text ? Promise.resolve(e.text) : e.file ?
+            grok.dapi.files.readAsText(e.file) : entryText(e)),
+          open: () => openRow(e), compare: () => chosen.peek().length >= 2 ? () => compare.click() : null});
+      } else if (grok.shell.o instanceof PmxSavedStudy && grok.shell.o.o.key === keyOf(e))
+        grok.shell.o = null;
     };
     return box;
   };
@@ -554,14 +660,7 @@ function yourStudies(): {root: HTMLElement, reload: () => void} {
                   (err) => grok.shell.error(saveError(err, e.row!.kind)))).show();
             }, 'Delete (to the trash)')])}] : [],
     ],
-    onRowClick: (e) => {
-      // (a deleted one does not open: Restore brings it back first)
-      if (opening || trash)
-        return;
-      opening = true;
-      void openEntry(e).catch((err) => grok.shell.error(esc(plainError(err, `"${e.name}" could not be opened. Try ` +
-        'again; if it fails again, reload the page.')))).finally(() => opening = false);
-    }});
+    onRowClick: (e) => openRow(e)});
   table.root.style.cursor = 'pointer';
   const title = h('h3', '', ['Your studies']);
   const deleted = ui.link('Show deleted', () => {
@@ -612,10 +711,13 @@ function yourStudies(): {root: HTMLElement, reload: () => void} {
 function takeDrops(target: HTMLElement, over: (on: boolean) => void, got: (files: File[]) => void): void {
   let depth = 0;
   const hasFiles = (e: DragEvent) => !!e.dataTransfer && [...e.dataTransfer.types].includes('Files');
+  // every drag event over the page stays the page's: the platform shows its own drop overlay ("Incoming!") on a
+  // dragenter it sees, and hides it on a drop it sees, so it was left on screen by a drop taken here
   target.addEventListener('dragenter', (e) => {
     if (!hasFiles(e))
       return;
     e.preventDefault();
+    e.stopPropagation();
     if (depth++ === 0)
       over(true);
   });
@@ -627,6 +729,8 @@ function takeDrops(target: HTMLElement, over: (on: boolean) => void, got: (files
     e.dataTransfer!.dropEffect = 'copy';
   });
   target.addEventListener('dragleave', (e) => {
+    if (hasFiles(e))
+      e.stopPropagation();
     if (hasFiles(e) && --depth <= 0) {
       depth = 0;
       over(false);
@@ -680,6 +784,9 @@ export function takesFiles(page: HTMLElement, at: OpenAt): HTMLElement {
 const OPEN_DIALOG = 'open-study';
 /** What the Open a study dialog on screen does with files dropped on the page meanwhile: reads them in it. */
 let takeInOpen: (files: File[]) => Promise<void> = async () => {};
+/** Where the Open a study dialog on screen was opened from (its stage, and Plan's history use). */
+let openAt: OpenAt | undefined;
+const sameAt = (a?: OpenAt, b?: OpenAt) => a?.stage === b?.stage && !!a?.history === !!b?.history;
 
 /** The Open a study dialog: a file dropped on it, browsed for, or one of the user's plans; once read, what it holds
  *  and the stage it opens in (suggested from its dates). `first`: files dropped on the page, read at once. One at a
@@ -693,19 +800,26 @@ export function openStudyDialog(first?: File[], at?: OpenAt): DG.Dialog {
   let loadingName = '';
   let latest = 0;
 
+  // one open from elsewhere (the Overview's, another stage's) gives way: a file dropped here is read for this stage
+  const other = modalOf(OPEN_DIALOG);
+  if (other && !sameAt(openAt, at)) {
+    other.close();
+    releaseModal(OPEN_DIALOG);
+  }
   const dialog = modal(OPEN_DIALOG, {title: at ? `Open a study in ${labelOf(at.stage)}` : 'Open a study'});
   if (!dialog) {
     if (first?.length)
       void takeInOpen(first);
     return modalOf(OPEN_DIALOG)!;
   }
+  openAt = at;
   const body = h('div', 'pmx-open');
   dialog.add(body);
   dialog.onOK(() => void go().catch((e) => grok.shell.error(plainError(e, 'The study could not be opened. Try ' +
     'again; if it fails again, reload the page.'))), {closeOnEnter: false});
   // the OK button says where the study opens, and waits until there is one
   const ok: HTMLButtonElement = dialog.getButton('OK') ?? document.createElement('button');
-  ok.classList.add('pmx-primary');
+  ok.classList.add('pmx-primary', 'ui-btn-raised');
   // and up to two secondary buttons, the other stages it may open in (named and shown by render)
   const altStages: (OpenStage | null)[] = [null, null];
   const alts = altStages.map((_, i) => {
@@ -735,8 +849,10 @@ export function openStudyDialog(first?: File[], at?: OpenAt): DG.Dialog {
       const dated = !!plan && table.lastDay !== null && plan.end !== null;
       // in Plan, a table may be a model's growth history (a model outside the atlas)
       const history = !!at?.history && !plan;
+      const asHistory = 'A table of measurements opens in Analyze. To plan with it as the growth history of a model ' +
+        'outside the atlas, pick that below.';
       return {
-        hint: !dated ? '' : table.lastDay! > plan!.end! ?
+        hint: history ? asHistory : !dated ? '' : table.lastDay! > plan!.end! ?
           // (from the last day measured: a table may have days and no dates)
           `Measured to day ${table.lastDay}, past the planned end (day ${plan!.end}).` :
           `Measured to day ${table.lastDay} of about ${plan!.end}.`,
@@ -824,7 +940,8 @@ export function openStudyDialog(first?: File[], at?: OpenAt): DG.Dialog {
       if (hint)
         parts.push(h('div', 'pmx-hint', [icon(ICON.info, 16, 1.8), h('span', '', [hint])]));
       // opened from a stage, a file of another opens in its own: said, never refused
-      const away = at && pick ? routedNote(brought, at.stage, pick.stage) : null;
+      // (the history offered in Plan says it in its hint)
+      const away = at && pick && !(at.history && table && !plan) ? routedNote(brought, at.stage, pick.stage) : null;
       if (away)
         parts.push(h('div', 'pmx-hint', [icon(ICON.info, 16, 1.8), h('span', '', [away])]));
       if (error)
@@ -878,7 +995,8 @@ export function openStudyDialog(first?: File[], at?: OpenAt): DG.Dialog {
     error = reads.map((r) => r.kind === 'bad' ? `"${r.file}" could not be opened. ${r.why}` : '').filter((s) => s)
       .join(' ');
     brought = next;
-    chosen = at?.stage ?? null;
+    // a table in Plan: a study, opened in Analyze, unless the user picks it as a growth history
+    chosen = next.table && !next.plan && at?.history ? null : at?.stage ?? null;
     phase = next.table || next.plan || next.study ? 'loaded' : 'error';
     render();
   };
@@ -929,7 +1047,7 @@ export async function openBrought(b: Brought, stage: OpenStage, exposure?: DG.Da
     await showStage('plan', await planView(plan.saved));
   } else if (stage === 'analyze' && table) {
     if (plan)
-      table.df.setTag(PLAN_TAG, plan.text);
+      table.df.setTag(PLAN_TAG, planTag(plan.text));
     markTableFromFile(table.df, metaOf(table.df)?.owner ?? '');
     await showStage('analyze', await analyzeView({study: table.df, exposure}));
   } else if (stage === 'monitor') {
@@ -938,7 +1056,7 @@ export async function openBrought(b: Brought, stage: OpenStage, exposure?: DG.Da
     if (!df)
       return;
     if (table && plan)
-      df.setTag(PLAN_TAG, plan.text);
+      df.setTag(PLAN_TAG, planTag(plan.text));
     markTableFromFile(df, study ? ownerOf('study', study.saved) : table ? metaOf(df)?.owner ?? '' :
       ownerOf('plan', plan!.saved));
     await showStage('monitor', await monitorView(df));
@@ -954,7 +1072,8 @@ export const DEMO = {
   analyze: {table: 'ct26-trametinib-antipd1-finished.csv', plan: 'ct26-trametinib-antipd1.pmxplan',
     pk: 'ct26-trametinib-pk-mouse.csv', what: 'Day 21, with mouse PK'},
   compare: [{table: 'ct26-trametinib-antipd1-finished.csv', plan: 'ct26-trametinib-antipd1.pmxplan',
-    pk: 'ct26-trametinib-pk-mouse.csv'}, {table: 'mc38-trametinib-finished.csv', pk: 'mc38-trametinib-pk-mouse.csv'}],
+    pk: 'ct26-trametinib-pk-mouse.csv', line: 'CT26'},
+  {table: 'mc38-trametinib-finished.csv', pk: 'mc38-trametinib-pk-mouse.csv', line: 'MC38'}],
 } as const;
 
 const demoText = (name: string) => _package.files.readAsText(`demo/${name}`);
@@ -994,42 +1113,78 @@ export function openDemo(stage: OpenStage): Promise<void> {
   }).then(() => {}, (e) => grok.shell.error(plainError(e, 'The demo could not be opened. Try again in a moment.')));
 }
 
-/** The two finished demo studies saved among the user's studies (with NCA's exposure from their mouse PK, as Analyze
- *  keeps it), unless saved already, then opened in Compare. */
+/** The tag the demo studies are saved with: how a later try finds them among the user's studies. */
+export const DEMO_TAG = 'PMX Studio demo';
+/** LibraryEntry.stage of a finished study. */
+const FINISHED_STAGE = 3;
+
+/** A finished demo study as Analyze saves it: its plan, the model and the analysis's effect (each arm's TGI on its
+ *  evaluation day, which Compare reads), NCA's exposure from its mouse PK when the NCA package is there. Run headless,
+ *  as the Analyze view runs it, without the twin (Compare does not read it). */
+async function demoStudy(d: typeof DEMO.compare[number], df: DG.DataFrame, plan?: Brought['plan']):
+  Promise<SavedStudy> {
+  const roles = roleColumns(df);
+  const frames = await analysisFrames(analysisDeclarationOf({study: df, animal: roles.animal, group: roles.group,
+    day: roles.day, volume: roles.volume, plan: plan?.text ?? null, line: d.line, control: '',
+    endpoint: plan?.saved.predicted.endpoint ?? 1000, correction: 'holm', withTwin: false}));
+  const arms = frames.comparisons.col('arm')!.toList() as string[];
+  const pk = await demoPk(d.pk);
+  const mapping = pk ? await concentrationMapping(pk) : null;
+  const nca = pk && mapping ? ncaByArm(arms, await runNca(pk, mapping), pk.name, metaOf(df)) : null;
+  const effect = keptEffect(frames, metaOf(df), nca);
+  df.setTag(EXPOSURE_TAG, JSON.stringify({...exposureJson(new Map(), nca) ?? {}, effect}));
+  return savedStudyOf(df, null);
+}
+
+/** The finished demo studies among the user's (`mine`), each saved with `saveDoc` unless there already (by its tag
+ *  and name; the deleted are not listed): the entries Compare opens. */
+export async function demoStudies(mine: LibraryEntry[], saveDoc: (doc: SavedStudy) => Promise<unknown>):
+  Promise<LibraryEntry[]> {
+  const entries: LibraryEntry[] = [];
+  for (const d of DEMO.compare) {
+    // read and tagged first (quick): its name, given by its plan, finds it among the saved
+    const {table, plan} = {...await demoRead(d.table), ...'plan' in d ? await demoRead(d.plan) : {}};
+    const df = table!.df;
+    if (plan)
+      df.setTag(PLAN_TAG, planTag(plan.text));
+    df.setTag(FINISHED_TAG, 'true');
+    df.setTag(LINE_TAG, d.line);
+    // (an ID for each: the one of its plan, else the demo's)
+    const meta = metaOf(df) ?? emptyMeta();
+    setMetaOn(df, {...meta, id: meta.id || plan?.saved.study?.id || `PMX-DEMO-${d.line}`, tags: [DEMO_TAG]});
+    const name = studyNameOf(df);
+    const there = mine.find((e) => e.kind === 'study' && e.stage === FINISHED_STAGE && e.tags.includes(DEMO_TAG) &&
+      e.name === name);
+    if (there) {
+      entries.push(there);
+      continue;
+    }
+    const doc = await demoStudy(d, df, plan);
+    try {
+      await saveDoc(doc);
+    } catch (e) {
+      // the first saved, the second not: said, so the user knows one is among their studies
+      const before = entries.length ? `"${entries.map((x) => x.name).join('", "')}" is saved; ` : '';
+      throw new Error(`${before}"${doc.name}" could not be saved: ${plainError(e, 'try again in a moment')}`);
+    }
+    entries.push(entryOf(JSON.stringify(doc), Date.now())!);
+  }
+  return entries;
+}
+
+/** The two finished demo studies saved among the user's studies (unless saved already), then opened in Compare
+ *  (the Compare it opened before, while open). */
 export function compareDemo(): Promise<void> {
+  if (showOpened('demo-compare'))
+    return Promise.resolve();
   return preparing('demo-compare', async () => {
     const progress = DG.TaskBarProgressIndicator.create('Saving the demo studies...');
     try {
-      const mine = await myEntries();
-      const entries: LibraryEntry[] = [];
-      for (const d of DEMO.compare) {
-        const {table, plan} = {...await demoRead(d.table), ...'plan' in d ? await demoRead(d.plan) : {}};
-        const df = table!.df;
-        if (plan)
-          df.setTag(PLAN_TAG, plan.text);
-        df.setTag(FINISHED_TAG, 'true');
-        const pk = await demoPk(d.pk);
-        const mapping = pk ? await concentrationMapping(pk) : null;
-        if (pk && mapping) {
-          const groups = roleColumns(df).group.categories;
-          const control = controlOf(groups, metaOf(df));
-          const nca = ncaByArm(groups.filter((g) => g !== control), await runNca(pk, mapping), pk.name, metaOf(df));
-          const kept = exposureJson(new Map(), nca);
-          if (kept)
-            df.setTag(EXPOSURE_TAG, JSON.stringify(kept));
-        }
-        const doc = savedStudyOf(df, null);
-        // saved once: a second try compares the copies already there
-        const there = mine.find((e) => e.kind === 'study' && e.stage === 3 && e.name === doc.name);
-        if (there)
-          entries.push(there);
-        else {
-          await (domainStorageOn() ? save('study', doc) : saveStudy(doc));
-          entries.push(entryOf(JSON.stringify(doc), Date.now())!);
-        }
-      }
+      const entries = await demoStudies(await myEntries(),
+        (doc) => domainStorageOn() ? save('study', doc) : saveStudy(doc));
       const view = await showStage('home', await compareView(entries));
       view.name = 'PMX Studio · Compare';
+      view.root.dataset[OPENED_AS] = 'demo-compare';
     } finally {
       progress.close();
     }
@@ -1076,10 +1231,19 @@ function readNotes(b: Brought): HTMLElement[] {
       return [markLine(`${t.read.questions.length > 1 ? 'Questions' : 'A question'} before the table is read`)];
     const lines = studySummary(t.read, !!b.plan?.blinded);
     const merged = mergedWarning(t.merged, !!b.plan?.blinded);
-    return [...lines.map((l) => l.startsWith('Not read') ? noteLine(l) : markLine(l)),
-      ...merged ? [noteLine(merged)] : []];
+    return [...marks(lines.filter((l) => !l.startsWith('Not read'))),
+      ...lines.filter((l) => l.startsWith('Not read')).map((l) => noteLine(l)), ...merged ? [noteLine(merged)] : []];
   }
   if (b.study)
-    return savedSummary(b.study.saved).slice(1).map((l) => markLine(l));
+    return marks(savedSummary(b.study.saved).slice(1));
   return [];
+}
+
+/** Lines of what was read under one info mark (one per line read as noise: a mark per group). */
+function marks(lines: string[]): HTMLElement[] {
+  if (!lines.length)
+    return [];
+  const block = markLine('');
+  block.lastElementChild!.replaceWith(h('div', '', lines.map((l) => h('div', '', [l]))));
+  return [block];
 }

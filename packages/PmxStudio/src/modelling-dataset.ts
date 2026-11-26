@@ -14,6 +14,7 @@ import {StudyMeta, armParts} from './study-meta';
 import {drugKey} from './arm-name';
 import {okNamed, showCentred, modal} from './ui';
 import {plural} from './wide-table';
+import {entered} from './sheet';
 
 /** The concentrations NCA read: its table and mapping (subject, time, concentration, blq, lloq and their units), and
  *  the column that names the group, if any. */
@@ -165,7 +166,7 @@ export function modellingDataset(s: StudyInputs, meta: StudyMeta | null, pk: PkS
       return {};
     const mean = bws.reduce((a, b) => a + b, 0) / bws.length;
     return {proposed: {dose: Math.round(100 * p.dose!.value * perMg / (mean / 1000)) / 100,
-      from: `from ${p.dose!.value} ${p.dose!.unit.replace(/^u/, 'µ')} at ${mean.toFixed(1)} g mean weight`}};
+      from: `from ${entered(p.dose!.value)} ${p.dose!.unit.replace(/^u/, 'µ')} at ${mean.toFixed(1)} g mean weight`}};
   };
   // the doses, group by group
   const notes: string[] = [];

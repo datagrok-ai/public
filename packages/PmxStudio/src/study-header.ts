@@ -10,6 +10,8 @@ import type {ReadonlySignal} from '@datagrok-libraries/u2';
 import {okNamed, showCentred, Stage, STAGES, modal} from './ui';
 import {StudyMeta, detailsForm, emptyMeta} from './study-meta';
 import {myEntries} from './store';
+import {bindObject} from './handlers';
+import type {PmxGroup} from './handlers';
 
 /** What the header says of the study: its name, its groups (the control first) and a status line; its details
  *  (ID, owner, day 0, what each group receives), edited from its name when `setMeta` keeps them. */
@@ -25,8 +27,8 @@ export interface StudyIdentity {
   /** a study not saved yet (read when shown): its ID is only the one it will ask for (its plan's, its file's), which
    *  the store may refuse and replace, so the header says "Not saved yet" and names that ID on hover */
   unsaved?: () => boolean;
-  /** a group's right-click menu */
-  groupMenu?: (group: string, e: MouseEvent) => void;
+  /** a group as the platform's object (handlers.ts): its right click offers its actions */
+  groupObject?: (group: string, color: string) => PmxGroup;
 }
 
 /** The header of `stage`'s view: `steps` for the ribbon (where the study stands), `row` the study over the panes;
@@ -94,14 +96,8 @@ export function studyHeader(owner: {effect: (fn: () => void) => unknown, own?: (
       const box = span('', 'pmx-head-swatch');
       box.style.background = g.color;
       chip.append(box, span(g.name));
-      if (s?.groupMenu) {
-        chip.addEventListener('contextmenu', (e) => {
-          // the ribbon has a menu of its own
-          e.preventDefault();
-          e.stopPropagation();
-          s.groupMenu!(g.name, e);
-        });
-      }
+      if (s?.groupObject)
+        bindObject(s.groupObject(g.name, g.color), chip);
       return chip;
     }));
     status.textContent = s?.status ?? '';
@@ -166,7 +162,8 @@ export function steps(current: Stage, open: (stage: Stage) => void, own?: (dispo
     const controls = ribbon.parentElement?.querySelector('.d4-view-ribbon-controls')?.getBoundingClientRect();
     const over = [...nav.children].map((c) => c.getBoundingClientRect()).filter((r) => r.width > 0)
       .map((r) => document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2))
-      .filter((e): e is Element => !!e && !nav.contains(e) && !e.contains(nav)).map((e) => e.getBoundingClientRect().left);
+      .filter((e): e is Element => !!e && !nav.contains(e) && !e.contains(nav))
+      .map((e) => e.getBoundingClientRect().left);
     const right = Math.min(box.right, controls && controls.width > 0 ? controls.left : box.right, ...over) - 8;
     if (me.left >= left && me.right <= right)
       return;

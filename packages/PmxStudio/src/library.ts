@@ -47,8 +47,10 @@ export interface LibraryEntry {
   readOnly?: boolean;
 }
 
-/** A plan or study file's entry (null: not one, or damaged). */
-export function entryOf(text: string, updated: number, file: DG.FileInfo | null = null): LibraryEntry | null {
+/** A plan or study file's entry (null: not one, or damaged; `strict`: what is wrong, thrown, for a document the app
+ *  made itself, which must read). */
+export function entryOf(text: string, updated: number, file: DG.FileInfo | null = null,
+  strict = false): LibraryEntry | null {
   try {
     const x = JSON.parse(text);
     const study = x?.format === 'pmx-study' ? parseStudy(text) : null;
@@ -77,7 +79,9 @@ export function entryOf(text: string, updated: number, file: DG.FileInfo | null 
       day: days.length ? days.reduce((a, b) => Math.max(a, b)) : null,
       next: days.length ? futureDays(days, plan, meta?.start)[0] : null,
       end: plan?.predicted.studyEnd ?? null};
-  } catch {
+  } catch (e) {
+    if (strict)
+      throw e;
     return null;
   }
 }

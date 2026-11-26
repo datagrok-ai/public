@@ -8,11 +8,13 @@ import * as DG from 'datagrok-api/dg';
 import {buttonWithIcon, computed, div, divH, divV, dot, effect, icon, loader, RadioInput, Section, signal, span,
   link, Splitter, StatCard, Tooltip} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
-import type {FuncCallForm} from '@datagrok-libraries/u2/dg';
+import type {Dialog} from '@datagrok-libraries/u2';
+import type {FuncCallForm, ViewHost} from '@datagrok-libraries/u2/dg';
 
 import {_package} from './package';
 import {cruxWake} from './crux';
 import {addColorItem} from './colors';
+import {PmxFigure} from './pmx-objects';
 import {isFiniteNumber} from './engine';
 
 /** A fraction as a whole percent: 0.734 → "73%". */
@@ -74,7 +76,17 @@ export function guide(x: number, lo: number): HTMLElement {
 
 /** A figure of the results with what it covers in its tooltip, owned by `owner` (the view's form). */
 export function statCard(owner: {build: <T>(f: () => T) => T}, label: string | ReadonlySignal<string>,
-  value: ReadonlySignal<StatValue | undefined>, tip: () => string, format?: (x: StatValue) => string): HTMLElement {
+  value: ReadonlySignal<StatValue | undefined>, tip: () => string, format?: (x: StatValue) => string,
+  compared = true): HTMLElement {
+  // a figure no result follows (Compare's): no change, nothing to pin
+  if (!compared) {
+    return owner.build(() => {
+      const c = new StatCard({label, value, format});
+      c.root.classList.add('pmx-stat');
+      Tooltip.bind(c.root, tip);
+      return c.root;
+    });
+  }
   return owner.build(() => {
     // the change from the previous result, or from the figures pinned (cardGrid's right click): u2's delta, as a
     // number (a percent when the card shows one), in one colour (more animals is not better, more power is)
@@ -105,13 +117,13 @@ export function statCard(owner: {build: <T>(f: () => T) => T}, label: string | R
     // (the card's own sentence ends with its full stop, given or not: the tooltip runs on after it)
     Tooltip.bind(c.root, () => `${tip().replace(/([^.!?…])\s*$/, '$1.')}\n\nThe arrow: the change from ` +
       `${pinned.value ? 'the figures pinned' :
-      'the previous result'}. Right-click to ${pinned.value ? 'unpin them' : 'pin these figures and compare'}.`);
+        'the previous result'}. Right-click to ${pinned.value ? 'unpin them' : 'pin these figures and compare'}.`);
     return c.root;
   });
 }
 
 /** The figures in a grid that keeps them one size and wraps them as the pane narrows (u2's row does not wrap). */
-export function cardGrid(cards: HTMLElement[], cls: string, minWidth: number): HTMLElement {
+export function cardGrid(cards: HTMLElement[], cls: string, minWidth: number, pinnable = true): HTMLElement {
   const grid = div(cards, cls);
   Object.assign(grid.style, {display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(${minWidth}px, 1fr))`,
     gap: 'var(--dg-space-m)'});
@@ -121,12 +133,11 @@ export function cardGrid(cards: HTMLElement[], cls: string, minWidth: number): H
     for (const c of cards)
       c.dispatchEvent(new CustomEvent('pmx-pin', {detail: on}));
   };
-  grid.addEventListener('contextmenu', (e) => {
-    e.preventDefault();
-    const on = grid.classList.contains('pmx-pinned');
-    DG.Menu.popup().item(on ? 'Unpin: compare with the previous result' : 'Pin these figures to compare',
-      () => pin(!on)).show({causedBy: e});
-  });
+  if (!pinnable)
+    return grid;
+  // its right click: Pin or Unpin, the figures' actions (handlers.ts)
+  ui.bind(new PmxFigure('The figures', {pin: {on: () => grid.classList.contains('pmx-pinned'), set: pin}}), grid,
+    {contextMenu: true});
   return grid;
 }
 
@@ -248,7 +259,12 @@ export function callInputs<T>(call: DG.FuncCall, extra: object = {}): T {
 
 /** A titled block of the results column. */
 export function block(title: string, hint: HTMLElement | string, ...content: HTMLElement[]): HTMLElement {
-  const s = new Section({title, hint, collapsible: false});
+  // the hint and the header carry classes of the app's own: a long hint goes on under the title (studio.css)
+  const h = typeof hint === 'string' ? hint && span(hint) : hint;
+  if (h)
+    h.classList.add('pmx-block-hint');
+  const s = new Section({title, hint: h, collapsible: false});
+  s.header.classList.add('pmx-block-header');
   s.root.classList.add('pmx-block');
   s.body.classList.add('pmx-block-body');
   content.forEach((c) => s.body.append(c));
@@ -320,15 +336,19 @@ export function notesBox(): HTMLElement {
 /** The example: a published MC38 study (Yu et al., Nat Commun 2024, CC BY 4.0), its citation and changes in
  *  files/example/README.md. */
 export const EXAMPLE = {file: 'example/mc38-ld4172-anti-pd1.csv', saveAs: 'pmx-example-mc38-yu2024-ccby.csv'};
+export const EXAMPLE_SOURCE = 'A published MC38 study: Yu X. et al., Nature Communications 15 (2024), ' +
+  'doi:10.1038/s41467-024-55006-2, CC BY 4.0';
+
+/** Downloads the example study (a static file of the package). */
+export const downloadExample = () => void _package.files.readAsText(EXAMPLE.file)
+  .then((text) => DG.Utils.download(EXAMPLE.saveAs, text, 'text/csv'))
+  .catch((e) => grok.shell.error(plainError(e, 'The example could not be downloaded. Try again in a moment.')));
 
 /** The empty Monitor's and Analyze's one quiet line: a study to try (a static file of the package, no engine) and
  *  where one's own starts. */
 export function exampleLine(): HTMLElement {
-  const get = link('Download an example study',() => void _package.files.readAsText(EXAMPLE.file)
-    .then((text) => DG.Utils.download(EXAMPLE.saveAs, text, 'text/csv'))
-    .catch((e) => grok.shell.error(plainError(e, 'The example could not be downloaded. Try again in a moment.'))));
-  get.title = 'A published MC38 study: Yu X. et al., Nature Communications 15 (2024), ' +
-    'doi:10.1038/s41467-024-55006-2, CC BY 4.0';
+  const get = link('Download an example study', downloadExample);
+  get.title = EXAMPLE_SOURCE;
   const line = span('No study at hand? ', 'pmx-muted');
   line.append(get, '. Your own starts in Plan.');
   return line;
@@ -409,7 +429,17 @@ export type Stage = 'home' | 'plan' | 'monitor' | 'analyze';
 /** Marks `view` as `stage`'s: every stage's view is named after the app, so the app finds its own by this mark. */
 export function markStage<V extends DG.ViewBase>(view: V, stage: Stage): V {
   view.root.dataset.pmxStage = stage;
+  view.helpUrl = helpPage();
   return view;
+}
+
+/** The app's help, the package's README as published with it: the help panel of every view of the app. */
+export const helpPage = () => `${_package.webRoot.replace(/\/?$/, '/')}README.md`;
+/** The app's help in the platform's help panel, opened if hidden (the README of the package installed, not
+ *  GitHub's). */
+export function showHelp(): void {
+  grok.shell.windows.help.visible = true;
+  grok.shell.windows.help.showHelp(helpPage());
 }
 export const stageOf = (view: DG.ViewBase | null | undefined) => view?.root?.dataset.pmxStage as Stage | undefined;
 export const STAGES: {stage: Stage, label: string, tip: string}[] = [
@@ -432,6 +462,9 @@ export function staleNote(text: string): HTMLElement {
  *  `auto` field's empty value worded as what the run does then. */
 export function settleForm(form: FuncCallForm, auto: {[field: string]: string}): void {
   void form.settled.then(() => {
+    // (a view closed before its form settled: nothing to fold)
+    if (form.scope.isDisposed)
+      return;
     foldColumns(form);
     // ponytail: funcForm opens every category; Advanced is folded by its header until u2 takes a
     // folded-categories option
@@ -566,13 +599,25 @@ export const isBodyWeight = (c: string) => /weight|\bbw\b/i.test(c) && !/tum/i.t
 /** The dialogs open now, by purpose ('preparing': its launcher is still reading what it will show). */
 const modals = new Map<string, DG.Dialog | 'preparing'>();
 
-/** The dialog open for `purpose` (undefined: none). One that has left the page counts as closed: a dialog made and
- *  never shown, or closed before its close was reported. */
+/** The number of purposes held: for the tests. */
+export const modalsHeld = () => modals.size;
+
+/** Whether a dialog is on screen: one closed has left the page (or is hidden). */
+const onScreen = (d: DG.Dialog) => d.root.isConnected && getComputedStyle(d.root).display !== 'none';
+
+/** The dialog open for `purpose` (undefined: none); a closed one is forgotten here. */
 export function modalOf(purpose: string): DG.Dialog | undefined {
   const d = modals.get(purpose);
-  return d && d !== 'preparing' && d.root.isConnected && getComputedStyle(d.root).display !== 'none' ?
-    d : undefined;
+  if (!d || d === 'preparing')
+    return undefined;
+  if (onScreen(d))
+    return d;
+  modals.delete(purpose);
+  return undefined;
 }
+
+/** Frees `purpose` at once, its dialog just closed (a launcher opening another in its place). */
+export const releaseModal = (purpose: string) => void modals.delete(purpose);
 
 /** Puts an open dialog in front of the others. */
 function raise(d: DG.Dialog): void {
@@ -592,10 +637,31 @@ export function modal(purpose: string, title: Parameters<typeof ui.dialog>[0] = 
     return null;
   }
   // (while 'preparing', only its own launcher gets here: a second click stopped in preparing)
-  // (no close handler: a dialog closed leaves the page, which modalOf reads as free)
+  // (a dialog made and never shown, which reports no close, is forgotten here; every launcher shows its dialog in the
+  // turn it makes it)
+  for (const [k, v] of [...modals]) {
+    if (v !== 'preparing' && !onScreen(v))
+      modals.delete(k);
+  }
   const d = ui.dialog(title);
   modals.set(purpose, d);
+  // free as soon as it closes (its root may stay on the page a moment while it fades)
+  d.onClose.subscribe(() => {
+    if (modals.get(purpose) === d)
+      modals.delete(purpose);
+  });
   return d;
+}
+
+/** The u2 dialogs on screen, by purpose. */
+const shownDialogs = new Map<string, Dialog>();
+
+/** A u2 dialog for `purpose`, made by `make` and shown pinned to `host`'s view, unless one is open for it already (as
+ *  modal() does for the platform's): a second click never stacks a second dialog over the first. */
+export function showOnce(host: ViewHost, purpose: string, make: () => Dialog): void {
+  if (shownDialogs.get(purpose)?.isOpen.peek())
+    return;
+  shownDialogs.set(purpose, host.show(host.build(make)));
 }
 
 /** For a launcher that reads something before its dialog shows: a second click meanwhile, or while its dialog is
@@ -656,13 +722,19 @@ export function dialogLine(text: string, tip?: string): HTMLElement {
 /** A line of an object's context panel: a label and its value, the detail in a tooltip. */
 export interface PanelFact {label: string, value: string | HTMLElement, tip?: string}
 
+/** An object's answer, first in its panel: `text` (its result in the words of the table it comes from), `sub` (a
+ *  quiet line: the p-value, the range), `tone` the mark beside it (ok: an effect; warn: against; neutral: none). */
+export interface PanelVerdict {text: string, sub?: string, tone: 'ok' | 'warn' | 'neutral'}
+
 /** A folded section of an object's context panel, built when opened. */
 export interface PanelSection {title: string, content: () => HTMLElement, open?: boolean}
 
-/** What the context panel shows for an object (a group, an animal), alike for each: its name after its colour, a
- *  quiet line under it, a few facts, then folded sections for the detail. */
-export function objectPanel(o: {title: string, color?: string, subtitle?: string, facts: PanelFact[],
-  sections?: PanelSection[]}): HTMLElement {
+/** What the context panel shows for an object (a group, an animal, a day), alike for each: its name after its
+ *  colour, a quiet line under it, its answer (none where there is none: never made up), a few facts, then folded
+ *  sections for the detail. */
+export function objectPanel(o: {title: string, color?: string, subtitle?: string, subtitleTip?: string,
+  verdict?: PanelVerdict | null,
+  facts: PanelFact[], sections?: PanelSection[]}): HTMLElement {
   const head = document.createElement('h3');
   head.className = 'pmx-object-title';
   head.style.margin = '0';
@@ -670,11 +742,19 @@ export function objectPanel(o: {title: string, color?: string, subtitle?: string
   const facts = factList(o.facts);
   facts.className = 'pmx-object-facts';
   const el = div([head], 'pmx-object-panel');
-  el.style.padding = '8px';
+  el.style.padding = '8px 12px 10px';
   if (o.subtitle) {
     const sub = div([o.subtitle], 'pmx-object-subtitle');
     sub.style.color = 'var(--dg-text-color-muted, #7d8792)';
+    if (o.subtitleTip)
+      sub.title = o.subtitleTip;
     el.append(sub);
+  }
+  if (o.verdict) {
+    const v = div([span(o.verdict.text)], `pmx-object-verdict pmx-${o.verdict.tone}`);
+    if (o.verdict.sub)
+      v.append(div([o.verdict.sub], 'pmx-object-verdict-sub'));
+    el.append(v);
   }
   el.append(facts);
   if (o.sections?.length) {
@@ -713,14 +793,15 @@ export function textLines(text: (string | HTMLElement)[]): HTMLElement {
   return el;
 }
 
-/** Shows `el` in the context panel, opening it: the user asked for depth (a click on a group or an animal). A tick
- *  later, as NCA does, so the platform's own pick on the same click does not replace it. Returns `el`. */
-export function showDepth<T extends HTMLElement>(el: T): T {
+/** Shows `x` in the context panel, opening it: the user asked for depth (a click on a group or an animal). An animal
+ *  or a group is given as its object (PmxAnimal, PmxGroup): its handler renders its details and its actions. A tick
+ *  later, as NCA does, so the platform's own pick on the same click does not replace it. Returns `x`. */
+export function showDepth<T extends object>(x: T): T {
   setTimeout(() => {
     grok.shell.windows.showContextPanel = true;
-    grok.shell.o = el;
+    grok.shell.o = x;
   }, 0);
-  return el;
+  return x;
 }
 
 /** A tiny line of `ys` over `xs` (a context panel's curve): no axes, the last point dotted. */

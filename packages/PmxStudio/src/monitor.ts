@@ -14,7 +14,7 @@ import {FINISHED_TAG, oneDecimal} from './study-file';
 import {WEEKDAY_NAMES, weekdaysOf} from './frames';
 import {LinePrior, bandFactors, linePrior} from './priors';
 import {monitorEnd} from './plan-checks';
-import {metaOf, weekdayOf} from './study-meta';
+import {lossText, metaOf, weekdayOf} from './study-meta';
 
 type Study = {animal: string[], group: string[], day: Float64Array, volume: Float64Array};
 
@@ -199,12 +199,7 @@ export function notYetMeasured(animals: {[k: string]: any}[], tolerability: DG.D
  *  last weighing says so on that session too, gone or not (it is why Welfare counts it removed for its weight). */
 export function weightReasons(w: {change: number | null, lastDay: number}, latest: number, previous: number | null,
   limit: number, present: boolean): string[] {
-  // whole percents, but near the limit one decimal, rounded (19.57% lost reads 19.6%, not "20%, limit 20%" nor a
-  // truncated 19.5%); only a loss a hair under the limit, which would round onto it (19.97%), is cut down to 19.9%
-  const lost = -(w.change ?? 0);
-  const tenth = Math.round(lost * 10) / 10;
-  const loss = Math.round(lost) >= limit && lost < limit ?
-    (tenth >= limit ? Math.floor(lost * 10) / 10 : tenth).toFixed(1) : Math.round(lost);
+  const loss = lossText(-(w.change ?? 0), limit);
   const over = w.change !== null && -w.change >= limit ? [`Over the ${limit}% weight-loss limit (lost ${loss}%)`] : [];
   if (w.lastDay < latest)
     return w.lastDay !== previous ? [] : over.length ? over : present ? [`Not weighed on day ${latest}`] : [];

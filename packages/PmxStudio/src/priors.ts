@@ -1,7 +1,8 @@
 /*
  * The control-growth priors of the engine: files/engine_priors_v3.json, exported offline from the curated atlas
  * (aggregates only: files/SOURCES.md; v3 = v2's MC38, CT26, B16F10 verbatim plus 4T1, LLC, Panc02, Hepa1-6,
- * EMT6, MDA-MB-231, A549, PDX-NSCLC, PDX-PDAC, the same fields; R7 freeze: EMT6 in, SKOV3 out). Reduced Gompertz per cell line:
+ * EMT6, MDA-MB-231, A549, PDX-NSCLC, PDX-PDAC, the same fields; R7 freeze: EMT6 in, SKOV3 out). Reduced Gompertz per
+ * cell line:
  *   log V(t) = log V0 + (alpha / beta) (1 - exp(-beta t))
  * A new study's (log alpha, log beta) come from the labs' bivariate normal (study_prior); the MAP prior of log alpha
  * is the one computed offline (per-paper values are not distributed).

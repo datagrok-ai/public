@@ -26,6 +26,7 @@ import './tests/store-tests';
 import './tests/model-history-tests';
 import './tests/history-models-tests';
 import './tests/open-tests';
+import './tests/handlers-tests';
 
 // the platform initialises the _package this bundle exports: the same object priors.ts and crux.ts read
 export {_package};

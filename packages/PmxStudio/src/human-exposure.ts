@@ -134,10 +134,10 @@ async function exposureDialogNow(arms: string[], now: Map<string, HumanExposure>
       ui.button('Use table values', () => useTable(i))]) :
       ui.divText(`${drug}: not in the reference table, enter your source's values`), ...badCv(i)]));
   showLines();
-  const sub = table.onDataChanged.subscribe(showLines);
   const d = modal(EXPOSURE_DIALOG, 'Patients\' exposure');
   if (!d)
     return;
+  const sub = table.onDataChanged.subscribe(showLines);
   d.add(ui.divV([
     dialogLine('Each drug\'s exposure in patients, at their regimen. Empty: skipped.', 'Measured (a label, a ' +
       'clinical study) or projected (your DMPK team\'s projection). A drug in PMX Studio\'s reference table is ' +

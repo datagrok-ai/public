@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
+import {PmxDay} from '../pmx-objects';
 import * as grok from 'datagrok-api/grok';
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
+import {category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 
 import {DEFAULT_RULES, findOutliers, rulesProblem, StudyColumns} from '../outlier-rules';
 import {AnimalSelection, animalMarks, appendPasted, caliperVolume, emptyStudy, exclusionsOf, mark, mirrorSelection,
@@ -19,7 +20,7 @@ import {parseArmName} from '../arm-name';
 import {dosedDays, dosesPerDay, excepted, groupWeights, readSchedule} from '../schedule';
 import {entryOf, libraryOf, matches} from '../library';
 import {spiderLines} from '../spider-chart';
-import {dayToday, icsOf, startMismatch, weeksGrid} from '../calendar';
+import {dayActions, dayToday, icsOf, startMismatch, weeksGrid} from '../calendar';
 import {Scope} from '@datagrok-libraries/u2';
 import {sheetHtml, sheetRows} from '../sheet';
 
@@ -342,6 +343,34 @@ category('Study table', () => {
     expect(dots(cellOf(late, 6)), 1);
     expect(dots(cellOf(late, 7)), 2);
     owner.dispose();
+  });
+
+  test('a day clicked: its context panel offers what its right click does (notes, doses, its date)', async () => {
+    const group = {group: 'A', compound: '', dose: null, unit: '', route: '', schedule: 'QD'};
+    let meta = {...emptyMeta(), groups: [group], start: '2026-03-02',
+      notes: [{day: 3, kind: 'Observation', text: 'ulcer', animal: '', who: 'me'}]} as StudyMeta;
+    const days = dayActions(() => meta, (m) => meta = m, () => [], {last: () => 10, logGiven: true});
+    const before = grok.shell.o;
+    days.select(3);
+    await delay(50);
+    try {
+      // (a day is its own object: one element would not replace another as the current object)
+      const panel = (grok.shell.o as PmxDay).details();
+      const text = panel.textContent ?? '';
+      for (const s of ['Add a note…', 'Remove note: Observation: ulcer', 'Skip a dose…', 'Log doses given…',
+        'Change the date of day 3…', 'Every other day of the study follows from it', 'Observation: ulcer'])
+        expect(text.includes(s), true, s);
+      // what happens on the day first; copying the date in the right-click menu only
+      expect(panel.querySelector('.pmx-object-title')?.textContent?.startsWith('Day 3'), true);
+      expect(text.includes('Dose') && text.includes('Notes'), true, text);
+      expect(text.includes('Copy the date'), false);
+      // its links run the same actions: the note removed
+      [...panel.querySelectorAll<HTMLElement>('a, .ui-link')]
+        .find((a) => a.textContent?.startsWith('Remove note'))!.click();
+      expect(meta.notes.length, 0);
+    } finally {
+      grok.shell.o = before;
+    }
   });
 
   test('one reader of schedules: rates, counts, first days, on and off', async () => {

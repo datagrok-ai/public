@@ -13,7 +13,8 @@ import {badge, BasicTable, buttonWithIcon, computed, div, divH, divV, dot, effec
 import {offerCopy, saveGate, tableSavers} from './native';
 import {domainStorageOn, isReadOnly, markTableFromFile, newRowNote, open, rowOfTable, save, saveCopy, saveError,
   setRowOn, tableFileOwner, withCode} from './store';
-import {FINISHED_TAG, LINE_TAG, STUDY_TAG, setHistoryOn, studyOf as savedStudyOf, stamped} from './study-file';
+import {FINISHED_TAG, LIMITS_TAG, LINE_TAG, STUDY_TAG, setHistoryOn, studyOf as savedStudyOf, stamped}
+  from './study-file';
 import {roleOf} from './study-reader';
 import {funcForm, TableInput, ViewHost, viewers} from '@datagrok-libraries/u2/dg';
 import type {ViewContent} from '@datagrok-libraries/u2/dg';
@@ -22,18 +23,19 @@ import {AnalysisFrames, AnalysisInputs, PREDICTED, analysisDeclarationOf, analys
   intervalNote, warmTwin} from './analyze';
 import {isFiniteNumber, median} from './engine';
 import {EmptyState, NoControl} from './crux';
-import {StudyLink, follow, groupColors, hasOwnColors, linkStudy, paint, resetColors} from './colors';
+import {PREDICTED_COLOR, StudyLink, follow, groupColors, hasOwnColors, linkStudy, paint, resetColors} from './colors';
 import {CorrectionInput} from './arms-input';
 import {askedOf, autoRun, axisAt, callInputs, cardGrid, dayText, keepSame, onTableEdits, only, TABLE_EDITS, guide,
   exampleLine, infoNote, noteLine, notesBox, num, pct, plainError, pValue, settleForm, signed, isBodyWeight,
   keepNamedColumns,
   sized, markStage,
-  statCard, swatch, volumeAxis, wrapCells, stagePanes, whenSettled, hintLink, PanelFact, PanelSection,
+  statCard, swatch, volumeAxis, wrapCells, stagePanes, whenSettled, hintLink, PanelFact, PanelSection, PanelVerdict,
   showDepth, textLines, factList, docSubtitle} from './ui';
 import {groupsShown, lineOf, logOf, planAtlas, restoreFields} from './study-file';
 import {TWIN_NOTE, savedHistory} from './history-models';
 import {markLine} from './ui';
-import {startMismatch} from './calendar';
+import {icsOf, startMismatch} from './calendar';
+import {exportName} from './study-file';
 import {PLAN_TAG, planKeyOf} from './plan-file';
 import {openStage} from './stages';
 import {noEffectNote, observedCell, planInput, planTab} from './plan-vs-observed';
@@ -42,13 +44,14 @@ import {BandChart} from './band-chart';
 import {explore, StudyInputs, studyInputsOf} from './explore';
 import {editLayout, panelTabs, Tab} from './panels';
 import {stagePage, studyHeader} from './study-header';
-import {openButton, takesFiles} from './hub-view';
-import {AnimalSelection, exclusionsOf, mirrorSelection, studyDataLine, studyMenu, studyOf, tagStudy,
+import {openButton, stageLinks, takesFiles} from './hub-view';
+import {AnimalSelection, exclusionsOf, mirrorSelection, studyDataLine, studyOf, tagStudy,
   keepStudyField, withoutExcluded, animalLine, animalMarks, animalPanel as panelOfAnimal} from './study-table';
 import {META_TAG, armParts, emptyMeta, metaOf, parseLine, setMetaOn} from './study-meta';
+import type {StudyMeta} from './study-meta';
 import {ExposureSection, GroupDetails, detailsElement, exposureSection, groupDetails, sectionElement}
   from './translation-report';
-import {Exports, download, exportMenu, reportHtml} from './report';
+import {Exports, download, exportMenu, htmlTable, reportHtml, stageToolbox} from './report';
 import {esc, printSheet} from './sheet';
 import {SpiderChart, WaterfallChart, spiderLines} from './spider-chart';
 import {LineInput} from './line-input';
@@ -57,10 +60,30 @@ import {KmChart} from './km-chart';
 import {CombinationStep, combinationStep, notCombined, stepWhy, stepWords, synergyAlpha, synergyDialog}
   from './synergy';
 import {findCombinations, readProblem} from './arm-name';
+import {PmxAnimal, PmxGroup, bindObject, popupFor} from './handlers';
+
+/** The exposure panel's hint, for the axis it shows. */
+const axisHint = (x: 'AUClast' | 'Dose') => `Each group’s TGI against its ${x === 'Dose' ? 'dose' :
+  'mouse exposure (NCA’s AUClast)'}, and the effect expected between the doses tested; shown when one drug was ` +
+  'given at 3 doses or more';
 
 /** Each combination's step on the ladder, in the words shown under it, for the regulatory table. */
 const stepsInWords = (steps: Map<string, {step: CombinationStep}>) =>
   new Map([...steps].map(([ab, x]) => [ab, stepWords(x.step)]));
+
+/** What a study keeps of its analysis `r` (Compare reads it): each treated group's TGI on the evaluation day, the
+ *  regulatory table's study, and the control's growth rate with its predicted range. The demo studies Compare saves
+ *  keep it the same way. */
+export function keptEffect(r: AnalysisFrames, meta: StudyMeta | null, nca: NcaByArm | null,
+  steps = new Map<string, {step: CombinationStep}>()): NonNullable<SavedExposure['effect']> {
+  const v = (c: string) => r.analysis.get(c, 0);
+  const arms = r.comparisons.col('arm')!.toList() as string[];
+  return {day: v('evaluation_day') ?? null, tgi: Object.fromEntries(arms
+    .map((a, i) => [a, r.comparisons.get('tgi', i)]).filter(([, t]) => Number.isFinite(t))),
+  ctd: ctdStudyOf(r, meta, r.analysis.name, nca, stepsInWords(steps)),
+  control: {slope: v('control_slope'), q025: v('control_slope_q025'), median: v('control_slope_median'),
+    q975: v('control_slope_q975'), endpoint: v('endpoint')}};
+}
 import {ARRIVE_CREDIT, arriveDialog, arriveItems, checklistBlocks, checklistDialog} from './arrive';
 import {CTD_TITLE, M4S_URL, ctdBlocks, ctdItems, ctdStudyOf} from './ctd';
 import {DOCX_TYPE, docx} from './docx';
@@ -69,7 +92,7 @@ import {CURVE_BAND, DrugExposure, ExposureAxis, ExposureCurve, HumanExposure, Nc
   aucUsed, concentrationMapping, cvOk, drugMultiples,
   exposureAxis, exposureCurve, exposureHint, exposureJson, groupColumnOf, humanMultiple, medianDay, medianTgi,
   ncaByArm,
-  ncaInstalled, parseExposure, readout, referenceRow, runNca}
+  ncaInstalled, parseExposure, readout, referenceRow, runNca, shownMultiple}
   from './exposure';
 import {EXPOSURE_TAG, exposureOfTag, roleColumns} from './study-file';
 import {humanReference, linePrior, modelName} from './priors';
@@ -78,42 +101,46 @@ import {PkSource, modellingDatasetDialog} from './modelling-dataset';
 
 /** Analyze's tabs and their panels, in order and width (twelfths): the answer and how the groups grew; each animal;
  *  how the animals bore it; whether the study went as planned. */
-const ANALYZE_TABS: Tab[] = [
-  {name: 'Results', layout: [{id: 'groups', span: 12}, {id: 'growth', span: 12}, {id: 'km', span: 12}]},
+export const ANALYZE_TABS: Tab[] = [
+  {name: 'Results', layout: [{id: 'groups', span: 12}, {id: 'growth', span: 12}, {id: 'km', span: 12},
+    {id: 'exposure', span: 12}]},
   {name: 'Each animal', layout: [{id: 'waterfall', span: 6}, {id: 'spider', span: 6},
     {id: 'animals', span: 12}]},
   {name: 'Tolerability', layout: [{id: 'tolerability', span: 12}]},
   {name: 'Against the plan', layout: [{id: 'plan', span: 12}, {id: 'controls', span: 12}]}];
 
-/** Under a growth chart: how many animals each group had on each measurement day, said only when a group thins (with
- *  no dropouts it is a grid of one number). */
-function animalsPerDay(volumes: DG.DataFrame, groups: string[], colors: {[g: string]: string}): HTMLElement | null {
+/** How many animals each group had on each measurement day (the volumes' `n`): the days, and each group's counts. */
+export interface AnimalsByDay {days: number[], groups: string[], n: Map<string, Map<number, number>>}
+
+export function animalsByDay(volumes: DG.DataFrame, groups: string[]): AnimalsByDay {
   const days = [...new Set(volumes.col('day')!.toList() as number[])].sort((a, b) => a - b);
-  const n = new Map<string, number>();
+  const n = new Map(groups.map((g) => [g, new Map<number, number>()]));
   for (let i = 0; i < volumes.rowCount; i++)
-    n.set(`${volumes.get('group', i)}|${volumes.get('day', i)}`, volumes.get('n', i));
-  const lost = groups.map((g) => {
-    const counts = days.map((d) => n.get(`${g}|${d}`)).filter((x): x is number => typeof x === 'number');
+    n.get(volumes.get('group', i))?.set(volumes.get('day', i), volumes.get('n', i));
+  return {days, groups, n};
+}
+
+/** The one line under the growth chart when a group thins ("Animals by day: Vehicle lost 3, …"); null: none lost
+ *  (the counts by day are in each group's details, the report and Open as table). */
+export function lostLine(a: AnimalsByDay): string | null {
+  const lost = a.groups.map((g) => {
+    const counts = a.days.map((d) => a.n.get(g)?.get(d)).filter((x): x is number => typeof x === 'number');
     // left by the end, not the max minus the min: a group measured from a later day has not lost any
     return {g, n: counts.length ? Math.max(...counts) - counts[counts.length - 1] : 0};
   }).filter((x) => x.n > 0);
-  if (!lost.length)
-    return null;
-  const table = document.createElement('table');
-  table.className = 'pmx-n-table';
-  const head = table.createTHead().insertRow();
-  const th = (text: string) => Object.assign(document.createElement('th'), {textContent: text});
-  head.append(th(''), ...days.map((d) => th(String(d))));
-  const body = table.createTBody();
-  for (const g of groups) {
-    const row = body.insertRow();
-    row.insertCell().append(swatch(g, colors[g]));
-    for (const d of days)
-      row.insertCell().textContent = String(n.get(`${g}|${d}`) ?? '');
-  }
-  const lead = div([], 'pmx-n-lead');
-  lead.textContent = `Animals by day: ${lost.map((x) => `${x.g} lost ${x.n}`).join(', ')}`;
-  return div([lead, div([table], 'pmx-n-scroll')]);
+  return lost.length ? `Animals by day: ${lost.map((x) => `${x.g} lost ${x.n}`).join(', ')}` : null;
+}
+
+/** The counts as a table: a row per group, a column per day (the report's, and Open as table's). */
+export const animalsByDayFrame = (a: AnimalsByDay) => DG.DataFrame.fromObjects(a.groups.map((g) => ({Group: g,
+  ...Object.fromEntries(a.days.map((d) => [`Day ${d}`, a.n.get(g)?.get(d) ?? null]))})))!;
+
+/** The same for the report. */
+function byDayTable(a: AnimalsByDay): HTMLElement {
+  const el = div([]);
+  el.innerHTML = htmlTable(['Group', ...a.days.map((d) => `Day ${d}`)],
+    a.groups.map((g) => [g, ...a.days.map((d) => a.n.get(g)?.get(d) ?? '')]));
+  return el;
 }
 
 const TWIN = 'Untreated twin';
@@ -142,6 +169,20 @@ function animalFrame(twins: DG.DataFrame, animal: string, color: string): DG.Dat
   df.col('day')!.meta.units = 'd';
   inMm3(df, ['lower', 'upper', 'median']);
   return df;
+}
+
+/** A group's animals removed early, in a few words ("2 removed on day 7 (weight)"; on several days or for
+ *  several reasons: "3 removed early"), from Tolerability's list; null: none, or no body weight to list them. */
+export function removedOf(tol: DG.DataFrame | undefined, group: string): string | null {
+  const i = tol?.col('removed_animals') && tol.col('group') ?
+    (tol.col('group')!.toList() as unknown[]).findIndex((x) => String(x) === group) : -1;
+  if (i < 0)
+    return null;
+  const all = [...String(tol!.get('removed_animals', i) ?? '').matchAll(/(?:^|, )(.+?) \(day (\d+), ([^)]+)\)/g)];
+  if (!all.length)
+    return null;
+  const same = all.every((m) => m[2] === all[0][2] && m[3] === all[0][3]);
+  return `${all.length} removed ${same ? `on day ${all[0][2]} (${all[0][3]})` : 'early'}`;
 }
 
 /** An effect against the twin (%), in words: how much smaller, or larger. */
@@ -477,14 +518,19 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   // the exposure on the study's table (EXPOSURE_TAG), so that saving the study keeps it
   let sectionNow: () => ExposureSection | null = () => null;
   // the group details shown in the context panel, cleared with the view
-  let lastDetails: HTMLElement | null = null;
+  let lastDetails: object | null = null;
   let lastGroup = '';
   // a group's animals for its details (set with the animal list)
   let animalsOf: (group: string, color: string) => PanelSection[] = () => [];
   // each group's statistics, as the report's Statistics table has them
   let statsOf = new Map<string, PanelFact[]>();
+  // the animals each group had on each measurement day (set with the growth chart)
+  let byDay: AnimalsByDay | null = null;
   const groupSections = (group: string, color: string): PanelSection[] => [...animalsOf(group, color),
-    ...statsOf.has(group) ? [{title: 'Statistics', content: () => factList(statsOf.get(group)!)}] : []];
+    ...statsOf.has(group) ? [{title: 'Statistics', content: () => factList(statsOf.get(group)!)}] : [],
+    ...byDay?.n.get(group)?.size ? [{title: 'Animals by day', content: () => factList(byDay!.days
+      .filter((d) => byDay!.n.get(group)!.has(d)).map((d) => ({label: `Day ${d}`,
+        value: String(byDay!.n.get(group)!.get(d))})))}] : []];
   self.own(() => {
     if (lastDetails && grok.shell.o === lastDetails)
       grok.shell.o = null;
@@ -609,8 +655,12 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       });
     });
     // opened with its concentrations (the demo's mouse PK): read as a table picked in the field
-    if (opening?.exposure)
+    // (opened in the workspace first, as a table the user picks is: the field offers open tables only)
+    if (opening?.exposure) {
+      if (!grok.shell.tables.includes(opening.exposure))
+        grok.shell.addTable(opening.exposure);
       exposureField.table = opening.exposure;
+    }
     self.subscribe(grok.events.onTableAdded, (e: DG.EventData<DG.DataFrameArgs>) => {
       const t = e.args.dataFrame;
       if (exposureField.value || t.name === form.getInput('study')?.value)
@@ -855,8 +905,9 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     exposureCharts.forEach((c) => c.root.style.display = exposureData.value?.col(c === exposureCharts[0] ?
       'AUClast' : 'Dose') ? '' : 'none');
   });
+  // its own panel, after growth and time to endpoint: the groups panel keeps the headline (each group's multiple of
+  // the patients' exposure, the sentence), the charts would push the growth down
   const exposureBox = divV([exposureText, ...exposureCharts.map((c) => sized(c, 260))]);
-  form.effect(() => exposureBox.style.display = exposureData.value ? '' : 'none');
   const statsTable = div([]);
   const controlCheck = div([]);
   const protocol = div([]);
@@ -904,9 +955,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     const meta = metaOf(studyDf());
     const nca = run ? ncaByArm(arms, run, ncaSource?.table.name ?? '', meta) : savedNca.value;
     shownNca = nca;
-    shownEffect = {day: v('evaluation_day') ?? null, tgi: Object.fromEntries(arms
-      .map((a, i) => [a, r.comparisons.get('tgi', i)]).filter(([, t]) => Number.isFinite(t))),
-    ctd: ctdStudyOf(r, meta, r.analysis.name, nca, stepsInWords(steps))};
+    shownEffect = keptEffect(r, meta, nca, steps);
     keepExposure(nca);
     const exposure = nca?.arms ?? null;
     // a combination's drugs, each with its own exposure (none: no NCA, or nothing for any of its drugs)
@@ -987,6 +1036,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
         result: g('activity'), step: step ? {words: stepWords(step.step), why: step.why} : null,
         responders: done && g('twin_animals') ? `${g('responders')} of ${g('twin_animals')}` : null,
         tgiCi: {lower: g('tgi_lower'), upper: g('tgi_upper')}, nadir: nci.get(arm)?.nadir ?? null,
+        p: g('p_value'), removed: removedOf(r.tolerability, arm),
         day: v('evaluation_day') ?? null, x: exposure?.get(arm), table: nca?.table ?? null, live: !!run,
         multiple: multiples.get(arm) ?? null, human: parts.length === 1 ? human.get(parts[0].key) : undefined,
         curve: !pts || arm === control ? null : at < 0 ? 'off' : at === 0 ? 'lowest' :
@@ -997,8 +1047,9 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     };
     // a group's details open in the context panel: built again from the analysis and exposure as they are now
     if (lastDetails && grok.shell.o === lastDetails && (arms.includes(lastGroup) || lastGroup === control)) {
-      grok.shell.o = lastDetails = detailsElement(detailsNow(lastGroup),
-        groupSections(lastGroup, colors[lastGroup]));
+      const group = lastGroup;
+      grok.shell.o = lastDetails = new PmxGroup(studyOf(studyDf()), group, colors[group], {details: () =>
+        detailsElement(detailsNow(group), groupSections(group, colors[group]))});
     }
     hintLine.replaceChildren(...hint ? [muted(hint.text), ...hint.add ? [ui.button('Add…', () =>
       hint.add === 'patients' ? openHumans() : addConcentrations())] : []] : []);
@@ -1037,7 +1088,10 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       }
       const resultCell = stepLine ? divV([verdict, stepLine]) : verdict;
       // what its details and name say it received, on hover; under the name only what could not be read
-      const name = swatch(g('arm'), colors[g('arm')]);
+      // the group's name stands for it: its right click offers the group's actions
+      const name = bindObject(new PmxGroup(studyOf(studyDf()), g('arm'), colors[g('arm')], {details: () =>
+        detailsElement(detailsNow(g('arm')), groupSections(g('arm'), colors[g('arm')]))}),
+      swatch(g('arm'), colors[g('arm')]));
       const read = parseLine(g('arm'), meta);
       if (read)
         Tooltip.bind(name, read);
@@ -1051,13 +1105,34 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
         !done ? waitingTwin() : `${g('responders')} of ${g('twin_animals')}`, pValue(g('p_value')).replace(' ', ' '),
         withNci(resultCell, nci.get(g('arm')), showNci)]});
     }
+    // each treated group's exposure as a multiple of the patients', once one is placed (a combination: each drug's)
+    if (withHuman) {
+      const tipped = (text: string, tip?: string) => {
+        const el = span(text);
+        if (tip)
+          Tooltip.bind(el, tip);
+        return el;
+      };
+      const multipleCell = (arm: string): string | HTMLElement => {
+        const ds = drugMs.get(arm);
+        if (ds?.some((d) => d.m?.ratio !== undefined)) {
+          return divV(ds.map((d) => d.m?.ratio !== undefined ? tipped(`${d.drug} ${shownMultiple(d.m)}`, d.m.tip) :
+            tipped(`${d.drug} —`, d.m?.why)));
+        }
+        const m = multiples.get(arm);
+        return m?.ratio !== undefined ? tipped(shownMultiple(m), m.tip) : m?.why ? tipped('—', m.why) : '—';
+      };
+      for (const row of rows)
+        row.cells.splice(row.cells.length - 1, 0, row.name === control ? '—' : multipleCell(row.name));
+    }
     const headers = ['Group', 'Analyzed', 'TGI', 'T/C (95% CI)', 'Below its predicted untreated size', 'Responders',
-      'p', 'Result'];
+      'p', ...withHuman ? ['× patients’ exposure'] : [], 'Result'];
     const table = new BasicTable<Row>({items: rows, keyOf: (x) => x.name, columns: headers.map((header, j) => ({header,
       render: (x: Row) => x.cells[j], align: j >= 1 && j < headers.length - 1 ? 'center' : 'left'})),
     // a group's details in the context panel
     onRowClick: (x) => {
-      lastDetails = showDepth(detailsElement(detailsNow(lastGroup = x.name), groupSections(x.name, colors[x.name])));
+      lastDetails = showDepth(new PmxGroup(studyOf(studyDf()), lastGroup = x.name, colors[x.name], {details: () =>
+        detailsElement(detailsNow(x.name), groupSections(x.name, colors[x.name]))}));
     }});
     table.root.style.width = '100%';
     wrapCells(table.root);
@@ -1176,21 +1251,23 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     if (!showPredicted.value || ahead.length === 0)
       return r.volumes;
     const v = r.volumes;
+    // (the animals behind each point, for the tooltip and the thin stretches; none for the prediction)
     const row = (df: DG.DataFrame, i: number, group: string) => ({group, day: df.get('day', i),
-      median: df.get('median', i), lower: df.get('lower', i), upper: df.get('upper', i)});
+      median: df.get('median', i), lower: df.get('lower', i), upper: df.get('upper', i),
+      n: df.col('n') && !df.col('n')!.isNone(i) ? df.get('n', i) : NaN});
     const df = DG.DataFrame.fromObjects([...ahead.map((i) => row(p, i, PREDICTED)),
       ...Array.from({length: v.rowCount}, (_, i) => row(v, i, v.get('group', i)))])!;
     for (const c of ['day', 'median', 'lower', 'upper']) {
       df.col(c)!.meta.units = v.col(c)?.meta.units ?? '';
       df.col(c)!.meta.format = v.col(c)?.meta.format ?? '';
     }
-    paint(df, 'group', {[PREDICTED]: '#9aa5b1', ...colorsOf(r)});
+    paint(df, 'group', {[PREDICTED]: PREDICTED_COLOR, ...colorsOf(r)});
     df.meta.formulaLines.addAll(v.meta.formulaLines.items);
     return df;
   });
   const growth = new BandChart(growthData, {x: 'day', lower: 'lower', upper: 'upper',
     line: 'median', split: 'group', xTitle: 'Day after randomization', yTitle: 'Tumor volume', log: growthAxis.log,
-    markers: true});
+    markers: true, count: 'n'});
 
   // each treated animal against its twin: the animals listed by group, the strongest first, the one selected drawn
   type AnimalRow = {animal: string, group: string, effect: number, lower: number, upper: number};
@@ -1256,26 +1333,44 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   const verdict = (a: AnimalRow) => a.lower > 0 ? 'Responder' : a.upper < 0 ? 'Larger than its twin' :
     'Within its twin\'s range';
   // an animal in the context panel: its curve, readings and marks, then how it ends against its twin
+  // each treated animal's way to its twin (the list's rows): its panel's Actions offer it too
+  type Show = () => void;
+  const toTwin = new Map<string, Show>();
   const showAnimal = (animal: string, color: string) => {
+    if (!animalDetails(animal, color))
+      return;
+    // as its object: the handler shows these details and the animal's actions under them
+    lastDetails = showDepth(new PmxAnimal(studyOf(studyDf()), animal, {color, twin: toTwin.get(animal), details: () =>
+      animalDetails(animal, color) ?? ui.divText(animal)}));
+    lastGroup = '';
+  };
+  const animalDetails = (animal: string, color: string): HTMLElement | null => {
     const n = studyOf(studyDf());
     if (!n)
-      return;
+      return null;
     const a = twins.get(animal);
     const own = result.peek()?.animals;
     const at = own ? (own.col('animal')!.toList() as unknown[]).findIndex((x) => String(x) === animal) : -1;
     const o = (k: string) => at < 0 || !own!.col(k) || own!.col(k)!.isNone(at) ? null : own!.get(k, at);
     const rate = o('slope_per_day');
-    const mine: PanelFact[] = [
-      ...rate !== null ? [{label: 'Growth rate', value: `${num(rate)} ln V/day` +
-        (o('doubling_time') !== null ? `, doubles in ${num(o('doubling_time'))} d` : '')}] : [],
-      ...o('best_response') !== null ? [{label: 'Best response', value: `${signed(o('best_response'))}` +
-        (o('mrecist') ? ` (${o('mrecist')})` : '')}] : [],
-      ...o('time_to_endpoint') !== null ? [{label: 'Endpoint', value: o('endpoint_reached') ?
-        `day ${num(o('time_to_endpoint'))}` : `not reached by day ${num(o('time_to_endpoint'))}`}] : []];
-    lastDetails = showDepth(panelOfAnimal(n, animal, {color, showGroup: true, extra: [...mine, ...!a ? [] : [
-      {label: 'Against its twin', value: sideOf(a.effect), tip: `90% range: ${sideOf(a.lower)} to ${sideOf(a.upper)}`},
-      {label: 'Result', value: verdict(a)}]]}));
-    lastGroup = '';
+    const best = o('best_response');
+    const an = result.peek()?.analysis;
+    const [day, endpoint] = [an?.get('evaluation_day', 0) ?? null, an?.get('endpoint', 0) ?? null];
+    // the growth in plain words, folded: the rate in ln V per day and mRECIST's class on hover
+    const growth: PanelFact[] = [
+      ...o('doubling_time') !== null ? [{label: 'Doubles', value: `every ${num(o('doubling_time'))} days`,
+        ...rate !== null ? {tip: `Growth rate: ${num(rate)} ln V per day`} : {}}] : [],
+      ...best !== null ? [{label: 'Best response', value: `${pct(Math.abs(best) / 100)} ${best <= 0 ? 'smaller' :
+        'larger'} than on day 0`, ...o('mrecist') ? {tip: `mRECIST: ${o('mrecist')}`} : {}}] : []];
+    // (the endpoint without a day of its own: "not reached by day 16" read against a volume of day 21)
+    const mine: PanelFact[] = o('time_to_endpoint') === null ? [] : [{label: 'Endpoint',
+      value: o('endpoint_reached') ? `Reached on day ${num(o('time_to_endpoint'))}` :
+        `Not reached${endpoint !== null ? ` (${num(endpoint)} mm³)` : ''}`}];
+    // the answer, as the twin chart says it: its side against its twin, the range and the day
+    const answer: PanelVerdict | null = !a ? null : {text: `${verdict(a)}: ${sideOf(a.effect)} than its twin`,
+      sub: `90% range ${sideOf(a.lower)} to ${sideOf(a.upper)}${day !== null ? `, on day ${day}` : ''}`,
+      tone: a.lower > 0 ? 'ok' : a.upper < 0 ? 'warn' : 'neutral'};
+    return panelOfAnimal(n, animal, {color, showGroup: true, verdict: answer, extra: mine, growth});
   };
   // a group's animals for its context panel: each one's curve, last volume and status; a click shows the animal
   const MARK_WORDS: {[m: string]: string} = {excluded: 'Excluded', partly: 'Some excluded', flagged: 'Flagged'};
@@ -1301,7 +1396,8 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     const status = (x: string) => [MARK_WORDS[marks.get(x) ?? ''], removedAs.get(x),
       twins.has(x) ? verdict(twins.get(x)!) : '']
       .filter((w) => w && !w.startsWith('Within')).join(' · ');
-    return [{title: 'Animals', open: true, content: () => textLines(names.map((x) =>
+    // (folded, its count in its header: open, its lines pushed the other panes off the panel)
+    return [{title: `Animals ${names.length}`, content: () => textLines(names.map((x) =>
       animalLine(n, x, color, status(x), () => showAnimal(x, color))))}];
   };
   form.effect(() => {
@@ -1372,11 +1468,15 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
             selection.select(new Set([a.animal]));
         };
         row.addEventListener('click', choose);
-        row.addEventListener('contextmenu', (ev) => {
-          ev.preventDefault();
-          studyMenu(studyOf(studyDf()), 'animal', a.animal,
-            {causedBy: ev}, [['Show against its twin', pick]]);
-        });
+        // its right click (and the context panel's Actions): the animal's actions, against its twin first; from the
+        // menu it becomes the current object too
+        toTwin.set(a.animal, pick);
+        const shown = () => {
+          pick();
+          showAnimal(a.animal, colors[a.group]);
+        };
+        bindObject(new PmxAnimal(studyOf(studyDf()), a.animal, {color: colors[a.group], twin: shown,
+          details: () => animalDetails(a.animal, colors[a.group]) ?? span(a.animal)}), row);
         row.addEventListener('keydown', (ev) => {
           if (ev.key === 'Enter' || ev.key === ' ') {
             ev.preventDefault();
@@ -1451,7 +1551,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     gap: 'var(--dg-space-l)', alignItems: 'start'});
 
   // the growth rate of each animal, the quantity the test compares
-  // under the growth chart, the animals behind each point
+  // under the growth chart, one line when a group loses animals (each point's count is in its tooltip)
   const perDay = div([], 'pmx-n-per-day');
   // the study's animals or measurements as Datagrok tables (to chart, filter, cluster there); the animals picked in
   // Analyze come marked in them
@@ -1466,9 +1566,9 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   const volumesOnly = only(result, ['volumes'], groupsOf);
   form.effect(() => {
     const r = volumesOnly.value;
-    const t = r && animalsPerDay(r.volumes, [r.analysis.get('control', 0), ...r.comparisons.col('arm')!.toList()],
-      colorsOf(r));
-    perDay.replaceChildren(...t ? [t] : []);
+    byDay = r ? animalsByDay(r.volumes, [r.analysis.get('control', 0), ...r.comparisons.col('arm')!.toList()]) : null;
+    const line = byDay && lostLine(byDay);
+    perDay.replaceChildren(...line ? [noteLine(line)] : []);
   });
 
   // each animal as a bar in its group's colour, on what the scientist compares them by: its growth rate (the slope of
@@ -1504,8 +1604,9 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     const groups = [control, ...r.comparisons.col('arm')!.toList()].filter((g) => bars.some((b) => b.group === g));
     return bars.length ? {bars, colors: colorsOf(r), title: by.title, order: by.order, groups} : undefined;
   });
+  // a bar's right click: the animal's actions (a canvas cannot be bound: a menu of the same actions)
   const waterfall = new WaterfallChart(waterfallData, (animal, e) =>
-    studyMenu(studyOf(studyDf()), 'animal', animal, {causedBy: e}),
+    popupFor(new PmxAnimal(studyOf(studyDf()), animal), {causedBy: e}),
   selection);
   const waterfallMissing = infoNote('');
   form.effect(() => {
@@ -1625,7 +1726,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     ...k?.medians.length && k.medians.every((m) => m.events === 0) ? [noteLine(`No animal ${on ? 'would reach' :
       'reached'} the endpoint${on ? ` by day ${k.horizon}` : ''}: no group has a median time to it.`)] :
       (k?.medians ?? []).map((m) => noteLine(`${m.group}: ${on ? 'projected ' : ''}median ${m.median === null ?
-      'not reached' : dayText(m.median)}, ${m.events} of ${m.n} ${on ? 'would reach' : 'reached'} the endpoint` +
+        'not reached' : dayText(m.median)}, ${m.events} of ${m.n} ${on ? 'would reach' : 'reached'} the endpoint` +
       (!on && p.has(m.group) ? `; log-rank against the control ${pValue(p.get(m.group))}` : ''))),
     ...(!on && competing.value?.length ? [noteLine('Counting the animals removed for other reasons apart: ' +
       competing.value.map((c) => c.none ? `${c.group}: not estimable, no ${c.none === 'group' ? 'animal of the ' +
@@ -1685,10 +1786,11 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   });
 
   // the figures answer the study's question; each panel, one closer question
+  // (the exposure panel's hint says the axis it shows, set below)
+  const axisNote = span(axisHint('AUClast'));
   const panels = panelTabs([
     {id: 'groups', title: 'Experimental groups', hint: 'Each treated group against the control on the evaluation day',
-      content: [readoutLine, groupsTable, intervalLine, hintLine, groupNotes, ladderNotes, rates.root, exposureNotes,
-        exposureBox]},
+      content: [readoutLine, groupsTable, intervalLine, hintLine, groupNotes, ladderNotes, rates.root, exposureNotes]},
     {id: 'growth', title: 'Observed tumor growth', hint: 'Median and range (smallest to largest tumor) ' +
       'of each group, to the evaluation day; in grey, the median control predicted (by the plan, else by the ' +
       'atlas for this model)',
@@ -1702,6 +1804,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     {id: 'km', title: 'Time to endpoint', hint: 'Kaplan-Meier: the animals of each group still below the ' +
       'endpoint volume, day by day, as measured; an animal that never reached it counts until its last measurement',
     content: [sized(km, 320), kmWords]},
+    {id: 'exposure', title: 'Exposure and effect', hint: axisNote, content: [exposureBox]},
     {id: 'animals', title: 'Each animal against its twin', hint: 'Its twin: what each treated tumor would have ' +
       'measured untreated, predicted from its size at randomization, the study\'s controls and the cell line\'s ' +
       'growth. Select an animal to see its growth', content: [animals]},
@@ -1713,6 +1816,15 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       content: [controlCheck]},
   ], ANALYZE_TABS, 'pmx-analyze-panels', 'analyze');
   exports.push(['Layout…', () => editLayout(panels.root), 'View']);
+  // the exposure panel only when there is a chart to show (the layout editor still lists it)
+  form.effect(() => {
+    const cell = exposureBox.closest<HTMLElement>('.pmx-panel');
+    if (cell)
+      cell.style.display = exposureData.value ? '' : 'none';
+    // the hint says the axis shown: the mouse exposure, or the dose when NCA read none
+    if (exposureData.value)
+      axisNote.textContent = axisHint(exposureData.value.col('Dose') ? 'Dose' : 'AUClast');
+  });
   // the study's colours: a colour changed in a chart is the study's, in every stage open on it
   const link: StudyLink = {meta: () => metaOf(studyDf()), setMeta: (m) => {
     const df = studyDf();
@@ -1780,7 +1892,8 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
         // the plan the analysis used (analyze.ts)
         content, log: logOf(df), planAtlas: planAtlas(planText()),
         annex: [['Results', summary], ...section ? [['Exposure and patients', sectionElement(section)] as
-          [string, HTMLElement]] : [], ['Statistics', statsTable], ['Analysis protocol', protocol]],
+          [string, HTMLElement]] : [], ['Statistics', statsTable], ...byDay && lostLine(byDay) ?
+          [['Animals by day', byDayTable(byDay)] as [string, HTMLElement]] : [], ['Analysis protocol', protocol]],
         lastDay: lastMeasured()})));
     }],
     // the Essential 10, or ARRIVE 2.0 whole (the Recommended Set added); Download (.docx) is the author checklist
@@ -1807,7 +1920,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       const d = arriveDialog(items, {full, details: () => head.details(() => arrive(full)), options: which.root,
         download: async () => download(`${df.name} - ${title}.docx`, await docx(checklistBlocks({title, sub, items,
           credit: ARRIVE_CREDIT, last: ['Section, line', 'where']}), {title, landscape: true}), DOCX_TYPE)});
-    }],
+    }, 'Documents'],
     // the study as a row of the nonclinical dossier (CTD), each group a sub-row; its checklist is the preview
     ['Regulatory (CTD) table…', function ctd() {
       const {df, r} = studyNow();
@@ -1817,8 +1930,31 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
         download: async () => download(`${df.name} - CTD table.docx`,
           await docx(ctdBlocks([s], {sub}), {title: CTD_TITLE, landscape: true}), DOCX_TYPE)},
       ctdItems(s), {details: () => head.details(ctd)});
+    }, 'Documents'],
+    // the study as Monitor exports it: its file (with what Analyze added: the exposure, exclusions) and its calendar
+    ['Study file (.pmxstudy)', async () => {
+      const {df} = studyNow();
+      const limits = JSON.parse(df.getTag(LIMITS_TAG) || '{}');
+      const s = await stamped(savedStudyOf(df, limits.humane ?? null, limits.weightLimit ?? null));
+      download(`${exportName(df)}.pmxstudy`, JSON.stringify(s), 'application/json');
+    }],
+    ['Calendar (.ics)', () => {
+      const {df, r} = studyNow();
+      const days = [...new Set(roleColumns(df).day.toList().filter(isFiniteNumber))].sort((a, b) => a - b);
+      const evaluation = r.analysis.get('evaluation_day', 0);
+      const events = [...days.map((d): [number, string] => [d, 'Tumors measured']),
+        ...isFiniteNumber(evaluation) ? [[evaluation, 'Evaluation day'] as [number, string]] : []];
+      download(`${exportName(df)}.ics`, icsOf(exportName(df), metaOf(df) ?? emptyMeta(), lastMeasured() ?? 0, events),
+        'text/calendar');
     }],
     ['Animals', () => openTable('animals'), 'Data > Open as table'],
+    ['Animals by day', () => {
+      if (!byDay)
+        throw new Error('Analyze a study first');
+      const t = animalsByDayFrame(byDay);
+      t.name = `${studyNow().df.name} - animals by day`;
+      grok.shell.addTableView(t);
+    }, 'Data > Open as table'],
     ['Measurements', () => openTable('measurements'), 'Data > Open as table'],
     ['Statistics', () => download(`${studyNow().df.name} - statistics.csv`, statsCsv, 'text/csv'), 'Export > CSV'],
     ['Measurements', () => download(`${studyNow().df.name}.csv`, studyNow().df.toCsv(), 'text/csv'),
@@ -1864,7 +2000,8 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     return {name: df?.name || r.analysis.name, groups: [control, ...arms].map((name) => ({name, color: colors[name]})),
       status: `${modelName(r.analysis.get('line', 0))} · evaluated on ${dayText(r.analysis.get('evaluation_day', 0))}`,
       meta: () => metaOf(df), setMeta: df ? (m) => setMetaOn(df, m) : undefined,
-      groupMenu: (g, e) => studyMenu(studyOf(df), 'group', g, {causedBy: e})};
+      groupObject: (g, color) => new PmxGroup(studyOf(df), g, color, {details: () =>
+        detailsElement(detailsNow(g), groupSections(g, color))})};
     // Plan opens with the plan the analysis uses: the one picked, else the study's own
   }), (s) => void openStage(s, planText()));
   // Save (and Ctrl+S): what Analyze changes on the study's table (the patients' exposure, the effect kept, exclusions).
@@ -1950,9 +2087,11 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     const df = studyDf();
     return !!df && !rowOfTable(df);
   }));
+  const links = stageLinks({stage: 'analyze'}, () => head.details());
   return {
     root: takesFiles(stagePage(head.row, panes), {stage: 'analyze'}),
     ribbon: [[head.steps], [openButton({stage: 'analyze'}), saveButton]],
+    toolbox: stageToolbox(exports, links.study, links.help),
     path: '/analyze',
     status: computed(() => busy.value ? 'Analyzing the study…' : result.value ?
       studyDf()?.name || result.value.analysis.name : ''),

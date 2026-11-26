@@ -4,7 +4,10 @@ import {ArmExposure, HumanExposure, HumanMultiple, aucUsed, fuOk, meanCv, multip
   sourceText} from './exposure';
 import {htmlTable} from './report';
 import {esc} from './sheet';
-import {PanelSection, objectPanel, percentRange, signed, textLines} from './ui';
+import {PanelSection, PanelVerdict, objectPanel, pValue, percentRange, textLines} from './ui';
+import {gain} from './study-table';
+import {isFiniteNumber} from './engine';
+import {plainArm} from './arm-name';
 
 /** One treated group's line. */
 export interface ExposureRow {
@@ -84,7 +87,7 @@ export function exposureSection(o: {sentence: string | null, rows: ExposureRow[]
     ...!rows.some((r) => r.x?.exposure) ? [] : o.table !== undefined ?
       [`Mouse exposure: NCA, table ${o.table || 'not named'}.`] : ['Mouse exposure: NCA kept with each study.'],
     ...humans.map(({h, study}) => `Patients' exposure of ${h.drug}${study ? ` (${study})` : ''}: ${humanSource(h)}` +
-      `${h.cv !== null && h.cv !== undefined ? `, CV ${h.cv}%` : ''}.`)];
+      `${h.cv !== null && h.cv !== undefined ? `, CV ${num(h.cv)}%` : ''}.`)];
   return {sentence: o.sentence, warning: o.warning ?? null, head, rows: lines,
     curve: o.curve ? 'Within the tested doses only.' : null, notes, sources};
 }
@@ -101,7 +104,7 @@ export function sectionElement(s: ExposureSection): HTMLElement {
 
 /** A treated group's details for the context panel: its name and colour, what its name says it received (`read`), a
  *  few facts and the exposure as headed blocks (folded). */
-export interface GroupDetails {title: string, color?: string, read: string,
+export interface GroupDetails {title: string, color?: string, read: string, verdict?: PanelVerdict | null,
   facts: {label: string, value: string, tip?: string}[], blocks: {heading: string, lines: string[]}[]}
 
 /** One drug of a combination group, for its details: NCA's exposure, the patients' and the multiple. */
@@ -120,10 +123,17 @@ export function groupDetails(o: {group: string, read: string, tgi: number | null
   drugs?: DrugDetails[], color?: string, n?: number | null,
   tc?: {value: number, lower: number | null, upper: number | null} | null, result?: string | null,
   step?: {words: string, why: string} | null, responders?: string | null,
-  tgiCi?: {lower: number | null, upper: number | null} | null, nadir?: number | null}): GroupDetails {
+  tgiCi?: {lower: number | null, upper: number | null} | null, nadir?: number | null, p?: number | null,
+  removed?: string | null}): GroupDetails {
   const facts: GroupDetails['facts'] = [];
-  if (o.n !== undefined && o.n !== null)
-    facts.push({label: 'Animals', value: String(o.n)});
+  // the answer first, in the groups table's words (its dot's colour), with its p-value
+  const slows = o.result === 'Slows growth';
+  const verdict: PanelVerdict | null = !o.result ? null : {text: o.result + (o.tgi !== null ?
+    `: TGI ${Math.round(o.tgi)}%${o.day !== null ? ` on day ${o.day}` : ''}` : ''),
+  // (the side the result says: below, above or not clearly apart)
+  sub: isFiniteNumber(o.p) ? `${slows ? 'Clearly below' : o.result === 'Grows faster' ? 'Clearly above' :
+    'Not clearly different from'} the control (p ${pValue(o.p).startsWith('<') ? pValue(o.p) : `= ${pValue(o.p)}`})` :
+    undefined, tone: slows ? 'ok' : 'warn'};
   if (o.tgi !== null) {
     const tc = o.tc ? ` Its tumors ended at ${Math.round(o.tc.value)}% of the control's size` +
       (o.tc.lower !== null && o.tc.upper !== null ?
@@ -134,15 +144,24 @@ export function groupDetails(o: {group: string, read: string, tgi: number | null
       tip: 'How much less the group grew than the control: 100% means its tumors did not grow; above 100%, they ' +
         `shrank.${tc}`});
   }
-  if (o.result)
-    facts.push({label: 'Result', value: o.result});
-  if (o.nadir !== undefined && o.nadir !== null && Number.isFinite(o.nadir))
-    facts.push({label: 'BW nadir', value: signed(o.nadir), tip: 'Lowest mean body-weight change from day 0'});
+  // T/C as the table names it, its range quiet
+  if (o.tc) {
+    facts.push({label: 'Size vs control', value: `${Math.round(o.tc.value)}%` + (o.tc.lower !== null &&
+      o.tc.upper !== null ? ` (${percentRange(o.tc.lower, o.tc.upper)})` : ''),
+    tip: 'T/C: the group’s tumors as a share of the control’s on the evaluation day'});
+  }
   if (o.step)
     facts.push({label: 'Against its drugs', value: o.step.words, tip: o.step.why});
   if (o.responders) {
-    facts.push({label: 'Responders', value: o.responders,
+    facts.push({label: 'Responders', value: o.responders + (o.day !== null ? ` measured on day ${o.day}` : ''),
       tip: 'Animals whose tumor ends below the range it would reach untreated'});
+  }
+  // the animals, and why some are missing from what was measured
+  if (o.n !== undefined && o.n !== null)
+    facts.push({label: 'Animals', value: String(o.n) + (o.removed ? ` · ${o.removed}` : '')});
+  if (o.nadir !== undefined && o.nadir !== null && Number.isFinite(o.nadir)) {
+    facts.push({label: 'Weight', value: `${gain(o.nadir)} at its lowest`,
+      tip: 'The group’s lowest mean body-weight change from day 0 (its nadir)'});
   }
   const blocks: {heading: string, lines: string[]}[] = [];
   for (const d of o.drugs ?? [{drug: '', x: o.x, multiple: o.multiple, human: o.human}])
@@ -154,7 +173,7 @@ export function groupDetails(o: {group: string, read: string, tgi: number | null
       between: 'Between the lowest and highest dose tested, where the curve holds',
       off: 'Not on the curve: it is drawn through another set of groups'}[o.curve]]});
   }
-  return {title: o.group, color: o.color, read: o.read, facts, blocks};
+  return {title: o.group, color: o.color, read: o.read, verdict, facts, blocks};
 }
 
 /** A group's (or one of its drugs', `of` in the headings) exposure, the patients' and the multiple, as blocks. */
@@ -179,7 +198,7 @@ function exposureBlocks(o: DrugDetails, of: string, table: string | null, live: 
       (h.cmax !== null ? `; Cmax: ${num(h.cmax)} ${h.unit}` : ''),
     h.reference ? referenceLine(h) : `Source: ${humanSource(h)}`,
     ...h.reference ? [`Matrix: ${h.reference.row.matrix.replace(/_/g, ' ')}`] : [],
-    h.cv !== null && h.cv !== undefined ? `CV ${h.cv}%` : 'CV not given: the range is the 3-fold convention']});
+    h.cv !== null && h.cv !== undefined ? `CV ${num(h.cv)}%` : 'CV not given: the range is the 3-fold convention']});
   }
   const m = o.multiple;
   if (m) {
@@ -202,6 +221,9 @@ export function detailsElement(d: GroupDetails, first: PanelSection[] = []): HTM
     }
     return el;
   };
-  return objectPanel({title: d.title, color: d.color, subtitle: d.read && d.read !== d.title ? d.read : undefined,
-    facts: d.facts, sections: [...first, ...d.blocks.length ? [{title: 'Exposure', content: exposure}] : []]});
+  // its treatment in plain words, the codes it was read from on hover
+  const subtitle = d.read && d.read !== d.title ? plainArm(d.read) : undefined;
+  return objectPanel({title: d.title, color: d.color, subtitle, subtitleTip: d.read || undefined,
+    verdict: d.verdict, facts: d.facts,
+    sections: [...first, ...d.blocks.length ? [{title: 'Exposure', content: exposure}] : []]});
 }

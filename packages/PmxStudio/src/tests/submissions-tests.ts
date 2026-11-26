@@ -44,11 +44,16 @@ category('Submissions', () => {
     const items = formItems(studyPlanForm(facts));
     expect(items.length, 11);
     expect(items.filter((i) => i.done).map((i) => i.item).join(', '),
-      'Inclusion and exclusion criteria, Outcome measures and statistics', 'the EDA diagram: always the user');
+      'Inclusion and exclusion criteria, Randomisation and blinding, Outcome measures and statistics',
+      'the EDA diagram: always the user; blinding off is said');
     // no details yet: the animals and what each group receives come from them
     expect(items.filter((i) => i.fix === 'details').map((i) => i.item).join(', '),
       'Experimental animals, Experimental procedures');
-    expect(items[0].says.startsWith('To fill: grant code, start date, end date'), true);
+    // a block partly filled: what the plan filled, then what is left
+    expect(items[0].says.startsWith('From the plan: study title · to complete: grant code, start date, end date'), true,
+      items[0].says);
+    expect(items[1].says.startsWith('From the plan: species, number · to complete: strain or genotype'), true,
+      items[1].says);
     const meta = {...emptyMeta(), start: '2026-12-01', owner: 'jdoe', blinded: true, animals: {species: 'mouse',
       strain: 'C57BL/6', sex: 'female', age: '8 weeks', weight: '20 g', source: 'Charles River'},
     groups: [{group: 'Cpd-X', compound: 'Cpd-X', dose: 10, unit: 'mg/kg', route: 'PO', schedule: 'QD'}]};
@@ -59,9 +64,9 @@ category('Submissions', () => {
     // the plan's own answers (QA W1): a group no size reaches is said so, not left to fill; the balancing on volume
     // fills the confounders (the blinding stays the user's)
     const unsized = formItems(studyPlanForm({...facts, perGroup: [{name: 'Control', n: 8}, {name: 'Cpd-X', n: null}]}));
-    expect(unsized[6].says.includes('sample size'), false, unsized[6].says);
+    expect((unsized[6].says.split('to complete:')[1] ?? '').includes('sample size'), false, unsized[6].says);
     expect(unsized[6].detail!.includes('Cpd-X: over 40'), true, unsized[6].detail);
-    expect(unsized[8].says, 'To fill: blinding strategy');
+    expect(unsized[8].done, true, unsized[8].says);
     // a group named for what it receives is said once, not "name: the same"
     const named = [{group: 'Cpd-X 10 mg/kg PO QD', compound: 'Cpd-X', dose: 10, unit: 'mg/kg', route: 'PO',
       schedule: 'QD'}, {group: 'B', compound: 'Cpd-Y', dose: 5, unit: 'mg/kg', route: 'IP', schedule: 'QW'}];

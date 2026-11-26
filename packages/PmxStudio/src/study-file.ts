@@ -7,7 +7,7 @@ import * as DG from 'datagrok-api/dg';
 import type {FuncCallForm} from '@datagrok-libraries/u2/dg';
 
 import {_package} from './package';
-import {PLAN_TAG, Provenance, SavedPlan, fileNameOf, parsePlan, provenance, provenanceOf} from './plan-file';
+import {PLAN_TAG, Provenance, SavedPlan, fileNameOf, parsePlan, planTag, provenance, provenanceOf} from './plan-file';
 import type {SavedExposure} from './exposure';
 import {StudyMeta, metaOf, parseMeta, setMetaOn} from './study-meta';
 import {VolumeSource, volumeSourceOf} from './study-reader';
@@ -187,7 +187,7 @@ export function newStudyTable(plan: SavedPlan): DG.DataFrame {
   const df = DG.DataFrame.fromColumns([DG.Column.string('animal', 0), DG.Column.string('group', 0),
     DG.Column.float('day', 0), DG.Column.float('volume', 0)]);
   oneDecimal(df).name = plan.name;
-  df.setTag(PLAN_TAG, JSON.stringify(plan));
+  df.setTag(PLAN_TAG, planTag(plan));
   if (plan.study)
     setMetaOn(df, plan.study);
   if (typeof plan.inputs.looks === 'string' && plan.inputs.looks.trim())
@@ -213,6 +213,13 @@ export function roleColumns(df: DG.DataFrame): {animal: DG.Column, group: DG.Col
     return c;
   };
   return {animal: col('animal'), group: col('group'), day: col('day'), volume: col('volume')};
+}
+
+/** What an exported file of the study is named after: the study (its plan's name), else its ID, else its table; with
+ *  no character a file name cannot hold. */
+export function exportName(df: DG.DataFrame): string {
+  const named = df.getTag(PLAN_TAG) ? studyNameOf(df) : '';
+  return (named || metaOf(df)?.id || df.name || 'study').replace(/[\\/:*?"<>|]/g, '-').trim();
 }
 
 /** A study's name: a study followed from a saved plan goes by the plan's name, as the Overview lists it; else by
@@ -351,7 +358,7 @@ export function tableOf(s: SavedStudy): DG.DataFrame {
   df.setTag(LIMITS_TAG, JSON.stringify({humane: s.humane, weightLimit: s.weightLimit ?? null}));
   df.name = s.name;
   if (s.plan)
-    df.setTag(PLAN_TAG, JSON.stringify(s.plan));
+    df.setTag(PLAN_TAG, planTag(s.plan));
   if (s.line)
     df.setTag(LINE_TAG, s.line);
   const history = historyOf(s.history);

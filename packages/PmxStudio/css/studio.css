@@ -126,6 +126,10 @@ a.pmx-hint-link { color: inherit; text-decoration: underline dotted var(--dg-gre
 .pmx-grid-host { container-type: inline-size; }
 .pmx-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px; grid-auto-flow: row dense; }
 .pmx-panel { min-width: 0; }
+/* a panel's title and hint stay in its column: a long hint goes on under the title, never over the next panel */
+.pmx-panel > .pmx-block, .pmx-panel .pmx-block-header { min-width: 0; max-width: 100%; }
+.pmx-panel .pmx-block-header { flex-wrap: wrap; align-items: baseline; row-gap: 2px; }
+.pmx-panel .pmx-block-hint { white-space: normal; }
 .pmx-panel[data-span="3"] { grid-column: span 3; }
 .pmx-panel[data-span="4"] { grid-column: span 4; }
 .pmx-panel[data-span="6"] { grid-column: span 6; }
@@ -149,13 +153,6 @@ a.pmx-hint-link { color: inherit; text-decoration: underline dotted var(--dg-gre
 .pmx-tab:hover { color: var(--dg-text-color, #4D5261); }
 .pmx-tab.is-open { color: var(--dg-accent, #2083D5); border-bottom-color: var(--dg-accent, #2083D5); }
 .pmx-tab:focus-visible { outline: 2px solid var(--dg-accent, #2083D5); outline-offset: -2px; }
-
-/* under a growth chart: the animals of each group on each day */
-.pmx-n-scroll { overflow-x: auto; margin-top: 8px; }
-.pmx-n-table { border-collapse: collapse; font-size: 11px; color: var(--dg-grey-5, #717581); }
-.pmx-n-table th, .pmx-n-table td { padding: 1px 6px; text-align: center; white-space: nowrap; }
-.pmx-n-table th:first-child, .pmx-n-table td:first-child { text-align: left; }
-.pmx-n-table th { font-weight: 500; border-bottom: 1px solid var(--dg-border, #DBDCDF); }
 
 /* the results recomputing: a thin bar sliding along the top edge of the results pane */
 .pmx-busy-bar { position: absolute; top: 0; left: 0; right: 0; height: 3px; overflow: hidden; z-index: 3;
@@ -245,3 +242,13 @@ a.pmx-hint-link { color: inherit; text-decoration: underline dotted var(--dg-gre
   color: var(--dg-text-color); background: var(--dg-bg); border: var(--dg-border-width) solid var(--dg-border);
   border-radius: var(--dg-radius-l);
 }
+
+/* an object's answer in the context panel, first after its name (ui.ts objectPanel): the mark's colour says its side */
+.pmx-object-verdict { margin: 10px 0 2px; padding: 8px 10px; background: var(--grey-1, #f2f2f5);
+  border-left: 3px solid var(--grey-4, #9497a0); border-radius: 2px; font-weight: 500; }
+.pmx-object-verdict.pmx-ok { border-left-color: var(--green-2, #3cb173); }
+.pmx-object-verdict.pmx-warn { border-left-color: var(--orange-2, #ffa24a); }
+.pmx-object-verdict-sub { color: var(--grey-4, #9497a0); font-weight: 400; }
+
+/* the Actions pane of an object (handlers.ts withActions): a quiet line between its groups of actions */
+.pmx-actions-sep { height: 1px; background: var(--grey-2, #dbdcdf); margin: 4px 0; }

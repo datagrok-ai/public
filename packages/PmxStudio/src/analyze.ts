@@ -20,7 +20,8 @@ import * as DG from 'datagrok-api/dg';
 import {controlByName} from './arm-name';
 import {crux, CruxResult, EmptyState, MAX_SETS, named, rows} from './crux';
 import {groupsByAnimal} from './animal-group';
-import {Correction, EffectMetric, HUMANE, LAB_WEEKDAYS, StudyDeclaration, StudyDesign, correctionOf, designStudy,
+import {Correction, EffectMetric, ENDPOINT, HUMANE, LAB_WEEKDAYS, StudyDeclaration, StudyDesign, correctionOf,
+  designStudy,
   finite, isFiniteNumber as ok, median} from './engine';
 import {PlanInputs, declarationOf} from './frames';
 import {groupColors} from './colors';
@@ -278,6 +279,10 @@ export function endVerdict(reached: number | null, lastDay: number, r: Range): P
 
 /** Whether x falls in a 95% range (an open top: no upper limit). */
 const within = (x: number, r: Range) => x >= r.q025 && (r.q975 === null || x <= r.q975);
+
+/** The controls' growth rate against its predicted range, in Analyze's words (Compare reads a control the same way). */
+export const slopeSide = (x: number, r: Range) => within(x, r) ? 'As predicted' as const :
+  x > (r.q975 ?? Infinity) ? 'Faster than predicted' as const : 'Slower than predicted' as const;
 
 /** The days with a tumor measured: a study weighed on other days has rows with no volume, and those days are not
  *  ones an analysis can be on. */
@@ -561,6 +566,13 @@ export function remembered<A, R>(fn: (a: A) => Promise<R>, keep = 16): (a: A) =>
 const noPlanDesign = remembered<StudyDeclaration, StudyDesign>(designStudy);
 const checksAt = remembered<ChecksInput, PlanChecks>(planChecks);
 
+/** The atlas's controls for `line` (Compare: each study's control against them): as Analyze predicts them for a
+ *  study without a plan, randomized at `vRand`, measured to `lastDay`. */
+export const atlasControls = (line: string, vRand: number, lastDay: number, nControl: number,
+  endpoint = ENDPOINT) =>
+  checksAt({line, vRand, endpoint, humane: HUMANE, weekdays: LAB_WEEKDAYS, startWeekday: 0,
+    endpointDay: Math.max(lastDay, 7), nControl, arms: []});
+
 /** The study's volume at randomization: the median of every animal's day-0 volume (before any treatment, so every
  *  group's); null when none was measured. */
 function startVolume(d: AnalysisDeclaration): number | null {
@@ -642,6 +654,8 @@ async function compareWithPlan(d: AnalysisDeclaration, treated: string[], arms: 
   // its end predicted again from its own start, by the plan's model, line and schedule (the .pmxplan unchanged; each
   // arm's range stays the plan's: it moves little with the start, and the plan keeps no kill rate to compute it again)
   let c = p.checks;
+  // (a median control that never reaches the endpoint has no day)
+  const dayOf = (d: number | null) => Number.isFinite(d) ? `about day ${Math.round(d!)}` : 'not within the study';
   let reanchored = false;
   if (d.plan && start !== null && Math.abs(Math.log(start / p.vRand)) > Math.log(REANCHOR)) {
     const pd = declarationOf(d.plan.inputs as unknown as PlanInputs);
@@ -649,8 +663,8 @@ async function compareWithPlan(d: AnalysisDeclaration, treated: string[], arms: 
       weekdays: pd.weekdays, startWeekday: pd.startWeekday, endpointDay: p.endpointDay,
       nControl: p.nControl ?? controls, arms: []});
     notes.push(`Randomized at ${Math.round(start)} mm³ (median), the plan at ${p.vRand} mm³: the controls and the ` +
-      `end are predicted from ${Math.round(start)} mm³, the median control reaching ${p.endpoint} mm³ about day ` +
-      `${Math.round(own.end.median)} (the plan: day ${Math.round(c.end.median)})`);
+      `end are predicted from ${Math.round(start)} mm³, the median control reaching ${p.endpoint} mm³ ` +
+      `${dayOf(own.end.median)} (the plan: ${dayOf(c.end.median)})`);
     c = {...c, end: own.end, notReached: own.notReached, controlSlope: own.controlSlope, controls: own.controls};
     reanchored = true;
   }
@@ -661,8 +675,7 @@ async function compareWithPlan(d: AnalysisDeclaration, treated: string[], arms: 
   const slope = arms.length ? arms[0].slopeControl : null;
   const observedSlope = slope !== null && Number.isFinite(slope) ? slope : null;
   const controlSlope: PlanComparison['controlSlope'] = {observed: observedSlope, range: c.controlSlope,
-    verdict: observedSlope === null ? null : within(observedSlope, c.controlSlope) ? 'As predicted' :
-      observedSlope > (c.controlSlope.q975 ?? Infinity) ? 'Faster than predicted' : 'Slower than predicted'};
+    verdict: observedSlope === null ? null : slopeSide(observedSlope, c.controlSlope)};
 
   // the first measurement day the median control reached the endpoint, whatever evaluation day was chosen; a study
   // that never did is later than planned only if it was measured beyond the range's top

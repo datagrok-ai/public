@@ -58,6 +58,9 @@ export interface ArmDeclaration {
 
 export interface StudyDeclaration {
   line: string;
+  /** false: each combination's sentence is left to the caller (Plan asks it after the plan shows); default: in the
+   *  notes */
+  combinationNotes?: boolean;
   /** mm3 at randomisation (start of treatment) */
   vRand: number;
   /** mm3: by default the study ends when the median control reaches it (single animals may pass it) */
@@ -390,15 +393,31 @@ export async function designCombination(d: StudyDeclaration, a: DrugRate, b: Dru
   interaction: number, mde: boolean): Promise<Row> {
   const {prior, params} = await lineModel(d.line);
   const [ca, cb] = [a.archetype, b.archetype];
-  const r = await crux('stats.tumor_combination_design', prior, {...params, v_rand: d.vRand, humane: d.humane,
+  const asked = {...params, v_rand: d.vRand, humane: d.humane,
     endpoint: d.endpoint, metric: metric.toLowerCase(), power: d.power, alpha: d.alpha,
     weekdays: weekdaysParam(d.weekdays), start_weekday: d.startWeekday, seed: SEED,
     ...(d.n ? {n: d.n} : {}), ...(d.lastDay ? {last_day: d.lastDay} : {}),
     kill_rate_a: a.killRate, kill_rate_b: b.killRate, onset_a: ca.onsetDays, onset_b: cb.onsetDays,
     kappa_sd_a: ca.kappaSd, kappa_sd_b: cb.kappaSd, responders_a: ca.responders, responders_b: cb.responders,
-    interaction: Math.max(-1, interaction), mde});
-  return rows(r.main as any)[0];
+    interaction: Math.max(-1, interaction), mde};
+  // the seed is fixed: the same inputs give the same row (a plan drawn again, its synergy search), so asked once
+  const key = JSON.stringify([d.line, asked], (_, v) => ArrayBuffer.isView(v) ? Array.from(v as any) : v);
+  let r = combinationCache.get(key);
+  if (r)
+    combinationCache.delete(key); // re-inserted below: most recently used last
+  else {
+    const mine = r = crux('stats.tumor_combination_design', prior, asked).then((x) => rows(x.main as any)[0]);
+    r.catch(() => combinationCache.get(key) === mine && combinationCache.delete(key));
+    // ponytail: oldest-used out at 128 (a plan's combinations and their synergy searches, over its replans)
+    if (combinationCache.size >= 128)
+      combinationCache.delete(combinationCache.keys().next().value!);
+  }
+  combinationCache.set(key, r);
+  return r;
 }
+
+/** designCombination's rows by their inputs (never mutated once resolved). */
+const combinationCache = new Map<string, Promise<Row>>();
 
 /** The study's combinations (an arm whose name is two others' together, unless the user said it is not), with the
  *  interaction their declared effects give. */
@@ -622,7 +641,7 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
   // each combination against its drugs alone (the cheap part; the synergy is the view's, asked after the plan shows)
   // at the smallest of the three groups compared: what they give when the combination needs more. A failed call
   // (a Crux without the function) costs the plan nothing but this sentence, said plainly
-  notes.groups.push(...await Promise.all(combinationsOf(d, arms).map((c) => {
+  notes.groups.push(...d.combinationNotes === false ? [] : await Promise.all(combinationsOf(d, arms).map((c) => {
     const name = d.arms[c.ab].name;
     return designCombination({...d, n: combinationN(d, arms, c) ?? null}, arms[c.a], arms[c.b], d.arms[c.ab].metric,
       c.interaction, false).then((row) => row ? combinationNote(name, row, d.power,

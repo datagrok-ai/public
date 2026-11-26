@@ -37,6 +37,12 @@ import {armParts, detailsName, emptyMeta, ofGroups, parseMeta, renamedDetails, r
   from '../study-meta';
 import {groupDetails} from '../translation-report';
 import type {StudyInputs} from '../explore';
+import {ANALYZE_TABS} from '../analyze-view';
+import {panelGrid} from '../panels';
+import {entered, sig} from '../sheet';
+import {compareRows} from '../compare-view';
+import {Scope} from '@datagrok-libraries/u2';
+import * as grok from 'datagrok-api/grok';
 
 const OUTPUTS = ['analysis', 'comparisons', 'animals', 'volumes', 'twins', 'effects', 'checks', 'versusPlan',
   'predicted', 'tolerability', 'weights'];
@@ -848,7 +854,7 @@ category('Analyze: human exposure and modelling dataset', () => {
         'AUC per administration ÷ 21 days between administrations (on average)'), true, trasQw.tip);
       // an intermittent regimen also gives one dose against one administration (mouse 12 mg·h/L; patients' AUC as is)
       expect(trasQw.tip!.includes(`Per administration: the mouse's AUC per dose against the patients' AUC per ` +
-        `administration is ${Number((12 / (tras.auc! / 1000)).toPrecision(3)).toLocaleString('en-US')}×`), true,
+        `administration is ${sig(12 / (tras.auc! / 1000))}×`), true,
       trasQw.tip);
       expect(olaQd.tip!.includes('Per administration'), false, olaQd.tip);
       // what was measured, when it is more than the parent drug: intact oxaliplatin, not platinum; olaparib
@@ -1021,8 +1027,8 @@ category('Analyze: human exposure and modelling dataset', () => {
     const last: NcaByArm = {table: 'pk', pk: new Map(), arms: new Map([10, 30].map((d) => [`Cpd-A ${d} mg/kg QD`,
       {exposure: {...x(d, 1), aucInf: null, auc: d === 10 ? 10 : 40}}]))};
     const lastOnly = at(patients(20000), last)!;
-    expect(lastOnly.text.endsWith('17 mg/kg would match it') && lastOnly.tip.includes('AUClast: may underestimate exposure'),
-      true, lastOnly.tip);
+    expect(lastOnly.text.endsWith('17 mg/kg would match it') &&
+      lastOnly.tip.includes('AUClast: may underestimate exposure'), true, lastOnly.tip);
     // an arm with no schedule: the study's, said so; a study with none either: nothing
     const studys = at(patients(20000), two, 'Cpd-A 20 mg/kg')!;
     expect(studys.text, 'At 20 mg/kg, mice get about 1.2× the patients\' exposure; 17 mg/kg would match it');
@@ -1449,5 +1455,46 @@ category('Analyze: what the result and its numbers say together', () => {
       true);
     expect(intervalNote([{activity: 'Slows growth', tcLower: 30, tcUpper: 70},
       {activity: 'No clear effect', tcLower: 60, tcUpper: 120}], 21) === null, true);
+  });
+
+  test('one number format for exposure, doses and fractions: no float noise, separators, 2-3 figures', async () => {
+    expect(sig(new Float32Array([0.3])[0]), '0.3');
+    expect(sig(0.30000001192092896), '0.3');
+    expect(sig(12345.678), '12,300');
+    expect(sig(1234.5, 2), '1,200');
+    expect(sig(0.000123456), '0.000123');
+    expect(sig(2.7182, 2), '2.7');
+    expect(sig(100), '100');
+    expect(sig(NaN), '—');
+    // a dose as entered keeps every digit: only the float noise goes
+    expect([entered(3.125), entered(112.5), entered(1234.5), entered(new Float32Array([0.3])[0])].join('|'),
+      '3.125|112.5|1,234.5|0.3');
+    const groups: [string, number][] = [['Vehicle', 1000], ['Cpd-A 3.125 mg/kg QD', 500]];
+    const [arm] = compareRows({name: 'S', line: null, meta: null, rows: groups.flatMap(([g, v]) => [1, 2, 3]
+      .map((i) => ({animal: `${g}-${i}`, group: g, day: 14, volume: v})))}, 'x');
+    expect(arm.dose, '3.125 mg/kg');
+  });
+
+  test('exposure has its own panel on Results, after growth and time to endpoint', async () => {
+    const ids = ANALYZE_TABS[0].layout.map((s) => s.id);
+    expect(ids.join(), 'groups,growth,km,exposure');
+    expect(ANALYZE_TABS.flatMap((t) => t.layout).filter((s) => s.id === 'exposure').length, 1);
+  });
+
+  test('a layout stored before a panel was added still shows that panel, at the end', async () => {
+    const stage = 'test-added-panel';
+    const panel = (id: string) => ({id, title: id, hint: '', content: [document.createElement('div')]});
+    grok.userSettings.add('PmxStudio', `layout-${stage}`, JSON.stringify([{id: 'b', span: 6}, {id: 'a', span: 6}]));
+    const owner = Scope.root('test layout');
+    try {
+      const host = owner.build(() => panelGrid([panel('a'), panel('b'), panel('new')],
+        [{id: 'a', span: 12}, {id: 'b', span: 12}, {id: 'new', span: 12}], 'pmx-test', stage));
+      const shown = [...host.querySelectorAll<HTMLElement>('.pmx-panel')]
+        .map((c) => `${c.dataset.panel}:${c.dataset.span}`);
+      expect(shown.join(), 'b:6,a:6,new:12');
+    } finally {
+      owner.dispose();
+      grok.userSettings.delete('PmxStudio', `layout-${stage}`);
+    }
   });
 });

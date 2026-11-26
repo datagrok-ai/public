@@ -17,13 +17,12 @@ import {DEFAULT_RULES, Finding, OutlierRules, RULE_LIMITS, RulesSource, canEditL
   rulesInForce, rulesProblem, saveLabRules, saveUserRules, userRules} from './outlier-rules';
 import {groupsByAnimal} from './animal-group';
 import {StudyInputs as StudyNames} from './explore';
-import type {MenuAt} from './calendar';
 import {ROLES, WEIGHT, pastedNumber, plural} from './wide-table';
 import {EXCLUDED, FLAGGED, MARK_REASON, STUDY_TAG, addLog, groupsShown, roleColumns, ticked} from './study-file';
-import {metaOf} from './study-meta';
+import {metaOf, weightChangeText} from './study-meta';
 import {colorsOfTable, paint} from './colors';
-import {PanelFact, dialogLine, objectPanel, okNamed, showCentred, signed, sparkline, stageOf, modal, preparing}
-  from './ui';
+import {PanelFact, PanelVerdict, dialogLine, factList, objectPanel, okNamed, showCentred, signed, sparkline, stageOf,
+  modal, preparing} from './ui';
 import {esc} from './sheet';
 
 export {pastedNumber};
@@ -134,7 +133,7 @@ export function animalMarks(n: StudyNames): Map<string, Mark | 'partly'> {
 /** One animal's readings, by day: the volumes kept (excluded rows left out), its group, the rows excluded and flagged
  *  with their reasons, and its first and last body weight (null: none weighed). */
 export function animalReadings(n: StudyNames, animal: string): {days: number[], volumes: number[], group: string,
-  excluded: number, flagged: number, reasons: string[], weights: [number, number] | null} {
+  excluded: number, flagged: number, reasons: string[], weights: [number, number] | null, weightDay0: number | null} {
   const df = n.study;
   const [a, g, d, v] = [n.animal, n.group, n.day, n.volume].map((c) => df.col(c)!);
   const w = n.bodyWeight ? df.col(n.bodyWeight) : null;
@@ -163,30 +162,38 @@ export function animalReadings(n: StudyNames, animal: string): {days: number[], 
   kept.sort((x, y) => x[0] - y[0]);
   weighed.sort((x, y) => x[0] - y[0]);
   return {days: kept.map((x) => x[0]), volumes: kept.map((x) => x[1]), group, excluded, flagged,
-    reasons: [...reasons], weights: weighed.length ? [weighed[0][1], weighed[weighed.length - 1][1]] : null};
+    reasons: [...reasons], weights: weighed.length ? [weighed[0][1], weighed[weighed.length - 1][1]] : null,
+    weightDay0: weighed.length ? weighed[0][0] : null};
 }
 
 /** A % change with its sign either way: "+4%", "−3%", "0%" (what rounds to 0 has none). */
 export const gain = (x: number) => `${Math.round(x) > 0 ? '+' : ''}${signed(x)}`;
 
-/** An animal in the context panel: its curve, last volume, weight, marks; its group only when `showGroup` (a blinded
- *  study's stays hidden), `extra` facts after (Analyze's twin). */
+/** An animal in the context panel: its group under its name only when `showGroup` (a blinded study's stays hidden),
+ *  its answer when there is one (`verdict`: Analyze's twin; Monitor has none), its tumor, weight and marks, `extra`
+ *  facts after, and `growth` folded with its readings (without it, the readings are a fact). */
 export function animalPanel(n: StudyNames, animal: string, o: {color?: string, showGroup: boolean,
-  extra?: PanelFact[]}): HTMLElement {
+  extra?: PanelFact[], verdict?: PanelVerdict | null, growth?: PanelFact[],
+  /** the study's weight-loss limit (%): a change near it worded as its check words it */
+  weightLimit?: number | null}): HTMLElement {
   const r = animalReadings(n, animal);
   const last = r.volumes.length ? r.volumes[r.volumes.length - 1] : null;
-  const facts: PanelFact[] = [...o.showGroup && r.group ? [{label: 'Group', value: r.group}] : [],
-    {label: 'Volume', value: divH([sparkline(r.days, r.volumes, o.color), span(last === null ? '—' :
-      ` ${Math.round(last)} mm³, day ${r.days[r.days.length - 1]}`)])},
-    {label: 'Readings', value: r.days.length ? `${r.days.length}, day ${r.days[0]}–${r.days[r.days.length - 1]}` : '0'},
+  const readings: PanelFact = {label: 'Readings', value: r.days.length ?
+    `${r.days.length}, day ${r.days[0]} to ${r.days[r.days.length - 1]}` : '0'};
+  const facts: PanelFact[] = [
+    {label: 'Tumor', value: divH([sparkline(r.days, r.volumes, o.color), span(last === null ? '—' :
+      ` ${Math.round(last)} mm³ on day ${r.days[r.days.length - 1]}`)])},
+    ...o.growth ? [] : [readings],
     // a gain with its "+", as Needs attention writes it (signed() marks only a loss)
-    ...r.weights ? [{label: 'Body weight', value: `${r.weights[1].toFixed(1)} g (${gain(100 *
-      (r.weights[1] / r.weights[0] - 1))})`}] : [],
+    ...r.weights ? [{label: 'Body weight', value: `${r.weights[1].toFixed(1)} g · ${weightChangeText(100 *
+      (r.weights[1] / r.weights[0] - 1), o.weightLimit)} since day ${r.weightDay0}`}] : [],
     ...r.excluded ? [{label: 'Excluded', value: plural(r.excluded, 'reading')}] : [],
     ...r.flagged ? [{label: 'Flagged', value: plural(r.flagged, 'reading')}] : [],
     ...r.reasons.length ? [{label: 'Why', value: r.reasons.join('; ')}] : [],
     ...o.extra ?? []];
-  return objectPanel({title: animal, color: o.showGroup ? o.color : undefined, facts});
+  return objectPanel({title: animal, color: o.showGroup ? o.color : undefined,
+    subtitle: o.showGroup && r.group ? r.group : undefined, verdict: o.verdict, facts,
+    sections: o.growth ? [{title: 'Growth', content: () => factList([...o.growth!, readings])}] : []});
 }
 
 /** An animal as a line of a group's panel: name, curve, last volume, its status in a word or two; a click shows the
@@ -195,9 +202,13 @@ export function animalLine(n: StudyNames, animal: string, color: string, status:
   open: () => void): HTMLElement {
   const r = animalReadings(n, animal);
   const last = r.volumes.length ? `${Math.round(r.volumes[r.volumes.length - 1])} mm³` : '—';
-  const line = divH([span(animal), sparkline(r.days, r.volumes, color, 80, 18), span(last),
-    ...status ? [span(status)] : []]);
-  Object.assign(line.style, {gap: '8px', alignItems: 'center', cursor: 'pointer'});
+  // a long status cut to the line, whole on hover (the panel is narrow: wrapped, it pushed the other panes away)
+  const st = span(status);
+  Object.assign(st.style, {minWidth: '0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+    color: 'var(--dg-text-color-muted, #7d8792)'});
+  st.title = status;
+  const line = divH([span(animal), sparkline(r.days, r.volumes, color, 80, 18), span(last), ...status ? [st] : []]);
+  Object.assign(line.style, {gap: '8px', alignItems: 'center', cursor: 'pointer', flexWrap: 'nowrap', minWidth: '0'});
   (line.firstElementChild as HTMLElement).style.minWidth = '48px';
   line.onclick = open;
   return line;
@@ -234,34 +245,12 @@ export function mark(df: DG.DataFrame, rows: number[], state: Mark | null, reaso
     `Cleared the mark on ${what}`) + how);
 }
 
-/** An animal's or a group's menu (a right click on it anywhere in a stage): `extra`, the stage's own items, then
- *  its rows in the study table selected, flagged, excluded or cleared, and its name copied. */
-export function studyMenu(n: StudyNames | null, role: 'animal' | 'group', value: string, at: MenuAt,
-  extra: [string, () => void][] = []): void {
-  const popup = DG.Menu.popup();
-  for (const [name, run] of extra)
-    popup.item(name, run);
-  const col = n ? n.study.col(n[role]) : null;
-  if (n && col) {
-    const rows = Array.from({length: n.study.rowCount}, (_, i) => i).filter((i) => String(col.get(i)) === value);
-    const what = `${role} ${value} (${plural(rows.length, 'row')})`;
-    const these = new Set(rows);
-    popup.item('Select its rows', () => n.study.selection.init((i) => these.has(i)));
-    popup.item(`Flag ${role === 'animal' ? 'this animal' : 'every animal of the group'}…`,
-      () => markRows(n.study, rows, 'flag', what));
-    popup.item(`Exclude ${role === 'animal' ? 'this animal' : 'the group'} from the analysis…`,
-      () => markRows(n.study, rows, 'exclude', what));
-    popup.item('Clear its marks', () => markRows(n.study, rows, 'clear', what));
-  }
-  popup.item('Copy the name', () => void navigator.clipboard.writeText(value));
-  popup.show(at);
-}
-
 /** A context menu's item (detectors.js): flags or excludes the rows, asking why (required to exclude), or clears
  *  their marks. */
-export function markRows(df: DG.DataFrame, rows: number[], action: string, what: string): void {
+export function markRows(df: DG.DataFrame, rows: number[], action: string, what: string, done = () => {}): void {
   if (action === 'clear') {
     mark(df, rows, null, '', what);
+    done();
     return;
   }
   const exclude = action === 'exclude';
@@ -271,14 +260,16 @@ export function markRows(df: DG.DataFrame, rows: number[], action: string, what:
   if (!d)
     return;
   d.add(dialogLine(exclude ? 'Left out of the analysis' : 'Stays in the analysis, marked to look at',
-      exclude ? 'Left out of the analysis and the forecasts, and reported with its reason' : undefined))
+    exclude ? 'Left out of the analysis and the forecasts, and reported with its reason' : undefined))
     .add(reason)
     .onOK(() => {
       const text = (reason.value ?? '').trim();
       if (exclude && text === '')
         grok.shell.warning('Write why: an exclusion is reported with its reason');
-      else
+      else {
         mark(df, rows, exclude ? 'excluded' : 'flagged', text, what);
+        done();
+      }
     });
   const ok = okNamed(d, exclude ? 'Exclude' : 'Flag');
   showCentred(d);
@@ -442,11 +433,13 @@ async function rulesDialogNow(): Promise<void> {
   const impossible = ui.input.bool('Impossible values', {value: rules.impossible,
     tooltipText: 'A negative volume or body weight; an animal measured twice on one day'});
   const jumpOn = ui.input.bool('Jumps between measurements', {value: rules.jump.on});
-  const fold = ui.input.float('Times larger or smaller', {value: rules.jump.fold, min: RULE_LIMITS.fold[0], max: RULE_LIMITS.fold[1],
+  const fold = ui.input.float('Times larger or smaller', {value: rules.jump.fold, min: RULE_LIMITS.fold[0],
+    max: RULE_LIMITS.fold[1],
     tooltipText: 'A volume that changed since the animal’s previous one this many times more, or less, than its ' +
       'group’s did over the same days (a caliper typo, a misread animal)'});
   const groupOn = ui.input.bool('Far from its group', {value: rules.group.on});
-  const mads = ui.input.float('Robust deviations', {value: rules.group.mads, min: RULE_LIMITS.mads[0], max: RULE_LIMITS.mads[1],
+  const mads = ui.input.float('Robust deviations', {value: rules.group.mads, min: RULE_LIMITS.mads[0],
+    max: RULE_LIMITS.mads[1],
     tooltipText: 'How far from the group’s median on that day, in robust deviations (MAD) of log volume'});
   const minAnimals = ui.input.int('In groups of at least', {value: rules.group.minAnimals,
     min: RULE_LIMITS.minAnimals[0], max: RULE_LIMITS.minAnimals[1]});

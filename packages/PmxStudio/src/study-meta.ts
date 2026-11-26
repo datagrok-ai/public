@@ -153,6 +153,23 @@ export function dateOf(start: string | null, day: number): Date | null {
 export const dateText = (d: Date, year = false) => d.toLocaleDateString('en-GB',
   {day: 'numeric', month: 'short', ...year ? {year: 'numeric'} : {}, timeZone: 'UTC'});
 
+/** A weight lost (%) as the weight-loss limit check words it: whole percents, but near the limit one decimal, rounded
+ *  (19.57% lost reads 19.6%, not "20%, limit 20%" nor a truncated 19.5%); only a loss a hair under the limit, which
+ *  would round onto it (19.97%), is cut down to 19.9%. */
+export function lossText(lost: number, limit: number | null | undefined): string {
+  if (!limit || Math.round(lost) < limit || lost >= limit)
+    return String(Math.round(lost));
+  const tenth = Math.round(lost * 10) / 10;
+  return (tenth >= limit ? Math.floor(lost * 10) / 10 : tenth).toFixed(1);
+}
+
+/** A body-weight change (%), signed ("+4%", "−12%"), near the weight-loss `limit` as lossText words it: the table,
+ *  the panel and the reason it needs attention say one number. */
+export function weightChangeText(change: number, limit?: number | null): string {
+  const loss = lossText(-change, limit);
+  return Number(loss) > 0 ? `−${loss}%` : `${Math.round(change) > 0 ? '+' : ''}${Math.round(change)}%`;
+}
+
 /** The weekday of a date, Monday 0 (as Plan's weekdays). */
 export const weekdayOf = (iso: string) => (new Date(`${iso}T00:00:00Z`).getUTCDay() + 6) % 7;
 

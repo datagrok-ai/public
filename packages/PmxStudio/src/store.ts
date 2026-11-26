@@ -59,7 +59,8 @@ export {domainStorageOn};
 /** The listed columns of a document: its entry, as entryOf computes it for the Overview. */
 export function columnsOf(kind: Kind, doc: SavedPlan | SavedStudy): Omit<DocRow, 'id' | 'version'> {
   const document = JSON.stringify(doc);
-  const e = entryOf(document, 0);
+  // (the app's own document: what keeps it from reading is said, not hidden as another kind of file)
+  const e = entryOf(document, 0, null, true);
   if (!e || e.kind !== kind)
     throw new Error(`Not a PMX Studio ${kind}`);
   const meta = kind === 'study' ? (doc as SavedStudy).meta : (doc as SavedPlan).study;

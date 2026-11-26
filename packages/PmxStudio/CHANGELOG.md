@@ -1,5 +1,28 @@
 # PmxStudio changelog
 
+## 0.1.2 (2026-11-26)
+
+* A plan whose controls never reach the endpoint within the study (Panc02 at 2000 mm³) saves and opens again; when a
+  plan or study of the app cannot be saved, the message says why.
+
+* Analyze: NCA's exposure has a panel of its own, **Exposure and effect**, out of the groups panel; the groups table
+  gains a **× patients' exposure** column when the patients' exposure is given.
+* Numbers in exposure, AUC, Cmax, concentration, dose and multiple tooltips: 2–3 significant figures, no float noise
+  ("0.30000001192092896" is now 0.3), thousands separators.
+* Animals by day: one line under the growth chart; each point's tooltip says "n of N animals", and a stretch with fewer
+  than 3 animals is dashed. The full table is in the group's context panel, the report and **Open as table**.
+* A toolbox in Plan, Monitor, Analyze and Compare: the view menu's items by section (Study, Export, Documents, View,
+  Help). Analyze exports the study file (`.pmxstudy`) and the calendar (`.ics`); Monitor's Propose groups… and the
+  randomization sheet are in its Study section, Enrollment before the measurement sheet.
+* Right-click the platform's way: animals, groups and figures are Datagrok objects with registered actions, the same
+  in the right-click menu and in the context panel's Actions; Include in the analysis is offered for an excluded
+  animal. The custom study menus are removed.
+* Compare v2: panels you can lay out, with summary cards, every group's growth (Linear, Log, Relative V/V0), dose and
+  effect across studies, TGI against the patients' exposure, each control against the atlas for its model (a table and
+  one sentence when a control drifts), and the treated groups with their result.
+* One Crux module, `pmx` (crux-core main 2623118b4), in place of `nonclinical` and `stats`: 5.6 MB of wasm instead
+  of 21 MB, the same results.
+
 ## 0.1.1 (2026-11-26)
 
 * Browse stays open: opening PMX Studio, or coming back to its Overview, no longer closes Datagrok's Browse tree,

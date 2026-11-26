@@ -10,6 +10,8 @@ import {StudyMeta, dateOf, dateText} from './study-meta';
 export const esc = (s: unknown) => String(s ?? '').replace(/[&<>"]/g, (c) =>
   ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'})[c]!);
 
+export {entered, sig} from './format';
+
 /** Whether a measurement on `day` is closer to randomization than one on `was`: the last on or before day 0, else
  *  the first after it. */
 export const closer = (day: number, was: number) => day <= 0 ? was > 0 || day > was : was > 0 && day < was;

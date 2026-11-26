@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/pmxstudio",
   "friendlyName": "PMX Studio",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "PMX Studio Preclinical: de novo design of xenograft and syngeneic efficacy studies from a curated atlas of historical controls",
   "dependencies": {
     "@datagrok-libraries/test": "workspace:^",

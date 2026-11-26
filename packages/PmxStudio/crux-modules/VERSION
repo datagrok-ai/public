@@ -1,1 +1,1 @@
-nonclinical: crux-core main ef9fc7c43 (land: tumor-effect-from-study; land: tumor-combination 4b034cadb, tumor-allocate-weight, twin-fit-budget, map-prior-binomial-tau0); stats: crux-core main 3e77becef (land: tumor-monitor, on tumor-twin-webgpu)
+pmx: crux-core main 2623118b4 (land: pmx-module; rebuilt from it: wasm and bindings byte-identical to the spike build 1c9ce1a1f shipped before; the module carries the functions this package calls)

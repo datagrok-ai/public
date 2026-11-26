@@ -15,7 +15,7 @@ import {CanvasRenderer} from 'echarts/renderers';
 import type {EChartsOption} from 'echarts';
 
 import {chartMenu} from './report';
-import {esc} from './sheet';
+import {esc, sig} from './sheet';
 import {colorTick} from './colors';
 
 echarts.use([BarChart, CustomChart, LineChart, ScatterChart, GridComponent, LegendComponent, MarkAreaComponent,
@@ -43,10 +43,18 @@ export interface BandChartOptions {
   redrawOn?: ReadonlySignal<unknown>;
   /** the categories whose line is dashed (a prediction beside what was observed) */
   dashed?: string[];
+  /** the animals behind each point: said in the tooltip, and the line dashed where fewer than 3 remain (a median of
+   *  one or two animals is no group's) */
+  count?: string;
 }
 
+/** Below this many animals a point's median is not read as its group's: its stretch of line is dashed. */
+export const FEW_ANIMALS = 3;
+
 /** One category's points, sorted by X; `row` is one of its rows, where its colour is read. */
-export interface Band {name: string, x: number[], lower: number[], upper: number[], line: number[] | null, row: number}
+export interface Band {name: string, x: number[], lower: number[], upper: number[], line: number[] | null, row: number,
+  /** the animals behind each point (NaN: not known); null: no count given */
+  n?: number[] | null}
 
 /** A constant formula line of the table: `${X} = 19` vertical, `${any other column} = 1500` horizontal. */
 export interface RefLine {value: number, vertical: boolean, title: string, color: string, dashed: boolean}
@@ -92,10 +100,11 @@ export class BandChart extends Control {
     }
     const line = o.line ? df.col(o.line) : null;
     const split = o.split ? df.col(o.split) : null;
-    this.bands = collectBands(df, x, lower, upper, line, split);
+    this.bands = collectBands(df, x, lower, upper, line, split, o.count ? df.col(o.count) : null);
     const y = line ?? upper;
     const fmt = {xUnits: x.meta.units ?? '', yUnits: y.meta.units ?? '', x: x.meta.format || DEFAULT_FORMAT,
-      y: y.meta.format || '0.0', xTitle: o.xTitle || x.name, ...o.yInTooltip ? {yTitle: o.yTitle ?? y.name} : {}};
+      y: y.meta.format || '0.0', xOwn: !!x.meta.format, yOwn: !!y.meta.format, xTitle: o.xTitle || x.name,
+      ...o.yInTooltip ? {yTitle: o.yTitle ?? y.name} : {}};
     const xTitle = axisTitle(fmt.xTitle, fmt.xUnits);
     const yTitle = axisTitle(o.yTitle || (line ? line.name : `${lower.name} – ${upper.name}`), fmt.yUnits, log);
     // the split column's colour coding when it has one, else the categorical palette in band order
@@ -121,7 +130,8 @@ export function initQuietly(host: HTMLElement): echarts.ECharts {
 }
 
 type Look = {xTitle: string, yTitle: string, log: boolean, markers: boolean, fit: boolean, dashed: string[],
-  fmt: {xUnits: string, yUnits: string, x: string, y: string, xTitle: string, yTitle?: string}};
+  fmt: {xUnits: string, yUnits: string, x: string, y: string, xTitle: string, yTitle?: string, xOwn?: boolean,
+    yOwn?: boolean}};
 
 function chartOption(bands: Band[], colors: string[], refs: RefLine[], look: Look): EChartsOption {
   const series: object[] = [];
@@ -135,11 +145,7 @@ function chartOption(bands: Band[], colors: string[], refs: RefLine[], look: Loo
       data: b.x.map((x, i) => [x, b.lower[i], b.upper[i]]), encode: {x: 0, y: [1, 2]},
       renderItem: (params: any, api: any) => params.dataIndex !== 0 ? null : {type: 'polygon',
         shape: {points: outline.map((p) => api.coord(p))}, style: {fill: color, opacity: 0.25}}});
-    if (b.line) {
-      const dashed = look.dashed.includes(b.name);
-      series.push({name: b.name, type: 'line', data: pairs(b.line), symbol: look.markers && !dashed ? 'circle' : 'none',
-        lineStyle: {color, width: 2, type: dashed ? 'dashed' : 'solid'}, itemStyle: {color}});
-    }
+    series.push(...lineSeries(b, color, look.markers, look.dashed.includes(b.name)));
   });
   if (refs.length && bands.length) {
     // the reference lines ride an empty series; its radius-0 points keep a horizontal one inside the Y axis
@@ -194,6 +200,35 @@ function chartOption(bands: Band[], colors: string[], refs: RefLine[], look: Loo
   } as EChartsOption;
 }
 
+/** A band's line: solid, or dashed for a prediction; with counts, dashed over each stretch where a point has fewer than
+ *  FEW_ANIMALS animals (each stretch a series of its own, of the band's name: one legend entry, and every series keeps
+ *  the band's indices, its other points empty, so the tooltip reads each point by its index). */
+export function lineSeries(b: Band, color: string, markers: boolean, dashed: boolean): object[] {
+  if (!b.line)
+    return [];
+  const line = b.line;
+  const at = (keep: (i: number) => boolean) => b.x.map((x, i) => [x, keep(i) ? line[i] : null]);
+  const style = (dash: boolean) => ({name: b.name, type: 'line', symbol: markers && !dashed ? 'circle' : 'none',
+    lineStyle: {color, width: 2, type: dash ? 'dashed' : 'solid'}, itemStyle: {color}});
+  const n = b.n;
+  if (dashed || !n)
+    return [{...style(dashed), data: at(() => true)}];
+  const few = (i: number) => n[i] < FEW_ANIMALS;
+  // a segment is dashed when either end is a thin point; consecutive dashed segments make one stretch
+  const stretches: [number, number][] = [];
+  for (let i = 0; i + 1 < b.x.length; i++) {
+    if (!few(i) && !few(i + 1))
+      continue;
+    const last = stretches[stretches.length - 1];
+    if (last && last[1] === i)
+      last[1] = i + 1;
+    else
+      stretches.push([i, i + 1]);
+  }
+  return [{...style(false), data: at((i) => !few(i))},
+    ...stretches.map(([s, e]) => ({...style(true), data: at((i) => i >= s && i <= e)}))];
+}
+
 /** The tick step of an axis from 0 to `top` (niceCeil's): 4 steps for 2 × 10^p (500s to 2000), else 5 (200s to
  *  1000, 500s to 2500, 1000s to 5000). */
 export function niceStep(top: number): number {
@@ -219,22 +254,29 @@ export function niceFloor(v: number): number {
 
 /** X, then lower / line / upper of every band at that point (each series at its own index: bands of different
  *  categories need not share their X values). */
-function tooltip(params: any[], bands: Band[], fmt: Look['fmt']): string {
+export function tooltip(params: any[], bands: Band[], fmt: Look['fmt']): string {
   if (!params.length)
     return '';
   const rows = new Set<string>();
   const u = fmt.yUnits ? ` ${fmt.yUnits}` : '';
-  const y = (v: number) => DG.format(v, fmt.y);
+  // a column with no format of its own: the app's number format (no float noise, thousands separated)
+  const y = (v: number) => fmt.yOwn ? DG.format(v, fmt.y) : sig(v);
   for (const p of params) {
     const b = bands.find((b) => b.name === p.seriesName);
     const i = p.dataIndex;
     if (!b || i >= b.x.length)
       continue;
     const range = `${y(b.lower[i])} – ${y(b.upper[i])}${u}`;
-    rows.add(`${b.name === '' ? '' : `<b>${esc(b.name)}</b>: `}${b.line ? `${y(b.line[i])}${u} (${range})` : range}`);
+    // the animals behind the point, of the most the group had
+    const n = b.n?.[i];
+    const most = b.n ? Math.max(...b.n.filter(Number.isFinite)) : NaN;
+    const of = Number.isFinite(n) ? `, ${n} of ${most} animal${most === 1 ? '' : 's'}` : '';
+    const name = b.name === '' ? '' : `<b>${esc(b.name)}</b>: `;
+    rows.add(`${name}${b.line ? `${y(b.line[i])}${u} (${range})` : range}${of}`);
   }
   const xu = fmt.xUnits ? ` ${fmt.xUnits}` : '';
-  return [`${esc(fmt.xTitle)}: ${DG.format(params[0].data[0], fmt.x)}${xu}`, ...fmt.yTitle ? [esc(fmt.yTitle)] : [],
+  const x = params[0].data[0];
+  return [`${esc(fmt.xTitle)}: ${fmt.xOwn ? DG.format(x, fmt.x) : sig(x)}${xu}`, ...fmt.yTitle ? [esc(fmt.yTitle)] : [],
     ...rows].join('<br>');
 }
 
@@ -262,7 +304,7 @@ export function refLines(items: DG.FormulaLine[], xName: string): RefLine[] {
 
 /** The filtered rows with X, lower and upper present, grouped by the split category and sorted by X. */
 export function collectBands(df: DG.DataFrame, x: DG.Column, lower: DG.Column, upper: DG.Column,
-  line: DG.Column | null, split: DG.Column | null): Band[] {
+  line: DG.Column | null, split: DG.Column | null, count: DG.Column | null = null): Band[] {
   const byName = new Map<string, number[]>();
   for (let i = df.filter.findNext(-1, true); i !== -1; i = df.filter.findNext(i, true)) {
     if (x.isNone(i) || lower.isNone(i) || upper.isNone(i))
@@ -277,6 +319,7 @@ export function collectBands(df: DG.DataFrame, x: DG.Column, lower: DG.Column, u
     rows.sort((a, b) => x.get(a) - x.get(b));
     const values = (c: DG.Column) => rows.map((i) => c.get(i) as number);
     return {name, row: rows[0], x: values(x), lower: values(lower), upper: values(upper),
-      line: line ? rows.map((i) => line.isNone(i) ? NaN : line.get(i)) : null};
+      line: line ? rows.map((i) => line.isNone(i) ? NaN : line.get(i)) : null,
+      n: count ? rows.map((i) => count.isNone(i) ? NaN : count.get(i)) : null};
   });
 }

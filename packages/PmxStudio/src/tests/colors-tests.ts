@@ -141,6 +141,21 @@ category('Study colours', () => {
     }
   });
 
+  test('two open studies with a group of one name and colour: the colour picked is the table\'s study\'s', async () => {
+    const [one, two] = ['PMX-T-ONE', 'PMX-T-TWO'].map((id) => stage(id, ['Vehicle', 'A'], 'Vehicle'));
+    const [t1, t2] = [groupFrame(['A']), groupFrame(['A'])];
+    one.table = () => t1;
+    two.table = () => t2;
+    const stops = [linkStudy(one), linkStudy(two)];
+    try {
+      expect(one.colors()['A'], two.colors()['A'], 'the same colour in both');
+      recolorOf('A', two.colors()['A'], t2)!('#123123');
+      expect([one.kept.colors['A'] ?? 'none', two.kept.colors['A']].join(), 'none,#123123');
+    } finally {
+      stops.forEach((s) => s());
+    }
+  });
+
   test('a colour picked on a chart\'s legend item is the study\'s', async () => {
     const s = stage('PMX-T-LEGEND', ['Vehicle', 'A'], 'Vehicle');
     const stop = linkStudy(s);

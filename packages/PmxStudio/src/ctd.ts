@@ -12,6 +12,7 @@ import {isFiniteNumber as has} from './engine';
 import {GroupDetails, StudyMeta, rowsOf} from './study-meta';
 import type {SavedStudy} from './study-file';
 import {aucUsed, sig as sig3} from './exposure';
+import {entered} from './sheet';
 import type {NcaByArm} from './exposure';
 import {modelName} from './priors';
 
@@ -327,7 +328,7 @@ export function ctdStudyOf(r: AnalysisFrames, meta: StudyMeta | null, name: stri
   const scored = animals.some((a) => typeof a.mrecist === 'string' && a.mrecist);
   const count = (group: string, re: RegExp) => animals.filter((a) => a.group === group && re.test(a.mrecist ?? ''))
     .length;
-  const dose = (d: GroupDetails) => [d.compound.trim(), d.dose === null ? '' : `${d.dose} ${d.unit}`.trim(),
+  const dose = (d: GroupDetails) => [d.compound.trim(), d.dose === null ? '' : `${entered(d.dose)} ${d.unit}`.trim(),
     d.schedule.trim()].filter((x) => x).join(' ');
   const group = (g: string, i: number | null): CtdGroup => {
     const details = rowsOf(meta, g).filter((d) => d.compound.trim());

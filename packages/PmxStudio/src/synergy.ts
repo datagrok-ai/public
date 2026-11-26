@@ -307,7 +307,7 @@ export function synergyDialog(s: StudyInputs, control: string, treated: string[]
         if (!r)
           return;
         r.add(synergyResult(x, g, alpha, groupColors(treated, control, metaOf(s.study)?.colors,
-            metaOf(s.study)?.slots))).onOK(() => {});
+          metaOf(s.study)?.slots))).onOK(() => {});
         okNamed(r, 'Close');
         // one way out: Close
         const cancel = r.getButton('CANCEL');

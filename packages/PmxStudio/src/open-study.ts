@@ -145,6 +145,32 @@ export function routedNote(b: Brought, asked: OpenStage, opens: OpenStage): stri
   return `${what} opens in ${LABEL[opens]}, not in ${LABEL[asked]}.`;
 }
 
+/** The sheet picker on screen: its workbook and the answer it will give. */
+let sheetAsked: {file: string, answer: Promise<string>} | null = null;
+
+/** The sheet of workbook `file` the user picks among `names`. One picker at a time: the same workbook again gets the
+ *  open picker's answer; another waits for it to close, then asks. */
+function sheetOf(file: string, names: string[]): Promise<string> {
+  if (sheetAsked) {
+    return sheetAsked.file === file ? sheetAsked.answer :
+      sheetAsked.answer.catch(() => '').then(() => sheetOf(file, names));
+  }
+  const answer = new Promise<string>((resolve, reject) => {
+    const input = ui.input.choice('Sheet', {value: names[0], items: names});
+    const none = () => reject(new Error('No sheet was chosen.'));
+    const d = modal('xlsx-sheet', 'Which sheet holds the measurements?')!; // (free: no picker is asked)
+    // closing with X or Escape is a close, not a cancel; after OK the promise is settled and this does nothing
+    d.add(dialogLine(file)).add(input).onOK(() => resolve(input.value!)).onCancel(none);
+    okNamed(d, 'Open');
+    showCentred(d);
+    d.onClose.subscribe(() => setTimeout(none, 0));
+  });
+  sheetAsked = {file, answer};
+  const done = () => void (sheetAsked = null);
+  answer.then(done, done);
+  return answer;
+}
+
 /** What a file holds as text: an Excel file's sheet, read through PowerPack (a soft dependency) and written as CSV.
  *  With several sheets that read as a study, the user picks one. Throws a plain Error when it cannot be read. */
 export async function fileText(f: File): Promise<{text: string, merged: Merged[]}> {
@@ -179,18 +205,7 @@ export async function fileText(f: File): Promise<{text: string, merged: Merged[]
       throw new Error(refused[0] ?? 'No sheet of the workbook reads as a table of measurements (sheets tried: ' +
         `${sheets.map((s) => s.name).join(', ')}). Each needs a row per measurement, or a column per day or animal.`);
     }
-    const name = names.length === 1 || sheets.length === 1 ? names[0] : await new Promise<string>((resolve, reject) => {
-      const input = ui.input.choice('Sheet', {value: names[0], items: names});
-      const none = () => reject(new Error('No sheet was chosen.'));
-      const d = modal('xlsx-sheet', 'Which sheet holds the measurements?');
-      if (!d)
-        return none();
-      // closing with X or Escape is a close, not a cancel; after OK the promise is settled and this does nothing
-      d.add(dialogLine(f.name)).add(input).onOK(() => resolve(input.value!)).onCancel(none);
-      okNamed(d, 'Open');
-      showCentred(d);
-      d.onClose.subscribe(() => setTimeout(none, 0));
-    });
+    const name = names.length === 1 || sheets.length === 1 ? names[0] : await sheetOf(f.name, names);
     pick = sheets.find((s) => s.name === name)!;
   }
   const bad = animalProblem(usable.find((df) => df.name === pick.name)!);

@@ -1,6 +1,7 @@
 /*
  * Crux (https://github.com/datagrok-ai/crux) in the browser: the wasm modules this package ships in
- * crux-modules/ (nonclinical and stats, the ones its functions are routed to; README "Crux modules"), loaded once
+ * crux-modules/ (pmx: the functions this package calls, carried from Crux's nonclinical and stats; README "Crux
+ * modules"), loaded once
  * by Crux's own module loader
  * (crux-modules.js, renamed from .mjs: a Web Worker per module, functions routed by manifest.json) and called
  * through its leaf ABI: plain columns in, the result's columns out.
@@ -69,6 +70,14 @@ export function cruxPool(open: () => Promise<CruxModules>, maxSets: number, idle
   };
   return {
     sets: () => pool.length, // (for the package's tests)
+    /** Opens one set with `modules` loaded (fetched, compiled, their workers started) when none is open, so the first
+     *  call finds it warm; the other sets open on demand, as calls overlap. Nothing when a set is open. */
+    warm(modules: string[]): void {
+      if (pool.length)
+        return;
+      pool.push(fresh(modules));
+      countdown();
+    },
     wake(): void {
       // (never opened, or calculating: the calculation's end counts down; at rest with nothing to reopen, a countdown
       // would only swap the one set for the same)
@@ -104,11 +113,19 @@ export function cruxPool(open: () => Promise<CruxModules>, maxSets: number, idle
 
 let first: Promise<CruxModules> | null = null;
 
+const cruxBase = () => new URL('crux-modules/', _package.webRoot.endsWith('/') ? _package.webRoot :
+  `${_package.webRoot}/`);
+
+/** The bundled Crux modules' manifest as served (it carries each module's js and wasm hashes): what a plan's kept
+ *  tables are checked against (plan-file.ts engineFingerprint). */
+export const cruxManifestText = (): Promise<string> => fetch(new URL('manifest.json', cruxBase()).href)
+  .then((r) => r.ok ? r.text() : Promise.reject(new Error(`crux-modules/manifest.json: ${r.status}`)));
+
 /** A new set of workers: the loader and its manifest are fetched for the first only (a slow server pays once). */
 function load(): Promise<CruxModules> {
   if (first)
     return first.then((m: any) => new m.constructor(m.manifest, m.options));
-  const base = new URL('crux-modules/', _package.webRoot.endsWith('/') ? _package.webRoot : `${_package.webRoot}/`);
+  const base = cruxBase();
   first = import(/* webpackIgnore: true */ new URL('crux-modules.js', base).href)
     .then((m) => m.CruxModules.fromBase(base) as Promise<CruxModules>);
   first.catch(() => first = null);
@@ -144,6 +161,9 @@ export const named = (r: CruxResult, name: string) => rows(r.named![name].table)
 
 const engine = cruxPool(load, MAX_SETS, IDLE_MS);
 let calls = 0;
+const callsOf = new Map<string, number>();
+/** The calls of one function so far (for the package's tests: a plan designed, not only drawn). */
+export const cruxCallsOf = (name: string) => callsOf.get(name) ?? 0;
 /** The calls made so far (for the package's tests: what opens the engine). */
 export const cruxCalls = () => calls;
 
@@ -164,6 +184,7 @@ export class NoControl extends Error {
 /** Calls the crux-fn `name` (e.g. 'stats.contrast') on `table` (column name -> values) with `params`. */
 export const crux = (name: string, table: {[col: string]: any}, params: object = {}): Promise<CruxResult> => {
   calls++;
+  callsOf.set(name, (callsOf.get(name) ?? 0) + 1);
   return engine.call(name, table, params).catch((e) => {
     throw new EngineError(String(e?.message ?? e));
   });
@@ -172,3 +193,14 @@ export const crux = (name: string, table: {[col: string]: any}, params: object =
 /** A gesture that will compute (a field changed, a stage opened, the tab back): the engine at rest reopens its sets
  *  now, not on the first call. Nothing when it is open, or never was. */
 export const cruxWake = () => engine.wake();
+
+let warmed = false;
+/** The engine made ready before it is needed (the Overview shown and the browser idle, or a stage's card under the
+ *  pointer): one set of workers with the pmx module loaded, once a session. Plan, Monitor and Analyze then start on
+ *  it rather than on fetching and compiling the module. */
+export function cruxWarm(): void {
+  if (warmed)
+    return;
+  warmed = true;
+  engine.warm(['pmx']);
+}

@@ -16,8 +16,10 @@ export interface Range {q025: number, median: number, q975: number | null}
  *  with no factor keeps its range. */
 export function widenedEnd(r: Range, f: BandFactors | null): Range {
   const s = f?.end80 ?? null;
-  return s === null ? r : {q025: Math.floor(widened(r.median, r.q025, s, 0.5)), median: r.median,
-    q975: r.q975 === null ? null : Math.ceil(widened(r.median, r.q975, s, 0.5))};
+  // (no median: the controls do not reach the endpoint, nothing to widen)
+  return s === null || !Number.isFinite(r.median) || !Number.isFinite(r.q025) ? r :
+    {q025: Math.floor(widened(r.median, r.q025, s, 0.5)), median: r.median,
+      q975: r.q975 === null ? null : Math.ceil(widened(r.median, r.q975, s, 0.5))};
 }
 
 /** The range with the plan's printed one (day Q10 to Q90, rounded) inside it: a day Plan showed is never called off. */

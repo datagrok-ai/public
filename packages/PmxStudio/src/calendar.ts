@@ -9,7 +9,9 @@ import {div, divV, span, Tooltip} from '@datagrok-libraries/u2';
 
 import {groupColors} from './colors';
 import {WEEKDAY_NAMES} from './frames';
-import {okNamed, showCentred, modal} from './ui';
+import {PanelFact, objectPanel, okNamed, showCentred, showDepth, modal} from './ui';
+import {PmxDay} from './pmx-objects';
+import {plural} from './wide-table';
 import {StudyMeta, dateOf, dateText, dosingDays, noteDialog, schedulesOf, startFrom, withException, withGiven}
   from './study-meta';
 
@@ -58,7 +60,7 @@ export interface DayLook {marks: HTMLElement[], detail?: string, tint?: string, 
 /** The weeks from day 0 (on weekday `startWeekday`, Monday 0) to `last`; `header`: the seven weekday labels. */
 export function weeksGrid(o: {meta: StudyMeta, startWeekday: number, last: number, header?: HTMLElement[],
   day: (day: number, study: HTMLElement[]) => DayLook, onMenu: (day: number, at: MenuAt) => void,
-  onNote: (day: number) => void, control?: string}): HTMLElement {
+  onNote: (day: number) => void, onSelect?: (day: number) => void, control?: string}): HTMLElement {
   const {meta, startWeekday: start, last} = o;
   const doses = dosingDays(meta.groups, last, meta);
   // the arms' colours as the charts have them (read here: a colour change draws the calendar again)
@@ -157,6 +159,9 @@ export function weeksGrid(o: {meta: StudyMeta, startWeekday: number, last: numbe
         }
       });
       cell.addEventListener('dblclick', () => o.onNote(day));
+      // a click: the day on the context panel, with its actions (the right click's, also reachable there)
+      if (o.onSelect)
+        cell.addEventListener('click', () => o.onSelect!(day));
       grid.append(cell);
     }
   }
@@ -168,8 +173,9 @@ export function weeksGrid(o: {meta: StudyMeta, startWeekday: number, last: numbe
  *  be about; `logGiven` (Monitor): the day's doses can be logged as given; `name`: a group as the user may see it
  *  (blinded: "Group 2"). */
 export function dayActions(get: () => StudyMeta, set: (m: StudyMeta) => void, animals: () => string[] = () => [],
-  opts: {logGiven?: boolean, name?: (group: string) => string, last?: () => number} = {}):
-  {addNote: (day: number) => void, menu: (day: number, at: MenuAt) => void} {
+  opts: {logGiven?: boolean, name?: (group: string) => string, last?: () => number,
+    measured?: () => number[]} = {}):
+  {addNote: (day: number) => void, menu: (day: number, at: MenuAt) => void, select: (day: number) => void} {
   const name = opts.name ?? ((g: string) => g);
   // a dialog to pick some of `groups` (by the names the user sees) and why; `ok` gets the groups and the note
   // one group to choose from is ticked already; the button says the action and waits for a group (a dose change;
@@ -192,7 +198,7 @@ export function dayActions(get: () => StudyMeta, set: (m: StudyMeta) => void, an
     sync();
     showCentred(d);
   };
-  const doseItems = (popup: DG.Menu, day: number) => {
+  const doseItems = (popup: {item: (name: string, run: () => void) => unknown}, day: number) => {
     const m = get();
     const scheduled = [...new Set(m.groups.filter((g) => schedulesOf(g).length).map((g) => g.group))];
     // the day's doses as the calendar places them (to its last day: a weekend dose moves within it)
@@ -241,24 +247,67 @@ export function dayActions(get: () => StudyMeta, set: (m: StudyMeta) => void, an
     okNamed(d, 'Set date');
     showCentred(d);
   };
-  const menu = (day: number, at: MenuAt) => {
+  // the day's actions, in order (null: a separator): its menu and its context panel offer the same
+  const itemsOf = (day: number): ([string, () => void] | null)[] => {
     const m = get();
-    const popup = DG.Menu.popup().item('Add a note…', () => addNote(day));
-    const own = m.notes.filter((n) => n.day === day);
-    for (const n of own) {
-      popup.item(`Remove note: ${n.kind}: ${n.text.length > 40 ? `${n.text.slice(0, 40)}…` : n.text}`,
-        () => set({...get(), notes: get().notes.filter((x) => x !== n)}));
+    const out: ([string, () => void] | null)[] = [['Add a note…', () => addNote(day)]];
+    for (const n of m.notes.filter((x) => x.day === day)) {
+      out.push([`Remove note: ${n.kind}: ${n.text.length > 40 ? `${n.text.slice(0, 40)}…` : n.text}`,
+        () => set({...get(), notes: get().notes.filter((x) => x !== n)})]);
     }
-    popup.separator();
-    doseItems(popup, day);
-    popup.separator();
-    popup.item(m.start ? `Change the date of day ${day}…` : `Set the date of day ${day}…`, () => dateDay(day));
+    out.push(null);
+    doseItems({item: (name, run) => out.push([name, run])}, day);
+    out.push(null);
+    out.push([m.start ? `Change the date of day ${day}…` : `Set the date of day ${day}…`, () => dateDay(day)]);
     const d = dateOf(m.start, day);
     if (d)
-      popup.item('Copy the date', () => void navigator.clipboard.writeText(d.toISOString().slice(0, 10)));
+      out.push(['Copy the date', () => void navigator.clipboard.writeText(d.toISOString().slice(0, 10))]);
+    return out;
+  };
+  const menu = (day: number, at: MenuAt) => {
+    const popup = DG.Menu.popup();
+    for (const x of itemsOf(day)) {
+      if (x)
+        popup.item(x[0], x[1]);
+      else
+        popup.separator();
+    }
     popup.show(at);
   };
-  return {addNote, menu};
+  // what happens on the day, as its cell draws it: its doses, whether tumors are measured, its notes; then its
+  // actions, the study-wide date change set apart with what it does; copying the date in the menu only
+  // ponytail: the panel shows the day as clicked; after an action, a click on the day again shows it as it is now
+  const weekday = (d: Date, w: 'short' | 'long') => d.toLocaleDateString('en-GB', {weekday: w, timeZone: 'UTC'});
+  const select = (day: number) => {
+    const m = get();
+    const date = dateOf(m.start, day);
+    const dosed = (dosingDays(m.groups, Math.max(day, opts.last?.() ?? day), m).get(day) ?? []).map(name);
+    const measured = opts.measured?.();
+    const next = measured?.filter((x) => x > day).sort((a, b) => a - b)[0];
+    const nextDate = next === undefined ? null : dateOf(m.start, next);
+    const notes = m.notes.filter((x) => x.day === day);
+    const facts: PanelFact[] = [
+      {label: 'Dose', value: dosed.length ? `${plural(dosed.length, 'group')}: ${dosed.join(', ')}` : 'None'},
+      ...measured ? [{label: 'Measure', value: measured.includes(day) ? 'Yes' : next === undefined ? 'No' :
+        `No: next on day ${next}${nextDate ? ` (${weekday(nextDate, 'short')})` : ''}`}] : [],
+      {label: 'Notes', value: notes.length ? notes.map((n) => `${n.kind}: ${n.text}`).join('; ') : 'None'}];
+    const items = itemsOf(day);
+    const cut = items.lastIndexOf(null);
+    const links = (xs: typeof items) => xs.filter((x): x is [string, () => void] => !!x && x[0] !== 'Copy the date')
+      .map(([n, run]) => ui.link(n, run));
+    const own = links(cut < 0 ? items : items.slice(0, cut));
+    const wide = cut < 0 ? [] : links(items.slice(cut));
+    const hint = ui.divText(`Every other day of the study follows from it`);
+    hint.style.color = 'var(--dg-text-color-muted, #7d8792)';
+    const panel = objectPanel({title: `Day ${day}${date ? ` · ${weekday(date, 'long')} ${dateText(date)}` : ''}`,
+      subtitle: `Week ${Math.floor(day / 7) + 1}`, facts});
+    const acc = ui.accordion('pmx-actions');
+    acc.addPane('Actions', () => ui.divV([...own, ...wide.length ? [ui.div([], 'pmx-actions-sep'), ...wide, hint] : []],
+      {style: {gap: '4px'}}), true);
+    const el = ui.divV([panel, acc.root]);
+    showDepth(new PmxDay(`Day ${day}`, () => el));
+  };
+  return {addNote, menu, select};
 }
 
 /** The study's days as an iCalendar file of all-day events (`events`: day and what is done, with the doses its

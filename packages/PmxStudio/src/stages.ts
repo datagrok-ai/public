@@ -85,6 +85,8 @@ export function showStage(stage: Stage, view: DG.ViewBase): Promise<DG.ViewBase>
   return new Promise((resolve) => setTimeout(() => {
     const label = STAGES.find((s) => s.stage === stage)?.label;
     view.name = uniqueName(stage === 'home' ? 'PMX Studio' : `PMX Studio · ${label}`);
+    // (added views come pinned, whatever the user did: the panels read the app's pin instead, see applyPanels)
+    view.root.dataset[ADDED] = 'true';
     grok.shell.addView(view);
     // the platform puts the app's root before the path of the view it opens as the app, not of one added later
     view.path = pathOf(stage);
@@ -96,7 +98,7 @@ export function showStage(stage: Stage, view: DG.ViewBase): Promise<DG.ViewBase>
  *  group or an animal: ui.ts showDepth), and the Browse tree only while the view is pinned, for the page to have the
  *  whole screen. Opening the app, or coming back to the Overview, leaves Browse, the toolbox and help as the user had
  *  them (a one-click preview of the app used to close Browse). */
-type Panel = 'showContextPanel' | 'showBrowse';
+export type Panel = 'showContextPanel' | 'showBrowse';
 /** The data attribute (camel-cased) of a page of the app that is no stage (Compare): treated as the Overview. */
 export const STANDS_ALONE = 'pmxAlone';
 
@@ -106,6 +108,35 @@ export function quietPanels(stage: string | null, alone: boolean, pinned: boolea
   if (!stage && !alone)
     return [];
   return pinned ? ['showContextPanel', 'showBrowse'] : ['showContextPanel'];
+}
+
+const ours = (v: DG.ViewBase | null) => !!stageOf(v) || !!v?.root?.dataset[STANDS_ALONE];
+/** The data attribute of a view the app added itself (showStage): the platform adds every such view pinned. */
+export const ADDED = 'pmxAdded';
+
+/** Shows and hides the panels (`w`: grok.shell.windows) for the current view `v`: the ones it hides are hidden, their
+ *  state kept in `before`; the ones hidden before and no longer hidden (unpinned, another PMX view, leaving the app)
+ *  given back as they were. Pinned is the user's: a view the platform opened (the app from Browse, a file) is pinned
+ *  when the user opened it for good (a double click) or pinned its preview, and that is kept in `app`; a view the
+ *  app added (a stage, Compare) is always pinned by the platform, so it follows `app`. Whether `v` counts as pinned. */
+export function applyPanels(w: {[p in Panel]: boolean}, v: DG.ViewBase | null, before: Map<Panel, boolean>,
+  app: {pinned: boolean}): boolean {
+  if (ours(v) && !v!.root.dataset[ADDED])
+    app.pinned = !!v!.isPinned;
+  const pinned = ours(v) && app.pinned;
+  const hide = quietPanels(stageOf(v) ?? null, !!v?.root?.dataset[STANDS_ALONE], pinned);
+  for (const [p, on] of [...before]) {
+    if (!hide.includes(p)) {
+      w[p] = on;
+      before.delete(p);
+    }
+  }
+  for (const p of hide) {
+    if (!before.has(p))
+      before.set(p, w[p]);
+    w[p] = false;
+  }
+  return pinned;
 }
 
 /** The state each hidden panel had before the app hid it; given back as soon as the current view no longer hides
@@ -120,27 +151,15 @@ export function quietContextPanel(): void {
     return;
   watching = true;
   const computes = (v: DG.ViewBase | null) => !!stageOf(v) && stageOf(v) !== 'home'; // (Plan, Monitor, Analyze)
-  const ours = (v: DG.ViewBase | null) => !!stageOf(v) || !!v?.root?.dataset[STANDS_ALONE];
-  // the current view's pinned state as last applied: a pin changes no view, so it is watched (below)
+  // the app's pin (see applyPanels), and the current view's isPinned as last read: a pin changes no view, so it is
+  // watched (below)
+  const app = {pinned: false};
   let pinnedNow = false;
   const apply = () => {
-    const w = grok.shell.windows;
-    const v = grok.shell.v;
-    if (computes(v)) // a stage opened or come back to: the engine at rest wakes
+    if (computes(grok.shell.v)) // a stage opened or come back to: the engine at rest wakes
       cruxWake();
-    pinnedNow = ours(v) && !!v?.isPinned;
-    const hide = quietPanels(stageOf(v) ?? null, !!v?.root?.dataset[STANDS_ALONE], pinnedNow);
-    for (const [p, on] of [...before]) {
-      if (!hide.includes(p)) {
-        w[p] = on;
-        before.delete(p);
-      }
-    }
-    for (const p of hide) {
-      if (!before.has(p))
-        before.set(p, w[p]);
-      w[p] = false;
-    }
+    pinnedNow = !!grok.shell.v?.isPinned;
+    applyPanels(grok.shell.windows, grok.shell.v, before, app);
   };
   // and again a tick later: back on a pinned Overview from a stage, the platform shows its Browse tree after the event
   grok.events.onCurrentViewChanged.subscribe(() => {
@@ -150,9 +169,11 @@ export function quietContextPanel(): void {
   // the platform has no event for a view pinned (DG.View.fromRoot views get no afterPersist call): its state is read
   // once a second, and the panels change only when it changes (the user may open Browse again on a pinned view)
   // ponytail: a 1 s poll of one getter; an event, when the platform gives one
+  // (not while the tab is hidden: nothing to show)
   setInterval(() => {
-    const v = grok.shell.v;
-    if ((ours(v) && !!v?.isPinned) !== pinnedNow)
+    if (document.hidden)
+      return;
+    if (!!grok.shell.v?.isPinned !== pinnedNow)
       apply();
   }, 1000);
   // the tab back on a stage that computes: the engine at rest wakes

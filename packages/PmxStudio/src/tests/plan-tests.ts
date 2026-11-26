@@ -6,6 +6,7 @@ import {fixedValue} from '../ui';
 import {ENDPOINT, HUMANE, LAB_WEEKDAYS, MIN_GROUP, StudyDeclaration, calibrated, combinationFailed, combinationN,
   combinationNote, combinationsOf, synergyClause, designCombination, designStudy, finite, LAB_FACTOR_HIGH,
   labSpreadGroup} from '../engine';
+import {cruxCalls} from '../crux';
 import {declarationOf, tgisOf} from '../frames';
 import {bandCalibration, enginePriors} from '../priors';
 
@@ -386,6 +387,14 @@ category('Plan', () => {
     const s = await designStudy(d);
     const [a, b] = s.arms;
     const added = await designCombination(d, a, b, 'TGI', 0, false);
+    // asked again with the same inputs (a plan drawn again): no second engine call, the same row
+    const calls = cruxCalls();
+    expect(JSON.stringify(await designCombination(d, a, b, 'TGI', 0, false)), JSON.stringify(added));
+    expect(cruxCalls() - calls, 0);
+    // left to the caller (Plan, after the plan shows): the plan without the combination's sentence, the rest the same
+    const quiet = await designStudy({...d, combinationNotes: false});
+    expect(s.notes.groups.length - quiet.notes.groups.length, 1, s.notes.groups.join(' | '));
+    expect(quiet.arms.map((x) => x.n).join(), s.arms.map((x) => x.n).join());
     expect(finite(added['effect_bliss']) !== null && finite(added['effect_ida']) !== null, true, 'the effects');
     expect(Number(added['effect_bliss']) > Number(added['effect_ida']), true, 'together, more than the best alone');
     const more = await designCombination(d, a, b, 'TGI', 0.5, false);

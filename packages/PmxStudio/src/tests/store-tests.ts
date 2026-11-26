@@ -33,7 +33,7 @@ function bigStudy(study: SavedStudy, animals: number): SavedStudy {
   const rows = Array.from({length: animals * 20}, (_, i) => ({animal: `Ratón-${Math.floor(i / 20)} µ`,
     group: i % 2 ? 'Véhicule — 対照' : 'Cpd-Ω 10 mg/kg', day: i % 20, volume: 100 + (i % 997) / 7, weight: 20.125}));
   return {...study, name: 'Étude α 😀 中文', rows, extra: {comment: rows.map((_, i) => `nota «${i}» ñé "q"\n\t\\`)},
-    log: [{when: '2026-11-24T10:00:00.000Z', who: 'gcanudo', what: 'Révélé — 群'}]};
+    log: [{when: '2026-11-24T10:00:00.000Z', who: 'demo', what: 'Révélé — 群'}]};
 }
 
 category('Store', () => {

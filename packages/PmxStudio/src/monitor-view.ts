@@ -26,18 +26,19 @@ import {openStage, showStage} from './stages';
 import {LIMITS_TAG, LINE_TAG, LOG_TAG, LOOKS_TAG, REVEALED, VOLUME_TAG, WEIGHT_TAG, addLog, groupsShown, logOf,
   newStudyTable, parseStudy, EXCLUDED, EXPOSURE_TAG, exposureOfTag, stamped, lineOf, setHistoryOn,
   restoreFields, roleColumns, saveStudy, studyNameOf, studyOf, tableOf, ticked} from './study-file';
+import {exportName} from './study-file';
 import {TWIN_NOTE, savedHistory} from './history-models';
 import {markLine, modal} from './ui';
 import {WeightRow, groupWeights, readSchedule} from './schedule';
 import {editLayout, panelTabs, Tab} from './panels';
 import {stagePage, studyHeader} from './study-header';
-import {openButton, takesFiles} from './hub-view';
-import {animalMarks, animalPanel as panelOfAnimal, blindColumn, emptyStudy, openStudyTable, studyDataLine, studyMenu,
+import {openButton, stageLinks, takesFiles} from './hub-view';
+import {animalMarks, animalPanel as panelOfAnimal, blindColumn, emptyStudy, openStudyTable, studyDataLine,
   studyOf as studyNamesOf,
   keepStudyField, tagStudy, withoutExcluded} from './study-table';
 import {EmptyState, NoControl} from './crux';
 import {META_TAG, StudyMeta, armDoses, dateOf, dateText, decisionEntry, emptyMeta, metaOf, renamedGroups, setMetaOn,
-  stopsOf, withGroups, withId} from './study-meta';
+  stopsOf, withGroups, withId, weightChangeText} from './study-meta';
 import {renamedExposure} from './exposure';
 import {Saved, domainStorageOn, isReadOnly, markTableFromFile, newRowNote, ownerOf, rowOfTable, save, saveCopy,
   saveError, setRowOn, tableFileOwner, withCode} from './store';
@@ -45,7 +46,8 @@ import {offerCopy, saveGate, tableSavers} from './native';
 import {CAL, DayLook, dayActions, dayToday, icsOf, mark, marked, startMismatch, weeksGrid} from './calendar';
 import {LineInput} from './line-input';
 import {esc, printSheet, sheetHtml} from './sheet';
-import {Exports, download, exportMenu, reportHtml} from './report';
+import {Exports, download, exportMenu, reportHtml, stageToolbox} from './report';
+import {PmxAnimal, PmxGroup, popupFor} from './handlers';
 import {studyInputsOf} from './explore';
 import {rowsOf, tolerabilityTab} from './tolerability';
 import {findCombinations, parseArmName} from './arm-name';
@@ -53,14 +55,15 @@ import {linePrior, modelName} from './priors';
 import {IndependenceBand, bandWhy, bandWords, independenceBand, notCombined} from './synergy';
 import {askedOf, autoRun, block, callInputs, cardGrid, dayText, exampleLine, infoNote, onTableEdits, TABLE_EDITS,
   dialogLine, isBodyWeight, okNamed, showCentred,
-  keepNamedColumns, noteLine, notes, notesBox, pct, plainError, settleForm, sized, markStage, signed, stageOf,
+  keepNamedColumns, noteLine, notes, notesBox, pct, plainError, settleForm, sized, markStage, stageOf,
   statCard, swatch, volumeAxis, wrapCells, stagePanes, whenSettled, showDepth, percentRange} from './ui';
 
 /** Monitor's tabs and their panels, in order and width (twelfths): today's work and how the groups grow; the
  *  measurements and the groups formed; how the animals bear it; whether each group is worth continuing. */
 const MONITOR_TABS: Tab[] = [
   {name: 'Today', layout: [{id: 'growth', span: 12}, {id: 'today', span: 12}, {id: 'calendar', span: 12}]},
-  {name: 'Measurement sheet', layout: [{id: 'sheet', span: 12}, {id: 'enrollment', span: 12}]},
+  // (enrollment first: forming the groups is the study's first step; the sheet is every day's after it)
+  {name: 'Measurement sheet', layout: [{id: 'enrollment', span: 12}, {id: 'sheet', span: 12}]},
   {name: 'Welfare', layout: [{id: 'welfare', span: 12}]},
   {name: 'Decisions', layout: [{id: 'decisions', span: 12}]}];
 
@@ -115,14 +118,6 @@ function fill<R>(host: HTMLElement, items: R[], key: (r: R) => string,
   host.replaceChildren(t.root);
 }
 
-/** The Monitor view; `initial`: the table of a study to follow. */
-/** What an exported file of the study is named after: the study (its plan's name), else its ID, else its table; with
- *  no character a file name cannot hold. */
-export function exportName(df: DG.DataFrame): string {
-  const named = df.getTag(PLAN_TAG) ? studyNameOf(df) : '';
-  return (named || metaOf(df)?.id || df.name || 'study').replace(/[\\/:*?"<>|]/g, '-').trim();
-}
-
 /** The tags a study is saved from (studyOf), besides its measurements. */
 const SAVED_TAGS = [PLAN_TAG, META_TAG, LIMITS_TAG, LINE_TAG, VOLUME_TAG, EXPOSURE_TAG, LOOKS_TAG, LOG_TAG];
 
@@ -139,6 +134,7 @@ export function takeOverFollowed(followed: DG.DataFrame, opened: DG.DataFrame): 
   return true;
 }
 
+/** The Monitor view; `initial`: the table of a study to follow. */
 export async function monitorView(initial?: DG.DataFrame): Promise<DG.ViewBase> {
   const exports: Exports = [];
   const host = ViewHost.create({name: 'PMX Studio', content: (self) => monitorContent(self, initial,
@@ -406,7 +402,7 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
       if (!name)
         return;
       e.preventDefault();
-      studyMenu(studyNamesOf(studyTable()), 'animal', name, {causedBy: e});
+      popupFor(new PmxAnimal(studyNamesOf(studyTable()), name), {causedBy: e});
     });
   }
   const noteBox = notesBox();
@@ -460,7 +456,7 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
   const groupCols = (): [string, (r: AnimalRow) => string][] => revealed.value ? [['Group', (a) => a.group]] : [];
   // an animal clicked: its curve, readings, weight and marks in the context panel (its group and colour only once
   // the groups are revealed), cleared with the view
-  let shownAnimal: HTMLElement | null = null;
+  let shownAnimal: object | null = null;
   self.own(() => {
     if (shownAnimal && grok.shell.o === shownAnimal)
       grok.shell.o = null;
@@ -471,16 +467,19 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     if (!n || !r)
       return;
     const shown = revealed.peek();
-    shownAnimal = showDepth(panelOfAnimal(n, String(a.animal), {showGroup: shown,
-      color: shown ? colorsOf(r)[String(a.group)] : undefined}));
+    const color = shown ? colorsOf(r)[String(a.group)] : undefined;
+    // as its object: the handler shows its panel and the animal's actions under it
+    shownAnimal = showDepth(new PmxAnimal(n, String(a.animal), {color, details: () =>
+      panelOfAnimal(n, String(a.animal), {showGroup: shown, color,
+        weightLimit: call.getParamValue('weightLimit') ?? 20})}));
   };
   // only for a study with body weights
   const weightCols = (r: MonitorFrames): [string, (a: AnimalRow) => string | HTMLElement][] =>
     r.animals.col('weight_change') ?
       [['Weight change', (a) => {
-        // a gain says so (+4%), as a loss does (−4%)
+        // a gain says so (+4%), as a loss does (−4%); near the limit as the reason it needs attention says it
         const el = span(typeof a.weight_change === 'number' ?
-          (a.weight_change >= 0.5 ? '+' : '') + signed(a.weight_change) : '—');
+          weightChangeText(a.weight_change, call.getParamValue('weightLimit') ?? 20) : '—');
         if (typeof a.last_weight === 'number')
           ui.tooltip.bind(el, `Last weighed: ${grams(a.last_weight)} g`);
         return el;
@@ -539,7 +538,8 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
 
   // Enrollment
   const allocationTable = div([], 'pmx-monitor-allocation');
-  const propose = async () => {
+  // `onlyNew` (a study under way): only the animals without a group are placed, in the room the groups have left
+  const propose = async (onlyNew = false) => {
     const df = studyTable();
     if (!df)
       throw new Error('Open the study\'s measurements first');
@@ -553,11 +553,25 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     // each animal's latest volume
     const wName = df.getTag(WEIGHT_TAG);
     const weightCol = roleCol(df, 'bodyWeight') ?? (wName ? df.col(wName) : null);
-    const latest = latestReadings(Array.from({length: df.rowCount}, (_, i) => ({animal: String(animal.get(i)),
-      day: day.get(i), volume: volume.isNone(i) ? NaN : volume.get(i),
-      weight: weightCol && !weightCol.isNone(i) ? Number(weightCol.get(i)) : null})));
-    const groups = [{name: 'Vehicle', n: plan.predicted.nControl ?? 0},
+    const had = roleCol(df, 'group');
+    const groupOf = (i: number) => had && !had.isNone(i) ? String(had.get(i)).trim() : '';
+    const placed = new Map<string, string>();
+    for (let i = 0; i < df.rowCount; i++) {
+      if (groupOf(i))
+        placed.set(String(animal.get(i)), groupOf(i));
+    }
+    // (ponytail: a group is matched to the plan's by name; a study that renamed its control places none in it)
+    const left = (g: string, n: number) => Math.max(0, n - [...placed.values()].filter((x) => x === g).length);
+    // each animal's latest volume (under way: of those without a group)
+    const latest = latestReadings(Array.from({length: df.rowCount}, (_, i) => i)
+      .filter((i) => !onlyNew || !placed.has(String(animal.get(i)))).map((i) => ({animal: String(animal.get(i)),
+        day: day.get(i), volume: volume.isNone(i) ? NaN : volume.get(i),
+        weight: weightCol && !weightCol.isNone(i) ? Number(weightCol.get(i)) : null})));
+    const planned = [{name: 'Vehicle', n: plan.predicted.nControl ?? 0},
       ...plan.predicted.arms.map((a) => ({name: a.name, n: a.n ?? 0}))];
+    const groups = onlyNew ? planned.map((g) => ({...g, n: left(g.name, g.n)})).filter((g) => g.n > 0) : planned;
+    if (onlyNew && !groups.length)
+      throw new Error('Every group already has its planned animals: none left to place the new ones in.');
     // what the engine would refuse, said as what to do (a retry or a reload changes neither)
     const unsized = groups.filter((g) => !(g.n > 0)).map((g) => g.name);
     if (unsized.length) {
@@ -573,9 +587,12 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     const note = balanceNote(!!weightCol, weightMissing(latest.volume, latest.weight), weightUsed);
     const group = new Map(rowsOf(allocation).map((r) => [r.animal, r.group]));
     const col = roleCol(df, 'group') ?? df.columns.addNewString(groupsShown(df) ? 'group' : '~group');
-    for (let i = 0; i < df.rowCount; i++)
-      col.set(i, group.get(String(animal.get(i))) ?? '');
-    record(`Groups allocated (seed ${seed})${weightUsed ? '; balanced on body weight too' : ''}`);
+    for (let i = 0; i < df.rowCount; i++) {
+      if (!onlyNew || !groupOf(i))
+        col.set(i, group.get(String(animal.get(i))) ?? '');
+    }
+    record(`${onlyNew ? `New animals placed (${latest.animal.length})` : 'Groups allocated'} (seed ${seed})` +
+      `${weightUsed ? '; balanced on body weight too' : ''}`);
     fill(allocationTable, rowsOf(balance), (b) => b.group, [['Group', (b) => b.group], ['Animals', (b) => String(b.n)],
       ['Geometric mean volume', (b) => `${mm3(b.geo_mean)} mm³`],
       ['Volume spread (CV)', (b) => `${Math.round(100 * Math.sqrt(Math.exp(b.sd_log * b.sd_log) - 1))}%`],
@@ -597,6 +614,19 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
       Array.from({length: df.rowCount}, (_, i) => i).some((i) => !groups.isNone(i) && String(groups.get(i)).trim());
     if (!allocated)
       return void propose().catch(failed('The groups could not be proposed'));
+    // under way (measured after day 0): the animals keep their groups; only those without one are placed
+    const day = roleCol(df, 'day');
+    if (day && Array.from({length: df.rowCount}, (_, i) => day.get(i)).some((x) => typeof x === 'number' && x > 0)) {
+      const animal = roleCol(df, 'animal');
+      const without = new Set(Array.from({length: df.rowCount}, (_, i) => i)
+        .filter((i) => groups!.isNone(i) || !String(groups!.get(i)).trim()).map((i) => String(animal?.get(i))));
+      if (!animal || !without.size) {
+        grok.shell.info('The study is under way and every animal has its group: groups are proposed before ' +
+          'dosing starts. A new animal without a group would be placed in its room.');
+        return;
+      }
+      return void propose(true).catch(failed('The new animals could not be placed'));
+    }
     const d = modal('replace-groups', 'Replace the groups?');
     if (!d)
       return;
@@ -609,7 +639,7 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
   const proposeButton = buttonWithIcon('Propose groups', 'random', proposeAsked);
   proposeButton.title = 'Fill the table\'s group column with random groups alike in their tumors';
   // the animal room's sheet, from the groups in the table and the seed the log kept
-  const sheetButton = buttonWithIcon('Print randomization sheet', 'print', () => {
+  const printRandomization = () => {
     const df = studyTable();
     if (!df || !roleCol(df, 'group')) {
       grok.shell.warning('The sheet needs the study\'s groups: propose them, or open a table with a group column.');
@@ -623,7 +653,8 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     } catch (e: any) {
       failed('The sheet could not be printed')(e);
     }
-  });
+  };
+  const sheetButton = buttonWithIcon('Print randomization sheet', 'print', printRandomization);
   sheetButton.title = 'A page for the animal room: each animal, its group and its volume at randomization, ' +
     'what each group receives, and lines to sign. It shows the groups.';
 
@@ -791,12 +822,14 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     const df = studyTable();
     const a = df ? roleCol(df, 'animal') : null;
     return a ? [...new Set(a.toList().map(String))].sort(naturalCompare) : [];
-  }, {logGiven: true, last: () => monitorEvents.last,
+  }, {logGiven: true, last: () => monitorEvents.last, measured: () => monitorEvents.measureDays ?? [],
     name: (g) => revealed.peek() ? g : blindName(meta.peek())(g)});
   const calendarSummary = divV([], 'pmx-calendar-summary');
   Object.assign(calendarSummary.style, {gap: '4px', lineHeight: '1.45', marginBottom: 'var(--dg-space-m)'});
   const calendarBox = div([]);
-  let monitorEvents: {last: number, events: [number, string][], end?: number} = {last: 0, events: []};
+  let monitorEvents: {last: number, events: [number, string][], end?: number,
+    /** the days the calendar marks as measured or to measure (its day panel's Measure) */
+    measureDays?: number[]} = {last: 0, events: []};
   form.effect(() => {
     const r = result.value;
     const m = meta.value;
@@ -914,7 +947,7 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
         marks.push(mark('Planned end', CAL.dark, false));
       const detail = runsOn(d) && d !== today ? `past the expected end (day ${end}): its doses and measurements ` +
         'only if the study runs on' : d === today ? 'today' : measured.has(d) ? 'measured' : planned(d) ? (d < now ?
-          'a measurement day with no values' : 'a measurement day') : undefined;
+        'a measurement day with no values' : 'a measurement day') : undefined;
       // the days gone by shaded, so where the study stands reads at a glance; the likely end's days in amber
       return {marks, detail, border: d === today ? `2px solid ${CAL.blue}` : undefined,
         tint: d < now ? `color-mix(in srgb, ${CAL.slate} 16%, transparent)` :
@@ -925,10 +958,11 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     monitorEvents = {last, events: Array.from({length: last - Math.max(0, now) + 1}, (_, i) => Math.max(0, now) + i)
       .flatMap((d): [number, string][] => [...planned(d) && !measured.has(d) ? [[d, 'Measure tumors'] as [number,
         string]] : [], ...looks.has(d) ? [[d, 'Planned review'] as [number, string]] : [],
-      ...d === end ? [[d, 'Expected end of study'] as [number, string]] : []]), end};
+      ...d === end ? [[d, 'Expected end of study'] as [number, string]] : []]), end,
+    measureDays: Array.from({length: last + 1}, (_, d) => d).filter((d) => measured.has(d) || planned(d))};
     calendarBox.replaceChildren(weeksGrid({meta: unnamed(m, revealed.value), startWeekday, last, day: look,
       control: String(r.status.get('control', 0)), onMenu: calendarDays.menu,
-      onNote: calendarDays.addNote}));
+      onNote: calendarDays.addNote, onSelect: calendarDays.select}));
   });
 
   // Decisions
@@ -1173,7 +1207,9 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     {id: 'enrollment', title: 'Enrollment', hint: 'Random groups alike in their starting tumors',
       content: [divH([proposeButton, sheetButton]), allocationTable]},
   ], MONITOR_TABS, 'pmx-monitor-panels', 'monitor');
-  exports.push(['Layout…', () => editLayout(panels.root), 'View']);
+  exports.push(['Layout…', () => editLayout(panels.root), 'View'],
+    // the study's first steps, at the top of the toolbox and the menu as well as on the Enrollment panel
+    ['Propose groups…', proposeAsked, 'Study'], ['Print randomization sheet', printRandomization, 'Study']);
   // the study's colours: a colour changed in a chart is the study's, in every stage open on it
   const link: StudyLink = {meta: () => metaOf(studyTable()), setMeta, colors: () => {
     const r = result.peek();
@@ -1268,16 +1304,18 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
       setMeta(m);
       if (m.blinded !== was)
         record(m.blinded ? 'Blinded entry on' : 'Blinded entry off: the groups are shown');
-    } : undefined, groupMenu: (g, e) => studyMenu(studyNamesOf(df), 'group', g, {causedBy: e})};
+    } : undefined, groupObject: (g, color) => new PmxGroup(studyNamesOf(df), g, color)};
     // the header's Analyze step is this study's analysis (unless that would reveal a blinded study's groups: the
     // button does that, and says so); Plan opens with the study's plan, but not on a blinded study's hidden groups
   }), (s) => s === 'analyze' && studyTable() && revealed.peek() ? analyzeThis() : void openStage(s,
     revealed.peek() ? planText() : null));
   // saving is always in reach, as in Plan: a study's measurements, log and notes live in the table until saved
   form.effect(() => [saveButton, analyzeButton].forEach((b) => b.hidden = !result.value));
+  const links = stageLinks({stage: 'monitor'}, () => head.details());
   return {
     root: takesFiles(stagePage(head.row, panes), {stage: 'monitor'}),
     ribbon: [[head.steps], [openButton({stage: 'monitor'}), saveButton, analyzeButton]],
+    toolbox: stageToolbox(exports, links.study, links.help),
     path: '/monitor',
     status: computed(() => busy.value ? 'Forecasting the study…' :
       result.value ? modelName(String(status.value?.get('line', 0))) : ''),

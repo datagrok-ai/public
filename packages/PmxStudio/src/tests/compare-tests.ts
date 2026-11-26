@@ -2,18 +2,22 @@ import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
 import * as DG from 'datagrok-api/dg';
 
-import {chartRows, compareFooter, compareRows, compareSection, compareSentence, compareTexts, compareView, hintRows,
-  humansToOpen, modelWarning, shownMultiple, studyLabels, tgiFootnote, tgiNote, withHumans}
+import {slopeSide} from '../analyze';
+import {chartRows, compareFooter, compareRows, controlCheck, controlGrowth, controlVsAtlas, doseGroups, driftSentence,
+  growthFrame, rangeText, sideText, compareSection, compareSentence, compareTexts, compareView, hintRows,
+  humansToOpen, modelWarning, studyLabels, tgiFootnote, tgiNote, withHumans}
   from '../compare-view';
 import {entryOf} from '../library';
 import {EXPOSURE_TAG} from '../study-file';
 import {emptyMeta, setMetaOn} from '../study-meta';
+import {shownMultiple} from '../exposure';
 import {Exposure, HumanExposure, NcaByArm, ReferenceRow, exposureJson, exposureRange, fromReference, patientsRange}
   from '../exposure';
 import {ExposureSection, GroupDetails, detailsElement, exposureSection, groupDetails} from '../translation-report';
 import type {PreviousStudy} from '../study-effect';
-import {drugKey} from '../arm-name';
+import {drugKey, plainArm} from '../arm-name';
 import {animalPanel, animalReadings} from '../study-table';
+import {sig} from '../sheet';
 
 const x = (dose: number, aucInf: number): Exposure => ({auc: aucInf * 0.9, aucCv: null, aucUnit: 'mg/L·h',
   cmax: null, cmaxCv: null, cmaxUnit: 'mg/L', aucInf, aucInfUnit: 'mg/L·h', dose: `${dose} mg/kg`, route: 'PO',
@@ -189,6 +193,92 @@ category('Compare: studies against the patients\' exposure', () => {
   });
 });
 
+category('Compare: growth, doses and controls against the atlas', () => {
+  test('a control against the atlas: within its range, or how many times faster or slower', async () => {
+    // the atlas: log volume growing 0.15 to 0.30 a day (doubling 2.3 to 4.6 d), median 0.2 (3.5 d)
+    const atlas = {q025: 0.15, median: 0.2, q975: 0.3};
+    const within = controlVsAtlas(0.2, atlas);
+    expect([within.side, sideText(within), rangeText(within)].join('|'), 'within|Within the atlas range|2.3–4.6 d');
+    const fast = controlVsAtlas(0.4, atlas);
+    expect([fast.side, sideText(fast)].join('|'), 'faster|2× faster');
+    const slow = controlVsAtlas(0.1, atlas);
+    expect([slow.side, sideText(slow)].join('|'), 'slower|2× slower');
+    // no prediction (no model, the atlas failed) or a control that did not grow: nothing said against the atlas
+    expect(controlVsAtlas(0.2, null).side, null);
+    // a control that did not grow: the furthest below the range, said so
+    const flat = controlVsAtlas(-0.01, atlas);
+    expect([flat.side, flat.doubling, sideText(flat)].join('|'), 'slower||Did not grow');
+    expect(driftSentence([{study: 'C', model: 'x', check: flat}])!.startsWith('C: its control did not grow'), true);
+    // one plain sentence, only for the controls that drifted
+    expect(driftSentence([{study: 'A', model: 'x', check: within}]), null);
+    expect(driftSentence([{study: 'B', model: 'x', check: fast}])!.startsWith('B: its control doubled every 1.7 d, ' +
+      'faster than the atlas predicts'), true);
+  });
+
+  test('the control’s growth: the mean of its animals’ rates, its last day and its day-0 median', async () => {
+    const s: PreviousStudy = {name: 'S', line: null, meta: null, rows: [0, 5, 10].flatMap((d) => [
+      {animal: 'c1', group: 'Vehicle', day: d, volume: 100 * Math.exp(0.2 * d)},
+      {animal: 'c2', group: 'Vehicle', day: d, volume: 120 * Math.exp(0.1 * d)},
+      {animal: 't1', group: 'Cpd-A 10 mg/kg', day: d, volume: 110}])};
+    const g = controlGrowth(s);
+    expect([sig(g.slope!), g.lastDay, g.vRand, g.n].join('|'), '0.15|10|110|2');
+    // read to the evaluation day, as Analyze reads it: before day 0 and past the endpoint (where a control slows)
+    // left out
+    const slowing: PreviousStudy = {name: 'S', line: null, meta: null, rows: [[-3, 60], [0, 100], [7, 400], [14, 1600],
+      [21, 1700]].map(([day, volume]) => ({animal: 'c1', group: 'Vehicle', day, volume}))};
+    const cut = controlGrowth(slowing);
+    expect([cut.toDay, sig(cut.slope!)].join('|'), `14|${sig(Math.log(16) / 14)}`);
+    expect(controlGrowth(slowing, 1000, 7).toDay, 7);
+  });
+
+  test('a control read as Analyze read it, when the study kept its analysis', async () => {
+    const atlas = {q025: 0.15, median: 0.2, q975: 0.3};
+    // its rows alone (a plateau after the endpoint) would read slower than the atlas
+    const rows = [[0, 100], [7, 140], [14, 150]].map(([day, volume]) => ({animal: 'c1', group: 'Vehicle', day,
+      volume}));
+    const plain: PreviousStudy = {name: 'S', line: null, meta: null, rows};
+    expect(controlCheck(plain, atlas).check.side, 'slower');
+    // kept: the analysis's rate and range, classified as Analyze's verdict
+    const kept = {slope: 0.18, q025: 0.12, median: 0.17, q975: 0.25, endpoint: 1000};
+    const s: PreviousStudy = {...plain, exposure: {effect: {day: 14, tgi: {}, control: kept}}};
+    const {check, fromAnalysis} = controlCheck(s, atlas);
+    expect([fromAnalysis, check.side].join('|'), 'true|within');
+    expect(slopeSide(kept.slope, kept), 'As predicted');
+    for (const x of [0.05, 0.4]) {
+      const k = {...s, exposure: {effect: {day: 14, tgi: {}, control: {...kept, slope: x}}}};
+      expect(controlCheck(k, atlas).check.side, {'As predicted': 'within', 'Faster than predicted': 'faster',
+        'Slower than predicted': 'slower'}[slopeSide(x, kept)]);
+    }
+  });
+
+  test('doses: each drug alone by its unit, the lowest first; combinations and groups without a dose left out',
+    async () => {
+      const rows = [...compareRows(study('S1', [['Cpd-A 30 mg/kg QD', 400], ['Cpd-A 10 mg/kg QD', 600],
+        ['Cpd-A + Cpd-B', 300]]), 'x'), ...compareRows(study('S2', [['Cpd-A 3 mg/kg QD', 900]]), 'x')];
+      const groups = doseGroups(rows);
+      expect(groups.map((g) => g.name).join(), 'Cpd-A (mg/kg)');
+      expect(groups[0].rows.map((r) => `${r.doseValue}:${r.study}`).join(), '3:S2,10:S1,30:S1');
+    });
+
+  test('growth: a series per group and study, the treatment’s colour, the second study dashed; V/V0',
+    async () => {
+      const one = study('S1', [['Cpd-A 10 mg/kg QD', 500]]);
+      const two = study('S2', [['Cpd-A 10 mg/kg QD', 700]]);
+      const g = growthFrame([{s: one, label: 'S1'}, {s: two, label: 'S2'}], false)!;
+      const series = [...new Set(g.df.col('series')!.toList())];
+      expect(series.length, 4);
+      expect(g.dashed.every((x) => x.endsWith('· S2')) && g.dashed.length === 2, true, g.dashed.join());
+      const a = series.filter((x) => !x.startsWith('Control'));
+      expect(g.colors[a[0]] === g.colors[a[1]], true, 'one treatment, one colour');
+      // a group the study recoloured: drawn in its study's colour, as Analyze draws it
+      const own = {...one, meta: {...emptyMeta(), colors: {'Cpd-A 10 mg/kg QD': '#ff7f0e'}}};
+      const c = growthFrame([{s: own, label: 'S1'}], false)!.colors;
+      expect(c[[...Object.keys(c)].find((x) => x.startsWith('Cpd-A'))!], '#ff7f0e', JSON.stringify(c));
+      // relative: each animal over its first volume (one day each here: 1)
+      expect(growthFrame([{s: one, label: 'S1'}], true)!.df.col('median')!.toList().every((v) => v === 1), true);
+    });
+});
+
 category('Report: exposure and patients', () => {
   const ok = (s: ExposureSection) => [s.sentence ?? '', ...s.rows.flat(), ...s.sources, ...s.notes.slice(1)]
     .every((t) => !/target|efficacious|clinical dose|margin|predict|did more|rose|fell/i.test(t));
@@ -261,6 +351,20 @@ category('Analyze: a group\'s translation details', () => {
     table: 'pk_conc', live: true, multiple: null, human: undefined, curve: null};
   const headings = (d: GroupDetails) => d.blocks.map((b) => b.heading).join('|');
 
+  test('the answer’s p-value line says the side its result says; a weight gained is signed', async () => {
+    const sub = (result: string, p: number) => groupDetails({...base, result, p}).verdict?.sub ?? '';
+    expect(sub('Slows growth', 0.001).startsWith('Clearly below the control'), true);
+    expect(sub('Grows faster', 0.001).startsWith('Clearly above the control'), true);
+    expect(sub('No clear effect', 0.4).startsWith('Not clearly different from the control'), true);
+    const weight = (nadir: number) => groupDetails({...base, nadir}).facts.find((f) => f.label === 'Weight')?.value;
+    expect(weight(2), '+2% at its lowest');
+    // its treatment in plain words under its name
+    expect(plainArm('Cpd-A · 30 mg/kg · QD · p.o.'), 'Cpd-A · 30 mg/kg · once a day · by mouth');
+    expect(plainArm('Cpd-A · 5 mg/kg · Q3D · i.p. + anti-PD-1 · 10 mg/kg · BIW'),
+      'Cpd-A · 5 mg/kg · every 3 days · into the abdomen + anti-PD-1 · 10 mg/kg · twice a week');
+    expect(weight(-6), '−6% at its lowest');
+  });
+
   test('full: the facts on top, both exposures, the multiple, the curve folded', async () => {
     const d = groupDetails({...base, x: {exposure: x(30, 40)}, human: patients('Cpd-A')[1],
       multiple: {ratio: 2, tip: 'Mouse daily AUC: AUCinf per dose × 1 dose a day (QD).', range: 'above'},
@@ -298,13 +402,14 @@ category('Analyze: a group\'s translation details', () => {
     expect(d.blocks[1].lines[0].startsWith('Not on the curve'), true);
   });
 
-  test('the panel: name and colour, plain facts on top, data only (no formula, no link)', async () => {
+  test('the panel: name and colour, its answer first, plain facts, data only (no formula, no link)', async () => {
     const d = groupDetails({...base, group: 'LD4172 20 mg/kg i.p. QD + anti-PD-1',
       read: 'LD4172 · 20 mg/kg + anti-PD-1',
       color: '#1f77b4', n: 8, tgi: 108, day: 6, tc: {value: -8, lower: -20, upper: 4}, result: 'Slows growth',
       step: {words: 'More than its two drugs acting independently', why: 'Bliss: why'}, responders: '5 of 8',
-      x: {exposure: x(20, 40)}, tgiCi: {lower: 95, upper: 121}, nadir: -12.4});
-    expect(d.facts.map((f) => f.label).join('|'), 'Animals|TGI|Result|BW nadir|Against its drugs|Responders');
+      x: {exposure: x(20, 40)}, tgiCi: {lower: 95, upper: 121}, nadir: -12.4, p: 0.0004,
+      removed: '2 removed on day 7 (weight)'});
+    expect(d.facts.map((f) => f.label).join('|'), 'TGI|Size vs control|Against its drugs|Responders|Animals|Weight');
     // the combination step's own why on its fact's hover only
     expect(d.facts.find((f) => f.label === 'Against its drugs')?.tip, 'Bliss: why');
     const el = detailsElement(d, [{title: 'Animals', content: () => document.createElement('div')}]);
@@ -312,8 +417,15 @@ category('Analyze: a group\'s translation details', () => {
     expect(title?.textContent, 'LD4172 20 mg/kg i.p. QD + anti-PD-1');
     expect(title?.querySelector('span[style*="background"]') !== null, true, 'the colour dot');
     const facts = el.querySelector('.pmx-object-facts')?.textContent ?? '';
-    for (const s of ['Animals8', 'TGI108% (95–121%) on day 6', 'ResultSlows growth', 'BW nadir−12%', '5 of 8'])
+    for (const s of ['Animals8 · 2 removed on day 7 (weight)', 'TGI108% (95–121%) on day 6', 'Weight−12% at its lowest',
+      '5 of 8 measured on day 6'])
       expect(facts.includes(s), true, `${s} in ${facts}`);
+    // the answer before the facts, in the groups table's words, with its p-value
+    const verdict = el.querySelector('.pmx-object-verdict');
+    expect(verdict?.firstChild?.textContent, 'Slows growth: TGI 108% on day 6');
+    expect(verdict?.textContent?.includes('Clearly below the control (p < 0.001)'), true, verdict?.textContent ?? '');
+    expect(!!(verdict!.compareDocumentPosition(el.querySelector('.pmx-object-facts')!) &
+      Node.DOCUMENT_POSITION_FOLLOWING), true, 'the answer first');
     // no formula and no link anywhere: the panel is data
     expect(/ΔT|ΔC|Method|exposure…|computed/.test(el.textContent ?? ''), false, el.textContent ?? '');
     const panes = [...el.querySelectorAll('.d4-accordion-pane-header')].map((h) => h.textContent?.trim());
@@ -349,7 +461,9 @@ category('Context panel: an animal', () => {
     const text = el.textContent ?? '';
     expect(text.includes('Cpd-A'), false, text);
     expect(el.querySelector('span[style*="background"]') === null, true, 'no colour dot');
-    expect(text.includes('400 mm³, day 7'), true, text);
+    expect(text.includes('400 mm³ on day 7'), true, text);
+    // Monitor: no answer line, never made up
+    expect(el.querySelector('.pmx-object-verdict') === null, true);
     expect(animalPanel(study(), 'M1', {showGroup: true}).textContent?.includes('Cpd-A'), true);
   });
 });

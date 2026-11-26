@@ -5,6 +5,8 @@
    exposure (pump, drinking water, chow, diet) every day. The study's rules (no dosing at weekends) move the days,
    never the schedule as written. */
 
+import {sig} from './format';
+
 // the parts of a schedule as a name writes them (lower case); SCHEDULE finds one in a name
 // (the unit right after the number: "Q1 w/ PD-1" is not Q1W)
 const RATE = 'q\\d+(?:d|h|w)|qd|bid|tid|qid|qod|qw|biw|tiw|' +
@@ -235,7 +237,7 @@ export function doseTotal(doses: number, dose: {value: number, unit: string} | n
     perKg * animals * (known ? weightKg : DEFAULT_WEIGHT_KG) * (1 + OVERAGE) : null, assumedWeight: !known};
 }
 
-const amount = (x: number) => x >= 100 ? Math.round(x).toLocaleString('en-US') : String(Number(x.toPrecision(2)));
+const amount = (x: number) => x >= 100 ? sig(Math.round(x), 15) : sig(x, 2);
 
 /** "14 doses · 280 mg/kg in total · about 84 mg of compound" (`given`: the doses so far, "6 of 14 doses · 120 of
  *  280 mg/kg"), and its tooltip. */

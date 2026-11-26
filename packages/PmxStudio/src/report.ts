@@ -4,28 +4,55 @@
    echarts charts get the same two items on a right click. */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as echarts from 'echarts/core';
 
 import {startMismatch} from './calendar';
 import {addColorItem} from './colors';
-import {esc} from './sheet';
+import {entered, esc} from './sheet';
 import {provenance} from './plan-file';
 import type {LogEntry} from './study-file';
 import {StudyMeta, animalsLine, dateOf, dateText, ofGroups} from './study-meta';
 import {isoToday, plainError} from './ui';
+import {PmxFigure, popupFor} from './handlers';
 
 /** A menu item: its name, what it does, its group (Export unless named) and, for one not always available, why
  *  it is not now (null: it is). */
 export type Exports = [string, () => void | Promise<void>, string?, (() => string | null)?][];
 
-const failed = (e: any) =>
+export const failed = (e: any) =>
   grok.shell.error(plainError(e, 'The export could not be made. Try again; if it fails again, reload the page.'));
+
+/** Runs a menu item as the menu and the toolbox do: one not available now says why (the ribbon's menu shows it
+ *  enabled, and with isEnabled it swallowed the click: QA pass 4, Reset colors did nothing, said nothing). */
+function runItem(x: Exports[number]): void {
+  const why = x[3]?.();
+  if (why)
+    return void grok.shell.info(esc(`${x[0]}: ${why}.`));
+  // clicks while it runs, and for a moment after (a download is done at once), are one click: one file, not three
+  if (running.has(x[1]))
+    return;
+  running.add(x[1]);
+  const started = Date.now();
+  void Promise.resolve().then(x[1]).catch(failed).finally(() =>
+    setTimeout(() => running.delete(x[1]), Math.max(0, ONE_CLICK_MS - (Date.now() - started))));
+}
+
+/** The items running now (their actions). */
+const running = new Set<Exports[number][1]>();
+/** How long after it starts an item ignores more clicks. */
+export const ONE_CLICK_MS = 1000;
+
+/** Runs `x` as a click on it in the menu or the toolbox does (for tests). */
+export const clickItem = (x: Exports[number]) => runItem(x);
+
+// a group 'Data > Open as table' is a submenu of Data
+const where = (x: Exports[number]) => (x[2] ?? 'Export').split(' > ');
 
 /** The view's menu: the stage's exports in an Export group, its other items in theirs (View: the layout). */
 export function exportMenu(view: DG.ViewBase, items: Exports): void {
   const menu = DG.Menu.create();
-  // a group 'Data > Open as table' is a submenu of Data; one with a single item is that item, named by the submenu
-  const where = (x: Exports[number]) => (x[2] ?? 'Export').split(' > ');
+  // one submenu with a single item is that item, named by the submenu
   for (const name of [...new Set(['Export', ...items.map((x) => where(x)[0])])]) {
     const group = menu.group(name);
     const subs = new Map<string, DG.Menu>();
@@ -33,25 +60,44 @@ export function exportMenu(view: DG.ViewBase, items: Exports): void {
     for (const x of mine) {
       const sub = where(x)[1];
       if (sub && mine.filter((y) => where(y)[1] === sub).length === 1) {
-        group.item(sub, () => void Promise.resolve().then(x[1]).catch(failed));
+        group.item(sub, () => runItem(x));
         continue;
       }
       if (sub && !subs.has(sub))
         subs.set(sub, group.group(sub));
-      // an item not available now: the ribbon's menu shows it enabled, and with isEnabled it swallowed the click (QA
-      // pass 4: Reset colors did nothing, said nothing), so no isEnabled: a click says why (the automatic colours)
-      const run = () => {
-        const why = x[3]?.();
-        if (why)
-          return void grok.shell.info(esc(`${x[0]}: ${why}.`));
-        void Promise.resolve().then(x[1]).catch(failed);
-      };
-      (sub ? subs.get(sub)! : group).item(x[0], run);
+      (sub ? subs.get(sub)! : group).item(x[0], () => runItem(x));
     }
     subs.forEach((s) => s.endGroup());
     group.endGroup();
   }
   view.ribbonMenu = menu;
+}
+
+/** A toolbox link: its text, what it does, its tooltip. */
+export type ToolLink = [string, () => void, string?];
+
+/** A toolbox: sections of links, each open (the Overview's and every page's); a section with no link is left out. */
+export function toolbox(sections: [string, ToolLink[]][]): HTMLElement {
+  const acc = ui.accordion('pmx-toolbox');
+  for (const [title, links] of sections.filter(([, l]) => l.length)) {
+    acc.addPane(title, () => ui.divV(links.map(([text, run, tip]) => ui.link(text, () => run(), tip)),
+      {style: {gap: '6px'}}), true);
+  }
+  return acc.root;
+}
+
+/** The toolbox sections a menu item goes to, by its group: Study, Export, Documents, View (Data's tables too). */
+export const TOOLBOX_SECTIONS = ['Study', 'Export', 'Documents', 'View'];
+
+/** A page's toolbox from the items of its view menu (the same items, run the same way): `study` first in Study
+ *  (Open…, the study's details), then the menu's by section; `help` last. Read when the page is built: every page
+ *  adds its items before it returns. */
+export function stageToolbox(items: Exports, study: ToolLink[], help: ToolLink[]): HTMLElement {
+  const section = (x: Exports[number]) => where(x)[0] === 'Data' ? 'View' : where(x)[0];
+  const label = (x: Exports[number]) => where(x)[1] ? `${where(x)[1]}: ${x[0]}` : x[0];
+  const of = (s: string): ToolLink[] => items.filter((x) => section(x) === s).map((x) => [label(x), () => runItem(x)]);
+  return toolbox([...TOOLBOX_SECTIONS.map((s): [string, ToolLink[]] => [s, [...s === 'Study' ? study : [], ...of(s)]]),
+    ['Help', help]]);
 }
 
 /** Saves a text, a file's bytes or a data URL as a file, and says so, naming it: the browser may refuse a download
@@ -78,7 +124,8 @@ export function download(name: string, content: string | Uint8Array, type = 'tex
   }
 }
 
-const pngOf = (chart: echarts.ECharts) => chart.getDataURL({type: 'png', pixelRatio: 2, backgroundColor: '#fff'});
+export const pngOf = (chart: echarts.ECharts) =>
+  chart.getDataURL({type: 'png', pixelRatio: 2, backgroundColor: '#fff'});
 
 /** The legend item under a mouse event on `chart`: its name and its series' colour (null: not on a legend item). */
 function legendItemAt(chart: echarts.ECharts, e: MouseEvent): {name: string, color: string} | null {
@@ -106,8 +153,9 @@ function legendHeight(chart: echarts.ECharts): number {
   return Number.isFinite(h) ? h : 0;
 }
 
-/** An echarts chart's right-click menu: Save as PNG, Copy as image, named after its panel; on a group's legend item,
- *  Change color… too, the platform's colour picker, the colour then the study's. */
+/** An echarts chart's right-click menu: the figure's actions (handlers.ts: Save as PNG, Copy as image), named after
+ *  its panel; on a group's legend item, Change color… first, the platform's colour picker, the colour then the
+ *  study's (a canvas cannot be bound: the menu is built from the same actions). */
 export function chartMenu(host: HTMLElement): void {
   host.addEventListener('contextmenu', (e) => {
     const chart = echarts.getInstanceByDom(host);
@@ -116,15 +164,11 @@ export function chartMenu(host: HTMLElement): void {
       return;
     e.preventDefault();
     const name = host.closest<HTMLElement>('.pmx-panel')?.dataset.panel ?? 'figure';
-    const menu = DG.Menu.popup();
     const item = legendItemAt(chart, e);
-    if (item && addColorItem(menu, item.name, item.color))
-      menu.separator();
-    menu
-      .item('Save as PNG', () => download(`${name}.png`, pngOf(chart)))
-      .item('Copy as image', () => void fetch(pngOf(chart)).then((r) => r.blob())
-        .then((b) => navigator.clipboard.write([new ClipboardItem({'image/png': b})])).catch(failed))
-      .show({causedBy: e});
+    popupFor(new PmxFigure(name, {chart: host}), {causedBy: e}, (menu) => {
+      if (item && addColorItem(menu, item.name, item.color))
+        menu.separator();
+    });
   });
 }
 
@@ -237,7 +281,8 @@ export async function reportHtml(o: {title: string, stage: string, meta: StudyMe
     // the animals as the details give them (species, strain, sex, age, weight, source)
     animalsLine(m.animals).filled ? htmlTable(['Animals'], [[animalsLine(m.animals).filled]]) : '',
     groups.length ? htmlTable(['Group', 'Compound', 'Dose', 'Route', 'Schedule'], groups.map((g) =>
-      [g.group, g.compound, g.dose === null ? '' : `${g.dose} ${g.unit}`, g.route, g.schedule])) : ''].join('');
+      [g.group, g.compound, g.dose === null ? '' : `${entered(g.dose)} ${g.unit}`, g.route, g.schedule])) :
+      ''].join('');
   const notes = !m?.notes.length ? '' : '<h2>Notebook</h2>' + htmlTable(['Day', 'Kind', 'Animal', 'Note', 'Who'],
     [...m.notes].sort((a, b) => a.day - b.day).map((n) => {
       const d = day0 ? dateOf(m.start, n.day) : null;

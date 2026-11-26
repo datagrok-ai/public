@@ -151,9 +151,9 @@ export function tolerabilityTab<R extends TolerabilityFrames>(form: FuncCallForm
     // the deepest treated group's, named: "Mean nadir −12%" alone did not say whose
     card(computed(() => worst.value ? `Mean nadir, ${worst.value.group}` : 'Mean nadir'),
       computed(() => worst.value?.mean_nadir ?? undefined), () => worst.value ?
-      `Each group's lowest mean weight change from day 0 (its day): ${perGroup((g) =>
-        g.mean_nadir === null ? '—' : `${signed(g.mean_nadir)} (day ${Math.round(g.mean_nadir_day)})`)}` : '',
-    (x) => signed(x as number)),
+        `Each group's lowest mean weight change from day 0 (its day): ${perGroup((g) =>
+          g.mean_nadir === null ? '—' : `${signed(g.mean_nadir)} (day ${Math.round(g.mean_nadir_day)})`)}` : '',
+      (x) => signed(x as number)),
     card('Treated animals losing 10% or more', losing10, () => 'Animals whose weight fell 10% or more below day 0 at ' +
       `some point: ${perGroup((g) => `${g.grade_2 + g.grade_3} of ${g.n}`)}`),
     card('Removed early, not for the tumor', computed(() => has.value ?

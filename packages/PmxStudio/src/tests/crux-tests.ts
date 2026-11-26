@@ -26,6 +26,21 @@ function fakeSets(failFrom = Infinity, loaded: () => Promise<string[]> = async (
 const IDLE = 20;
 
 category('Crux pool', () => {
+  test('warmed: one set with the module loaded, once; the first call runs on it', async () => {
+    const {made, open, opens} = fakeSets();
+    const pool = cruxPool(open, 4, 60000);
+    pool.warm(['pmx']);
+    pool.warm(['pmx']);
+    await delay(0);
+    expect(pool.sets(), 1);
+    expect(made[0].loads.join(), 'pmx');
+    const one = pool.call('f', {});
+    await delay(0);
+    expect(opens(), 1, 'the call opened another set');
+    made[0].go();
+    await one;
+  });
+
   test('sets open for overlapping calls, are not closed while a call runs, and shrink to one after a pause',
     async () => {
       const {made, open} = fakeSets();
