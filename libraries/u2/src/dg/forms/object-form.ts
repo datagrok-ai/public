@@ -608,11 +608,21 @@ export class ObjectForm extends Form {
         const date = typeof dayjsLike.toDate === 'function' ? dayjsLike.toDate() : new Date(value as string | number);
         return isNaN(date.getTime()) ? null : date;
       }
-      case 'list':
-        return Array.isArray(value) ? value :
-          (value === null || value === undefined || value === '' ? [] : ListInput.parse(String(value)));
-      case 'map':
-        return typeof value === 'object' && value !== null && !Array.isArray(value) ? value : {};
+      case 'list': {
+        if (Array.isArray(value))
+          return value;
+        if (value === null || value === undefined || value === '')
+          return [];
+        const parsed = ObjectForm.fromJsonText(value);
+        return Array.isArray(parsed) ? parsed.map((item) => item === null ? '' : String(item)) :
+          ListInput.parse(String(value));
+      }
+      case 'map': {
+        if (typeof value === 'object' && value !== null && !Array.isArray(value))
+          return value;
+        const parsed = ObjectForm.fromJsonText(value);
+        return ObjectForm._isRecord(parsed) ? parsed : {};
+      }
       // the platform's own value (a FileInfo), handed to the platform's own editor untouched
       case 'file':
         return value ?? null;
@@ -621,19 +631,59 @@ export class ObjectForm extends Form {
     }
   }
 
+  /** A cell holding the JSON text of an array or object, as that value; `undefined` otherwise. */
+  static fromJsonText(value: unknown): unknown {
+    if (typeof value !== 'string' || !/^\s*[[{]/.test(value))
+      return undefined;
+    try {
+      return JSON.parse(value);
+    } catch (_) {
+      return undefined;
+    }
+  }
+
   /** Identity for echo suppression. `Object.is` decides the scalars, but {@link coerce} builds a
    * fresh `Date`, list or record on every read of an empty or foreign-shaped value, so identity
-   * alone would report an edit — and fire `onChanged` — the moment the field is constructed. */
+   * alone would report an edit — and fire `onChanged` — the moment the field is constructed. Lists
+   * and plain objects compare by value, any other object by identity of its own keys' values. */
   static same(a: unknown, b: unknown): boolean {
+    return ObjectForm._sameValue(a, b, new Map());
+  }
+
+  private static _sameValue(a: unknown, b: unknown, seen: Map<object, Set<object>>): boolean {
+    if (Object.is(a, b))
+      return true;
     if (a instanceof Date && b instanceof Date)
       return a.getTime() === b.getTime();
-    if (Array.isArray(a) && Array.isArray(b))
-      return a.length === b.length && a.every((item, i) => Object.is(item, b[i]));
-    if (ObjectForm._isRecord(a) && ObjectForm._isRecord(b)) {
+    if (!ObjectForm._isRecord(a) && !Array.isArray(a) || !ObjectForm._isRecord(b) && !Array.isArray(b))
+      return false;
+    const lists = Array.isArray(a) && Array.isArray(b);
+    if (!lists && !(ObjectForm._isPlainObject(a) && ObjectForm._isPlainObject(b))) {
+      if (!ObjectForm._isRecord(a) || !ObjectForm._isRecord(b))
+        return false;
       const keys = Object.keys(a);
-      return keys.length === Object.keys(b).length && keys.every((k) => Object.is(a[k], b[k]));
+      return keys.length === Object.keys(b).length && keys.every((k) => Object.hasOwn(b, k) && Object.is(a[k], b[k]));
     }
-    return Object.is(a, b);
+    let pairs = seen.get(a as object);
+    if (pairs?.has(b as object))
+      return true;
+    if (pairs === undefined)
+      seen.set(a as object, pairs = new Set());
+    pairs.add(b as object);
+    if (lists)
+      return a.length === b.length && a.every((item, i) => ObjectForm._sameValue(item, b[i], seen));
+    const x = a as Record<string, unknown>;
+    const y = b as Record<string, unknown>;
+    const keys = Object.keys(x);
+    return keys.length === Object.keys(y).length &&
+      keys.every((k) => Object.hasOwn(y, k) && ObjectForm._sameValue(x[k], y[k], seen));
+  }
+
+  private static _isPlainObject(x: unknown): boolean {
+    if (typeof x !== 'object' || x === null || Array.isArray(x))
+      return false;
+    const proto = Object.getPrototypeOf(x);
+    return proto === Object.prototype || proto === null;
   }
 
   private static _isRecord(x: unknown): x is Record<string, unknown> {

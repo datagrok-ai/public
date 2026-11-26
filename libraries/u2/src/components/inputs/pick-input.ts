@@ -29,11 +29,11 @@ export class PickInput<T> extends Input<string | null, PickInputOptions<T>> {
     return this._typeAhead;
   }
 
-  /** No typing: the box reads as a dropdown and a click opens the list — for a short lookup. */
+  /** The box reads as a dropdown and a click opens the list — for a short lookup; typing still narrows it. */
   asDropdown(): void {
     const input = this._typeAhead.root.querySelector('input')!;
-    input.readOnly = true;
     this.root.classList.add('u2-pick-dropdown');
+    this._typeAhead.explicitEnter = true;
     this.scope.listen(input, 'click', () => {
       if (!this._typeAhead.isOpen.peek())
         this._typeAhead.open();

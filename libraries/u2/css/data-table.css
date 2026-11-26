@@ -63,7 +63,7 @@
   text-overflow: ellipsis;
 }
 
-.u2-data-table-sortable > .u2-data-table-head {
+.u2-data-table-head.u2-data-table-sortable {
   cursor: pointer;
 }
 
@@ -130,6 +130,18 @@
 .u2-data-table-row-selected:hover {
   background: var(--dg-selection-bg);
   color: var(--dg-selection-text);
+}
+
+/* the current row — where Enter and a bulk action's "clicked row" land — in the list's colour, over
+   the selection's when the row is both, so it reads apart from the other picked rows */
+.u2-data-table-row-current,
+.u2-data-table-row-current:hover {
+  background: var(--u2-row-current-bg);
+}
+
+.u2-data-table-row-current.u2-data-table-row-selected,
+.u2-data-table-row-current.u2-data-table-row-selected:hover {
+  background: linear-gradient(var(--u2-row-current-bg), var(--u2-row-current-bg)), var(--u2-row-selected-bg);
 }
 
 /* the editor's per-cell verdicts, the platform grid's colours in table terms: an unsaved edit is

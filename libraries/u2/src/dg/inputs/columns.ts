@@ -52,9 +52,9 @@ export function aggregationsFor(type: string): string[] {
 }
 
 /** Dart seeds a new row with `avg` for a numerical column and `total count` otherwise in its
- * multi-property mode (`aggregated_columns_input.dart:30`) — but the same file excludes `avg` for
- * datetimes, which the platform also counts as numerical. So the seed is `avg` where the column's
- * type actually offers it, and the first aggregation it does offer otherwise. */
+ * multi-property mode — but it excludes `avg` for datetimes, which the platform also counts as
+ * numerical. So the seed is `avg` where the column's type actually offers it, and the first
+ * aggregation it does offer otherwise. */
 export function defaultAggregation(column: DG.Column): string {
   const available = aggregationsFor(column.type);
   return column.isNumerical && available.includes(DG.AGG.AVG) ? DG.AGG.AVG : available[0];

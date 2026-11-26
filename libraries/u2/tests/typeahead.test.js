@@ -116,6 +116,27 @@ smoke('keyboard: ArrowDown/Enter picks the active option and fills the input', a
   typeahead.dispose();
 });
 
+smoke('a dropdown takes a row named exactly or the one row left, never the highlighted first of several',
+  async () => {
+    const typeahead = users();
+    typeahead.explicitEnter = true;
+    const input = typeahead.root.querySelector('input');
+    input.focus();
+    type(input, 'a');
+    await flush();
+    fire(input, 'keydown', {key: 'Enter'});
+    assert.equal(typeahead.selected.value, null, 'the highlighted first of several rows is not taken');
+    type(input, 'chen');
+    await flush();
+    fire(input, 'keydown', {key: 'Enter'});
+    assert.equal(typeahead.selected.value, USERS[2], 'the one row left is the one shown highlighted');
+    type(input, 'bruno bauer');
+    await flush();
+    fire(input, 'keydown', {key: 'Enter'});
+    assert.equal(typeahead.selected.value, USERS[1]);
+    typeahead.dispose();
+  });
+
 smoke('a typed query highlights the first match, so plain Enter accepts it', async () => {
   const typeahead = users();
   const input = typeahead.root.querySelector('input');

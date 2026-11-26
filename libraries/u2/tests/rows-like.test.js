@@ -70,6 +70,8 @@ scoped('frameRows: one live proxy per id — reads follow the frame, writes reac
   assert.deepEqual(df.dart.writes.at(-1), ['title', 1, 'Ibu']);
   assert.equal(rows.byKey('z'), undefined);
   assert.equal(rows.indexOf('c'), 2);
+  df.dart.rows.splice(0, 1);
+  assert.deepEqual([rows.indexOf('b'), b.title], [-1, undefined], 'a row moved silently reads nothing, not another');
   scope.dispose();
   assert.equal(df.liveSubscriptions(), 0, 'nothing left on the frame');
 });

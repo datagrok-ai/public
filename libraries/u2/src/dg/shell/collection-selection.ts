@@ -15,7 +15,12 @@ export interface SelectableCollection {
   readonly currentRow: Signal<RowView | null>;
   readonly rows: RowsLike<RowView>;
   readonly df: ReadonlySignal<DataFrameLike | undefined>;
+  /** The frame's selected rows; a control that takes the collection over adopts them. */
+  readonly selection?: ReadonlySignal<readonly RowView[]>;
 }
+
+/** The keys a source's user picked, kept past the control that held them. */
+const KEPT = new WeakMap<object, string[]>();
 
 /** Binds `rows` (any `VirtualRows`) to `source` inside `owner`'s scope, and answers nothing: the
  * binding lives as long as the owner does.
@@ -28,8 +33,10 @@ export interface SelectableCollection {
  *    kept keys is a new collection with nothing selected;
  * 3. Escape clears both the mark and the lead. */
 export function collectionSelection(source: SelectableCollection, rows: VirtualRows<RowView>,
-  options: {owner: Control}): void {
+  options: {owner: Control, active?: ReadonlySignal<boolean>}): void {
   const owner = options.owner;
+  // two controls over one source must not both write: the one out of view leaves the source alone
+  const active = options.active ?? signal(true);
   // the list's selection and the source's current row are one thing, written in either direction —
   // seeded from the row that is current already, so the first effect does not clear it
   const current = source.currentRow.peek();
@@ -37,14 +44,29 @@ export function collectionSelection(source: SelectableCollection, rows: VirtualR
     rows.selectedIndex.value = source.rows.items.peek().findIndex((r) => r.id === current.id);
   owner.effect(() => {
     const row = source.rows.items.peek()[rows.selectedIndex.value] ?? null;
+    if (!untracked(() => active.value))
+      return;
     if (row?.id !== source.currentRow.peek()?.id)
       source.currentRow.value = row;
   });
+  // the source moving the current row off a row that left is not the user's pick: the selection stays
+  let leadId = current?.id ?? null;
+  const picked = signal(false);
   owner.effect(() => {
     const row = source.currentRow.value;
+    if (!active.value)
+      return;
     const items = source.rows.items.value;
     const at = row === null ? -1 : items.findIndex((r) => r.id === row.id);
-    if (at !== rows.selectedIndex.peek())
+    const left = untracked(() => leadId !== null && leadId !== row?.id && source.rows.byKey(leadId) === undefined);
+    leadId = row?.id ?? null;
+    if (at === rows.selectedIndex.peek())
+      return;
+    const others = row === null || !left || !picked.peek() ? [] :
+      untracked(() => rows.selectedKeys().filter((key) => source.rows.byKey(key) !== undefined));
+    if (row !== null && others.length > 0)
+      untracked(() => rows.selectKeys(others, row.id));
+    else
       rows.selectedIndex.value = at;
   });
   // the control's multi-selection IS the collection's: everything that acts on "the selected rows"
@@ -52,12 +74,13 @@ export function collectionSelection(source: SelectableCollection, rows: VirtualR
   // the frame's selection bitset, and nothing else on a list page writes it. A selection is a
   // USER's: the lead a load puts on the first row is not one, so nothing is mirrored until the
   // control is clicked or keyed, and a new collection starts over.
-  const picked = signal(false);
   const onPick = () => picked.value = true;
   const onEscape = (e: Event) => {
     if ((e as KeyboardEvent).key !== 'Escape')
       return;
     picked.value = false;
+    kept = [];
+    KEPT.delete(source);
     rows.selectedIndex.value = -1;
   };
   rows.root.addEventListener('click', onPick);
@@ -70,10 +93,26 @@ export function collectionSelection(source: SelectableCollection, rows: VirtualR
   });
   let frame: unknown;
   let kept: string[] = [];
+  let live = false;
   owner.effect(() => {
     const selected = rows.selectedIndices.value;
     const df = source.df.value;
     const own = picked.value;
+    if (!active.value) {
+      live = false;
+      return;
+    }
+    const fresh = !live;
+    live = true;
+    const frames = fresh ? untracked(() => (source.selection?.peek() ?? []).map((r) => r.id)) : [];
+    const taken = frames.length > 0 || !fresh ? frames : KEPT.get(source) ?? [];
+    if (fresh && own && taken.length === 0) {
+      kept = [];
+      picked.value = false;
+      const lead = untracked(() => source.currentRow.peek()?.id);
+      untracked(() => rows.selectKeys(lead === undefined ? [] : [lead], lead));
+      return;
+    }
     const bits = df?.selection as
       {get?(i: number): boolean, set?(i: number, value: boolean): void} | null | undefined;
     if (df === undefined || typeof bits?.set !== 'function')
@@ -84,9 +123,10 @@ export function collectionSelection(source: SelectableCollection, rows: VirtualR
     if (df !== frame) {
       frame = df;
       // nothing to carry over leaves the control's own lead alone: a load puts it on the first row
-      const again = own ? kept : [];
+      const again = taken.length > 0 ? taken : own ? kept : [];
       if (again.length === 0) {
         picked.value = false;
+        KEPT.delete(source);
         return;
       }
       // the scroller copies the items in an effect of its own, which runs AFTER this one: the
@@ -98,14 +138,25 @@ export function collectionSelection(source: SelectableCollection, rows: VirtualR
         const back = again.filter((id) => present.has(id));
         picked.value = back.length > 0;
         if (back.length > 0)
-          untracked(() => rows.selectKeys(back));
+          untracked(() => rows.selectKeys(back, source.currentRow.peek()?.id));
+        else
+          KEPT.delete(source);
+      });
+      return;
+    }
+    if (taken.length > 1 || taken.length === 1 && selected.size === 0) {
+      queueMicrotask(() => {
+        if (owner.scope.isDisposed)
+          return;
+        picked.value = true;
+        untracked(() => rows.selectKeys(taken, source.currentRow.peek()?.id));
       });
       return;
     }
     // the emptying the scroller does when its items are replaced is not the user clearing
     // the selection: only a non-empty one is remembered, and `own` is what clears it
     if (own && selected.size > 0)
-      kept = rows.selectedKeys();
+      KEPT.set(source, kept = rows.selectedKeys());
     // read before writing: a bitset that fires per write would send a change event per ROW on
     // every pass, and a frame the platform writer holds is not to be touched for nothing
     for (let i = 0; i < df.rowCount; i++) {

@@ -104,10 +104,12 @@ export class Format {
   }
 
   /** A date spelled out to read beside an item (`timestamp`): the locale's short month, the day and the year —
-   * Oct 2, 2026 — and with `time` the hour and the minute; `utc` reads it in UTC. A cell's text is {@link value}. */
-  static spelled(date: Date, options: {time?: boolean, utc?: boolean} = {}): string {
+   * Oct 2, 2026 — and with `time` the hour and the minute, with `seconds` the second too; `utc` reads it in UTC.
+   * A cell's text is {@link value}. */
+  static spelled(date: Date, options: {time?: boolean, seconds?: boolean, utc?: boolean} = {}): string {
     return date.toLocaleString(undefined, {month: 'short', day: 'numeric', year: 'numeric',
-      ...(options.time ? {hour: '2-digit', minute: '2-digit'} : {}), ...(options.utc ? {timeZone: 'UTC'} : {})});
+      ...(options.time ? {hour: '2-digit', minute: '2-digit'} : {}), ...(options.seconds ? {second: '2-digit'} : {}),
+      ...(options.utc ? {timeZone: 'UTC'} : {})});
   }
 
   // the platform's `initColumnFormat`, decided per value rather than per column

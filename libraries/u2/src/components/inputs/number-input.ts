@@ -22,6 +22,10 @@ export interface NumberInputOptions extends InputOptions<number | null> {
 }
 
 const INT = /^-?\d+$/;
+/** The range of the platform's `int` column: a frame column silently wraps a larger number, and
+ * -2147483648 is its null. */
+const INT32_MIN = -2147483647;
+const INT32_MAX = 2147483647;
 const FLOAT = /^-?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/;
 
 /** Numeric editor over a text field: `input type=number` brings a native spinner and its own
@@ -58,6 +62,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
   private declare _slider: HTMLInputElement | null;
   /** Why the text in the field is no value, while it is not. */
   private declare _bad: Signal<string | null>;
+  private declare _written: string | null;
 
   constructor(options: NumberInputOptions = {}) {
     super(options, null);
@@ -104,6 +109,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
 
   protected createEditor(): HTMLElement {
     this._bad = signal<string | null>(null);
+    this._written = '';
     this._slider = null;
     const input = document.createElement('input');
     this._input = input;
@@ -120,10 +126,11 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
         echo = false;
       // a float32 column echoes the typed value rounded: the typed text already says it
       else if (!NumberInput._sameFloat32(this._parse(input.value), value))
-        input.value = this._format(value);
+        this._show(this._format(value));
       this._syncSlider();
     });
     this.scope.listen(input, 'input', () => {
+      this._written = null;
       const parsed = this._parse(input.value);
       this._bad.value = parsed !== undefined ? null :
         this._int && FLOAT.test(input.value.trim()) ? 'Must be a whole number' : 'Not a number';
@@ -247,8 +254,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
   }
 
   protected resetEditor(): void {
-    this._bad.value = null;
-    this._input.value = this._format(this.peek());
+    this._show(this._format(this.peek()));
     this._syncSlider();
   }
 
@@ -256,7 +262,10 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
     return this._bad.value !== null;
   }
 
+  // a blur over the displayed text must not parse a `format`-rounded value back
   private _commit(): void {
+    if (this._input.value === this._written)
+      return;
     const parsed = this._parse(this._input.value);
     if (parsed !== undefined)
       this._set(parsed);
@@ -265,19 +274,32 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
   private _set(value: number | null): void {
     this._bad.value = null;
     this.value = value;
-    this._input.value = this._format(this.peek());
+    this._show(this._format(this.peek()));
     this._syncSlider();
+  }
+
+  private _show(text: string): void {
+    this._input.value = text;
+    this._written = text;
+    this._bad.value = null;
   }
 
   private _parse(text: string): number | null | undefined {
     const trimmed = text.trim();
     if (!trimmed)
       return null;
-    return (this._int ? INT : FLOAT).test(trimmed) ? Number(trimmed) : undefined;
+    const value = (this._int ? INT : FLOAT).test(trimmed) ? Number(trimmed) : NaN;
+    return Number.isFinite(value) ? value : undefined;
+  }
+
+  private _bounds(): {min: number | undefined, max: number | undefined} {
+    const {min, max} = this.options;
+    return this._int ? {min: Math.max(min ?? INT32_MIN, INT32_MIN), max: Math.min(max ?? INT32_MAX, INT32_MAX)} :
+      {min, max};
   }
 
   private _clamp(value: number): number {
-    const {min, max} = this.options;
+    const {min, max} = this._bounds();
     if (min !== undefined && value < min)
       return min;
     if (max !== undefined && value > max)
@@ -286,7 +308,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
   }
 
   private _outOfRange(value: number | null): string | null {
-    const {min, max} = this.options;
+    const {min, max} = this._bounds();
     if (value == null)
       return null;
     if (min !== undefined && value < min)
