@@ -33,8 +33,10 @@ export class DomainSearch extends TextInput {
     this.effect(() => {
       source.state.value;
       const columns = DomainSearch.columns(source);
-      box.title = columns.length === 0 ? '' : `Finds the ${nounOf(source.schema.info)} whose ` +
-        `${columns.join(', ')} contain the text — within what the filter shows`;
+      const reason = source.searchable.value ? null : 'Nothing to search in this table';
+      this.disabled = reason;
+      box.title = reason ?? (columns.length === 0 ? '' : `Finds the ${nounOf(source.schema.info)} whose ` +
+        `${columns.join(', ')} contain the text — within what the filter shows`);
     });
     const wait = options.debounceMs ?? 300;
     const write = () => {
