@@ -24,6 +24,9 @@ export interface ViewExport {
   export: () => Promise<DG.FileInfo>;
 }
 
+const OUTDATED_MSG = 'Output outdated';
+const EXPORT_DISABLED_MSG = 'Export is turned off for this run';
+
 export abstract class CustomFunctionView extends DG.ViewBase {
   public isReady = new BehaviorSubject(false);
 
@@ -45,8 +48,6 @@ export abstract class CustomFunctionView extends DG.ViewBase {
 
   set exportEnabled(enabled: boolean) {
     this._exportEnabled = enabled;
-    if (this.funcCall)
-      this.buildRibbonPanels();
   }
 
   get outputOutdated(): boolean | undefined {
@@ -55,8 +56,6 @@ export abstract class CustomFunctionView extends DG.ViewBase {
 
   set outputOutdated(isOutdated: boolean) {
     this._isOutputOutdated = isOutdated;
-    if (this.funcCall)
-      this.buildRibbonPanels();
   }
 
   get runError(): string | undefined {
@@ -181,10 +180,13 @@ export abstract class CustomFunctionView extends DG.ViewBase {
     const historyButton = ui.iconFA('history', () => this.openRunWithDialog(), 'Open a saved run');
     const saveButton = ui.iconFA('save', () => this.funcCall ? this.saveRunWithDialog(this.funcCall) : undefined, 'Save');
     const exportButton = ui.iconFA('arrow-to-bottom', () => {
-      if (!this.outputOutdated && this.exportEnabled)
+      if (this.outputOutdated)
+        grok.shell.error(OUTDATED_MSG)
+      else if (!this.exportEnabled)
+        grok.shell.error(EXPORT_DISABLED_MSG)
+      else
         this.exportRun(this.exports[0]);
     }, this.exports[0]?.name);
-    exportButton.classList.toggle('d4-disabled', this.outputOutdated && !this.exportEnabled);
     const newRibbonPanels: HTMLElement[][] =
       [[...(hasRunDialogs() ? [historyButton, saveButton] : []), ...(this.exports.length > 0 ? [exportButton] : [])]];
     this.setRibbonPanels(newRibbonPanels);
@@ -228,8 +230,8 @@ export abstract class CustomFunctionView extends DG.ViewBase {
         .group('Export')
         .items(this.exports, (item) => this.exportRun(item), {
           toString: (item) => item.name,
-          isValid: () => this.outputOutdated ? 'Output outdated' :
-            (this.exportEnabled ? null : 'Export is turned off for this run'),
+          isValid: () => this.outputOutdated ? OUTDATED_MSG :
+            (this.exportEnabled ? null : EXPORT_DISABLED_MSG),
         })
         .endGroup();
     }
