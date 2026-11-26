@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Forge: fixed the warning "MLflow model was not updated" after another tab of the same user had already removed the model's row
 * Forge: the published MLflow models you may use appear in the Forge catalog as your own rows; their containers stop after 60 idle minutes
 * Docker: Rebuilt the mlflow container on Wolfi to clear the Debian CVEs; pyenv Pythons bootstrap model environments from current pip/setuptools wheels
 * Docker: rebased the mlflow container on Debian 13 with pinned mlflow 3.14.0 (was unpinned ghcr.io :latest on EOL Debian 11) and raised pip/setuptools/wheel/cryptography security floors (VEX)

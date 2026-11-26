@@ -93,8 +93,14 @@ async function write({register, remove}: SyncDiff): Promise<string[]> {
   const failed: string[] = [];
   for (const registration of register)
     await registerModel(registration).catch(() => failed.push(registration.model.name));
+  const refused: OwnRow[] = [];
   for (const row of remove)
-    await grok.functions.call('Forge:deleteModel', {model: row.Id}).catch(() => failed.push(row.Name));
+    await grok.functions.call('Forge:deleteModel', {model: row.Id}).catch(() => refused.push(row));
+  // A row that the user's other tab deleted in its own sync is refused too: only a row still there failed.
+  if (refused.length > 0) {
+    const left = new Set((await ownRows()).map((row) => row.Id));
+    failed.push(...refused.filter((row) => left.has(row.Id)).map((row) => row.Name));
+  }
   return failed;
 }
 
