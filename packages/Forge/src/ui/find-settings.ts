@@ -4,7 +4,6 @@ import * as rxjs from 'rxjs';
 import {Engine, isServerEngine} from '../engines/engine';
 import {ModelTask} from '../generated/db';
 import {METRIC_LABELS, MetricId} from '../metrics/metrics';
-import {isRecord} from '../preparation/preparation-options';
 import {DEFAULT_BUDGET_SECONDS, defaultMetric, defaultUncheckReason, exclusionOf, isQuickLimit, isQuickMethod,
   MethodProbabilities, probabilitiesOf, SEARCH_METRICS, SearchChoice} from '../training/search';
 import {LimitInputs, StoredLimit, TRIALS} from './limit-inputs';
@@ -19,7 +18,7 @@ const DEFAULT_LIMIT: StoredLimit = {limit: TRIALS, minutes: DEFAULT_BUDGET_SECON
 const NO_METHOD_CHECKED = 'Check at least one method';
 const NO_PROBABILITY_METHOD = 'No checked method gives class probabilities';
 const SERVER_TOOLTIP = 'Runs on the server; not searched in the browser';
-const METHODS_TOOLTIP = 'The methods to try, each with its defaults first';
+const METHODS_TOOLTIP = 'The methods to try. The recommended ones are checked.';
 const SEARCH_TOOLTIP = 'Search settings for the best model';
 const SEARCH_TOOLTIPS: Record<SearchKind, string> = {[DEFAULT_SEARCH]: 'Search with the recommended settings',
   [CUSTOM_SEARCH]: 'Choose the metric, the limit and the methods yourself'};
@@ -28,12 +27,10 @@ const SEARCH_TOOLTIPS: Record<SearchKind, string> = {[DEFAULT_SEARCH]: 'Search w
  * probabilities. */
 export interface MethodEntry { name: string; isLive: boolean; isServer: boolean; probabilities: MethodProbabilities }
 
-/** What is remembered per user: Search (Default or Custom), the metric, the limit and the user's toggles of the
- * methods. */
+/** What is remembered per user: Search (Default or Custom), the metric and the limit. */
 interface StoredFind extends StoredLimit {
   search: SearchKind;
   metric?: string;
-  methods: {[name: string]: boolean};
 }
 
 /** The Find best model block under **Method** while Auto is chosen: the status line (Not searched), **Search**
@@ -43,8 +40,10 @@ interface StoredFind extends StoredLimit {
  * probabilities while Predict probability is on, or one without them under a probability metric is not listed, its
  * reason in the label's tooltip; a slow one, or a method whose probabilities are a train input (SVM) on a classifier,
  * unchecked unless the time limit is above a minute; SVM unchecked on a table of more than 1000 rows at any limit).
- * Both share the limit equally between the methods. Search, Metric, the limit and the user's method toggles are
- * remembered per user; Default keeps Custom's settings as they are. */
+ * Both share the limit equally between the methods. Search, Metric and the limit are remembered per user; the user's
+ * method toggles live with the block (kept across rebuilds and Default / Custom switches, never stored), so every new
+ * Train view starts from the recommended checks, which the Candidates tooltip says; Default keeps Custom's
+ * settings as they are. */
 export class FindSettings {
   readonly root = ui.div([], 'forge-find');
   readonly statusText: HTMLSpanElement;
@@ -59,7 +58,7 @@ export class FindSettings {
   readonly subs: rxjs.Subscription[] = [];
   private readonly host: {onChanged: () => void};
   private entries: MethodEntry[] = [];
-  private readonly overrides: {[name: string]: boolean};
+  private readonly overrides: {[name: string]: boolean} = {};
   private task: ModelTask | undefined;
   private readonly storedMetric: string | undefined;
   private readonly saver: {save: () => void; flush: () => void};
@@ -77,7 +76,6 @@ export class FindSettings {
     this.host = host;
     const stored = FindSettings.load();
     this.storedMetric = stored.metric;
-    this.overrides = stored.methods;
     this.saver = TuneSettings.saver(FIND_KEY, () => this.record());
     this.subs.push(new rxjs.Subscription(() => this.flushSave()));
     const status = TuneSettings.statusLine();
@@ -330,21 +328,15 @@ export class FindSettings {
 
   private record(): StoredFind {
     return {search: this.isCustom ? CUSTOM_SEARCH : DEFAULT_SEARCH,
-      metric: TuneSettings.metricOf(this.metric, this.task), ...this.limit.stored(), methods: this.overrides};
+      metric: TuneSettings.metricOf(this.metric, this.task), ...this.limit.stored()};
   }
 
   /** The remembered settings, each item checked: a malformed or stale one falls back to its default (Search to
-   * Default); the limit as {@link LimitInputs.load} reads it. */
+   * Default); the limit as {@link LimitInputs.load} reads it; an old record's method toggles are ignored. */
   static load(): StoredFind {
     const value = TuneSettings.storedRecord(FIND_KEY);
-    const {metric, methods} = value;
-    const toggles: {[name: string]: boolean} = {};
-    for (const [name, checked] of Object.entries(isRecord(methods) ? methods : {})) {
-      if (typeof checked === 'boolean')
-        toggles[name] = checked;
-    }
+    const {metric} = value;
     return {search: value.search === CUSTOM_SEARCH ? CUSTOM_SEARCH : DEFAULT_SEARCH,
-      metric: typeof metric === 'string' ? metric : undefined, ...LimitInputs.load(value, DEFAULT_LIMIT),
-      methods: toggles};
+      metric: typeof metric === 'string' ? metric : undefined, ...LimitInputs.load(value, DEFAULT_LIMIT)};
   }
 }

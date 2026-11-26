@@ -118,15 +118,21 @@ Predictive modeling (train, apply, catalog) behind the platform's `ML | Models` 
   (one `category` block per name: a later `before` replaces an earlier one, and the Test Manager runs `before` and
   `after` around every test, so they stay light). The storage holds one key per method and `Find best` (the Find best
   model block); a test that writes a key deletes it in `finally`.
-- Test layers: `grok test` keeps logic, form logic without a view, stub scenarios (`slowEngine`, `stuckEngine`, a
-  failing viewer), invariants (subscriptions, released frames), registration and API functions, numbers and
-  `restoreRun`; the user flows, the tooltips and the layout are BDD's (`bdd/`). UI tests never assert tooltip
-  texts, pixels or CSS, and wait for a state (`awaitTrained`, `retrain`: a change drops `lastTraining` at once,
-  `aria-busy` false; `waitUntil` with 20 s or more), never a fixed delay. Forge's `test()` declares `skipToCategory`,
-  `skipToTest`, `returnOnFail` and `exclude`, so the CLI retries a failed run on a fresh page.
+- Test layers: `grok test` keeps logic, form logic without a view, stub scenarios (`slowEngine`, `stuckEngine`,
+  `instantEngine`: a fit at once with class probabilities, for Train view flows without a real training; a failing
+  viewer), invariants (subscriptions, released frames; `ResultsPane` fed `ResultsData` built in code), registration and
+  API functions, numbers and `restoreRun`; the user flows, the tooltips and the layout are BDD's (`bdd/`). UI tests
+  never assert tooltip texts, pixels or CSS, and wait for a state (`awaitTrained`, `retrain`: a change drops
+  `lastTraining` at once, `aria-busy` false; `waitUntil` with 20 s or more), never a fixed delay. Forge's `test()`
+  declares `skipToCategory`, `skipToTest`, `returnOnFail` and `exclude`, so the CLI retries a failed run on a fresh
+  page.
 - Method `Auto` is a view state (`userChoice`), not an engine: `this.engine` stays the suggested method, and
   `Forge:trainModel` takes `method: 'auto'`; the winner's engine must reach both the selection and the request.
   Choosing it keeps `lastTraining` (`requestCheck(true)`): nothing retrains, the results stay.
+- Platform inputs (`BoolInput`, `RadioInput`, `ChoiceInput`, number inputs) fire `onChanged` when set to the value they
+  already hold; a programmatic set reached from `setWinner` / `fillMethod` must check that the value differs, or it
+  requests a check (Find's winner was trained twice). A set that must never check (the Missing values reset and
+  `restore`) runs with the input's `notify` off (`TuneSettings.silently`).
 - The view continues a search only through its kept `SearchState` (`searches`, per mode, Tune per method) while
   `searchInputs` match; a repeated `startSearch` in a test continues the earlier one (the limit adds up). It starts
   nothing while Tune's or Find's problem holds (an invalid limit included), whatever `choice` it is given.

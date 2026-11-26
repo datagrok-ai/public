@@ -214,6 +214,7 @@ async function predict(request: ApplyRequest, progress?: LoopProgress): Promise<
     return column;
   };
   const column = added(labels, predictionName(table, target));
+  column.meta.description = `${target} predicted by ${model.row.name}`;
   const {options} = model;
   const probabilityColumns: DG.Column[] = [];
   if (options.postprocessingInfo.includes(CLASS_PROBABILITIES) && probabilities !== undefined) {

@@ -48,6 +48,27 @@ export const PANEL_TEXTS: {[key in PanelText]: [title: string, tooltip: string]}
   runs: ['Runs', 'The trainings of this view, newest first; click one to set its inputs again.'],
   search: ['Search', 'Each method\'s best settings, ranked by the metric minus its standard error.'],
 };
+/** Whose predictions the panels show: the final model's of its training rows (the Train view), or the saved model's
+ * of the evaluated rows. */
+export type PredictedRows = 'training' | 'evaluation';
+const TRAINING_ROWS = 'The final model on its training rows';
+const VALIDATION_ROWS = 'On the validation rows';
+const EVALUATED_ROWS = 'On the evaluated rows';
+
+/** What a viewer panel shows besides the data: the model's predictions, or (**Per-class**) the values of the
+ * validation split in the Train view. */
+export type PanelSource = 'prediction' | 'validation';
+
+/** The line under a panel of [source] saying whose predictions it shows ([rows]); undefined for a panel without a
+ * source: **Class balance**, **Features correlation**, a classifier's **Features** and the method's own views. */
+export function sourceLineOf(source: PanelSource | undefined, rows: PredictedRows): string | undefined {
+  if (source === undefined)
+    return undefined;
+  if (rows === 'evaluation')
+    return EVALUATED_ROWS;
+  return source === 'validation' ? VALIDATION_ROWS : TRAINING_ROWS;
+}
+
 const STATISTICS_HEADERS: {[column: string]: string} = {
   'Statistic': 'Summary statistic of the column.',
   'Actual': 'The statistic of the target column.',
@@ -77,6 +98,8 @@ export interface ResultsData {
   blob: Uint8Array;
   /** The metrics grid's content. */
   summary: MetricsSummary;
+  /** Whose predictions [prediction] holds. */
+  rows: PredictedRows;
 }
 
 /** **Wrong predictions**: the table's columns and the prediction spread over its rows, filtered to the wrong rows. */
@@ -91,6 +114,7 @@ export interface Mismatches {
 export interface Shown {
   table: DG.DataFrame;
   kind: ResultKind;
+  rows: PredictedRows;
   /** The target's classes, its empty category aside. */
   classes: string[];
   columns: DG.Column[];
@@ -120,8 +144,10 @@ export interface Shown {
   isLinking: boolean;
   /** The viewer panels by key: every panel but the metrics, the insights and the method's own. */
   panels: Map<PanelKey, HTMLElement>;
-  /** Their viewers, which show the insights about them as their descriptions. */
+  /** Their viewers, which show the insights about them and {@link sourceLineOf} as their descriptions. */
   viewers: Map<PanelKey, DG.Viewer>;
+  /** The source of each viewer panel that has one. */
+  sources: Map<PanelKey, PanelSource>;
 }
 
 /** A curve's panel: Forge's own frame of the curve's points, the viewer, the panel's title text and the frame's row
@@ -133,7 +159,7 @@ interface PerClassPanel { frame: DG.DataFrame; labels: string[]; axes: PerClassA
 /** The viewers of [data]: one frame of the columns the method saw, the target, the prediction and Forge's own
  * columns, and the panels over it. A viewer that fails to build gives the frame and the links back. */
 export function buildShown(data: ResultsData, kind: ResultKind): Shown {
-  const {table, columns, target, prediction, score, curves, keptRows} = data;
+  const {table, columns, target, prediction, score, curves, keptRows, rows} = data;
   const kept = keptRows?.getSelectedIndexes() ?? null;
   let toFrame: Int32Array | null = null;
   if (kept !== null) {
@@ -141,9 +167,9 @@ export function buildShown(data: ResultsData, kind: ResultKind): Shown {
     for (let i = 0; i < kept.length; i++)
       toFrame[kept[i]] = i;
   }
-  const shown: Shown = {table, kind, classes: classesOf(target), columns, target, keptRows, kept, toFrame,
+  const shown: Shown = {table, kind, rows, classes: classesOf(target), columns, target, keptRows, kept, toFrame,
     prediction, score, curves, curvePanels: [], subs: [], isLinking: false, panels: new Map(), viewers: new Map(),
-    ...previewFrame(data)};
+    sources: new Map(), ...previewFrame(data)};
   linkRows(shown, shown.frame, kept, toFrame, shown.subs);
   try {
     if (kind === 'regression')
@@ -240,6 +266,8 @@ export function updateWrongPredictions(shown: Shown): Mismatches | undefined {
   if (wrong === null || wrong.trueCount === 0) {
     shown.wrong = undefined;
     shown.panels.delete('wrongPredictions');
+    shown.viewers.delete('wrongPredictions');
+    shown.sources.delete('wrongPredictions');
     return old;
   }
   const isWrongRow = new Uint8Array(table.rowCount);
@@ -261,7 +289,7 @@ export function updateWrongPredictions(shown: Shown): Mismatches | undefined {
     linkRows(shown, mismatches.frame, null, null, mismatches.subs);
     const grid = readOnlyGrid(mismatches.frame, {headers: {[predicted.name]: 'The model\'s prediction for the row.'}});
     grid.props.showRowHeader = true;
-    shown.panels.set('wrongPredictions', resultsPanel('wrongPredictions', grid.root));
+    addViewer(shown, 'wrongPredictions', grid, {source: 'prediction'});
   } catch (e) {
     releaseLinkedFrame(mismatches);
     throw e;
@@ -382,9 +410,19 @@ export function resultsPanel(key: PanelText, content: HTMLElement, name = ''): H
   return ui.divV([resultsTitle(key, name), content], 'forge-results-panel');
 }
 
-/** The panel [key] of [viewer] in [shown]. */
-function addViewer(shown: Shown, key: PanelKey & PanelText, viewer: DG.Viewer, name = ''): void {
-  shown.panels.set(key, resultsPanel(key, viewer.root, name));
+/** The viewer panels' titles: **Predicted <name> vs Actual** of either kind is the panel `predictedVsActual`. */
+type ViewerTitle = Exclude<PanelText, 'metrics' | 'insights' | 'visualize' | 'runs' | 'search'>;
+
+/** The panel of [viewer] titled [title] in [shown] ([name] in place of `<name>`, [span] the title's text): a panel with
+ * a [source] gets its description at the bottom and the {@link sourceLineOf} line. */
+function addViewer(shown: Shown, title: ViewerTitle, viewer: DG.Viewer,
+  {source, name = '', span}: {source?: PanelSource; name?: string; span?: HTMLElement} = {}): void {
+  const key: PanelKey = title === 'classifierVsActual' || title === 'regressionVsActual' ? 'predictedVsActual' : title;
+  if (source !== undefined) {
+    viewer.setOptions({descriptionPosition: 'Bottom'});
+    shown.sources.set(key, source);
+  }
+  shown.panels.set(key, ui.divV([resultsTitle(title, name, span), viewer.root], 'forge-results-panel'));
   shown.viewers.set(key, viewer);
 }
 
@@ -393,17 +431,17 @@ function addViewer(shown: Shown, key: PanelKey & PanelText, viewer: DG.Viewer, n
  * its own color), **Per-class** (three or more classes; {@link perClassPanel}). **Wrong predictions** follows the
  * prediction ({@link updateWrongPredictions}). */
 function classifierPanels(shown: Shown, {summary, threshold}: ResultsData): void {
-  const {frame, panels, columns, target, prediction, marks} = shown;
+  const {frame, columns, target, prediction, marks} = shown;
   curvePanels(shown, threshold);
   const numerical = columns.filter((c) => c.matches(NUMERICAL));
   if (numerical.length >= 2) {
-    panels.set('predictedVsActual', resultsPanel('classifierVsActual', DG.Viewer.scatterPlot(frame,
-      {xColumnName: numerical[0].name, yColumnName: numerical[1].name, colorColumnName: target.name,
-        markersColumnName: marks.name}).root, target.name));
+    addViewer(shown, 'classifierVsActual', DG.Viewer.scatterPlot(frame, {xColumnName: numerical[0].name,
+      yColumnName: numerical[1].name, colorColumnName: target.name, markersColumnName: marks.name}),
+    {source: 'prediction', name: target.name});
   }
   if (shown.classes.length < MAX_CONFUSION_CLASSES) {
     addViewer(shown, 'confusions', DG.Viewer.confusionMatrix(frame,
-      {xColumnName: target.name, yColumnName: prediction.name, descriptionPosition: 'Bottom'}));
+      {xColumnName: target.name, yColumnName: prediction.name}), {source: 'prediction'});
   }
   addViewer(shown, 'classBalance', DG.Viewer.barChart(frame, {splitColumnName: target.name,
     stackColumnName: target.name, valueColumnName: target.name, valueAggrType: DG.AGG.TOTAL_COUNT,
@@ -474,8 +512,7 @@ function curvePanel(shown: Shown, curve: Curve, curves: Curves, threshold: numbe
     showCurrentPoint: true, legendVisibility: 'Never', showXAxis: true, showYAxis: true, autoLayout: false,
     showXSelector: true, showYSelector: true, showSizeSelector: false, showColorSelector: false});
   const title = ui.span([PANEL_TEXTS[curve.key][0]]);
-  shown.panels.set(curve.key, ui.divV([resultsTitle(curve.key, '', title), viewer.root], 'forge-results-panel'));
-  shown.viewers.set(curve.key, viewer);
+  addViewer(shown, curve.key, viewer, {source: 'prediction', span: title});
   return {curve, frame, viewer, title, marked};
 }
 
@@ -607,30 +644,31 @@ function perClassPanel(shown: Shown, summary: MetricsSummary): void {
   const legendChars = labels.reduce((sum, label) => sum + label.length + LEGEND_ITEM_CHARS, 0);
   addViewer(shown, 'perClass', DG.Viewer.pcPlot(frame, {columnNames: names, colorColumnName: CLASS,
     showCurrentLine: false, showFilters: false, showColorSelector: false, legendPosition: 'Top',
-    legendVisibility: legendChars <= MAX_TOP_LEGEND_CHARS ? 'Always' : 'Never'}));
+    legendVisibility: legendChars <= MAX_TOP_LEGEND_CHARS ? 'Always' : 'Never'}), {source: 'validation'});
   shown.perClass = {frame, labels, axes};
 }
 
 /** **Predicted <target> vs Actual**, **Residuals**, **Distributions of predicted and actual <target>**,
  * **Statistics**. */
 function regressionPanels(shown: Shown): void {
-  const {frame, panels, target, prediction, marks} = shown;
-  panels.set('predictedVsActual', resultsPanel('regressionVsActual', DG.Viewer.scatterPlot(frame,
-    {xColumnName: target.name, yColumnName: prediction.name, showRegressionLine: true}).root, target.name));
+  const {frame, target, prediction, marks} = shown;
+  addViewer(shown, 'regressionVsActual', DG.Viewer.scatterPlot(frame, {xColumnName: target.name,
+    yColumnName: prediction.name, showRegressionLine: true}), {source: 'prediction', name: target.name});
   const range = Math.max(Math.abs(target.min), Math.abs(target.max));
   addViewer(shown, 'residuals', DG.Viewer.scatterPlot(frame, {xColumnName: prediction.name,
-    yColumnName: marks.name, showRegressionLine: true, yMin: -range, yMax: range}));
+    yColumnName: marks.name, showRegressionLine: true, yMin: -range, yMax: range}), {source: 'prediction'});
   const values = distributionValues(target, prediction);
   shown.distributions = DG.DataFrame.fromColumns([DG.Column.fromFloat32Array('targets', values),
     DG.Column.fromType(DG.COLUMN_TYPE.STRING, 'label', values.length)
       .init((i) => i < target.length ? 'TARGET' : 'PREDICTION')]);
-  panels.set('distributions', resultsPanel('distributions', DG.Viewer.histogram(shown.distributions,
-    {valueColumnName: 'targets', splitColumnName: 'label'}).root, target.name));
+  addViewer(shown, 'distributions', DG.Viewer.histogram(shown.distributions,
+    {valueColumnName: 'targets', splitColumnName: 'label'}), {source: 'prediction', name: target.name});
   const rows = statisticsOf(target, prediction);
   shown.statistics = DG.DataFrame.fromColumns([textColumn('Statistic', rows.map((r) => r.id)),
     numberColumn('Actual', rows.map((r) => r.actual)), numberColumn('Predicted', rows.map((r) => r.predicted))]);
   addViewer(shown, 'statistics', readOnlyGrid(shown.statistics,
-    {headers: STATISTICS_HEADERS, cells: {'Statistic': (row) => STATISTIC_DESCRIPTIONS[rows[row].id]}}));
+    {headers: STATISTICS_HEADERS, cells: {'Statistic': (row) => STATISTIC_DESCRIPTIONS[rows[row].id]}}),
+  {source: 'prediction'});
 }
 
 /** **Features** and **Features correlation**: both for 3 to 20 numerical columns. */
@@ -641,7 +679,8 @@ function featurePanels(shown: Shown): void {
     return;
   const extra = target.matches(NUMERICAL) ? [target.name, prediction.name] : [];
   addViewer(shown, 'features', DG.Viewer.pcPlot(frame,
-    {columnNames: [...numerical, ...extra], colorColumnName: target.name}));
+    {columnNames: [...numerical, ...extra], colorColumnName: target.name, descriptionPosition: 'Bottom'}),
+  {source: shown.kind === 'regression' ? 'prediction' : undefined});
   addViewer(shown, 'correlation', DG.Viewer.correlationPlot(frame,
     {xColumnNames: numerical, yColumnNames: numerical}));
 }

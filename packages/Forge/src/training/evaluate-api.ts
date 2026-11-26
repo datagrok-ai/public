@@ -3,14 +3,15 @@ import {apiMapping, APPLY_COLUMNS, loadedModelOf} from '../apply/apply-model';
 import {Engine} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
 import {ForgeError} from '../forge-error';
-import {ClassValues, MetricValues} from '../metrics/metrics';
+import {ClassValues, MetricValues, verdictMetricOf} from '../metrics/metrics';
 import {findModelRow} from '../storage/model-store';
 import {evaluateModel, EvaluationResult, storedTrainingTable} from './evaluation';
 import {evaluationInsights, Insight} from './insights';
+import {searchRecordOf} from './search';
 import {metricsRecordOf} from './train-model';
 
 /** The `model` columns an evaluation reads (the system columns come with any query). */
-const EVALUATE_COLUMNS = [...APPLY_COLUMNS, 'metrics', 'dataset_ref', 'dataset_table_id'] as const;
+const EVALUATE_COLUMNS = [...APPLY_COLUMNS, 'metrics', 'search', 'dataset_ref', 'dataset_table_id'] as const;
 
 /** The inputs of `Forge:evaluateModel`; a missing optional input is null or undefined. */
 export interface EvaluateModelInput {
@@ -71,12 +72,14 @@ export async function runEvaluateModel(input: EvaluateModelInput, discovered?: E
   }
   const train = stored?.train ?? {};
   const validation = stored?.validation ?? {};
+  const measured = stored ?? {train, validation};
   const {positiveClass} = result;
   return {id: row.id, name: row.name, table: table.name, target: target.name, rowCount: result.rowCount,
     skippedRows: result.skippedRows, ...(positiveClass === undefined ? {} : {positiveClass}),
     metrics: {train, validation, evaluation: result.values},
     ...(result.classes === undefined ? {} : {classes: result.classes}),
-    insights: evaluationInsights(result, {train, validation}).map(insightText)};
+    insights: evaluationInsights(result, measured, verdictMetricOf(measured, searchRecordOf(row.search)?.metric))
+      .map(insightText)};
 }
 
 const insightText = ({panel: _, ...text}: Insight): InsightText => text;

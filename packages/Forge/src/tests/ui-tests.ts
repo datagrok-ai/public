@@ -12,10 +12,12 @@ import {defaultHyperparameters, enabledRules, Engine, hyperparametersOf, isEnabl
   visibleHyperparametersOf} from '../engines/engine';
 import {errorMessage, ForgeError} from '../forge-error';
 import {forgeDb} from '../generated/db';
-import {Curves} from '../metrics/metrics';
+import {Curves, METRIC_LABELS, MetricId, verdictMetricOf, VerdictStatus} from '../metrics/metrics';
 import {deleteModel} from '../storage/model-store';
-import {CandidateRecord, SearchRecord, searchSpaceOf} from '../training/search';
-import {trainingEngines, trainPredictionOf} from '../training/train-model';
+import {evaluationInsights} from '../training/insights';
+import {DEFAULT_VALIDATION} from '../training/k-fold';
+import {CandidateRecord, SearchRecord, searchRecordOf, searchSpaceOf} from '../training/search';
+import {metricsRecordOf, trainingEngines} from '../training/train-model';
 import {modelLabels} from '../ui/apply-model-dialog';
 import {ButtonGate} from '../ui/button-gate';
 import {EvaluationView} from '../ui/evaluation-view';
@@ -24,16 +26,20 @@ import {ForgeApp} from '../ui/forge-app';
 import {TIME, TRIALS} from '../ui/limit-inputs';
 import {MetricsSummary, MetricsTable, tinyValueText} from '../ui/metrics-table';
 import {ModelCards} from '../ui/model-cards';
+import {isSameInputs, RunInputs} from '../ui/runs-panel';
 import {ForgeModelHandler} from '../ui/model-handler';
 import {PreparationInputs} from '../ui/preparation-inputs';
-import {PanelKey, resultsLayout} from '../ui/results-layout';
-import {buildShown, markCurves, refillShown, releaseShown, ResultsData} from '../ui/results-viewers';
+import {PanelKey, ResultKind, resultsLayout} from '../ui/results-layout';
+import {ResultsPane} from '../ui/results-pane';
+import {buildShown, markCurves, PanelSource, refillShown, releaseShown, ResultsData, sourceLineOf}
+  from '../ui/results-viewers';
 import {SHOWN_RUN, TrainView} from '../ui/train-view';
 import {AUTO_TUNE, MANUAL, TuneSettings} from '../ui/tune-settings';
 import {ValidationInputs} from '../ui/validation-inputs';
 import {balloonWith, cancelAtGate, cancelOnceShown, clearTestGalleryStorage, columnsOf, deferred, deleteRunsOf,
-  demoDemog, EngineGate, expectReleased, framesSharing, insertModelRow, openIris, openSolubility, runsOf,
-  saveIrisModel, slowEngine, stuckEngine, svm, taskBarEntry, twoClassTable, twoSpeciesIris, unbalancedIris,
+  demoDemog, edaEngine, emptyEngine, EngineGate, expectReleased, framesSharing, insertModelRow, instantEngine,
+  NO_PREPARATION_STEPS, openIris, openSolubility, runsOf,
+  saveIrisModel, slowEngine, stuckEngine, svm, taskBarEntry, twoClassTable, unbalancedIris,
   useTestGalleryStorage, valuesOf, withEngine, xgboost} from './test-data';
 
 const WAIT_MS = 20000;
@@ -498,6 +504,30 @@ category('UI: Train', () => {
 const textOf = (rows: number, name: string, value: (i: number) => string) =>
   DG.Column.fromStrings(name, Array.from({length: rows}, (_, i) => value(i)));
 
+/** A `forge-test-gaps-…` table of 300 rows: `x1` and `x2` with gaps (every 7th and every 11th row), `sex` when
+ * [withText], and the class `cls`, which follows `x1`. */
+function gappedTable(withText: boolean): DG.DataFrame {
+  const rows = 300;
+  const gapsEvery = (n: number) => Array.from({length: rows}, (_, i) => i).filter((i) => i % n === 0);
+  const table = DG.DataFrame.fromColumns([
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'x1', valuesOf(rows, (i) => i / 10, gapsEvery(7))),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'x2', valuesOf(rows, (i) => (i * 37) % 100 / 10, gapsEvery(11))),
+    ...(withText ? [textOf(rows, 'sex', (i) => i % 2 === 0 ? 'M' : 'F')] : []),
+    textOf(rows, 'cls', (i) => ['a', 'b', 'c'][Math.floor(i / 100)]),
+  ]);
+  table.name = `forge-test-gaps-${Date.now()}`;
+  return table;
+}
+
+/** Sets Method to Auto in [view], finds the best of [methods] in two trials and waits until the view is settled. */
+async function findBest(view: TrainView, methods: string[]): Promise<void> {
+  view.methodInput.value = 'Auto';
+  await waitUntil(() => isSettled(view) && !isDisabled(view.findButton),
+    () => `Find is not offered: ${trainState(view)}`, WAIT_MS);
+  await view.startSearch('best', {metric: 'balancedAccuracy', strategy: 'equal', maxTrials: 2, methods});
+  await waitUntil(() => isSettled(view), () => `The results stay busy: ${trainState(view)}`, TIMEOUT);
+}
+
 category('UI: Preparation', () => {
   test('PreparationInputs: Missing values for gaps, One-hot encoding for text, Skip unique categories for ids',
     async () => {
@@ -565,21 +595,48 @@ category('UI: Preparation', () => {
     expect(`${oneHot.visible} ${oneHot.value}`, 'false false', 'A hidden One-hot encoding is not unchecked');
     use(['x', 'few', 'many'], false);
   });
+
+  test('Missing values and One-hot fire no change when set to what they hold; a restore shows the group', async () => {
+    const table = gappedTable(true);
+    let count = 0;
+    const preparation = new PreparationInputs(() => {
+      count++;
+    }, () => null, []);
+    preparation.update(columnsOf(table, ['x1', 'x2', 'sex']));
+    const calls = (change: () => void) => {
+      const before = count;
+      change();
+      return count - before;
+    };
+    const steps = {...NO_PREPARATION_STEPS, ...preparation.steps()};
+    expectArray([calls(() => preparation.setKeepsMissingValues(true)),
+      calls(() => preparation.setKeepsMissingValues(false)), calls(() => preparation.restore(steps, {mode: 'skip'})),
+      calls(() => preparation.restoreMissingValues({mode: 'skip'})),
+      calls(() => preparation.restore({...steps, oneHot: !steps.oneHot}, {mode: 'skip'}))], [0, 0, 0, 0, 1]);
+
+    const numeric = new PreparationInputs(() => {}, () => null, []);
+    numeric.update(columnsOf(table, ['x1', 'x2']));
+    numeric.setKeepsMissingValues(true);
+    expect(isShown(numeric.group.root), false, 'Preparation is shown for a method that keeps the gaps');
+    numeric.restoreMissingValues({mode: 'skip'});
+    expect(isShown(numeric.group.root), true, 'Preparation stays hidden after Skip rows is restored');
+    expect(numeric.missingValues.settings().mode, 'skip');
+  });
 });
 
 /** The Results rows of [view], in order. */
-const rowsOf = (view: TrainView | EvaluationView) =>
+const rowsOf = (view: {resultsPane: ResultsPane}) =>
   Array.from(view.resultsPane.root.querySelectorAll<HTMLElement>('.forge-results-row'));
 
 const titleOf = (panel: Element) => (panel.firstElementChild?.textContent ?? '').trim();
 
 /** The panel titles of each Results row of [view], in order. */
-const rowTitles = (view: TrainView | EvaluationView) =>
+const rowTitles = (view: {resultsPane: ResultsPane}) =>
   rowsOf(view).map((row) => Array.from(row.querySelectorAll('.forge-results-panel'), titleOf));
 
-/** The viewer of the Results panel titled [title] of [view]. */
-function panelViewer(view: TrainView, title: string): DG.Viewer {
-  const panel = Array.from(view.resultsPane.root.querySelectorAll<HTMLElement>('.forge-results-panel'))
+/** The viewer of the Results panel titled [title] of [pane]. */
+function panelViewer(pane: ResultsPane, title: string): DG.Viewer {
+  const panel = Array.from(pane.root.querySelectorAll<HTMLElement>('.forge-results-panel'))
     .find((p) => titleOf(p) === title);
   const element = panel?.querySelector('.d4-viewer');
   const viewer: unknown = element instanceof HTMLElement ? DG.toJs(DG.Widget.find(element)) : null;
@@ -608,7 +665,22 @@ function resultsDataOf(table: DG.DataFrame, target: DG.Column, summary: MetricsS
   threshold?: number): ResultsData {
   return {engine: xgboost(), table, columns: columnsOf(table, ['a', 'b']), target,
     prediction: DG.Column.fromStrings('prediction', target.toList().map(String)), curves, keptRows: null, threshold,
-    blob: new Uint8Array(0), summary};
+    blob: new Uint8Array(0), summary, rows: 'training'};
+}
+
+/** A method's result over [columns] of [table] (30 rows, target `label` of x, y, z) that gets [wrongRows] wrong: a new
+ * prediction column, as each training gives; no views of the method's own. */
+function shownDataOf(table: DG.DataFrame, columns: string[], wrongRows: number[]): ResultsData {
+  const target = table.getCol('label');
+  const labels = target.toList().map(String);
+  const predicted = labels.map((label, i) => wrongRows.includes(i) ? (label === 'x' ? 'y' : 'x') : label);
+  const accuracy = 1 - wrongRows.length / labels.length;
+  const engine = emptyEngine('forge-test-results');
+  const summary: MetricsSummary = {metrics: {train: {accuracy, f1: accuracy}, validation: {accuracy: 0.9, f1: 0.9}},
+    rowCount: labels.length, skippedRows: 0};
+  return {engine, table, columns: columnsOf(table, columns), target,
+    prediction: DG.Column.fromStrings('prediction', predicted), keptRows: null, blob: new Uint8Array(0), summary,
+    rows: 'training'};
 }
 
 /** A viewer that throws while it is built, then the Wrong predictions grid: each time the frames go back and no result
@@ -717,65 +789,75 @@ category('UI: Results', () => {
     }
   }, {timeout: TIMEOUT});
 
-  test('a retrain keeps the grid, the rows and the viewers, and gives Wrong predictions\' frame back when it goes; a ' +
-    'Features change rebuilds the viewers; a hint releases the frames and keeps the grid', async () => {
-    const iris = await unbalancedIris();
-    const view = await openTrainView(iris);
+  test('ResultsPane: a result of the same data keeps the grid, the rows and the viewers, and gives Wrong ' +
+    'predictions\' frame back when it goes; other columns rebuild the viewers; a hint releases the frames and keeps ' +
+    'the grid', async () => {
+    const rows = 30;
+    const table = DG.DataFrame.fromColumns([
+      ...['a', 'b', 'c', 'd'].map((name, k) =>
+        DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, name, valuesOf(rows, (i) => (i * (k + 3)) % 7))),
+      DG.Column.fromStrings('label', Array.from({length: rows}, (_, i) => ['x', 'y', 'z'][i % 3]))]);
+    table.name = `forge-test-results-${Date.now()}`;
+    const all = ['a', 'b', 'c', 'd'];
+    const pane = new ResultsPane();
+    const results = {resultsPane: pane};
+    const host = DG.View.create();
+    host.append(pane.root);
+    grok.shell.addView(host);
     try {
-      const grid = gridWith(view.resultsPane.root, 'Metric').root;
-      const rows = rowsOf(view);
-      const titles = rowTitles(view);
-      const viewerRoots = () => ['Predicted Species vs Actual', 'Features'].map((t) => panelViewer(view, t).root);
+      const metricsGrid = () => gridWith(pane.root, 'Metric').root;
+      const frameSet = () => [...pane.frames];
+      const viewerRoots = () => ['Predicted label vs Actual', 'Features'].map((t) => panelViewer(pane, t).root);
+      await pane.show(shownDataOf(table, all, []));
+      const grid = metricsGrid();
+      const before = rowsOf(results);
+      const titles = rowTitles(results);
       const roots = viewerRoots();
-      const [frame] = view.resultsPane.frames;
-      await retrain(view, () => setHyperparameter(view, 'maxDepth', 1));
-      expect(gridWith(view.resultsPane.root, 'Metric').root === grid, true, 'A retrain built a new metrics grid');
-      const after = rowsOf(view);
-      const retrained = rowTitles(view);
-      for (let i = 0; i < rows.length; i++) {
-        const isSame = JSON.stringify(titles[i]) === JSON.stringify(retrained[i]);
-        expect(after[i] === rows[i], isSame, `Row ${i + 1}: ${JSON.stringify(titles[i])}`);
-      }
-      expect(after[0] === rows[0], true, 'Row 1 was rebuilt');
-      expect(viewerRoots().every((root, i) => root === roots[i]), true, 'A retrain rebuilt the viewers');
-      expect(view.resultsPane.frames[0] === frame && frame.columns.length > 0, true, 'A retrain replaced the frame');
-      const training = view.lastTraining;
-      if (training === undefined)
-        throw new Error('No training');
-      expectArray(frame.getCol('Predicted Species').toList().map(String),
-        trainPredictionOf(training.result).toList().map(String));
+      expect(pane.frames.length, 1, 'A result without wrong rows has Wrong predictions');
+      const [frame] = pane.frames;
 
-      // One iteration of depth 1 gets rows wrong; 100 of depth 6 get none of these rows wrong.
-      await retrain(view, () => setHyperparameter(view, 'iterations', 1));
-      await waitUntil(() => view.resultsPane.frames.length === 2, 'Wrong predictions has no frame of its own', WAIT_MS);
-      const mismatches = view.resultsPane.frames[1];
-      await retrain(view, () => {
-        setHyperparameter(view, 'iterations', 100);
-        setHyperparameter(view, 'maxDepth', 6);
-      });
-      await waitUntil(() => view.resultsPane.frames.length === 1, 'Wrong predictions stays', WAIT_MS);
-      expect(view.resultsPane.frames[0] === frame && frame.columns.length > 0, true,
-        'The retrain replaced the viewers\' frame');
+      const wrongRows = [1, 4];
+      const wrong = shownDataOf(table, all, wrongRows);
+      await pane.show(wrong);
+      expect(metricsGrid() === grid, true, 'A result of the same metrics built a new metrics grid');
+      const after = rowsOf(results);
+      const shownTitles = rowTitles(results);
+      for (let i = 0; i < before.length; i++) {
+        const isSame = JSON.stringify(titles[i]) === JSON.stringify(shownTitles[i]);
+        expect(after[i] === before[i], isSame, `Row ${i + 1}: ${JSON.stringify(titles[i])}`);
+      }
+      expect(after[0] === before[0], true, 'Row 1 was rebuilt');
+      expect(viewerRoots().every((root, i) => root === roots[i]), true, 'The same data rebuilt the viewers');
+      expect(pane.frames.length, 2, 'Wrong predictions has no frame of its own');
+      expect(pane.frames[0] === frame && frame.columns.length > 0, true, 'The same data replaced the frame');
+      expectArray(frame.getCol('Predicted label').toList().map(String), wrong.prediction.toList().map(String));
+      const mismatches = pane.frames[1];
+
+      await pane.show(shownDataOf(table, all, []));
+      expect(pane.frames.length, 1, 'Wrong predictions stays');
+      expect(pane.frames[0] === frame && frame.columns.length > 0, true, 'The result replaced the viewers\' frame');
       expectReleased([mismatches]);
 
-      const shown = [...view.resultsPane.frames];
-      await retrain(view, () => view.featuresInput.value = view.featuresInput.value.slice(0, 3));
-      await waitUntil(() => view.resultsPane.frames[0] !== frame, 'A Features change kept the frame', WAIT_MS);
-      expect(viewerRoots().every((root, i) => root !== roots[i]), true, 'A Features change kept the viewers');
+      const shown = frameSet();
+      const fewer = ['a', 'b', 'c'];
+      await pane.show(shownDataOf(table, fewer, []));
+      expect(pane.frames[0] !== frame, true, 'Other columns kept the frame');
+      expect(viewerRoots().every((root, i) => root !== roots[i]), true, 'Other columns kept the viewers');
       expectArray(shown.map((f) => f.columns.length), shown.map(() => 0));
 
-      const current = [...view.resultsPane.frames];
-      view.resultsPane.showHint('');
-      expect(rowsOf(view).length, 0, 'The rows stay with a hint');
-      expect(view.resultsPane.frames.length, 0, 'Frames stay with a hint');
+      const current = frameSet();
+      pane.showHint('');
+      expect(rowsOf(results).length, 0, 'The rows stay with a hint');
+      expect(pane.frames.length, 0, 'Frames stay with a hint');
       expectArray(current.map((f) => f.columns.length), current.map(() => 0));
-      expect(resultsText(view).includes('Performance'), true, 'No Performance header with a hint');
-      await retrain(view, () => setHyperparameter(view, 'maxDepth', 6));
-      expect(gridWith(view.resultsPane.root, 'Metric').root === grid, true, 'The hint dropped the metrics grid');
+      expect((pane.root.textContent ?? '').includes('Performance'), true, 'No Performance header with a hint');
+      await pane.show(shownDataOf(table, fewer, []));
+      expect(metricsGrid() === grid, true, 'The hint dropped the metrics grid');
     } finally {
-      await closeTrainView(view, [iris]);
+      pane.clear();
+      host.close();
     }
-  }, {timeout: TIMEOUT});
+  });
 
   test('a viewer or the Wrong predictions grid that fails to build gives its frame back', expectFailedBuildReleased,
     {timeout: TIMEOUT});
@@ -882,6 +964,51 @@ category('UI: Results', () => {
       null]);
   });
 
+  test('sourceLineOf: whose predictions each panel shows; descriptionOf joins the insights and the line', async () => {
+    const training = 'The final model on its training rows';
+    const evaluated = 'On the evaluated rows';
+    const predicting: PanelKey[] = ['predictedVsActual', 'confusions', 'rocCurve', 'prCurve', 'residuals',
+      'distributions', 'statistics', 'wrongPredictions'];
+    const sourceOf = (key: PanelKey, kind: ResultKind): PanelSource | undefined => key === 'perClass' ? 'validation' :
+      predicting.includes(key) || (key === 'features' && kind === 'regression') ? 'prediction' : undefined;
+    const lines: [PanelSource | undefined, string | undefined, string | undefined][] = [
+      ['prediction', training, evaluated], ['validation', 'On the validation rows', evaluated],
+      [undefined, undefined, undefined]];
+    for (const [source, onTraining, onEvaluation] of lines) {
+      expect(String(sourceLineOf(source, 'training')), String(onTraining), `${source} training`);
+      expect(String(sourceLineOf(source, 'evaluation')), String(onEvaluation), `${source} evaluation`);
+    }
+
+    const rows = 30;
+    const threeClasses = DG.DataFrame.fromColumns([
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'a', valuesOf(rows, (i) => i)),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'b', valuesOf(rows, (i) => (i * 7) % 5)),
+      DG.Column.fromStrings('label', Array.from({length: rows}, (_, i) => ['x', 'y', 'z'][i % 3]))]);
+    const perClassSummary: MetricsSummary = {metrics: {train: {}, validation: {}, classes: ['x', 'y', 'z']
+      .map((label) => ({label, rows: 10, train: {}, validation: {precision: 0.9}}))}, rowCount: rows, skippedRows: 0};
+    const binary = twoClassTable(20);
+    const binarySummary: MetricsSummary = {metrics: {train: {auc: 0.8}, validation: {}}, rowCount: 20, skippedRows: 0};
+    const built: [ResultKind, ResultsData][] = [
+      ['binary', resultsDataOf(binary, binary.getCol('label'), binarySummary, curvesOf(0), 0.4)],
+      ['multiclass', resultsDataOf(threeClasses, threeClasses.getCol('label'), perClassSummary)]];
+    for (const [kind, data] of built) {
+      const shown = buildShown(data, kind);
+      try {
+        for (const key of shown.viewers.keys())
+          expect(String(shown.sources.get(key)), String(sourceOf(key, kind)), `${key} ${kind}`);
+        expect(shown.viewers.has('perClass'), kind === 'multiclass', `Per-class ${kind}`);
+      } finally {
+        releaseShown(shown);
+      }
+    }
+
+    expect(ResultsPane.descriptionOf(['The classes are unbalanced.', 'a_b'], undefined),
+      'The classes are unbalanced. a\\_b');
+    expect(ResultsPane.descriptionOf([], training), training);
+    expect(ResultsPane.descriptionOf(['Large errors.'], training), `Large errors.\n\n${training}`);
+    expect(ResultsPane.descriptionOf([], undefined), '');
+  });
+
   test('EvaluationView: the Evaluation column equals Train on the training data; no column, no application',
     async () => {
       const iris = await openIris();
@@ -906,8 +1033,23 @@ category('UI: Results', () => {
         expectJson(titles[0], ['Predicted Species vs Actual', 'Confusions', 'Per-class']);
         expect(titles[1]?.includes('Performance'), true, JSON.stringify(titles));
         expect(titles[1][0], 'Insights & Tips', 'The evaluation hides Insights & Tips');
-        // This model gets the overfitting tip, so the metric line stays out.
-        expectArray(bulletsOf(view.resultsPane.root, '.forge-insights > ul'), ['The model may be overfitting.']);
+        const stored = metricsRecordOf(model.metrics);
+        if (stored === null)
+          throw new Error('The saved model has no metrics');
+        const species = iris.getCol('Species');
+        const expected = evaluationInsights({values: stored.train, target: species, prediction: species}, stored,
+          verdictMetricOf(stored, searchRecordOf(model.search)?.metric)).map((i) => i.text);
+        const bullets = bulletsOf(view.resultsPane.root, '.forge-insights > ul');
+        if (expected.length > 0)
+          expectArray(bullets, expected);
+        else
+          expect(bullets.length === 1 && bullets[0].startsWith('Balanced accuracy '), true, bullets.join(' | '));
+        const descriptions = () => Array.from(opened.resultsPane.root.querySelectorAll('.d4-viewer-description'),
+          (d) => d.textContent?.trim() ?? '');
+        await waitUntil(() => descriptions().some((d) => d.includes('On the evaluated rows')),
+          () => `No panel says it shows the evaluated rows: ${descriptions().join(' | ')}`, WAIT_MS);
+        expect(descriptions().some((d) => d.includes('The final model on its training rows')), false,
+          descriptions().join(' | '));
         expect(iris.columns.length, columnCount, 'A column was added');
         expect(await forgeDb.applications.query().where('model_id', '=', id).count(), 0);
         view.close();
@@ -997,10 +1139,39 @@ const runsColumn = (view: TrainView, name: string) => runsGrid(view).dataFrame.g
 category('UI: Runs', () => {
   testStorageHooks();
 
-  test('restoreRun of a run whose inputs differ sets them and trains; of the form\'s own inputs sets nothing',
+  test('isSameInputs: every input but Predict probability, the threshold and its metric trains another model',
     async () => {
-      const iris = await openIris();
-      const view = await openTrainView(iris);
+      const engine = emptyEngine('forge-test-a');
+      const run: RunInputs = {engine, targetName: 'label', featureNames: ['a', 'b'], hyperparameters: {iterations: 20},
+        missingValues: {mode: 'skip'}, steps: NO_PREPARATION_STEPS, twoClasses: true, validation: DEFAULT_VALIDATION,
+        seed: 42};
+      const changes: [string, Partial<RunInputs>][] = [
+        ['method', {engine: {...engine, name: 'forge-test-b'}}],
+        ['target', {targetName: 'b'}],
+        ['features', {featureNames: ['a']}],
+        ['settings', {hyperparameters: {iterations: 30}}],
+        ['missing values', {missingValues: {mode: 'keep'}}],
+        ['one-hot', {steps: {...NO_PREPARATION_STEPS, oneHot: true}}],
+        ['skip unique categories', {steps: {...NO_PREPARATION_STEPS, skipUniqueCategories: true}}],
+        ['validation', {validation: {...DEFAULT_VALIDATION, scheme: 'holdout'}}],
+        ['seed', {seed: 7}],
+      ];
+      for (const [name, change] of changes)
+        expect(isSameInputs(run, {...run, ...change}), false, name);
+      const recuts: [string, Partial<RunInputs>][] = [
+        ['same', {}],
+        ['predict probability', {steps: {...NO_PREPARATION_STEPS, predictProbability: true}}],
+        ['threshold', {steps: {...NO_PREPARATION_STEPS, threshold: 0.7}}],
+        ['threshold metric', {steps: {...NO_PREPARATION_STEPS, thresholdMetric: 'f1'}}],
+      ];
+      for (const [name, change] of recuts)
+        expect(isSameInputs(run, {...run, ...change}), true, name);
+    });
+
+  test('restoreRun of a run whose inputs differ sets them and trains once; of the form\'s own inputs sets nothing',
+    async () => {
+      const table = twoClassTable(100);
+      const view = await openTrainView(table, [instantEngine()]);
       try {
         await retrain(view, () => setHyperparameter(view, 'iterations', 30));
         await retrain(view, () => {
@@ -1014,35 +1185,38 @@ category('UI: Runs', () => {
         const third = view.lastTraining;
         view.restoreRun(view.runs[0]);
         expect(view.lastTraining === third && !view.isTraining, true, 'The form\'s own inputs were set again');
+        expect(view.runs.length, 3, 'The form\'s own inputs trained');
 
         view.featuresInput.value = [];
         await waitUntil(() => resultsState(view) === 'false/true',
           () => `No problem without features: ${trainState(view)}`, WAIT_MS);
         expect(view.runs.length, 3, 'An empty Features trained');
         view.restoreRun(view.runs[0]);
-        expect(view.featuresInput.value.length, 4, 'The run\'s features are not set again');
+        expectArray(view.featuresInput.value.map((c) => c.name), ['a', 'b']);
         await awaitTrained(view);
-        await waitUntil(() => view.runs.length === 4, 'A run of other inputs does not train', WAIT_MS);
+        await waitUntil(() => view.runs.length >= 4, 'A run of other inputs does not train', WAIT_MS);
+        expectArray(runsColumn(view, '#'), [4, 3, 2, 1]);
       } finally {
-        await closeTrainView(view, [iris]);
+        await closeTrainView(view, [table]);
       }
     }, {timeout: TIMEOUT});
 
   test('restoreRun of the current run after a threshold move restores the threshold without training', async () => {
-    const iris = await twoSpeciesIris();
-    const view = await openTrainView(iris);
+    const table = twoClassTable(100);
+    const view = await openTrainView(table, [instantEngine()]);
     const {predictProbability, threshold} = view.outputInputs;
     const hasProbabilityStep = () =>
       view.lastTraining?.result.options.postprocessingInfo.includes('class-probabilities');
     try {
+      const [count, shown] = [view.runs.length, shownRun(view)];
       predictProbability.value = true;
       await waitUntil(() => hasProbabilityStep() === true && isSettled(view),
         () => `Predict probability does not re-cut: ${trainState(view)}`, WAIT_MS);
-      const [count, shown] = [view.runs.length, shownRun(view)];
       threshold.value = 0.7;
-      await waitUntil(() => view.lastTraining?.result.options.binaryClassificationThreshold === 0.7,
-        'The threshold does not re-cut', WAIT_MS);
+      await waitUntil(() => view.lastTraining?.result.options.binaryClassificationThreshold === 0.7 &&
+        isSettled(view), () => `The threshold does not re-cut: ${trainState(view)}`, WAIT_MS);
       expect(shown !== null && shownRun(view) === shown, true, `A re-cut shows ${shownRun(view)}, not ${shown}`);
+      expect(view.runs.length, count, 'A re-cut trained');
       view.restoreRun(view.runs[0]);
       await waitUntil(() => hasProbabilityStep() === false && isSettled(view),
         () => `The run's Predict probability does not re-cut: ${trainState(view)}`, WAIT_MS);
@@ -1051,7 +1225,7 @@ category('UI: Runs', () => {
         'Unchecking by a run without Predict probability did not keep the hidden threshold');
       expect(!view.isTraining && view.runs.length === count && shownRun(view) === shown, true, 'The restore trained');
     } finally {
-      await closeTrainView(view, [iris]);
+      await closeTrainView(view, [table]);
     }
   }, {timeout: TIMEOUT});
 
@@ -1153,6 +1327,28 @@ category('UI: Search', () => {
     const optimistic = textOf(searchRecord());
     expect(optimistic.includes('Validation after a search is optimistic'), true, optimistic);
   });
+
+  test('Tune on a table with a text feature trains only its winner', async () => {
+    const table = gappedTable(true);
+    const view = await openTrainView(table);
+    try {
+      view.methodInput.value = 'Decision Tree';
+      await waitUntil(() => view.lastTraining?.engine.name === 'Decision Tree' && isSettled(view),
+        () => `Decision Tree did not train: ${trainState(view)}`, TIMEOUT);
+      view.tuneSettings.setMode(AUTO_TUNE);
+      const {metric, space} = view.tuneSettings.choice();
+      const before = view.runs.length;
+      await view.startSearch('tune', {metric, space, maxTrials: 2});
+      await waitUntil(() => isSettled(view), () => `The results stay busy: ${trainState(view)}`, TIMEOUT);
+      expect(view.runs.length, before + 1, `runs ${JSON.stringify(view.runs.map((r) => [r.engine.name,
+        r.search?.mode]))}`);
+      expect(view.runs[0].search?.mode, 'tune');
+      expect(view.lastTraining?.result.search !== undefined, true, 'the tuned model is not the last training');
+    } finally {
+      await closeTrainView(view, [table]);
+      grok.userSettings.delete(TuneSettings.storage, 'Decision Tree');
+    }
+  }, {timeout: TIMEOUT * 2});
 });
 
 /** Each row of [table] as its cells' texts. */
@@ -1160,6 +1356,8 @@ const tableRows = (table: HTMLElement) =>
   Array.from(table.querySelectorAll('tr'), (row) => Array.from(row.cells, (cell) => cell.textContent ?? ''));
 
 category('UI: Cards', () => {
+  testStorageHooks();
+
   test('bestMarks: 3 decimals, ties, all when all tie, not one card; kindLine, settingsOf, settingsBlock', async () => {
     expectArray(ModelCards.bestMarks([0.9801, 0.9804, 0.97], 1), [true, true, false]);
     expectArray(ModelCards.bestMarks([0.03, 0.02, 0.0204], -1), [false, true, true]);
@@ -1207,6 +1405,41 @@ category('UI: Cards', () => {
     expectArray(blockOf(ModelCards.settingsBlock('Auto-tuned settings', settings(5))),
       ['Auto-tuned settings', 'Setting 0 0 Setting 1 1', 'Setting 2 2 Setting 3 3', 'Setting 4 4']);
   });
+
+  test('verdictOfRun gives the three statuses', async () => {
+    const statusOf = (train: number, validation: number) => ModelCards.verdictOfRun({metrics: {
+      train: {balancedAccuracy: train}, validation: {balancedAccuracy: validation},
+      baseline: {balancedAccuracy: 0.25}}}, 'balancedAccuracy')?.status;
+    expectArray([statusOf(0.3, 0.3), statusOf(0.95, 0.8), statusOf(0.95, 0.93)],
+      ['underfitting', 'overfitting', 'noOverfitting']);
+    expect(ModelCards.verdictOfRun({}, 'balancedAccuracy') === undefined, true, 'a verdict without metrics');
+  });
+
+  test('the current card and Insights & Tips give one verdict, following Compare by', async () => {
+    const iris = await openIris();
+    const view = await openTrainView(iris);
+    try {
+      const statusText = () =>
+        view.root.querySelector('.forge-card-current .forge-card-status')?.lastElementChild?.textContent ?? '';
+      const insights = () => bulletsOf(view.resultsPane.root, '.forge-insights > ul');
+      const texts: Record<VerdictStatus, string> = {underfitting: 'Underfitting', overfitting: 'Overfitting',
+        noOverfitting: 'No overfitting'};
+      const expectAgreement = (metric: MetricId) => {
+        const run = view.modelCards.current;
+        const status = run === undefined ? undefined : ModelCards.verdictOfRun(run, metric)?.status;
+        expect(statusText(), status === undefined ? '' : texts[status], `the card's status by ${metric}`);
+        const prefix = `The model may be overfitting by ${METRIC_LABELS[metric]}:`;
+        expect(insights().some((line) => line.startsWith(prefix)), status === 'overfitting', insights().join(' | '));
+        expect(insights().some((line) => line.startsWith('The model is underfitting')), status === 'underfitting',
+          insights().join(' | '));
+      };
+      expectAgreement('balancedAccuracy');
+      view.modelCards.compareBy.value = METRIC_LABELS.logLoss;
+      expectAgreement('logLoss');
+    } finally {
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: TIMEOUT});
 });
 
 /** A Find best model block outside a view. */
@@ -1228,7 +1461,7 @@ function closeFind(find: FindSettings, isKept = false): void {
 category('UI: Find best', () => {
   testStorageHooks();
 
-  test('FindSettings.load: Search, the limit and the method toggles; an old stored time becomes whole minutes',
+  test('FindSettings.load: Search and the limit, no method toggles; an old stored time becomes whole minutes',
     async () => {
       const loaded = (value: unknown) => {
         grok.userSettings.add(TuneSettings.storage, FIND_KEY, JSON.stringify(value));
@@ -1242,14 +1475,15 @@ category('UI: Find best', () => {
         expectArray([limits({seconds: 30, trials: 70}), limits({search: CUSTOM_SEARCH, strategy: 'halving',
           limit: TRIALS, minutes: 7, trials: 40}), limits({search: 'custom', expanded: true, seconds: 3600.5})],
         [`${DEFAULT_SEARCH} ${TIME} 1 70`, `${CUSTOM_SEARCH} ${TRIALS} 7 40`, `${DEFAULT_SEARCH} ${TIME} 60 100`]);
-        expectJson(loaded({methods: {XGBoost: false, SVM: 'yes'}}).methods, {XGBoost: false});
+        expect('methods' in loaded({methods: {XGBoost: false, SVM: 'yes'}}), false, 'the stored toggles are read');
       } finally {
         grok.userSettings.delete(TuneSettings.storage, FIND_KEY);
       }
     }, {timeout: TIMEOUT});
 
   test('FindSettings: Default searches with the defaults whatever is stored; Custom with the stored and edited ' +
-    'settings, kept across switches, its limit checked only there; Search is remembered; equal split', async () => {
+    'settings, kept across switches, its limit checked only there; Search is remembered, the method toggles only in ' +
+    'the view; equal split', async () => {
     grok.userSettings.add(TuneSettings.storage, FIND_KEY, JSON.stringify({metric: 'f1', strategy: 'halving',
       limit: TIME, minutes: 5, trials: 7, methods: {XGBoost: false, RealMLP: true}}));
     let find = newFind();
@@ -1259,8 +1493,8 @@ category('UI: Find best', () => {
       expect(find.search.value, DEFAULT_SEARCH);
       const defaults = {metric: 'balancedAccuracy', strategy: 'equal', maxTrials: 100, methods: ['XGBoost']};
       expectJson(find.choice(), defaults);
-      const custom = (minutes: number) => ({metric: 'f1', strategy: 'equal', budgetSeconds: minutes * 60,
-        methods: ['SVM', 'RealMLP']});
+      const custom = (minutes: number, methods = ['XGBoost', 'SVM', 'RealMLP']) => ({metric: 'f1', strategy: 'equal',
+        budgetSeconds: minutes * 60, methods});
       find.search.value = CUSTOM_SEARCH;
       expectJson(find.choice(), custom(5));
       find.limit.minutes.value = 3;
@@ -1268,6 +1502,17 @@ category('UI: Find best', () => {
       find.search.value = DEFAULT_SEARCH;
       expectJson(find.choice(), defaults);
       find.search.value = CUSTOM_SEARCH;
+      expectJson(find.choice(), custom(3));
+
+      find.candidates.value = ['XGBoost', 'RealMLP'];
+      find.search.value = DEFAULT_SEARCH;
+      find.search.value = CUSTOM_SEARCH;
+      expectJson(find.choice(), custom(3, ['XGBoost', 'RealMLP']));
+      closeFind(find, true);
+      find = newFind();
+      find.setTask('classification');
+      find.setMethods(findEntries());
+      expect(find.isCustom, true, 'Custom is not remembered');
       expectJson(find.choice(), custom(3));
 
       find.limit.kind.value = TRIALS;
@@ -1324,4 +1569,92 @@ category('UI: Find best', () => {
       closeFind(find);
     }
   }, {timeout: TIMEOUT});
+
+  test('Find best model pins its winner once', async () => {
+    const iris = await openIris();
+    const view = await openTrainView(iris);
+    try {
+      await findBest(view, ['XGBoost']);
+      const cards = view.modelCards;
+      expect(cards.pinned.length, 1, `the winner is not pinned: runs ${JSON.stringify(view.runs.map((r) =>
+        [r.status, r.search?.mode]))}`);
+      expect(cards.pinned[0] === cards.current, true, 'the pinned card is not the winner');
+      await findBest(view, ['XGBoost']);
+      const current = cards.current;
+      expect(current !== undefined && cards.pinned.filter((run) => isSameInputs(run, current)).length, 1,
+        'the continued winner is pinned twice or not at all');
+    } finally {
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('Find best model on data with gaps and a text feature trains only its winner, and the form shows its missing ' +
+    'values', async () => {
+    const table = gappedTable(true);
+    const view = await openTrainView(table);
+    try {
+      const before = view.runs.length;
+      await findBest(view, ['Decision Tree']);
+      const runs = () => JSON.stringify(view.runs.map((r) => [r.engine.name, r.search?.mode, r.missingValues.mode]));
+      expect(view.runs.length, before + 1, `runs ${runs()}`);
+      const winner = view.runs[0];
+      expect(`${winner.search?.mode} ${winner.missingValues.mode}`, 'best skip');
+      expect(view.modelCards.current === winner, true, 'the winner is not the current card');
+      expect(view.modelCards.pinned[0] === winner, true, 'the winner is not pinned');
+      expect(view.lastTraining?.result.search !== undefined, true, 'the winner is not the last training');
+      expect(view.missingValuesInputs.settings().mode, 'skip');
+      expect(isShown(view.missingValuesInputs.choice.root), true, 'Missing values is hidden');
+
+      view.restoreRun(winner);
+      expect(resultsState(view).startsWith('false/'), true, `the pinned winner retrains: ${trainState(view)}`);
+      expect(view.runs.length, before + 1, `runs ${runs()}`);
+    } finally {
+      await closeTrainView(view, [table]);
+    }
+  }, {timeout: TIMEOUT * 2});
+
+  test('Find best model with Impute of other neighbors trains only its winner, which keeps them', async () => {
+    const table = gappedTable(true);
+    const view = await openTrainView(table);
+    try {
+      const missingValues = view.missingValuesInputs;
+      view.methodInput.value = 'Auto';
+      missingValues.choice.value = 'Impute';
+      const neighbors = missingValues.inputs.find((input) => input.caption === 'Neighbors');
+      if (neighbors === undefined)
+        throw new Error('Impute has no Neighbors');
+      neighbors.value = Number(neighbors.value) + 2;
+      const impute = missingValues.settings();
+      await waitUntil(() => isSettled(view), () => `The results stay busy: ${trainState(view)}`, TIMEOUT);
+      const before = view.runs.length;
+      await findBest(view, ['Decision Tree']);
+      const runs = () => JSON.stringify(view.runs.map((r) => [r.engine.name, r.search?.mode, r.missingValues]));
+      expect(view.runs.length, before + 1, `runs ${runs()}`);
+      const winner = view.runs[0];
+      expect(winner.search?.mode, 'best');
+      expectJson(winner.missingValues, impute);
+      expect(view.modelCards.current === winner, true, 'the winner is not the current card');
+      expect(view.lastTraining?.result.search !== undefined, true, 'the winner is not the last training');
+      expectJson(missingValues.settings(), impute);
+    } finally {
+      await closeTrainView(view, [table]);
+    }
+  }, {timeout: TIMEOUT * 2});
+
+  test('After Find, a Search row click restores the method with the search\'s missing values', async () => {
+    const table = gappedTable(true);
+    const view = await openTrainView(table);
+    try {
+      await findBest(view, ['Decision Tree', 'LDA']);
+      const winner = view.runs[0];
+      const hyperparameters = winner.engine.name === 'Decision Tree' ? winner.hyperparameters :
+        defaultHyperparameters(edaEngine('Decision Tree'));
+      const before = view.lastTraining;
+      view.restoreLeader({method: 'Decision Tree', hyperparameters});
+      await awaitTrained(view, before);
+      expect(`${view.runs[0].engine.name} ${view.runs[0].missingValues.mode}`, 'Decision Tree skip');
+    } finally {
+      await closeTrainView(view, [table]);
+    }
+  }, {timeout: TIMEOUT * 2});
 });

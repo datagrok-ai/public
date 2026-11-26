@@ -47,7 +47,8 @@ package.ts ──> ui/forge-app.ts ───> storage/, generated/db.ts    (cata
            │                    └─> ui/model-actions.ts, ui/model-handler.ts, ui/model-comparison.ts,
            │                        ui/apply-model-dialog.ts, ui/data-grid.ts
            ├─> ui/train-view.ts ──> training/ ──> preparation/, engines/, metrics/, apply/ (evaluation.ts)
-           │                    ├─> ui/results-pane.ts ──> training/insights.ts, ui/metrics-table.ts, ui/results-layout.ts,
+           │                    ├─> ui/results-pane.ts ──> training/insights.ts, metrics/ (verdictMetricOf),
+           │                    │                      │   ui/metrics-table.ts, ui/results-layout.ts,
            │                    │                      │   the method's visualize (preparation/shared-frame.ts)
            │                    │                      └─> ui/results-viewers.ts ──> metrics/, preparation/shared-frame.ts,
            │                    │                                                    apply/ (scatteredColumn, copyInto), ui/data-grid.ts,
@@ -57,9 +58,10 @@ package.ts ──> ui/forge-app.ts ───> storage/, generated/db.ts    (cata
            │                    │                       ui/tune-settings.ts (TuneStatus)
            │                    ├─> ui/model-cards.ts ──> ui/metrics-table.ts (metricIdsOf, valueColumns), ui/runs-panel.ts,
            │                    │                        ui/tune-settings.ts (TuneSettings, TuneStatus), ui/collapsible-group.ts,
-           │                    │                        training/search.ts (defaultMetric, directionOf), metrics/, engines/,
+           │                    │                        training/search.ts (directionOf), metrics/, engines/,
            │                    │                        training/k-fold.ts (types)
-           │                    ├─> ui/preparation-inputs.ts ──> preparation/, ui/missing-values-inputs.ts,
+           │                    ├─> ui/preparation-inputs.ts ──> preparation/, ui/missing-values-inputs.ts
+           │                    │                               (ui/tune-settings.ts: TuneSettings.silently),
            │                    │                               ui/collapsible-group.ts
            │                    ├─> ui/output-inputs.ts ──> metrics/, preparation/pipeline.ts, ui/collapsible-group.ts,
            │                    │                          ui/tune-settings.ts (TuneSettings, CUSTOMIZED)
@@ -89,7 +91,8 @@ package.ts ──> ui/forge-app.ts ───> storage/, generated/db.ts    (cata
            │                                          (applicableTables, loginsOf, model-activity), apply/, metrics/,
            │                                          training/
            ├─> catalog/model-edit.ts (runUpdateModel) ──> storage/ (findModelRow, modelsChanged), generated/db.ts
-           ├─> training/evaluate-api.ts (runEvaluateModel) ──> training/ (evaluation.ts, insights.ts, metricsRecordOf),
+           ├─> training/evaluate-api.ts (runEvaluateModel) ──> training/ (evaluation.ts, insights.ts, metricsRecordOf,
+           │                                                  search.ts: searchRecordOf), metrics/ (verdictMetricOf),
            │                                                  apply/ (loadedModelOf, apiMapping), engines/,
            │                                                  storage/ (findModelRow, dataset-ref)
            ├─> ui/model-handler.ts ──> ui/rich-tooltip.ts (the tooltip), generated/db.ts (features read once),
@@ -251,7 +254,8 @@ package.ts ──> ui/forge-app.ts ───> storage/, generated/db.ts    (cata
   model whose options record `class-probabilities`; with `thresholdMetric`, the view's result's
   `options.thresholdMetric`, the optimized variant, see "The threshold in the view") and `Evaluation: <table> (<rows> rows[, <n> skipped
   (missing values)])` (with an evaluation). The `metricFindings` of the metrics mark their cells: `onCellPrepare` paints a marked value
-  (the finding's `splits`) in `DG.Color.failure`, and its tooltip is the finding's text (`R2 is below 0.3.`), without
+  (the finding's `splits`: Train for an underfitting metric, Validation for a mismatch) in `DG.Color.failure`, and its
+  tooltip is the finding's text (`R2 is barely better than predicting the mean on the training rows.`), without
   the value or the column's phrase (the header keeps that).
 - `CollapsibleGroup` (`ui/collapsible-group.ts`, classes `forge-group*` in `css/forge.css`) is the folding block of
   the Train view groups and of the Apply dialog's **Columns** and **More options**: a header with a chevron, the
@@ -270,22 +274,30 @@ package.ts ──> ui/forge-app.ts ───> storage/, generated/db.ts    (cata
   when its columns have gaps, with the tooltip "Rows with missing values in: <col>: N, ...". **Impute** is offered
   only when `Eda:knnImpute` exists; choosing it shows the function's own inputs (**Neighbors**, **Distance**, from
   `imputeSettingsOf` with `defaultValuesOf`) right under it. Hiding them puts their defaults back, so a hidden invalid
-  value cannot block the form. `setKeeps(true)` (the Train view, for a method with `handlesMissingValues`) and
-  `restore` of a `keep` setting (the Apply dialog) hide it all and make `settings()` `keep`, with or without gaps.
+  value cannot block the form; that reset and `restore` set the inputs that differ with `notify` off
+  (`TuneSettings.silently`), so they never
+  call the owner's `onChanged`: `restore` shows the inputs as they then apply itself, and its callers check the form
+  when they need to (`restoreRun`, `restoreLeader` and the Apply dialog do; `startSearch` must not). A user's change of
+  the radio, **Neighbors** or **Distance** still calls it. `setKeeps(true)` (the Train view, for a method with
+  `handlesMissingValues`) and `restore` of a `keep` setting (the Apply dialog) hide it all and make `settings()`
+  `keep`, with or without gaps.
 - **Preparation** (`ui/preparation-inputs.ts`, `PreparationInputs`, Train view only) owns its `CollapsibleGroup`:
   **Missing values** (the `MissingValuesInputs` above), **One-hot encoding** (shown while a checked feature
   is text or yes/no; checked when it appears if every such feature, the all-unique ones aside while Skip unique
   categories is checked, has at most `ONE_HOT_MAX_CATEGORIES` (20) categories (`defaultOneHot` in
   `preparation/pipeline.ts`, also `Forge:trainModel`'s default), else unchecked: a deviation from the
   built-in tool, which always starts unchecked; it follows that default until the user toggles it, `isOneHotChosen`,
-  and hiding resets it), **Skip unique categories** (checked; shown while a checked feature has `hasUniqueCategories`;
+  set only when it differs, as the platform fires `onChanged` on an equal value; hiding resets it), **Skip unique
+  categories** (checked; shown while a checked feature has `hasUniqueCategories`;
   both leave out the semantic-type features of the constructor's last argument `semTypes`, which the view passes as
   its `semTypes` (`featureSemTypes(engines)`, computed once when it opens and passed to `checkSelection` too), so a
   molecule feature alone hides the group). `update(features)` runs on every Features change; a hidden input gets its
   default back (`CollapsibleGroup.showInput`), so it reappears as it first appeared, and the group is hidden while
   nothing in it is shown (no missing values and no text feature). `steps()` gives `oneHot` and `skipUniqueCategories`
   (Skip unique categories, checked while hidden, is sent only while it is shown); `restore(steps, missingValues)` sets
-  Missing values with the impute settings, then Skip unique categories, then One-hot encoding.
+  Missing values with the impute settings (`restoreMissingValues`: `MissingValuesInputs.restore`, then the group's
+  visibility again; silent, as above), then Skip unique categories, then One-hot encoding, setting only the step
+  inputs whose value differs, so an unchanged input requests no check.
 - **Output** (`ui/output-inputs.ts`, `OutputInputs`, Train view only) owns its `CollapsibleGroup`, between Method and
   Validation, shown while the target has two or more classes:
   **Predict probability** (unchecked; shown while the target is categorical with two or more `classesOf` classes;
@@ -314,9 +326,9 @@ package.ts ──> ui/forge-app.ts ───> storage/, generated/db.ts    (cata
   while Predict probability is checked and the target has exactly two classes, and hide together. The show conditions
   count the classes `update` takes from a categorical target with `classesOf` (`metrics/metrics.ts`): Predict
   probability two or more, the threshold and its metric exactly two. The threshold's hand-edit state `isThresholdEdited`: a value change not made
-  by `setThreshold` (which sets the value with the input's `notify` off) sets it and calls `onThresholdChanged`; `setThreshold(value,
+  by `setThreshold` (which sets the value with the input's `notify` off, `TuneSettings.silently`) sets it and calls `onThresholdChanged`; `setThreshold(value,
   metric?)` sets the value (and the metric) without telling the view and clears it, or sets it without a metric.
-  Hiding keeps the metric, the threshold and the hand edit (the user's decision 3b): checked again, the view's re-cut
+  Hiding keeps the metric, the threshold and the hand edit (the user's decision): checked again, the view's re-cut
   optimizes an unedited threshold for the kept metric, and a hand edit stays. `update` resets them
   (`setThreshold(DEFAULT_THRESHOLD, DEFAULT_THRESHOLD_METRIC)`) when the target's `classesOf` classes change (another
   target column, or none). `steps()` carries `thresholdMetric` (the chosen metric) unless the threshold was edited
@@ -387,7 +399,8 @@ at least 10.").
 **Missing values in the view.** **Missing values** (see Components) is the first input of **Preparation** and follows
 the checked features; `fillMethod`, which every method change goes through, hides it for a method that handles
 missing values (`PreparationInputs.setKeepsMissingValues`), and every training of it records `keep`, with or without
-gaps. The **Target** tooltip adds "<target>: N rows without a value are skipped." ("1 row without a value is
+gaps, unless a search's winner, a **Search** row or a **Runs** row set `Skip rows` / `Impute` (see "Search"); the next
+method change hides it again. The **Target** tooltip adds "<target>: N rows without a value are skipped." ("1 row without a value is
 skipped.") when the target has gaps; it is information, not a problem. After a training with skipped rows,
 **Performance** lists `Rows: N used, M skipped (missing values)` first in the bullet list under the metrics grid;
 after a training under `keep` whose features had gaps, `Missing values: kept (the method handles them)` comes before
@@ -628,7 +641,8 @@ and the column of cards (`root`, `forge-cards`). The cards take the form's width
 **Train** row is held at the pane's bottom edge only while its place is below it, then scrolls away above the group.
 The look follows the user's mockup (2026-11-23) in tokens: a pinned card `color-mix` of `--grey-1` and `--white`, the
 current one `--blue-1` at 8% over `--white` with a `--blue-1` 25% border, **Best** `--green-1` on `--green-3`, the
-status `--green-3` (ok) / `--orange-3` (warn). A card is a plain `div` (`ui.element`).
+status `--green-3` (ok) / `--orange-3` (warn) / `#CE2C31` (bad: the user's colour, not a token, the variable
+`--forge-underfitting` on `.forge-cards` in `css/forge.css`). A card is a plain `div` (`ui.element`).
 `addRun` of a completed run calls `setCurrent(run)`: the current card (`forge-card-current`) is built from the same
 `SessionRun` as the Runs row, and the previous current card is removed; a failed or cancelled run leaves it. A card
 is a header (`forge-card-header`): a column (`forge-card-body`) of the title row (`forge-card-title-row`: the method in
@@ -651,16 +665,20 @@ a name or a value shows the setting's description; the kind has no tooltip — a
 a flex row `space-between` / `align-items: center` with no left indent; every card text is 14 px but the **Best** badge, 11 px): at the left
 edge, flush with the title, `forge-card-score` with the metric's label (`forge-card-metric`, `METRIC_LABELS[metric]`, set by `fill` on every Compare by change) and its validation value (`forge-card-value`,
 `fixed`: 3 decimals, `-` without one), both semibold; at the right edge the status
-(`forge-card-status`, hidden without both values; `overfittingOf` of the metric: `forge-card-ok` with
-`ui.iconFA('check')` and `No overfitting`, or `forge-card-warn` with a plain-text `!` span (`forge-card-mark`, the
-status's colour, size and weight; the FA exclamation glyph looked like an outlined emoji) and `Overfitting`).
+(`forge-card-status`, hidden without a verdict; `verdictOfRun(run, metric)`, the `verdictOf` of the metric, see
+"Metrics": `forge-card-bad` with a plain-text `!` span (`forge-card-mark`, the status's colour, size and weight; the
+FA exclamation glyph looked like an outlined emoji) and `Underfitting`, `forge-card-warn` with the `!` and
+`Overfitting`, or `forge-card-ok` with `ui.iconFA('check')` and `No overfitting`).
 The value's tooltip is `metricsTooltip(run, metric)` (a **Metric** / **Train** / **Validation** table of
 `metricIdsOf` over `valueColumns` without its `Test` column, the metric's row `forge-card-tip-selected`), bound on the
 value; the label's is `METRIC_DESCRIPTIONS[metric]`, the Performance grid's Metric tooltip; the status's
-`statusTooltip(run, metric)` (`<Metric label>:`, a table with no colouring of Train, Validation and, from
-`overfittingOf` (one source for the numbers and the decision), **Gap** for a score (the difference of the shown
-values, 3 decimals) or **Ratio** for an error (`ratio`, 2 decimals, `-` for a train value of 0), then `Should perform
-about as well on new data.` or `May perform worse on new data.`; null without both values); all bound with
+`statusTooltip(run, metric)` (underfitting: `<label of the judged metric>:`, a table of **Train** and **Guessing**
+(**Predicting the mean** for R2) from the verdict's `underfitting`, then `Barely better than guessing, even on the
+training rows.` or `Barely better than predicting the mean, even on the training rows.`; otherwise `<Metric label>:`,
+a table with no colouring of Train, Validation and, from the verdict's `overfitting` (one source for the numbers and
+the decision), **Gap** for a score (the difference of the shown values, 3 decimals) or **Ratio** for an error
+(`ratio`, 2 decimals, `-` for a train value of 0), then `Should perform about as well on new data.` or `May perform
+worse on new data.`; null without a verdict); all bound with
 `ui.tooltip.bind`, hover only. The tooltips' plain `ui.table`s (`forge-card-tip-table`, `align-self: flex-start` and
 `width: auto`, not stretched; the values right-aligned, but left-aligned in the status tooltip's,
 `forge-card-status-tip-table`) and the settings table are the exceptions to "tables of data are grids" (the user's
@@ -669,18 +687,21 @@ Every mutator (`setCurrent`, `pin`, `unpin`, `update`, `clear`) ends with `rende
 shown, the others hidden; **Compare by** lists the `METRIC_IDS` a shown card has by their `METRIC_LABELS` (no
 direction mark; `directionOf` still orders the cards and **Best**; each `option`'s `title` its
 `METRIC_DESCRIPTIONS` through `TuneSettings.describeMetricOptions`, a pick read back with `metricOfLabel`); unless the user picked a metric that is still
-listed (`isMetricChosen`), the metric is `defaultMetricOf` the current card when it is shown, else the first shown
-card (its `search.metric`, else Balanced accuracy, else R2, else the first listed); `metricId` is undefined while no
-card is shown (a pick survives that). `showCompareBy` sets the items and the value with `notify = false`, so
+listed (`isMetricChosen`), the metric is `defaultMetricOf` (`metrics/metrics.ts`) the current card when it is shown,
+else the first shown card (its `search.metric`, else Balanced accuracy, else R2, else the first listed); `metricId` is
+undefined while no card is shown (a pick survives that). `render()` ends by giving a changed `metricId` (a pick, a
+default after `setCurrent`, a key change, `clear`) to the constructor's second callback `onMetricChanged`, which the
+Train view wires to `resultsPane.setVerdictMetric`: the card and Insights & Tips give one verdict. `showCompareBy` sets the items and the value with `notify` off (`TuneSettings.silently`), so
 a programmatic set is never the user's pick, and sets the value only when it differs (a set while the input fires its
 own change throws on the platform). Each shown card is filled for the metric (skipped when it already shows it), the
-pinned cards are sorted after the current one by one key, `directionOf(metric)` times the validation value as shown
-(`roundTo3`, as for **Best**), a card without it last (the sort is stable, so ties keep the pin order, newest first),
-and re-appended only when the order changed; `update` with the same key does nothing. **Best** follows
-`bestMarks(values, direction)`: the values
+pinned cards are ranked by one key, `directionOf(metric)` times the validation value as shown
+(`roundTo3`, as for **Best**), a card without it last (the sort is stable, so ties keep the pin order, newest first).
+**Best** follows `bestMarks(values, direction)` over the shown cards: the values
 rounded to 3 decimals, every card at the best one (all of them on a full tie, the user's decision of 2026-11-23),
-none for fewer than two shown cards or when no shown card has the value.
-The current card's "+" (`forge-card-pin`) calls `pin(run)`, with a trash (`forge-card-unpin`) on the pinned card
+none for fewer than two shown cards or when no shown card has the value. The current card is always first, then the
+ranked pinned ones, so the best pinned card heads them (the user's decision of 2026-11-26); the cards are re-appended
+only when the order changed; `update` with the same key does nothing.
+The current card's "+" (`forge-card-pin`, tooltip `Add the model to the comparison`) calls `pin(run)`, with a trash (`forge-card-unpin`) on the pinned card
 calling `unpin(run)` (the pinned card of that `SessionRun`); a pin whose inputs a pinned card has (`isSameInputs`)
 adds nothing. `refreshPin` hides the current card's "+" (`visibility: hidden`, so the header keeps its height) while a
 pinned card has its inputs, as the core did; the current card has no trash, and `unpin` of that pinned card shows "+"
@@ -1036,8 +1057,9 @@ groups' header gap first, so its chevron, `chevron-right` / `chevron-down` swapp
 where the Method header's text does; `aria-expanded` / `aria-controls`, collapsed by default, saved, as far under the
 status line as the status is under Settings) shows or hides the grid (`setExpanded`). Every input of a row shows the
 setting's Manual tooltip exactly, its `Property.description` (nothing without one): the label, the range fields, the
-pinned / fixed value, the choices button and its checkboxes. A pin's tooltip is `Pin to exclude from tuning. <its
-aria-label>` (a fixed one `<Caption>: Fixed, can’t be tuned`); the Metric label and select `Metric the search
+pinned / fixed value, the choices button and its checkboxes. A pin's tooltip is `Fix this value: the search does not
+change it`, a pinned one's `Search this setting in its range` (its `aria-label` keeps the state; a fixed one
+`<Caption>: Fixed, can’t be tuned`); the Metric label and select `Metric the search
 optimizes`, Limit (label and options) `What ends the search: a time or a trial limit`, Max time (label and field)
 `Minutes the search may run`, Max trials `Maximum number of trials, pruned and failed ones included`, the toggle `Show / Hide search options`. What
 the user sees ends on one vertical line, the block's right edge: the reset and pin glyphs (their 30 px buttons put the
@@ -1121,8 +1143,11 @@ and gives it back in its `finally`; a live retrain (`startTraining(true)`) does 
 both callers start only while nothing trains (`isTraining`, `tuneBlocker`). Then
 `SearchPanel.update({plan, leaders, outcome})`; without a chosen leader the warning `No trial completed: <error>` when a trial
 failed, else `No trial completed.`, and the hint (`idleHint`); else `setWinner` (`setMethod`: the method's values set to the chosen ones,
-the inputs rebuilt by `fillMethod` and **Settings** to Manual; **Method** set under `isSettingMethod`: no check is
-requested), `lastTuned` of the method = the form's values with the search's table, target and features (the status
+the inputs rebuilt by `fillMethod` and **Settings** to Manual; **Method** set under `isSettingMethod`; the form
+inputs it rebuilds or re-sets fire nothing, because an equal value is never set, and the impute inputs `setKeeps(true)`
+hides go back to their defaults silently), **Missing values** set to the search selection's
+(`preparation.restoreMissingValues(this.shownSearchMissingValues)`, silent), so no check runs and the
+winner's training is the last one and `lastTraining`; `lastTuned` of the method = the form's values with the search's table, target and features (the status
 then reads `Auto-tuned`), the balloon (`Optimal settings for <Method> found.` or
 `Search cancelled; the best so far is trained.`) and `startTraining(false, {selection, request, fingerprint})`: the
 override skips `prepareTraining`, records the fingerprint of all the selection's rows (as the API) and trains the search request with the chosen hyperparameters, `holdOut` and `search`, with the
@@ -1215,7 +1240,8 @@ the browser`; one with `none` while Predict probability is on, `<Method> gives n
 shared with `Forge:trainModel`), the
 reasons going to the Candidates caption's tooltip as `Not listed: <reason>` lines after `METHODS_TOOLTIP` (then
 `SVM: unchecked by default on more than 1000 rows` while that rule applies to a listed SVM), and checks
-them by the user's toggle (`overrides`, kept only against the default) or the default (`defaultCheck`: never a method
+them by the user's toggle (`overrides`, kept only against the default, `{}` in every new block: the toggles survive
+rebuilds and Default / Custom switches in the view, never a new Train view) or the default (`defaultCheck`: never a method
 `defaultUncheckReason` names on the table's `rowCount`, set by `setRowCount`; else not a quick limit, `isQuickLimit`, or
 a quick method, `isQuickMethod`: live and, for a classifier, not a probability input);
 it clears the value first (the platform keeps a checked item it no longer lists) and ignores its own value changes
@@ -1223,11 +1249,12 @@ it clears the value first (the platform keeps a checked item it no longer lists)
 when the limit becomes quick or stops being quick (`isQuick`).
 Stored in `grok.userSettings` (`TuneSettings.storage`, key `Find best` = `FIND_KEY`; Tune's and Find's saves go
 through `TuneSettings.saver`, written 300 ms after the last change into the storage of that change, and at once by
-`flushSave`, which the settings' `subs` call when the view drops them): `{search, metric, limit, minutes, trials,
-methods}` (`metric` the select's), each item checked by `FindSettings.load` over `TuneSettings.storedRecord` (`search`
-Custom only when stored as `Custom`, else Default; an old record's `expanded` and `strategy` are ignored; the limit by
-`LimitInputs.load`, an old `seconds` migrated as Tune's). The Candidates caption's `METHODS_TOOLTIP`: `The methods to try, each with its
-defaults first`. `inputs` (Search, Limit, Max time, Max trials, Candidates) join `formInputs()` (the lock) and
+`flushSave`, which the settings' `subs` call when the view drops them): `{search, metric, limit, minutes, trials}`
+(`metric` the select's), each item checked by `FindSettings.load` over `TuneSettings.storedRecord` (`search`
+Custom only when stored as `Custom`, else Default; an old record's `expanded`, `strategy` and `methods` are ignored,
+and the next save drops them; the limit by
+`LimitInputs.load`, an old `seconds` migrated as Tune's). The Candidates caption's `METHODS_TOOLTIP`: `The methods to try. The recommended
+ones are checked.` `inputs` (Search, Limit, Max time, Max trials, Candidates) join `formInputs()` (the lock) and
 the Method group's `expandOnError`; `setLocked` disables them and Metric. `revalidate` under Auto clears `problems.method` while
 a method can learn, asks each browser method `retrainsLive` at once (into `interactivity`), lists them
 (cost order) then the server ones, sets Predict probability's reason, validates the find inputs and, instead of
@@ -1239,8 +1266,19 @@ search that trained nothing); `showTrainRow` hides **Train**, `problem()` skips 
 values by `searchMissingValues` (`impute` kept, else `skip`: every method gets the same folds), `bestSearchPlan` over
 `bestCandidates(candidateEngines(choice.methods), ...)` (the last check's browser methods so named) and the progress
 `Finding best model`; the winner (`plan.candidates`' engine of the chosen leader) goes to `setWinner` (Method
-leaves Auto), `lastTuned`, the balloon `Best model: <Method> (<Metric> 0.000).` and `startTraining` with `engine:
-winner` in both the selection and the request (what `trainModel` trains and `trainingRunOf` records).
+leaves Auto), `lastTuned` and `startTraining` with `engine:
+winner` in both the selection and the request (what `trainModel` trains and `trainingRunOf` records). `startTraining`
+resolves to the run `addRun` put first when the training completed (undefined when it was superseded, cancelled or
+failed, or the table changed); after it, unless the search was cancelled, the balloon `Best model: <Method> (<Metric>
+0.000).`, or `Best model: <Method> (<Metric> 0.000), underfitting.` when that run's `verdictOf(run.metrics,
+plan.metric)` is `underfitting` (the plain text without a run), and `modelCards.pin(run)`: the winner is pinned
+(its `isSameInputs` guard keeps a continued search's same winner from a second pin; a Tune winner is not pinned). The
+form then shows Find's `skip` / `impute` under **Missing values**, also for a winner that handles gaps (only the
+search's hold out has no input). The pinned winner's card is a second card of the run next to the current one, as a
+"+" click gives; a click on it goes through `restoreRun`, which only re-cuts while the form holds the winner's inputs
+and otherwise retrains on the form's rows. A **Search** row click (`restoreLeader`) restores the row's method, its
+settings and the missing values the shown search ran on (`shownSearchMissingValues`, set with
+`searchPanel.update({...})` and cleared with `searchPanel.update(undefined)`).
 
 **API.** `Forge:trainModel` with `options.search` (`searchChoiceOf`: keys `metric`, ONE limit `budgetSeconds` (whole,
 >= 1) or `maxTrials` (whole, >= 1), both refused with `COMBINED_LIMITS`, neither: `budgetSeconds` 60; with `method:
@@ -1285,7 +1323,8 @@ features (and target) to use, `keptRows` (the input rows kept, or `null` when ev
   Train view and in `Forge:trainModel` (resolved after the suggestion may have replaced the chosen method). An
   explicit `skip` or `impute` (the API's `missingValues` option) is still honoured for such a method; `keep` for any
   other method is refused ("<Method> needs rows without missing values. Choose Skip rows or Impute.",
-  `needsRowsWithoutGaps`). The Train view hides **Missing values** for such a method. Only when the training features
+  `needsRowsWithoutGaps`). The Train view hides **Missing values** for such a method, unless a search's winner, a
+  **Search** row or a **Runs** row set `Skip rows` / `Impute`; a method change (`fillMethod`) gives the default back. Only when the training features
   had gaps do the Performance list (after training and of a saved model) say `Missing values: kept (the method
   handles them)` and the Runs cell `keep missing values` (see "Missing values in the view").
 
@@ -1456,14 +1495,51 @@ Parity rule: the TS ids other than `auc` stay the source of their values (balanc
 `Metrics` tests compare them with the report's at 1e-9. Without EDA's function (version skew), or when it fails, Forge
 measures the TS ids only (no average precision), with no per-class values and no curve panels.
 
-**Findings.** `metricFindings(metrics)` lists the values worth a word, per metric in `METRIC_IDS` order (a
-`MetricFinding`: `id`, `kind`, the `splits` it marks, `text`, `detail` `Train 0.912, validation 0.405.`, 3 decimals, `-`
-for a missing value):
+**Findings.** `metricFindings(metrics: SplitMetrics)` (`{train, validation, baseline?}`) lists the values worth a
+word, per metric in `METRIC_IDS` order (a `MetricFinding`: `id`, `kind`, the `splits` it marks, `text`, `detail`, 3
+decimals, `-` for a missing value; an `underfitting` one also carries its `Underfitting`):
 
-- `threshold`: the splits whose value is below `METRIC_THRESHOLDS` (`r2` 0.3, `auc` 0.5, the built-in tool's):
-  `R2 is below 0.3.` The built-in tool tested the train value only; Forge tests both splits.
+- `underfitting`: a metric with a base of its own (below; not one judged by another) whose train value
+  `underfittingOf` flags, marking the train value: `<label> is barely better than guessing on the training rows.`
+  (`R2 is barely better than predicting the mean on the training rows.`), detail `Train 0.300, guessing 0.250.`
+  (`Train 0.050, predicting the mean 0.000.`); none without a `baseline` (models and runs saved before schema 0.1.25).
+  It replaced the built-in tool's thresholds (`R2` below 0.3, `AUC-ROC` below 0.5, accuracy below 0.2).
 - `mismatch`: a validation value worse than the train one by `overfittingOf(id, train, validation)` (on the shown, rounded values),
-  marking the validation value: `The validation <label> is far from the training one: the model may be overfitting.`
+  marking the validation value: `The validation <label> is far from the training one.`, detail `Train 0.912,
+  validation 0.405.` (the verdict word is the card's and the Insights' only, see "One verdict" below).
+
+**Underfitting.** `baselineMetrics(task, target, positiveClass?)` is a trivial model's values on the training rows
+(`trainModel` stores them as `metrics.baseline` from the prepared target the train values are measured on; a re-cut
+keeps them). K is the number of classes with rows, p_k their shares over the non-empty target rows (`classCounts`), p
+the largest, π the share of `positiveClass` when K = 2:
+
+| Task | Metric | Base | Perfect |
+|---|---|---|---|
+| classification | `balancedAccuracy` | 1/K | 1 |
+| | `accuracy` | p | 1 |
+| | `mcc` | 0 | 1 |
+| | `auc` | 0.5 | 1 |
+| | `averagePrecision`, `f1` | π with two classes and a positive class, else 1/K | 1 |
+| | `logLoss` | −Σ p_k ln p_k | 0 |
+| | `brier` | π(1 − π) with two classes and a positive class, else Σ p_k(1 − p_k) (Forge's two Brier forms) | 0 |
+| | `sensitivity`, `specificity`, `precision`, `npv` | none: judged by `balancedAccuracy` | |
+| regression | `r2` | 0 | 1 |
+| | `mse`, `rmse`, `mae` | none: judged by `r2` | |
+
+`underfittingOf(id, train, baseline)` judges the metric `JUDGED_BY[id] ?? id` on its train value `t` and base `b`,
+both rounded to 3 decimals: the skill `(t − b) / (1 − b)` for a score, `1 − t / b` for an error, rounded too; under
+`MIN_SKILL` (0.1) is underfitting, so a shown skill of exactly 0.100 is not flagged. Undefined without either value or
+when the base is already perfect. `trivialModelOf(id)` names the trivial model in the texts: `guessing`, or
+`predicting the mean` for the metrics judged by R2.
+
+**One verdict.** `verdictOf(metrics, metric)` is the one judgement the model card and Insights & Tips both show:
+`underfitting` when `underfittingOf(metric, ...)` flags it, else `overfitting` / `noOverfitting` by
+`overfittingOf(metric, train, validation)` of the metric itself (overfitting never delegates), undefined when neither
+can be judged; the `Verdict` carries both parts it computed. The caller resolves the metric: the card's **Compare
+by**, or, without a card, `verdictMetricOf(metrics, searchMetric?)` of `metrics/metrics.ts`, which is
+`defaultMetricOf(ids, searchMetric?)` (the search's metric, else Balanced accuracy, else R2, else the first of `ids`)
+over the metrics with a validation or test value, the ids a card lists (`metricIdsOf`), so the fallback and a lone
+card pick the same metric.
 
 `overfittingOf` gives `{kind, gap, ratio, isOverfitting}`: an error (`MINIMIZED_METRICS`, which also gives
 `directionOf` -1) is judged by its `ratio` (no `gap`), any other metric by its `gap` (no `ratio`), positive when
@@ -1481,7 +1557,7 @@ flagged and the tooltips' Gap is the difference of the shown values; an error's 
 rounded values to the 2 decimals the card tooltip shows (undefined for a train value of 0), and the rule compares
 that shown ratio, so a shown 1.50 is not flagged. The rule is directional: a
 validation value better than the train one is never flagged. The Performance grid's red
-value, the insight `The model may be overfitting.`, `getModel`'s `findings` and the model cards' status all use it.
+value, the metric insights, `getModel`'s `findings` and the model cards' status all use it.
 
 `areValuesSimilar(a, b)` is the built-in tool's closeness: within 0.1 when the mean magnitude of the two is below 1,
 otherwise a relative difference (to that mean) of at most 0.9, so only values several times apart differ. It is used
@@ -1516,8 +1592,7 @@ computed only when no target or features rule fails.
 `resultInsights({values, target, prediction, positiveClass?})` checks a trained model's predictions of `target` (the
 kept rows), `values` being its metrics:
 
-- text or yes/no target: accuracy below 0.2 -> `Only 15% of the rows are predicted correctly.` (detail
-  `Accuracy 0.150 (below 0.2).`, panel `metrics`); with sensitivity and specificity, one ratio of them below 0.6 ->
+- text or yes/no target: with sensitivity and specificity, one ratio of them below 0.6 ->
   `The model finds <negative> much better than <positive>.` or the other way round (detail `Recall (Sensitivity)
   0.900, Specificity 0.300.`, panel `confusions`);
 - numerical target: the residuals' quartiles: the top quarter more than four times as wide as the middle half ->
@@ -1527,11 +1602,23 @@ kept rows), `values` being its metrics:
   is not finite is skipped): `The predictions' statistics deviate significantly from the actual ones.`, `items`
   `variance: predicted 0.214, actual 0.762` per such statistic, panel `statistics`.
 
-The metric findings are not part of `resultInsights`: `evaluationInsights(result, stored)` (the Results pane and
-`Forge:evaluateModel`) adds `metricInsights(metrics)` of the stored metrics after them, the findings as
-insights with panel `metrics`: each `threshold` finding as it is (its text and detail), and all `mismatch` findings in
-one `The model may be overfitting.` with `items` `<label>: train 0.912, validation 0.405` per metric (the grid's cell
-tooltips keep the finding's own text per metric).
+(The built-in tool's accuracy check, `Only 15% of the rows are predicted correctly.`, is gone: the underfitting rule
+replaced it.) The metric findings are not part of `resultInsights`: `metricInsights(stored, metric)` of the stored
+metrics follows them (`evaluationInsights(result, stored, metric)` joins both for `Forge:evaluateModel`; the Results
+pane joins its kept `resultInsights` with them), by the verdict of the metric the caller resolved (`verdictOf`;
+undefined: no verdict), in this order, panel `metrics`:
+
+1. verdict `underfitting`: `The model is underfitting: it is barely better than guessing even on the training rows.`
+   (`... than predicting the mean even ...` when the judged metric is R2); `items` the judged metric first, then every
+   other metric with its own `underfitting` finding, `<label>: train 0.300, guessing 0.250` (`R2: train 0.050,
+   predicting the mean 0.000`);
+2. verdict `overfitting`: `The model may be overfitting by <label>: train 0.950, validation 0.800.`; `items` the other
+   metrics with a `mismatch` finding, `<label>: train 0.912, validation 0.405`;
+3. otherwise (no overfitting verdict) and any `mismatch` finding: `Some metrics are far apart on the training and
+   validation rows.` with every such metric as an item.
+
+So the card's status and Insights never disagree (a test checks it for every metric). The grid's cell tooltips keep
+each finding's own text per metric.
 
 `summaryInsight(stored, evaluation?)` is the one line the Results pane shows when there is no other: Balanced accuracy
 for a classifier, R2 for a regressor (`METRIC_LABELS`), read from `evaluation` (`on the evaluated rows`, Run
@@ -1554,10 +1641,25 @@ with a hint text or the `MetricsTable` root) and **Insights & Tips** (`forge-ins
 only; its tooltip the detail lines, the `items` as a bulleted list and, last, `See <panel title>.` in grey
 (`forge-tooltip-minor`) when the insight's `panel` is mounted; repeated texts once; hidden only while empty in the
 hint state; with a result never (the `summaryInsight` line of `training/insights.ts` when there is no other, the
-metric's description as its detail; nothing when it is `undefined`)). The insights of a viewer panel
-(every `InsightPanel` but `metrics`, whose grid marks its own findings) are also its viewer's `description`
-(`descriptionVisibilityMode: 'Always'`, the texts joined by a space, escaped as literal Markdown), refreshed with the
-list; **Confusions** shows it under the matrix (`descriptionPosition: 'Bottom'`), the others above the viewer. Every panel's title is the built-in tool's widget title, `ui.div([span], 'd4-dialog-header d4-dialog-title
+metric's description as its detail; nothing when it is `undefined`)). Each viewer of `Shown.viewers` gets one
+`description` (`descriptionVisibilityMode: 'Always'`), refreshed with the list: `ResultsPane.descriptionOf(texts,
+line)`, the texts of the insights about its panel (every `InsightPanel` but `metrics`, whose grid marks its own
+findings) joined by a space and escaped as literal Markdown, then, as the next paragraph (`\n\n`), the panel's
+`sourceLineOf(source, rows)` (`results-viewers.ts`, no DOM), which says whose predictions it shows: `source` is the
+panel's `PanelSource` (`prediction` or `validation`, kept in `Shown.sources`; none for a panel without one), `rows`
+is `ResultsData.rows` (`PredictedRows`: `training` from the Train view, `evaluation` from the Evaluation view):
+
+| Panel | `training` | `evaluation` |
+|---|---|---|
+| **Predicted <target> vs Actual**, **Confusions**, **ROC Curve**, **PR Curve**, **Residuals**, **Distributions ...**, **Statistics**, **Wrong predictions**; a regressor's **Features** | `The final model on its training rows` | `On the evaluated rows` |
+| **Per-class** (the validation values in the Train view) | `On the validation rows` | `On the evaluated rows` |
+| **Class balance**, **Features correlation**, a classifier's **Features**, the method's own views | none | none |
+
+Every viewer panel (the two grids included) is registered by one function, `addViewer(shown, title, viewer, {source,
+name, span})`: the title key (`classifierVsActual` / `regressionVsActual` make the panel `predictedVsActual`), and a
+panel with a `source` gets `descriptionPosition: 'Bottom'`, so its insights sit at the bottom with the line (a
+classifier's **Features** asks for it in its own options); **Class balance** and **Features correlation** keep theirs
+above the viewer. Every panel's title is the built-in tool's widget title, `ui.div([span], 'd4-dialog-header d4-dialog-title
 forge-results-title')`; `PANEL_TEXTS` holds each title (`<name>` for the target's or the method's name) with what the
 panel shows, the span's tooltip (the span takes the mouse, `d4-dialog-title` lets it through). The root holds the hint
 host (the two panels while there is no result) and the rows host (`forge-results-rows`).
@@ -1570,9 +1672,12 @@ host (the two panels while there is no result) and the rows host (`forge-results
   `curves` (the result's `Curves` from EDA's report: the positive class's ROC and PR curves for two classes with a
   probability or score), `keptRows`,
   `positiveClass`, `threshold` (Predict probability: the Train view's `binaryClassificationThreshold` of the result, the
-  evaluation's of the model, circled as the current **Classification threshold**), `blob`, `summary`. The grid is the `MetricsTable` in place at once (see "Components");
-  the result insights are `evaluationInsights` of `summary.evaluation?.values ?? summary.metrics.train` and
-  `summary.metrics`, the fallback line `summaryInsight(summary.metrics, summary.evaluation?.values)` (cleared by
+  evaluation's of the model, circled as the current **Classification threshold**), `blob`, `summary`, `rows` (whose
+  predictions `prediction` holds, `PredictedRows`: the source line under each panel). The grid is the `MetricsTable` in place at once (see "Components");
+  the result insights are `resultInsights` of `summary.evaluation?.values ?? summary.metrics.train`, computed once and
+  kept with the summary (`shownResult`, dropped by `showHint`), followed in `fillInsights` by `metricInsights` of
+  `summary.metrics` by the verdict metric (`setVerdictMetric`'s, else `verdictMetricOf(summary.metrics,
+  summary.search?.metric)`), the fallback line `summaryInsight(summary.metrics, summary.evaluation?.values)` (cleared by
   `showHint`); **Insights & Tips** is always one of the mounted panels. A `multiclass` result gets the **Per-class** parallel coordinates plot, built with the other viewers (`buildShown`)
   and refilled with them (see "Keeping the viewers").
   Then the method's `visualize` is awaited, and the rows are mounted in one step: the previous rows stay until the
@@ -1584,6 +1689,10 @@ host (the two panels while there is no result) and the rows host (`forge-results
   and the metrics host shows the text (`''` for nothing). The grid is detached, not disposed: the next result with the
   same metric rows shows it again. `clear()`: everything goes, the grid disposed. The view calls it on a Table change
   and in `detach()`.
+- `setVerdictMetric(metric)`: the model cards' **Compare by** (`onMetricChanged`; undefined without a shown card),
+  kept through hints and `clear()`; it only stores the metric and, while a result is shown, refills the list (the kept
+  result insights, the metric insights by the new metric) and the viewer descriptions at once, without touching the
+  rows (the Evaluation view never calls it).
 - `frames`: the shared frames of the shown result (tests); kept until `clear()`, a hint or a result of other data.
 
 `ui/results-layout.ts` (no DOM): `resultsLayout(kind, available, visualizeCount)` gives the rows, each a height, its
@@ -1716,7 +1825,8 @@ another failure is reported and closes it. The result goes to `ResultsPane.show`
 (`storedSummary`, as Performance reads it) plus `evaluation` (the values, the table's name, the kept rows, the
 skipped ones and the per-class `classes`) and the result's `curves`, so the grid has the **Evaluation** column,
 **Per-class** shows the evaluation's values, the bullets end with `Evaluation: <table> (<rows> rows)` and
-the result insights read the evaluation's values; the positive class is the stored one, else the options'. The view's
+the result insights read the evaluation's values; `rows: 'evaluation'`, so the prediction panels say `On the evaluated
+rows` (see "Results"); the positive class is the stored one, else the options'. The view's
 `detach()` clears the pane (its frames given back); a result that comes after the view closed is dropped. The evaluated
 table is held by the view only; no column is added and no application is recorded.
 
@@ -1803,7 +1913,8 @@ missing-value settings. `applyAndRecord(request, source, progress?)`:
    empty.
 8. Names the column `predictionName(table, target)`: `<target> (predicted)`, or `<target> (predicted 2)`, ... when a
    column of that name exists (ignoring case); tags it `predictive.model` = the model id (`PREDICTION_TAG` in
-   `constants.ts`, the tag the platform's earlier tool wrote too) and adds it to the table. A model whose options record `class-probabilities` and whose method
+   `constants.ts`, the tag the platform's earlier tool wrote too), describes it (`meta.description`, first in the
+   column's tooltip, which then lists the tag) `<target> predicted by <model name>` and adds it to the table. A model whose options record `class-probabilities` and whose method
    returned probabilities then adds, after it, the positive class's column (`positiveClass` recorded and among the
    classes) or one per class, each spread over the kept rows as the labels are, named `probabilityName(table, target,
    class)` (`P(<target> = <class>)`, `P(<target> = <class>) 2`, ...; both names come from `freeName`), tagged the same way and described (`meta.
@@ -2079,8 +2190,10 @@ author (`loginsOf`; a deleted or unknown user gives an empty `author`) together.
 `description`, `tags` (a list, `tagsOf`), `method`, `package` (the engine's namespace), `task`, `target`, `targetType`
 and `classes` (`targetSchemaOf`; null without them), `features` (in training order) and `featureTypes` (`{name: type}`)
 from one `featureSchemasOf`, `applicableTo` (the names of the open tables that fit, `applicableTables`), `hyperparameters`,
-`preparation` (`preparationOptionsOf` of `options`), `metrics` (`metricsRecordOf` with `classes` and `test`, null without them), `search` (`searchRecordOf`, null without one), `findings`
-(`{text, detail}` of `metricFindings`, none without metrics), `seed`, `splitting`, `storage` (`mode`, with a reference
+`preparation` (`preparationOptionsOf` of `options`), `metrics` (`metricsRecordOf` with `classes`, `test` and
+`baseline`, null without them), `search` (`searchRecordOf`, null without one), `findings`
+(`{text, detail}` of `metricFindings`: the `underfitting` and `mismatch` findings, see "Metrics"; none without
+metrics), `seed`, `splitting`, `storage` (`mode`, with a reference
 its `source`, `datasetRefCaption`, with a copy its `tableId`), `dataset` (`name`, `rows`, `summary`: the stored
 fingerprint), `hasModelFile` (`ownBlob`), `keepsTrainingRows`, `author` (login), `created` and `updated` (ISO texts),
 `lastRun` (`{when, status}` of the newest application, null when never applied) and `applications` (the count). The
@@ -2103,7 +2216,8 @@ version}` after the write. `Forge:deleteModel` fires it too: the panel showing t
 `evaluateModel(model, table?, target?, columnNamesMap?, showProgress = true) -> object` (`runEvaluateModel` in
 `training/evaluate-api.ts`) is Run Evaluation without the view:
 
-1. `findModelRow` reads the `EVALUATE_COLUMNS` (`APPLY_COLUMNS` plus `metrics`, `dataset_ref`, `dataset_table_id`),
+1. `findModelRow` reads the `EVALUATE_COLUMNS` (`APPLY_COLUMNS` plus `metrics`, `search`, `dataset_ref`,
+   `dataset_table_id`),
    `loadedModelOf` loads it (its refusals as for `applyModel`) with the discovered methods, or with a test's stubs
    passed as `runEvaluateModel(input, discovered)`.
 2. The table: the given one, else `storedTrainingTable` (the reference, else the copy; not added to the workspace),
@@ -2119,8 +2233,10 @@ version}` after the write. `Forge:deleteModel` fires it too: the panel showing t
 It returns `EvaluateModelResult`: `id`, `name`, `table` (the evaluated table's name), `target`, `rowCount`,
 `skippedRows`, `positiveClass` (when there is one), `metrics` (`train` and `validation` from the stored record, `{}`
 each without one, and `evaluation`), `classes` (the evaluation's per-class values, a classifier with EDA's report)
-and `insights`: `evaluationInsights` of the evaluation and the
-stored metrics, as the Evaluation view's Insights & Tips without its `summaryInsight` fallback line, as
+and `insights`: `evaluationInsights` of the evaluation and the whole
+stored record (its `baseline` too) by the verdict metric `verdictMetricOf` gives with the stored search's metric
+(`searchRecordOf(row.search)?.metric`), as the Evaluation view's Insights & Tips without its `summaryInsight`
+fallback line, as
 `{text, detail?, items?}` (no `panel`; empty when there is nothing to say). No column is
 added and no application is recorded.
 
@@ -2427,7 +2543,7 @@ Every model and training run is a platform entity from its insert, and its autho
 on it, so the author sees, applies, edits and deletes his models whatever the table's grants. Sharing goes through
 the platform: **Share...** opens the sharing dialog (the row is already promoted), which writes the grant on the
 entity's wrapping project. A non-administrator author shares his own model too: eager promotion gives him Share, so
-GROK-21041 no longer blocks own models (WO-3, `forge.tester` on the release build). A user a model is shared with
+GROK-21041 no longer blocks own models (checked as `forge.tester` on the release build). A user a model is shared with
 sees it in the catalog, applies it, and the application is recorded (`application` is secured by its model). He
 trains, saves and deletes models of his own. Linking a model into a shared Space is another way to share it.
 
@@ -2527,8 +2643,9 @@ matches and shows the completed result of only makes it current; a difference of
 threshold re-cuts). The model cards
 are the built-in tool's compare cards (the current model, "+" to pin, hidden while the current model is pinned, a
 trash to remove, a click on a pinned card setting its inputs again), redesigned after the user's mockup (2026-11-23):
-the **Trained models** group with **Compare by**, one metric per card with its validation value and overfitting status,
-**Best**, how the settings were chosen over a settings table, the pinned cards sorted by the metric, and the
+the **Trained models** group with **Compare by**, one metric per card with its validation value and its verdict
+(Underfitting, Overfitting or No overfitting, the one Insights & Tips give), the current card first, how the settings
+were chosen over a settings table, the pinned cards sorted by the metric (the best one first), the Find best model winner pinned, and the
 same-data rule: a card is shown only on the target and validation it was trained with (the core cleared every card on
 a data change).
 
@@ -2599,7 +2716,9 @@ The views publish their state in the DOM, so a test waits on what a view says in
   carries its tooltip as `aria-label`. Then `.forge-card-settings` (the italic `.forge-card-kind` inside,
   `<kind>` alone) and `.forge-card-settings-table` (one `.d4-item-table`, two or four cells a row); both absent for a method without settings. Then
   `.forge-card-score` with `.forge-card-metric` (the Compare by label) and `.forge-card-value`, and `.forge-card-status` with
-  `forge-card-ok` or `forge-card-warn` (then a `.forge-card-mark` `!`). No `.forge-card-train`, no tabs, no
+  `forge-card-ok`, `forge-card-warn` or `forge-card-bad` (the last two with a `.forge-card-mark` `!`), its last span
+  the status text (`No overfitting`, `Overfitting`, `Underfitting`). The current card comes first, then the pinned
+  cards ranked by the metric (best first). No `.forge-card-train`, no tabs, no
   `.forge-card-more`.
 - **Search** (`.forge-search`): `SearchPanel.grid` (the leaderboard) and `SearchPanel.chart` (the bar chart, null
   without a leader), each in a `.forge-panel-fill` box of one `.ui-split-h`; the chart's frame is the grid's
@@ -2665,12 +2784,12 @@ user flows, the tooltips and the layout are the BDD features'. `test()` takes `s
 
 ## EMS schema `forge`
 
-Manifest: `databases/forge/schema.json`, version `0.1.24` (0.1.17 added the `search` json column to `model` and
+Manifest: `databases/forge/schema.json`, version `0.1.25` (0.1.17 added the `search` json column to `model` and
 `training_run`; 0.1.18 describes the current `splitting` shape, 0.1.19 the `space` of a Tune `search`, 0.1.20 the
 `postprocessingInfo` ids of `options` (`class-probabilities`), the `metrics` ids `logLoss` and `brier` and the
 `search` score "by the chosen validation", and 0.1.21 the `methods` of a Find best model `search` and its `test`
 (listed ahead of the Test setting that will write it), 0.1.22 the `eliminatedRound` of those `methods`, 0.1.23 the `strategy`, 0.1.24 the `chosen` of Find best model by
-the best score - se, description changes that need only the bump; a description stays under
+the best score - se, 0.1.25 the `baseline` of `metrics`, description changes that need only the bump; a description stays under
 the 1024 characters of its column). `grok publish` deploys it; a debug publish applies
 destructive changes without migration scripts, except a `promotion` change on a row table, which is always refused
 (`[promotion-change]`). To change it, publish a manifest with only a placeholder table, then the real one, bumping
@@ -2705,7 +2824,7 @@ EMS `json` columns hold objects only; a list is wrapped in an object. TS types: 
 | `model.features`, `training_run.features` | `FeaturesSchema` | `{columns: [{name, type, semType?}]}`, in training order |
 | `options` | `PreparationOptions` | Preparation replay, see below and "Preparation"; Forge writes `{preprocessingInfo, postprocessingInfo, missingValues: {mode, neighbors?, distance?, skippedRows}, skippedColumns?: [names], oneHotCategories?: {<column>: [categories]}}`; with Predict probability `postprocessingInfo` holds `class-probabilities` and, for two classes, `positiveClass`, `negativeClass`, `binaryClassificationThreshold` are set; models of the former regression mode (before 0.1.20) hold `binary-classification` with the same keys and `targetType` |
 | `hyperparameters` | `Hyperparameters` | `{<train function input>: value}` |
-| `metrics` | `MetricsRecord` | `{train: {<metric id>: number}, validation: {<metric id>: number}, test?: {<metric id>: number} (the final model on the rows held out before a search), positiveClass?, classes?: [{label, rows, train, validation}]}`; ids `mse`, `rmse`, `mae`, `r2`, `accuracy`, `f1`, `sensitivity`, `specificity`, `precision`, `npv`, `auc`, `balancedAccuracy`, `mcc`, `averagePrecision`, `logLoss`, `brier` (`auc`, `averagePrecision`, `logLoss` and `brier` for classifiers whose method returns probabilities; a model of the former regression mode has `auc` and `averagePrecision` of its scores; `balancedAccuracy` and `mcc` for every classifier; `classes` from Crux through `Eda:classificationReport`); class ids `precision`, `sensitivity`, `f1`, `auc`, `averagePrecision` |
+| `metrics` | `MetricsRecord` | `{train: {<metric id>: number}, validation: {<metric id>: number}, test?: {<metric id>: number} (the final model on the rows held out before a search), baseline?: {<metric id>: number} (a trivial model on the training rows, `baselineMetrics`: `balancedAccuracy`, `accuracy`, `mcc`, `auc`, `averagePrecision`, `f1`, `logLoss`, `brier` from the class shares of a classifier, `r2` 0 for a regressor; since 0.1.25, absent in older rows, which get no underfitting verdict), positiveClass?, classes?: [{label, rows, train, validation}]}`; ids `mse`, `rmse`, `mae`, `r2`, `accuracy`, `f1`, `sensitivity`, `specificity`, `precision`, `npv`, `auc`, `balancedAccuracy`, `mcc`, `averagePrecision`, `logLoss`, `brier` (`auc`, `averagePrecision`, `logLoss` and `brier` for classifiers whose method returns probabilities; a model of the former regression mode has `auc` and `averagePrecision` of its scores; `balancedAccuracy` and `mcc` for every classifier; `classes` from Crux through `Eda:classificationReport`); class ids `precision`, `sensitivity`, `f1`, `auc`, `averagePrecision` |
 | `splitting` | `Splitting` | `{scheme: none \| kfold \| holdout, folds?, trainFraction?, isStratified?, isShuffled?}` (`folds` for kfold, `trainFraction` for holdout; `isStratified` when the split kept each class's share; `isShuffled` false for a split in row order, absent in older models: shuffled; read by `splittingOf`); `none` only in older models |
 | `search` (`model`, `training_run`) | `SearchRecord` | `{mode: tune \| best, metric, budgetSeconds?, maxTrials? (the limit; a continued one sums its runs'), strategy?: equal \| halving (best), seed, trials, completed, pruned, failed, elapsedMs, stopped: budget \| cancelled \| exhausted \| trials \| failed, holdOut?: {rows, fraction}, space?: {searched: [{name, type, low?, high?, log?, step?, choices?, simpler?}], pinned: [names]}, methods?: [{method, trials, outcome: complete \| failed \| abandoned \| unstarted, note?, eliminatedRound?}], leaders: [{method, hyperparameters, score, se, foldScores, trials, chosen, note?}]}`; absent without a search (`mode` `best` is Find best model, `methods` its candidates in cost order, `eliminatedRound` the round of successive halving one was dropped after); `space` (Tune) is in the schema's description since 0.1.19, `methods` and `test?: auto \| off \| <fraction>` (not written yet) since 0.1.21, `eliminatedRound` since 0.1.22, strategy and the one limit (budgetSeconds or maxTrials) since 0.1.23, chosen by the best score − se (score + se if minimized) for Find since 0.1.24 |
 | `model.dataset_ref` | `DatasetRef` | Reference mode: `{kind: file \| query \| script, script, path?, id?, name?}`, see "Storage modes" |

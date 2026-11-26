@@ -1,12 +1,13 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {MetricId, verdictMetricOf} from '../metrics/metrics';
 import {onFrame} from '../preparation/shared-frame';
-import {evaluationInsights, Insight, summaryInsight} from '../training/insights';
-import {MetricsTable} from './metrics-table';
+import {Insight, metricInsights, resultInsights, summaryInsight} from '../training/insights';
+import {MetricsSummary, MetricsTable} from './metrics-table';
 import {reportError} from './report-error';
 import {PanelKey, resultKindOf, ResultsRow, resultsLayout} from './results-layout';
 import {buildShown, markCurves, Mismatches, PANEL_TEXTS, refillShown, releaseLinkedFrame, releaseShown, ResultsData,
-  resultsPanel, resultsTitle, Shown, updateWrongPredictions} from './results-viewers';
+  resultsPanel, resultsTitle, Shown, sourceLineOf, updateWrongPredictions} from './results-viewers';
 import {bulletList} from './rich-tooltip';
 import '../../css/forge.css';
 
@@ -60,10 +61,13 @@ export class ResultsPane {
   private readonly sizeKeeper = new MutationObserver(() => this.keepSizes());
   private metricsTable: MetricsTable | undefined;
   private dataInsights: Insight[] = [];
-  /** The insights of the shown result and its metric findings. */
-  private resultLines: Insight[] = [];
+  /** The shown result's {@link resultInsights}, computed once, and its summary, whose {@link metricInsights} follow
+   * the verdict metric. */
+  private shownResult: {insights: Insight[]; summary: MetricsSummary} | undefined;
   /** The line shown alone when there is no other: the result's {@link summaryInsight}. */
   private fallbackLine: Insight | undefined;
+  /** The metric of the model cards' **Compare by** (the verdict's); undefined without a shown card. */
+  private verdictMetric: MetricId | undefined;
   private shown: Shown | undefined;
   /** Counts the shows and hints: a show that a newer call outdated while `visualize` ran mounts nothing. */
   private version = 0;
@@ -127,12 +131,20 @@ export class ResultsPane {
     this.fillInsights();
   }
 
+  /** The verdict of the result insights follows [metric] (the cards' **Compare by**), at once while a result is shown;
+   * undefined: the result's {@link verdictMetricOf}. */
+  setVerdictMetric(metric: MetricId | undefined): void {
+    this.verdictMetric = metric;
+    if (this.shownResult !== undefined)
+      this.fillInsights();
+  }
+
   /** [text] in the **Performance** panel instead of the result ('' for nothing); the data insights stay under it. The
    * metrics grid is kept for the next result. */
   showHint(text: string): void {
     this.version++;
     this.unmount();
-    this.resultLines = [];
+    this.shownResult = undefined;
     this.fallbackLine = undefined;
     this.fillInsights();
     this.metricsTable?.root.remove();
@@ -154,8 +166,8 @@ export class ResultsPane {
       ui.empty(this.metricsHost);
       this.metricsHost.append(this.metricsTable.root);
     }
-    this.resultLines = evaluationInsights({values: summary.evaluation?.values ?? summary.metrics.train, target,
-      prediction, positiveClass}, summary.metrics);
+    this.shownResult = {insights: resultInsights({values: summary.evaluation?.values ?? summary.metrics.train, target,
+      prediction, positiveClass}), summary};
     this.fallbackLine = summaryInsight(summary.metrics, summary.evaluation?.values);
     this.fillInsights();
     const elements = await this.visualizeElements(data);
@@ -202,7 +214,7 @@ export class ResultsPane {
   private fillInsights(): void {
     ui.empty(this.insightsList);
     const texts = new Set<string>();
-    const lines = [...this.dataInsights, ...this.resultLines].filter(({text}) => !texts.has(text) && texts.add(text));
+    const lines = [...this.dataInsights, ...this.resultLines()].filter(({text}) => !texts.has(text) && texts.add(text));
     const shown = lines.length > 0 || this.fallbackLine === undefined ? lines : [this.fallbackLine];
     for (const {text, detail, items, panel} of shown) {
       const li = ui.element('li');
@@ -216,12 +228,32 @@ export class ResultsPane {
       this.insightsList.append(li);
     }
     ui.setDisplay(this.insightsPanel, shown.length > 0 || this.mounted.has('insights'));
-    for (const [key, viewer] of this.shown?.viewers ?? []) {
-      const description = shown.filter(({panel}) => panel === key && panel !== 'metrics')
-        .map(({text}) => ResultsPane.markdownText(text)).join(' ');
+    const result = this.shown;
+    for (const [key, viewer] of result?.viewers ?? []) {
+      const texts = shown.filter(({panel}) => panel === key && panel !== 'metrics').map(({text}) => text);
+      const description = ResultsPane.descriptionOf(texts,
+        result === undefined ? undefined : sourceLineOf(result.sources.get(key), result.rows));
       if ((viewer.props.description ?? '') !== description)
         viewer.setOptions({description, descriptionVisibilityMode: 'Always'});
     }
+  }
+
+  /** The shown result's insights, then its metric insights by the verdict metric: the cards' **Compare by**, else the
+   * result's {@link verdictMetricOf}. */
+  private resultLines(): Insight[] {
+    const result = this.shownResult;
+    if (result === undefined)
+      return [];
+    const {metrics, search} = result.summary;
+    return [...result.insights,
+      ...metricInsights(metrics, this.verdictMetric ?? verdictMetricOf(metrics, search?.metric))];
+  }
+
+  /** A viewer's description: the insight [texts] about its panel as literal Markdown, joined by a space, then the
+   * [line] saying whose predictions it shows, as the next paragraph; '' without either. */
+  static descriptionOf(texts: string[], line: string | undefined): string {
+    const insights = texts.map((text) => ResultsPane.markdownText(text)).join(' ');
+    return [insights, line ?? ''].filter((part) => part !== '').join('\n\n');
   }
 
   /** [text] as literal Markdown (a viewer's description is Markdown): no markup from the names in it. */

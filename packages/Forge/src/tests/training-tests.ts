@@ -10,8 +10,8 @@ import {EngineRegistry} from '../engines/engine-registry';
 import {ForgeError} from '../forge-error';
 import {defaultFeatures} from '../training/default-features';
 import {DEFAULT_VALIDATION, heldOutCount, holdOutFold, kFold, minimumRows} from '../training/k-fold';
-import {aucOf, aucOfProbabilities, classesOf, METRIC_DESCRIPTIONS, metricsOf, MetricValues, probabilityMetrics,
-  probabilityOf} from '../metrics/metrics';
+import {aucOf, aucOfProbabilities, classesOf, METRIC_DESCRIPTIONS, METRIC_IDS, metricsOf, MetricValues,
+  probabilityMetrics, probabilityOf, SplitMetrics, verdictMetricOf, verdictOf} from '../metrics/metrics';
 import {classificationReport} from '../metrics/report';
 import {MissingValuesSettings, prepareMissingValues} from '../preparation/missing-values';
 import {prepareFeatures, replayPostprocessing, replayPreprocessing} from '../preparation/pipeline';
@@ -24,8 +24,8 @@ import {quickEngines, searchableEngines, searchRecordOf} from '../training/searc
 import {autoEngines, runTrainModel, TrainModelInput} from '../training/train-api';
 import {bestThresholdOf, checkSelection, failedCheck, foldMasks, foldPrediction, needsRowsWithoutGaps,
   outOfFoldProbabilities, prepareTraining, problemMessages, recutResult, TrainingProblems, TrainingRequest,
-  TrainingResult, TrainingSelection, trainingEngines, trainModel, trainPredictionOf, validationSplit, withLateEngines}
-  from '../training/train-model';
+  TrainingResult, TrainingSelection, trainingEngines, trainModel, trainPredictionOf, validationSplit, withLateEngines,
+  metricsRecordOf} from '../training/train-model';
 import {QueuedTraining, TrainingQueue} from '../training/training-queue';
 import {cancelAtGate, cancelOnceShown, CLASSIFIERS, columnNamed, columnsOf, deleteModelsNamed, deleteRunsOf, demoDemog,
   EDA_METHODS, EngineGate, engineByName, expectMetrics, expectNoFrames, expectReleased, failingEngine, failsWith,
@@ -52,6 +52,10 @@ const NOT_SOFTMAX = 'Softmax cannot learn from this selection. ' +
   'It needs numerical features and a numerical, text or boolean target.';
 const NO_METHOD = 'No method can learn from this selection. Check the features and the target.';
 const STUCK = 'forge-test-stuck';
+const UNDERFITTING_GUESSING =
+  'The model is underfitting: it is barely better than guessing even on the training rows.';
+const UNDERFITTING_MEAN =
+  'The model is underfitting: it is barely better than predicting the mean even on the training rows.';
 const needsRows = (name: string) => needsRowsWithoutGaps(engineByName(EngineRegistry.discover(), name));
 
 /** A selection of [engine] with its default hyperparameters. */
@@ -909,7 +913,7 @@ category('Training', () => {
     expectArray(failed.insights, []);
   }, {timeout: TIMEOUT});
 
-  test('resultInsights: a classifier\'s accuracy and class balance, a regressor\'s residuals and statistics',
+  test('resultInsights: a classifier\'s class balance, a regressor\'s residuals and statistics',
     async () => {
       const rows = 20;
       const labels = (value: (i: number) => string) =>
@@ -917,7 +921,7 @@ category('Training', () => {
       const classes = labels((i) => i % 2 === 0 ? 'a' : 'b');
       const texts = (values: MetricValues, positiveClass?: string) =>
         resultInsights({values, target: classes, prediction: classes, positiveClass}).map((i) => i.text);
-      expectArray(texts({accuracy: 0.1}), ['Only 10% of the rows are predicted correctly.']);
+      expectArray(texts({accuracy: 0.1}), []);
       expectArray(texts({sensitivity: 0.9, specificity: 0.3}, 'a'), ['The model finds a much better than b.']);
       expectArray(texts({sensitivity: 0.3, specificity: 0.9}, 'a'), ['The model finds b much better than a.']);
       expectArray(texts({accuracy: 1, sensitivity: 1, specificity: 1}, 'a'), []);
@@ -942,13 +946,58 @@ category('Training', () => {
       expectArray(regression(target), []);
     });
 
-  test('metricInsights: a value below its threshold as is, the overfitting metrics in one insight', async () => {
-    const insights = metricInsights({train: {r2: 0.2, mse: 1, mae: 1}, validation: {r2: 0.9, mse: 4, mae: 1.05}});
-    expectArray(insights.map((i) => i.text), ['R2 is below 0.3.', 'The model may be overfitting.']);
-    expect(insights[0].detail, 'Train 0.200, validation 0.900.');
-    expectArray(insights[1].items ?? [], ['MSE: train 1.000, validation 4.000']);
-    expect(insights.every((i) => i.panel === 'metrics'), true, JSON.stringify(insights));
-    expectArray(metricInsights({train: {accuracy: 0.97}, validation: {accuracy: 0.95}}), []);
+  test('metricInsights: one verdict by the metric, the other metrics as items', async () => {
+    const underfitting = metricInsights({train: {balancedAccuracy: 0.3, accuracy: 0.9, auc: 0.52, mcc: 0.9},
+      validation: {balancedAccuracy: 0.3, accuracy: 0.9, auc: 0.52, mcc: 0.2},
+      baseline: {balancedAccuracy: 0.25, accuracy: 0.9, auc: 0.5, mcc: 0}}, 'balancedAccuracy');
+    expectArray(underfitting.map((i) => i.text), [UNDERFITTING_GUESSING,
+      'Some metrics are far apart on the training and validation rows.']);
+    expectArray(underfitting[0].items ?? [], ['Balanced accuracy: train 0.300, guessing 0.250',
+      'Accuracy: train 0.900, guessing 0.900', 'AUC-ROC: train 0.520, guessing 0.500']);
+    expectArray(underfitting[1].items ?? [], ['MCC: train 0.900, validation 0.200']);
+    expect(underfitting.every((i) => i.panel === 'metrics'), true, JSON.stringify(underfitting));
+
+    const overfitting = metricInsights({train: {balancedAccuracy: 0.95, accuracy: 0.95, mcc: 0.9},
+      validation: {balancedAccuracy: 0.8, accuracy: 0.8, mcc: 0.85}}, 'balancedAccuracy');
+    expectArray(overfitting.map((i) => i.text),
+      ['The model may be overfitting by Balanced accuracy: train 0.950, validation 0.800.']);
+    expectArray(overfitting[0].items ?? [], ['Accuracy: train 0.950, validation 0.800']);
+
+    const fine = metricInsights({train: {balancedAccuracy: 0.95, accuracy: 0.97}, validation: {balancedAccuracy: 0.93,
+      accuracy: 0.9}}, 'balancedAccuracy');
+    expectArray(fine.map((i) => i.text), ['Some metrics are far apart on the training and validation rows.']);
+    expectArray(fine[0].items ?? [], ['Accuracy: train 0.970, validation 0.900']);
+    const close = {train: {accuracy: 0.97}, validation: {accuracy: 0.95}};
+    expectArray(metricInsights(close, verdictMetricOf(close)), []);
+
+    const regressor = metricInsights({train: {r2: 0.05, rmse: 3}, validation: {r2: 0.04, rmse: 3.1}, baseline: {r2: 0}},
+      'rmse');
+    expectArray(regressor.map((i) => i.text), [UNDERFITTING_MEAN]);
+    expectArray(regressor[0].items ?? [], ['R2: train 0.050, predicting the mean 0.000']);
+    const r2Only = {train: {r2: 0.05}, validation: {r2: 0.04}, baseline: {r2: 0}};
+    expectArray(metricInsights(r2Only, verdictMetricOf(r2Only)).map((i) => i.text), [UNDERFITTING_MEAN]);
+  });
+
+  test('metricInsights agree with verdictOf for every metric', async () => {
+    const records: SplitMetrics[] = [
+      {train: {balancedAccuracy: 0.3, accuracy: 0.92, mcc: 0.9, logLoss: 0.42, sensitivity: 0.3},
+        validation: {balancedAccuracy: 0.28, accuracy: 0.9, mcc: 0.2, logLoss: 0.43, sensitivity: 0.25},
+        baseline: {balancedAccuracy: 0.25, accuracy: 0.9, mcc: 0, logLoss: 0.434}},
+      {train: {balancedAccuracy: 0.99, accuracy: 0.99, logLoss: 0.05, f1: 0.99},
+        validation: {balancedAccuracy: 0.8, accuracy: 0.85, logLoss: 0.4, f1: 0.97},
+        baseline: {balancedAccuracy: 0.33, accuracy: 0.34, logLoss: 1.09, f1: 0.33}},
+      {train: {r2: 0.9, rmse: 1, mae: 0.8}, validation: {r2: 0.88, rmse: 1.1, mae: 0.85}, baseline: {r2: 0}},
+    ];
+    for (const record of records) {
+      for (const m of METRIC_IDS.filter((id) => record.train[id] !== undefined)) {
+        const texts = metricInsights(record, m).map((i) => i.text);
+        const status = verdictOf(record, m)?.status;
+        expect(texts.some((t) => t.startsWith('The model is underfitting')), status === 'underfitting',
+          `${m}: ${texts.join(' | ')}`);
+        expect(texts.some((t) => t.startsWith('The model may be overfitting by')), status === 'overfitting',
+          `${m}: ${texts.join(' | ')}`);
+      }
+    }
   });
 
   test('summaryInsight: Balanced accuracy or R2 on the evaluated, validation or training rows', async () => {
@@ -974,10 +1023,14 @@ category('Training', () => {
     expect(result.prediction.length, 150);
     const labels = trainPredictionOf(result);
     expect(labels === result.prediction && labels.type === DG.COLUMN_TYPE.STRING, true, labels.type);
+    expectFloat(result.metrics.baseline?.balancedAccuracy ?? NaN, 1 / 3, 1e-9, 'the baseline balanced accuracy');
+    const read = metricsRecordOf(JSON.parse(JSON.stringify(result.metrics)));
+    expectFloat(read?.baseline?.balancedAccuracy ?? NaN, 1 / 3, 1e-9, 'the baseline read back');
 
     const twoSpecies = await twoSpeciesIris();
     const probability = await trainModel(await requestOf(columnsOf(twoSpecies, MEASUREMENTS),
       twoSpecies.getCol('Species'), PREDICT_PROBABILITY));
+    expectFloat(probability.metrics.baseline?.averagePrecision ?? NaN, 0.5, 1e-9, 'a re-cut keeps the baseline');
     expect(probability.probabilities !== undefined, true, 'The probability model kept no probabilities');
     expect(trainPredictionOf(probability).toList().every((v) => v === 'versicolor' || v === 'virginica'), true,
       trainPredictionOf(probability).categories.join());

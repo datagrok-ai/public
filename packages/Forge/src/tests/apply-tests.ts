@@ -555,6 +555,8 @@ category('Apply', () => {
         const {column, probabilityColumns} = await applyAndRecord(requestFor(model, table), 'api');
         expect(column.type, DG.COLUMN_TYPE.STRING);
         expect(column.name, 'Species (predicted)');
+        expect(column.meta.description, `Species predicted by ${model.row.name}`);
+        expect(column.getTag(PREDICTION_TAG), id);
         expectArray(column.toList(),
           replayPostprocessing(result.prediction, result.options, result.probabilities).toList());
         expect(column.toList().every((v) => v === 'versicolor' || v === 'virginica'), true, column.categories.join());

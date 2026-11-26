@@ -1,24 +1,24 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {visibleHyperparametersOf} from '../engines/engine';
-import {fixed, METRIC_DESCRIPTIONS, METRIC_IDS, METRIC_LABELS, MetricId, metricOfLabel, Overfitting, overfittingOf,
-  roundTo3} from '../metrics/metrics';
+import {defaultMetricOf, fixed, METRIC_DESCRIPTIONS, METRIC_IDS, METRIC_LABELS, MetricId, metricOfLabel, roundTo3,
+  trivialModelOf, Verdict, verdictOf, VerdictStatus} from '../metrics/metrics';
 import {ValidationSettings} from '../training/k-fold';
-import {defaultMetric, directionOf} from '../training/search';
+import {directionOf} from '../training/search';
 import {CollapsibleGroup} from './collapsible-group';
 import {metricIdsOf, valueColumns} from './metrics-table';
 import {isSameInputs, SessionRun} from './runs-panel';
 import {TuneSettings, TuneStatus} from './tune-settings';
 
 const GROUP = 'Trained models';
-const PIN_TOOLTIP = 'Pin to compare with other models';
+const PIN_TOOLTIP = 'Add the model to the comparison';
 const UNPIN_TOOLTIP = 'Remove from the comparison';
 const COMPARE_TOOLTIP = 'The metric the cards show, sort and compare by.';
 const SETTINGS_KINDS: Record<TuneStatus, string> = {'Default': 'Default settings',
   'Customized': 'Customized settings', 'Auto-tuned': 'Auto-tuned settings'};
 const AUTO_TUNED_MODEL = 'Auto-tuned model';
-const NO_OVERFITTING = 'No overfitting';
-const OVERFITTING = 'Overfitting';
+const STATUS_TEXTS: Record<VerdictStatus, string> = {underfitting: 'Underfitting', overfitting: 'Overfitting',
+  noOverfitting: 'No overfitting'};
 const SAME_ON_NEW_DATA = 'Should perform about as well on new data.';
 const WORSE_ON_NEW_DATA = 'May perform worse on new data.';
 
@@ -55,8 +55,12 @@ export class ModelCards {
   private key: string | undefined;
   private metric: MetricId | undefined;
   private isMetricChosen = false;
+  /** The {@link metricId} last given to `onMetricChanged`. */
+  private reportedMetric: MetricId | undefined;
 
-  constructor(private readonly onRestore: (run: SessionRun) => void) {
+  /** [onRestore] gets a clicked pinned card's run, [onMetricChanged] every change of {@link metricId}. */
+  constructor(private readonly onRestore: (run: SessionRun) => void,
+    private readonly onMetricChanged: (metric: MetricId | undefined) => void) {
     this.compareBy = ui.input.choice<string | null>('Compare by', {items: [], value: null, nullable: false,
       tooltipText: COMPARE_TOOLTIP, onValueChanged: (label) => {
         this.metric = metricOfLabel(label);
@@ -195,19 +199,32 @@ export class ModelCards {
     return table;
   }
 
-  /** The overfitting status of [metric] of [run]; null without both values. */
+  /** The status of [metric] of [run]: underfitting by the metric judged, with its train and trivial values, or the
+   * overfitting of [metric]; null without a verdict. */
   static statusTooltip(run: SessionRun, metric: MetricId): HTMLElement | null {
-    const overfitting = ModelCards.overfittingOfRun(run, metric);
+    const verdict = ModelCards.verdictOfRun(run, metric);
+    const underfitting = verdict?.status === 'underfitting' ? verdict.underfitting : undefined;
+    if (underfitting !== undefined) {
+      const trivial = trivialModelOf(underfitting.id);
+      return ModelCards.statusTip(METRIC_LABELS[underfitting.id], [['Train', fixed(underfitting.train)],
+        [`${trivial.charAt(0).toUpperCase()}${trivial.slice(1)}`, fixed(underfitting.baseline)]],
+      `Barely better than ${trivial}, even on the training rows.`);
+    }
+    const overfitting = verdict?.overfitting;
     if (overfitting === undefined)
       return null;
     const {kind, gap, ratio, isOverfitting} = overfitting;
-    const table = ui.table<[string, string]>([['Train', fixed(run.metrics?.train[metric])],
+    return ModelCards.statusTip(METRIC_LABELS[metric], [['Train', fixed(run.metrics?.train[metric])],
       ['Validation', fixed(run.metrics?.validation[metric])],
       kind === 'gap' ? ['Gap', fixed(gap)] : ['Ratio', ratio === undefined ? '-' : ratio.toFixed(2)]],
-    (row) => row);
+    isOverfitting ? WORSE_ON_NEW_DATA : SAME_ON_NEW_DATA);
+  }
+
+  /** A status tooltip: `<label>:`, the name-value [rows], then [text]. */
+  private static statusTip(label: string, rows: [string, string][], text: string): HTMLElement {
+    const table = ui.table(rows, (row) => row);
     table.classList.add('forge-card-tip-table', 'forge-card-status-tip-table');
-    return ui.divV([ui.divText(`${METRIC_LABELS[metric]}:`), table,
-      ui.divText(isOverfitting ? WORSE_ON_NEW_DATA : SAME_ON_NEW_DATA)], 'forge-tooltip');
+    return ui.divV([ui.divText(`${label}:`), table, ui.divText(text)], 'forge-tooltip');
   }
 
   private cards(): Card[] {
@@ -222,9 +239,19 @@ export class ModelCards {
     card.pin.style.visibility = this.pinnedCards.some((c) => isSameInputs(c.run, card.run)) ? 'hidden' : '';
   }
 
+  /** Shows the cards and reports a changed {@link metricId}. */
+  private render(): void {
+    this.renderCards();
+    const metric = this.metricId;
+    if (metric === this.reportedMetric)
+      return;
+    this.reportedMetric = metric;
+    this.onMetricChanged(metric);
+  }
+
   /** Shows the cards of the form's data, Compare by with their metrics, each card's values and status, the order and
    * **Best**. */
-  private render(): void {
+  private renderCards(): void {
     const visible = this.cards().filter((c) => c.key === this.key);
     for (const card of this.cards())
       ui.setDisplay(card.root, card.key === this.key);
@@ -234,7 +261,7 @@ export class ModelCards {
     const ids = METRIC_IDS.filter((id) => visible.some((c) => c.metricIds.includes(id)));
     if (!this.isMetricChosen || this.metric === undefined || !ids.includes(this.metric)) {
       this.isMetricChosen = false;
-      this.metric = ModelCards.defaultMetricOf(visible[0].run, ids);
+      this.metric = defaultMetricOf(ids, visible[0].run.search?.metric);
     }
     this.showCompareBy(ids);
     const metric = this.metric;
@@ -264,8 +291,7 @@ export class ModelCards {
   /** Lists [ids] in **Compare by** with the chosen metric, without counting it as the user's pick. */
   private showCompareBy(ids: MetricId[]): void {
     const labels = ids.map((id) => METRIC_LABELS[id]);
-    this.compareBy.notify = false;
-    try {
+    TuneSettings.silently(this.compareBy, () => {
       if (labels.length !== this.compareBy.items.length || labels.some((l, i) => l !== this.compareBy.items[i])) {
         this.compareBy.items = labels;
         TuneSettings.describeMetricOptions(this.compareBy.input);
@@ -274,9 +300,7 @@ export class ModelCards {
       // A set while the input fires its own change (the user's pick) throws on the platform.
       if (this.compareBy.value !== label)
         this.compareBy.value = label;
-    } finally {
-      this.compareBy.notify = true;
-    }
+    });
   }
 
   /** The card's metric label, validation value and status for [metric]. */
@@ -286,21 +310,22 @@ export class ModelCards {
     card.filled = metric;
     card.metric.textContent = METRIC_LABELS[metric];
     card.value.textContent = fixed(card.run.metrics?.validation[metric]);
-    const overfitting = ModelCards.overfittingOfRun(card.run, metric);
-    ui.setDisplay(card.status, overfitting !== undefined);
-    if (overfitting === undefined)
+    const verdict = ModelCards.verdictOfRun(card.run, metric);
+    ui.setDisplay(card.status, verdict !== undefined);
+    if (verdict === undefined)
       return;
-    const {isOverfitting} = overfitting;
-    card.status.classList.toggle('forge-card-ok', !isOverfitting);
-    card.status.classList.toggle('forge-card-warn', isOverfitting);
+    const {status} = verdict;
+    card.status.classList.toggle('forge-card-ok', status === 'noOverfitting');
+    card.status.classList.toggle('forge-card-warn', status === 'overfitting');
+    card.status.classList.toggle('forge-card-bad', status === 'underfitting');
     ui.empty(card.status);
-    card.status.append(isOverfitting ? ui.span(['!'], 'forge-card-mark') : ui.iconFA('check'),
-      ui.span([isOverfitting ? OVERFITTING : NO_OVERFITTING]));
+    card.status.append(status === 'noOverfitting' ? ui.iconFA('check') : ui.span(['!'], 'forge-card-mark'),
+      ui.span([STATUS_TEXTS[status]]));
   }
 
-  private static overfittingOfRun({metrics}: SessionRun, metric: MetricId): Overfitting | undefined {
-    const [train, validation] = [metrics?.train[metric], metrics?.validation[metric]];
-    return train === undefined || validation === undefined ? undefined : overfittingOf(metric, train, validation);
+  /** The verdict of [metric] on [run]'s metrics ({@link verdictOf}); undefined without metrics or a verdict. */
+  static verdictOfRun({metrics}: Pick<SessionRun, 'metrics'>, metric: MetricId): Verdict | undefined {
+    return metrics === undefined ? undefined : verdictOf(metrics, metric);
   }
 
   /** A card of [run]; a click on a pinned card, but on its icon, restores its run. */
@@ -334,13 +359,6 @@ export class ModelCards {
     return {run, key: ModelCards.keyOf(run.targetName, run.validation, run.seed), root,
       pin: isPinned ? undefined : icon, best, metric, value, status,
       metricIds: run.metrics === undefined ? [] : metricIdsOf({metrics: run.metrics})};
-  }
-
-  /** The metric the cards compare by until the user picks one: the one [run]'s search optimized, else Balanced
-   * accuracy, else R2, else the first of [ids]. */
-  private static defaultMetricOf(run: SessionRun, ids: MetricId[]): MetricId | undefined {
-    return [run.search?.metric, defaultMetric('classification'), defaultMetric('regression')]
-      .find((id): id is MetricId => id !== undefined && ids.includes(id)) ?? ids[0];
   }
 
   private static captionOf(p: DG.Property): string {

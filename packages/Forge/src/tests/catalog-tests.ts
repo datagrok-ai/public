@@ -491,6 +491,7 @@ category('Catalog', () => {
       expectMetrics(details.metrics?.train ?? {}, stored.train, 1e-9);
       expectMetrics(details.metrics?.validation ?? {}, stored.validation, 1e-9);
       expect(details.metrics?.classes?.length, 3);
+      expectFloat(details.metrics?.baseline?.balancedAccuracy ?? NaN, 1 / 3, 1e-9, 'the stored baseline');
       expectArray(details.findings.map((f) => f.text), metricFindings(stored).map((f) => f.text));
       expect(details.search, null);
       expect(details.storage.mode, 'none');

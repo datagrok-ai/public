@@ -122,7 +122,7 @@ export class EvaluationView extends DG.ViewBase {
         keptRows: result.keptRows, positiveClass,
         threshold: loaded.options.binaryClassificationThreshold, blob: result.blob,
         summary: {...stored, evaluation: {values, tableName: table.name, rowCount, skippedRows,
-          ...(result.classes === undefined ? {} : {classes: result.classes})}}});
+          ...(result.classes === undefined ? {} : {classes: result.classes})}}, rows: 'evaluation'});
     } catch (e) {
       if (progress.canceled)
         grok.shell.warning('Evaluation was cancelled.');

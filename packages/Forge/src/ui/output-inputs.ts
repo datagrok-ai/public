@@ -100,12 +100,7 @@ export class OutputInputs {
   /** Sets the threshold to [value], optimized for [metric]; without one, [value] counts as a hand edit. The view is
    * not told. */
   setThreshold(value: number, metric?: BestThresholdMetric): void {
-    this.threshold.notify = false;
-    try {
-      this.threshold.value = value;
-    } finally {
-      this.threshold.notify = true;
-    }
+    TuneSettings.silently(this.threshold, () => this.threshold.value = value);
     if (metric !== undefined) {
       this.thresholdMetric.value = METRIC_LABELS[metric];
       this.optimizedFor = metric;

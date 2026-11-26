@@ -98,10 +98,18 @@ export type BestThresholdMetric = typeof BEST_THRESHOLD_METRICS[number];
 
 /** A training's two measurements: the final model on its training rows, and the out-of-fold predictions. */
 export type Split = 'train' | 'validation';
-const SPLITS: Split[] = ['train', 'validation'];
 
-/** The values below which a metric is marked (the built-in tool's thresholds). */
-const METRIC_THRESHOLDS: Partial<Record<MetricId, number>> = {r2: 0.3, auc: 0.5};
+/** A training's train and validation values and, since schema 0.1.25, the trivial model's values on its training
+ * rows. */
+export interface SplitMetrics { train: MetricValues; validation: MetricValues; baseline?: MetricValues }
+
+/** The metrics judged for underfitting by another one: the shares of one class by Balanced accuracy, the errors of a
+ * regressor by R2. */
+const JUDGED_BY: Partial<Record<MetricId, MetricId>> = {sensitivity: 'balancedAccuracy',
+  specificity: 'balancedAccuracy', precision: 'balancedAccuracy', npv: 'balancedAccuracy', mse: 'r2', rmse: 'r2',
+  mae: 'r2'};
+/** The share of the way from the trivial model to a perfect one below which a train value is underfitting. */
+const MIN_SKILL = 0.1;
 
 /** The metrics for which lower is better: the errors. */
 export const MINIMIZED_METRICS: ReadonlySet<MetricId> = new Set<MetricId>(['mse', 'rmse', 'mae', 'logLoss', 'brier']);
@@ -136,19 +144,130 @@ export function roundTo3(x: number): number {
   return Number(x.toFixed(3));
 }
 
+/** The underfitting of a metric: [id] is the metric judged ({@link JUDGED_BY}), [train] and [baseline] its values
+ * rounded as shown, [skill] the share of the way from the trivial model to a perfect one. */
+export interface Underfitting { id: MetricId; train: number; baseline: number; skill: number; isUnderfitting: boolean }
+
+/** The trivial model's values on the training rows of [target]: for a classifier from the shares p_k of the K classes
+ * with rows (π the share of [positiveClass] for two classes), for a regressor R2 0. */
+export function baselineMetrics(task: ModelTask, target: DG.Column, positiveClass?: string): MetricValues {
+  if (task === 'regression')
+    return {r2: 0};
+  const counts = [...classCounts(target)];
+  const total = counts.reduce((sum, [, n]) => sum + n, 0);
+  const k = counts.length;
+  if (k === 0)
+    return {};
+  const shares = counts.map(([, n]) => n / total);
+  const positive = positiveClass === undefined || k !== 2 ? undefined :
+    (counts.find(([label]) => label === positiveClass)?.[1] ?? 0) / total;
+  const share = positive ?? 1 / k;
+  return {
+    balancedAccuracy: 1 / k,
+    accuracy: Math.max(...shares),
+    mcc: 0,
+    auc: 0.5,
+    averagePrecision: share,
+    f1: share,
+    logLoss: -shares.reduce((sum, p) => sum + p * Math.log(p), 0),
+    brier: positive === undefined ? shares.reduce((sum, p) => sum + p * (1 - p), 0) : positive * (1 - positive),
+  };
+}
+
+/** The underfitting of [id] by the metric it is judged by: its train value against the [baseline] one; undefined
+ * without either, or when the baseline is already perfect. */
+export function underfittingOf(id: MetricId, train: MetricValues, baseline: MetricValues): Underfitting | undefined {
+  const judged = JUDGED_BY[id] ?? id;
+  const [trainValue, baseValue] = [train[judged], baseline[judged]];
+  if (trainValue === undefined || baseValue === undefined)
+    return undefined;
+  const [t, b] = [roundTo3(trainValue), roundTo3(baseValue)];
+  const isError = MINIMIZED_METRICS.has(judged);
+  if (isError ? b <= 0 : b >= 1)
+    return undefined;
+  const skill = roundTo3(isError ? 1 - t / b : (t - b) / (1 - b));
+  return {id: judged, train: t, baseline: b, skill, isUnderfitting: skill < MIN_SKILL};
+}
+
+export type VerdictStatus = 'underfitting' | 'overfitting' | 'noOverfitting';
+export interface Verdict { status: VerdictStatus; metric: MetricId; underfitting?: Underfitting;
+  overfitting?: Overfitting }
+
+/** Underfitting first, then overfitting by [metric] itself, then no overfitting; undefined when neither can be
+ * judged. */
+export function verdictOf(metrics: SplitMetrics, metric: MetricId): Verdict | undefined {
+  const {train, validation, baseline} = metrics;
+  const underfitting = baseline === undefined ? undefined : underfittingOf(metric, train, baseline);
+  const [t, v] = [train[metric], validation[metric]];
+  const overfitting = t === undefined || v === undefined ? undefined : overfittingOf(metric, t, v);
+  if (underfitting?.isUnderfitting)
+    return {status: 'underfitting', metric, underfitting, overfitting};
+  if (overfitting === undefined)
+    return undefined;
+  return {status: overfitting.isOverfitting ? 'overfitting' : 'noOverfitting', metric, underfitting, overfitting};
+}
+
+/** The metric a model is judged and compared by until the user picks one: [searchMetric] (the one its search
+ * optimized), else Balanced accuracy, else R2 (the tasks' default search metrics), else the first of [ids]; only one
+ * of [ids]. */
+export function defaultMetricOf(ids: readonly MetricId[], searchMetric?: MetricId): MetricId | undefined {
+  const candidates: (MetricId | undefined)[] = [searchMetric, 'balancedAccuracy', 'r2'];
+  return candidates.find((id): id is MetricId => id !== undefined && ids.includes(id)) ?? ids[0];
+}
+
+/** The verdict metric of one model until the user picks one: the {@link defaultMetricOf} the metrics with a
+ * validation or test value, as the model cards pick it. */
+export function verdictMetricOf({validation, test}: {validation: MetricValues; test?: MetricValues},
+  searchMetric?: MetricId): MetricId | undefined {
+  return defaultMetricOf(METRIC_IDS.filter((id) => validation[id] !== undefined || test?.[id] !== undefined),
+    searchMetric);
+}
+
+/** `guessing`, or `predicting the mean` when [id] is judged by R2. */
+export function trivialModelOf(id: MetricId): string {
+  return (JUDGED_BY[id] ?? id) === 'r2' ? 'predicting the mean' : 'guessing';
+}
+
+/** The rows of each class of [col] that has any, empty cells aside, in the column's category order. */
+export function classCounts(col: DG.Column): Map<string, number> {
+  const counts = new Map<string, number>();
+  if (col.type === DG.COLUMN_TYPE.STRING) {
+    // A text column's raw data are the indexes of its categories.
+    const categories = col.categories;
+    const indexes = col.getRawData();
+    const tally = new Int32Array(categories.length);
+    for (let i = 0; i < col.length; i++)
+      tally[indexes[i]]++;
+    for (let k = 0; k < categories.length; k++) {
+      if (categories[k] !== '' && tally[k] > 0)
+        counts.set(categories[k], tally[k]);
+    }
+    return counts;
+  }
+  for (let i = 0; i < col.length; i++) {
+    if (!col.isNone(i)) {
+      const value = String(col.get(i));
+      counts.set(value, (counts.get(value) ?? 0) + 1);
+    }
+  }
+  return counts;
+}
+
 export function metricOfLabel(label: string | null): MetricId | undefined {
   return METRIC_IDS.find((id) => METRIC_LABELS[id] === label);
 }
 
-/** A metric value worth a word: below its threshold, or a validation value worse than the train one by the
- * overfitting rule ({@link overfittingOf}). */
+/** A metric value worth a word: a train value barely better than the trivial model's ({@link underfittingOf}), or a
+ * validation value worse than the train one by the overfitting rule ({@link overfittingOf}). */
 export interface MetricFinding {
   id: MetricId;
-  kind: 'threshold' | 'mismatch';
+  kind: 'underfitting' | 'mismatch';
   /** The splits whose values the finding marks. */
   splits: Split[];
   text: string;
   detail: string;
+  /** The underfitting an `underfitting` finding reports. */
+  underfitting?: Underfitting;
 }
 
 interface ClassCounts { tp: number; fp: number; fn: number }
@@ -430,29 +549,34 @@ export function aucOfProbabilities(actual: DG.Column, probabilities: ClassProbab
 
 /** The built-in tool's closeness of two values: within 0.1 when both are small (their mean magnitude below 1),
  * otherwise within 90% of that mean, so that only values several times apart differ (the statistics insight; the
- * metric findings use overfittingOf). */
+ * metric findings use overfittingOf and underfittingOf). */
 export function areValuesSimilar(a: number, b: number): boolean {
   const mean = (Math.abs(a) + Math.abs(b)) / 2;
   return mean < 1 ? Math.abs(a - b) <= 0.1 : Math.abs(a - b) / mean <= 0.9;
 }
 
-/** For each metric: the splits whose value is below its threshold, then a validation value worse than the train one
- * by the overfitting rule ({@link overfittingOf}). */
-export function metricFindings(metrics: Record<Split, MetricValues>): MetricFinding[] {
+/** For each metric: a train value barely better than the trivial model's (the metrics with a baseline of their own,
+ * {@link underfittingOf}), then a validation value worse than the train one by the overfitting rule
+ * ({@link overfittingOf}). */
+export function metricFindings(metrics: SplitMetrics): MetricFinding[] {
   const findings: MetricFinding[] = [];
+  const {baseline} = metrics;
   for (const id of METRIC_IDS) {
     const train = metrics.train[id];
     const validation = metrics.validation[id];
     const label = METRIC_LABELS[id];
-    const detail = `Train ${fixed(train)}, validation ${fixed(validation)}.`;
-    const threshold = METRIC_THRESHOLDS[id];
-    const below = threshold === undefined ? [] :
-      SPLITS.filter((split) => (metrics[split][id] ?? threshold) < threshold);
-    if (below.length > 0)
-      findings.push({id, kind: 'threshold', splits: below, text: `${label} is below ${threshold}.`, detail});
+    const underfitting = baseline === undefined || JUDGED_BY[id] !== undefined ? undefined :
+      underfittingOf(id, metrics.train, baseline);
+    if (underfitting?.isUnderfitting) {
+      const trivial = trivialModelOf(id);
+      findings.push({id, kind: 'underfitting', splits: ['train'],
+        text: `${label} is barely better than ${trivial} on the training rows.`,
+        detail: `Train ${fixed(underfitting.train)}, ${trivial} ${fixed(underfitting.baseline)}.`, underfitting});
+    }
     if (train !== undefined && validation !== undefined && overfittingOf(id, train, validation).isOverfitting) {
-      findings.push({id, kind: 'mismatch', splits: ['validation'], detail,
-        text: `The validation ${label} is far from the training one: the model may be overfitting.`});
+      findings.push({id, kind: 'mismatch', splits: ['validation'],
+        detail: `Train ${fixed(train)}, validation ${fixed(validation)}.`,
+        text: `The validation ${label} is far from the training one.`});
     }
   }
   return findings;

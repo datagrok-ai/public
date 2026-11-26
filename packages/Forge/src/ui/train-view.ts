@@ -10,7 +10,7 @@ import {defaultHyperparameters, enabledRules, EnabledRules, Engine, featureSemTy
   from '../engines/engine';
 import {errorMessage, ForgeError} from '../forge-error';
 import {ModelTask, TrainingRunStatus} from '../generated/db';
-import {BestThresholdMetric, METRIC_LABELS, taskOf} from '../metrics/metrics';
+import {BestThresholdMetric, METRIC_LABELS, taskOf, verdictOf} from '../metrics/metrics';
 import {_package} from '../package';
 import {missingColumnsOf, MissingValuesSettings} from '../preparation/missing-values';
 import {PreparationSteps, PreparedFeatures, twoClasses} from '../preparation/pipeline';
@@ -123,7 +123,8 @@ export class TrainView extends DG.ViewBase {
   readonly resultsPane = new ResultsPane(this.resultsStatus, [{block: this.searchPanel.root, height: 320},
     {block: this.runsPanel.root, height: 260}]);
   /** The **Trained models** group under the form: the current model and the pinned ones (same data only). */
-  readonly modelCards = new ModelCards((run) => this.restoreRun(run));
+  readonly modelCards = new ModelCards((run) => this.restoreRun(run),
+    (metric) => this.resultsPane.setVerdictMetric(metric));
   lastTraining: Training | undefined;
   /** The recorded trainings of the current table, newest first; a Table change starts a new list. */
   runs: SessionRun[] = [];
@@ -148,6 +149,8 @@ export class TrainView extends DG.ViewBase {
    * ({@link searchInputs}): **Tune** or **Find** continues it while they stay. In memory only: its plan holds the
    * columns. */
   private readonly searches = new Map<string, {state: SearchState; inputs: string}>();
+  /** The missing values the search shown in **Search** ran on: a row click restores them with its method. */
+  private shownSearchMissingValues: MissingValuesSettings | undefined;
   /** Methods whose check failed, logged once per view. */
   private readonly loggedFailures = new Set<string>();
   /** Whether each method retrains on every change, as the last check of this table that could ask said. */
@@ -228,6 +231,7 @@ export class TrainView extends DG.ViewBase {
     this.unsubscribeMethod();
     this.resultsPane.clear();
     this.searchPanel.update(undefined);
+    this.shownSearchMissingValues = undefined;
     this.runsPanel.update([]);
     this.modelCards.clear();
     super.detach();
@@ -438,6 +442,7 @@ export class TrainView extends DG.ViewBase {
     this.searches.clear();
     this.runsPanel.update(this.runs);
     this.searchPanel.update(undefined);
+    this.shownSearchMissingValues = undefined;
     this.resultsPane.clear();
     this.resultsPane.layout();
     this.showHint(RESULTS_HINT);
@@ -930,13 +935,14 @@ export class TrainView extends DG.ViewBase {
   /** Trains the current selection through the queue (a newer training supersedes it) with a task-bar progress; records
    * a completed, failed or cancelled run (a superseded one is not recorded) and shows the result. [override] is the
    * winner of a search: its selection, its request (the search rows, the hold out and the search record) and the
-   * fingerprint of all the selection's rows. */
+   * fingerprint of all the selection's rows. Resolves to the run put first in **Runs** when the training completed;
+   * undefined when it was superseded, cancelled or failed, or the table changed. */
   private async startTraining(isLive: boolean,
     override?: {selection: TrainingSelection; request: TrainingRequest; fingerprint: DatasetFingerprint}):
-    Promise<void> {
+    Promise<SessionRun | undefined> {
     const selection = override?.selection ?? this.selection();
     if (selection === null)
-      return;
+      return undefined;
     const settingsStatus = this.form.tune.status;
     const checkNumber = this.checkNumber;
     // A Table change starts a new list: a training of the old table adds no row to it.
@@ -965,23 +971,21 @@ export class TrainView extends DG.ViewBase {
         return run.progress;
       });
       if (queued.outcome === 'superseded')
-        return;
+        return undefined;
       const record = async (status: TrainingRunStatus, metrics?: MetricsRecord, message?: string) =>
         run.record === undefined ? '' : recordTrainingRun({...run.record, status, metrics, error: message,
           duration_ms: Date.now() - (run.startedOn ?? Date.now())});
       const isCurrent = () => checkNumber === this.checkNumber;
       const addRun = (status: TrainingRunStatus, outcome: {metrics?: MetricsRecord; error?: string},
-        steps = selection.steps) => {
-        if (runs === this.runs)
-          this.addRun({...selection, steps}, run.record, status, outcome, settingsStatus);
-      };
+        steps = selection.steps) => runs === this.runs ?
+        this.addRun({...selection, steps}, run.record, status, outcome, settingsStatus) : undefined;
       if (queued.outcome === 'completed') {
         const {result} = queued;
         const {binaryClassificationThreshold, thresholdMetric} = result.options;
         if (run.record !== undefined)
           run.record.options = result.options;
         const runId = await record('completed', result.metrics);
-        addRun('completed', {metrics: result.metrics}, {...selection.steps,
+        const added = addRun('completed', {metrics: result.metrics}, {...selection.steps,
           threshold: binaryClassificationThreshold ?? selection.steps.threshold, thresholdMetric});
         if (isCurrent() && run.fingerprint !== undefined && run.request !== undefined) {
           this.lastTraining = {result, request: run.request, runId, engine, table, columns: [...features, target],
@@ -991,6 +995,7 @@ export class TrainView extends DG.ViewBase {
           // Predict probability or the threshold may have changed while the model trained.
           this.recut();
         }
+        return added;
       } else if (queued.outcome === 'cancelled') {
         await record('cancelled');
         addRun('cancelled', {});
@@ -1019,19 +1024,22 @@ export class TrainView extends DG.ViewBase {
         ui.empty(this.resultsStatus);
       this.updateControls();
     }
+    return undefined;
   }
 
   /** Puts the training of [selection] whose outcome was recorded as [record] (undefined when nothing was) first in
-   * **Runs**, numbered after the runs before it; a completed one becomes the current model card. */
+   * **Runs**, numbered after the runs before it, and returns it; a completed one becomes the current model card. */
   private addRun(selection: TrainingSelection, record: TrainingRunRecord | undefined, status: TrainingRunStatus,
-    outcome: {metrics?: MetricsRecord; error?: string}, settingsStatus: TuneStatus): void {
-    this.runs.unshift({number: this.runs.length + 1, status, ...TrainView.runInputsOf(selection),
+    outcome: {metrics?: MetricsRecord; error?: string}, settingsStatus: TuneStatus): SessionRun {
+    const run: SessionRun = {number: this.runs.length + 1, status, ...TrainView.runInputsOf(selection),
       featureGaps: missingColumnsOf(selection.features).length > 0, rowCount: record?.row_count ?? 0,
-      search: record?.search, settingsStatus, ...outcome});
+      search: record?.search, settingsStatus, ...outcome};
+    this.runs.unshift(run);
     this.runsPanel.update(this.runs);
     this.resultsPane.layout();
     if (status === 'completed')
-      this.modelCards.setCurrent(this.runs[0]);
+      this.modelCards.setCurrent(run);
+    return run;
   }
 
   /** Sets the target, the features, the preparation, the validation, the method and its hyperparameters of [run]
@@ -1073,8 +1081,9 @@ export class TrainView extends DG.ViewBase {
   /** Searches on the selection as [choice] asks, through the queue with a task-bar progress: [mode] `tune` the current
    * method's settings (**Tune**: as Search options set it), `best` the methods [choice] names (**Find**: as the Find
    * best model block sets it; the rows with missing values skipped unless imputed). Shows the leaders in **Search**,
-   * sets the form to the chosen method and settings, which read Auto-tuned in Manual, and trains them as a regular
-   * training on the search rows, with the hold out measured as Test. The kept search of [mode] on the same inputs
+   * sets the form to the chosen method and settings, which read Auto-tuned in Manual, and to the missing values the
+   * search ran on, without requesting a check, and trains them as a regular training on the search rows, with the hold
+   * out measured as Test. The kept search of [mode] on the same inputs
    * ({@link keptSearch}) is continued when its plan allows ({@link canContinue}): the new budget on top of its trials;
    * otherwise the search starts afresh; either way it becomes the kept one. Meanwhile the form is locked: its inputs
    * are disabled, and a click on a **Runs** or **Search** row sets nothing. */
@@ -1093,6 +1102,7 @@ export class TrainView extends DG.ViewBase {
     this.activeTrainings++;
     this.showTraining(false);
     this.searchPanel.update(undefined);
+    this.shownSearchMissingValues = undefined;
     this.resultsPane.layout();
     this.lockForm();
     let indicator: DG.TaskBarProgressIndicator | undefined;
@@ -1134,6 +1144,7 @@ export class TrainView extends DG.ViewBase {
         return;
       this.searches.set(key, {state, inputs});
       this.searchPanel.update({plan, leaders, outcome});
+      this.shownSearchMissingValues = selectedMissingValues(selection);
       this.resultsPane.layout();
       if (chosen === undefined) {
         grok.shell.warning(failedSearchMessage(outcome) ?? 'No trial completed.');
@@ -1142,19 +1153,27 @@ export class TrainView extends DG.ViewBase {
       }
       const winner = plan.candidates.find((c) => c.engine.name === chosen.method)!.engine;
       this.setWinner(winner, chosen.hyperparameters);
+      this.form.preparation.restoreMissingValues(this.shownSearchMissingValues);
       this.lastTuned.set(winner.name, {values: TrainView.valuesOf(this.form.hyperparameters), context: {
         table: this.form.table, target: selection.target.name, features: selection.features.map((c) => c.name)},
       isFound: mode === 'best'});
       this.form.tune.updateStatus();
-      if (outcome.stopped === 'cancelled')
+      const isCancelled = outcome.stopped === 'cancelled';
+      if (isCancelled)
         grok.shell.warning('Search cancelled; the best so far is trained.');
       else if (mode === 'tune')
         grok.shell.info(`Optimal settings for ${chosen.method} found.`);
-      else
-        grok.shell.info(`Best model: ${chosen.method} (${METRIC_LABELS[plan.metric]} ${chosen.score.toFixed(3)}).`);
       const hyperparameters = {...chosen.hyperparameters};
-      await this.startTraining(false, {selection: {...selection, engine: winner, hyperparameters},
+      const run = await this.startTraining(false, {selection: {...selection, engine: winner, hyperparameters},
         request: {...plan.request, engine: winner, hyperparameters, holdOut, search: record}, fingerprint});
+      if (mode === 'best' && !isCancelled) {
+        const isUnderfitting = run?.metrics !== undefined &&
+          verdictOf(run.metrics, plan.metric)?.status === 'underfitting';
+        grok.shell.info(`Best model: ${chosen.method} (${METRIC_LABELS[plan.metric]} ${chosen.score.toFixed(3)})` +
+          `${isUnderfitting ? ', underfitting' : ''}.`);
+        if (run !== undefined)
+          this.modelCards.pin(run);
+      }
     } catch (e) {
       reportError(e);
     } finally {
@@ -1251,7 +1270,9 @@ export class TrainView extends DG.ViewBase {
     this.applyRules(this.form);
   }
 
-  /** Sets **Method** to [engine] with [hyperparameters], without a check: the search's winner is trained next. */
+  /** Sets **Method** to [engine] with [hyperparameters], without a check: the search's winner is trained next. The
+   * form's inputs it re-sets fire nothing, as an equal value is never set; {@link startSearch} then gives **Missing
+   * values** the search's. */
   private setWinner(engine: Engine, hyperparameters: Hyperparameters): void {
     this.setMethod(engine, hyperparameters);
     this.isSettingMethod = true;
@@ -1265,13 +1286,15 @@ export class TrainView extends DG.ViewBase {
     this.showTrainRow();
   }
 
-  /** A click on a **Search** row: sets its method and settings in Manual; the view then checks and trains as after
-   * any change. Nothing is set while the form is locked. */
+  /** A click on a **Search** row: sets its method, settings and the missing values the search ran on in Manual; the
+   * view then checks and trains as after any change. Nothing is set while the form is locked. */
   restoreLeader(leader: Restored): void {
     const engine = this.engines.find((e) => e.name === leader.method);
     if (engine === undefined || this.locked !== null)
       return;
     this.setMethod(engine, leader.hyperparameters);
+    if (this.shownSearchMissingValues !== undefined)
+      this.form.preparation.restoreMissingValues(this.shownSearchMissingValues);
     this.requestCheck();
   }
 
@@ -1348,7 +1371,7 @@ export class TrainView extends DG.ViewBase {
     this.resultsPane.show({engine, table, columns: request.prepared.columns, target: request.target,
       prediction: trainPredictionOf(result), curves: result.curves,
       keptRows: request.keptRows, positiveClass, threshold: result.options.binaryClassificationThreshold,
-      blob: result.blob, summary}).catch((e) => reportError(e)).finally(() => {
+      blob: result.blob, summary, rows: 'training'}).catch((e) => reportError(e)).finally(() => {
       this.showing--;
       this.publishState(this.problem());
     });

@@ -67,13 +67,20 @@ export class PreparationInputs {
     this.updateVisibility();
   }
 
-  /** Sets the inputs shown for the current selection to [steps] and [missingValues], as a user would; a hidden input
-   * keeps its default. Skip unique categories goes first, as it changes the One-hot default. */
+  /** Sets **Missing values** to [settings] without telling the owner and shows the group as it then applies. */
+  restoreMissingValues(settings: MissingValuesSettings): void {
+    this.missingValues.restore(settings);
+    this.updateVisibility();
+  }
+
+  /** Sets the inputs shown for the current selection to [steps] and [missingValues] ({@link restoreMissingValues}), the
+   * steps as a user would; a hidden input keeps its default, and an input that already holds its value is not set, so
+   * nothing is checked for it. Skip unique categories goes first, as it changes the One-hot default. */
   restore(steps: PreparationSteps, missingValues: MissingValuesSettings): void {
-    this.missingValues.restore(missingValues);
+    this.restoreMissingValues(missingValues);
     for (const [input, value] of [[this.skipUniqueCategories, steps.skipUniqueCategories],
       [this.oneHot, steps.oneHot]] as const) {
-      if (input.visible)
+      if (input.visible && input.value !== value)
         input.value = value;
     }
   }
@@ -108,7 +115,7 @@ export class PreparationInputs {
     }
     this.oneHot.visible = true;
     this.oneHotDefault = defaultOneHot(this.features, this.skipUniqueCategories.value, this.semTypes);
-    if (!this.isOneHotChosen)
+    if (!this.isOneHotChosen && this.oneHot.value !== this.oneHotDefault)
       this.oneHot.value = this.oneHotDefault;
   }
 }

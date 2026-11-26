@@ -2,9 +2,11 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, expectArray, expectExceptionAsync, expectFloat, test}
   from '@datagrok-libraries/test/src/test';
 import {ForgeError} from '../forge-error';
-import {areValuesSimilar, aucOf, aucOfProbabilities, BEST_THRESHOLD_METRICS, bestThreshold, CLASS_METRIC_IDS,
-  ClassProbabilities, classificationMetrics, METRIC_DESCRIPTIONS, METRIC_IDS, METRIC_LABELS, metricFindings, MetricId,
-  MetricValues, overfittingOf, probabilityMetrics, probabilityOf, regressionMetrics} from '../metrics/metrics';
+import {areValuesSimilar, aucOf, aucOfProbabilities, baselineMetrics, BEST_THRESHOLD_METRICS, bestThreshold,
+  CLASS_METRIC_IDS, ClassProbabilities, classificationMetrics, defaultMetricOf, METRIC_DESCRIPTIONS, METRIC_IDS,
+  METRIC_LABELS,
+  metricFindings, MetricId, MetricValues, overfittingOf, probabilityMetrics, probabilityOf, regressionMetrics,
+  underfittingOf, verdictOf} from '../metrics/metrics';
 import {ClassificationReport, classificationReport, curvesOf} from '../metrics/report';
 import {defaultMetric, directionOf, SEARCH_METRICS} from '../training/search';
 import {metricsRecordOf} from '../training/train-model';
@@ -108,30 +110,95 @@ category('Metrics', () => {
     expect(areValuesSimilar(10, 30), false);
   });
 
-  test('metricFindings: values below the threshold and a validation value far from the train one', async () => {
-    const low = metricFindings({train: {r2: 0.2, mse: 1}, validation: {r2: 0.2, mse: 1.1}});
+  test('metricFindings: a train value barely better than the baseline and a validation value far apart', async () => {
+    const low = metricFindings({train: {r2: 0.05, mse: 1}, validation: {r2: 0.05, mse: 1.1}, baseline: {r2: 0}});
     expect(low.length, 1, JSON.stringify(low));
-    expect(low[0].kind, 'threshold');
-    expectArray(low[0].splits, ['train', 'validation']);
-    expect(low[0].text, 'R2 is below 0.3.');
-    expect(low[0].detail, 'Train 0.200, validation 0.200.');
+    expect(low[0].kind, 'underfitting');
+    expectArray(low[0].splits, ['train']);
+    expect(low[0].text, 'R2 is barely better than predicting the mean on the training rows.');
+    expect(low[0].detail, 'Train 0.050, predicting the mean 0.000.');
+    expect(metricFindings({train: {r2: 0.05}, validation: {r2: 0.05}}).length, 0, 'underfitting without a baseline');
+
+    const classifier = metricFindings({train: {balancedAccuracy: 0.3, sensitivity: 0.3, accuracy: 0.9},
+      validation: {balancedAccuracy: 0.3, sensitivity: 0.3, accuracy: 0.9},
+      baseline: {balancedAccuracy: 0.25, accuracy: 0.9}});
+    expectArray(classifier.map((f) => `${f.id} ${f.kind}`), ['accuracy underfitting', 'balancedAccuracy underfitting']);
+    expect(classifier[1].text, 'Balanced accuracy is barely better than guessing on the training rows.');
+    expect(classifier[1].detail, 'Train 0.300, guessing 0.250.');
 
     const far = metricFindings({train: {accuracy: 0.9}, validation: {accuracy: 0.4}});
     expect(far.length, 1, JSON.stringify(far));
     expect(far[0].kind, 'mismatch');
     expectArray(far[0].splits, ['validation']);
-    expect(far[0].text, 'The validation Accuracy is far from the training one: the model may be overfitting.');
+    expect(far[0].text, 'The validation Accuracy is far from the training one.');
     expect(far[0].detail, 'Train 0.900, validation 0.400.');
 
     expect(metricFindings({train: {accuracy: 0.97, f1: 0.97, auc: 0.99}, validation: {accuracy: 0.95, f1: 0.95,
-      auc: 0.98}}).length, 0);
-    const oneSplit = metricFindings({train: {auc: 0.6}, validation: {auc: 0.55}});
-    expect(oneSplit.length, 0, JSON.stringify(oneSplit));
-    const belowOnValidation = metricFindings({train: {auc: 0.52}, validation: {auc: 0.49}});
-    expectArray(belowOnValidation.map((f) => `${f.kind}: ${f.splits.join()}`), ['threshold: validation']);
+      auc: 0.98}, baseline: {accuracy: 0.5, f1: 0.5, auc: 0.5}}).length, 0);
+    expect(metricFindings({train: {auc: 0.52}, validation: {auc: 0.49}}).length, 0, 'no threshold finding');
     expect(metricFindings({train: {accuracy: 0.4}, validation: {accuracy: 0.9}}).length, 0);
     const error = metricFindings({train: {rmse: 1}, validation: {rmse: 1.6}});
     expectArray(error.map((f) => `${f.id} ${f.kind}`), ['rmse mismatch']);
+  });
+
+  test('baselineMetrics: the trivial model from the class shares, R2 0 for a regressor', async () => {
+    const shares = (counts: [string, number][]) => DG.Column.fromStrings('t',
+      counts.flatMap(([label, n]) => Array<string>(n).fill(label)));
+    const four = baselineMetrics('classification', shares([['a', 90], ['b', 3], ['c', 3], ['d', 4]]));
+    expectFloat(four.balancedAccuracy ?? NaN, 0.25, 1e-9, 'balancedAccuracy');
+    expectFloat(four.accuracy ?? NaN, 0.9, 1e-9, 'accuracy');
+    expect(four.mcc, 0);
+    expect(four.auc, 0.5);
+    expectFloat(four.averagePrecision ?? NaN, 0.25, 1e-9, 'averagePrecision');
+    expectFloat(four.f1 ?? NaN, 0.25, 1e-9, 'f1');
+    expectFloat(four.logLoss ?? NaN, 0.433973, 1e-6, 'logLoss');
+    expectFloat(four.brier ?? NaN, 0.1866, 1e-9, 'brier');
+
+    const two = baselineMetrics('classification', shares([['yes', 70], ['no', 30]]), 'yes');
+    expectFloat(two.averagePrecision ?? NaN, 0.7, 1e-9, 'two-class averagePrecision');
+    expectFloat(two.f1 ?? NaN, 0.7, 1e-9, 'two-class f1');
+    expectFloat(two.brier ?? NaN, 0.21, 1e-9, 'two-class brier');
+    expectFloat(two.logLoss ?? NaN, 0.610864, 1e-6, 'two-class logLoss');
+
+    const gapped = baselineMetrics('classification', shares([['a', 3], ['', 4], ['b', 1]]));
+    expectFloat(gapped.balancedAccuracy ?? NaN, 0.5, 1e-9, 'the empty category is not a class');
+    expectFloat(gapped.accuracy ?? NaN, 0.75, 1e-9, 'the empty rows are not counted');
+    expect(JSON.stringify(baselineMetrics('regression', numbers([1, 2, 3]))), JSON.stringify({r2: 0}));
+  });
+
+  test('underfittingOf: the skill below 0.1 on the shown values; the delegated metrics', async () => {
+    const ba = (train: number) => underfittingOf('balancedAccuracy', {balancedAccuracy: train},
+      {balancedAccuracy: 0.25})?.isUnderfitting;
+    expect(ba(0.32), true);
+    expect(ba(0.33), false);
+    expect(ba(0.325), false, 'a skill of exactly 0.100');
+    const logLoss = (train: number) => underfittingOf('logLoss', {logLoss: train}, {logLoss: 0.434})?.isUnderfitting;
+    expect(logLoss(0.40), true);
+    expect(logLoss(0.38), false);
+    const r2 = (train: number) => underfittingOf('r2', {r2: train}, {r2: 0})?.isUnderfitting;
+    expect(r2(0.099), true);
+    expect(r2(0.1), false);
+    const rmse = underfittingOf('rmse', {rmse: 1, r2: 0.05}, {r2: 0});
+    expect(`${rmse?.id} ${rmse?.isUnderfitting}`, 'r2 true');
+    const recall = underfittingOf('sensitivity', {sensitivity: 0.9, balancedAccuracy: 0.6}, {balancedAccuracy: 0.5});
+    expect(`${recall?.id} ${recall?.isUnderfitting}`, 'balancedAccuracy false');
+    expect(underfittingOf('auc', {auc: 0.6}, {}) === undefined, true, 'without a base');
+    expect(underfittingOf('auc', {}, {auc: 0.5}) === undefined, true, 'without a train value');
+  });
+
+  test('verdictOf: underfitting, then overfitting, then no overfitting', async () => {
+    const baseline = {balancedAccuracy: 0.25};
+    const statusOf = (train: number, validation: number, base?: MetricValues) => verdictOf({
+      train: {balancedAccuracy: train}, validation: {balancedAccuracy: validation},
+      ...(base === undefined ? {} : {baseline: base})}, 'balancedAccuracy')?.status;
+    expect(statusOf(0.3, 0.1, baseline), 'underfitting', 'an underfitting record that also overfits');
+    expect(statusOf(0.9, 0.6, baseline), 'overfitting');
+    expect(statusOf(0.9, 0.88, baseline), 'noOverfitting');
+    expect(statusOf(0.3, 0.29), 'noOverfitting', 'never underfitting without a baseline');
+    expect(verdictOf({train: {balancedAccuracy: 0.3}, validation: {}}, 'balancedAccuracy') === undefined, true,
+      'no validation value and no baseline');
+    expect(verdictOf({train: {balancedAccuracy: 0.3}, validation: {}, baseline}, 'balancedAccuracy')?.status,
+      'underfitting', 'underfitting without a validation value');
   });
 
   test('overfittingOf: 0.05 for the scores, 0.1 for MCC and R2, 1.5 times for the errors', async () => {
@@ -193,10 +260,12 @@ category('Metrics', () => {
     expect(metricsRecordOf({train: {}, validation: {}})?.classes === undefined, true, 'classes without any');
   });
 
-  test('metricsRecordOf keeps test', async () => {
-    const record = metricsRecordOf({train: {r2: 0.9}, validation: {r2: 0.7}, test: {r2: 0.5}});
+  test('metricsRecordOf keeps test and baseline', async () => {
+    const record = metricsRecordOf({train: {r2: 0.9}, validation: {r2: 0.7}, test: {r2: 0.5}, baseline: {r2: 0}});
     expect(record?.test?.r2, 0.5);
+    expect(record?.baseline?.r2, 0);
     expect(metricsRecordOf({train: {}, validation: {}})?.test === undefined, true, 'test without one');
+    expect(metricsRecordOf({train: {}, validation: {}})?.baseline === undefined, true, 'baseline without one');
   });
 
   test('SEARCH_METRICS and the directions', async () => {
@@ -211,6 +280,9 @@ category('Metrics', () => {
     expectArray(SEARCH_METRICS.classification.slice(-2), ['logLoss', 'brier']);
     expect(defaultMetric('classification'), 'balancedAccuracy');
     expect(defaultMetric('regression'), 'r2');
+    expect(defaultMetricOf(SEARCH_METRICS.classification), defaultMetric('classification'));
+    expect(defaultMetricOf(SEARCH_METRICS.regression), defaultMetric('regression'));
+    expect(defaultMetricOf(METRIC_IDS, 'f1'), 'f1');
   });
 
   test('curvesOf turns the PR curve\'s null threshold into Infinity and gives none without curves', async () => {
@@ -240,7 +312,7 @@ category('Metrics', () => {
     const findings = metricFindings({train: {mcc: 0.9}, validation: {mcc: 0.2}});
     expect(findings.length, 1, JSON.stringify(findings));
     expect(findings[0].kind, 'mismatch');
-    expect(findings[0].text, 'The validation MCC is far from the training one: the model may be overfitting.');
+    expect(findings[0].text, 'The validation MCC is far from the training one.');
   });
 
   test('aucOfProbabilities: the positive class for two classes, the macro one-vs-rest average for more', async () => {

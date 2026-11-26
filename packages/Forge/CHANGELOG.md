@@ -2,13 +2,22 @@
 
 ## v.next
 
+* GROK-20932: Find best model: Fixed the winner being trained again with the form's settings on tables with text features; the form shows the missing-values handling the winner was trained with
+* GROK-20932: Tune: Fixed a second training after the tuned model on tables with text features
+* GROK-20932: Find best model: Made Candidates start from the recommended checks in every Train view
+* GROK-20932: Tune: Clarified the tooltips of the pins in Search options
+* GROK-20932: Results: Added a line under each prediction panel saying whose predictions it shows: the final model on its training rows, the validation rows or the evaluated rows
+* GROK-20932: Apply: Added a description to the prediction column: <target> predicted by <model name>
+* GROK-20932: Trained models: Added the Underfitting status in red; the card and Insights & Tips give one verdict by Compare by
+* GROK-20932: Find best model: Pinned the winner in Trained models
+* GROK-20932: Results: Added the underfitting check in place of the R2, AUC-ROC and accuracy thresholds: a model barely better than guessing on its training rows is flagged in Performance, Insights & Tips and the model card
 * GROK-20932: Train view: Replaced Find best model's Strategy and Search options with Search Default / Custom; the view always splits the limit equally
-* GROK-20932: Train view: SVM always trains with class probabilities (Platt scaling): ROC Curve, PR Curve and the probability metrics for two classes; Predict probability no longer retrains it
-* GROK-20932: Find best model: SVM is unchecked by default on a table of more than 1000 rows (also the API's default with method auto)
-* GROK-20932: Metrics: Overfitting is judged per metric: more than 0.05 below the training value for a 0-1 score, 0.1 for MCC and R2, 1.5 times for an error, on the values rounded to 3 decimals as shown (an error's ratio to the 2 decimals it is shown with)
-* GROK-20932: Train view: Predict probability, Classification threshold and Best threshold by moved from Preparation to a new Output group under Method
-* GROK-20932: Train view: Trained models group with redesigned model cards: Compare by, Best (every card at the best value as shown, ties included), how the settings were chosen (Default settings, Customized settings, Auto-tuned settings or Auto-tuned model) over a name-value list of every setting's value (two a row, its description on hover), the metric and its validation value with No overfitting / Overfitting and metric tooltips (Gap for a score, Ratio for an error)
-* GROK-20932: Metrics: F1 is labelled F1 score everywhere (Performance, Compare by, Search, Best threshold by, Per-class, Compare models columns)
+* GROK-20932: Train view: Made SVM always train with class probabilities (Platt scaling): ROC Curve, PR Curve and the probability metrics for two classes; Predict probability no longer retrains it
+* GROK-20932: Find best model: Unchecked SVM by default on a table of more than 1000 rows (also the API's default with method auto)
+* GROK-20932: Metrics: Changed overfitting to be judged per metric: more than 0.05 below the training value for a 0-1 score, 0.1 for MCC and R2, 1.5 times for an error, on the values rounded to 3 decimals as shown (an error's ratio to the 2 decimals it is shown with)
+* GROK-20932: Train view: Moved Predict probability, Classification threshold and Best threshold by from Preparation to a new Output group under Method
+* GROK-20932: Train view: Added the Trained models group with redesigned model cards: Compare by, Best (every card at the best value as shown, ties included), how the settings were chosen (Default settings, Customized settings, Auto-tuned settings or Auto-tuned model) over a name-value list of every setting's value (two a row, its description on hover), the metric and its validation value with No overfitting / Overfitting and metric tooltips (Gap for a score, Ratio for an error)
+* GROK-20932: Metrics: Renamed F1 to F1 score everywhere (Performance, Compare by, Search, Best threshold by, Per-class, Compare models columns)
 * GROK-20932: Added molecule features: a method that declares meta.mlsemtypes (for example Molecule) gets such columns as they are (no One-hot, Skip unique categories or Impute on them), other methods are not offered for them and a chosen one says why in its balloon; Forge:listMethods shows Semantic types
 * GROK-20932: Fixed the Train view waiting forever for a method checked on the server: it joins Method when it answers, and one silent for 30 s is left out
 * [core#1518](https://github.com/datagrok-ai/core/issues/1518): Introduced the Models view at /models in place of the Forge app: the model catalog with search (text and #tags), list, cards and table modes, a sort menu (both remembered), a model count and Train a model... when empty; the list mode shows the names as links, the toolbar keeps only Refresh (Apply..., Delete model and Compare are in the model's menu, which also gained Share...), the search box has no magnifier and the card no Applicable to icon; the model tooltip is three lines (the name, `Predicts <target> with <method> from <features>`, `Created <date> by <author>`); Forge left Browse > Apps

@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
-import {areValuesSimilar, METRIC_DESCRIPTIONS, METRIC_LABELS, metricFindings, MetricId, MetricValues, Split}
-  from '../metrics/metrics';
+import {areValuesSimilar, classCounts, fixed, METRIC_DESCRIPTIONS, METRIC_LABELS, metricFindings, MetricId,
+  MetricValues, Split, SplitMetrics, trivialModelOf, Underfitting, verdictOf} from '../metrics/metrics';
 import {residualsOf, statisticsOf} from '../metrics/statistics';
 
 /** The panel of the results an insight is about. */
@@ -18,7 +18,6 @@ const MAX_SHARES = 10;
 const CORRELATION = 0.9;
 const MAX_CORRELATED_COLUMNS = 99;
 const UNIQUE_SHARE = 0.8;
-const LOW_ACCURACY = 0.2;
 const LOW_RATIO = 0.6;
 const TAIL_FACTOR = 4;
 
@@ -30,20 +29,16 @@ export function dataInsights(columns: DG.Column[], target: DG.Column): Insight[]
     ...uniqueInsights(all)];
 }
 
-/** The built-in tool's checks of a trained model's predictions of [target]: low accuracy and one class found much
- * better than the other for a classifier ([values] are its metrics); one-sided large errors and predicted statistics
- * far from the actual ones for a regressor. */
+/** The built-in tool's checks of a trained model's predictions of [target]: one class found much better than the
+ * other for a classifier ([values] are its metrics); one-sided large errors and predicted statistics far from the
+ * actual ones for a regressor. */
 export function resultInsights(input: {values: MetricValues; target: DG.Column; prediction: DG.Column;
   positiveClass?: string}): Insight[] {
   const {values, target, prediction} = input;
   if (target.matches(NUMERICAL))
     return [...residualInsights(target, prediction), ...statisticInsights(target, prediction)];
   const insights: Insight[] = [];
-  const {accuracy, sensitivity, specificity} = values;
-  if (accuracy !== undefined && accuracy < LOW_ACCURACY) {
-    insights.push({text: `Only ${Math.round(accuracy * 100)}% of the rows are predicted correctly.`,
-      detail: `Accuracy ${accuracy.toFixed(3)} (below ${LOW_ACCURACY}).`, panel: 'metrics'});
-  }
+  const {sensitivity, specificity} = values;
   const classes = target.categories.filter((c) => c !== '');
   const positive = input.positiveClass ?? classes[0];
   const negative = classes.find((c) => c !== positive);
@@ -58,26 +53,45 @@ export function resultInsights(input: {values: MetricValues; target: DG.Column; 
   return insights;
 }
 
-/** The metric findings as insights about **Performance**: each value below its threshold as is, and every validation
- * value far from the train one in one insight that lists them. */
-export function metricInsights(metrics: Record<Split, MetricValues>): Insight[] {
+/** The insights about **Performance** by the verdict of [metric] ({@link verdictOf}; the caller resolves it with
+ * `verdictMetricOf` or the cards' **Compare by**; undefined: no verdict): an underfitting model, listing every metric
+ * barely better than the trivial model's, the verdict's first; a model overfitting by [metric], listing the other
+ * metrics far apart; else the metrics far apart, without the verdict word. */
+export function metricInsights(metrics: SplitMetrics, metric: MetricId | undefined): Insight[] {
+  const verdict = metric === undefined ? undefined : verdictOf(metrics, metric);
   const findings = metricFindings(metrics);
-  const insights = findings.filter((f) => f.kind === 'threshold')
-    .map(({text, detail}): Insight => ({text, detail, panel: 'metrics'}));
-  const mismatches = findings.filter((f) => f.kind === 'mismatch');
-  if (mismatches.length > 0) {
-    const value = (split: Split, id: MetricId) => metrics[split][id]?.toFixed(3);
-    insights.push({text: 'The model may be overfitting.', panel: 'metrics', items: mismatches.map(({id}) =>
-      `${METRIC_LABELS[id]}: train ${value('train', id)}, validation ${value('validation', id)}`)});
+  const mismatches = findings.filter((f) => f.kind === 'mismatch').map((f) => f.id);
+  const insights: Insight[] = [];
+  const underfitting = verdict?.status === 'underfitting' ? verdict.underfitting : undefined;
+  if (underfitting !== undefined) {
+    const others = findings.flatMap((f) => f.underfitting !== undefined && f.id !== underfitting.id ?
+      [f.underfitting] : []);
+    insights.push({text: `The model is underfitting: it is barely better than ${trivialModelOf(underfitting.id)} ` +
+      'even on the training rows.', panel: 'metrics', items: [underfitting, ...others].map(underfittingItem)});
+  }
+  const splitItem = (id: MetricId) => `${METRIC_LABELS[id]}: train ${fixed(metrics.train[id])}, ` +
+    `validation ${fixed(metrics.validation[id])}`;
+  if (verdict?.status === 'overfitting') {
+    const others = mismatches.filter((id) => id !== verdict.metric);
+    insights.push({text: `The model may be overfitting by ${splitItem(verdict.metric)}.`,
+      panel: 'metrics', ...(others.length === 0 ? {} : {items: others.map(splitItem)})});
+  } else if (mismatches.length > 0) {
+    insights.push({text: 'Some metrics are far apart on the training and validation rows.', panel: 'metrics',
+      items: mismatches.map(splitItem)});
   }
   return insights;
 }
 
+/** `<Metric>: train <t>, guessing <b>` (`predicting the mean` for R2). */
+function underfittingItem({id, train, baseline}: Underfitting): string {
+  return `${METRIC_LABELS[id]}: train ${fixed(train)}, ${trivialModelOf(id)} ${fixed(baseline)}`;
+}
+
 /** The insights of a trained or evaluated model: the {@link resultInsights} of [result], then the
- * {@link metricInsights} of the [stored] train and validation metrics. */
-export function evaluationInsights(result: Parameters<typeof resultInsights>[0],
-  stored: Record<Split, MetricValues>): Insight[] {
-  return [...resultInsights(result), ...metricInsights(stored)];
+ * {@link metricInsights} of the [stored] metrics by [metric]. */
+export function evaluationInsights(result: Parameters<typeof resultInsights>[0], stored: SplitMetrics,
+  metric: MetricId | undefined): Insight[] {
+  return [...resultInsights(result), ...metricInsights(stored, metric)];
 }
 
 /** One line reading the model's quality when nothing else is worth a tip: Balanced accuracy for a classifier, R2 for a
@@ -140,31 +154,6 @@ function shareLines(counts: Map<string, number>): string[] {
   for (const i of byRemainder.slice(0, left))
     tenths[i]++;
   return entries.map(([name], i) => `${name}: ${(tenths[i] / 10).toFixed(1)}%`);
-}
-
-/** The rows of each class of [col] that has any, empty cells aside, in the column's category order. */
-function classCounts(col: DG.Column): Map<string, number> {
-  const counts = new Map<string, number>();
-  if (col.type === DG.COLUMN_TYPE.STRING) {
-    // A text column's raw data are the indexes of its categories.
-    const categories = col.categories;
-    const indexes = col.getRawData();
-    const tally = new Int32Array(categories.length);
-    for (let i = 0; i < col.length; i++)
-      tally[indexes[i]]++;
-    for (let k = 0; k < categories.length; k++) {
-      if (categories[k] !== '' && tally[k] > 0)
-        counts.set(categories[k], tally[k]);
-    }
-    return counts;
-  }
-  for (let i = 0; i < col.length; i++) {
-    if (!col.isNone(i)) {
-      const value = String(col.get(i));
-      counts.set(value, (counts.get(value) ?? 0) + 1);
-    }
-  }
-  return counts;
 }
 
 /** One insight for the pairs of numerical columns that move together, each listed with its correlation; it points to

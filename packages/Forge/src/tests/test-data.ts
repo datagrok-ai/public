@@ -181,6 +181,36 @@ export function slowEngine(base: Engine, gate?: EngineGate, role: 'train' | 'app
   return {...base, isLiveUpdate: false, functions: {...base.functions, [role]: gated}};
 }
 
+/** XGBoost's checks and settings under [name] with a fit that returns at once and a prediction of a
+ * {@link twoClassTable}'s classes from the first feature (`even` for a whole part of 0), with class probabilities
+ * (`even`: 0.65-0.77, `odd`: 0.23-0.35); no views of its own. An engine stub, not a platform mock. */
+export function instantEngine(name = 'forge-test-instant'): Engine {
+  const engine = xgboost();
+  const {train, apply} = engine.functions;
+  if (train === undefined || apply === undefined)
+    throw new Error('XGBoost has no train or apply');
+  const trainStub = renamedTrain(train, name);
+  trainStub.apply = () => Promise.resolve(new Uint8Array([1]));
+  const applyStub: DG.Func = Object.create(apply);
+  applyStub.apply = (params) => {
+    const df: unknown = params === undefined || Array.isArray(params) ? undefined : params['df'];
+    if (!(df instanceof DG.DataFrame))
+      return Promise.reject(new Error('No df to predict'));
+    const x = df.columns.byIndex(0);
+    const even = Array.from({length: x.length}, (_, i) => {
+      const value = x.getNumber(i);
+      const fraction = value - Math.floor(value);
+      return Math.floor(value) % 2 === 0 ? 0.65 + 2 * fraction : 0.35 - 2 * fraction;
+    });
+    return Promise.resolve(DG.DataFrame.fromColumns([
+      DG.Column.fromStrings('prediction', even.map((p) => p >= 0.5 ? 'even' : 'odd')),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'proba_even', even),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'proba_odd', even.map((p) => 1 - p))]));
+  };
+  return {...engine, name, functions: {...engine.functions, train: trainStub, apply: applyStub, visualize: undefined},
+    isLiveUpdate: true};
+}
+
 /** A promise the test settles when it chooses: a stub's check answer. */
 export function deferred<T = void>(): {promise: Promise<T>; resolve: (value: T) => void} {
   const holder: {resolve: (value: T) => void} = {resolve: () => {}};
@@ -256,10 +286,21 @@ export function failingEngine(name: string, error: string): Engine {
   const {train} = engine.functions;
   if (train === undefined)
     throw new Error('XGBoost has no train');
-  const trainStub: DG.Func = Object.create(train);
-  Object.defineProperty(trainStub, 'options', {value: {...train.options, mlname: name}});
+  const trainStub = renamedTrain(train, name);
   trainStub.apply = () => Promise.reject(new Error(error));
   return {...engine, name, functions: {...engine.functions, train: trainStub}};
+}
+
+/** [train] under the method name [name] (its `mlname`), for a stub to replace its `apply`. */
+function renamedTrain(train: DG.Func, name: string): DG.Func {
+  const stub: DG.Func = Object.create(train);
+  Object.defineProperty(stub, 'options', {value: {...train.options, mlname: name}});
+  return stub;
+}
+
+/** A method without functions: a stub for the logic that only reads its name. */
+export function emptyEngine(name: string): Engine {
+  return {name, namespace: 'Forge', kind: 'function', functions: {}, isLiveUpdate: true};
 }
 
 /** A text column of SMILES [values] with the semantic type Molecule. */

@@ -8,8 +8,8 @@ import {apply, CHECK_TIMEOUT_MS, EnginePrediction, isInteractive, LoopProgress, 
   yieldToEventLoop} from '../engines/engine-calls';
 import {ForgeError} from '../forge-error';
 import {ModelTask} from '../generated/db';
-import {bestThreshold, BestThresholdMetric, classesOf, classLabelMetrics, ClassMetrics, ClassProbabilities, Curves,
-  METRIC_IDS, MetricValues, metricsOf, probabilityOf, taskOf} from '../metrics/metrics';
+import {baselineMetrics, bestThreshold, BestThresholdMetric, classesOf, classLabelMetrics, ClassMetrics,
+  ClassProbabilities, Curves, METRIC_IDS, MetricValues, metricsOf, probabilityOf, taskOf} from '../metrics/metrics';
 import {classMetricsOf, curvesOf, measure, Measured, SCORE_METRIC_IDS} from '../metrics/report';
 import {missingColumnsOf, MissingValuesSettings, missingValuesProblems, prepareMissingValues}
   from '../preparation/missing-values';
@@ -31,6 +31,8 @@ export interface MetricsRecord {
   validation: MetricValues;
   /** The final model on the rows held out before a search. */
   test?: MetricValues;
+  /** A trivial model on the training rows ({@link baselineMetrics}); absent before schema 0.1.25. */
+  baseline?: MetricValues;
   positiveClass?: string;
   /** A classifier's per-class values, when EDA's report gave them. */
   classes?: ClassMetrics[];
@@ -417,6 +419,7 @@ export async function trainModel(request: TrainingRequest, progress?: LoopProgre
       undefined : {...validationProbabilities, columns: validationProbabilities.columns.map(validated)}),
     request.holdOut === undefined ? undefined : testMetrics(engine, request.holdOut, blob, setup.task, positiveClass)]);
   const {record, curves} = recordOf(onTrain, onValidation, positiveClass, test?.values);
+  record.baseline = baselineMetrics(setup.task, target, positiveClass);
   const plain: TrainingResult = {...result, metrics: record, probabilities, curves, actual: request.target,
     outOfFold: {prediction: outOfFold, probabilities: validationProbabilities},
     ...(test === undefined ? {} : {test: test.test})};
@@ -604,6 +607,9 @@ export function metricsRecordOf(value: unknown): MetricsRecord | null {
   const test = metricValuesOf(value.test);
   if (test !== null)
     record.test = test;
+  const baseline = metricValuesOf(value.baseline);
+  if (baseline !== null)
+    record.baseline = baseline;
   if (typeof value.positiveClass === 'string')
     record.positiveClass = value.positiveClass;
   if (Array.isArray(value.classes)) {

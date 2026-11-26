@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import {defaultValuesOf, Hyperparameters} from '../engines/engine';
 import {imputeFunction, imputeSettings, imputeSettingsOf, MissingColumn, MissingValuesSettings}
   from '../preparation/missing-values';
+import {TuneSettings} from './tune-settings';
 
 const SKIP_ROWS = 'Skip rows';
 const IMPUTE = 'Impute';
@@ -73,23 +74,26 @@ export class MissingValuesInputs {
     return imputeSettings(this.imputeInputs.get('neighbors')?.value, this.imputeInputs.get('distance')?.value);
   }
 
-  /** Sets the inputs to [settings], as a user would: `keep` hides them; the choice and, for Impute, its inputs are
-   * set only while the choice is shown. */
+  /** Sets the inputs to [settings] without telling the owner: `keep` hides them; the choice and, for Impute, its
+   * inputs are set only while the choice is shown. The owner checks the form itself when it needs to. */
   restore(settings: MissingValuesSettings): void {
     this.keeps = settings.mode === 'keep';
     this.updateVisibility();
     if (!this.isChoiceShown)
       return;
     const isImpute = settings.mode === 'impute' && this.imputeInputs.size > 0;
-    this.choice.value = isImpute ? IMPUTE : SKIP_ROWS;
+    const choice = isImpute ? IMPUTE : SKIP_ROWS;
+    if (this.choice.value !== choice)
+      TuneSettings.silently(this.choice, () => this.choice.value = choice);
     const impute = settings.impute;
-    if (!isImpute || impute === undefined)
-      return;
-    for (const [name, value] of Object.entries(impute)) {
-      const input = this.imputeInputs.get(name);
-      if (input !== undefined)
-        input.value = value;
+    if (isImpute && impute !== undefined) {
+      for (const [name, value] of Object.entries(impute)) {
+        const input = this.imputeInputs.get(name);
+        if (input !== undefined && input.value !== value)
+          TuneSettings.silently(input, () => input.value = value);
+      }
     }
+    this.updateVisibility();
   }
 
   private updateVisibility(): void {
@@ -99,12 +103,13 @@ export class MissingValuesInputs {
       ui.setDisplay(input.root, isImputeShown);
     const isHiding = this.isImputeShown && !isImputeShown;
     this.isImputeShown = isImputeShown;
-    // A hidden setting goes back to its default, so a value left invalid cannot block the form unseen.
+    // A hidden setting goes back to its default, so a value left invalid cannot block the form unseen; the settings
+    // no longer read it, so the owner is not told.
     if (isHiding) {
       for (const [name, input] of this.imputeInputs) {
         const value = this.defaults[name];
-        if (value !== undefined)
-          input.value = value;
+        if (value !== undefined && input.value !== value)
+          TuneSettings.silently(input, () => input.value = value);
       }
     }
   }

@@ -611,6 +611,15 @@ div.forge-gallery > .forge-gallery-below {
   color: var(--orange-3);
 }
 
+/* The user's colour for Underfitting, not a design token. */
+.forge-cards {
+  --forge-underfitting: #CE2C31;
+}
+
+.forge-card-bad {
+  color: var(--forge-underfitting);
+}
+
 .forge-card-status > .grok-icon {
   font-size: inherit;
   color: inherit;

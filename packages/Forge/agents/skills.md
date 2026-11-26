@@ -103,9 +103,9 @@ Returns one object with what the model's **Details**, **Performance** and **Acti
 | `featureTypes` | `{name: type}` |
 | `hyperparameters` | the method's settings |
 | `preparation` | the recorded preparation |
-| `metrics` | `train`, `validation`, `test` (after a search that held rows out), for two classes `positiveClass` and, for a classifier, `classes` (per class: `label`, `rows`, `train` and `validation` values of `precision`, `sensitivity`, `f1`, `auc`, `averagePrecision`); null when none were saved |
+| `metrics` | `train`, `validation`, `test` (after a search that held rows out), `baseline` (see below; absent in models saved before it existed), for two classes `positiveClass` and, for a classifier, `classes` (per class: `label`, `rows`, `train` and `validation` values of `precision`, `sensitivity`, `f1`, `auc`, `averagePrecision`); null when none were saved |
 | `search` | the search that chose the settings, as `trainModel` returns it; null without one |
-| `findings` | `{text, detail}` for a metric below its threshold or a validation value worse than the training one by the overfitting rule (0.05 for a 0-1 score, 0.1 for MCC and R2, 1.5 times for an error) |
+| `findings` | `{text, detail}` for a training value barely better than a trivial model's (underfitting: `<Metric> is barely better than guessing on the training rows.`, for R2 `... than predicting the mean ...`; detail `Train 0.300, guessing 0.250.`) or a validation value worse than the training one by the overfitting rule (0.05 for a 0-1 score, 0.1 for MCC and R2, 1.5 times for an error; `The validation <Metric> is far from the training one.`, detail `Train 0.912, validation 0.405.`) |
 | `seed`, `splitting` | how the data was split: the split seed and `{scheme: kfold \| holdout, folds?, trainFraction?, isStratified?, isShuffled?}` |
 | `storage` | `mode`, with a reference its `source`, with a copy its `tableId` |
 | `dataset` | `name`, `rows` and `summary` (the data summary kept instead of the data) |
@@ -127,6 +127,15 @@ better), both computed by Forge, only with probabilities. `auc` (when the report
 `classes` come from Crux through the EDA package's `classificationReport`. A model saved with the former regression
 mode of Predict probability (before schema 0.1.20) has `auc` and `averagePrecision` of its scores and no `logLoss`
 or `brier`.
+
+`metrics.baseline` holds a trivial model's values on the training rows: for a classifier `balancedAccuracy` (1 / the
+number of classes), `accuracy` (the largest class's share), `mcc` 0, `auc` 0.5, `averagePrecision` and `f1` (the
+positive class's share for two classes, else 1 / the number of classes), `logLoss` and `brier` from the class shares;
+for a regressor `r2` 0. A model is underfitting by a metric when its training value covers less than 0.1 of the way
+from the baseline to a perfect value ((value − baseline) / (perfect − baseline); for an error 1 − value / baseline),
+on the values rounded to 3 decimals; recall, specificity, precision and the negative predictive value are judged by
+`balancedAccuracy`, the regression errors by `r2`. Models saved before the baseline existed have none and are never
+judged underfitting.
 
 Errors (every function with `model`): `No Forge model 'X' is available to you.`,
 `Several models are named 'X'. Use the model id.`
@@ -188,8 +197,8 @@ Trains as the Predictive model view does, with its defaults (5-fold cross-valida
 Returns `modelId` (null when not saved), `runId`, `name`, `method`, `task`, `target`, `features`, `rowCount` (the
 rows trained on; after a search with a hold out, without the held out rows), `skippedRows`, `seed`, `metrics`
 (`train`, `validation`, `test` (after a search with a hold out: the final model on the held out rows), each with the
-metric keys above (`logLoss` and `brier` for a method with class probabilities), for two classes `positiveClass` and,
-for a classifier, `classes`) and, after a search, `search`: `mode` (`tune`, or `best` with `auto`; `method` is then
+metric keys above (`logLoss` and `brier` for a method with class probabilities), `baseline` (the trivial model's values,
+as `getModel` describes them), for two classes `positiveClass` and, for a classifier, `classes`) and, after a search, `search`: `mode` (`tune`, or `best` with `auto`; `method` is then
 the chosen leader's), `metric`,
 `budgetSeconds` or `maxTrials` (the limit; a continued search in the view sums its runs'), `strategy` (`best`:
 `equal` or `halving`), `seed`, `trials`, `completed`, `pruned`, `failed`, `elapsedMs`, `stopped` (`budget`, `cancelled`,
@@ -258,8 +267,8 @@ Errors, for example:
 Forge:applyModel(model: string, table: dataframe, columnNamesMap?: map, showProgress?: bool = true) -> dataframe
 ```
 
-Adds the prediction column `<target> (predicted)` (`<target> (predicted 2)` and so on when the name is taken) to
-`table` and returns the table; a model saved with Predict probability also adds, right after it, its probability
+Adds the prediction column `<target> (predicted)` (`<target> (predicted 2)` and so on when the name is taken),
+described `<target> predicted by <model name>` (the header tooltip), to `table` and returns the table; a model saved with Predict probability also adds, right after it, its probability
 columns `P(<target> = <class>)` (`P(<target> = <class>) 2` and so on when taken; two classes: the positive class's
 only; more: one per class), tagged as the prediction column and described `Probability that <target> is <class>,
 predicted by <model name>` (the header tooltip); a model saved without it adds none. Features are matched to columns of the same name (ignoring case); `columnNamesMap`
@@ -299,6 +308,12 @@ Returns `id`, `name`, `table` (the evaluated table's name), `target`, `rowCount`
 `positiveClass` (for two
 classes), `metrics` (`train` and `validation` as saved, `evaluation` on this data), `classes` (a classifier: the
 evaluation's per-class values, each `label`, `rows`, `values`) and `insights` (each a `text`, with the numbers behind it in `detail` or `items`).
+The quality insights give one verdict by the search's metric when the model came from a search, else Balanced
+accuracy, else R2, else the first metric with a validation value: `The model is underfitting: it is barely better than guessing even on the training rows.` (`...
+than predicting the mean ...` for R2; `items` such as `Balanced accuracy: train 0.300, guessing 0.250`), or `The model
+may be overfitting by <Metric>: train 0.950, validation 0.800.`; other metrics far apart on the training and
+validation rows are listed as items, or, without an overfitting verdict, under `Some metrics are far apart on the
+training and validation rows.`
 Nothing is added to the table and the evaluation is not recorded as an application.
 
 Errors, besides the ones of `applyModel`'s mapping:

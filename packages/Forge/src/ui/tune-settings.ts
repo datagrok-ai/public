@@ -25,7 +25,8 @@ export const NOT_SEARCHED = 'Not searched';
 export const STATUS_TOOLTIPS: Record<TuneStatus | typeof NOT_SEARCHED, string> = {
   'Default': 'The method\'s recommended settings', 'Auto-tuned': 'Found by the search', [CUSTOMIZED]: 'Changed by you',
   [NOT_SEARCHED]: 'Click Find to search'};
-const PIN_TOOLTIP = 'Pin to exclude from tuning';
+const PIN_TOOLTIP = 'Fix this value: the search does not change it';
+const UNPIN_TOOLTIP = 'Search this setting in its range';
 const SETTINGS_TOOLTIP = 'How the settings are chosen: by hand or by a search on this data';
 const METRIC_TOOLTIP = 'Metric the search optimizes';
 const FIXED_TOOLTIP = 'Fixed, can’t be tuned';
@@ -430,7 +431,6 @@ export class TuneSettings {
       return {...base, isPinned: true};
     }
     pin.addEventListener('click', () => this.togglePin(name));
-    ui.tooltip.bind(pin, () => `${PIN_TOOLTIP}. ${pin.getAttribute('aria-label')}`);
     const range = stored.ranges[name];
     const isPinned = stored.pinned.includes(name);
     let row: Row;
@@ -450,6 +450,7 @@ export class TuneSettings {
       row = {...base, dim, tuned: ui.div([from, ui.span(['–'], 'forge-tune-hint'), to], 'forge-tune-range'), from, to,
         isPinned};
     }
+    ui.tooltip.bind(pin, () => row.isPinned ? UNPIN_TOOLTIP : PIN_TOOLTIP);
     TuneSettings.showPin(row);
     return row;
   }
@@ -675,6 +676,16 @@ export class TuneSettings {
     TuneSettings.setMetrics(select, ids, ids.find((x) => x === chosen) ?? ids.find((x) => x === stored) ??
       defaultMetric(task));
     return task;
+  }
+
+  /** Runs [change] of [input] with its change events off: a programmatic set its owner must not hear. */
+  static silently(input: DG.InputBase, change: () => void): void {
+    input.notify = false;
+    try {
+      change();
+    } finally {
+      input.notify = true;
+    }
   }
 
   /** The italic status line under an input (Settings' and the classification threshold's): an empty label in the
