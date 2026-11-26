@@ -1,11 +1,11 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {badge, div, divV, span} from '@datagrok-libraries/u2';
+import {badge, batch, div, divV, span, untracked} from '@datagrok-libraries/u2';
 import type {BadgeVariant, RowView} from '@datagrok-libraries/u2';
 import {domains} from '@datagrok-libraries/ems/src/dg';
 import type {DomainViewOptions} from '@datagrok-libraries/ems/src/dg';
-import {GritIssueHandler, lookupName, warmLookups} from './grit-issue-handler';
+import {GritIssueHandler, lookupName, projectKey, reloadLookups, warmLookups} from './grit-issue-handler';
 import {gritDb, IssueRow} from './generated/db';
 import {getGritDb} from './generated/db-ui';
 export * from './package.g';
@@ -69,12 +69,14 @@ domains.configure<IssueRow>('grit.issue', async (issues) => {
   issues.actions.add({name: 'Assign to me', icon: 'user', requires: 'edit',
     when: (r) => r.assignee !== me(), run: (r) => { r.assignee = me(); }});
   issues.actions.add({name: 'Close', icon: 'check', requires: 'edit',
+    disabledFor: (r) => r.assignee ? null : 'Assign before closing',
     when: (r) => closedId !== null && r.status_id !== closedId, run: (r) => { r.status_id = closedId!; }});
   issues.validators.add('status_id', (v, r) =>
     closedId !== null && v === closedId && !r.assignee ? 'Assign before closing' : null);
   // the status heads the second line, so a card without a description still fills its height
   issues.renderer = {...issues.renderer, card: (r) => divV([
-    div([span(`#${r.number} ${r.title}`, 'u2-domain-card-title'), ...priorityBadge(r)]),
+    div([span(`${[lookupName(r.project_id), r.number].filter((p) => p != null && p !== '').join('-')} ${r.title}`,
+      'u2-domain-card-title'), ...priorityBadge(r)]),
     span([lookupName(r.status_id), r.description].filter((d) => !!d).join(' · '), 'u2-domain-card-description'),
   ], 'u2-domain-card')};
 }, {id: 'grit'});
@@ -84,11 +86,52 @@ function priorityBadge(r: RowView<IssueRow>): HTMLElement[] {
   return name === null ? [] : [badge(name, {variant: priorityVariants[name] ?? 'default'})];
 }
 
+export const openIssues = 'status_id.name != "closed" or status_id = null';
+const INT_MAX = 2147483647;
+
 /** The Issues app: the platform ribbon plus the Mine / Open presets, and a key for each action. */
 export const issuesOptions: DomainViewOptions = {mode: 'cards', itemHeight: 48, children: {tables: ['comment']},
   shortcuts: {'m': 'Assign to me', 'c': 'Close'},
+  setup: (app) => {
+    const source = app.listSource;
+    // the names the cards show: read as the app opens and when the same rows are read again, not per page
+    void reloadLookups().catch(() => {});
+    let shown: string | undefined;
+    app.effect(() => {
+      if (source.df.value === undefined)
+        return;
+      const read = JSON.stringify([source.query.peek(), source.search.peek(), source.sort.peek(),
+        source.deleted.peek()]);
+      if (read === shown)
+        untracked(() => void reloadLookups().catch(() => {}));
+      shown = read;
+    });
+    // a typed handle (`GRIT-12`, `#12`) filters on the number in place of the filter in force, until the next search
+    let derived: string | null = null;
+    let kept = source.query.peek();
+    app.effect(() => {
+      const typed = source.search.value.trim();
+      const m = /^(?:([A-Za-z][A-Za-z0-9_]*)-|#)(\d+)$/.exec(typed);
+      const n = m === null ? NaN : Number(m[2]);
+      const held = derived !== null && source.query.peek() === derived;
+      if (!Number.isSafeInteger(n) || n < 1 || n > INT_MAX) {
+        if (typed !== '' && held)
+          source.query.value = kept;
+        if (typed !== '')
+          derived = null;
+        return;
+      }
+      if (!held)
+        kept = source.query.peek();
+      derived = `${m![1] === undefined ? '' : `project_id.key = "${projectKey(m![1])}" and `}number = ${n}`;
+      batch(() => {
+        source.search.value = '';
+        source.query.value = derived!;
+      });
+    });
+  },
   ribbon: (base, app) => ({...base,
-    presets: [app.presets(['Mine', 'assignee = $me'], ['Open', 'status_id.name != "closed"'])]}),
+    presets: [app.presets(['Mine', 'assignee = $me'], ['Open', openIssues])]}),
 };
 
 /** A view per Grit table — the issues where they were, at `/apps/Grit/Issues`. Grit's one app answers everything
