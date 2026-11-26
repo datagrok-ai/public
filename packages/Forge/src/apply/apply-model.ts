@@ -130,8 +130,9 @@ export async function applyAndRecord(request: ApplyRequest, source: ApplicationS
 
 /** {@link applyAndRecord} under the cancellable task-bar progress "Predicting <target>". */
 export async function applyWithProgress(request: ApplyRequest, source: ApplicationSource): Promise<ApplyResult> {
-  const progress = DG.TaskBarProgressIndicator.create(`Predicting ${request.model.row.target_name}`,
-    {cancelable: true});
+  const row = request.model.row;
+  const progress = DG.TaskBarProgressIndicator.create(
+    isExternal(row) ? `Predicting with ${row.name}` : `Predicting ${row.target_name}`, {cancelable: true});
   try {
     return await applyAndRecord(request, source, progress);
   } finally {

@@ -23,7 +23,6 @@ import {reportError} from './report-error';
 const MAX_BATCH_SIZE = 100000;
 const ROWS_HEIGHT_SHARE = 0.4;
 const MIN_ROWS_HEIGHT = 160;
-const SYNCED_ICON_MS = 2000;
 const NO_MODELS = 'No Forge models yet. Train and save one with ML | Models | Train Model... first.';
 
 export interface ApplyDialogOptions {
@@ -37,26 +36,18 @@ export interface ApplyDialogOptions {
 
 const applyRows = (): PromiseLike<ApplyModelRow[]> => storedModels().select(...APPLY_COLUMNS).top(MAX_MODELS);
 
-/** The sync's state beside a list of models: a spinner, then a check that goes or a warning that stays. */
+/** The sync's state beside a list of models: a spinner while it runs, then a check or a warning. */
 export function syncIcon(): {root: HTMLElement; sub: rxjs.Subscription} {
   const root = ui.div([], 'forge-sync-icon');
-  const shown = syncStatus.value;
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const sub = syncStatus.subscribe((status) => {
-    clearTimeout(timer);
-    const {checking, message} = status;
-    const isDone = !checking && message === '' && status.finished && status !== shown;
+  const sub = syncStatus.subscribe(({checking, message, finished}) => {
     const [name, look, text] = checking ? ['spinner', 'fa-spin', 'Checking for new models'] :
       message !== '' ? ['exclamation-triangle', 'forge-card-warn', message] : ['check', 'forge-card-ok',
         'Models are up to date'];
     const icon = ui.iconFA(name);
     icon.classList.add(look);
     ui.tooltip.bind(icon, text);
-    root.replaceChildren(...(checking || message !== '' || isDone ? [icon] : []));
-    if (isDone)
-      timer = setTimeout(() => root.replaceChildren(), SYNCED_ICON_MS);
+    root.replaceChildren(...(checking || finished ? [icon] : []));
   });
-  sub.add(() => clearTimeout(timer));
   return {root, sub};
 }
 
