@@ -2403,7 +2403,7 @@ missing (a restored `models` view shows a one-line note; `grok.ml.applyModel` re
 | `applyModel` | `model`, `table`, `columnNamesMap`, `showProgress`, passed by name | `grok.ml.applyModel(name, table, map, showProgress)` for any name that is not a model of the earlier tool |
 
 The core hides the earlier tool's table pane **Models**, its **Predicted By** row in a column's **Details** and its
-other panes whether or not Forge is installed (its **MLFlow** node, the MLFlow connections, stays); models of the earlier tool are shown without
+other panes whether or not Forge is installed (its **MLFlow** node stays); models of the earlier tool are shown without
 commands. `ML | Models` and the Browse node exist only with Forge (the commands register after the package functions
 load). Renaming one of these functions or its inputs silently removes the entry point, or breaks `grok.ml.applyModel`;
 `ui-tests.ts` ("the core's entry points exist; Forge has no menu, app or view function of its own") pins them. Publishing or removing Forge
@@ -2523,7 +2523,7 @@ a data change).
 The model's menu has no **Add to** (the built-in tool added a model to an open project): a model reaches a Space by
 the platform's drag (see Sharing). Forge has no Browse node of its own (no app); with Forge installed, the core opens
 Forge's view **Models** from **Browse > Platform > Predictive models** (`/models`); the core keeps its
-**MLFlow** node with the MLFlow connections (see "Core entry points"). The built-in catalog was the core's card gallery (`DG.CardView`-like, with
+**MLFlow** node (see "Core entry points"). The built-in catalog was the core's card gallery (`DG.CardView`-like, with
 a filter panel, grouping and smart search); Forge's gallery keeps its look (search, list/cards/table, sort, count)
 without those (see "Models view"), and a card's double-click no longer opens Edit.
 There is no catalog menu item (the built-in tool had none either). The Domains view of `model` can be filtered by
@@ -2793,20 +2793,12 @@ card, **Applicable to** and **Download**) stay hidden. "No models yet." is shown
 
 ## Models without a file (the `sync` role)
 
-A package may keep its models elsewhere, as the MLflow package does. Its function with `meta.mlrole: sync` (no
-inputs) writes them as the caller's own rows through `Forge:registerModel` (`engine_kind` `external`, no file, the
-reference to the model in `options`) and `Forge:deleteModel`, and returns what it could not refresh, or an empty
-string. `storedModels()` (`storage/model-store.ts`), which the catalog, the Apply dialog, the **Models** pane and
-apply by name read through, returns the stored rows and starts `syncModels()` in the background: every `sync`
-function, at most once in 30 s, concurrent callers sharing the run. `syncStatus` drives an icon, its tooltip saying
-which state: beside **Model** in the Apply dialog (`syncIcon`) a spinner, then a green check for two seconds or a
-warning that stays with what was not refreshed; in the catalog the Refresh icon spins and takes the warning colour.
-The dialog opens without any model too, and the OK button's reason then says so; rows a sync wrote reload the catalog
-(`modelsChanged`), the **Models** pane and the dialog's list, where the picked model stays picked unless it is gone. Such a row
-is applied by a method that has only `apply`, which gets the row's `options` as UTF-8 json in place of the model
-file; the prediction column, its tag and the `application` record are as for any model. `applyModel` by a name that
-is not found waits for one sync and looks again. **Download** and **Run Evaluation** need Forge's own file and are not
-offered.
+A package that keeps its models elsewhere has a function with `meta.mlrole: sync` (no inputs): it writes them as the
+caller's own rows with `Forge:registerModel` (`engine_kind` `external`, the reference to the model in `options`),
+deletes the gone ones with `Forge:deleteModel` and returns what it could not refresh. Every list of models reads
+through `storedModels()` (`storage/model-store.ts`), which returns the stored rows and runs the `sync` functions in
+the background, at most once in 30 s; `syncStatus` drives the sync icon of the Apply dialog and the catalog. The
+method's `apply` gets such a row's `options` as UTF-8 json in place of the model file.
 
 ## Engine contract (methods in the UI)
 

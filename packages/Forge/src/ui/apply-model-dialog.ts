@@ -23,8 +23,7 @@ import {reportError} from './report-error';
 const MAX_BATCH_SIZE = 100000;
 const ROWS_HEIGHT_SHARE = 0.4;
 const MIN_ROWS_HEIGHT = 160;
-/** The time the sync's green check stays. */
-const DONE_MS = 2000;
+const SYNCED_ICON_MS = 2000;
 const NO_MODELS = 'No Forge models yet. Train and save one with ML | Models | Train Model... first.';
 
 export interface ApplyDialogOptions {
@@ -38,8 +37,7 @@ export interface ApplyDialogOptions {
 
 const applyRows = (): PromiseLike<ApplyModelRow[]> => storedModels().select(...APPLY_COLUMNS).top(MAX_MODELS);
 
-/** The background sync as an icon beside a list of models, its tooltip saying which: spinning while it runs, then a
- * green check for two seconds or, when something was not refreshed, a warning that stays. Nothing before a sync. */
+/** The sync's state beside a list of models: a spinner, then a check that goes or a warning that stays. */
 export function syncIcon(): {root: HTMLElement; sub: rxjs.Subscription} {
   const root = ui.div([], 'forge-sync-icon');
   const shown = syncStatus.value;
@@ -56,14 +54,13 @@ export function syncIcon(): {root: HTMLElement; sub: rxjs.Subscription} {
     ui.tooltip.bind(icon, text);
     root.replaceChildren(...(checking || message !== '' || isDone ? [icon] : []));
     if (isDone)
-      timer = setTimeout(() => root.replaceChildren(), DONE_MS);
+      timer = setTimeout(() => root.replaceChildren(), SYNCED_ICON_MS);
   });
   sub.add(() => clearTimeout(timer));
   return {root, sub};
 }
 
-/** The dialog opens on the stored rows, also without any: a sync may bring a user's first models. Without any after
- * the check, the OK button's reason says so. */
+/** Opens without models too: a sync may bring the first ones. */
 export async function applyModelDialog(options: ApplyDialogOptions): Promise<DG.Dialog> {
   const rows = await applyRows();
   const preset = rows.find((row) => row.id === options.modelId);
@@ -206,7 +203,6 @@ class ApplyForm {
     const opened = syncStatus.value;
     const sync = syncIcon();
     this.modelInput.addOptions(sync.root);
-    // The OK button's reason follows the sync too: without any model it says so once the check is over.
     this.subs.push(sync.sub, syncStatus.subscribe((status) => {
       if (status !== opened && !status.checking && status.changed)
         this.reloadModels().catch(reportError).finally(() => this.update());
@@ -243,15 +239,15 @@ class ApplyForm {
     return entries.map((e) => e.label);
   }
 
-  /** After a sync that wrote rows: the list is read again; the picked model stays picked unless it is gone, and its
-   * column rows are rebuilt only when it is gone or its features changed. */
+  /** The picked model stays picked unless it is gone. */
   private async reloadModels(): Promise<void> {
     this.isReloading = true;
-    const rows = await applyRows().then((r) => r, (e) => {
+    let rows: ApplyModelRow[];
+    try {
+      rows = await applyRows();
+    } finally {
       this.isReloading = false;
-      throw e;
-    });
-    this.isReloading = false;
+    }
     const picked = this.models.get(this.modelInput.value ?? '');
     this.models = modelLabels(rows);
     const order = this.order();

@@ -17,8 +17,8 @@ type PaneModelRow = Pick<ModelRow, typeof CARD_COLUMNS[number] | 'id' | 'author_
 /** **Models**, in the look of the platform's own **Models** pane: the models that fit [table], newest first, each a
  * line of the run icon (apply), the name as a link (the model's tooltip, menu and drag) and the menu arrow; then
  * **Train**.
- * Built when the pane opens. The platform never detaches it, so its one subscription, which redraws the lines after a
- * sync that wrote rows, ends itself at the first sync that finds the pane out of the page. */
+ * Built when the pane opens; the platform never detaches it, so its sync subscription ends itself once the pane is
+ * out of the page. */
 export function tableModelsPane(table: DG.DataFrame): HTMLElement {
   const host = ui.div([]);
   const fill = async () => {

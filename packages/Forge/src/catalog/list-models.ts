@@ -12,6 +12,13 @@ import {metricColumns} from './compare-models';
 const DEFAULT_LIMIT = 100;
 const TASKS: readonly ModelTask[] = ['regression', 'classification'];
 
+export function modelTaskOf(task: string): ModelTask {
+  const known = TASKS.find((t) => t === task);
+  if (known === undefined)
+    throw new ForgeError('The task must be regression or classification.');
+  return known;
+}
+
 /** The `model` columns `Forge:listModels` reads (the system columns come with any query). */
 const LIST_COLUMNS = ['name', 'description', 'engine_name', 'task', 'target_name', 'features', 'options',
   'row_count', 'storage_mode', 'tags', 'metrics'] as const;
@@ -31,13 +38,10 @@ export interface ListModelsInput {
 
 /** The body of `Forge:listModels`: the visible models, newest first, at most [ListModelsInput.limit]; `task` and
  * `method` filter on the server, the name part, the target, the tags and the table in the browser over at most
- * {@link MAX_MODELS} rows. With [ListModelsInput.own] only the caller's own models, filtered on the server and cut by
- * the limit alone. Nothing is uploaded. */
+ * {@link MAX_MODELS} rows. Nothing is uploaded. */
 export async function runListModels(input: ListModelsInput): Promise<DG.DataFrame> {
-  const task = input.task || null;
-  if (task !== null && !TASKS.some((t) => t === task))
-    throw new ForgeError('The task must be regression or classification.');
-  const limit = input.limit ?? DEFAULT_LIMIT;
+  const task = input.task ? modelTaskOf(input.task) : null;
+  const limit = input.limit ?? (input.own ? MAX_MODELS : DEFAULT_LIMIT);
   if (!Number.isInteger(limit) || limit < 1)
     throw new ForgeError('The limit must be a whole number of at least 1.');
   const query = forgeDb.models.query();
@@ -53,7 +57,7 @@ export async function runListModels(input: ListModelsInput): Promise<DG.DataFram
   const table = input.table || null;
   const filtered = !!name || !!target || tags.length > 0 || table !== null;
   const rows: ListModelRow[] = await query.select(...LIST_COLUMNS).orderBy('created_on', true)
-    .top(input.own ? limit : filtered ? MAX_MODELS : Math.min(limit, MAX_MODELS));
+    .top(filtered ? MAX_MODELS : Math.min(limit, MAX_MODELS));
   const fits = (row: ListModelRow): boolean => {
     if (name && !row.name.toLowerCase().includes(name) || target && row.target_name.toLowerCase() !== target)
       return false;
@@ -80,8 +84,8 @@ export async function loginsOf(ids: string[]): Promise<Map<string, string>> {
 }
 
 /** **Forge models**: one row per model with **Id**, **Name**, **Description**, **Method**, **Task**, **Target**,
- * **Features**, **Training rows**, **Data storage**, **Tags**, **Author**, **Created**, **Options** (the row's
- * `options` as json text), then `<metric> (validation)` for every metric a listed model has. */
+ * **Features**, **Training rows**, **Data storage**, **Tags**, **Author**, **Created**, **Options** (json
+ * text), then `<metric> (validation)` for every metric a listed model has. */
 function modelsFrame(rows: ListModelRow[], logins: Map<string, string>): DG.DataFrame {
   const df = DG.DataFrame.fromColumns([
     textColumn('Id', rows.map((r) => r.id)),

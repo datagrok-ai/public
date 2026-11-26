@@ -35,8 +35,7 @@ export interface LoadedModel {
   features: ColumnSchema[];
   options: PreparationOptions;
   blobPath: string;
-  /** A model without a file (`isExternal`): its row's `options` as UTF-8 json, which the method's `apply` takes as the
-   * model. */
+  /** What the method's `apply` takes as the model when there is no file: the row's `options` as UTF-8 json. */
   reference?: Uint8Array;
 }
 
@@ -71,10 +70,10 @@ export interface RowPredictions {
   probabilities?: ClassProbabilities;
 }
 
-/** The model with the id or the unique name [idOrName], ready to apply. A model that is not found is looked for once
- * more after a sync: a model a sync function lists has no row before the first one. */
+/** The model with the id or the unique name [idOrName], ready to apply. */
 export async function loadModel(idOrName: string): Promise<LoadedModel> {
   const find = () => findModelRow(idOrName, APPLY_COLUMNS);
+  // A synced model has no row before the first sync.
   const row = await find().catch(async () => {
     await syncModels();
     return find();
@@ -82,8 +81,7 @@ export async function loadModel(idOrName: string): Promise<LoadedModel> {
   return loadedModelOf(row, EngineRegistry.discover());
 }
 
-/** {@link loadModel} for a row already read, with the engines already discovered. A model without a file
- * (`isExternal`) needs only a method with `apply`. */
+/** {@link loadModel} for a row already read, with the engines already discovered. */
 export function loadedModelOf(row: ApplyModelRow, engines: Engine[]): LoadedModel {
   const name = row.name;
   const external = isExternal(row);

@@ -1,83 +1,115 @@
-/** A row of Core's `mlflowModels`: a published model, or with [error] a model that cannot be used or, without a
- * [name], a connection that could not be listed. */
-export interface ListedModel {
-  connectionId: string;
-  connection: string;
-  name: string;
-  version: string;
-  description: string;
-  /** JSON arrays of `{name, type, semType?}`. */
-  inputs: string;
-  outputs: string;
-  error: string;
-}
+import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
+import {Column, ENGINE, ListedModel, ModelReference, NamedModel, OwnRow, Registration, SyncDiff, TYPES}
+  from './types';
 
-/** The caller's own Forge row of a model, as `Forge:listModels` gives it. */
-export interface OwnRow {
-  id: string;
-  name: string;
-  description: string;
-  target: string;
-  /** The feature names, joined by ", ". */
-  features: string;
-  /** The reference: the model in its registry and the declared [type] of its first output. */
-  options: {connectionId?: string; name?: string; version?: string; type?: string};
-}
-
-export interface Column { name: string; type: string; semType?: string }
-
-/** MLflow's type names as Datagrok's; any other type is a string. */
-const TYPES: {[type: string]: string} = {boolean: 'bool', integer: 'int', long: 'int', int: 'int', float: 'double',
-  double: 'double', datetime: 'datetime'};
-
-export function columnsOf(json: string): Column[] {
+function columnsOf(json?: string): Column[] {
   try {
-    const columns: unknown = JSON.parse(json);
-    return Array.isArray(columns) ? columns.map((c: Column) => ({...c, type: TYPES[c.type] ?? 'string'})) : [];
+    const columns: unknown = JSON.parse(json ?? '');
+    return Array.isArray(columns) ?
+      columns.map((c: {name: string; type: string; semType?: string}) =>
+        ({...c, type: TYPES[c.type] ?? DG.COLUMN_TYPE.STRING})) : [];
   } catch {
     return [];
   }
 }
 
-/** The predicted column: the model's first output. */
-export function targetOf(model: ListedModel): Column {
-  return columnsOf(model.outputs)[0] ?? {name: 'prediction', type: 'double'};
+function targetOf(model: ListedModel): Column {
+  return columnsOf(model.outputs)[0] ?? {name: 'prediction', type: DG.COLUMN_TYPE.FLOAT};
 }
 
-/** What a sync writes: the models to register (with [row], the row to update: its name and description are the
- * user's and stay) and the rows to delete. A row is deleted when its model is no longer listed, unless its connection
- * could not be listed; a second row of a model always. A model listed with an error is not registered, and its row
- * stays. */
-export function syncDiff(listed: ListedModel[], rows: OwnRow[]): {register: {model: ListedModel; row?: OwnRow}[];
-  remove: OwnRow[]} {
+function isModel(listed: ListedModel): listed is NamedModel {
+  return !!listed.name;
+}
+
+function isFailedConnection(listed: ListedModel): boolean {
+  return !isModel(listed) && !!listed.error;
+}
+
+function referenceOf(row: OwnRow): Partial<ModelReference> {
+  return JSON.parse(row.Options);
+}
+
+export function syncDiff(listed: ListedModel[], rows: OwnRow[]): SyncDiff {
   const keyOf = (connectionId?: string, name?: string) => `${connectionId}/${name}`;
-  const failed = new Set(listed.filter((m) => m.error !== '' && m.name === '').map((m) => m.connectionId));
   const byKey = new Map<string, OwnRow>();
   const remove: OwnRow[] = [];
   for (const row of rows) {
-    const key = keyOf(row.options.connectionId, row.options.name);
+    const {connectionId, name} = referenceOf(row);
+    const key = keyOf(connectionId, name);
     if (byKey.has(key))
       remove.push(row);
     else
       byKey.set(key, row);
   }
-  const register: {model: ListedModel; row?: OwnRow}[] = [];
-  for (const model of listed.filter((m) => m.name !== '')) {
-    const key = keyOf(model.connectionId, model.name);
+  const register: Registration[] = [];
+  for (const model of listed.filter(isModel)) {
+    const key = keyOf(model.connection_id, model.name);
     const row = byKey.get(key);
     byKey.delete(key);
-    if (model.error !== '')
+    if (model.error)
       continue;
-    // A registered version never changes, so the feature names are enough to see a new signature.
-    const target = targetOf(model);
-    const isSame = row !== undefined && row.options.version === model.version && row.options.type === target.type &&
-      row.target === target.name && row.features === columnsOf(model.inputs).map((c) => c.name).join(', ');
-    if (!isSame)
+    if (row === undefined || isChanged(model, row))
       register.push({model, row});
   }
+  const failed = new Set(listed.filter(isFailedConnection).map((m) => m.connection_id));
   for (const row of byKey.values()) {
-    if (!failed.has(row.options.connectionId ?? ''))
+    if (!failed.has(referenceOf(row).connectionId ?? ''))
       remove.push(row);
   }
   return {register, remove};
+}
+
+// A registered version never changes, so the feature names are enough to see a new signature.
+function isChanged(model: NamedModel, row: OwnRow): boolean {
+  const target = targetOf(model);
+  const {version, type} = referenceOf(row);
+  return version !== (model.version ?? '') || type !== target.type || row.Target !== target.name ||
+    (row.Features ?? '') !== columnsOf(model.inputs).map((c) => c.name).join(', ');
+}
+
+async function listedModels(): Promise<ListedModel[]> {
+  return (await grok.functions.call('mlflowModels', {})).toJson();
+}
+
+async function ownRows(): Promise<OwnRow[]> {
+  return (await grok.functions.call('Forge:listModels', {method: ENGINE, own: true})).toJson();
+}
+
+function registerModel({model, row}: Registration): Promise<string> {
+  const target = targetOf(model);
+  const reference: ModelReference = {connectionId: model.connection_id, name: model.name,
+    version: model.version ?? '', type: target.type};
+  const isClass = target.type === DG.COLUMN_TYPE.STRING || target.type === DG.COLUMN_TYPE.BOOL;
+  // The name and the description of a registered row are the user's.
+  return grok.functions.call('Forge:registerModel', {id: row?.Id, name: row?.Name ?? model.name,
+    description: row ? row.Description : model.description, engine: ENGINE,
+    task: isClass ? 'classification' : 'regression', target, features: {columns: columnsOf(model.inputs)},
+    options: reference});
+}
+
+/** Returns the names of the models whose write was refused: one refusal does not stop the others. */
+async function write({register, remove}: SyncDiff): Promise<string[]> {
+  const failed: string[] = [];
+  for (const registration of register)
+    await registerModel(registration).catch(() => failed.push(registration.model.name));
+  for (const row of remove)
+    await grok.functions.call('Forge:deleteModel', {model: row.Id}).catch(() => failed.push(row.Name));
+  return failed;
+}
+
+function messageOf(listed: ListedModel[], failed: string[]): string {
+  const messages = listed.filter(isFailedConnection).map((m) => `${m.connection} was not refreshed: ${m.error}`);
+  if (failed.length > 0) {
+    messages.push(`${failed.length} MLflow ${failed.length === 1 ? 'model was' : 'models were'} not updated (${
+      failed[0]}${failed.length === 1 ? '' : ', ...'}).`);
+  }
+  return messages.join(' ');
+}
+
+/** Returns what was not refreshed. */
+export async function syncModels(): Promise<string> {
+  const listed = await listedModels();
+  const failed = await write(syncDiff(listed, await ownRows()));
+  return messageOf(listed, failed);
 }

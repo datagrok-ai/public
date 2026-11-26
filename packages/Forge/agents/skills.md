@@ -76,13 +76,13 @@ Forge:listModels(name?: string, target?: string, task?: string, method?: string,
 - `table`: only the models whose features all have a column of the same or a close name in the table; checked in the
   browser, nothing is uploaded
 - `limit`: at most this many models
-- `own`: only the models you created
+- `own`: only the models you created; `limit` is then 10 000 by default
 
 Returns the table **Forge models**, one row per model you can see, newest first: **Id**, **Name**, **Description**,
 **Method**, **Task**, **Target**, **Features** (the feature names), **Training rows**, **Data storage** (`none`,
 `reference` or `copy`), **Tags**, **Author** (a login), **Created**, **Options** (json text), then
-`<Metric> (validation)` for every metric a
-listed model has (a regression model's cells are empty in a classifier's metrics).
+`<Metric> (validation)` for every metric a listed model has (a regression model's cells are empty in a classifier's
+metrics).
 
 Errors: `The task must be regression or classification.`, `The limit must be a whole number of at least 1.`
 
@@ -338,10 +338,10 @@ Forge:registerModel(id?: string, name: string, description?: string, engine: str
   features: map, options: map) -> string
 ```
 
-For a package that keeps its models outside Forge (its `meta.mlrole: sync` function), not for a user's request. Writes
-your own row of a model without a model file, a new one or, with `id`, the one registered before, and returns its id;
-the method's `apply` gets `options` as the model. Errors: `The method 'X' is not installed.`, `The task must be
-regression or classification.`, `The model 'X' is not a model you registered.`
+For a package with models outside Forge, not a user's request: writes or, with `id`, updates your row; returns its id.
+
+Errors: `No method 'X' is installed. The methods are: <methods>.`, `The task must be regression or classification.`,
+`The model 'X' is not a model you registered.`
 
 ### deleteModel
 

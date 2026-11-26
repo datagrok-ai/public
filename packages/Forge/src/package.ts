@@ -5,11 +5,12 @@ import * as DG from 'datagrok-api/dg';
 import {runApplyModel} from './apply/apply-model';
 import {ModelDetails, runGetModel} from './catalog/get-model';
 import {runListModels} from './catalog/list-models';
-import {runUpdateModel, UpdatedModel} from './catalog/model-edit';
+import {runRegisterModel, runUpdateModel, UpdatedModel} from './catalog/model-edit';
 import {checkApply, checkTrain, isCheckApplicable} from './engines/check-method';
-import {runDeleteModel, runRegisterModel} from './storage/model-store';
+import {runDeleteModel} from './storage/model-store';
 import {EvaluateModelResult, runEvaluateModel} from './training/evaluate-api';
 import {runListMethods, runTrainModel, TrainModelResult} from './training/train-api';
+import {FeaturesSchema, TargetSchema} from './training/train-model';
 import {openApplyDialog} from './ui/apply-model-dialog';
 import {ForgeApp} from './ui/forge-app';
 import {openShareDialog, registerModelActions} from './ui/model-actions';
@@ -103,7 +104,7 @@ export async function deleteModel(model: string): Promise<string> {
 }
 
 //name: registerModel
-//description: Writes your own catalog row of a model that has no model file in Forge: its method's apply function gets the row's options as the model. Creates the row, or with an id updates the one registered before
+//description: Writes your own catalog row of a model kept outside Forge, whose method's apply function gets the row's options as the model. With an id updates the row registered before
 //input: string id {optional: true; description: The row to update. Without it a new row is created}
 //input: string name
 //input: string description {optional: true}
@@ -114,8 +115,7 @@ export async function deleteModel(model: string): Promise<string> {
 //input: map options {description: What the method's apply function needs to find the model}
 //output: string result {description: The row id}
 export async function registerModel(id: string | null, name: string, description: string | null, engine: string,
-  task: string, target: {[key: string]: unknown}, features: {[key: string]: unknown},
-  options: {[key: string]: unknown}): Promise<string> {
+  task: string, target: TargetSchema, features: FeaturesSchema, options: {[key: string]: unknown}): Promise<string> {
   return runRegisterModel({id, name, description, engine, task, target, features, options});
 }
 

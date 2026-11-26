@@ -723,8 +723,8 @@ grok.shell.addTableView(await grok.functions.call('Forge:listModels',
 `Forge:listModels` returns the table **Forge models**, one row per model you can see, newest first: **Id**, **Name**,
 **Description**, **Method**, **Task**, **Target**, **Features** (the feature names), **Training rows**, **Data
 storage** (`none`, `reference` or `copy`), **Tags**, **Author** (a login), **Created**, **Options** (json text), then
-`<Metric> (validation)` for every metric a listed model has (a regression model's cells are empty in a classifier's metrics). Every input is
-optional:
+`<Metric> (validation)` for every metric a listed model has (a regression model's cells are empty in a classifier's
+metrics). Every input is optional:
 
 * `name`: a part of the model name, ignoring case
 * `target`: the name of the column the model predicts, ignoring case
@@ -734,7 +734,7 @@ optional:
 * `table`: only the models whose features all have a close column in the table, as **Applicable to** in the catalog;
   checked in the browser, nothing is uploaded
 * `limit` (`100` by default): at most this many models
-* `own`: only the models you created
+* `own`: only the models you created; `limit` is then 10 000 by default
 
 A wrong task fails the call with `The task must be regression or classification.`, a limit below 1 with `The limit
 must be a whole number of at least 1.`
@@ -978,12 +978,12 @@ applications, and returns its id; its training runs stay, without the model, and
 emptied. `model` is an id or a unique name, as
 for `applyModel`: `No Forge model 'X' is available to you.`, `Several models are named 'X'. Use the model id.`
 
-### Register a model kept outside Forge
+### Register
 
-`Forge:registerModel` (`id?`, `name`, `description?`, `engine`, `task`, `target`, `features`, `options`) is for a
-package whose models live elsewhere (its `meta.mlrole: sync` function): it writes your own row of a model without a
-model file, or with `id` updates the one registered before, and returns the row id. Errors: `The method 'X' is not
-installed.`, `The task must be regression or classification.`, `The model 'X' is not a model you registered.`
+`Forge:registerModel` (`id?`, `name`, `description?`, `engine`, `task`, `target`, `features`, `options`) writes your
+own row of a model kept outside Forge, or with `id` updates it, and returns its id: `No method 'X' is installed. The
+methods are: <methods>.`, `The task must be regression or classification.`, `The model 'X' is not a model you
+registered.`
 
 ### Datagrok AI (Grokky)
 

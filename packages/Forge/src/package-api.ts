@@ -80,7 +80,7 @@ export namespace funcs {
   }
 
   /**
-   * Writes your own catalog row of a model that has no model file in Forge: its method's apply function gets the row's options as the model. Creates the row, or with an id updates the one registered before
+   * Writes your own catalog row of a model kept outside Forge, whose method's apply function gets the row's options as the model. With an id updates the row registered before
    * @param {string} id - The row to update. Without it a new row is created
    * @param {string} engine - The method as Forge names it (its functions' meta.mlname)
    * @param {string} task - regression or classification

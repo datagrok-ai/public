@@ -101,7 +101,6 @@ export class ForgeApp extends DG.ViewBase {
     this.emptyHint = ui.divV([ui.divText('No models yet.'),
       ui.link('Train a model...', () => void launchTraining(null), 'Open the Train view on a table')],
     'forge-gallery-empty');
-    // The background sync: the icon spins while it runs and warns of what was not refreshed, in its tooltip.
     ui.tooltip.bind(refreshIcon, () => syncStatus.value.message || 'Refresh');
     const rowOf = (i: number) => ForgeModelHandler.rowOf(this.modelValues(i));
     this.modelsGallery = new Gallery({key: 'models', noun: 'models',
@@ -122,12 +121,12 @@ export class ForgeApp extends DG.ViewBase {
     this.subscribeCatalog();
     this.publishLoad(0);
     this.subs.push(
-      // A sync's writes reload the catalog as any change does (modelsChanged).
       syncStatus.subscribe(({checking, message}) => {
+        const isWarning = !checking && message !== '';
         refreshIcon.classList.toggle('fa-spin', checking);
-        refreshIcon.classList.toggle('forge-card-warn', !checking && message !== '');
+        refreshIcon.classList.toggle('forge-card-warn', isWarning);
         // The toolbar's icon colour outweighs the class.
-        refreshIcon.style.color = !checking && message !== '' ? 'var(--orange-3)' : '';
+        refreshIcon.style.color = isWarning ? 'var(--orange-3)' : '';
       }),
       // Stale from the change, not from the debounced reload.
       modelsChanged.subscribe(() => this.markStale()),
