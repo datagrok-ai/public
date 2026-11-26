@@ -59,16 +59,16 @@ under its own `SharedSession`:
   (`DomainTable.open(row)`) activates the running app instead of a second view.
 - **The ribbon** is `DomainApp.ribbon()`, three named slots: `main` — New as an icon button,
   Save (Ctrl+S; Tab from the form's last field lands on it) the one raised button, Discard, the
-  ⋮ **Actions** menu (below), Refresh shown only while the page is stale; `tools` — the
+  ⋮ **Actions** menu (below), and Refresh, always there (through the unsaved gate); `tools` — the
   search box and the Sort by menu, on the list page only; `presets` — empty unless the `ribbon`
   option fills it. New is hidden without `insert`; Save and Discard are off while there is nothing to save
   and say so ("No changes to save", "Nothing to discard"), except Discard on an untouched create page,
   which it leaves. The filter box is a row of the list page,
   under the ribbon.
 - **The status bar** is the session's summary while it is dirty ("3 unsaved changes in 2 tables"),
-  else the page's ("50 of 2,077 substances", "New substance", "Substance saved"). A `live` source that has
-  seen the server move while the page is dirty says "Data changed — Refresh", and the ribbon's
-  Refresh button appears beside it.
+  else the page's ("50 of 2,077 substances", "New substance", "Substance saved"). A `live` list that has
+  seen the server move while something it holds is unsaved, a tab another view's save left behind, and a
+  page whose properties were edited over pending changes say "Data changed — Refresh".
 - **Three gates in front of dropping unsaved changes**, each the same Save / Discard / Cancel
   dialog: in-app navigation (a row, Back, a filter or preset change), the view's ✕
   (`onViewRemoving`), the browser's unload (`beforeunload`, armed exactly while dirty).
@@ -162,10 +162,10 @@ const report = await domains.import(table);             // DG.DomainBatchReport,
 A four-step wizard: **source** (any open frame, or any file the platform can read — the same
 table input the platform's own dialogs use), **mapping** (source column → target, auto-matched by
 name; only the columns the caller may write are offered), **preview** (the schema's own rules over
-the first 10k rows, plus the blocking problems: no source, nothing mapped, two columns mapped to
-one target, an unmapped upsert key, a missing required column) and **report** (the server's, which
+the first 1,000 rows — the commit judges the rest — plus the blocking problems: no source, nothing
+mapped, two columns mapped to one target, an unmapped upsert key, a missing required column) and **report** (the server's, which
 is the authority). Only the MAPPED columns are posted, under their target names — a skipped or
-renamed source column never reaches the server, and the source frame is never touched.
+renamed source column never reaches the server; the source frame only gets the key column, replacing one so named.
 
 ## Rules the controls follow (so the app does not re-implement them)
 
