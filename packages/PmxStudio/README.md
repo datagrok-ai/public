@@ -176,6 +176,7 @@ before are brought in once with **Bring your files in** on the Overview; the fil
   priors (`studies`) uses anonymous ids.
 - `files/example/mc38-ld4172-anti-pd1.csv`: the example study the empty Monitor and Analyze offer to download (see
   below), its source, licence and changes in `files/example/README.md`.
+- `files/demo/`: demo data to try every stage (see "Demo data" below and `files/demo/README.md`).
 - `crux-modules/`: Crux's browser modules, the crux-core commit they come from in `crux-modules/VERSION` (see below).
 
 ## Example study
@@ -196,6 +197,15 @@ opened with a plan of 3 arms (the groups are matched to the arms by order).
 What it shows: in Analyze the median control stays below the 1000 mm³ endpoint, so the groups are compared on the
 last day, day 12, and the app says so; the combination slows growth (TGI 79%, p = 0.013) while neither drug alone has
 a clear effect (TGI 17% and 18%); the body weights stay within the NCI limits (Monitor's Welfare, Analyze's Tolerability).
+
+## Demo data
+
+`files/demo/` holds a small set of studies to try every stage: a plan, a running study with planted welfare cases, a
+finished study with removals, mouse PK for the exposure, a second study to compare, a model outside the atlas, and
+other table layouts. On a server they are in **Browse > Files > App Data > PmxStudio > demo**; open one from the
+Overview's **Open a study**, or drag it onto the app. `files/demo/README.md` says what to open for each stage. All are
+synthetic (seeded models, not real animals or real PK) except the published MC38 study, which is `files/example/`.
+Exposure needs the NCA package, whose own demo data is in **App Data > Nca**.
 
 ## Crux modules
 

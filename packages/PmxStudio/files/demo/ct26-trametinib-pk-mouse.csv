@@ -1,0 +1,113 @@
+SUBJECT,GROUP,COMPOUND,ROUTE,DOSE_MG_KG,TIME_H,CONC_NG_ML
+T03-01,Trametinib 0.3 mg/kg p.o. QD,trametinib,PO,0.3,0.25,14.96
+T03-01,Trametinib 0.3 mg/kg p.o. QD,trametinib,PO,0.3,0.5,31.1
+T03-01,Trametinib 0.3 mg/kg p.o. QD,trametinib,PO,0.3,1,31.62
+T03-01,Trametinib 0.3 mg/kg p.o. QD,trametinib,PO,0.3,2,31.78
+T03-01,Trametinib 0.3 mg/kg p.o. QD,trametinib,PO,0.3,4,22.11
+T03-01,Trametinib 0.3 mg/kg p.o. QD,trametinib,PO,0.3,8,14.04
+T03-01,Trametinib 0.3 mg/kg p.o. QD,trametinib,PO,0.3,24,1.07
+T03-02,Trametinib 0.3 mg/kg p.o. QD,trametinib,PO,0.3,0.25,17.35
+T03-02,Trametinib 0.3 mg/kg p.o. QD,trametinib,PO,0.3,0.5,26.18
+T03-02,Trametinib 0.3 mg/kg p.o. QD,trametinib,PO,0.3,1,37.96
+T03-02,Trametinib 0.3 mg/kg p.o. QD,trametinib,PO,0.3,2,37.6
+T03-02,Trametinib 0.3 mg/kg p.o. QD,trametinib,PO,0.3,4,26.36
+T03-02,Trametinib 0.3 mg/kg p.o. QD,trametinib,PO,0.3,8,14.1
+T03-02,Trametinib 0.3 mg/kg p.o. QD,trametinib,PO,0.3,24,1.72
+T03-03,Trametinib 0.3 mg/kg p.o. QD,trametinib,PO,0.3,0.25,16.09
+T03-03,Trametinib 0.3 mg/kg p.o. QD,trametinib,PO,0.3,0.5,31.25
+T03-03,Trametinib 0.3 mg/kg p.o. QD,trametinib,PO,0.3,1,27.63
+T03-03,Trametinib 0.3 mg/kg p.o. QD,trametinib,PO,0.3,2,27.74
+T03-03,Trametinib 0.3 mg/kg p.o. QD,trametinib,PO,0.3,4,27.11
+T03-03,Trametinib 0.3 mg/kg p.o. QD,trametinib,PO,0.3,8,13.79
+T03-03,Trametinib 0.3 mg/kg p.o. QD,trametinib,PO,0.3,24,0.85
+T03-04,Trametinib 0.3 mg/kg p.o. QD,trametinib,PO,0.3,0.25,15.77
+T03-04,Trametinib 0.3 mg/kg p.o. QD,trametinib,PO,0.3,0.5,23.33
+T03-04,Trametinib 0.3 mg/kg p.o. QD,trametinib,PO,0.3,1,31.63
+T03-04,Trametinib 0.3 mg/kg p.o. QD,trametinib,PO,0.3,2,28.04
+T03-04,Trametinib 0.3 mg/kg p.o. QD,trametinib,PO,0.3,4,21.14
+T03-04,Trametinib 0.3 mg/kg p.o. QD,trametinib,PO,0.3,8,8.18
+T03-04,Trametinib 0.3 mg/kg p.o. QD,trametinib,PO,0.3,24,0
+T1-01,Trametinib 1 mg/kg p.o. QD,trametinib,PO,1,0.25,57.37
+T1-01,Trametinib 1 mg/kg p.o. QD,trametinib,PO,1,0.5,71.49
+T1-01,Trametinib 1 mg/kg p.o. QD,trametinib,PO,1,1,95.91
+T1-01,Trametinib 1 mg/kg p.o. QD,trametinib,PO,1,2,81.11
+T1-01,Trametinib 1 mg/kg p.o. QD,trametinib,PO,1,4,56.34
+T1-01,Trametinib 1 mg/kg p.o. QD,trametinib,PO,1,8,24.04
+T1-01,Trametinib 1 mg/kg p.o. QD,trametinib,PO,1,24,0.69
+T1-02,Trametinib 1 mg/kg p.o. QD,trametinib,PO,1,0.25,60.25
+T1-02,Trametinib 1 mg/kg p.o. QD,trametinib,PO,1,0.5,93.53
+T1-02,Trametinib 1 mg/kg p.o. QD,trametinib,PO,1,1,111.54
+T1-02,Trametinib 1 mg/kg p.o. QD,trametinib,PO,1,2,102.19
+T1-02,Trametinib 1 mg/kg p.o. QD,trametinib,PO,1,4,84.51
+T1-02,Trametinib 1 mg/kg p.o. QD,trametinib,PO,1,8,61.83
+T1-02,Trametinib 1 mg/kg p.o. QD,trametinib,PO,1,24,6.82
+T1-03,Trametinib 1 mg/kg p.o. QD,trametinib,PO,1,0.25,62.25
+T1-03,Trametinib 1 mg/kg p.o. QD,trametinib,PO,1,0.5,93.76
+T1-03,Trametinib 1 mg/kg p.o. QD,trametinib,PO,1,1,129.56
+T1-03,Trametinib 1 mg/kg p.o. QD,trametinib,PO,1,2,115.63
+T1-03,Trametinib 1 mg/kg p.o. QD,trametinib,PO,1,4,116.75
+T1-03,Trametinib 1 mg/kg p.o. QD,trametinib,PO,1,8,62.45
+T1-03,Trametinib 1 mg/kg p.o. QD,trametinib,PO,1,24,8.44
+T1-04,Trametinib 1 mg/kg p.o. QD,trametinib,PO,1,0.25,43.06
+T1-04,Trametinib 1 mg/kg p.o. QD,trametinib,PO,1,0.5,82.95
+T1-04,Trametinib 1 mg/kg p.o. QD,trametinib,PO,1,1,90.49
+T1-04,Trametinib 1 mg/kg p.o. QD,trametinib,PO,1,2,137.06
+T1-04,Trametinib 1 mg/kg p.o. QD,trametinib,PO,1,4,88.78
+T1-04,Trametinib 1 mg/kg p.o. QD,trametinib,PO,1,8,67.01
+T1-04,Trametinib 1 mg/kg p.o. QD,trametinib,PO,1,24,18.88
+T3-01,Trametinib 3 mg/kg p.o. QD,trametinib,PO,3,0.25,129.42
+T3-01,Trametinib 3 mg/kg p.o. QD,trametinib,PO,3,0.5,218.93
+T3-01,Trametinib 3 mg/kg p.o. QD,trametinib,PO,3,1,321.01
+T3-01,Trametinib 3 mg/kg p.o. QD,trametinib,PO,3,2,377.1
+T3-01,Trametinib 3 mg/kg p.o. QD,trametinib,PO,3,4,292.86
+T3-01,Trametinib 3 mg/kg p.o. QD,trametinib,PO,3,8,184.63
+T3-01,Trametinib 3 mg/kg p.o. QD,trametinib,PO,3,24,32.62
+T3-02,Trametinib 3 mg/kg p.o. QD,trametinib,PO,3,0.25,166.64
+T3-02,Trametinib 3 mg/kg p.o. QD,trametinib,PO,3,0.5,249.64
+T3-02,Trametinib 3 mg/kg p.o. QD,trametinib,PO,3,1,287.93
+T3-02,Trametinib 3 mg/kg p.o. QD,trametinib,PO,3,2,302.39
+T3-02,Trametinib 3 mg/kg p.o. QD,trametinib,PO,3,4,235.4
+T3-02,Trametinib 3 mg/kg p.o. QD,trametinib,PO,3,8,143.89
+T3-02,Trametinib 3 mg/kg p.o. QD,trametinib,PO,3,24,18.42
+T3-03,Trametinib 3 mg/kg p.o. QD,trametinib,PO,3,0.25,207.45
+T3-03,Trametinib 3 mg/kg p.o. QD,trametinib,PO,3,0.5,321.85
+T3-03,Trametinib 3 mg/kg p.o. QD,trametinib,PO,3,1,439.83
+T3-03,Trametinib 3 mg/kg p.o. QD,trametinib,PO,3,2,375.1
+T3-03,Trametinib 3 mg/kg p.o. QD,trametinib,PO,3,4,235.32
+T3-03,Trametinib 3 mg/kg p.o. QD,trametinib,PO,3,8,83.82
+T3-03,Trametinib 3 mg/kg p.o. QD,trametinib,PO,3,24,1.52
+T3-04,Trametinib 3 mg/kg p.o. QD,trametinib,PO,3,0.25,148.7
+T3-04,Trametinib 3 mg/kg p.o. QD,trametinib,PO,3,0.5,228.06
+T3-04,Trametinib 3 mg/kg p.o. QD,trametinib,PO,3,1,281.01
+T3-04,Trametinib 3 mg/kg p.o. QD,trametinib,PO,3,2,301.25
+T3-04,Trametinib 3 mg/kg p.o. QD,trametinib,PO,3,4,204.84
+T3-04,Trametinib 3 mg/kg p.o. QD,trametinib,PO,3,8,90.61
+T3-04,Trametinib 3 mg/kg p.o. QD,trametinib,PO,3,24,6.99
+C-01,Trametinib 1 mg/kg p.o. QD + anti-PD-1 10 mg/kg i.p. BIW,trametinib,PO,1,0.25,36.73
+C-01,Trametinib 1 mg/kg p.o. QD + anti-PD-1 10 mg/kg i.p. BIW,trametinib,PO,1,0.5,74.05
+C-01,Trametinib 1 mg/kg p.o. QD + anti-PD-1 10 mg/kg i.p. BIW,trametinib,PO,1,1,103.75
+C-01,Trametinib 1 mg/kg p.o. QD + anti-PD-1 10 mg/kg i.p. BIW,trametinib,PO,1,2,93.4
+C-01,Trametinib 1 mg/kg p.o. QD + anti-PD-1 10 mg/kg i.p. BIW,trametinib,PO,1,4,79.49
+C-01,Trametinib 1 mg/kg p.o. QD + anti-PD-1 10 mg/kg i.p. BIW,trametinib,PO,1,8,46.69
+C-01,Trametinib 1 mg/kg p.o. QD + anti-PD-1 10 mg/kg i.p. BIW,trametinib,PO,1,24,9.04
+C-02,Trametinib 1 mg/kg p.o. QD + anti-PD-1 10 mg/kg i.p. BIW,trametinib,PO,1,0.25,63.49
+C-02,Trametinib 1 mg/kg p.o. QD + anti-PD-1 10 mg/kg i.p. BIW,trametinib,PO,1,0.5,89.43
+C-02,Trametinib 1 mg/kg p.o. QD + anti-PD-1 10 mg/kg i.p. BIW,trametinib,PO,1,1,104.41
+C-02,Trametinib 1 mg/kg p.o. QD + anti-PD-1 10 mg/kg i.p. BIW,trametinib,PO,1,2,83.8
+C-02,Trametinib 1 mg/kg p.o. QD + anti-PD-1 10 mg/kg i.p. BIW,trametinib,PO,1,4,70.34
+C-02,Trametinib 1 mg/kg p.o. QD + anti-PD-1 10 mg/kg i.p. BIW,trametinib,PO,1,8,44.36
+C-02,Trametinib 1 mg/kg p.o. QD + anti-PD-1 10 mg/kg i.p. BIW,trametinib,PO,1,24,7.04
+C-03,Trametinib 1 mg/kg p.o. QD + anti-PD-1 10 mg/kg i.p. BIW,trametinib,PO,1,0.25,50.42
+C-03,Trametinib 1 mg/kg p.o. QD + anti-PD-1 10 mg/kg i.p. BIW,trametinib,PO,1,0.5,84.06
+C-03,Trametinib 1 mg/kg p.o. QD + anti-PD-1 10 mg/kg i.p. BIW,trametinib,PO,1,1,106.14
+C-03,Trametinib 1 mg/kg p.o. QD + anti-PD-1 10 mg/kg i.p. BIW,trametinib,PO,1,2,120.09
+C-03,Trametinib 1 mg/kg p.o. QD + anti-PD-1 10 mg/kg i.p. BIW,trametinib,PO,1,4,82.86
+C-03,Trametinib 1 mg/kg p.o. QD + anti-PD-1 10 mg/kg i.p. BIW,trametinib,PO,1,8,54.44
+C-03,Trametinib 1 mg/kg p.o. QD + anti-PD-1 10 mg/kg i.p. BIW,trametinib,PO,1,24,7.41
+C-04,Trametinib 1 mg/kg p.o. QD + anti-PD-1 10 mg/kg i.p. BIW,trametinib,PO,1,0.25,58.95
+C-04,Trametinib 1 mg/kg p.o. QD + anti-PD-1 10 mg/kg i.p. BIW,trametinib,PO,1,0.5,98.53
+C-04,Trametinib 1 mg/kg p.o. QD + anti-PD-1 10 mg/kg i.p. BIW,trametinib,PO,1,1,128.16
+C-04,Trametinib 1 mg/kg p.o. QD + anti-PD-1 10 mg/kg i.p. BIW,trametinib,PO,1,2,110.71
+C-04,Trametinib 1 mg/kg p.o. QD + anti-PD-1 10 mg/kg i.p. BIW,trametinib,PO,1,4,95.13
+C-04,Trametinib 1 mg/kg p.o. QD + anti-PD-1 10 mg/kg i.p. BIW,trametinib,PO,1,8,46.53
+C-04,Trametinib 1 mg/kg p.o. QD + anti-PD-1 10 mg/kg i.p. BIW,trametinib,PO,1,24,3.44
