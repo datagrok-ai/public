@@ -5,8 +5,7 @@ Predictive modeling (train, apply, catalog) behind the platform's `ML | Models` 
 ## Entry points
 
 - `src/package.ts` — annotated functions only, each delegating: `forgeApp` (no `app` tag: the view is not an app),
-  `forgeModels`, `forgeTrain`, `forgeApply`, `forgeMethodModels` (the models a method provides: `ui/provided-models-view.ts`
-  over `catalog/provided-models.ts`; ARCHITECTURE.md, "Provided models")
+  `forgeModels`, `forgeTrain`, `forgeApply`
   (no menus: the core's `ML | Models`, Browse node, `/models` and view type `models` call `forgeApp`, `forgeTrain`,
   `forgeApply`; `forgeModels` opens or focuses the Models view for BDD and API callers), the API `applyModel`,
   `trainModel`, `deleteModel`, `listMethods` (`training/train-api.ts` over
@@ -100,7 +99,7 @@ Predictive modeling (train, apply, catalog) behind the platform's `ML | Models` 
   and 2026-11-23). A plain `grok.shell.o =` freezes the panel for a
   second and ignores the next plain set: the catalog sets with `setCurrentObject(x, true, true)`.
 - Tests type a tag chip into `input.d4-tags-selector-input` (`typeTag`); assigning the Tags `value` skips Enter.
-- The core calls `forgeTrain`, `forgeApply`, `forgeApp`, `forgeMethodModels` and `applyModel` (inputs by name) by name: renaming one or its
+- The core calls `forgeTrain`, `forgeApply`, `forgeApp` and `applyModel` (inputs by name) by name: renaming one or its
   inputs removes `ML | Models`, Browse > Platform > Predictive models (and `/models`) or breaks `grok.ml.applyModel`
   (core#1518). Forge has no `view`-tagged function: `/models` and the view type `models` are the core's. An `app` tag
   would prefix every view path the call creates with `/apps/Forge`.

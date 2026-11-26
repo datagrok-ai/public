@@ -30,7 +30,7 @@ export const REGRESSORS = EDA_METHODS.filter((name) => !['Softmax', 'Naive Bayes
 /** The EDA methods with `meta.mlnativenans`. */
 export const NATIVE_NANS = ['XGBoost', 'Random Forest', 'Extra Trees', 'Hist Gradient Boosting', 'CatBoost',
   'Decision Tree', 'TabM'];
-export const XGBOOST_FIELDS: Pick<ModelInsert, 'engine_name' | 'engine_namespace' | 'engine_kind'> =
+export const XGBOOST_FIELDS: Pick<TrainingRunRow, 'engine_name' | 'engine_namespace' | 'engine_kind'> =
   {engine_name: 'XGBoost', engine_namespace: 'Eda', engine_kind: 'function'};
 export const IMPUTE: MissingValuesSettings = {mode: 'impute', impute: {neighbors: 4, distance: 'Euclidean'}};
 export const NO_PREPARATION_STEPS: PreparationSteps =

@@ -3,7 +3,7 @@ import type {ModelTask} from '../generated/db';
 import type {MissingValuesSettings} from '../preparation/missing-values';
 import {isRecord} from '../preparation/preparation-options';
 
-export const ENGINE_ROLES = ['train', 'apply', 'isApplicable', 'isInteractive', 'visualize', 'models'] as const;
+export const ENGINE_ROLES = ['train', 'apply', 'isApplicable', 'isInteractive', 'visualize'] as const;
 export type EngineRole = typeof ENGINE_ROLES[number];
 export type EngineKind = 'function' | 'script';
 export type Hyperparameters = {[name: string]: number | string | boolean};

@@ -8,7 +8,7 @@ import {COMPARE_COLUMNS, CompareModelRow} from '../catalog/compare-models';
 import {GRID_DATE_FORMAT, MODEL_TYPE, VIEW_NAME, VIEW_PATH, VIEW_TYPE} from '../constants';
 import {forgeDb, ModelRow, ModelStorageMode} from '../generated/db';
 import {isRecord} from '../preparation/preparation-options';
-import {modelsChanged} from '../storage/model-store';
+import {modelsChanged, storedModels, syncStatus} from '../storage/model-store';
 import {isOpen} from './apply-model-dialog';
 import {Gallery, SortField} from './gallery';
 import {addModelItems} from './model-actions';
@@ -101,6 +101,8 @@ export class ForgeApp extends DG.ViewBase {
     this.emptyHint = ui.divV([ui.divText('No models yet.'),
       ui.link('Train a model...', () => void launchTraining(null), 'Open the Train view on a table')],
     'forge-gallery-empty');
+    // The background sync: the icon spins while it runs and warns of what was not refreshed, in its tooltip.
+    ui.tooltip.bind(refreshIcon, () => syncStatus.value.message || 'Refresh');
     const rowOf = (i: number) => ForgeModelHandler.rowOf(this.modelValues(i));
     this.modelsGallery = new Gallery({key: 'models', noun: 'models',
       placeholder: 'Search models by name, target, method or #tag', grid: this.grid,
@@ -120,6 +122,13 @@ export class ForgeApp extends DG.ViewBase {
     this.subscribeCatalog();
     this.publishLoad(0);
     this.subs.push(
+      // A sync's writes reload the catalog as any change does (modelsChanged).
+      syncStatus.subscribe(({checking, message}) => {
+        refreshIcon.classList.toggle('fa-spin', checking);
+        refreshIcon.classList.toggle('forge-card-warn', !checking && message !== '');
+        // The toolbar's icon colour outweighs the class.
+        refreshIcon.style.color = !checking && message !== '' ? 'var(--orange-3)' : '';
+      }),
       // Stale from the change, not from the debounced reload.
       modelsChanged.subscribe(() => this.markStale()),
       // A burst of writes (tag chips) reloads once.
@@ -177,7 +186,7 @@ export class ForgeApp extends DG.ViewBase {
 
   static async loadModels(): Promise<DG.DataFrame> {
     const [models, properties] = await Promise.all([
-      forgeDb.models.query()
+      storedModels()
         .select(...CATALOG_COLUMNS)
         .orderBy('created_on', true)
         .df(),

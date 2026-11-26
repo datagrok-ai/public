@@ -208,9 +208,6 @@ category('UI', () => {
     expectArray(app[0].outputs.map((p) => p.propertyType), [DG.TYPE.VIEW]);
     const inputs = DG.Func.find({package: 'Forge', name: 'applyModel'})[0]?.inputs.map((p) => p.name) ?? [];
     expectArray(inputs, ['model', 'table', 'columnNamesMap', 'showProgress']);
-    const provided = DG.Func.find({package: 'Forge', name: 'forgeMethodModels'})[0];
-    expectArray(provided?.inputs.map((p) => p.name) ?? [], ['method']);
-    expectArray(provided?.outputs.map((p) => p.propertyType) ?? [], [DG.TYPE.VIEW]);
     expect(DG.Func.find({package: 'Forge', tags: [DG.FUNC_TYPES.APP]}).length, 0);
     expect(DG.Func.find({package: 'Forge', tags: ['view']}).length, 0);
   });

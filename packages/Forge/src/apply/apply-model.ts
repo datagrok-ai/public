@@ -12,7 +12,7 @@ import {CLASS_PROBABILITIES, isRecord, PreparationOptions, preparationOptionsOf,
   from '../preparation/preparation-options';
 import {replayPostprocessing, replayPreprocessing} from '../preparation/pipeline';
 import {rowCopy} from '../preparation/row-copy';
-import {findModelRow, ownBlob} from '../storage/model-store';
+import {findModelRow, isExternal, ownBlob, syncModels} from '../storage/model-store';
 import {ColumnSchema, TargetSchema} from '../training/train-model';
 import {recordApplication} from './application-store';
 import {ColumnMapping, exactMapping, MappingProblem, mappingProblems} from './column-matching';
@@ -24,8 +24,8 @@ const YIELD_MS = 50;
 const RAW_COPY_TYPES: string[] = [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT, DG.COLUMN_TYPE.QNUM];
 
 /** The `model` columns applying reads (the system columns come with any query). */
-export const APPLY_COLUMNS = ['name', 'engine_name', 'engine_namespace', 'target_name', 'features', 'options',
-  'blob'] as const;
+export const APPLY_COLUMNS = ['name', 'engine_name', 'engine_namespace', 'engine_kind', 'target_name', 'features',
+  'options', 'blob'] as const;
 export type ApplyModelRow = Pick<ModelRow, typeof APPLY_COLUMNS[number] | 'id' | 'created_on'>;
 
 export interface LoadedModel {
@@ -35,8 +35,8 @@ export interface LoadedModel {
   features: ColumnSchema[];
   options: PreparationOptions;
   blobPath: string;
-  /** A model its method provides ({@link providedModelOf}): what the method's `apply` takes as the model. Such a model
-   * has no file, and its applications and prediction columns are not recorded. */
+  /** A model without a file (`isExternal`): its row's `options` as UTF-8 json, which the method's `apply` takes as the
+   * model. */
   reference?: Uint8Array;
 }
 
@@ -71,51 +71,48 @@ export interface RowPredictions {
   probabilities?: ClassProbabilities;
 }
 
-/** The model with the id or the unique name [idOrName], ready to apply. */
+/** The model with the id or the unique name [idOrName], ready to apply. A model that is not found is looked for once
+ * more after a sync: a model a sync function lists has no row before the first one. */
 export async function loadModel(idOrName: string): Promise<LoadedModel> {
-  return loadedModelOf(await findModelRow(idOrName, APPLY_COLUMNS), EngineRegistry.discover());
+  const find = () => findModelRow(idOrName, APPLY_COLUMNS);
+  const row = await find().catch(async () => {
+    await syncModels();
+    return find();
+  });
+  return loadedModelOf(row, EngineRegistry.discover());
 }
 
-/** {@link loadModel} for a row already read, with the engines already discovered. */
+/** {@link loadModel} for a row already read, with the engines already discovered. A model without a file
+ * (`isExternal`) needs only a method with `apply`. */
 export function loadedModelOf(row: ApplyModelRow, engines: Engine[]): LoadedModel {
   const name = row.name;
-  if (!row.blob) {
+  const external = isExternal(row);
+  if (!external && !row.blob) {
     throw new ForgeError(`The model '${name}' has no model file, so it cannot be applied. ` +
       'It was not trained and saved in Forge.');
   }
-  const blob = ownBlob(row.blob);
-  if (blob === null)
+  const blob = external ? null : ownBlob(row.blob);
+  if (!external && blob === null)
     throw new ForgeError(`The model '${name}' points to a file outside Forge's storage and cannot be applied.`);
   const features = requiredFeaturesOf(row);
   if (features === null)
     throw new ForgeError(`The model '${name}' has no feature list.`);
-  const engine = engines.find((e) => e.name === row.engine_name && isComplete(e));
+  const engine = engines.find((e) => e.name === row.engine_name &&
+    (external ? e.functions.apply !== undefined : isComplete(e)));
   if (engine === undefined) {
     throw new ForgeError(`The method '${row.engine_name}' is not installed. ` +
       `Install the ${row.engine_namespace} package.`);
   }
-  return {row, engine, features, options: preparationOptionsOf(row.options), blobPath: blob.path};
-}
-
-/** [row] of a model the method [engine] provides (`meta.mlrole: models`), ready to apply: its id is what the method's
- * `apply` gets as the model. */
-export function providedModelOf(row: ApplyModelRow, engine: Engine): LoadedModel {
-  const features = featureSchemasOf(row.features);
-  if (features === null)
-    throw new ForgeError(`The model '${row.name}' has no feature list.`);
-  return {row, engine, features, options: preparationOptionsOf(row.options), blobPath: '',
-    reference: new TextEncoder().encode(row.id)};
+  return {row, engine, features, options: preparationOptionsOf(row.options), blobPath: blob?.path ?? '',
+    ...(external ? {reference: new TextEncoder().encode(JSON.stringify(row.options ?? {}))} : {})};
 }
 
 /** Adds the prediction column to the request's table and records the application as completed, failed or
- * cancelled; mapping problems and an empty table are refused first, without a record. A provided model's application
- * is not recorded. */
+ * cancelled; mapping problems and an empty table are refused first, without a record. */
 export async function applyAndRecord(request: ApplyRequest, source: ApplicationSource,
   progress?: LoopProgress): Promise<ApplyResult> {
   checkApplyRequest(request);
   const {model, table} = request;
-  if (model.reference !== undefined)
-    return predict(request, progress);
   const startedOn = Date.now();
   const record = (outcome: Pick<ApplicationInsert, 'status' | 'column_name' | 'skipped_rows' | 'error'>) =>
     recordApplication({model_id: model.row.id, table_name: table.name, row_count: table.rowCount, source,
@@ -225,8 +222,7 @@ async function predict(request: ApplyRequest, progress?: LoopProgress): Promise<
   const added = (values: DG.Column, name: string): DG.Column => {
     const column = keptRows === null ? values : scatteredColumn(values, keptRows, table.rowCount);
     column.name = name;
-    if (model.reference === undefined)
-      column.setTag(PREDICTION_TAG, model.row.id);
+    column.setTag(PREDICTION_TAG, model.row.id);
     table.columns.add(column);
     return column;
   };

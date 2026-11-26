@@ -118,6 +118,6 @@ export function tagsOf(text: string | null | undefined): string[] {
   return normalizedTags((text ?? '').split(','));
 }
 
-function engineFieldsOf(engine: Engine): Pick<ModelInsert, 'engine_name' | 'engine_namespace' | 'engine_kind'> {
+function engineFieldsOf(engine: Engine): Pick<TrainingRunInsert, 'engine_name' | 'engine_namespace' | 'engine_kind'> {
   return {engine_name: engine.name, engine_namespace: engine.namespace, engine_kind: engine.kind};
 }

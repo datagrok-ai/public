@@ -26,11 +26,13 @@ export interface ListModelsInput {
   tags?: string | null;
   table?: DG.DataFrame | null;
   limit?: number | null;
+  own?: boolean | null;
 }
 
 /** The body of `Forge:listModels`: the visible models, newest first, at most [ListModelsInput.limit]; `task` and
  * `method` filter on the server, the name part, the target, the tags and the table in the browser over at most
- * {@link MAX_MODELS} rows. Nothing is uploaded. */
+ * {@link MAX_MODELS} rows. With [ListModelsInput.own] only the caller's own models, filtered on the server and cut by
+ * the limit alone. Nothing is uploaded. */
 export async function runListModels(input: ListModelsInput): Promise<DG.DataFrame> {
   const task = input.task || null;
   if (task !== null && !TASKS.some((t) => t === task))
@@ -43,13 +45,15 @@ export async function runListModels(input: ListModelsInput): Promise<DG.DataFram
     query.where('task', '=', task);
   if (input.method)
     query.where('engine_name', '=', input.method);
+  if (input.own)
+    query.where('author_id', '=', DG.User.current().id);
   const name = input.name?.toLowerCase();
   const target = input.target?.toLowerCase();
   const tags = tagsOf(input.tags).map((t) => t.toLowerCase());
   const table = input.table || null;
   const filtered = !!name || !!target || tags.length > 0 || table !== null;
   const rows: ListModelRow[] = await query.select(...LIST_COLUMNS).orderBy('created_on', true)
-    .top(filtered ? MAX_MODELS : Math.min(limit, MAX_MODELS));
+    .top(input.own ? limit : filtered ? MAX_MODELS : Math.min(limit, MAX_MODELS));
   const fits = (row: ListModelRow): boolean => {
     if (name && !row.name.toLowerCase().includes(name) || target && row.target_name.toLowerCase() !== target)
       return false;
@@ -76,8 +80,8 @@ export async function loginsOf(ids: string[]): Promise<Map<string, string>> {
 }
 
 /** **Forge models**: one row per model with **Id**, **Name**, **Description**, **Method**, **Task**, **Target**,
- * **Features**, **Training rows**, **Data storage**, **Tags**, **Author**, **Created**, then `<metric> (validation)`
- * for every metric a listed model has. */
+ * **Features**, **Training rows**, **Data storage**, **Tags**, **Author**, **Created**, **Options** (the row's
+ * `options` as json text), then `<metric> (validation)` for every metric a listed model has. */
 function modelsFrame(rows: ListModelRow[], logins: Map<string, string>): DG.DataFrame {
   const df = DG.DataFrame.fromColumns([
     textColumn('Id', rows.map((r) => r.id)),
@@ -92,6 +96,7 @@ function modelsFrame(rows: ListModelRow[], logins: Map<string, string>): DG.Data
     textColumn('Tags', rows.map((r) => tagsText(tagsOf(r.tags)))),
     textColumn('Author', rows.map((r) => logins.get(r.author_id))),
     DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME, 'Created', rows.map((r) => r.created_on)),
+    textColumn('Options', rows.map((r) => JSON.stringify(r.options ?? {}))),
     ...metricColumns(rows, ['validation']),
   ]);
   df.name = 'Forge models';

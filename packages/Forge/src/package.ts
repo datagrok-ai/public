@@ -7,7 +7,7 @@ import {ModelDetails, runGetModel} from './catalog/get-model';
 import {runListModels} from './catalog/list-models';
 import {runUpdateModel, UpdatedModel} from './catalog/model-edit';
 import {checkApply, checkTrain, isCheckApplicable} from './engines/check-method';
-import {runDeleteModel} from './storage/model-store';
+import {runDeleteModel, runRegisterModel} from './storage/model-store';
 import {EvaluateModelResult, runEvaluateModel} from './training/evaluate-api';
 import {runListMethods, runTrainModel, TrainModelResult} from './training/train-api';
 import {openApplyDialog} from './ui/apply-model-dialog';
@@ -16,7 +16,6 @@ import {openShareDialog, registerModelActions} from './ui/model-actions';
 import {ModelComparisonHandler} from './ui/model-comparison';
 import {ForgeModelHandler} from './ui/model-handler';
 import {isForgePrediction, predictedByPane} from './ui/prediction-column-panel';
-import {ProvidedModelsView} from './ui/provided-models-view';
 import {tableModelsPane} from './ui/table-models-panel';
 import {TrainView} from './ui/train-view';
 export * from './package.g';
@@ -41,14 +40,6 @@ export function _initForge(): void {
 //output: view result
 export async function forgeApp(): Promise<DG.ViewBase> {
   return ForgeApp.create();
-}
-
-//name: forgeMethodModels
-//description: Opens the models a method provides, such as the MLflow models the platform syncs (the core's Browse > Platform > Predictive models > MLFlow calls it)
-//input: string method {description: The method as Forge names it, for example MLflow}
-//output: view result
-export async function forgeMethodModels(method: string): Promise<DG.ViewBase> {
-  return ProvidedModelsView.create(method);
 }
 
 //name: forgeModels
@@ -111,6 +102,23 @@ export async function deleteModel(model: string): Promise<string> {
   return runDeleteModel(model);
 }
 
+//name: registerModel
+//description: Writes your own catalog row of a model that has no model file in Forge: its method's apply function gets the row's options as the model. Creates the row, or with an id updates the one registered before
+//input: string id {optional: true; description: The row to update. Without it a new row is created}
+//input: string name
+//input: string description {optional: true}
+//input: string engine {description: The method as Forge names it (its functions' meta.mlname)}
+//input: string task {description: regression or classification}
+//input: map target {description: name, type and, optionally, semType of the predicted column}
+//input: map features {description: columns, the list of name, type and, optionally, semType of the model's inputs}
+//input: map options {description: What the method's apply function needs to find the model}
+//output: string result {description: The row id}
+export async function registerModel(id: string | null, name: string, description: string | null, engine: string,
+  task: string, target: {[key: string]: unknown}, features: {[key: string]: unknown},
+  options: {[key: string]: unknown}): Promise<string> {
+  return runRegisterModel({id, name, description, engine, task, target, features, options});
+}
+
 //name: listMethods
 //description: Lists the installed machine learning methods with their package, type, where they run, roles and settings (hyperparameters) with their defaults and ranges. With a table, marks the methods that can learn from it and the one Forge suggests
 //input: dataframe table {optional: true; description: A table to check the methods against, with the view's default features}
@@ -129,10 +137,12 @@ export async function listMethods(table: DG.DataFrame | null, target: string | n
 //input: string tags {optional: true; description: Comma-separated tags. A model is listed when it has every one of them}
 //input: dataframe table {optional: true; description: Only the models whose features all have a column of the same or a close name in this table. Checked in the browser, nothing is uploaded}
 //input: int limit = 100 {optional: true; description: At most this many models, newest first}
-//output: dataframe result {description: One row per model, Id, Name, Description, Method, Task, Target, Features, Training rows, Data storage, Tags, Author, Created and a <Metric> (validation) column for every metric a listed model has}
+//input: bool own = false {optional: true; description: Only the models you created}
+//output: dataframe result {description: One row per model, Id, Name, Description, Method, Task, Target, Features, Training rows, Data storage, Tags, Author, Created, Options (json text) and a <Metric> (validation) column for every metric a listed model has}
 export async function listModels(name: string | null, target: string | null, task: string | null,
-  method: string | null, tags: string | null, table: DG.DataFrame | null, limit: number | null): Promise<DG.DataFrame> {
-  return runListModels({name, target, task, method, tags, table, limit});
+  method: string | null, tags: string | null, table: DG.DataFrame | null, limit: number | null,
+  own: boolean | null): Promise<DG.DataFrame> {
+  return runListModels({name, target, task, method, tags, table, limit, own});
 }
 
 //name: getModel

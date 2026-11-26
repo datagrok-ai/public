@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {after, awaitCheck, before, category, expect, expectArray, expectExceptionAsync, expectFloat, test,
   waitUntil} from '@datagrok-libraries/test/src/test';
-import {applyAndRecord, ApplyRequest, DEFAULT_BATCH_SIZE, loadModel, providedModelOf} from '../apply/apply-model';
+import {applyAndRecord, ApplyRequest, DEFAULT_BATCH_SIZE, loadModel} from '../apply/apply-model';
 import {exactMapping} from '../apply/column-matching';
 import {applicableTables, modelsFor} from '../catalog/applicable-tables';
 import {compareFormFields, compareModels, CompareModelRow} from '../catalog/compare-models';
@@ -13,9 +13,7 @@ import {ListModelsInput, runListModels} from '../catalog/list-models';
 import {modelActivity} from '../catalog/model-activity';
 import {runUpdateModel, updateModelInfo} from '../catalog/model-edit';
 import {readModelFile} from '../catalog/model-file';
-import {providedModels, providedRow} from '../catalog/provided-models';
 import {PANEL_PREDICTED_BY, PREDICTION_TAG} from '../constants';
-import {Engine} from '../engines/engine';
 import {forgeDb} from '../generated/db';
 import {metricFindings} from '../metrics/metrics';
 import {NO_NAME, tagsOf, tagsText} from '../storage/model-fields';
@@ -28,7 +26,7 @@ import {runTrainModel} from '../training/train-api';
 import {metricsRecordOf, trainModel} from '../training/train-model';
 import {clearTestGalleryStorage, columnsOf, deleteModelsNamed, deleteRunsOf, expectMetrics, failsWith,
   insertModelRow, MEASUREMENTS, openDemoTable, openIris, PREDICT_PROBABILITY, requestOf, savedFixture, saveIrisModel,
-  twoSpeciesIris, useTestGalleryStorage, WINE, xgboost} from './test-data';
+  twoSpeciesIris, useTestGalleryStorage, WINE} from './test-data';
 
 const TIMEOUT = 90000;
 const WAIT_MS = 10000;
@@ -589,7 +587,7 @@ category('Catalog', () => {
         ...(func?.outputs ?? []).map((p) => `-> ${p.propertyType}`)];
     };
     expectArray(signature('listModels'), ['name: string', 'target: string', 'task: string', 'method: string',
-      'tags: string', 'table: dataframe', 'limit: int', '-> dataframe']);
+      'tags: string', 'table: dataframe', 'limit: int', 'own: bool', '-> dataframe']);
     expectArray(signature('getModel'), ['model: string', '-> object']);
     expectArray(signature('updateModel'), ['model: string', 'name: string', 'description: string', 'tags: string',
       '-> object']);
@@ -611,58 +609,4 @@ category('Catalog', () => {
       await forgeDb.models.delete(edited);
     }
   });
-
-  test('providedModels lists the models a method provides as catalog rows', async () => {
-    const provider = providerOf(DG.DataFrame.fromColumns([
-      DG.Column.fromStrings('id', ['Admin:first', 'Admin:second']),
-      DG.Column.fromStrings('name', ['first', 'second']),
-      DG.Column.fromStrings('target', ['y', 'z']),
-      DG.Column.fromStrings('features', ['[{"name": "a", "type": "double"}, {"name": "b", "type": "int"}]', 'none']),
-      DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME, 'created', [dayjs('2026-11-25'), null])]));
-    const models = await providedModels(provider);
-    expectArray(models.columns.names(), ['id', 'name', 'engine_name', 'target_name', 'features', 'created_on']);
-    const first = providedModelOf(providedRow(models, provider, 0), provider);
-    expectArray(first.features.map((f) => `${f.name}:${f.type}`), ['a:double', 'b:int']);
-    expect(first.row.target_name, 'y');
-    expect(new TextDecoder().decode(first.reference), 'Admin:first');
-    await expectExceptionAsync(async () => {
-      providedModelOf(providedRow(models, provider, 1), provider);
-    }, failsWith('The model \'second\' has no feature list.'));
-    await expectExceptionAsync(async () => {
-      await providedModels(xgboost());
-    }, failsWith('The method \'XGBoost\' provides no models.'));
-  });
-
-  test('a provided model is applied with its id as the model and leaves no prediction tag', async () => {
-    const received: string[] = [];
-    const provider = providerOf(DG.DataFrame.fromColumns([
-      DG.Column.fromStrings('id', ['Admin:first']), DG.Column.fromStrings('name', ['first']),
-      DG.Column.fromStrings('target', ['y']),
-      DG.Column.fromStrings('features', ['[{"name": "a", "type": "double"}]'])]), (model) => received.push(model));
-    const model = providedModelOf(providedRow(await providedModels(provider), provider, 0), provider);
-    const table = DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'a', [1, 2, 3])]);
-    const {column} = await applyAndRecord({model, table, mapping: exactMapping(model.features, table),
-      batchSize: DEFAULT_BATCH_SIZE, missingValues: {mode: 'skip'}}, 'api');
-    expect(column.name, 'y (predicted)');
-    expectArray(column.toList(), [2, 4, 6]);
-    expect(column.getTag(PREDICTION_TAG) ?? null, null);
-    expectArray(received, ['Admin:first']);
-  });
 });
-
-/** A method that provides [models] and whose `apply` doubles the first feature, telling [onApply] the model it got;
- * an engine stub, not a platform mock. */
-function providerOf(models: DG.DataFrame, onApply: (model: string) => void = () => {}): Engine {
-  const base = xgboost().functions.apply!;
-  const listed: DG.Func = Object.create(base);
-  listed.apply = async () => models;
-  const applied: DG.Func = Object.create(base);
-  applied.apply = async ({df, model}: {df: DG.DataFrame; model: Uint8Array}) => {
-    onApply(new TextDecoder().decode(model));
-    const feature = df.columns.byIndex(0);
-    return DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'prediction',
-      feature.toList().map((v: number) => 2 * v))]);
-  };
-  return {name: 'forge-test-provider', namespace: 'Forge', kind: 'function', isLiveUpdate: false,
-    functions: {apply: applied, models: listed}};
-}
