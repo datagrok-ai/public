@@ -43,11 +43,24 @@ category('Dapi: domain session', () => {
       const [insert] = parent.buildOps();
       expect(insert.op.ref, draft, 'the insert op does not name its draft id as ref');
       expect('id' in (insert.op.values as any), false, 'the draft id leaked into the insert values');
-      const [event] = child.buildOps();
+      const [event] = child.buildOps(new Set([draft]));
       expect((event.op.values as any).item_id, `$${draft}`, 'the sibling draft reference was not rewritten to $ref');
     } finally {
       parent.detach();
       child.detach();
+    }
+  });
+
+  test('draftIds lists the draft rows only', async () => {
+    const prefix = `ds-ids-${stamp()}`;
+    await items().insert({sku: `${prefix}-0`, name: 'Saved'});
+    const editor = await itemsEditor(prefix);
+    try {
+      const draft = editor.dataFrame.get('id', editor.addRow({sku: `${prefix}-1`, name: 'Draft'}));
+      expect([...editor.draftIds()].join(), draft);
+    } finally {
+      editor.detach();
+      await cleanup(prefix);
     }
   });
 
@@ -169,7 +182,7 @@ category('Dapi: domain session', () => {
       expect(parent.errorCount, 0, 'the client rejected the duplicate before the server saw it');
       const session = new DG.DomainSession([child, parent]);
       expect(await session.save(), false, 'a duplicate sku was accepted');
-      expect(parent.errorOf(row, 'sku')?.kind, 'error', 'the server error did not reach the second editor');
+      expect(parent.errorOf(row, 'sku')?.kind, 'refused', 'the server error did not reach the second editor');
       expect(child.isDirty, true, 'the first editor lost its edit');
       expect((await items().get(item.id)).name, 'Item', 'the transaction did not roll back');
     } finally {
@@ -196,6 +209,7 @@ category('Dapi: domain session', () => {
       expect(refusal.message, parent.errorOf(row, 'sku')?.message,
         'lastRefusal does not say what the cell says');
       expect(typeof refusal.opIndex, 'number', 'lastRefusal carries no opIndex');
+      expect(refusal.code, 'validation');
       parent.setValue(row, 'sku', `${prefix}-1`);
       expect(await session.save(), true, 'the corrected batch did not land');
       expect(session.lastRefusal, null, 'a successful save did not clear lastRefusal');

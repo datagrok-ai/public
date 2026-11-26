@@ -160,8 +160,8 @@ category('Dapi: domains batch', () => {
       const committed: {[status: string]: string} =
         {inserted: 'insert', updated: 'update', duplicate: 'skip', error: 'error'};
       for (const row of report.rows)
-        expect(predicted.get(row.index), committed[row.status],
-          `row ${row.index}: predicted ${predicted.get(row.index)}, committed ${row.status}`);
+        expect(predicted.get(row.index ?? -1), committed[row.status],
+          `row ${row.index}: predicted ${predicted.get(row.index ?? -1)}, committed ${row.status}`);
     } finally {
       await purge(p);
     }

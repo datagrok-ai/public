@@ -265,6 +265,30 @@ category('Dapi: domain lifecycle', () => {
     expect(Array.isArray(rows), true);
   });
 
+  test('table origin and user columns', async () => {
+    const name = `zzor${`${Date.now()}`.slice(-8)}`;
+    try {
+      await grok.dapi.domains.createSchema(name);
+    } catch (e: any) {
+      if (e instanceof DG.DomainError && (e.code === 'forbidden' || e.status === 403)) {
+        console.log('skipped: no CreateDomainSchema privilege');
+        return;
+      }
+      throw e;
+    }
+    const handle = grok.dapi.domains.schema(name);
+    try {
+      await handle.apply({tables: {things: {columns: {name: {type: 'string'}}}},
+        ifVersion: `${(await handle.manifest())['version']}`});
+      const [things] = (await grok.dapi.domains.schemas.include('tables.columns.property')
+        .filter(`name = "${name}"`).first()).tables;
+      expect(things.origin, 'user');
+      expect(things.userColumns!.join(), 'name');
+    } finally {
+      await handle.delete();
+    }
+  });
+
   test('schema grants: list, grant, revoke round-trip', async () => {
     const schema = grok.dapi.domains.schema('apitests');
     const group = await allUsers();
