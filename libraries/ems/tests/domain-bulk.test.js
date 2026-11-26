@@ -6,7 +6,7 @@ import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {layout} from '@datagrok-libraries/u2/tests/layout.mjs';
 import {backends, Scope, Control, notify} from '@datagrok-libraries/u2';
 import {MemoryDomainBackend} from '../src/core/memory-domain.js';
-import {SCHEMA, backend} from './domain-fixtures.mjs';
+import {SCHEMA, backend, hierarchyBackend} from './domain-fixtures.mjs';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/facade.js');
@@ -66,9 +66,9 @@ async function opened(source) {
   return {running};
 }
 
-async function table(memory, options = {}) {
+async function table(memory, options = {}, address = 'grit.issue') {
   emsBackends.domain = memory;
-  const handle = await domains.table('grit.issue');
+  const handle = await domains.table(address);
   const source = testOwner().build(() => handle.source(options));
   await flush();
   return {handle, source};
@@ -121,6 +121,36 @@ scoped('the checked columns are written to the selection; an unchecked one is le
   assert.deepEqual(rows.map((r) => r.done), [true, false, true], 'the two selected rows only');
   assert.deepEqual(rows.map((r) => r.title), ['Aspirin', 'Ibuprofen', 'Naproxen'],
     'the unchecked column was not in the request');
+  source.dispose();
+});
+
+scoped('a parent that is one of the rows, or under one, is refused: no row ends up under itself', async () => {
+  const memory = hierarchyBackend();
+  const {source} = await table(memory, {pageSize: 10}, 'stock.location');
+  select(source, (i) => ['l1', 'l2'].includes(source.rows.items.value[i].id));
+  const {running} = await opened(source);
+  choose('parent_id');
+  await flush();
+  for (const parent of ['l2', 'l3']) {
+    field('parent_id').value = parent;
+    fire(ok(), 'click');
+    await flush();
+    assert.match(document.body.textContent, /Cannot move a location under itself or one of its descendants/);
+  }
+  assert.deepEqual(memory.tableSync('stock.location').rows.map((r) => r.parent_id ?? null),
+    [null, 'l1', 'l2', 'l3', null]);
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null);
+  const {hierarchyCycle} = await import('../src/core/domain-backend.js');
+  const stored = memory.tableSync('stock.location');
+  const l2 = (ids) => ids.includes('l2');
+  assert.match(await hierarchyCycle(stored, 'l9', l2, new Map([['l9', 'l4'], ['l2', 'l9']]), 'Room'),
+    /^Cannot move "Room" under itself/, 'two pending moves that close a loop between them');
+  assert.equal(await hierarchyCycle(stored, 'l9', l2, new Map([['l2', 'l9']])), null);
+  const draft = {...stored, ancestors: () => Promise.reject(new Error('no such row'))};
+  assert.equal(await hierarchyCycle(draft, '~new:1', l2), null, 'a parent added in the same save is asked nothing');
+  assert.match(await hierarchyCycle(stored, '~new:1', l2, new Map([['~new:1', 'l2'], ['l2', '~new:1']])),
+    /under itself/, 'a draft parent is followed through its pending parent');
   source.dispose();
 });
 

@@ -3,7 +3,7 @@ import {test, testOwner} from '@datagrok-libraries/u2/tests/owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
-import {backends, Scope, signal, Registry, SpecContext, renderSpec, registerAll} from '@datagrok-libraries/u2';
+import {backends, Scope, signal, Registry, SpecContext, renderSpec, registerAll, Rows} from '@datagrok-libraries/u2';
 import {DomainSource} from '../src/core/domain-source.js';
 import {DataFrame, Property, Stream, WidgetDescriptor, platform} from '@datagrok-libraries/u2/tests/platform-doubles.mjs';
 import {backend} from './domain-fixtures.mjs';
@@ -14,6 +14,7 @@ const {DomainGrid} = await import('../src/dg/grid.js');
 const {EditorEditState} = await import('../src/dg/editor-state.js');
 const {registerDomainComponents} = await import('../src/dg/registrations.js');
 const DG = await import('datagrok-api/dg');
+const grok = await import('datagrok-api/grok');
 
 function scoped(name, body) {
   test(name, async () => {
@@ -105,6 +106,35 @@ scoped('over a memory source: the frame is the grid\'s; the memory writer is not
   assert.equal(grid.grid.dataFrame, src.df.value, 'the source\'s frame reaches the viewer');
   assert.equal(grid.grid.editor, null);
   assert.equal(DG.DomainObjectHandler.decorated.length, 0, 'nothing to decorate for');
+  const items = [];
+  const id = src.df.value.get('id', 0);
+  grok.events.onContextMenu.fire({args: {context: {dart: grid.grid.dart}, menu: {item: (text, run) => items.push({text, run})},
+    item: {isTableCell: true, tableRowIndex: 0, grid: {dataFrame: src.df.value}}}});
+  const remove = items.find((x) => x.text === 'Delete');
+  assert.notEqual(remove, undefined, 'Delete is offered');
+  await remove.run();
+  await flush();
+  assert.equal(src.rows.byKey(id)[Rows.STATE], 'deleted');
+  grid.dispose();
+  src.dispose();
+});
+
+scoped('an open cell editor holds a reload off: the rows stay and the source is marked stale', async () => {
+  emsBackends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const src = testOwner().build(() => table.source({pageSize: 10}));
+  const grid = testOwner().build(() => domains.grid(src));
+  await flush();
+  const editor = document.createElement('input');
+  editor.setAttribute('name', 'cell-editor');
+  grid.grid.root.append(editor);
+  await emsBackends.domain.transaction([{op: 'update', table: 'grit.issue', id: 'i1', values: {title: 'Theirs'}}]);
+  await src.refresh();
+  assert.equal(src.rows.byKey('i1').title, 'Aspirin');
+  assert.equal(src.stale.value, true);
+  editor.remove();
+  await src.refresh();
+  assert.equal(src.rows.byKey('i1').title, 'Theirs');
   grid.dispose();
   src.dispose();
 });

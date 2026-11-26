@@ -1,8 +1,11 @@
 import * as DG from 'datagrok-api/dg';
-import {Control, signal, text, textWidth, Dates, span, timestamp, DataTable, Rows} from '@datagrok-libraries/u2';
+import * as grok from 'datagrok-api/grok';
+import {Control, signal, text, textWidth, Dates, span, timestamp, DataTable, Rows,
+  notify} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, IProperty, ObjectRenderer, CellStateLike, DataTableColumn,
   RowView} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
+import {nounOf, DomainBackendError} from '../core/domain-backend.js';
 import {viewers} from '@datagrok-libraries/u2/dg';
 import {collectionSelection} from '@datagrok-libraries/u2/dg';
 import type {Bindable} from '@datagrok-libraries/u2/dg';
@@ -11,7 +14,7 @@ import {EditorEditState} from './editor-state.js';
 import {DomainTable} from './facade.js';
 import type {DomainAction} from './facade.js';
 import {DomainForm} from './form.js';
-import {pageOnScroll} from './list.js';
+import {DomainList, pageOnScroll} from './list.js';
 
 export interface DomainGridOptions {
   /** The grid's look, each option a value or a signal the grid follows. */
@@ -53,6 +56,7 @@ export class DomainGrid extends Control {
     this.grid = this.build(() =>
       viewers.grid(source.df as unknown as ReadonlySignal<DG.DataFrame | undefined>, _options.look));
     this.root.append(this.grid.root);
+    this.own(source.holdReload(() => this.grid.root.querySelector('[name="cell-editor"]') !== null));
     if (_options.look?.colHeaderHeight === undefined)
       this.grid.setOptions({colHeaderHeight: HEADER_HEIGHT});
     // the editor follows the source's writer: attached over each frame the source loads, released
@@ -65,7 +69,8 @@ export class DomainGrid extends Control {
         this._decorate(edit.df);
         this.grid.attachEditor(edit.editor);
         // the grid balloons a refused cell edit itself; the source carries it to the status bar
-        this._refused = edit.editor.onRefused.subscribe((r) => source.refuse(r.message));
+        this._refused = edit.editor.onRefused.subscribe((r) =>
+          source.fail(new DomainBackendError('refused', `Cannot save: ${r.message}`, true)));
       } else
         this.grid.detachEditor();
     });
@@ -88,6 +93,22 @@ export class DomainGrid extends Control {
       if (row !== undefined && !Rows.isDraft(row))
         open.run(row);
     });
+    type GridMenu = {args?: {context?: DG.Grid, item?: DG.GridCell, menu?: DG.Menu}};
+    this.subscribe(grok.events.onContextMenu, (e: GridMenu) => {
+      const {context, item, menu} = e.args ?? {};
+      if (menu === undefined || context?.dart !== this.grid.dart || item === undefined ||
+          !(item.isTableCell || item.isRowHeader) || (item.tableRowIndex ?? -1) < 0)
+        return;
+      const row = source.rows.byKey(String(item.grid.dataFrame.get('id', item.tableRowIndex!)));
+      for (const action of row === undefined ? [] : DomainList.stagedDelete(source, row)) {
+        menu.item(action.text, async () => {
+          await action.run();
+          if (action.name === DomainList.DELETE && !Rows.isDraft(row!) &&
+            source.rows.byKey(row!.id)?.[Rows.STATE] === 'deleted')
+            notify.info(`${this._captionOf(row!)} will be deleted when you save; Discard brings it back`);
+        });
+      }
+    });
     this.own(() => {
       repointed.unsubscribe();
       clicked.unsubscribe();
@@ -95,6 +116,11 @@ export class DomainGrid extends Control {
       for (const s of this._rows)
         s.unsubscribe();
     });
+  }
+
+  private _captionOf(row: RowView): string {
+    const renderer = DomainTable.of(this.source)?.renderer ?? DomainTable.schemaRenderer(() => this.source.schema);
+    return renderer.caption(row) || `The ${nounOf(this.source.schema.info, true)}`;
   }
 
   // only over the frame the grid holds: it re-resolves the ref-cell renderers on its own only at its first
@@ -315,6 +341,7 @@ export class DomainDataTable extends Control {
       name,
       header: byName.get(name)?.friendlyName || name,
       width: DomainDataTable.width(byName.get(name), name === nameColumn),
+      sortable: byName.get(name) !== undefined && DomainTable.isSortable(byName.get(name)!),
       ...(DomainDataTable.isNumeric(byName.get(name)) ? {align: 'right' as const} : {}),
       render: (row) => this._options.cells?.[name]?.(row) ?? this._cell(row, name, byName.get(name)),
     })).concat(this._options.extraColumns ?? []);

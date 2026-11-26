@@ -9,7 +9,7 @@ import {backend, hierarchyBackend} from './domain-fixtures.mjs';
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/facade.js');
 const {SavedSearches} = await import('../src/dg/saved-searches.js');
-const {userSettings} = await import('datagrok-api/grok');
+const {userSettings, dapi} = await import('datagrok-api/grok');
 const {registerDomainComponents} = await import('../src/dg/registrations.js');
 
 function scoped(name, body) {
@@ -31,6 +31,13 @@ function scoped(name, body) {
     }
     assert.equal(Scope.liveCount, live, 'live scopes back to baseline');
   });
+}
+
+/** The server's saved searches of grit.issue start as `stored`, and this tab has read them. */
+async function cleared(stored = {}) {
+  dapi.userDataStorage.values = {'ems-searches|grit.issue': stored};
+  await SavedSearches.reload('grit.issue');
+  return stored;
 }
 
 async function issues(options = {}) {
@@ -365,8 +372,9 @@ scoped('a `basic` backend is offered no under, regex, !like, fuzzy or between, n
 
 scoped('saved and recent searches: the list names the saved search it holds, history keeps 20, newest first', async () => {
   userSettings.values = {};
+  await cleared();
   const high = {q: 'priority = "high"', search: 'Nap', sort: '!number'};
-  SavedSearches.save('grit.issue', 'High', high);
+  await SavedSearches.save('grit.issue', 'High', high);
   const src = await issues();
   const filters = testOwner().build(() => domains.filters(src));
   await flush();
@@ -381,8 +389,51 @@ scoped('saved and recent searches: the list names the saved search it holds, his
   for (let i = 0; i < 25; i++)
     SavedSearches.record('grit.issue', {...high, search: `t${i}`});
   assert.equal(SavedSearches.recent('grit.issue').length, 20);
-  SavedSearches.remove('grit.issue', 'High');
+  document.body.append(filters.root);
+  fire(filters.root.querySelector('[aria-label="Saved and recent searches"]'), 'click');
+  await flush();
+  await flush();
+  const panel = () => [...document.body.querySelectorAll('[role="menu"]')].at(-1);
+  fire(panel().querySelector('[aria-haspopup="menu"]'), 'click');
+  fire([...panel().querySelectorAll('[role="menuitem"]')].find((e) => e.textContent.includes('High')), 'click');
+  await flush();
+  assert.deepEqual([...SavedSearches.saved('grit.issue').keys()], ['High'], 'not before the user agrees');
+  [...document.querySelectorAll('[role="dialog"] button')].find((b) => b.textContent === 'Delete').click();
+  await flush();
+  await flush();
+  assert.deepEqual([...SavedSearches.saved('grit.issue').keys()], [], 'the history menu deletes a saved search');
   assert.equal(SavedSearches.title(src), null);
+  filters.root.remove();
   filters.dispose();
   src.dispose();
+});
+
+scoped('Save as new search under a taken name is refused, not a silent replace', async () => {
+  await cleared();
+  const first = {q: 'priority = "high"', search: '', sort: ''};
+  await SavedSearches.save('grit.issue', 'S1', first);
+  const src = await issues();
+  src.search.value = 'Nap';
+  await flush();
+  const button = testOwner().build(() => SavedSearches.saveButton(src));
+  button.click();
+  await flush();
+  const input = document.querySelector('[role="dialog"] input');
+  input.value = ' s1 ';
+  fire(input, 'input');
+  await flush();
+  [...document.querySelectorAll('[role="dialog"] button')].find((b) => b.textContent === 'SAVE').click();
+  await flush();
+  assert.deepEqual([...SavedSearches.saved('grit.issue')], [['S1', first]]);
+  src.dispose();
+});
+
+// a whole group written from this tab's copy would bring back what another tab deleted since
+scoped('saved searches are written one by one: what another tab deleted stays deleted', async () => {
+  const stored = await cleared({Alpha: '{"q":"","search":"alpha","sort":""}'});
+  delete stored.Alpha;
+  await SavedSearches.save('grit.issue', 'Beta', {q: '', search: 'beta', sort: ''});
+  assert.deepEqual(Object.keys(stored), ['Beta']);
+  await SavedSearches.reload('grit.issue');
+  assert.deepEqual([...SavedSearches.saved('grit.issue').keys()], ['Beta']);
 });

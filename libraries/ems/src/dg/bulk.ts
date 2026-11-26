@@ -1,13 +1,16 @@
 import {signal, computed, Filters, div, span, Dialog, Input, MultiSelect, RadioInput, notify, text}
   from '@datagrok-libraries/u2';
-import type {IProperty, ReadonlySignal, RowView} from '@datagrok-libraries/u2';
+import type {FilterValue, IProperty, ReadonlySignal, RowView} from '@datagrok-libraries/u2';
 import {confirmDiscard} from '../core/session.js';
 import type {DomainSource} from '../core/domain-source.js';
-import {nounOf} from '../core/domain-backend.js';
+import {nounOf, hierarchyCycle} from '../core/domain-backend.js';
 import type {DomainQueryLike} from '../core/domain-backend.js';
 import {ObjectForm, propertyForm} from '@datagrok-libraries/u2/dg';
 import {DomainTable, firstProblem} from './facade.js';
 import {DomainErrors} from './errors.js';
+import {DomainFilters} from './filters.js';
+import {DomainPick} from './pick.js';
+import type {DomainPickOptions} from './pick.js';
 
 export interface DomainBulkEditOptions {
   /** The columns offered, in this order; every column the caller may write by default. */
@@ -38,7 +41,7 @@ export async function bulkEdit(source: DomainSource, options: DomainBulkEditOpti
   // the trash mode of the source, not a bound on its access: nothing in it is written until the
   // rows are restored, and the column policy below reads column security alone
   if (source.readOnly.peek()) {
-    notify.warning(`${source.table}: deleted rows are read-only until they are restored`);
+    notify.warning(`${source.table}: ${source.readOnlyReason}`);
     return null;
   }
   const writable = source.access.peek().columnPolicy();
@@ -83,24 +86,28 @@ function _targets(source: DomainSource): BulkTarget[] {
   ];
 }
 
-/** On a filtered list, a selection of just the clicked row means the filter. */
-function _preferred(source: DomainSource, targets: BulkTarget[]): BulkTarget {
-  const selection = source.selection.peek();
-  const clicked = selection.length === 1 && selection[0].id === source.currentRow.peek()?.id;
-  return (clicked ? targets.find((t) => t.kind === MATCHING) : undefined) ?? targets[0];
-}
-
 function _open(source: DomainSource, props: IProperty[], required: Set<string>, targets: BulkTarget[],
   resolve: (n: number | null) => void): void {
   const handle = DomainTable.of(source)!;
   const dialog = Dialog.create(`Bulk edit ${nounOf(source.schema.info)}`, {name: 'bulk-edit'});
   dialog.root.classList.add('u2-domain-bulk');
+  const selection = source.selection.peek();
+  const matched = new Map<string, unknown>();
+  if (targets.some((t) => t.kind === MATCHING)) {
+    for (const name of new Set(Object.values(handle.info.refFilters).flatMap((f) => DomainPick.bind(f).unbound)))
+      void _sharedMatching(source, name).then((value) => matched.set(name, value), () => undefined);
+  }
+  const params = () => Object.fromEntries(source.schema.properties.map(({name}) => [name,
+    picker.peek().includes(name!) ? form.input(name!)?.peek() :
+      target.peek().kind === SELECTED ? _shared(selection, name!) : matched.get(name!)]));
+  const overrides = Object.fromEntries(Object.entries(handle.info.refFilters)
+    .map(([name, filter]): [string, Partial<DomainPickOptions>] => [name, {filter, params, siblings: source.schema}]));
   const form = dialog.build(() =>
-    propertyForm(props, {}, {access: source.access.peek().columnPolicy(), layout: 'normal'}));
+    propertyForm(props, {}, {access: source.access.peek().columnPolicy(), layout: 'normal', overrides}));
 
   const header = div([], 'u2-domain-bulk-header');
   form.root.prepend(header);
-  const target = _applyTo(dialog, form, header, targets, _preferred(source, targets));
+  const target = _applyTo(dialog, form, header, targets);
   const picker = dialog.build(() => new MultiSelect({label: 'Change', name: 'fields', items: [],
     placeholder: 'Choose the fields to change', fill: true}));
   form.add(picker, header);
@@ -110,7 +117,6 @@ function _open(source: DomainSource, props: IProperty[], required: Set<string>, 
     .filter((p) => target.value.count <= 1 || !keys.has(p.name!))
     .map((p) => ({value: p.name!, label: DomainTable.captionOf(p)}))));
 
-  const selection = source.selection.peek();
   for (const prop of props) {
     const input = form.input(prop.name!);
     if (input === undefined)
@@ -170,14 +176,14 @@ function _open(source: DomainSource, props: IProperty[], required: Set<string>, 
 }
 
 /** "Apply to": plain text where there is one target, a choice where there are two. */
-function _applyTo(dialog: Dialog, form: ObjectForm, header: HTMLElement, targets: BulkTarget[],
-  preferred: BulkTarget): ReadonlySignal<BulkTarget> {
+function _applyTo(dialog: Dialog, form: ObjectForm, header: HTMLElement, targets: BulkTarget[]):
+  ReadonlySignal<BulkTarget> {
   if (targets.length === 1) {
     header.append(ObjectForm.readonlyField('Apply to', 'target', targets[0].label).row);
     return signal(targets[0]);
   }
   const radio = dialog.build(() => new RadioInput({label: 'Apply to', name: 'target',
-    items: targets.map((t) => t.label), value: preferred.label, nullable: false}));
+    items: targets.map((t) => t.label), value: targets[0].label, nullable: false}));
   form.add(radio, header);
   return computed(() => targets.find((t) => t.label === radio.value) ?? targets[0]);
 }
@@ -185,6 +191,25 @@ function _applyTo(dialog: Dialog, form: ObjectForm, header: HTMLElement, targets
 function _current(rows: readonly RowView[], column: string): string {
   const seen = new Set(rows.map((row) => text(row[column])));
   return seen.size > 1 ? `${seen.size} different values` : '';
+}
+
+function _shared(rows: readonly RowView[], column: string): unknown {
+  const seen = new Set(rows.map((row) => row[column]));
+  return seen.size === 1 ? [...seen][0] : undefined;
+}
+
+// the one value every row the filter matches holds: the first row's, unless a second row holds another
+async function _sharedMatching(source: DomainSource, column: string): Promise<unknown> {
+  const table = DomainTable.of(source)!.table;
+  const scope = DomainFilters.treeOf(source.query.peek(), source.schema);
+  const [first] = await table.query({filter: _filterOf(source), columns: [column], limit: 1});
+  const value = first?.[column];
+  if (value === null || value === undefined)
+    return undefined;
+  const other = await table.query({filter: Filters.toDomainTree(Filters.group('and', [scope, Filters.group('or',
+    [Filters.cond(column, '!=', value as FilterValue), Filters.cond(column, 'is null')])]), {schema: source.schema}),
+  columns: [column], limit: 1});
+  return other.length === 0 ? value : undefined;
 }
 
 function _tooMany(source: DomainSource): string {
@@ -202,9 +227,10 @@ function _filterOf(source: DomainSource): DomainQueryLike['filter'] {
 async function _run(source: DomainSource, form: ObjectForm, columns: string[], selection: boolean):
   Promise<number> {
   const handle = DomainTable.of(source)!;
-  const filter = selection ? Filters.toDomainTree(Filters.group('and',
-    [Filters.cond('id', 'in', source.selection.peek().map((row) => row.id))]), {schema: source.schema}) :
-    _filterOf(source);
+  const schema = source.schema;
+  const scope = !selection ? DomainFilters.treeOf(source.query.peek(), schema) :
+    Filters.group('and', [Filters.cond('id', 'in', source.selection.peek().map((row) => row.id))]);
+  const filter = selection ? Filters.toDomainTree(scope, {schema}) : _filterOf(source);
   // a chosen column left empty clears the column; one not chosen is not in the request
   const written = Object.fromEntries(columns.map((name) => {
     const value = form.input(name)?.peek();
@@ -213,6 +239,12 @@ async function _run(source: DomainSource, form: ObjectForm, columns: string[], s
   const refused = await _check(source, handle, filter, written, selection);
   if (refused !== null)
     throw new Error(refused);
+  const cycle = await hierarchyCycle(handle.table, written[schema.info.parentColumn ?? ''], async (ids) =>
+    (await handle.table.query({limit: 1, filter: Filters.toDomainTree(
+      Filters.group('and', [scope, Filters.cond('id', 'in', ids)]), {schema})})).length > 0, new Map(),
+  selection && source.selection.peek().length === 1 ? source.selection.peek()[0][schema.info.nameColumn ?? ''] : null);
+  if (cycle !== null)
+    throw new Error(cycle);
   const report = await handle.table.updateWhere!(filter, written, {limit: MAX_ROWS}).catch((e) => {
     throw new Error(DomainErrors.message(e));
   });

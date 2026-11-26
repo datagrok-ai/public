@@ -1,9 +1,10 @@
-import {emsBackends, nounOf} from '../core/domain-backend.js';
+import {capital, emsBackends, errorCode, nounOf, withArticle} from '../core/domain-backend.js';
 import {InputOptions, text, div, span, TypeAhead, Filters, Rows, PickInput} from '@datagrok-libraries/u2';
 import type {ObjectRenderer, DomainCondition, DomainConditionNode, DomainConditionTree,
   FilterSchema} from '@datagrok-libraries/u2';
 import type {DomainTableInfoLike, DomainTableLike} from '../core/domain-backend.js';
 import {DomainSource} from '../core/domain-source.js';
+import {DomainErrors} from './errors.js';
 import type {DomainTable} from './facade.js';
 
 export interface PickItem {
@@ -30,6 +31,8 @@ export interface DomainPickOptions extends InputOptions<string | null> {
   params?: () => Record<string, unknown>;
   /** The schema the `$name`s belong to — the hint's captions. */
   siblings?: FilterSchema;
+  /** A row of a hierarchy table whose subtree is not offered: the row a parent is being picked for. */
+  notUnder?: string;
   placeholder?: string;
   /** Row presentation; the caption over its detail by default. */
   renderer?: ObjectRenderer<PickItem>;
@@ -46,10 +49,12 @@ export class DomainPick extends PickInput<PickItem> {
   private static readonly _plural = new Map<string, string>();
 
   constructor(readonly table: string, options: DomainPickOptions = {}) {
-    const {filter, params, siblings, placeholder, renderer, limit, debounceMs, ...rest} = options;
+    const {filter, params, siblings, notUnder, placeholder, renderer, limit, debounceMs, ...rest} = options;
     const listItem = renderer?.listItem?.bind(renderer);
     let unbound: string[] = [];
     let more = false;
+    let denied: string | null = null;
+    let subtree: unknown[] | undefined;
     const caption = (name: string) => siblings?.properties.find((p) => p.name === name)?.friendlyName ?? name;
     const host = DomainPick.host;
     super({
@@ -61,8 +66,20 @@ export class DomainPick extends PickInput<PickItem> {
             unbound = bound.unbound;
             if (unbound.length > 0)
               return [];
-            const page = await DomainPick.page(table, query, {filter: bound.filter, limit});
+            const t = await DomainPick.table(table);
+            if (notUnder !== undefined) {
+              subtree ??= (await t.query({filter: {property: 'id', operator: 'under', value: notUnder}, columns: [],
+                limit: 1000})).map((row) => row.id);
+            }
+            const outside = subtree === undefined ? undefined : {property: 'id', operator: '!=', value: subtree};
+            const page = await DomainPick.page(table, query, {limit, filter: outside === undefined ? bound.filter :
+              bound.filter === undefined ? outside : [outside, 'and', bound.filter]});
             more = page.more;
+            // the server answers a reader without View with no rows: only the access tells it from an empty table
+            denied = page.items.length === 0 && query.trim() === '' && (await t.access()).can.view === false ?
+              DomainErrors.noAccess(t.info) : null;
+            if (denied !== null)
+              return [];
             // the held value opens the list, so it is never missing from it
             const held = typeAhead.selected.peek();
             return held === null || query.trim() !== '' ? page.items :
@@ -78,7 +95,7 @@ export class DomainPick extends PickInput<PickItem> {
           footer: () => more ? 'More match — type to narrow' : null,
           // an empty table is not a dead end: say what there is none of yet
           emptyText: (query) => unbound.length > 0 ? `Pick a ${caption(unbound[0]).toLowerCase()} first` :
-            query.trim() === '' ?
+            denied !== null ? denied : query.trim() === '' ?
               `No ${(DomainPick._plural.get(table) ?? table.split('.').pop()!).toLowerCase()} yet` : 'No matches',
         });
         return typeAhead;
@@ -91,6 +108,10 @@ export class DomainPick extends PickInput<PickItem> {
       },
     });
     this.root.dataset.u2 = 'domain-pick';
+    this.effect(() => {
+      if (!this.typeAhead.isOpen.value)
+        subtree = undefined;
+    });
     // a short lookup (a status, a priority) reads as a dropdown
     void DomainPick.isShort(table).then((short) => {
       if (short && !this.scope.isDisposed)
@@ -134,7 +155,8 @@ export class DomainPick extends PickInput<PickItem> {
   /** The item behind an id; a draft id is the draft's caption from the live source holding it,
    * no query issued; an id the table does not answer is shown as itself. A table with an app caption
    * reads the row; otherwise a backend that declares `resolveNames` answers it there — over the
-   * platform the registry's resolver, batched and cached; every other backend reads the row. */
+   * platform the registry's resolver, batched and cached, which asks for the name column even where the
+   * caller cannot read it; every other backend reads the row. */
   static async resolve(table: string, id: string): Promise<PickItem> {
     const draft = Rows.isDraft(id) ? DomainSource.draftOf(id) : undefined;
     if (draft !== undefined) {
@@ -144,13 +166,28 @@ export class DomainPick extends PickInput<PickItem> {
     }
     const caption = await DomainPick.host?.caption(table) ?? null;
     const backend = emsBackends.domain;
-    if (caption === null && backend?.resolveNames !== undefined) {
-      const name = (await backend.resolveNames(table, [id]))[id];
-      return {id, name: name || id};
+    const t = await DomainPick.table(table).catch(() => undefined);
+    const unseen = (noun: string): PickItem => ({id, name: `${capital(withArticle(noun))} you cannot see`});
+    if (t === undefined)
+      return unseen('row');
+    try {
+      if (caption === null && backend?.resolveNames !== undefined && t.info.hiddenName === undefined) {
+        const name = (await backend.resolveNames(table, [id]))[id];
+        if (name)
+          return {id, name};
+      } else {
+        const [row] = await t.query({filter: {property: 'id', operator: '=', value: id}, limit: 1});
+        if (row !== undefined)
+          return DomainPick.item(row, t.info, caption);
+      }
+    } catch (e) {
+      if (errorCode(e) !== 'forbidden')
+        throw e;
+      return unseen(nounOf(t.info, true));
     }
-    const t = await DomainPick.table(table);
-    const [row] = await t.query({filter: {property: 'id', operator: '=', value: id}, limit: 1});
-    return row === undefined ? {id, name: id} : DomainPick.item(row, t.info, caption);
+    // an unanswered id over a table without View is a row the caller cannot see; any other is a stale reference
+    return (await t.access().catch(() => undefined))?.can.view === false ? unseen(nounOf(t.info, true)) :
+      {id, name: id};
   }
 
   private static renderItem(item: PickItem): HTMLElement {

@@ -97,7 +97,8 @@ scoped('a written id resolves to its name; an unknown id shows itself', async ()
 scoped('a backend that declares resolveNames answers an id there: one call, no query', async () => {
   const calls = [];
   emsBackends.domain = {
-    table: () => assert.fail('the resolver path reads no row'),
+    table: () => Promise.resolve({info: {}, access: async () => ({can: {view: true}}),
+      query: () => assert.fail('the resolver path reads no row')}),
     saveAll: () => Promise.resolve(true),
     resolveNames: (table, ids) => {
       calls.push({table, ids: [...ids]});
@@ -108,6 +109,16 @@ scoped('a backend that declares resolveNames answers an id there: one call, no q
   assert.deepEqual(calls, [{table: 'grit.project', ids: ['p1']}]);
   assert.deepEqual(await DomainPick.resolve('grit.project', 'gone'), {id: 'gone', name: 'gone'},
     'an id the resolver answers null for is shown as itself');
+  emsBackends.domain = {
+    table: async () => ({info: {singularName: 'location'}, access: async () => ({can: {view: false}})}),
+    resolveNames: async () => ({l9: null, l2: 'Room'})};
+  assert.deepEqual(await DomainPick.resolve('stock.location', 'l9'), {id: 'l9', name: 'A location you cannot see'},
+    'a reference into a table the caller may not read never shows the id');
+  assert.deepEqual(await DomainPick.resolve('stock.location', 'l2'), {id: 'l2', name: 'Room'},
+    'a row a row grant lets the caller read is named, whatever the table-level View');
+  emsBackends.domain = {table: async () => ({info: {singularName: 'assay'}, access: async () => ({can: {view: false}}),
+    query: () => Promise.reject(Object.assign(new Error('Forbidden'), {status: 403}))})};
+  assert.equal((await DomainPick.resolve('m.assay', 'a1')).name, 'An assay you cannot see', 'a 403 from the lookup too');
 });
 
 scoped('an extra filter narrows the candidates; an empty query lists them all', async () => {
@@ -143,6 +154,21 @@ scoped('the name column falls back to the business key, then to the id', async (
   const blob = await emsBackends.domain.table('x.blob');
   assert.equal(DomainPick.nameColumn(blob.info), 'id');
   assert.deepEqual(await DomainPick.search('x.blob', ''), [{id: 'b1', name: 'b1'}]);
+});
+
+scoped('a name column the user cannot read is neither asked for nor shown: the picker goes by the key', async () => {
+  emsBackends.domain = new MemoryDomainBackend({name: 'x', tables: {vendor: {businessKey: ['code'],
+    columns: {code: {type: 'string', required: true}, name: {type: 'string', isName: true}}}}},
+  {rows: {vendor: [{id: 'v1', code: 'AB', name: 'Secret'}]}, access: {can: {view: true}, fields: {code: 'readonly'}}});
+  const table = emsBackends.domain.tableSync('x.vendor');
+  const query = table.query.bind(table);
+  const sent = [];
+  table.query = (spec) => (sent.push(JSON.stringify(spec)), query(spec));
+  emsBackends.domain.resolveNames = () => (sent.push(JSON.stringify({columns: ['name', 'code']})), Promise.resolve({}));
+  assert.deepEqual(await DomainPick.search('x.vendor', ''), [{id: 'v1', name: 'AB'}]);
+  assert.deepEqual(await DomainPick.search('x.vendor', 'Secret'), []);
+  assert.deepEqual(await DomainPick.resolve('x.vendor', 'v1'), {id: 'v1', name: 'AB'});
+  assert.equal(sent.length > 0 && !sent.some((spec) => spec.includes('name')), true);
 });
 
 scoped('DomainPick.filter: the like condition, AND-ed with the extra filter as a tree', () => {
@@ -247,6 +273,14 @@ scoped('opened on focus, Enter alone commits the highlighted first candidate', a
   await flush();
   assert.equal(pick.value, 'p2', 'Datagrok, the first by name');
   assert.equal(input.value, 'Datagrok');
+  pick.asDropdown();
+  assert.equal(input.readOnly, false);
+  type(input, 'grit');
+  await flush();
+  await flush();
+  fire(input, 'keydown', {key: 'Enter'});
+  await flush();
+  assert.equal(pick.value, 'p1', 'a dropdown filters by what is typed: Enter picks it, not the first row');
   pick.dispose();
 });
 

@@ -1,29 +1,22 @@
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
-import {Control, Scope, Signal, ReadonlySignal, computed, signal, untracked, Rows, Access, Filters, div, span,
-  timestamp, EMPTY, isEmpty, text, loader, link, iconButton, notify, PickInput} from '@datagrok-libraries/u2';
-import type {Input, IProperty, FilterGroup, FilterSchema, IWidgetStatus,
+import {Control, Scope, Signal, ReadonlySignal, computed, signal, untracked, Rows, Access, div, span,
+  timestamp, isEmpty, text, loader, link, button, iconButton, notify, PickInput,
+  ChoiceInput} from '@datagrok-libraries/u2';
+import type {Input, IProperty, IWidgetStatus,
   RowView} from '@datagrok-libraries/u2';
 import {propertyForm, ObjectForm, Editors, userPick, groupPick, kindOf} from '@datagrok-libraries/u2/dg';
 import type {ObjectFormOptions} from '@datagrok-libraries/u2/dg';
 import {DomainSource} from '../core/domain-source.js';
-import {capital, nounOf} from '../core/domain-backend.js';
+import {capital, nounOf, emsBackends, withArticle} from '../core/domain-backend.js';
 import {DomainTable} from './facade.js';
+import type {DomainConstraint} from './facade.js';
 import {SYSTEM_COLUMNS} from './backend.js';
 import {DomainErrors} from './errors.js';
 import {DomainPick} from './pick.js';
 import type {DomainPickOptions} from './pick.js';
 
 export type DomainFormTarget = RowView | ReadonlySignal<RowView | null> | DomainSource;
-
-/** A schema constraint the form pre-validates: the parsed `expr` and the columns it names, the
- * first the field its message attaches to. */
-interface Constraint {
-  name: string;
-  message: string;
-  root: FilterGroup;
-  columns: string[];
-}
 
 export interface DomainFormOptions extends Pick<ObjectFormOptions,
   'include' | 'exclude' | 'layout' | 'condensed' | 'overrides' | 'onChanged' | 'labelColumn'> {
@@ -62,9 +55,10 @@ export class DomainForm extends Control {
   readonly problem: ReadonlySignal<string | null>;
 
   private readonly _form = signal<ObjectForm | null>(null);
-  private static readonly _parsed = new WeakMap<DomainTable, Constraint[]>();
-  private _constraints: Constraint[] = [];
+  private _constraints: DomainConstraint[] = [];
   private readonly _violations = new Map<string, string>();
+  // an update sends only the edited columns: a stored value a tightened rule refuses holds no Save off until edited
+  private readonly _stored = new Map<Input<unknown>, ReadonlySignal<boolean>>();
   private readonly _violationsVersion = signal(0);
   private _attached = new Set<string>();
   private _checkGen = 0;
@@ -75,6 +69,7 @@ export class DomainForm extends Control {
   private readonly _captions = new Map<string, {id: string, caption: string, address?: string}>();
   private _returnTo: string | undefined;
   private _editSub: {unsubscribe(): void} | undefined;
+  private readonly _changed = signal(0);
   private readonly _subs: {unsubscribe(): void}[];
 
   constructor(target: DomainFormTarget, private readonly _options: DomainFormOptions = {}) {
@@ -86,18 +81,26 @@ export class DomainForm extends Control {
     this.row = row;
     this.validity = computed(() => this._form.value?.validity.value ?? null);
     this.problem = computed(() => {
-      for (const input of this._form.value?.inputs ?? []) {
+      const form = this._form.value;
+      source.changeCount.value;
+      // a row with nothing pending is not in the batch: a stored value its rules refuse holds nothing off
+      if (form === null || (!(form.target as RowView)[Rows.STATE] &&
+          Object.keys(form.unwrittenValues.value).length === 0))
+        return null;
+      for (const input of form.inputs) {
         const message = input.validity.value;
-        if (message !== null) {
-          const caption = capital(input.label);
-          return message === EMPTY ? `${caption} is required` : `${caption}: ${message}`;
-        }
+        if (message !== null && !this._refused(input.name, message) && !this._stored.get(input)?.value)
+          return DomainTable.named(capital(input.label), message);
       }
       this._violationsVersion.value;
       for (const c of this._constraints) {
         const message = this._violations.get(c.name);
-        if (message !== undefined && !this._attached.has(c.name))
-          return message;
+        if (message === undefined)
+          continue;
+        // a constraint is a rule over the whole row, which the exemption of a stored value does not reach
+        const input = this._attached.has(c.name) ? form.input(c.columns[0]) : undefined;
+        if (input === undefined || this._stored.get(input)?.value)
+          return input === undefined ? message : DomainTable.named(capital(input.label), message);
       }
       return null;
     });
@@ -153,10 +156,8 @@ export class DomainForm extends Control {
     }));
     // a refusal raised elsewhere (the table's validators run before this guard) shows every verdict too
     this.effect(() => {
-      const code = DomainErrors.codeOf(source.error.value);
       const about = source.problemRow.peek();
-      if ((code === 'validation' || code === DomainSource.REFUSED) && source.state.peek() !== 'error' &&
-          (about === null || about === this.row.peek()?.id))
+      if (source.refusal.value !== undefined && (about === null || about === this.row.peek()?.id))
         untracked(() => this.validate());
     });
     this._subs = [source.session.onSaved.subscribe(() => this.focus()),
@@ -181,16 +182,30 @@ export class DomainForm extends Control {
       this._shown?.dispose();
       this._editSub?.unsubscribe();
     });
+    // a delete over a pending edit keeps the change count: the writer's own tick is what moves
+    const deleted = computed(() => {
+      source.changeCount.value;
+      this._changed.value;
+      return this.row.value?.[Rows.STATE] === 'deleted';
+    });
     this.effect(() => {
       const current = this.row.value;
       const access = _options.access ?? source.access.value;
-      untracked(() => this._show(current, access));
+      const gone = deleted.value;
+      untracked(() => this._show(current, gone ? access.narrow({edit: false}) : access, gone));
     });
-    // the editing state moves under the form — a discard, a save, another control's write
+    // the editing state moves under the form — a discard, a save, another control's write, a reload in place
+    let synced = false;
     this.effect(() => {
       const edit = source.edit.value;
       this._editSub?.unsubscribe();
-      this._editSub = edit?.onChanged.subscribe(() => this._sync());
+      this._editSub = edit?.onChanged.subscribe(() => {
+        this._sync();
+        this._changed.value++;
+      });
+      if (synced)
+        untracked(() => this._sync());
+      synced = edit !== undefined;
     });
   }
 
@@ -202,6 +217,13 @@ export class DomainForm extends Control {
   /** The input editing a column of the current row; none for a text field or without a row. */
   input(name: string): ReturnType<ObjectForm['input']> {
     return this._form.peek()?.input(name);
+  }
+
+  private _refused(name: string | undefined, message: string): boolean {
+    const target = this._form.peek()?.target as RowView | undefined;
+    const edit = this.source.edit.value;
+    return name !== undefined && target !== undefined && edit?.refused(target.id, name) === true &&
+      edit.errorOf(target.id, name) === message;
   }
 
   /** Every field's verdict shown, the first failing one focused — the explicit check a Save runs. */
@@ -266,7 +288,7 @@ export class DomainForm extends Control {
     return {source, row: signal(target as RowView | null)};
   }
 
-  private _show(row: RowView | null, access: Access): void {
+  private _show(row: RowView | null, access: Access, deleted = false): void {
     this._shown?.dispose();
     const scope = new Scope();
     this._shown = scope;
@@ -284,7 +306,9 @@ export class DomainForm extends Control {
       this._form.value = form;
       const system = this._options.system === 'footer' ? this._footer(row) : null;
       this._system = system;
-      this.root.replaceChildren(form.root, this._verdict, ...(system === null ? [] : [system]));
+      const note = deleted ? [div([`${capital(nounOf(this.source.schema.info, true))} will be deleted on save `,
+        link('Undo', () => this.source.edit.peek()?.unmarkDeleted(row.id))], 'u2-form-note')] : [];
+      this.root.replaceChildren(...note, form.root, this._verdict, ...(system === null ? [] : [system]));
       this._captions.clear();
       this._resolveCaptions(form, row, scope, system === null ? [] : DomainForm.systemProps(this.source));
       this._checkConstraints();
@@ -302,15 +326,20 @@ export class DomainForm extends Control {
     const draft = Rows.isDraft(row);
     const system = new Set(SYSTEM_COLUMNS.map(([name]) => name));
     const view = access.row(row);
+    this._stored.clear();
     // a ref column with a schema filter picks among the rows its siblings allow
     let overrides = options.overrides;
     for (const [name, filter] of Object.entries(table?.info.refFilters ?? {})) {
       const extra: Partial<DomainPickOptions> = {filter, params: () => row, siblings: source.schema};
       overrides = {...overrides, [name]: {...overrides?.[name], ...extra}};
     }
-    // a draft's empty readonly field is filled by the save
+    const parent = table?.info.parentColumn;
+    if (parent != null && !draft) {
+      const extra: Partial<DomainPickOptions> = {notUnder: row.id};
+      overrides = {...overrides, [parent]: {...overrides?.[parent], ...extra}};
+    }
     for (const prop of draft ? source.schema.properties : []) {
-      if (!DomainTable.isReference(prop))
+      if (!DomainTable.isReference(prop) && DomainTable.isAssignedOnSave(source.schema.info, prop))
         overrides = {...overrides, [prop.name!]: {emptyText: 'assigned on save', ...overrides?.[prop.name!]}};
     }
     const form = propertyForm(source.schema.properties.filter((p) => !system.has(p.name)), row, {
@@ -321,7 +350,7 @@ export class DomainForm extends Control {
     form.root.dataset.u2Row = row.id;
     // the schema constraints, pre-validated here; one naming a column the caller may not see is
     // left to the server
-    this._constraints = DomainForm.constraintsOf(table, source.schema)
+    this._constraints = (table?.constraints ?? [])
       .filter((c) => c.columns.every((name) => view.field(name) !== 'hidden'));
     this._violations.clear();
     this._attached = new Set();
@@ -342,6 +371,20 @@ export class DomainForm extends Control {
       const kind = kindOf(source.schema.properties.find((p) => p.name === name)!);
       input.addValidator((value) => (ObjectForm.same(value, ObjectForm.coerce(kind, row[name])) ?
         source.edit.peek()?.errorOf(row.id, name) : null) ?? table?.validators.check(name, value, row) ?? null);
+      input.addValidator((value) => {
+        const failed = source.unapplied(row.id, name);
+        return failed !== null && ObjectForm.same(value, failed.value) ?
+          `cannot be saved (${failed.message}): reload the page to see the table as it is now` : null;
+      });
+      if (!draft) {
+        const stored = computed(() => {
+          source.changeCount.value;
+          return ObjectForm.same(input.value, ObjectForm.coerce(kind, row[name])) &&
+            source.edit.peek()?.isChanged(row.id, name) !== true;
+        });
+        this._stored.set(input, stored);
+        DomainForm._markStored(input, stored);
+      }
       // and a constraint is judged on what the fields hold, written or not
       if (this._constraints.some((c) => c.columns.includes(name))) {
         let initial = true;
@@ -355,7 +398,92 @@ export class DomainForm extends Control {
       }
     }
     this._markChanged(form, row);
+    this._noteOutsideFilters(form, row, table);
     return form;
+  }
+
+  // a stored value the rules refuse is shown on its field at once; it holds Save off only once edited
+  private static _markStored(input: Input<unknown>, stored: ReadonlySignal<boolean>): void {
+    if (input instanceof ChoiceInput) {
+      const stale = input.peek();
+      const listed = [...input.items];
+      const values = listed.map((item) => typeof item === 'string' ? item : item.value);
+      if (typeof stale === 'string' && stale !== '' && values.length > 0 && !values.includes(stale)) {
+        const extra = {value: stale, label: `${stale} (not in the list)`};
+        input.addValidator((v) => v === null || v === '' || values.includes(v) ? null :
+          `Must be one of: ${values.join(', ')}`);
+        input.effect(() => {
+          const want = input.value === stale;
+          if (want !== (input.items.length > listed.length))
+            untracked(() => input.setItems(want ? [...listed, extra] : listed));
+        });
+      }
+    }
+    input.effect(() => {
+      if (!input.touched.value && input.validity.value !== null && stored.value)
+        untracked(() => input.touch());
+    });
+  }
+
+  // a held value the filter would not offer gets a note, never an error: filters only narrow the picker
+  private _noteOutsideFilters(form: ObjectForm, row: RowView, table: DomainTable | undefined): void {
+    for (const [name, filter] of Object.entries(table?.info.refFilters ?? {})) {
+      const input = form.input(name);
+      const prop = this.source.schema.properties.find((p) => p.name === name);
+      const params = [...new Set(DomainPick.bind(filter).unbound)];
+      if (input === undefined || prop === undefined || params.length === 0)
+        continue;
+      const note = span('', 'u2-form-note');
+      note.dataset.u2Part = 'note';
+      note.hidden = true;
+      input.root.append(note);
+      let gen = 0;
+      const valueOf = (field: string) => form.input(field)?.value ?? row[field];
+      const check = async (): Promise<void> => {
+        const mine = ++gen;
+        const held = valueOf(name);
+        const values = Object.fromEntries(params.map((p) => [p, valueOf(p)]));
+        const bound = DomainPick.bind(filter, values);
+        let message = '';
+        try {
+          const target = emsBackends.domain === undefined || bound.unbound.length > 0 || isEmpty(held) ||
+            Rows.isDraft(String(held)) ? undefined : await emsBackends.domain.table(prop.semType ?? '');
+          if (target !== undefined && bound.filter !== undefined &&
+              (await target.query({filter: [{property: 'id', operator: '=', value: held}, 'and', bound.filter],
+                limit: 1})).length === 0) {
+            const caption = async (p: IProperty | undefined, v: unknown) => {
+              if (p === undefined || !DomainTable.isReference(p))
+                return text(v);
+              const known = await DomainForm.captionOf(p, String(v)).catch(() => null);
+              // mid-sentence: "… is not in a site you cannot see"
+              return known !== null && known !== String(v) ? known.replace(/^A(n?) (.* you cannot see)$/, 'a$1 $2') :
+                `${withArticle(DomainTable.captionOf(p).toLowerCase())} you cannot see`;
+            };
+            const where = await Promise.all(params.map((field) =>
+              caption(this.source.schema.properties.find((p) => p.name === field), values[field])));
+            message = capital(`${await caption(prop, held)} is not in ${where.join(', ')}`);
+          }
+        } catch {
+          message = '';
+        }
+        if (mine === gen) {
+          note.textContent = message;
+          note.hidden = message === '';
+        }
+      };
+      void check();
+      for (const field of params) {
+        const sibling = form.input(field);
+        let initial = true;
+        sibling?.effect(() => {
+          sibling.value;
+          if (initial)
+            initial = false;
+          else
+            untracked(() => void check());
+        });
+      }
+    }
   }
 
   // a draft is new whole: none of its fields is marked
@@ -492,10 +620,13 @@ export class DomainForm extends Control {
       const state = source.state.value;
       if (state === 'loading')
         el.replaceChildren(loader('Loading…'));
-      else if (state === 'error')
-        el.replaceChildren(span(DomainErrors.message(source.error.value, source), 'u2-domain-form-error'));
-      else
-        el.replaceChildren(span(this._options.empty ?? DomainForm.emptyHint(source), 'u2-domain-form-hint'));
+      else if (state === 'error') {
+        el.replaceChildren(span(DomainErrors.message(source.error.value, source), 'u2-domain-form-error'),
+          button('Retry', () => void source.refresh()));
+      } else {
+        el.replaceChildren(span(DomainErrors.noView(source) ?? this._options.empty ?? DomainForm.emptyHint(source),
+          'u2-domain-form-hint'));
+      }
     });
     return el;
   }
@@ -523,36 +654,6 @@ export class DomainForm extends Control {
     this._checkConstraints();
   }
 
-  /** The table's grammar constraints, parsed once against the schema; one that does not parse
-   * or names an unknown column is skipped — the server still enforces it. */
-  static constraintsOf(table: DomainTable | undefined, schema: FilterSchema): Constraint[] {
-    if (table === undefined)
-      return [];
-    let parsed = DomainForm._parsed.get(table);
-    if (parsed !== undefined)
-      return parsed;
-    parsed = [];
-    for (const c of table.info.constraints) {
-      const {root, problems} = Filters.parse(c.expr, schema);
-      if (problems.length > 0)
-        continue;
-      const columns: string[] = [];
-      Filters.walk(root, (n) => {
-        if (Filters.isGroup(n))
-          return;
-        const refs = (Array.isArray(n.value) ? n.value : [n.value]).filter(Filters.isColumnRef).map((v) => v.column);
-        for (const name of [n.property, ...refs]) {
-          if (!columns.includes(name))
-            columns.push(name);
-        }
-      });
-      parsed.push({name: c.name, message: c.message ?? `Must satisfy: ${c.expr}`, root, columns});
-    }
-    DomainForm._parsed.set(table, parsed);
-    return parsed;
-  }
-
-  // SQL CHECK null semantics: an empty column makes its own comparison unknown, not the whole constraint
   private _checkConstraints(): void {
     const form = this._form.peek();
     const row = this.row.peek();
@@ -560,21 +661,14 @@ export class DomainForm extends Control {
     if (form === null || row === null || constraints.length === 0)
       return;
     const values: Record<string, unknown> = {...row, ...form.getValues()};
-    const frame = Filters.recordsFrame([values], this.source.schema.properties);
     const gen = ++this._checkGen;
-    void Promise.all(constraints.map(async (c): Promise<string | null> => {
-      try {
-        return (await Filters.toCheckMask(frame, c.root)).get(0) ? null : c.message;
-      } catch {
-        return null;
-      }
-    })).then((verdicts) => {
+    void Promise.all(constraints.map((c) => c.admits([values]))).then((verdicts) => {
       if (gen !== this._checkGen || this._form.peek() !== form)
         return;
       this._violations.clear();
       constraints.forEach((c, i) => {
-        if (verdicts[i] !== null)
-          this._violations.set(c.name, verdicts[i]!);
+        if (verdicts[i]?.[0] === false)
+          this._violations.set(c.name, c.message);
       });
       for (const c of constraints)
         form.input(c.columns[0])?.revalidate();
@@ -584,7 +678,7 @@ export class DomainForm extends Control {
 
   static emptyHint(source: DomainSource): string {
     const name = nounOf(source.schema.info, true);
-    return `Select ${/^[aeiou]/.test(name) ? 'an' : 'a'} ${name} to edit.`;
+    return `Select ${withArticle(name)} to edit.`;
   }
 }
 

@@ -5,6 +5,7 @@ import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {layout} from '@datagrok-libraries/u2/tests/layout.mjs';
 import {Scope, notify} from '@datagrok-libraries/u2';
+import {until} from './domain-fixtures.mjs';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const grok = await import('datagrok-api/grok');
@@ -330,7 +331,8 @@ scoped('a validation is bound to the exact payload: a change since is not valida
   assert.equal(result.name, 'nw');
   assert.deepEqual(result.access, {applied: [], failed: []});
   assert.equal(document.querySelector('.u2-dialog'), null);
-  assert.equal(grok.dapi.domains.invalidated, invalidated + 1, 'the completion boundary, once');
+  // the completion boundary, then the opened app reading the caller's access afresh
+  assert.equal(grok.dapi.domains.invalidated, invalidated + 2, 'the completion boundary once, the open once');
 });
 
 scoped('a refused create keeps the dialog open with the refusal named; cancel resolves null', async () => {
@@ -511,8 +513,7 @@ scoped('a warehouse read that never answers fails by name after the timeout; the
   try {
     const dialog = new BindingDialog({connection: CONN, catalog: 'bogus'});
     const done = dialog.open();
-    await new Promise((r) => setTimeout(r, 40));
-    await flush();
+    await until(() => document.body.textContent.includes('The connection did not answer within 0.02 s'));
     assert.equal(document.querySelector('.u2-binding-facts').textContent,
       'Postgres · The schemas could not be read: The connection did not answer within 0.02 s');
     assert.equal(dialog.connection.disabled, null);
@@ -523,8 +524,7 @@ scoped('a warehouse read that never answers fails by name after the timeout; the
     dialog.connection.value = CONN.id;
     await flush();
     dialog.schema.value = 'public';
-    await new Promise((r) => setTimeout(r, 40));
-    await flush();
+    await until(() => reason() === 'The draft did not answer within 0.02 s');
     assert.equal(reason(), 'The draft did not answer within 0.02 s');
     assert.equal(buttonNamed('NEXT').disabled, true);
     buttonNamed('CANCEL').click();
@@ -546,8 +546,7 @@ scoped('opened on Design over a preset whose reads never answer: the draft fails
   try {
     const dialog = new BindingDialog({connection: CONN, schema: 'public', catalog: 'bogus'});
     const done = dialog.open();
-    await new Promise((r) => setTimeout(r, 60));
-    await flush();
+    await until(() => status()?.textContent === 'The draft did not answer within 0.02 s');
     assert.equal(dialog.wizard.currentStep.value, 'design');
     assert.equal(dialog.schema.value, 'public', 'the preset schema is still picked');
     assert.equal(status().textContent, 'The draft did not answer within 0.02 s');

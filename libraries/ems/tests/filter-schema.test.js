@@ -48,7 +48,8 @@ function domainsDouble(filters = 'full') {
       },
     },
     table: (address) => ({
-      access: async () => ({support: {filters}}),
+      access: async () => ({support: {filters},
+        fields: Object.fromEntries(tables[address].map((p) => [p.name, 'readonly']))}),
       facets: async (spec) => {
         calls.facets.push([address, spec]);
         const column = spec.facets[0].column;

@@ -283,12 +283,13 @@ scoped('a 403 drops the access caches on top of the balloon', async () => {
   emsBackends.domain.transaction = async () => {
     throw Object.assign(new Error('Forbidden'), {code: 'forbidden'});
   };
+  let dropped = 0;
+  emsBackends.domain.dropAccess = () => dropped++;
   const form = testOwner().build(() => domains.form(src));
-  const before = grok.dapi.domains.invalidated;
   src.rows.byKey('i1').title = 'Ab';
   assert.equal(await src.save(), false);
   await flush();
-  assert.equal(grok.dapi.domains.invalidated, before + 1, 'the form reports the refused save');
+  assert.equal(dropped > 0, true, 'the access caches go');
   assert.match(document.body.querySelector('.u2-notify-error').textContent, /Forbidden/);
   form.dispose();
   src.dispose();
@@ -446,7 +447,7 @@ scoped('spec round trip: a form and a list bound through `$.issues.source` over 
 scoped('a readonly reference shows the target\'s name, not its uuid — off the frame, and after a refresh', async () => {
   await counting(async (lookups) => {
     emsBackends.domain = backend({access: {can: CAN,
-      fields: {title: 'editable', project_id: 'readonly', reporter: 'readonly'}}});
+      fields: {title: 'editable', project_id: 'readonly', reporter: 'readonly', name: 'readonly'}}});
     const {src} = await issues();
     src.currentRow.value = src.rows.byKey('i1');
     const form = testOwner().build(() => domains.form(src));
@@ -651,6 +652,32 @@ scoped('text a number field cannot read is an unsaved change too: the gates ask,
   assert.equal(weight.validity.value, null);
   assert.equal(src.isDirty.value, false);
   discard.dispose();
+  form.dispose();
+  src.dispose();
+});
+
+scoped('a write the writer throws on is a problem on its field: Save is refused, never "saved" for nothing', async () => {
+  const {src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const form = testOwner().build(() => domains.form(src));
+  await flush();
+  // a frame that lost the column since the form was built
+  const edit = src.edit.peek();
+  const setValue = edit.setValue;
+  edit.setValue = (key, column, value) => {
+    if (column === 'title')
+      throw new Error('No such column: title');
+    return setValue.call(edit, key, column, value);
+  };
+  const box = form.input('title').root.querySelector('input');
+  box.value = 'typed into a dropped column';
+  fire(box, 'input');
+  fire(box, 'focusout');
+  await flush();
+  assert.match(form.input('title').validity.value ?? '', /cannot be saved \(No such column: title\)/);
+  assert.equal(await src.save(), false);
+  assert.equal(document.querySelector('[role="status"]'), null, 'no "saved" balloon');
+  edit.setValue = setValue;
   form.dispose();
   src.dispose();
 });
@@ -914,7 +941,7 @@ scoped('a refused save names the field by its caption; the verdicts are shown', 
   const form = testOwner().build(() => domains.form(draft));
   const save = domains.saveButton(draft);
   await flush();
-  draft.currentRow.value.number = 2;
+  draft.currentRow.value.number = 9;
   await flush();
   assert.equal(form.problem.value, 'Title is required');
   assert.equal(save.button.getAttribute('aria-disabled'), 'true', 'Save is off, its tooltip saying why');
@@ -1010,7 +1037,7 @@ scoped('a schema constraint refuses Save with its message; fixing the value clea
   form.input('weight').value = -1;
   await flush();
   assert.equal(form.input('weight').validity.value, 'Weight is positive', 'on the first column the expr names');
-  assert.equal(form.problem.value, 'Weight: Weight is positive');
+  assert.equal(form.problem.value, 'Weight is positive', 'a message naming its field is not prefixed again');
   assert.equal(await src.save(), false);
   assert.match(src.error.value.message, /Weight is positive/);
   assert.equal(src.isDirty.value, true);
@@ -1198,4 +1225,60 @@ scoped('a draft shows the column defaults, so a required column with one is alre
   assert.equal(create.validate(), true, 'the draft with only its key typed is ready to save');
   create.dispose();
   draft.dispose();
+});
+scoped('a stored value a tightened rule refuses is shown, and holds Save off only once its field is edited', async () => {
+  // `score` holds 50 under a max lowered to 10, `kind` holds a choice removed since
+  const memory = emsBackends.domain = new MemoryDomainBackend({name: 'desk', tables: {
+    ticket: {businessKey: ['code'], columns: {
+      code: {type: 'string', required: true, isName: true},
+      score: {type: 'int', max: 10},
+      kind: {type: 'string', choices: ['beta', 'gamma']},
+    }},
+  }}, {rows: {ticket: [{id: 't1', code: 'T1', score: 50, kind: 'alpha'}]}});
+  const sent = [];
+  const real = memory.transaction.bind(memory);
+  memory.transaction = (ops) => (sent.push(...ops), real(ops));
+  const table = await domains.table('desk.ticket');
+  const src = testOwner().build(() => table.source({pageSize: 10}));
+  await flush();
+  src.currentRow.value = src.rows.byKey('t1');
+  const form = testOwner().build(() => domains.form(src));
+  await flush();
+  assert.notEqual(form.input('score').validity.value, null, 'shown on its field');
+  form.input('code').value = 'T1 edited';
+  await flush();
+  assert.equal(src.validity.value, null, 'an update sends the edited column alone');
+  assert.equal(await src.save(), true);
+  assert.deepEqual(sent.map((op) => op.values), [{code: 'T1 edited'}]);
+  form.input('score').value = 20;
+  await flush();
+  assert.equal(src.validity.value, 'Score: Value must be at most 10', 'an edited field is held to the rule');
+  form.input('score').value = 5;
+  await flush();
+  assert.equal(await src.save(), true);
+  form.dispose();
+  src.dispose();
+});
+
+// the frame holds a string_list or json cell as its JSON text: the form shows and saves the values
+scoped('string_list and json fields show their stored values and save what is added, nothing when unchanged', async () => {
+  const memory = emsBackends.domain = new MemoryDomainBackend({name: 'qa', tables: {item: {columns: {
+    name: {type: 'string', isName: true}, tags: {type: 'string_list'}, meta: {type: 'json'}}}}},
+  {rows: {item: [{id: 'r1', name: 'R1', tags: ['a', 'b'], meta: {k: 'v'}}]}});
+  const table = await domains.table('qa.item');
+  const source = testOwner().build(() => table.source({pageSize: 10}));
+  await flush();
+  source.currentRow.value = source.rows.byKey('r1');
+  const form = testOwner().build(() => domains.form(source));
+  await flush();
+  assert.deepEqual([form.input('tags').value, form.input('meta').value], [['a', 'b'], {k: 'v'}]);
+  const set = async (tags, meta) => (form.input('tags').value = tags, form.input('meta').value = meta, await flush());
+  await set(['a', 'b'], {k: 'v'});
+  assert.equal(source.changeCount.value, 0, 'the same values are no change');
+  await set(['a', 'b', 'c'], {k: 'v', k2: 'v2'});
+  assert.equal(await source.save(), true);
+  const stored = memory.tableSync('qa.item').rows[0];
+  assert.deepEqual([stored.tags, stored.meta], [['a', 'b', 'c'], {k: 'v', k2: 'v2'}]);
+  form.dispose();
+  source.dispose();
 });

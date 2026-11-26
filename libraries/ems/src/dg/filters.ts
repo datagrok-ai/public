@@ -41,8 +41,6 @@ export class DomainFilters extends Control {
    * two agree. A builder row still waiting for its value is a draft, not a problem. */
   readonly problem: ReadonlySignal<string | null>;
 
-  // `DomainApp.presets` registers `assignee = "<id>"` → `assignee = $me`, so the switch does not paste a uuid
-  private static readonly _shownAs = new WeakMap<DomainSource, Map<string, string>>();
   private static readonly _scoped = new Map<string, FilterOperator[]>();
 
   private readonly _input = signal<FilterQueryInput | FilterBuilder | null>(null);
@@ -153,8 +151,7 @@ export class DomainFilters extends Control {
       new FilterBuilder({schema, target: 'domain', inline: true}) :
       new FilterQueryInput({schema, target: 'domain', inline: true, name: 'filters',
         placeholder: this._options.placeholder ?? (schema.properties.length === 0 ? 'Filter…' :
-          `Filter, e.g. ${Filters.formatProperty(schema.properties[0].name)} = …`),
-        display: (tree) => DomainFilters._shownAs.get(source)?.get(Filters.format(tree)) ?? null}));
+          `Filter, e.g. ${Filters.formatProperty(schema.properties[0].name)} = …`)}));
     const box = input instanceof FilterQueryInput ? input : null;
     this.effect(() => {
       const q = source.query.value;
@@ -253,15 +250,6 @@ export class DomainFilters extends Control {
       unregister();
       DomainFilters._scoped.set(table, (DomainFilters._scoped.get(table) ?? []).filter((op) => !ops.includes(op)));
     };
-  }
-
-  /** Spells `bound` as `unbound` in the box over `source` — the form a control wrote the query
-   * from, kept for the user to read and edit. */
-  static showAs(source: DomainSource, bound: string, unbound: string): void {
-    let map = DomainFilters._shownAs.get(source);
-    if (map === undefined)
-      DomainFilters._shownAs.set(source, map = new Map<string, string>());
-    map.set(bound, unbound);
   }
 
   static treeOf(query: string | FilterGroup, schema?: FilterSchema): FilterGroup {
