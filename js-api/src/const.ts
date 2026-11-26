@@ -335,7 +335,7 @@ export const FUNC_TYPES = {
   UNIT_CONVERTER: 'unitConverter',
   MOLECULE_SKETCHER: 'moleculeSketcher',
   /** The Space row of the Save project dialog, reached through `ui.spaceSaveRow()`
-    * Signature: spaceSaveRow(homeId?: string, name?: string): Widget */
+    * Signature: spaceSaveRow(homeId?: string, name?: string, projectId?: string, placeholder?: string, tooltip?: string): Widget */
   SPACE_SAVE_ROW: 'spaceSaveRow',
   TOOLTIP: 'tooltip',
   FOLDER_VIEWER: 'folderViewer',
@@ -493,7 +493,7 @@ export const functionRoles: FuncRoleDescription[] = [
   {
     role: FUNC_TYPES.SPACE_SAVE_ROW,
     description: 'Creates the Space row of the Save project dialog: where the project goes, Move or Link',
-    signature: 'spaceSaveRow(homeId?: string, name?: string): Widget',
+    signature: 'spaceSaveRow(homeId?: string, name?: string, projectId?: string, placeholder?: string, tooltip?: string): Widget',
   },
   {
     role: FUNC_TYPES.TOOLTIP,

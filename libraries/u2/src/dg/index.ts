@@ -39,6 +39,7 @@ export {SpaceTree, createSpace, spaceHasName, entityName, recentSpaces, remember
 export type {SpaceEntry} from './spaces/spaces.js';
 export {saveToSpace, openFromSpace, SpaceBrowser} from './spaces/space-dialogs.js';
 export {spaceSaveRow, spaceSaveRowFor, SPACE_TOOLTIP} from './spaces/space-save-row.js';
+export type {SpaceSaveRowOptions} from './spaces/space-save-row.js';
 export type {SpaceSaveRow, SpaceSaveTarget} from './spaces/space-save-row.js';
 export type {SaveToSpaceOptions, SaveToSpaceValues, SpaceBrowserOptions, OpenFromSpaceOptions}
   from './spaces/space-dialogs.js';

@@ -34,4 +34,20 @@ category('ui: spaceSaveRow', () => {
       row?.detach();
     }
   });
+
+  test('shows the given placeholder in the empty space box', async () => {
+    if (!provided()) {
+      console.log(noProvider);
+      return;
+    }
+    const row: any = await ui.spaceSaveRow(null, 'Kinase panel', null,
+      {placeholder: 'Your projects', tooltip: 'Kept in your own projects'});
+    try {
+      expect(row.root.textContent.includes('Your projects'), true);
+      expect(row.root.textContent.includes('(optional)'), false);
+    }
+    finally {
+      row?.detach();
+    }
+  });
 });

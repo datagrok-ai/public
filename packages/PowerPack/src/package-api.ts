@@ -106,8 +106,8 @@ export namespace funcs {
   /**
    * The Space row of the Save project dialog (u2); the platform reaches it through ui.spaceSaveRow()
    */
-  export async function spaceSaveRow(homeId?: string , name?: string , projectId?: string ): Promise<any> {
-    return await grok.functions.call('PowerPack:SpaceSaveRow', { homeId, name, projectId });
+  export async function spaceSaveRow(homeId?: string , name?: string , projectId?: string , placeholder?: string , tooltip?: string ): Promise<any> {
+    return await grok.functions.call('PowerPack:SpaceSaveRow', { homeId, name, projectId, placeholder, tooltip });
   }
 
   export async function isFormulaColumn(col: DG.Column ): Promise<boolean> {

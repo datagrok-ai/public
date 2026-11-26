@@ -33,19 +33,26 @@ export interface SpaceSaveRow extends DG.Widget {
   mode: 'move' | 'link';
 }
 
+/** What the row's space box shows while empty, and its tooltip; the Save project dialog's wording by default. */
+export interface SpaceSaveRowOptions {
+  placeholder?: string;
+  tooltip?: string;
+}
+
 const same = (a: DG.Project | null, b: DG.Project | null): boolean =>
   a === null || b === null ? a === b : a.id === b.id;
 
 /** `home` is the space a saved project lives in, none for a new project, which always moves; `projectId` is the saved
  * project, which a space that links it does not count as another of its name. */
-export function spaceSaveRow(home: DG.Project | null, name: string, projectId: string | null = null): SpaceSaveRow {
+export function spaceSaveRow(home: DG.Project | null, name: string, projectId: string | null = null,
+  options: SpaceSaveRowOptions = {}): SpaceSaveRow {
   const widget = new DG.Widget(div()) as SpaceSaveRow;
   widget.onChanged = () => {};
   const row = widget.scope.build(() => component((self) => {
     const projectName = signal(name);
     const problem = signal<string | null>(null);
-    const input = new SpaceInput({inline: true, value: home, placeholder: 'Save to a space (optional)',
-      tooltipText: SPACE_TOOLTIP});
+    const input = new SpaceInput({inline: true, value: home, placeholder: options.placeholder ?? 'Save to a space (optional)',
+      tooltipText: options.tooltip ?? SPACE_TOOLTIP});
     const mode = new ChoiceChip({value: 'move', items: [
       {value: 'move', label: 'Move', description: 'Move to the new space. The project gets its permissions; ' +
         'the previous location becomes a link.'},
@@ -116,8 +123,8 @@ export function spaceSaveRow(home: DG.Project | null, name: string, projectId: s
 }
 
 /** The row for a project owned by `homeId`: a space, or the user's own projects (none for a new project). */
-export async function spaceSaveRowFor(homeId?: string | null, name?: string, projectId?: string | null):
-  Promise<SpaceSaveRow> {
+export async function spaceSaveRowFor(homeId?: string | null, name?: string, projectId?: string | null,
+  options: SpaceSaveRowOptions = {}): Promise<SpaceSaveRow> {
   const home = homeId ? await grok.dapi.spaces.find(homeId).catch(() => null) : null;
-  return spaceSaveRow(home, name ?? '', projectId ?? null);
+  return spaceSaveRow(home, name ?? '', projectId ?? null, options);
 }
