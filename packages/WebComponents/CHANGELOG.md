@@ -1,6 +1,6 @@
 # WebComponents changelog
 
-## v.next
+## 1.5.0 (2026-11-27)
 
 - InputForm: Removed the multiple choice overrides for condensed forms, outdated by the platform layout
 - DockManager: Esc no longer closes the active panel

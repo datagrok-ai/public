@@ -1,6 +1,6 @@
 # dock-spawn-dg changelog
 
-## v.next
+## 0.2.0 (2026-11-27)
 
 * `<dock-spawn-ts>`: Esc no longer closes the active panel (`escClosesWindow` is false); dialogs still close on Esc
 * Disabled the "New browser window" context-menu item by default (DockConfig.enableBrowserWindows is false)

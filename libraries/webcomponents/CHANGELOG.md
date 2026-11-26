@@ -1,6 +1,6 @@
 # webcomponents changelog
 
-## v.next
+## 0.4.0 (2026-11-27)
 
 * Viewer: An options change no longer re-sets the frame and fires `viewer-data-frame-changed` for frames created in JS
 * Viewer: A frame set on the viewer itself is kept on later options changes, and its `viewer-data-frame-changed` fires outside the Dart event

@@ -1,6 +1,6 @@
 # compute-api changelog
 
-## v.next
+## 0.9.0 (2026-11-27)
 
 * Added `openRunDialog`, which picks a saved run of a function in Compute2's run browser, and `openWorkflowRun`, which opens a saved run in its view
 * Added `historyInput` (`HistoryInput`), Compute2's input for a saved run of a model, picked in its Open dialog and loaded with its inputs and outputs
