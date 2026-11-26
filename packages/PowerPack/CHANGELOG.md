@@ -3,6 +3,7 @@
 ## v.next
 
 * Spaces: `spaceSaveRow` takes `placeholder` and `tooltip`, the empty space box's text and its tooltip, for a dialog that saves something other than a project
+* Home: Added a clear (x) button to the Search everywhere input; it empties the search and brings back the widgets, as does Esc
 * Spotlight: The Recent list reads only the user's latest 5000 events, so it stays fast for accounts with hundreds of thousands of events a month
 * [public#4668](https://github.com/datagrok-ai/public/issues/4668): Spotlight: Fixed the Recent and Shared with me lists failing with "Cannot read properties of null" when they held an entity the platform cannot show, such as a saved filter; such entities are left out
 * core#1765: Detectors: Declared the column types the semantic type detectors check, so the platform no longer calls them for other columns

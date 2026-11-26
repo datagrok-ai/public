@@ -403,3 +403,11 @@ button.ui-btn.ui-btn-raised.ua-metrics-btn-secondary {
   color: var(--grey-4);
   font-style: italic;
 }
+
+.ua-reports-widget-description {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
