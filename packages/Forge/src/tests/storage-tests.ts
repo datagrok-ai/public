@@ -13,7 +13,7 @@ import {deleteTrainingCopy, trainingCopyName, uploadTrainingCopy} from '../stora
 import {datasetFingerprint} from '../storage/dataset-fingerprint';
 import {datasetRefOf, openDatasetRef, storedDatasetRef} from '../storage/dataset-ref';
 import {ModelStorage, modelFieldsOf, normalizedTags, tagsOf, tagsText, trainingRunOf} from '../storage/model-fields';
-import {BLOB_ROOT, deleteModel, modelsChanged, ownBlob, runDeleteModel, saveModel, saveTrainedModel}
+import {adoptLegacyFile, BLOB_ROOT, deleteModel, modelsChanged, ownBlob, runDeleteModel, saveModel, saveTrainedModel}
   from '../storage/model-store';
 import {linkTrainingRun, recordTrainingRun} from '../storage/training-run-store';
 import {runTrainModel} from '../training/train-api';
@@ -197,6 +197,19 @@ category('Storage', () => {
     expect(await grok.dapi.files.exists(folder), false, `${folder} is left`);
     expect(await forgeDb.models.query().where('id', '=', id).count(), 0);
   }, {timeout: 60000});
+
+  test('a migrated model whose old model the caller cannot view is refused and keeps no file', async () => {
+    const name = `forge-test-model-${Date.now()}`;
+    const row = {id: await insertModelRow({name, legacy_id: DG.Utils.uuid4()}), name};
+    try {
+      const {legacy_id: legacyId} = (await forgeDb.models.get(row.id))!;
+      await expectExceptionAsync(async () => void await adoptLegacyFile({...row, legacy_id: legacyId}),
+        failsWith(`The file of the model '${name}' cannot be read: The earlier model is not available to you`));
+      expect((await forgeDb.models.get(row.id))?.blob ?? '', '');
+    } finally {
+      await forgeDb.models.delete(row.id);
+    }
+  });
 
   test('deleteModel never deletes outside the model folders', async () => {
     const stamp = Date.now();

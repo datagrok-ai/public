@@ -12,7 +12,7 @@ import {CLASS_PROBABILITIES, isRecord, PreparationOptions, preparationOptionsOf,
   from '../preparation/preparation-options';
 import {replayPostprocessing, replayPreprocessing} from '../preparation/pipeline';
 import {rowCopy} from '../preparation/row-copy';
-import {findModelRow, isExternal, ownBlob, syncModels} from '../storage/model-store';
+import {adoptLegacyFile, findModelRow, isExternal, ownBlob, syncModels} from '../storage/model-store';
 import {ColumnSchema, TargetSchema} from '../training/train-model';
 import {recordApplication} from './application-store';
 import {ColumnMapping, exactMapping, MappingProblem, mappingProblems} from './column-matching';
@@ -25,7 +25,7 @@ const RAW_COPY_TYPES: string[] = [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT, DG.C
 
 /** The `model` columns applying reads (the system columns come with any query). */
 export const APPLY_COLUMNS = ['name', 'engine_name', 'engine_namespace', 'engine_kind', 'target_name', 'features',
-  'options', 'blob'] as const;
+  'options', 'blob', 'legacy_id'] as const;
 export type ApplyModelRow = Pick<ModelRow, typeof APPLY_COLUMNS[number] | 'id' | 'created_on'>;
 
 export interface LoadedModel {
@@ -85,12 +85,14 @@ export async function loadModel(idOrName: string): Promise<LoadedModel> {
 export function loadedModelOf(row: ApplyModelRow, engines: Engine[]): LoadedModel {
   const name = row.name;
   const external = isExternal(row);
-  if (!external && !row.blob) {
+  // A migrated model gets its file when first applied.
+  const hasFile = !external && !(row.legacy_id && !row.blob);
+  if (hasFile && !row.blob) {
     throw new ForgeError(`The model '${name}' has no model file, so it cannot be applied. ` +
       'It was not trained and saved in Forge.');
   }
-  const blob = external ? null : ownBlob(row.blob);
-  if (!external && blob === null)
+  const blob = hasFile ? ownBlob(row.blob) : null;
+  if (hasFile && blob === null)
     throw new ForgeError(`The model '${name}' points to a file outside Forge's storage and cannot be applied.`);
   const features = requiredFeaturesOf(row);
   if (features === null)
@@ -207,7 +209,8 @@ export async function predictRows(request: ApplyRequest, progress?: LoopProgress
       'predicted. Fill the missing values or choose Impute.');
   }
   const columns = replayPreprocessing(prepared.features, model.options);
-  const blob = model.reference ?? await grok.dapi.files.readAsBytes(model.blobPath);
+  const blob = model.reference ?? (model.blobPath === '' ? await adoptLegacyFile(model.row) :
+    await grok.dapi.files.readAsBytes(model.blobPath));
   const {prediction: raw, probabilities} =
     await predictInBatches(model.engine, columns, rowCount, blob, request.batchSize, progress);
   return {columns, raw, labels: replayPostprocessing(raw, model.options, probabilities), keptRows: prepared.keptRows,
