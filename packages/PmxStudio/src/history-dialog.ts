@@ -10,7 +10,7 @@ import {SavedHistory, historyFit, registerHistory} from './history-models';
 import type {Answer, HistoryRow} from './model-history';
 import {fileText, readFile} from './open-study';
 import {previousOfTable} from './previous-studies';
-import {dialogLine, okNamed, showCentred} from './ui';
+import {dialogLine, okNamed, showCentred, modal} from './ui';
 
 /** A measurement as the readers give it. */
 type ReadRow = {animal: string, group: string | null, day: number | null, volume: number | null};
@@ -36,8 +36,9 @@ const ANSWERS: {[text: string]: Answer} = {'Yes': 'yes', 'No': 'no', 'Not sure':
 const PASSAGES: {[text: string]: SavedHistory['source']['passage']} =
   {'P0–P1': 'early', 'P2 or later': 'later', 'Not sure': 'unknown'};
 
-/** Opens the dialog; `done` gets the registered model's key. */
-export function historyDialog(done: (key: string) => void): void {
+/** Opens the dialog; `done` gets the registered model's key. `first`: a history already read (a table opened in
+ *  Plan's Open a study), shown at once. */
+export function historyDialog(done: (key: string) => void, first?: {rows: ReadRow[], from: string}): void {
   let read: {rows: ReadRow[], from: string} | null = null;
   // the name the dialog gave from the last file or table read ('' none yet)
   let named = '';
@@ -68,7 +69,9 @@ export function historyDialog(done: (key: string) => void): void {
   const table = ui.input.choice<string>('Or a table open in Datagrok', {nullable: true,
     items: tables.map((t) => t.name)});
 
-  const d = ui.dialog('Model not in the atlas');
+  const d = modal('history', 'Model not in the atlas');
+  if (!d)
+    return;
   let ok: HTMLButtonElement | null = null; // named once onOK has made it
   // the control's measurements of the history read (with no group column, every row); none read: none
   const controls = () => read ? controlRows(read.rows, groupsOf(read.rows).length ? control.value : null) : [];
@@ -162,5 +165,7 @@ export function historyDialog(done: (key: string) => void): void {
   ok = okNamed(d, 'Use this model');
   control.root.style.display = 'none';
   refresh();
+  if (first)
+    show(first.rows, first.from);
   showCentred(d, {width: 460});
 }

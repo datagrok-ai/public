@@ -8,7 +8,7 @@ import type * as DG from 'datagrok-api/dg';
 import {Block, fill} from './docx';
 import {HUMANE} from './engine';
 import {GroupDetails, StudyMeta, animalsLine} from './study-meta';
-import {closeNamed, num, plainError, showCentred} from './ui';
+import {closeNamed, num, plainError, showCentred, modal, modalOf} from './ui';
 
 /** An item: met, to do, or known only once the study is analyzed (`later`); `says` one short line, `detail` the full
  *  text, `asks` what the guideline asks for; `fix`: where the app fills the gap (`details`: the study's
@@ -181,7 +181,11 @@ items: ArriveItem[], actions: ChecklistActions = {}): DG.Dialog {
   const done = items.filter((x) => x.done).length;
   const grid = ui.div([], {style: {display: 'grid', gridTemplateColumns: '16px max-content minmax(0, 1fr)',
     gap: '6px 12px', alignItems: 'baseline', maxWidth: '640px'}});
-  const d = ui.dialog(`${spec.title} · ${done} of ${items.length}`);
+  // (one checklist of a kind at a time: a second click brings the open one up)
+  const purpose = `checklist:${spec.title}`;
+  const d = modal(purpose, `${spec.title} · ${done} of ${items.length}`);
+  if (!d)
+    return modalOf(purpose)!;
   for (const x of items) {
     if (x.group && x.group !== lastGroup) {
       grid.append(ui.span([x.group], {style: {gridColumn: '1 / -1', fontWeight: '600',

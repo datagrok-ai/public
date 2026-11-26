@@ -27,10 +27,11 @@ import {LIMITS_TAG, LINE_TAG, LOG_TAG, LOOKS_TAG, REVEALED, VOLUME_TAG, WEIGHT_T
   newStudyTable, parseStudy, EXCLUDED, EXPOSURE_TAG, exposureOfTag, stamped, lineOf, setHistoryOn,
   restoreFields, roleColumns, saveStudy, studyNameOf, studyOf, tableOf, ticked} from './study-file';
 import {TWIN_NOTE, savedHistory} from './history-models';
-import {markLine} from './ui';
+import {markLine, modal} from './ui';
 import {WeightRow, groupWeights, readSchedule} from './schedule';
 import {editLayout, panelTabs, Tab} from './panels';
 import {stagePage, studyHeader} from './study-header';
+import {openButton, takesFiles} from './hub-view';
 import {animalMarks, animalPanel as panelOfAnimal, blindColumn, emptyStudy, openStudyTable, studyDataLine, studyMenu,
   studyOf as studyNamesOf,
   keepStudyField, tagStudy, withoutExcluded} from './study-table';
@@ -596,8 +597,10 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
       Array.from({length: df.rowCount}, (_, i) => i).some((i) => !groups.isNone(i) && String(groups.get(i)).trim());
     if (!allocated)
       return void propose().catch(failed('The groups could not be proposed'));
-    const d = ui.dialog('Replace the groups?')
-      .add(dialogLine('Every animal gets a new random group', 'From its latest volume, in place of the one it has. ' +
+    const d = modal('replace-groups', 'Replace the groups?');
+    if (!d)
+      return;
+    d.add(dialogLine('Every animal gets a new random group', 'From its latest volume, in place of the one it has. ' +
         'The study\'s log keeps the new seed, not the old groups.'))
       .onOK(() => void propose().catch(failed('The groups could not be proposed')));
     okNamed(d, 'Replace');
@@ -1273,8 +1276,8 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
   // saving is always in reach, as in Plan: a study's measurements, log and notes live in the table until saved
   form.effect(() => [saveButton, analyzeButton].forEach((b) => b.hidden = !result.value));
   return {
-    root: stagePage(head.row, panes),
-    ribbon: [[head.steps], [saveButton, analyzeButton]],
+    root: takesFiles(stagePage(head.row, panes), {stage: 'monitor'}),
+    ribbon: [[head.steps], [openButton({stage: 'monitor'}), saveButton, analyzeButton]],
     path: '/monitor',
     status: computed(() => busy.value ? 'Forecasting the study…' :
       result.value ? modelName(String(status.value?.get('line', 0))) : ''),

@@ -9,7 +9,7 @@ import {PLAN_EXT, SavedPlan, parsePlan} from './plan-file';
 import {STUDY_EXT, SavedStudy, VOLUME_TAG, WEIGHT_TAG, oneDecimal, parseStudy} from './study-file';
 import {Answers, TableRead, animalProblem, cellsOfFrame, csvOf, readStudy, sheetProblem,
   studySheets} from './study-reader';
-import {dialogLine, okNamed, plainError, showCentred} from './ui';
+import {dialogLine, okNamed, plainError, showCentred, modal} from './ui';
 import {cellsOf, separatorOf} from './wide-table';
 import {Merged, mergedInWorkbook} from './xlsx-raw';
 
@@ -132,6 +132,19 @@ export function suggestedStage(b: Brought): OpenStage {
   return 'plan';
 }
 
+const LABEL: {[s in OpenStage]: string} = {plan: 'Plan', monitor: 'Monitor', analyze: 'Analyze'};
+
+/** What the dialog says when the files brought open in another stage than the one it was opened from (`asked`):
+ *  never a refusal, only where they open and why; null when they open where asked. */
+export function routedNote(b: Brought, asked: OpenStage, opens: OpenStage): string | null {
+  if (asked === opens)
+    return null;
+  if (b.table && !b.plan && asked === 'monitor')
+    return 'Without its plan, the study opens in Analyze. Add its .pmxplan to follow it in Monitor.';
+  const what = b.study ? 'A followed study' : b.table ? 'A table of measurements' : 'A plan';
+  return `${what} opens in ${LABEL[opens]}, not in ${LABEL[asked]}.`;
+}
+
 /** What a file holds as text: an Excel file's sheet, read through PowerPack (a soft dependency) and written as CSV.
  *  With several sheets that read as a study, the user picks one. Throws a plain Error when it cannot be read. */
 export async function fileText(f: File): Promise<{text: string, merged: Merged[]}> {
@@ -169,7 +182,9 @@ export async function fileText(f: File): Promise<{text: string, merged: Merged[]
     const name = names.length === 1 || sheets.length === 1 ? names[0] : await new Promise<string>((resolve, reject) => {
       const input = ui.input.choice('Sheet', {value: names[0], items: names});
       const none = () => reject(new Error('No sheet was chosen.'));
-      const d = ui.dialog('Which sheet holds the measurements?');
+      const d = modal('xlsx-sheet', 'Which sheet holds the measurements?');
+      if (!d)
+        return none();
       // closing with X or Escape is a close, not a cancel; after OK the promise is settled and this does nothing
       d.add(dialogLine(f.name)).add(input).onOK(() => resolve(input.value!)).onCancel(none);
       okNamed(d, 'Open');

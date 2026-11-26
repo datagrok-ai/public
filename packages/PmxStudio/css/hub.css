@@ -1,6 +1,6 @@
 /* PMX Studio's home: the stages as cards joined as in Flow, the growth of a study behind them, and the way in for a
    study under way. Colours and type from Datagrok's tokens, so it follows the theme. */
-.pmx-hub, .pmx-open {
+.pmx-hub, .pmx-open, .pmx-drop {
   --pmx-ease: cubic-bezier(.22, .61, .36, 1);
   --pmx-ease-out: cubic-bezier(.16, 1, .3, 1);
   --pmx-muted: var(--dg-grey-5, #717581);
@@ -32,31 +32,50 @@
 /* the stages */
 .pmx-flow { margin-top: 44px; display: grid; align-items: stretch; }
 .pmx-card {
-  font: inherit; color: inherit; text-align: left; cursor: pointer; width: 100%; min-width: 0; min-height: 188px;
-  box-sizing: border-box; padding: 24px; display: flex; flex-direction: column; gap: 12px;
+  min-width: 0; min-height: 188px; box-sizing: border-box; display: flex; flex-direction: column;
   background: var(--dg-bg, #fff); border: 1px solid var(--dg-border, #DBDCDF); border-radius: 8px;
   transition: transform .55s var(--pmx-ease-out), box-shadow .55s var(--pmx-ease-out), border-color .35s ease;
 }
-.pmx-card:hover, .pmx-card:focus-visible {
+.pmx-card:hover, .pmx-card:focus-within {
   transform: translateY(-4px);
   border-color: color-mix(in srgb, var(--dg-accent, #2083D5) 45%, var(--dg-border, #DBDCDF));
   box-shadow: 0 1px 2px rgba(31, 42, 55, .04), 0 18px 36px -14px color-mix(in srgb, var(--dg-accent, #2083D5) 40%, transparent);
-  outline: none;
 }
 .pmx-card:active { transform: translateY(-2px) scale(.995); transition-duration: .15s; }
+/* the upper area opens the stage: the whole of it, as the card did */
+.pmx-card-main {
+  font: inherit; color: inherit; text-align: left; cursor: pointer; flex: 1 1 auto; width: 100%; min-width: 0;
+  box-sizing: border-box; padding: 24px 24px 18px; display: flex; flex-direction: column; gap: 12px;
+  background: none; border: 0; border-radius: 8px 8px 0 0; outline: none;
+}
+.pmx-card-main:focus-visible { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--dg-accent, #2083D5) 35%, transparent); }
+/* its demo, below a thin rule */
+.pmx-card-foot { margin: 0 24px; padding: 10px 0 14px; border-top: 1px solid var(--dg-border, #DBDCDF); }
 .pmx-card-top { display: flex; align-items: center; justify-content: space-between; width: 100%; }
 .pmx-ico {
   width: 44px; height: 44px; flex: 0 0 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
   background: var(--pmx-tint); color: var(--dg-accent, #2083D5);
   transition: background-color .45s var(--pmx-ease), color .45s var(--pmx-ease), transform .55s var(--pmx-ease-out);
 }
-.pmx-card:hover .pmx-ico, .pmx-card:focus-visible .pmx-ico { background: var(--dg-accent, #2083D5); color: #fff; transform: scale(1.05); }
+.pmx-card:hover .pmx-card-main .pmx-ico, .pmx-card-main:focus-visible .pmx-ico { background: var(--dg-accent, #2083D5); color: #fff; transform: scale(1.05); }
 .pmx-num { font-size: 12px; color: var(--pmx-muted); font-variant-numeric: tabular-nums; }
 .pmx-name { display: block; margin-top: 4px; font-size: 19px; font-weight: 500; color: var(--dg-text-color, #4D5261); }
 .pmx-what { display: block; line-height: 1.55; color: var(--pmx-muted); }
 .pmx-go { display: inline-block; opacity: 0; transform: translateX(-6px); color: var(--dg-accent, #2083D5);
   transition: opacity .4s var(--pmx-ease), transform .5s var(--pmx-ease-out); }
-.pmx-card:hover .pmx-go, .pmx-card:focus-visible .pmx-go { opacity: 1; transform: none; }
+.pmx-card:hover .pmx-go, .pmx-card-main:focus-visible .pmx-go { opacity: 1; transform: none; }
+
+/* a secondary way in: a card's demo, or the demo studies under an empty list */
+.pmx-demo { font: inherit; color: inherit; text-align: left; cursor: pointer; display: flex; gap: 10px; align-items: flex-start;
+  width: 100%; padding: 4px 0; background: none; border: 0; border-radius: 4px; }
+.pmx-demo:focus-visible { outline: 2px solid color-mix(in srgb, var(--dg-accent, #2083D5) 45%, transparent); outline-offset: 2px; }
+.pmx-demo-ico { width: 22px; height: 22px; flex: 0 0 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: var(--pmx-tint); color: var(--dg-accent, #2083D5); transition: background-color .35s var(--pmx-ease), color .35s var(--pmx-ease); }
+.pmx-demo:hover .pmx-demo-ico, .pmx-demo:focus-visible .pmx-demo-ico { background: var(--dg-accent, #2083D5); color: #fff; }
+.pmx-demo-title { display: block; font-weight: 500; color: var(--dg-accent, #2083D5); }
+.pmx-demo-what { display: block; margin-top: 2px; font-size: 12px; line-height: 1.45; color: var(--pmx-muted); }
+.pmx-library .pmx-demo { margin-top: 10px; width: auto; }
+.pmx-demo[hidden] { display: none; }
 
 /* the connections, as Flow draws its edges */
 .pmx-link { position: relative; z-index: 2; transition: opacity .45s var(--pmx-ease); }
@@ -154,10 +173,14 @@
 .pmx-file-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid var(--dg-border, #DBDCDF); border-radius: 6px; }
 .pmx-file-row b { display: block; font-weight: 500; color: var(--dg-text-color, #4D5261); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pmx-file-row span { color: var(--pmx-muted); }
-.pmx-holds { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.pmx-holds li { display: flex; gap: 10px; align-items: flex-start; }
-.pmx-holds small { display: block; margin-top: 2px; font-size: 12px; color: var(--pmx-muted); }
-.pmx-holds .ok { color: var(--dg-green-2, #3CB173); } .pmx-holds .none { color: var(--dg-grey-4, #9497A0); } .pmx-holds .warn { color: var(--dg-orange-2, #FFA24A); }
+/* what a file read holds: the study as the stages' header names it, then the reading's notes */
+.pmx-read { display: flex; gap: 14px; align-items: flex-start; padding: 16px; border: 1px solid var(--dg-border, #DBDCDF); border-radius: 8px; background: var(--dg-bg, #fff); }
+.pmx-read .pmx-ico { width: 40px; height: 40px; flex: 0 0 40px; }
+.pmx-read-text { min-width: 0; flex: 1 1 auto; }
+.pmx-read-name { font-size: 15px; font-weight: 500; color: var(--dg-text-color, #4D5261); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pmx-read-facts { margin-top: 4px; color: var(--dg-text-color, #4D5261); font-variant-numeric: tabular-nums; }
+.pmx-read-files { margin-top: 6px; font: 400 11.5px var(--dg-font-family-mono, 'Roboto Mono', monospace); color: var(--pmx-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pmx-read-notes { display: flex; flex-direction: column; gap: 6px; padding: 0 2px; }
 .pmx-q { font-size: 12px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; color: var(--pmx-muted); }
 .pmx-opts { display: flex; flex-direction: column; gap: 8px; }
 .pmx-q + .pmx-opts { margin-top: 8px; }

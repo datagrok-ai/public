@@ -9,7 +9,7 @@ import {div, divV, span, Tooltip} from '@datagrok-libraries/u2';
 
 import {groupColors} from './colors';
 import {WEEKDAY_NAMES} from './frames';
-import {okNamed, showCentred} from './ui';
+import {okNamed, showCentred, modal} from './ui';
 import {StudyMeta, dateOf, dateText, dosingDays, noteDialog, schedulesOf, startFrom, withException, withGiven}
   from './study-meta';
 
@@ -181,7 +181,10 @@ export function dayActions(get: () => StudyMeta, set: (m: StudyMeta) => void, an
       items});
     const note = ui.input.string('Why', {value: '', placeholder: 'e.g. animal unwell, holiday',
       tooltipText: 'Optional: kept with the change'});
-    const d = ui.dialog(title).add(ui.inputs(withNote ? [chosen, note] : [chosen])).onOK(() =>
+    const d = modal('calendar-groups', title);
+    if (!d)
+      return;
+    d.add(ui.inputs(withNote ? [chosen, note] : [chosen])).onOK(() =>
       ok(groups.filter((_, i) => (chosen.value ?? []).includes(items[i])), note.value.trim()));
     const button = okNamed(d, verb);
     const sync = () => button.disabled = withNote && (chosen.value ?? []).length === 0;
@@ -227,7 +230,10 @@ export function dayActions(get: () => StudyMeta, set: (m: StudyMeta) => void, an
     const input = ui.input.date('Date', {tooltipText: 'Every other day of the study follows from it'});
     if (now)
       input.stringValue = now.toISOString().slice(0, 10);
-    const d = ui.dialog(`Date of day ${day}`).add(input).onOK(() => {
+    const d = modal('calendar-date', `Date of day ${day}`);
+    if (!d)
+      return;
+    d.add(input).onOK(() => {
       const iso = (input.value as unknown as {format(f: string): string} | null)?.format('YYYY-MM-DD');
       if (iso)
         set({...get(), start: startFrom(iso, day)});

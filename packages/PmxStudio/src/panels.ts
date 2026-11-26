@@ -8,7 +8,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {div, span} from '@datagrok-libraries/u2';
 
-import {block, okNamed, showCentred} from './ui';
+import {block, okNamed, showCentred, modal} from './ui';
 import {_package} from './package';
 import {canEditLabRules, saveLabSetting} from './outlier-rules';
 
@@ -354,8 +354,10 @@ function layoutDialog(stage: string, name: string, defaults: Slot[], now: Slot[]
   const help = span('Drag to move · drag a corner to resize · × hides', 'pmx-layout-help');
   ui.tooltip.bind(help, 'On a focused panel, Alt+arrows move it and Alt+Shift+arrows change its width. The header ' +
     'and the figures stay on top.');
-  const d = ui.dialog(`Layout of ${name}`)
-    .add(div([help, board, tray, status], 'pmx-layout'))
+  const d = modal('layout', `Layout of ${name}`);
+  if (!d)
+    return;
+  d.add(div([help, board, tray, status], 'pmx-layout'))
     .onOK(() => {
       // the lab's layout (or the stage's) kept as it is is no layout of one's own: a later lab change reaches it
       if (same(work, labLayout(stage, defaults) ?? defaults))

@@ -975,7 +975,7 @@
       }
     },
     "packages/PmxStudio": {
-      "files": 92,
+      "files": 93,
       "u2Files": 28,
       "valueValue": 0,
       "valuePeek": 0,
@@ -997,10 +997,10 @@
       "subclassEms": 0,
       "classBuildsUi": 0,
       "cssFiles": 2,
-      "cssLines": 478,
+      "cssLines": 501,
       "cssInternalLines": 5,
       "cssImportant": 19,
-      "commentLines": 4360,
+      "commentLines": 4454,
       "fileHeaders": 55,
       "privateDocs": 0,
       "classes": {
@@ -1511,6 +1511,13 @@
       "reason": "PmxStudio release after QA: platform events (input onChanged in dialogs, DataFrame edits, view removal) each unsubscribed by hand or ending with their dialog; library column widths and reduced motion at narrow screens and StatCard sizing need !important over inline styles; file headers kept as module docs",
       "grown": [
         "packages/PmxStudio u2/comments: 18 → 21"
+      ]
+    },
+    {
+      "date": "2026-11-26",
+      "reason": "PmxStudio 0.1.1: the Overview cards' demo foot and the read-file summary in the Open a study dialog (hub.css)",
+      "grown": [
+        "packages/PmxStudio cssLines: 478 → 501"
       ]
     }
   ]

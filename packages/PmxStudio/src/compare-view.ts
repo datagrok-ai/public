@@ -261,7 +261,7 @@ export async function compareView(entries: LibraryEntry[],
   const shownEntries = entries.filter((e) => texts.has(e));
   const view = DG.View.create();
   view.name = 'PMX Studio · Compare';
-  // no Toolbox or Browse beside it (empty for this page): it stands alone, as the Overview does
+  // a page of the app, quiet as the Overview is (stages.ts quietPanels)
   view.root.dataset[STANDS_ALONE] = 'true';
   const host = ViewHost.of(view);
   const muted = (t: string) => {

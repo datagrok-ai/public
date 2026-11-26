@@ -6,7 +6,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {okNamed, setUserSetting, showCentred, userSetting} from './ui';
+import {okNamed, setUserSetting, showCentred, userSetting, modal} from './ui';
 import {domainStorageOn} from './storage-setting';
 import {ArmPart, controlByName, describeArm, drugKey, parseArmName} from './arm-name';
 import {DoseException, DosingRules, Schedule, doseLine, dosedDays, doseTotal, excepted, readSchedule, validDay}
@@ -202,7 +202,10 @@ export function noteDialog(day: number, label: string, animals: string[], save: 
     tooltipText: 'Empty: the note is about the study'});
   const text = ui.input.textArea('Note', {value: ''});
   // what is noted first (typed at once), then its kind and, if any, its animal
-  const d = ui.dialog(`Note on ${label}`).add(ui.inputs([text, kind, ...(animals.length ? [animal] : [])]));
+  const d = modal('day-note', `Note on ${label}`);
+  if (!d)
+    return;
+  d.add(ui.inputs([text, kind, ...(animals.length ? [animal] : [])]));
   d.onOK(() => save({day, kind: kind.value as NoteKind, animal: animal.value ?? '', text: text.value.trim(),
     ...stamp()}));
   const ok = okNamed(d, 'Add note');

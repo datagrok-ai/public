@@ -9,7 +9,7 @@ import {HUMAN_UNITS, HumanExposure, ReferenceRow, STAT_TEXT, cvOk, fromReference
   referenceRow}
   from './exposure';
 import {humanReference} from './priors';
-import {closeNamed, dialogLine, okNamed, showCentred} from './ui';
+import {closeNamed, dialogLine, okNamed, showCentred, modal, preparing} from './ui';
 import {esc} from './sheet';
 
 // (what is optional is said on its header's hover: a wrapped header left "( optional)" on a line of its own)
@@ -50,9 +50,19 @@ export function openReferenceTable(rows: ReferenceRow[]): void {
  *  OK. */
 export async function humanExposureDialog(arms: string[], now: Map<string, HumanExposure>,
   done: (m: Map<string, HumanExposure>) => void, meta: StudyMeta | null = null): Promise<void> {
+  // (the reference table is read before the dialog shows: a second click meanwhile opens nothing more)
+  await preparing(EXPOSURE_DIALOG, () => exposureDialogNow(arms, now, done, meta));
+}
+
+const EXPOSURE_DIALOG = 'patients-exposure';
+
+async function exposureDialogNow(arms: string[], now: Map<string, HumanExposure>,
+  done: (m: Map<string, HumanExposure>) => void, meta: StudyMeta | null): Promise<void> {
   const drugs = [...drugsOfArms(arms, meta)];
   if (drugs.length === 0) {
-    showCentred(closeNamed(ui.dialog('Patients\' exposure')).add(ui.divText('The groups name no drug.')));
+    const none = modal(EXPOSURE_DIALOG, 'Patients\' exposure');
+    if (none)
+      showCentred(closeNamed(none).add(ui.divText('The groups name no drug.')));
     return;
   }
   const rows = await humanReference().then((t) => t.drugs).catch(() => [] as ReferenceRow[]);
@@ -125,7 +135,10 @@ export async function humanExposureDialog(arms: string[], now: Map<string, Human
       ui.divText(`${drug}: not in the reference table, enter your source's values`), ...badCv(i)]));
   showLines();
   const sub = table.onDataChanged.subscribe(showLines);
-  const d = ui.dialog('Patients\' exposure').add(ui.divV([
+  const d = modal(EXPOSURE_DIALOG, 'Patients\' exposure');
+  if (!d)
+    return;
+  d.add(ui.divV([
     dialogLine('Each drug\'s exposure in patients, at their regimen. Empty: skipped.', 'Measured (a label, a ' +
       'clinical study) or projected (your DMPK team\'s projection). A drug in PMX Studio\'s reference table is ' +
       'filled from it, editable. Hover a column\'s header for its detail.'),

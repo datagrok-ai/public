@@ -23,7 +23,7 @@ import {ENDPOINT_RISK, MIN_GROUP, StudyDeclaration, combinationFailed, combinati
   LAB_SENSITIVE, diameterOf, finite, isFiniteNumber, labSpreadGroup, safeEndpoint, synergyClause} from './engine';
 import {askedOf, autoRun, block, callInputs, cardGrid, closeNamed, copyRow, fixedValue, hintLink, infoNote, notes,
   notesBox, num, pct, settleForm, showCentred, sized, markStage, statCard, swatch, volumeAxis, wrapCells, stagePanes,
-  whenSettled, docSubtitle, metricWord, setUserSetting, userSetting} from './ui';
+  whenSettled, docSubtitle, metricWord, setUserSetting, userSetting, modal} from './ui';
 import {checklistBlocks, checklistDialog} from './arrive';
 import {PREPARE_CREDIT, prepareDialog, prepareItems} from './prepare';
 import {ethicsParts, ethicsText} from './ethics-text';
@@ -33,6 +33,9 @@ import {ARRIVE_STUDY_PLAN_URL, FormSection, NTS_CREDIT, NTS_URL, NtsLanguage, Pl
 import {openStage, showStage} from './stages';
 import {editLayout, panelGrid, Slot} from './panels';
 import {stagePage, studyHeader} from './study-header';
+import {openButton, takesFiles} from './hub-view';
+import type {OpenAt} from './hub-view';
+import {historyDialog} from './history-dialog';
 import {followPlan} from './monitor-view';
 import {PLAN_ATLAS_NOTE, SavedPlan, atlasNote, downloadPlan, parsePlan, planOf, planSaved, plansFolder,
   planKey, savePlan, shownPath} from './plan-file';
@@ -908,7 +911,10 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
           };
           total.onChanged.subscribe(show);
           doseDialog?.close();
-          doseDialog = showCentred(closeNamed(ui.dialog(`Total dose for ${arm}`)).add(ui.inputs([total])).add(answer));
+          const d = modal('total-dose', `Total dose for ${arm}`);
+          if (!d)
+            return;
+          doseDialog = showCentred(closeNamed(d).add(ui.inputs([total])).add(answer));
           total.input.focus();
         })];
       const line = div([span(`${arm}: `), text, ...match], 'pmx-plan-doses');
@@ -1671,9 +1677,13 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     return {name: defaultName(r), groups: ['Control', ...armsIn(r)].map((name) => ({name, color: colors[name]})),
       status: `${modelName(r.plan.get('line', 0))} · planned`, meta: () => meta.value, setMeta: (m) => meta.value = m};
   }), (s) => void openStage(s));
+  // Open… here opens a plan, or a table as a model's growth history (the model then picked here, as + Add your own
+  // model does)
+  const at: OpenAt = {stage: 'plan', history: (t) => historyDialog((key) => lineInput.value = key,
+    {rows: t.read.rows, from: t.file})};
   return {
-    root: stagePage(head.row, panes),
-    ribbon: [[head.steps], [saveButton, followButton]],
+    root: takesFiles(stagePage(head.row, panes), at),
+    ribbon: [[head.steps], [openButton(at), saveButton, followButton]],
     path: '/plan',
     status: computed(() => busy.value ? 'Designing the study…' : result.value ? result.value.plan.name : ''),
   };

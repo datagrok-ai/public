@@ -17,7 +17,7 @@ import {historyKeys, tumorModels} from './priors';
 import {filePreview} from './file-preview';
 import {LinkedRow, domainStorageOn, importFile, linkedRow, rowsOf, list, open, setRowOn} from './store';
 import {tableOf} from './study-file';
-import {plainError} from './ui';
+import {plainError, modal} from './ui';
 import {esc} from './sheet';
 
 export * from './package.g';
@@ -51,7 +51,10 @@ function chosenRow(kind: 'plan' | 'study', rows: LinkedRow[]): Promise<string | 
     return Promise.resolve(rows[0].id);
   return new Promise((resolve) => {
     let picked: string | null = null;
-    const d = ui.dialog(`More than one ${kind} has this ID`).add(ui.divText('Open which one?'));
+    const d = modal('which-row', `More than one ${kind} has this ID`);
+    if (!d)
+      return resolve(null);
+    d.add(ui.divText('Open which one?'));
     for (const r of rows) {
       // (the time too: two rows saved the same day read the same otherwise)
       const when = r.updated ? new Date(r.updated).toLocaleString([], {dateStyle: 'short', timeStyle: 'short'}) : '';

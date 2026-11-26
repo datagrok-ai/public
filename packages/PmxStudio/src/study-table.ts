@@ -22,7 +22,8 @@ import {ROLES, WEIGHT, pastedNumber, plural} from './wide-table';
 import {EXCLUDED, FLAGGED, MARK_REASON, STUDY_TAG, addLog, groupsShown, roleColumns, ticked} from './study-file';
 import {metaOf} from './study-meta';
 import {colorsOfTable, paint} from './colors';
-import {PanelFact, dialogLine, objectPanel, okNamed, showCentred, signed, sparkline, stageOf} from './ui';
+import {PanelFact, dialogLine, objectPanel, okNamed, showCentred, signed, sparkline, stageOf, modal, preparing}
+  from './ui';
 import {esc} from './sheet';
 
 export {pastedNumber};
@@ -266,8 +267,10 @@ export function markRows(df: DG.DataFrame, rows: number[], action: string, what:
   const exclude = action === 'exclude';
   const reason = ui.input.textArea('Reason', {value: ''});
   (reason.input as HTMLTextAreaElement).placeholder = exclude ? 'Required: it is reported' : 'Optional';
-  const d = ui.dialog(`${exclude ? 'Exclude' : 'Flag'} ${what}`)
-    .add(dialogLine(exclude ? 'Left out of the analysis' : 'Stays in the analysis, marked to look at',
+  const d = modal('mark-rows', `${exclude ? 'Exclude' : 'Flag'} ${what}`);
+  if (!d)
+    return;
+  d.add(dialogLine(exclude ? 'Left out of the analysis' : 'Stays in the analysis, marked to look at',
       exclude ? 'Left out of the analysis and the forecasts, and reported with its reason' : undefined))
     .add(reason)
     .onOK(() => {
@@ -332,8 +335,10 @@ function caliperDialog(df: DG.DataFrame): void {
     nullable: false});
   const width = ui.input.choice('Width (mm)', {items: [ADD, ...nums], value: guess(/^(w|wid|width|short)/i),
     nullable: false});
-  const d = ui.dialog('Volume from calipers')
-    .add(dialogLine('Volume = length × width² / 2 (mm³)', 'Recomputed as the readings are typed. A column not ' +
+  const d = modal('calipers', 'Volume from calipers');
+  if (!d)
+    return;
+  d.add(dialogLine('Volume = length × width² / 2 (mm³)', 'Recomputed as the readings are typed. A column not ' +
       'in the table yet is added.'))
     .add(ui.inputs([length, width]))
     .onOK(() => void caliperVolume(df, length.value!, width.value!).then((name) => grok.shell.info(name ===
@@ -425,6 +430,13 @@ export function onRulesChanged(fn: () => void): () => void {
 /** The rules dialog: each rule on or off with its threshold; saved as the user's own, or for the whole lab by who may,
  *  and back to the lab's. */
 export async function rulesDialog(): Promise<void> {
+  // (who may change the lab's rules is asked before the dialog shows: a second click meanwhile opens nothing more)
+  await preparing(RULES_DIALOG, rulesDialogNow);
+}
+
+const RULES_DIALOG = 'outlier-rules';
+
+async function rulesDialogNow(): Promise<void> {
   const {rules, from} = rulesInForce();
   const canLab = await canEditLabRules().catch(() => false);
   const impossible = ui.input.bool('Impossible values', {value: rules.impossible,
@@ -465,7 +477,9 @@ export async function rulesDialog(): Promise<void> {
   };
   [jumpOn, groupOn, weightOn].forEach((x) => x.onChanged.subscribe(follow));
   follow();
-  const d = ui.dialog('Outlier rules');
+  const d = modal(RULES_DIALOG, 'Outlier rules');
+  if (!d)
+    return;
   d.add(dialogLine(`${whose[from]} in force`, 'A value they find is only painted, for you to look at: nothing ' +
     'leaves the analysis unless you exclude it.' + (!canLab && labRules() ? ' The lab’s rules are changed by its ' +
     'responsible group.' : '')));

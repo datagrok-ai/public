@@ -5,11 +5,13 @@ import '../css/hub.css';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {BasicTable, computed, effect, signal} from '@datagrok-libraries/u2';
+import {BasicTable, buttonWithIcon, computed, effect, signal} from '@datagrok-libraries/u2';
 import {ViewHost} from '@datagrok-libraries/u2/dg';
 import type {ViewContent} from '@datagrok-libraries/u2/dg';
 
-import {isoToday, markStage, plainError, setUserSetting, stageOf, userSetting} from './ui';
+import {STAGES, isoToday, markLine, markStage, modal, modalOf, noteLine, plainError, preparing, setUserSetting,
+  stageOf, userSetting} from './ui';
+import {studySummary as savedSummary} from './file-preview';
 import {esc} from './sheet';
 import {steps} from './study-header';
 import type {Stage} from './ui';
@@ -18,10 +20,13 @@ import {_package} from './package';
 import {planView} from './plan-view';
 import {analyzeView} from './analyze-view';
 import {monitorView, openStudyFile} from './monitor-view';
-import {newStudyTable, parseStudy, tableOf} from './study-file';
+import {EXPOSURE_TAG, FINISHED_TAG, newStudyTable, parseStudy, roleColumns, saveStudy, studyOf as savedStudyOf,
+  tableOf} from './study-file';
+import {concentrationMapping, exposureJson, ncaByArm, ncaInstalled, runNca} from './exposure';
+import {controlOf} from './study-effect';
 import {PLAN_TAG, parsePlan} from './plan-file';
 import {domainStorageOn, entryText, firstOpen, firstOpenNotice, importFolders, keptRows, keptRowsLine, list,
-  markFromFile, markTableFromFile, open, ownerOf, remove, restore, saveError, savedPlans, share}
+  markFromFile, markTableFromFile, myEntries, open, ownerOf, remove, restore, save, savedPlans, saveError, share}
   from './store';
 import {metaOf} from './study-meta';
 
@@ -35,7 +40,10 @@ export const libraryWidths = (rows: boolean) => ({pick: 3, study: 16, drugs: 10,
 /** Shares a plan or study of the user's, to read, with the groups picked (a user is a group of one). */
 function shareDialog(e: LibraryEntry): void {
   const who = ui.input.userGroups('Share with');
-  ui.dialog(`Share "${e.name}"`).add(who).add(ui.divText('They can open it and save a copy of their own; only you ' +
+  const d = modal('share', `Share "${e.name}"`);
+  if (!d)
+    return;
+  d.add(who).add(ui.divText('They can open it and save a copy of their own; only you ' +
     'can change it.', 'pmx-muted')).onOK(() => {
     const groups = who.value ?? [];
     if (!groups.length)
@@ -50,7 +58,7 @@ function shareDialog(e: LibraryEntry): void {
 
 /** The user setting that says the user's files were brought in (domain storage). */
 const FILES_IN = 'filesBroughtIn';
-import {LibraryEntry, libraryReader, matches} from './library';
+import {LibraryEntry, entryOf, libraryReader, matches} from './library';
 import {compareTexts, compareView} from './compare-view';
 import {checklistDialog} from './arrive';
 import {CTD_TITLE, M4S_URL, commonDrug, ctdBlocks, ctdOfSaved, m4sOrder, summaryItems} from './ctd';
@@ -60,7 +68,8 @@ import {download} from './report';
 /** A study Compare can read: one followed, with measurements. */
 const comparable = (e: LibraryEntry) => e.kind === 'study' && e.day !== null;
 import {dayToday} from './calendar';
-import {Brought, OPENED_EXTS, OpenStage, bring, fileText, readFile, suggestedStage} from './open-study';
+import {Brought, MeasuredTable, OPENED_EXTS, OpenStage, bring, fileText, readFile, routedNote, suggestedStage}
+  from './open-study';
 import {Question, studySummary, waiting} from './study-reader';
 import {plural} from './wide-table';
 import {mergedWarning} from './xlsx-raw';
@@ -105,6 +114,7 @@ const ICON = {
   warn: '<path d="M12 3l9.5 17h-19z"/><path d="M12 10v4M12 17h0"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h0"/>',
   add: '<path d="M12 5v14M5 12h14"/>',
+  play: '<path d="M8 5.5v13l10.5-6.5z"/>',
 };
 
 // ---- the growth behind the page ------------------------------------------------------------------------------------
@@ -175,22 +185,36 @@ const CARDS: Card[] = [
     'each animal against what it would measure untreated.', icon: ICON.analyze},
 ];
 
-function card(c: Card, onOpen: () => void, onHover: (on: boolean) => void): HTMLButtonElement {
-  const b = h('button', 'pmx-card pmx-rise', [
+/** A secondary way in, at a card's foot or under the empty list: ▷, what it does, and a line on what it opens. */
+function demoButton(title: string, what: string, run: () => void): HTMLButtonElement {
+  const b = h('button', 'pmx-demo', [h('span', 'pmx-demo-ico', [icon(ICON.play, 12, 1.8)]),
+    h('span', '', [h('span', 'pmx-demo-title', [title]), h('span', 'pmx-demo-what', [what])])], {type: 'button'});
+  b.addEventListener('click', run);
+  return b;
+}
+
+/** A stage's card: the upper area one button that opens the stage, its demo a second button at the foot (no button
+ *  inside a button: each is reached and read on its own). */
+function card(c: Card, onOpen: () => void, onDemo: () => void, onHover: (on: boolean) => void): HTMLElement {
+  const main = h('button', 'pmx-card-main', [
     h('span', 'pmx-card-top', [h('span', 'pmx-ico', [icon(c.icon)]), h('span', 'pmx-num', [c.n])]),
     h('span', 'pmx-name', [c.name + ' ', h('span', 'pmx-go', ['→'], {'aria-hidden': 'true'})]),
     h('span', 'pmx-what', [c.what]),
-  ], {'type': 'button', 'data-stage': c.stage});
-  b.addEventListener('click', onOpen);
-  for (const [ev, on] of [['mouseenter', true], ['focus', true], ['mouseleave', false], ['blur', false]] as const)
-    b.addEventListener(ev, () => onHover(on));
-  return b;
+  ], {'type': 'button'});
+  main.addEventListener('click', onOpen);
+  const demo = demoButton('Try with demo data', DEMO[c.stage as OpenStage].what, onDemo);
+  demo.setAttribute('aria-label', `Try ${c.name} with demo data: ${DEMO[c.stage as OpenStage].what}`);
+  const el = h('div', 'pmx-card pmx-rise', [main, h('div', 'pmx-card-foot', [demo])], {'data-stage': c.stage});
+  for (const [ev, on] of [['mouseenter', true], ['focusin', true], ['mouseleave', false], ['focusout', false]] as const)
+    el.addEventListener(ev, () => onHover(on));
+  return el;
 }
 
 // ---- the page ------------------------------------------------------------------------------------------------------
 
 function hubContent(self: ViewHost): ViewContent {
-  const open = (stage: Stage) => stage === 'plan' ? void openStage('plan') : openStudyDialog();
+  const open = (stage: Stage) => stage === 'plan' ? void openStage('plan') :
+    void openStudyDialog(undefined, {stage: stage as OpenStage});
   // the card under the pointer lights the edges that touch it and dims the others
   const edges: {el: HTMLElement, ends: Stage[]}[] = [];
   const hover = (stage: Stage | null) => {
@@ -201,7 +225,8 @@ function hubContent(self: ViewHost): ViewContent {
     }
   };
   const cards = CARDS.map((c, i) => {
-    const el = card(c, () => open(c.stage), (on) => hover(on ? c.stage : null));
+    const el = card(c, () => open(c.stage), () => void openDemo(c.stage as OpenStage),
+      (on) => hover(on ? c.stage : null));
     el.style.animationDelay = `${0.16 + i * 0.08}s`;
     return el;
   });
@@ -240,14 +265,52 @@ function hubContent(self: ViewHost): ViewContent {
   const page = h('div', 'pmx-hub-page', [title, lede, flow, under, strip, studies.root]);
 
   // a file dragged anywhere on the page: the whole page takes it, and the dialog opens with it read
-  const dropLayer = h('div', 'pmx-drop', [h('div', 'pmx-drop-frame'),
-    h('div', 'pmx-drop-text', [h('span', 'pmx-ico', [icon(ICON.drop, 26, 1.7)]), 'Drop to open'])],
-  {'aria-hidden': 'true'});
-  const root = h('div', 'pmx-hub', [growthArt(), page, dropLayer]);
-  takeDrops(root, (on) => dropLayer.classList.toggle('is-open', on), (files) => openStudyDialog(files));
+  const layer = dropLayer();
+  const root = h('div', 'pmx-hub', [growthArt(), page, layer]);
+  takeDrops(root, (on) => layer.classList.toggle('is-open', on), (files) => openStudyDialog(files));
 
   // no path of its own: opened as the app, the platform gives it the app's; opened later, showStage does
-  return {root, ribbon: [[h('div', 'pmx-head', [steps('home', (s) => void openStage(s))])]]};
+  return {root, ribbon: [[h('div', 'pmx-head', [steps('home', (s) => void openStage(s))])]],
+    toolbox: hubToolbox(() => {
+      // Compare starts from the studies picked in the list: shown, with what to do
+      studies.root.scrollIntoView({behavior: 'smooth', block: 'start'});
+      grok.shell.info('Tick two studies with measurements or more in Your studies, then Compare.');
+    })};
+}
+
+/** The README, the app's help (Datagrok shows it in the help panel of the package). */
+export const HELP_URL = 'https://github.com/datagrok-ai/public/tree/master/packages/PmxStudio#readme';
+
+/** The Overview's toolbox: the page's ways in, as links (PMX Studio, the demo data, help). */
+function hubToolbox(compareSaved: () => void): HTMLElement {
+  const links = (items: [string, () => void, string][]) => ui.divV(items.map(([text, run, tip]) =>
+    ui.link(text, () => run(), tip)), {style: {gap: '6px'}});
+  const acc = ui.accordion('pmx-toolbox');
+  acc.addPane('PMX Studio', () => links([
+    ['Open a study…', () => void openStudyDialog(), 'A plan, a followed study or a table of measurements'],
+    ['New plan', () => void planView().then((v) => showStage('plan', v)), 'Plan a new study'],
+    ['Compare saved studies', compareSaved, 'Studies with measurements, side by side'],
+  ]), true);
+  acc.addPane('Demo', () => links([
+    ['Plan: ' + DEMO.plan.what, () => void openDemo('plan'), 'Opens the demo plan in Plan'],
+    ['Monitor: ' + DEMO.monitor.what, () => void openDemo('monitor'), 'Opens the demo study in Monitor'],
+    ['Analyze: ' + DEMO.analyze.what, () => void openDemo('analyze'), 'Opens the finished demo study in Analyze'],
+    ['Compare two demo studies', () => void compareDemo(), 'CT26 and MC38 trametinib, saved for you and opened ' +
+      'in Compare'],
+  ]), true);
+  acc.addPane('Help', () => {
+    const a = ui.link('PMX Studio help', HELP_URL, 'What each stage does, the files it opens and saves');
+    a.target = '_blank';
+    return ui.divV([a]);
+  }, true);
+  return acc.root;
+}
+
+/** What shows over a page while files are dragged over it. */
+function dropLayer(): HTMLElement {
+  return h('div', 'pmx-drop', [h('div', 'pmx-drop-frame'),
+    h('div', 'pmx-drop-text', [h('span', 'pmx-ico', [icon(ICON.drop, 26, 1.7)]), 'Drop to open'])],
+  {'aria-hidden': 'true'});
 }
 
 /** How far a study has gone: Plan — Monitor — Analyze, the stages behind it filled. */
@@ -313,6 +376,10 @@ function yourStudies(): {root: HTMLElement, reload: () => void} {
   host.hidden = true;
   const none = h('div', 'pmx-muted', ['No study matches']);
   const showNone = () => none.hidden = items.peek().length > 0;
+  // no studies yet: two demo studies to compare, saved as the user's own
+  const tryCompare = demoButton('Or compare two demo studies', 'CT26 and MC38 trametinib, saved for you and opened ' +
+    'in Compare', () => void compareDemo());
+  tryCompare.hidden = true;
   const today = h('div', 'pmx-library-today');
   // the stage filters, each with its count
   const chips = h('div', 'pmx-filters');
@@ -335,6 +402,7 @@ function yourStudies(): {root: HTMLElement, reload: () => void} {
     for (const el of [search.root, chips, table.root]) // (styles that set display would beat `hidden`)
       el.style.display = empty ? 'none' : '';
     none.textContent = empty ? trash ? 'Nothing deleted' : 'No studies yet' : 'No study matches';
+    tryCompare.hidden = !empty || trash;
     // (nothing is compared from the trash: no hint to pick)
     compareHint.hidden = trash || chosen.peek().length >= 2;
     today.textContent = todayLine(entries);
@@ -480,7 +548,8 @@ function yourStudies(): {root: HTMLElement, reload: () => void} {
               shareDialog(e);
             }, 'Share to read'), ui.iconFA('trash-alt', (ev: MouseEvent) => {
               ev.stopPropagation();
-              ui.dialog(`Delete "${e.name}"?`).add(ui.divText('It goes to the trash: Show deleted brings it back.'))
+              modal('delete', `Delete "${e.name}"?`)
+                ?.add(ui.divText('It goes to the trash: Show deleted brings it back.'))
                 .onOK(() => void remove(e.row!.kind, e.row!.id).then(reload,
                   (err) => grok.shell.error(saveError(err, e.row!.kind)))).show();
             }, 'Delete (to the trash)')])}] : [],
@@ -534,7 +603,7 @@ function yourStudies(): {root: HTMLElement, reload: () => void} {
       kept.hidden = !kept.textContent;
     }, () => {}); // (no domain tables to read: nothing to say)
   }
-  host.append(head, today, kept, h('div', 'pmx-library', [table.root, none]));
+  host.append(head, today, kept, h('div', 'pmx-library', [table.root, none, tryCompare]));
   return {root: host, reload};
 }
 
@@ -579,46 +648,108 @@ function takeDrops(target: HTMLElement, over: (on: boolean) => void, got: (files
 type Phase = 'drop' | 'loading' | 'loaded' | 'error';
 interface Option {stage: OpenStage, title: string, desc: string, note: string, disabled: boolean}
 
+/** Where the dialog was opened from: a stage's Open…, or a file dropped on its page. `history`: Plan's own use of a
+ *  table, as the growth history of a model outside the atlas. */
+export interface OpenAt {stage: OpenStage, history?: (t: MeasuredTable) => void}
+
+const labelOf = (s: OpenStage) => STAGES.find((x) => x.stage === s)!.label;
+/** What a stage's Open a study takes, said under its drop zone. */
+const TAKES: {[s in OpenStage]: string} = {
+  plan: 'A saved plan, or the growth history of a model outside the atlas',
+  monitor: 'A followed study, or the measurements of a running study with its plan',
+  analyze: 'The measurements of a finished study, with its plan. Mouse PK is added in Analyze, once it is open',
+};
+
+/** A stage's Open… in its header: the Open a study dialog, for that stage. */
+export function openButton(at: OpenAt): HTMLButtonElement {
+  const b = buttonWithIcon('Open…', 'folder-open', () => void openStudyDialog(undefined, at));
+  b.title = `Open a study in ${labelOf(at.stage)}. ${TAKES[at.stage]}.`;
+  return b;
+}
+
+/** A stage's page taking files dropped on it, as the Overview does: the Open a study dialog opens with them read.
+ *  The layer goes first: the page's last child is the panes, which take the height left. */
+export function takesFiles(page: HTMLElement, at: OpenAt): HTMLElement {
+  const layer = dropLayer();
+  page.style.position = 'relative';
+  page.prepend(layer);
+  takeDrops(page, (on) => layer.classList.toggle('is-open', on), (files) => void openStudyDialog(files, at));
+  return page;
+}
+
+const OPEN_DIALOG = 'open-study';
+/** What the Open a study dialog on screen does with files dropped on the page meanwhile: reads them in it. */
+let takeInOpen: (files: File[]) => Promise<void> = async () => {};
+
 /** The Open a study dialog: a file dropped on it, browsed for, or one of the user's plans; once read, what it holds
- *  and the stage it opens in (suggested from its dates). `first`: files dropped on the page, read at once. */
-export function openStudyDialog(first?: File[]): void {
+ *  and the stage it opens in (suggested from its dates). `first`: files dropped on the page, read at once. One at a
+ *  time: while one is open, it is the one answered (with `first` read in it). `at`: the stage it was opened from,
+ *  which a file opens in when it can; a file of another stage opens in its own, and the dialog says so. */
+export function openStudyDialog(first?: File[], at?: OpenAt): DG.Dialog {
   let phase: Phase = 'drop';
   let brought: Brought = {};
-  let chosen: OpenStage | null = null;
+  let chosen: OpenStage | null = at?.stage ?? null;
   let error = '';
   let loadingName = '';
   let latest = 0;
 
+  const dialog = modal(OPEN_DIALOG, {title: at ? `Open a study in ${labelOf(at.stage)}` : 'Open a study'});
+  if (!dialog) {
+    if (first?.length)
+      void takeInOpen(first);
+    return modalOf(OPEN_DIALOG)!;
+  }
   const body = h('div', 'pmx-open');
-  const dialog = ui.dialog({title: 'Open a study'});
   dialog.add(body);
   dialog.onOK(() => void go().catch((e) => grok.shell.error(plainError(e, 'The study could not be opened. Try ' +
     'again; if it fails again, reload the page.'))), {closeOnEnter: false});
   // the OK button says where the study opens, and waits until there is one
   const ok: HTMLButtonElement = dialog.getButton('OK') ?? document.createElement('button');
+  ok.classList.add('pmx-primary');
+  // and up to two secondary buttons, the other stages it may open in (named and shown by render)
+  const altStages: (OpenStage | null)[] = [null, null];
+  const alts = altStages.map((_, i) => {
+    const text = `pmx-alt-${i}`;
+    dialog.addButton(text, () => {
+      const stage = altStages[i];
+      if (!stage)
+        return;
+      chosen = stage;
+      dialog.close();
+      void go().catch((e) => grok.shell.error(plainError(e, 'The study could not be opened. Try again; if it ' +
+        'fails again, reload the page.')));
+    });
+    const b: HTMLButtonElement = dialog.getButton(text) ?? document.createElement('button');
+    b.style.display = 'none';
+    return b;
+  });
 
-  const options = (): {question: string, list: Option[], hint: string} => {
+  const options = (): {list: Option[], hint: string} => {
     const {table, plan, study} = brought;
     if (study) {
       // a followed study is Monitor's file: nothing to choose
-      return {question: 'A followed study', hint: '', list: [
+      return {hint: '', list: [
         {stage: 'monitor', title: 'Open it', desc: 'Monitor', note: '', disabled: false}]};
     }
     if (table) {
       const dated = !!plan && table.lastDay !== null && plan.end !== null;
-      return {question: 'Has the study finished?',
+      // in Plan, a table may be a model's growth history (a model outside the atlas)
+      const history = !!at?.history && !plan;
+      return {
         hint: !dated ? '' : table.lastDay! > plan!.end! ?
           // (from the last day measured: a table may have days and no dates)
           `Measured to day ${table.lastDay}, past the planned end (day ${plan!.end}).` :
           `Measured to day ${table.lastDay} of about ${plan!.end}.`,
         list: [
+          ...history ? [{stage: 'plan' as const, title: 'A model\'s growth history', note: '', disabled: false,
+            desc: 'Plan, with a model outside the atlas'}] : [],
           {stage: 'monitor', title: 'Still running', desc: 'Monitor', disabled: !plan,
             note: !plan ? 'Add the plan it is run with to follow it' : ''},
           {stage: 'analyze', title: 'Finished', note: '', disabled: false,
             desc: plan ? 'Analyze, against its plan' : 'Analyze, against the historical controls'},
         ]};
     }
-    return {question: 'Has the study started?', hint: '', list: [
+    return {hint: '', list: [
       {stage: 'plan', title: 'Not started', desc: 'Plan', note: '', disabled: false},
       {stage: 'monitor', title: 'Starting now', desc: 'Monitor', note: '', disabled: false}]};
   };
@@ -662,6 +793,7 @@ export function openStudyDialog(first?: File[]): void {
       [h('span', 'pmx-ico', [icon(ICON.add, 14, 2)]), text, input] :
       [h('span', 'pmx-ico', [icon(ICON.open)]),
         h('span', 'pmx-dz-main', ['Drag a file here, or ', h('b', '', ['browse'])]),
+        ...at ? [h('span', 'pmx-muted', [TAKES[at.stage]])] : [],
         h('span', 'pmx-exts', [OPENED_EXTS.filter((x) => x !== 'txt').map((x) => '.' + x).join(' · ')]), input]);
   };
   const errorLine = () => h('div', 'pmx-error', [icon(ICON.warn, 16, 1.8), h('span', '', [error])]);
@@ -680,35 +812,21 @@ export function openStudyDialog(first?: File[]): void {
         h('div', 'pmx-track', [h('div')])]));
     } else {
       const {table, plan, study} = brought;
-      const rows = [...(table ? [[table.file, 'Measurements']] : []), ...(plan ? [[plan.file, 'Plan']] : []),
-        ...(study ? [[study.file, 'Followed study']] : [])]
-        .map(([name, kind]) => h('div', 'pmx-file-row', [icon(ICON.file, 20),
-          h('div', '', [h('b', '', [name]), h('span', '', [kind])])]));
-      parts.push(h('div', 'pmx-opts', rows));
-      const holds = holdsOf(brought);
-      if (holds.length)
-        parts.push(h('ul', 'pmx-holds', holds));
+      parts.push(readSummary(brought));
+      const notes = readNotes(brought);
+      if (notes.length)
+        parts.push(h('div', 'pmx-read-notes', notes));
       // what the table's reader could not tell: one choice each, the table read again with every answer
       for (const q of table?.read.questions ?? [])
         parts.push(askTable(q));
-      const {question, list, hint} = options();
+      const {hint} = options();
       const pick = selected();
-      // (a table that could not be read opens nowhere: no stage to ask about; a followed study has one stage, which
-      // the file row and the button "Open in Monitor" already say: no question repeating them)
-      parts.push(...table?.read.error || (study && list.length === 1) ? [] : [h('div', 'pmx-ask', [h('div', 'pmx-q', [question]),
-        h('div', 'pmx-opts', list.map((o) => {
-        const radio = h('input', '', [], {type: 'radio', name: 'pmx-stage'});
-        radio.checked = pick?.stage === o.stage;
-        radio.disabled = o.disabled;
-        radio.addEventListener('change', () => {
-          chosen = o.stage;
-          render();
-        });
-        return h('label', 'pmx-opt' + (o.disabled ? ' is-off' : pick?.stage === o.stage ? ' is-on' : ''), [radio,
-          h('span', '', [h('b', '', [o.title]), o.desc, ...(o.note ? [h('em', '', [o.note])] : [])])]);
-      }))])]);
       if (hint)
         parts.push(h('div', 'pmx-hint', [icon(ICON.info, 16, 1.8), h('span', '', [hint])]));
+      // opened from a stage, a file of another opens in its own: said, never refused
+      const away = at && pick ? routedNote(brought, at.stage, pick.stage) : null;
+      if (away)
+        parts.push(h('div', 'pmx-hint', [icon(ICON.info, 16, 1.8), h('span', '', [away])]));
       if (error)
         parts.push(errorLine());
       const missing = table && !plan ? 'Add its .pmxplan' : plan && !table && !study ? 'Add its measurements' : '';
@@ -721,8 +839,23 @@ export function openStudyDialog(first?: File[]): void {
     body.replaceChildren(h('div', 'pmx-in', parts));
     const pick = selected();
     ok.textContent = pick ? `Open in ${pick.desc.split(',')[0]}` : 'Open';
+    ok.title = pick ? `${pick.title}: ${pick.desc}` : '';
     ok.disabled = !pick;
     ok.classList.toggle('disabled', !pick);
+    // the other stages it may open in, as secondary buttons beside the primary (a table that could not be read, or
+    // waiting on an answer, none); one that cannot yet says why on hover
+    const others = !pick ? [] : options().list.filter((o) => o.stage !== pick.stage);
+    alts.forEach((b, i) => {
+      const o = others[i];
+      altStages[i] = o?.stage ?? null;
+      b.style.display = o ? '' : 'none';
+      if (!o)
+        return;
+      b.textContent = `Open in ${o.desc.split(',')[0]}`;
+      b.disabled = o.disabled;
+      b.classList.toggle('disabled', o.disabled);
+      b.title = o.note || `${o.title}: ${o.desc}`;
+    });
   };
 
   /** Reads the files and adds what they hold to what the dialog already has; a later read overtakes an earlier. */
@@ -745,7 +878,7 @@ export function openStudyDialog(first?: File[]): void {
     error = reads.map((r) => r.kind === 'bad' ? `"${r.file}" could not be opened. ${r.why}` : '').filter((s) => s)
       .join(' ');
     brought = next;
-    chosen = null;
+    chosen = at?.stage ?? null;
     phase = next.table || next.plan || next.study ? 'loaded' : 'error';
     render();
   };
@@ -768,69 +901,185 @@ export function openStudyDialog(first?: File[]): void {
 
   const go = async () => {
     const pick = selected();
-    const {table, plan, study} = brought;
+    const {table, plan} = brought;
     if (!pick)
       return;
-    // all of it read from files: a first save makes the user's copy of what someone else owns (as read now)
-    if (pick.stage === 'plan' && plan) {
-      markFromFile(plan.saved, ownerOf('plan', plan.saved));
-      showStage('plan', await planView(plan.saved));
-    } else if (pick.stage === 'analyze' && table) {
-      if (plan)
-        table.df.setTag(PLAN_TAG, plan.text);
-      markTableFromFile(table.df, metaOf(table.df)?.owner ?? '');
-      showStage('analyze', await analyzeView({study: table.df}));
-    } else if (pick.stage === 'monitor') {
-      // a followed study as saved; a table under way with its plan; a plan starting now, with an empty table
-      const df = study ? tableOf(study.saved) : table?.df ?? (plan ? newStudyTable(plan.saved) : null);
-      if (!df)
-        return;
-      if (table && plan)
-        df.setTag(PLAN_TAG, plan.text);
-      markTableFromFile(df, study ? ownerOf('study', study.saved) : table ? metaOf(df)?.owner ?? '' :
-        ownerOf('plan', plan!.saved));
-      showStage('monitor', await monitorView(df));
-    }
+    if (pick.stage === 'plan' && table && !plan && at?.history)
+      at.history(table);
+    else
+      await openBrought(brought, pick.stage);
   };
 
   takeDrops(dialog.root, (on) => body.querySelectorAll('.pmx-dz').forEach((z) => z.classList.toggle('is-over', on)),
     (files) => void take(files));
   render();
+  takeInOpen = take;
   dialog.show();
   if (first?.length)
     void take(first);
+  return dialog;
 }
 
-/** What the files brought hold, one line each. */
-function holdsOf(b: Brought): HTMLElement[] {
-  const line = (kind: 'ok' | 'none' | 'warn', text: string, sub = '') => h('li', '', [
-    h('span', kind, [icon(kind === 'ok' ? ICON.ok : kind === 'warn' ? ICON.warn : ICON.none, 16, 2)]),
-    h('span', '', [text, ...(sub ? [h('small', '', [sub])] : [])])]);
-  const out: HTMLElement[] = [];
-  if (b.table) {
-    const t = b.table;
-    const facts = [t.animals !== null ? plural(t.animals, 'animal') : '',
-      t.groups !== null ? plural(t.groups, 'group') : '',
-      t.lastDay !== null ? `day 0–${t.lastDay}` : ''].filter(Boolean);
-    const what = facts.join(' · ') || 'Measurements';
-    if (t.read.error)
-      out.push(line('warn', 'The table was not read', t.read.error));
-    else if (waiting(t.read))
-      out.push(line('none', `${t.read.questions.length > 1 ? 'Questions' : 'A question'} before the table is read`));
-    else {
-      // what was read and how, in plain words: the check that nothing was lost or guessed
-      const [counts, ...rest] = studySummary(t.read, !!b.plan?.blinded);
-      out.push(line('ok', counts, what));
-      rest.forEach((r) => out.push(line(r.startsWith('Not read') ? 'warn' : 'none', r)));
-      const merged = mergedWarning(t.merged, !!b.plan?.blinded);
-      if (merged)
-        out.push(line('warn', merged));
-    }
-    out.push(t.weight ? line('ok', 'Body weight') : line('none', 'No body weight'));
-    out.push(b.plan ? line('ok', `Plan: ${b.plan.name}`) : line('none', 'No plan'));
-  } else if (b.plan && !b.study) {
-    const facts = [b.plan.line, b.plan.end !== null ? `about ${b.plan.end} days` : ''].filter(Boolean);
-    out.push(line('ok', b.plan.name, facts.join(' · ')));
+/** Opens what the files brought hold in `stage`; `exposure`, a concentration table Analyze reads with it (NCA). All
+ *  of it read from files: a first save makes the user's copy of what someone else owns (as read now). */
+export async function openBrought(b: Brought, stage: OpenStage, exposure?: DG.DataFrame): Promise<void> {
+  const {table, plan, study} = b;
+  if (stage === 'plan' && plan) {
+    markFromFile(plan.saved, ownerOf('plan', plan.saved));
+    await showStage('plan', await planView(plan.saved));
+  } else if (stage === 'analyze' && table) {
+    if (plan)
+      table.df.setTag(PLAN_TAG, plan.text);
+    markTableFromFile(table.df, metaOf(table.df)?.owner ?? '');
+    await showStage('analyze', await analyzeView({study: table.df, exposure}));
+  } else if (stage === 'monitor') {
+    // a followed study as saved; a table under way with its plan; a plan starting now, with an empty table
+    const df = study ? tableOf(study.saved) : table?.df ?? (plan ? newStudyTable(plan.saved) : null);
+    if (!df)
+      return;
+    if (table && plan)
+      df.setTag(PLAN_TAG, plan.text);
+    markTableFromFile(df, study ? ownerOf('study', study.saved) : table ? metaOf(df)?.owner ?? '' :
+      ownerOf('plan', plan!.saved));
+    await showStage('monitor', await monitorView(df));
   }
-  return out;
+}
+
+// ---- the demo data ------------------------------------------------------------------------------------------------
+
+/** The demo studies (files/demo, with the package: synthetic, see its README), one per stage and two to compare. */
+export const DEMO = {
+  plan: {plan: 'ct26-trametinib-antipd1.pmxplan', what: 'CT26, trametinib + anti-PD-1'},
+  monitor: {study: 'ct26-running-day9.pmxstudy', what: 'The same study at day 9, six animals flagged'},
+  analyze: {table: 'ct26-trametinib-antipd1-finished.csv', plan: 'ct26-trametinib-antipd1.pmxplan',
+    pk: 'ct26-trametinib-pk-mouse.csv', what: 'Day 21, with mouse PK'},
+  compare: [{table: 'ct26-trametinib-antipd1-finished.csv', plan: 'ct26-trametinib-antipd1.pmxplan',
+    pk: 'ct26-trametinib-pk-mouse.csv'}, {table: 'mc38-trametinib-finished.csv', pk: 'mc38-trametinib-pk-mouse.csv'}],
+} as const;
+
+const demoText = (name: string) => _package.files.readAsText(`demo/${name}`);
+
+/** A demo file as Open a study reads it (a damaged one would be the package's fault: said as an error). */
+async function demoRead(name: string): Promise<Brought> {
+  const {brought, bad} = bring({}, [readFile(name, await demoText(name))]);
+  if (bad.length)
+    throw new Error(`The demo file ${name} could not be read.`);
+  return brought;
+}
+
+/** What a stage's demo opens with. */
+export async function demoBrought(stage: OpenStage): Promise<Brought> {
+  const d = DEMO[stage];
+  const parts = await Promise.all(Object.entries(d).filter(([k]) => k === 'plan' || k === 'study' || k === 'table')
+    .map(([, name]) => demoRead(name)));
+  return Object.assign({}, ...parts);
+}
+
+/** A concentration table of the demo (null without the NCA package: nothing reads it). */
+async function demoPk(name: string): Promise<DG.DataFrame | null> {
+  if (!ncaInstalled())
+    return null;
+  const df = DG.DataFrame.fromCsv(await demoText(name));
+  df.name = name.replace(/\.csv$/, '');
+  return df;
+}
+
+/** Opens a stage's demo there (Analyze with its mouse PK, when the NCA package is there). Once: a second click while
+ *  it opens does nothing. */
+export function openDemo(stage: OpenStage): Promise<void> {
+  return preparing(`demo-${stage}`, async () => {
+    const d = DEMO[stage];
+    const exposure = 'pk' in d ? await demoPk(d.pk) : null;
+    await openBrought(await demoBrought(stage), stage, exposure ?? undefined);
+  }).then(() => {}, (e) => grok.shell.error(plainError(e, 'The demo could not be opened. Try again in a moment.')));
+}
+
+/** The two finished demo studies saved among the user's studies (with NCA's exposure from their mouse PK, as Analyze
+ *  keeps it), unless saved already, then opened in Compare. */
+export function compareDemo(): Promise<void> {
+  return preparing('demo-compare', async () => {
+    const progress = DG.TaskBarProgressIndicator.create('Saving the demo studies...');
+    try {
+      const mine = await myEntries();
+      const entries: LibraryEntry[] = [];
+      for (const d of DEMO.compare) {
+        const {table, plan} = {...await demoRead(d.table), ...'plan' in d ? await demoRead(d.plan) : {}};
+        const df = table!.df;
+        if (plan)
+          df.setTag(PLAN_TAG, plan.text);
+        df.setTag(FINISHED_TAG, 'true');
+        const pk = await demoPk(d.pk);
+        const mapping = pk ? await concentrationMapping(pk) : null;
+        if (pk && mapping) {
+          const groups = roleColumns(df).group.categories;
+          const control = controlOf(groups, metaOf(df));
+          const nca = ncaByArm(groups.filter((g) => g !== control), await runNca(pk, mapping), pk.name, metaOf(df));
+          const kept = exposureJson(new Map(), nca);
+          if (kept)
+            df.setTag(EXPOSURE_TAG, JSON.stringify(kept));
+        }
+        const doc = savedStudyOf(df, null);
+        // saved once: a second try compares the copies already there
+        const there = mine.find((e) => e.kind === 'study' && e.stage === 3 && e.name === doc.name);
+        if (there)
+          entries.push(there);
+        else {
+          await (domainStorageOn() ? save('study', doc) : saveStudy(doc));
+          entries.push(entryOf(JSON.stringify(doc), Date.now())!);
+        }
+      }
+      const view = await showStage('home', await compareView(entries));
+      view.name = 'PMX Studio · Compare';
+    } finally {
+      progress.close();
+    }
+  }).then(() => {}, (e) => grok.shell.error(plainError(e, 'The demo studies could not be compared. Try again in ' +
+    'a moment.')));
+}
+
+/** What the files brought are, as the stages' header names a study: its name, then groups, animals and days, then the
+ *  files it was read from. */
+function readSummary(b: Brought): HTMLElement {
+  const {table: t, plan, study} = b;
+  let name = '';
+  let facts: string[] = [];
+  if (t) {
+    name = t.df.name || t.file;
+    facts = t.read.error ? ['Not read'] : [t.groups !== null ? plural(t.groups, 'group') : '',
+      t.animals !== null ? plural(t.animals, 'animal') : '', t.lastDay !== null ? `days 0–${t.lastDay}` : '',
+      t.weight ? 'body weight' : 'no body weight'];
+  } else if (study) {
+    const s = study.saved;
+    const animals = new Set(s.rows.map((r) => r.animal)).size;
+    const days = s.rows.map((r) => r.day).filter((d): d is number => typeof d === 'number');
+    name = s.name || study.file;
+    facts = ['Followed study', plural(animals, 'animal'), days.length ? `measured to day ${Math.max(...days)}` : ''];
+  } else if (plan) {
+    name = plan.name;
+    facts = ['Plan', plan.line, plan.end !== null ? `about ${plan.end} days` : ''];
+  }
+  const files = [t?.file, plan ? (t ? `plan "${plan.name}"` : plan.file) : '', study?.file].filter(Boolean)
+    .join(' · ');
+  return h('div', 'pmx-read', [h('span', 'pmx-ico', [icon(ICON.file, 20)]), h('div', 'pmx-read-text', [
+    h('div', 'pmx-read-name', [name]), h('div', 'pmx-read-facts', [facts.filter(Boolean).join(' · ')]),
+    h('div', 'pmx-read-files', [files])])]);
+}
+
+/** What the reading found, in the stages' notice style: what was read and how (the check that nothing was lost or
+ *  guessed) quiet, what was not read or read as one a warning. */
+function readNotes(b: Brought): HTMLElement[] {
+  const t = b.table;
+  if (t) {
+    if (t.read.error)
+      return [noteLine(t.read.error, 'error')];
+    if (waiting(t.read))
+      return [markLine(`${t.read.questions.length > 1 ? 'Questions' : 'A question'} before the table is read`)];
+    const lines = studySummary(t.read, !!b.plan?.blinded);
+    const merged = mergedWarning(t.merged, !!b.plan?.blinded);
+    return [...lines.map((l) => l.startsWith('Not read') ? noteLine(l) : markLine(l)),
+      ...merged ? [noteLine(merged)] : []];
+  }
+  if (b.study)
+    return savedSummary(b.study.saved).slice(1).map((l) => markLine(l));
+  return [];
 }

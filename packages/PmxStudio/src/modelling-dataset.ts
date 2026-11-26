@@ -12,7 +12,7 @@ import {dosedDays, excepted, readSchedule} from './schedule';
 import type {Schedule} from './schedule';
 import {StudyMeta, armParts} from './study-meta';
 import {drugKey} from './arm-name';
-import {okNamed, showCentred} from './ui';
+import {okNamed, showCentred, modal} from './ui';
 import {plural} from './wide-table';
 
 /** The concentrations NCA read: its table and mapping (subject, time, concentration, blq, lloq and their units), and
@@ -480,8 +480,10 @@ export function modellingDatasetDialog(s: StudyInputs, meta: StudyMeta | null, p
   ui.tooltip.bind(footer, 'Excluded measurements left out; flagged ones kept with FLAG = 1. Doses in mg/kg, one ' +
     'compartment per drug (2, 3...). The columns are explained at the top of the file.');
   footer.style.color = 'var(--grey-5, #68727f)';
-  const dlg = ui.dialog('Modelling dataset (NONMEM)')
-    .add(ui.divV([table, conc, ...pkDay ? [ui.inputs([pkDay])] : [], pkNotes, footer], {style: {gap: '8px'}}))
+  const dlg = modal('modelling-dataset', 'Modelling dataset (NONMEM)');
+  if (!dlg)
+    return;
+  dlg.add(ui.divV([table, conc, ...pkDay ? [ui.inputs([pkDay])] : [], pkNotes, footer], {style: {gap: '8px'}}))
     .onOK(() => {
       // one toast for the two files
       const [data, ids] = [`${name} - modelling dataset.csv`, `${name} - modelling dataset IDs.csv`];

@@ -103,9 +103,12 @@ category('Hub', () => {
 
   test('the home: three stages, each open', async () => {
     const root = (await hubView()).root;
-    const cards = [...root.querySelectorAll<HTMLButtonElement>('.pmx-card')];
+    const cards = [...root.querySelectorAll<HTMLElement>('.pmx-card')];
     expect(cards.map((c) => c.dataset.stage).join(), 'plan,monitor,analyze');
-    expect(cards.some((c) => c.disabled), false);
+    // each card: the stage's button and its demo's, apart (no button inside a button)
+    expect(cards.every((c) => c.querySelectorAll(':scope > button.pmx-card-main, .pmx-card-foot > button.pmx-demo')
+      .length === 2 && !c.querySelector('button button')), true);
+    expect(cards.some((c) => c.querySelector<HTMLButtonElement>('.pmx-card-main')!.disabled), false);
     expect(root.querySelectorAll('.pmx-link, .pmx-arc').length, 3);
   });
 

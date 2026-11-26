@@ -7,7 +7,7 @@ import {div, divV, span} from '@datagrok-libraries/u2';
 import type {Child} from '@datagrok-libraries/u2';
 import type {ReadonlySignal} from '@datagrok-libraries/u2';
 
-import {okNamed, showCentred, Stage, STAGES} from './ui';
+import {okNamed, showCentred, Stage, STAGES, modal} from './ui';
 import {StudyMeta, detailsForm, emptyMeta} from './study-meta';
 import {myEntries} from './store';
 
@@ -61,7 +61,10 @@ export function studyHeader(owner: {effect: (fn: () => void) => unknown, own?: (
     // the IDs the user's plans and studies have: another's is refused (the list as the Overview reads it)
     const taken = myEntries().then((es) => es.map((e) => e.id));
     const form = detailsForm(m, names, s.groupsHidden, taken);
-    const dialog = ui.dialog('Study details').add(form.root).onOK(() => {
+    const dialog = modal('study-details', 'Study details');
+    if (!dialog)
+      return;
+    dialog.add(form.root).onOK(() => {
       if (form.problem() !== null)
         return;
       const edited = form.read();

@@ -42,6 +42,7 @@ import {BandChart} from './band-chart';
 import {explore, StudyInputs, studyInputsOf} from './explore';
 import {editLayout, panelTabs, Tab} from './panels';
 import {stagePage, studyHeader} from './study-header';
+import {openButton, takesFiles} from './hub-view';
 import {AnimalSelection, exclusionsOf, mirrorSelection, studyDataLine, studyMenu, studyOf, tagStudy,
   keepStudyField, withoutExcluded, animalLine, animalMarks, animalPanel as panelOfAnimal} from './study-table';
 import {META_TAG, armParts, emptyMeta, metaOf, parseLine, setMetaOn} from './study-meta';
@@ -268,8 +269,9 @@ function summaryLines(r: AnalysisFrames, nci: Map<string, NciReading>): string[]
   return lines;
 }
 
-/** What Analyze opens with: a study table (with its plan in the `pmx.plan` tag, if any). */
-export interface AnalyzeStart {study?: DG.DataFrame}
+/** What Analyze opens with: a study table (with its plan in the `pmx.plan` tag, if any) and, with the NCA package,
+ *  a concentration table for its exposure. */
+export interface AnalyzeStart {study?: DG.DataFrame, exposure?: DG.DataFrame}
 
 /** The Analyze view; given a study, it analyzes it at once. */
 export async function analyzeView(opening?: AnalyzeStart): Promise<DG.ViewBase> {
@@ -606,6 +608,9 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
           ncaSays.value = `NCA could not compute exposure: ${e?.message ?? e}`;
       });
     });
+    // opened with its concentrations (the demo's mouse PK): read as a table picked in the field
+    if (opening?.exposure)
+      exposureField.table = opening.exposure;
     self.subscribe(grok.events.onTableAdded, (e: DG.EventData<DG.DataFrameArgs>) => {
       const t = e.args.dataFrame;
       if (exposureField.value || t.name === form.getInput('study')?.value)
@@ -1946,8 +1951,8 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     return !!df && !rowOfTable(df);
   }));
   return {
-    root: stagePage(head.row, panes),
-    ribbon: [[head.steps], [saveButton]],
+    root: takesFiles(stagePage(head.row, panes), {stage: 'analyze'}),
+    ribbon: [[head.steps], [openButton({stage: 'analyze'}), saveButton]],
     path: '/analyze',
     status: computed(() => busy.value ? 'Analyzing the study…' : result.value ?
       studyDf()?.name || result.value.analysis.name : ''),

@@ -563,6 +563,59 @@ export function keepNamedColumns(form: FuncCallForm, optional: {[input: string]:
 /** The name of a body weight column, for the optional column above. */
 export const isBodyWeight = (c: string) => /weight|\bbw\b/i.test(c) && !/tum/i.test(c);
 
+/** The dialogs open now, by purpose ('preparing': its launcher is still reading what it will show). */
+const modals = new Map<string, DG.Dialog | 'preparing'>();
+
+/** The dialog open for `purpose` (undefined: none). One that has left the page counts as closed: a dialog made and
+ *  never shown, or closed before its close was reported. */
+export function modalOf(purpose: string): DG.Dialog | undefined {
+  const d = modals.get(purpose);
+  return d && d !== 'preparing' && d.root.isConnected && getComputedStyle(d.root).display !== 'none' ?
+    d : undefined;
+}
+
+/** Puts an open dialog in front of the others. */
+function raise(d: DG.Dialog): void {
+  const parent = d.root.parentElement;
+  if (parent && parent.lastElementChild !== d.root)
+    parent.append(d.root);
+}
+
+/** A new dialog for `purpose`, or null when one is open for it already (brought to the front instead): every dialog
+ *  the app opens is made here, so a second click never opens a second dialog over the first. The purpose is free
+ *  again once its dialog closes (leaves the page). */
+export function modal(purpose: string, title: Parameters<typeof ui.dialog>[0] = purpose):
+  DG.Dialog | null {
+  const open = modalOf(purpose);
+  if (open) {
+    raise(open);
+    return null;
+  }
+  // (while 'preparing', only its own launcher gets here: a second click stopped in preparing)
+  // (no close handler: a dialog closed leaves the page, which modalOf reads as free)
+  const d = ui.dialog(title);
+  modals.set(purpose, d);
+  return d;
+}
+
+/** For a launcher that reads something before its dialog shows: a second click meanwhile, or while its dialog is
+ *  open, does nothing (the open dialog comes to the front). Undefined when it did nothing. */
+export async function preparing<T>(purpose: string, prepare: () => Promise<T>): Promise<T | undefined> {
+  const open = modalOf(purpose);
+  if (open || modals.get(purpose) === 'preparing') {
+    if (open)
+      raise(open);
+    return undefined;
+  }
+  modals.set(purpose, 'preparing');
+  try {
+    return await prepare();
+  } finally {
+    if (modals.get(purpose) === 'preparing')
+      modals.delete(purpose);
+  }
+}
+
 /** A dialog's OK button named for what it does (Export, Exclude, Save): returned, as getButton finds it only while it
  *  still says OK. Call it after onOK. */
 export function okNamed(d: DG.Dialog, verb: string): HTMLButtonElement {

@@ -1,7 +1,11 @@
 # PMX Studio demo data
 
-Studies to try PMX Studio with. On a server they are in **Browse > Files > App Data > PmxStudio > demo**. Open one from
-the PMX Studio Overview (**Open a study**), or drag it onto the app.
+Studies to try PMX Studio with. The quickest way: on the PMX Studio Overview, each stage's card has **Try with demo
+data** at its foot (Plan, Monitor and Analyze open with the study below), and while you have no studies yet, **Or
+compare two demo studies** saves the CT26 and MC38 studies for you and opens them in Compare.
+
+The files themselves are on the server in **Browse > Files > App Data > Pmxstudio > demo**. Open one from the Overview
+(**Open a study**) or a stage's **Open…**, or drag it onto the app.
 
 All are synthetic (made by seeded models: not real animals, not real PK), except the published MC38 study in
 `../example/` (Yu X. et al., *Nat Commun* 15 (2024), doi:10.1038/s41467-024-55006-2, CC BY 4.0).

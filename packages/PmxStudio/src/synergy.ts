@@ -12,7 +12,7 @@ import {declarationOf, type PlanInputs} from './frames';
 import {groupColors} from './colors';
 import {metaOf} from './study-meta';
 import {parsePlan} from './plan-file';
-import {dialogLine, okNamed, pValue, showCentred, swatch} from './ui';
+import {dialogLine, okNamed, pValue, showCentred, swatch, modal} from './ui';
 
 export interface Synergy {slopes: {control: number, a: number, b: number, ab: number}, dif: number, se: number,
   z: number, p: number, pTwoSided: number}
@@ -294,15 +294,19 @@ export function synergyDialog(s: StudyInputs, control: string, treated: string[]
   const a = ui.input.choice('Drug A alone', {items: treated, value: a0});
   const b = ui.input.choice('Drug B alone', {items: treated, value: b0});
   const same = ui.divText('Pick three different groups', {style: {color: 'var(--red-3, #c62828)'}});
-  const d = ui.dialog('Combination synergy (exploratory)')
-    .add(dialogLine(`Against ${control}, to day ${lastDay}`, 'Exploratory: the plan did not set this test. ' +
+  const d = modal('synergy', 'Combination synergy (exploratory)');
+  if (!d)
+    return;
+  d.add(dialogLine(`Against ${control}, to day ${lastDay}`, 'Exploratory: the plan did not set this test. ' +
       'Bliss independence on tumor growth (Demidenko & Miller 2019).'))
     .add(ui.inputs([ab, a, b])).add(same)
     .onOK(() => {
       const g = {control, a: a.value!, b: b.value!, ab: ab.value!};
       void synergyOf(s, g, lastDay).then((x) => {
-        const r = ui.dialog('Combination synergy (exploratory)')
-          .add(synergyResult(x, g, alpha, groupColors(treated, control, metaOf(s.study)?.colors,
+        const r = modal('synergy-result', 'Combination synergy (exploratory)');
+        if (!r)
+          return;
+        r.add(synergyResult(x, g, alpha, groupColors(treated, control, metaOf(s.study)?.colors,
             metaOf(s.study)?.slots))).onOK(() => {});
         okNamed(r, 'Close');
         // one way out: Close

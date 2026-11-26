@@ -1,5 +1,22 @@
 # PmxStudio changelog
 
+## 0.1.1 (2026-11-26)
+
+* Browse stays open: opening PMX Studio, or coming back to its Overview, no longer closes Datagrok's Browse tree,
+  toolbox or help. Pin the PMX Studio view to give it the whole screen: Browse closes while the pinned view is current
+  and comes back when you leave it or unpin it.
+* One dialog at a time: clicking a button again while its dialog is open (Open a study, share, delete, a model's
+  history, the calendar, ARRIVE, patients' exposure, the layout, the study's details and the others) brings the open
+  dialog to the front instead of opening a second one.
+* Open… in Plan, Monitor and Analyze: the same Open a study dialog as on the Overview, for that stage; files dropped on
+  a stage's page open there too. In Plan, a table can be the growth history of a model outside the atlas. A file of
+  another stage opens in its own stage, and the dialog says so.
+* A clearer summary once a file is read: the study, its groups, animals and days, the files it came from, what was read
+  and how, warnings for anything not read, and one main button with the other stages beside it.
+* Demo data one click away: **Try with demo data** at the foot of each stage's card on the Overview, and, while Your
+  studies is empty, **Or compare two demo studies** (CT26 and MC38 trametinib, saved as yours and opened in Compare).
+* The Overview's toolbox: Open a study, New plan, Compare saved studies, the demo data and the help.
+
 ## Unreleased
 
 * The priors file holds aggregates per tumor model only (2026-11-16): the per-paper table (`studies`) is no longer

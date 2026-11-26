@@ -69,6 +69,24 @@ priors file).
 | `plan-vs-observed.ts`, `plan-checks.ts` | the study against its plan, and the plan's predictive ranges |
 | `line-input.ts`, `band-chart.ts`, `gpu.ts` | the tumor model picker, the band chart, the WebGPU device |
 
+## Opening a study
+
+**Open a study** on the Overview takes a `.pmxplan`, a `.pmxstudy` or a table of measurements (`.csv`, `.tsv`,
+`.xlsx`), browsed for or dropped anywhere on the page. Plan, Monitor and Analyze have the same dialog as **Open…** in
+their header, and take files dropped on their page too: Plan opens a plan, or a table as the growth history of a model
+outside the atlas; Monitor a followed study, or a running study's table with its plan; Analyze a finished study's
+table with its plan (its mouse PK is added in Analyze once it is open). A file of another stage opens in the stage it
+belongs to, and the dialog says so. Once read, the dialog shows the study as a summary (groups, animals, days, the files
+it came from), what was read and how, and a warning for anything it could not read; the main button opens it where the
+dates say it belongs, the others in the other stages it may open in.
+
+Every dialog opens once: a second click while it is open brings the open one to the front (`ui.ts` `modal`).
+
+Opening PMX Studio leaves Datagrok's Browse tree, toolbox and help as they were. Pin the PMX Studio view to give it
+the whole screen: Browse closes while the pinned view is current and comes back as it was when you leave it or unpin
+it. The context panel stays closed in the app's views (F4 opens it). The Overview's toolbox has the app's actions:
+Open a study, New plan and Compare saved studies; the demo data; and this help.
+
 ## Saved plans
 
 A plan is a `.pmxplan` file, JSON: `format` `pmx-plan`, `version` 1, `name`, `created`, `author`, `inputs` (the
@@ -202,8 +220,12 @@ a clear effect (TGI 17% and 18%); the body weights stay within the NCI limits (M
 
 `files/demo/` holds a small set of studies to try every stage: a plan, a running study with planted welfare cases, a
 finished study with removals, mouse PK for the exposure, a second study to compare, a model outside the atlas, and
-other table layouts. On a server they are in **Browse > Files > App Data > PmxStudio > demo**; open one from the
-Overview's **Open a study**, or drag it onto the app. `files/demo/README.md` says what to open for each stage. All are
+other table layouts. They are one click away on the Overview: each stage's card has **Try with demo data** at its foot
+(Plan opens the CT26 trametinib + anti-PD-1 plan, Monitor the same study at day 9, Analyze the finished study with its
+mouse PK when the NCA package is installed), and while **Your studies** is empty, **Or compare two demo studies** saves
+the CT26 and MC38 trametinib studies as yours and opens them in Compare. The same actions are in the Overview's
+toolbox. On a server the files are also in **Browse > Files > App Data > Pmxstudio > demo**; open one from **Open a
+study** or a stage's **Open…**, or drag it onto the app. `files/demo/README.md` says what to open for each stage. All are
 synthetic (seeded models, not real animals or real PK) except the published MC38 study, which is `files/example/`.
 Exposure needs the NCA package, whose own demo data is in **App Data > Nca**.
 

@@ -92,17 +92,24 @@ export function showStage(stage: Stage, view: DG.ViewBase): Promise<DG.ViewBase>
   }));
 }
 
-/** The shell's panels a PMX Studio view hides: the context panel in every stage (it opens on a click on a group or
- *  an animal: ui.ts showDepth), and on the Overview also the browse tree, the toolbox and help, so the page stands
- *  alone. */
-type Panel = 'showContextPanel' | 'showBrowse' | 'showToolbox' | 'showHelp';
-const QUIET: Panel[] = ['showContextPanel'];
-const QUIET_OVERVIEW: Panel[] = ['showContextPanel', 'showBrowse', 'showToolbox', 'showHelp'];
-/** The data attribute (camel-cased) of a view that hides the panels as the Overview does without being a stage. */
+/** The shell's panels a PMX Studio view hides: the context panel in every view of the app (it opens on a click on a
+ *  group or an animal: ui.ts showDepth), and the Browse tree only while the view is pinned, for the page to have the
+ *  whole screen. Opening the app, or coming back to the Overview, leaves Browse, the toolbox and help as the user had
+ *  them (a one-click preview of the app used to close Browse). */
+type Panel = 'showContextPanel' | 'showBrowse';
+/** The data attribute (camel-cased) of a page of the app that is no stage (Compare): treated as the Overview. */
 export const STANDS_ALONE = 'pmxAlone';
 
+/** The panels hidden while a view is current: `stage` its stage (null: none), `alone` a page of the app that is no
+ *  stage, `pinned` the view pinned. */
+export function quietPanels(stage: string | null, alone: boolean, pinned: boolean): Panel[] {
+  if (!stage && !alone)
+    return [];
+  return pinned ? ['showContextPanel', 'showBrowse'] : ['showContextPanel'];
+}
+
 /** The state each hidden panel had before the app hid it; given back as soon as the current view no longer hides
- *  it (leaving the Overview for a stage, or leaving the app). */
+ *  it (unpinned, or leaving the app). */
 const before = new Map<Panel, boolean>();
 let watching = false;
 
@@ -113,13 +120,16 @@ export function quietContextPanel(): void {
     return;
   watching = true;
   const computes = (v: DG.ViewBase | null) => !!stageOf(v) && stageOf(v) !== 'home'; // (Plan, Monitor, Analyze)
+  const ours = (v: DG.ViewBase | null) => !!stageOf(v) || !!v?.root?.dataset[STANDS_ALONE];
+  // the current view's pinned state as last applied: a pin changes no view, so it is watched (below)
+  let pinnedNow = false;
   const apply = () => {
     const w = grok.shell.windows;
-    const stage = stageOf(grok.shell.v);
-    if (computes(grok.shell.v)) // a stage opened or come back to: the engine at rest wakes
+    const v = grok.shell.v;
+    if (computes(v)) // a stage opened or come back to: the engine at rest wakes
       cruxWake();
-    // (a page of the app that is no stage, Compare, stands alone as the Overview does: STANDS_ALONE on its root)
-    const hide = stage === 'home' || grok.shell.v?.root?.dataset[STANDS_ALONE] ? QUIET_OVERVIEW : stage ? QUIET : [];
+    pinnedNow = ours(v) && !!v?.isPinned;
+    const hide = quietPanels(stageOf(v) ?? null, !!v?.root?.dataset[STANDS_ALONE], pinnedNow);
     for (const [p, on] of [...before]) {
       if (!hide.includes(p)) {
         w[p] = on;
@@ -132,11 +142,19 @@ export function quietContextPanel(): void {
       w[p] = false;
     }
   };
-  // and again a tick later: back on the Overview from a stage, the platform shows its Browse tree after the event
+  // and again a tick later: back on a pinned Overview from a stage, the platform shows its Browse tree after the event
   grok.events.onCurrentViewChanged.subscribe(() => {
     apply();
     setTimeout(apply, 0);
   });
+  // the platform has no event for a view pinned (DG.View.fromRoot views get no afterPersist call): its state is read
+  // once a second, and the panels change only when it changes (the user may open Browse again on a pinned view)
+  // ponytail: a 1 s poll of one getter; an event, when the platform gives one
+  setInterval(() => {
+    const v = grok.shell.v;
+    if ((ours(v) && !!v?.isPinned) !== pinnedNow)
+      apply();
+  }, 1000);
   // the tab back on a stage that computes: the engine at rest wakes
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden && computes(grok.shell.v))
