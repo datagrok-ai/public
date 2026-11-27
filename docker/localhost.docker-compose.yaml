@@ -54,7 +54,7 @@ services:
     profiles: [ "all", "rabbitmq", "scripting", "jkg" ]
 
   grok_pipe:
-    image: datagrok/grok_pipe:${GROK_PIPE_VERSION:-1.22.3}
+    image: datagrok/grok_pipe:${GROK_PIPE_VERSION:-1.22.4}
     platform: linux/amd64
     container_name: grok_pipe
     ports:
@@ -147,7 +147,7 @@ services:
     profiles: [ "all", "grok_spawner" ]
 
   grok_connect:
-    image: datagrok/grok_connect:${GROK_CONNECT_VERSION:-2.8.11}
+    image: datagrok/grok_connect:${GROK_CONNECT_VERSION:-2.8.12}
     platform: linux/amd64
     environment:
       CONNECTION_POOL_MAXIMUM_SIZE: 50
@@ -163,7 +163,7 @@ services:
     profiles: [ "all", "grok_connect" ]
 
   grok_connect_adbc:
-    image: datagrok/grok_connect_adbc:${GROK_CONNECT_ADBC_VERSION:-0.1.2}
+    image: datagrok/grok_connect_adbc:${GROK_CONNECT_ADBC_VERSION:-0.1.3}
     platform: linux/amd64
     environment:
       GROK_CONNECT_PORT: 1235
@@ -184,7 +184,7 @@ services:
   # script in.
   jkg_python:
     <<: *jkg
-    image: datagrok/jkg_python:${JKG_PYTHON_VERSION:-1.1.5}
+    image: datagrok/jkg_python:${JKG_PYTHON_VERSION:-1.1.6}
     networks:
       datagrok:
         aliases:
@@ -193,7 +193,7 @@ services:
 
   jkg_r:
     <<: *jkg
-    image: datagrok/jkg_r:${JKG_R_VERSION:-1.1.5}
+    image: datagrok/jkg_r:${JKG_R_VERSION:-1.1.6}
     networks:
       datagrok:
         aliases:
@@ -202,7 +202,7 @@ services:
 
   jkg_octave:
     <<: *jkg
-    image: datagrok/jkg_octave:${JKG_OCTAVE_VERSION:-1.1.5}
+    image: datagrok/jkg_octave:${JKG_OCTAVE_VERSION:-1.1.6}
     networks:
       datagrok:
         aliases:
@@ -211,7 +211,7 @@ services:
 
   jkg_julia:
     <<: *jkg
-    image: datagrok/jkg_julia:${JKG_JULIA_VERSION:-1.1.5}
+    image: datagrok/jkg_julia:${JKG_JULIA_VERSION:-1.1.6}
     networks:
       datagrok:
         aliases:
@@ -220,7 +220,7 @@ services:
 
   jkg_nodejs:
     <<: *jkg
-    image: datagrok/jkg_nodejs:${JKG_NODEJS_VERSION:-1.1.5}
+    image: datagrok/jkg_nodejs:${JKG_NODEJS_VERSION:-1.1.6}
     networks:
       datagrok:
         aliases:
