@@ -3,6 +3,7 @@
 ## v.next
 
 * Spaces: `ui.spaceSaveRow()` takes `{placeholder, tooltip}` as its fourth argument, the empty space box's text and its tooltip, for a dialog that saves something other than a project
+* Data: `grok.data.linkTables` returns the link it made, a `DG.TableLink` (it returned nothing before); `TableLink.detach()` removes the link and resets what it set on the second table (filter, selection, current row)
 * [#4677](https://github.com/datagrok-ai/public/issues/4677): Views: Added `ViewBase.unsavedWork`, which a view overrides to name the changes a close would lose: a close the user starts then asks first and offers to save them
 * Chem: Fixed a SMILES with stereo centres, an aromatic N-H, a charge or an isotope pasted into a substructure filter's sketcher text box being read as SMARTS (`Nc1ncnc2c1c(Br)cn2[C@@H]3OC[C@@H](O)[C@H]3O`: every atom drawn aromatic- or aliphatic-only, and Similar found nothing). Only an H count a SMILES does not need (`[NH2]c1ccccc1`, `[CH3]c`, `[OH]`) still makes the text SMARTS, so that the H count stays the query's; a canonical SMILES stays a molecule, as when pasted on the canvas. A typed `c1cc[nH]c1` again finds N-substituted pyrroles too
 * Chem: Added `DG.chem.ISketcherOptions`, the third argument of `new DG.chem.Sketcher(mode, validationFunc, options)`: `sketcherType` shows that sketcher in the host whatever the session's (`DG.chem.currentSketcherType`, left as it is), and `showInput: false` leaves out the host's input row (the molecule field and its ≡ menu), the sketcher taking the whole host (Chem's Sketcher app)
