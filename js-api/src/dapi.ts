@@ -179,8 +179,8 @@ export class Dapi {
   }
 
   /** Predictive Models API endpoint */
-  get models(): HttpDataSource<Model> {
-    return new HttpDataSource(api.grok_Dapi_Models());
+  get models(): ModelsDataSource {
+    return new ModelsDataSource(api.grok_Dapi_Models());
   }
 
   /** Packages API endpoint */
@@ -2407,6 +2407,20 @@ export interface DockerStatus {
   /** No recent connection failure: the server's last poll of Grok Spawner succeeded. This is not a live probe.
    * Absent when the status could not be read. */
   isActive?: boolean,
+}
+
+/** Functionality to work with predictive models. */
+export class ModelsDataSource extends HttpDataSource<Model> {
+
+  constructor(s: any) {
+    super(s);
+  }
+
+  /** Returns the file of the model. Rejects when the caller may not view the model,
+   * or when the server has no file for it. */
+  getBlob(modelId: string): Promise<Uint8Array> {
+    return api.grok_Dapi_Models_GetBlob(modelId);
+  }
 }
 
 /** Functionality to work with Docker images. See also {@link DockerContainersDataSource}. */

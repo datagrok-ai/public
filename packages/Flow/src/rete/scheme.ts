@@ -3,7 +3,7 @@ import {ClassicPreset, GetSchemes} from 'rete';
 import * as DG from 'datagrok-api/dg';
 import {TypedSocket} from './sockets';
 import {isPrimitiveSlotType} from '../types/type-map';
-import type {FuncWrapper} from '../utils/func-input-overrides';
+import type {CustomEditorContext, CustomInputEditorFactory, FuncWrapper} from '../utils/func-input-overrides';
 
 export type DgNodeType = 'input' | 'output' | 'utility' | 'func';
 
@@ -33,6 +33,16 @@ export interface FlowEditorBridge {
   /** True while a run in progress still has this node ahead of it — the empty
    *  preview shows a loader instead of the "run the flow" placeholder. */
   isInlinePreviewPending(nodeId: string): boolean;
+  /** The editor of the function input an input node feeds, when that input has one: the node's card and its
+   *  panel show it, as the function's own panel does. */
+  wiredEditor(nodeId: string): WiredEditor | null;
+}
+
+/** A function input's own editor (`customEditorFor`) and the context it is built with: the function node's. */
+export interface WiredEditor {
+  factory: CustomInputEditorFactory;
+  param: DG.Property;
+  ctx: CustomEditorContext;
 }
 
 /** Base class for every canvas node — `ClassicPreset.Node` plus FuncFlow metadata. */
@@ -229,6 +239,10 @@ export function hostsHelmEditor(node: FlowNode): boolean {
   return node.dgNodeType === 'input' && node.dgOutputType === 'string' &&
     String(node.properties['semType'] ?? '').trim() === 'Macromolecule';
 }
+
+/** Width an in-card editor box that fits its editor starts at (an editor laid out to its container's width has no
+ *  width of its own): about a context panel's. */
+export const INLINE_EDITOR_WIDTH = 440;
 
 /** The helm box; malformed/missing stored values fall back to the 300×250 default. */
 export function editorBoxSize(node: FlowNode): {width: number; height: number} {

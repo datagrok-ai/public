@@ -42,7 +42,10 @@ export class ReportsWidget extends DG.Widget {
           ? ui.iconFA('user', null, 'Unknown reporter')
           : ui.tooltip.bind(userHandler.renderIcon(reporter.dart), () => userHandler.renderTooltip(reporter.dart));
         portrait.style.marginRight = '10px';
-        const content = ui.divH([clock, portrait, ui.divText(this.truncate(report.description, 30))]);
+        const description = ui.div([], 'ua-reports-widget-description');
+        description.textContent = report.description;
+        ui.tooltip.bind(description, report.description);
+        const content = ui.divH([clock, portrait, description]);
         const item = ui.card(content);
         item.style.overflow = 'visible';
         item.style.width = '100%';
@@ -61,11 +64,5 @@ export class ReportsWidget extends DG.Widget {
       d.style.lineHeight = '1';
       return d;
     }));
-  }
-
-  truncate(str: string, maxLength: number) {
-    if (str.length <= maxLength)
-      return str;
-    return str.slice(0, maxLength - 3) + '...';
   }
 }

@@ -2,6 +2,14 @@
 
 ## v.next
 
+* Fixed the first card of a page not opening in the context panel when the server spells the connection's namespace in another case than the configuration (a value made before the connection was found kept the configured name)
+* Links: the rows that point at a card are grouped in a box headed by what they share with it (`This drug`, `Same target · GROKTGT-000010`), one box for each key the card holds, each read from the column that holds it
+* Links: a table is named from the configuration's `entities`, else from its identifier's semantic type and pattern (`DG_BIOLOGICS_DRUG_ID`, `GROKMOL-`: `Drugs (GROKMOL)`), else from its own name without the words most tables of its schema share (`stg_assay_results_v1`: `Assay results`; `sequence_regions` under a sequence: `Regions`); a table that points at the card twice, or at its own table, says how (`Hierarchy · as parent`, `Child compounds`)
+* Links: a table's rows are read and counted when its pane opens, for every size; each row is one line, its key and its name, and opens its card in place; the card's own row is tagged `this`; views a curated configuration says nothing about fold under More; the table and column behind a line, and the table's comment, are in its tooltip
+* Added `entities` (label, code, plural, description, more, hidden) and the explicit references' `label` and `reverseLabel` to the configuration, and both to the editor (Entity Names, Labels); the editor keeps them through Import JSON and Save
+* Fixed a card losing its own links when a column of its row points at its own table (a parent column): the column took the place of the card's key, so a row without a parent showed none and one with a parent showed the parent's
+* Fixed the links of a joined table being read with the card's own key instead of the value of the join's column
+* Fixed the pane of a table that points at a card twice being renamed after the pane it is in once it had more than 10 rows
 * Fixed a value's card cutting its loading indicator while the value loads, as in PowerPack's search for a ChEMBL id
 * Fixed an unhandled rejection when a value's associations cannot be read, e.g. a database out of reach whose queries time out: they are left out with a warning, and the card shows its own failure
 * Fixed a caller that asked for the schema while it loaded: it waited for ever when the connection was not found, and after a load that failed it still queried the database (and waited for that query to time out too); it now gets no schema, as a later caller does

@@ -65,7 +65,7 @@ and `target` for, such as `Training needs at least 10 rows; the table has 3.`
 
 ```
 Forge:listModels(name?: string, target?: string, task?: string, method?: string, tags?: string, table?: dataframe,
-  limit?: int = 100) -> dataframe
+  limit?: int = 100, own?: bool = false) -> dataframe
 ```
 
 - `name`: a part of the model name, ignoring case
@@ -76,11 +76,13 @@ Forge:listModels(name?: string, target?: string, task?: string, method?: string,
 - `table`: only the models whose features all have a column of the same or a close name in the table; checked in the
   browser, nothing is uploaded
 - `limit`: at most this many models
+- `own`: only the models you created; `limit` is then 10 000 by default
 
 Returns the table **Forge models**, one row per model you can see, newest first: **Id**, **Name**, **Description**,
 **Method**, **Task**, **Target**, **Features** (the feature names), **Training rows**, **Data storage** (`none`,
-`reference` or `copy`), **Tags**, **Author** (a login), **Created**, then `<Metric> (validation)` for every metric a
-listed model has (a regression model's cells are empty in a classifier's metrics).
+`reference` or `copy`), **Tags**, **Author** (a login), **Created**, **Options** (json text), then
+`<Metric> (validation)` for every metric a listed model has (a regression model's cells are empty in a classifier's
+metrics).
 
 Errors: `The task must be regression or classification.`, `The limit must be a whole number of at least 1.`
 
@@ -328,6 +330,18 @@ Forge:shareModel(model: string)
 Opens the platform's Share dialog for the model, the one **Share...** in its **Sharing** pane opens, and returns at
 once, without waiting for the dialog. The share itself is made in the dialog. A missing model fails the call with no
 dialog.
+
+### registerModel
+
+```
+Forge:registerModel(id?: string, name: string, description?: string, engine: string, task: string, target: map,
+  features: map, options: map) -> string
+```
+
+For a package with models outside Forge, not a user's request: writes or, with `id`, updates your row; returns its id.
+
+Errors: `No method 'X' is installed. The methods are: <methods>.`, `The task must be regression or classification.`,
+`The model 'X' is not a model you registered.`
 
 ### deleteModel
 

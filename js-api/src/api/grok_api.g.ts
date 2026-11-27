@@ -71,7 +71,7 @@ export interface IDartApi {
   grok_View_Get_BasePath(v: any): any;
   grok_View_Set_BasePath(v: any, s: String): any;
   grok_View_Get_SaveToProject(v: any): any;
-  grok_View_Set_SaveToProject(v: any, x: Boolean): any;
+  grok_View_Set_SaveToProject(v: any, x: Bool): any;
   grok_View_Get_Description(v: any): any;
   grok_View_Set_Description(v: any, s: String): any;
   grok_View_Get_Type(v: any): any;
@@ -1174,6 +1174,7 @@ export interface IDartApi {
   grok_Dapi_RecentProjects(): any;
   grok_Dapi_Notebooks(): any;
   grok_Dapi_Models(): any;
+  grok_Dapi_Models_GetBlob(modelId: String): Promise<any>;
   grok_Dapi_Packages(): any;
   grok_Dapi_Layouts(): any;
   grok_Dapi_Views(): any;
@@ -1808,6 +1809,8 @@ export interface IDartApi {
   grok_ColumnInfo_Get_SemType(ci: any): any;
   grok_ColumnInfo_Get_LayoutColumnId(ci: any): any;
   grok_ColumnInfo_Get_Tags(ci: any): any;
+  grok_Model_Get_Inputs(m: any): any;
+  grok_Model_Get_Outputs(m: any): any;
   grok_HistoryEntry_Get_Object(e: any): any;
   grok_HistoryEntry_Get_Time(e: any): any;
   grok_Entity_Get_Id(p: any): any;
@@ -1942,6 +1945,7 @@ export interface IDartApi {
   grok_ParseCsv(s: String, options: any): any;
   grok_TestData(s: String, rows: Num, columns: Num): any;
   grok_LinkTables(t1: any, t2: any, keys1: any, keys2: any, linkTypes: any, initialSync: Bool, filterAllOnNoRowsSelected: Bool): any;
+  grok_DataFrameLink_Detach(link: any): any;
   grok_JoinTables(t1: any, t2: any, keys1: any, keys2: any, values1: any, values2: any, joinType: String, inPlace: Bool): any;
   grok_Subscription_Cancel(sub: any): any;
   grok_CallQuery(queryName: String, queryParameters: any, adHoc: Bool): Promise<any>;

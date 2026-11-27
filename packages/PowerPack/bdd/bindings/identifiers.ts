@@ -11,6 +11,8 @@ element('identifiers editor', {selector: '.db-explorer-editor',
   description: 'the view Configure Identifiers opens: the Identifiers, Joins and other sections, and Save'});
 element('add identifier icon', {selector: '.entry-points-section [aria-label="Add a new identifier"]',
   description: 'the plus under the list of identifiers'});
+element('add entity name icon', {selector: '.entities-section [aria-label="Name a table"]',
+  description: 'the plus under the tables named in the Entity Names section'});
 element('identifier preview', {selector: '.d4-dialog .db-explorer-entrypoint-preview-card',
   description: 'the card in the Add Identifier dialog: one row of the chosen table, read from the database'});
 element('configuration text', {selector: '.d4-dialog textarea',
@@ -97,6 +99,17 @@ export const savedIdentifiers = Then('the saved identifiers of {string} in the {
     return config ? Object.keys(config.entryPoints ?? {}).sort() : [`no configuration for ${target}`];
   }, {message: `the semantic types the configuration of ${target} defines, as saved`}).toEqual(expected);
 }, {tier: 'api', description: 'the semantic types (comma-separated) of the configuration saved for "catalog.schema" or a schema: all of them, no other'});
+
+export const savedEntityNames = Then('the saved entity names of {string} in the {string} connection should be {string}', async (page: Page, target: string, connection: string, list: string) => {
+  const nqName = await qualifiedName(page, connection);
+  await expect.poll(async () => {
+    const config = (await savedConfigs(page, nqName)).find((c) => covered(c) === target);
+    if (!config)
+      return `no configuration for ${target}`;
+    return Object.entries(config.entities ?? {}).map(([table, e]: [string, any]) => `${table}: ${e.label}${e.short ? ` (${e.short})` : ''}`)
+      .sort().join('; ');
+  }, {message: `the tables the configuration of ${target} names, as saved`}).toBe(list);
+}, {tier: 'api', description: 'the named tables of the configuration saved for "catalog.schema" or a schema, as "table: Name (Code)", "; "-separated'});
 
 export const identifiersConfigCovers = Then('the identifiers configurations of the {string} connection on the server should cover {string}', async (page: Page, connection: string, targets: string) => {
   const expected = targets.split(',').map((t) => t.trim()).filter(Boolean).sort();

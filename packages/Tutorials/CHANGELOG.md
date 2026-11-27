@@ -2,6 +2,7 @@
 
 ## v.next
 
+* core#440: Fixed the progress ring running one step ahead; a finished tutorial shows a green check
 * App: Opens as a view of the tracks and tutorials, so Browse previews it instead of showing RUN; the Browse tree lists the tracks and tutorials, and selecting one previews it without starting it
 * [#4437](https://github.com/datagrok-ai/public/issues/4437): Tutorials: Show both Windows and Mac keyboard shortcuts in step instructions
 * [#4444](https://github.com/datagrok-ai/public/issues/4444): Tutorials: Dashboards: saving the project before renaming it gets the project name step stuck, and skipping the next step throws NullError

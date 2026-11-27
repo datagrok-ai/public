@@ -11,7 +11,11 @@ To use **BioNeMo**, you need an **NGC API key** for either cloud or local access
   - [DiffDock Setup](https://docs.nvidia.com/nim/bionemo/diffdock/latest/getting-started.html)  
   - [MolMIM Setup](https://docs.nvidia.com/nim/bionemo/molmim/latest/quickstart-guide.html)  
 
-Make sure your API key is properly configured for your chosen setup.
+To set the key:
+
+1. Go to **Browse > Platform > Plugins** and click **BioNeMo**.
+2. In the context panel, open the **Credentials** pane.
+3. Add a parameter named `apiKey` and paste your NGC API key as its value.
 
 ## EsmFold model
 

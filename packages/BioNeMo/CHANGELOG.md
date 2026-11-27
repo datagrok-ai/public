@@ -1,5 +1,9 @@
 # Bionemo changelog
 
+## v.next
+
+* core#1837: BioNeMo: NGC API key is kept in package settings instead of package credentials
+
 ## 1.3.2 (2026-07-12)
 
 * GROK-18695: Updated npm dependencies to clear reported vulnerabilities

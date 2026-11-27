@@ -2,11 +2,12 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {DBExplorerConfig, EntryPointOptions,
+import {DBExplorerConfig, EntityOptions, EntryPointOptions,
   QueryJoinOptions, ReferencedByObject, ReferenceObject, SchemaAndConnection} from './types';
 import {DBExplorerObjectHandler, SemValueObjectHandler} from './object-handlers';
 import {getDefaultRendererByName} from './renderer';
 import {getSchemaReferences} from './utils';
+import {identifierCode, TableNames} from './naming';
 
 export class DBExplorer {
   private schemasLoaded: boolean = false;
@@ -18,6 +19,8 @@ export class DBExplorer {
   private objHandlers: DBExplorerObjectHandler[] = [];
   private loadingFailed: boolean = false;
   public genericValueHandler: DBExplorerObjectHandler;
+  /** What the Links section of every card of this explorer calls each table */
+  public readonly names = new TableNames();
   constructor(
     private connectionName: string,
     private schemaName: string,
@@ -38,7 +41,8 @@ export class DBExplorer {
       },
       nqName ?? connectionName,
       this.schemaName,
-      this.catalogName
+      this.catalogName,
+      this.names,
     );
     DG.ObjectHandler.register(this.genericValueHandler);
     this.objHandlers.push(this.genericValueHandler);
@@ -98,7 +102,9 @@ export class DBExplorer {
     }
   }
 
-  public async addCustomRelation(tableName: string, columnName: string, refTable: string, refColumn: string, schemas?: {tableSchema?: string; refTableSchema?: string}) {
+  /** @param labels - what the Links section calls the row pointed at (label) and the rows pointing at it (reverseLabel) */
+  public async addCustomRelation(tableName: string, columnName: string, refTable: string, refColumn: string, schemas?: {tableSchema?: string; refTableSchema?: string},
+    labels?: {label?: string; reverseLabel?: string}) {
     if (!this.schemasLoaded) {
       try {
         await this._dbLoadPromise;
@@ -120,14 +126,17 @@ export class DBExplorer {
     const schemaRefBy = this.referencedBy[refSchemaName];
     if (!schemaRefs[tableName])
       schemaRefs[tableName] = {};
-    schemaRefs[tableName][columnName] = {refTable, refColumn, refSchema: refSchemaName};
+    schemaRefs[tableName][columnName] = {refTable, refColumn, refSchema: refSchemaName, label: labels?.label};
     if (!schemaRefBy[refTable])
       schemaRefBy[refTable] = {};
     schemaRefBy[refTable][refColumn] ??= [];
     // there already might be this reference, so first check if such ref already exists
-    if (schemaRefBy[refTable][refColumn].find((r) => r.refTable === tableName && r.refColumn === columnName && r.refSchema === schemaName))
+    const existing = schemaRefBy[refTable][refColumn].find((r) => r.refTable === tableName && r.refColumn === columnName && r.refSchema === schemaName);
+    if (existing) {
+      existing.reverseLabel = labels?.reverseLabel ?? existing.reverseLabel;
       return;
-    schemaRefBy[refTable][refColumn].push({refTable: tableName, refColumn: columnName, refSchema: schemaName});
+    }
+    schemaRefBy[refTable][refColumn].push({refTable: tableName, refColumn: columnName, refSchema: schemaName, reverseLabel: labels?.reverseLabel});
   }
 
   public addEntryPoint(
@@ -146,8 +155,11 @@ export class DBExplorer {
       schemaPromise,
       this.schemaName,
       this.nqName ?? this.connectionName,
-      this.catalogName
+      this.catalogName,
+      this.names,
     );
+    this.names.addEntryPoint({semType: semanticType, table: tableName, column: columnName,
+      code: identifierCode(options?.regexpExample?.nonVariablePart, options?.matchRegexp)});
     // if the matching regexp is also provided, register it
     if (options?.matchRegexp)
       DG.SemanticValue.registerRegExpDetector(semanticType, options.matchRegexp);
@@ -166,6 +178,12 @@ export class DBExplorer {
     renderer: (value: string | number, connection: DG.DataConnection) => HTMLElement
   ) {
     this.objHandlers.forEach((handler) => handler.addCustomRenderer(check, renderer));
+    return this;
+  }
+
+  /** Names and display of tables in the Links section of the cards, by table or schema.table */
+  public addEntities(entities: {[tableName: string]: EntityOptions}) {
+    this.names.addEntities(entities);
     return this;
   }
 
@@ -206,6 +224,8 @@ export class DBExplorer {
       exp.addUniqueColumns(config.uniqueColumns);
     if (config.customSelectedColumns)
       exp.addCustomSelectedColumns(config.customSelectedColumns);
+    if (config.entities)
+      exp.addEntities(config.entities);
     if (config.explicitReferences) {
       config.explicitReferences.forEach((ref) => {
         exp.addCustomRelation(
@@ -213,7 +233,8 @@ export class DBExplorer {
           ref.column,
           ref.refTable,
           ref.refColumn,
-          {tableSchema: ref.schema, refTableSchema: ref.refSchema}
+          {tableSchema: ref.schema, refTableSchema: ref.refSchema},
+          {label: ref.label, reverseLabel: ref.reverseLabel},
         );
       });
     }

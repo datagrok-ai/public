@@ -256,14 +256,26 @@ export function ensureFunctionsRegistered(): void {
   registerAllFunctions();
 }
 
-/** Node type name for a DG.Func, registering a factory on the fly for off-catalog funcs;
- *  matches by qualified name so a freshly parsed Dart instance finds its registered twin. */
+function funcId(func: DG.Func): string | null {
+  try {
+    return func.id || null;
+  } catch {
+    return null;
+  }
+}
+
+/** Node type name for a DG.Func, registering a factory on the fly for off-catalog funcs.
+ *  A freshly parsed Dart instance finds its registered twin by entity id, or by qualified name
+ *  when either side has none (core funcs). The qualified name ignores namespaces, so on its own
+ *  it would hand a fresh `DG.Script` the node type of any saved script that shares its name. */
 export function ensureFuncNodeType(func: DG.Func): string {
   registerAllFunctions();
 
+  const id = funcId(func);
   const qName = getFuncQualifiedName(func).toLowerCase();
   for (const info of funcRegistry) {
-    if (getFuncQualifiedName(info.func).toLowerCase() === qName)
+    const infoId = funcId(info.func);
+    if (id && infoId ? id === infoId : getFuncQualifiedName(info.func).toLowerCase() === qName)
       return info.nodeTypeName;
   }
 

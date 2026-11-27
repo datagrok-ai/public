@@ -223,9 +223,10 @@ export function isStringListType(dgType: string): boolean {
   return dgType === 'string_list' || dgType === 'list<string>';
 }
 
-/** Comma-separated string → JS array literal of trimmed, non-empty strings. */
+/** Comma-separated string (or a list kept as such) → JS array literal of trimmed, non-empty strings. */
 export function stringListToArrayLiteral(value: unknown): string {
-  const items = String(value ?? '').split(',').map((s) => s.trim()).filter((s) => s.length > 0);
+  const items = (Array.isArray(value) ? value.map((x) => String(x)) : String(value ?? '').split(','))
+    .map((s) => s.trim()).filter((s) => s.length > 0);
   return `[${items.map((s) => JSON.stringify(s)).join(', ')}]`;
 }
 

@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {DBExplorerConfig, ExplicitReference, QueryJoinOptions} from './types';
+import {DBExplorerConfig, EntityOptions, ExplicitReference, QueryJoinOptions} from './types';
 import * as rxjs from 'rxjs';
 import {renderExampleCard} from './renderer';
 import {explicitCatalog, hasCatalogs, listCatalogs, ownCatalog} from './utils';
@@ -32,6 +32,7 @@ interface DBExplorerState {
   customSelectedColumns: {[tableName: string]: string[]};
   customRenderers?: CustomRenderer[];
   explicitReferences?: ExplicitReference[];
+  entities: {[tableName: string]: EntityOptions};
 }
 
 export class DBExplorerEditor {
@@ -46,7 +47,8 @@ export class DBExplorerEditor {
     headerNames: {},
     uniqueColumns: {},
     customSelectedColumns: {},
-    customRenderers: []
+    customRenderers: [],
+    entities: {},
   };
 
   private connections: DG.DataConnection[] = [];
@@ -341,6 +343,11 @@ export class DBExplorerEditor {
     // Header Names Section
     const headerPane = accordion.addPane('Header Names', () => this.createHeaderNamesSection(), false, null, false);
     ui.tooltip.bind(tryGetPaneHeaderRoot(headerPane.root), 'Customize column headers in the exploration view. Define a column for tables which will be used as a header for multiple records.');
+
+    // Entity Names Section
+    const entitiesPane = accordion.addPane('Entity Names', () => this.createEntitiesSection(), false, null, false);
+    ui.tooltip.bind(tryGetPaneHeaderRoot(entitiesPane.root), 'Name tables in the Links section of the cards, and choose how their rows are shown. ' +
+      'Without a name, a table is named after its identifier\'s semantic type, or its own name without the words most tables share.');
 
     // Unique Columns Section
     const uniquePane = accordion.addPane('Unique Columns', () => this.createUniqueColumnsSection(), false, null, false);
@@ -1044,6 +1051,97 @@ export class DBExplorerEditor {
     dialog.show({resizable: true});
   }
 
+  private createEntitiesSection(): HTMLDivElement {
+    const section = ui.divV([], 'entities-section');
+    const infoText = ui.divText('Name tables in the Links section of the cards', 'db-explorer-info-text');
+    ui.tooltip.bind(infoText, 'Each key is a table. Every field is optional: what is left out is inferred');
+    const tableContainer = ui.divV([], 'entities-table-container');
+    this.renderEntitiesTable(tableContainer);
+    const addButtonContainer = ui.divH([]);
+    addButtonContainer.style.marginTop = '10px';
+    addButtonContainer.appendChild(this.getAddIcon(() => this.showEntityDialog(null, tableContainer), 'Name a table'));
+    section.appendChild(infoText);
+    section.appendChild(tableContainer);
+    section.appendChild(addButtonContainer);
+    return section;
+  }
+
+  private renderEntitiesTable(container: HTMLDivElement): void {
+    container.innerHTML = '';
+    if (Object.keys(this.state.entities).length === 0) {
+      container.appendChild(ui.divText('No tables named yet', 'db-explorer-empty-message'));
+      return;
+    }
+    const placement = (e: EntityOptions) => e.hidden ? 'Hidden' : e.more === true ? 'Under More' : e.more === false ? 'In the list' : 'Inferred';
+    const table = ui.table(
+      Object.keys(this.state.entities),
+      (tableName) => {
+        const e = this.state.entities[tableName];
+        return [
+          tableName,
+          e.label ?? '-',
+          e.short ?? '-',
+          placement(e),
+          this.createActionButtons(
+            () => this.showEntityDialog(tableName, container),
+            () => {
+              delete this.state.entities[tableName];
+              this.renderEntitiesTable(container);
+            },
+          ),
+        ];
+      },
+      ['Table', 'Name', 'Code', 'Placement', 'Actions'],
+    );
+    table.style.width = '100%';
+    container.appendChild(table);
+  }
+
+  private showEntityDialog(tableName: string | null, tableContainer: HTMLDivElement): void {
+    const isEdit = tableName !== null;
+    const e: EntityOptions = isEdit ? this.state.entities[tableName!] : {};
+    const dialog = ui.dialog(isEdit ? `Edit Entity Name: ${tableName}` : 'Add Entity Name');
+    const PLACEMENTS = ['Inferred', 'In the list', 'Under More', 'Hidden'];
+    const tableInput = ui.input.choice('Table', {value: tableName || this.tableNames[0] || '', items: this.tableNames});
+    const labelInput = ui.input.string('Name', {value: e.label ?? '', nullable: true});
+    ui.tooltip.bind(labelInput.input, 'One record, e.g. "Compound"');
+    const shortInput = ui.input.string('Code', {value: e.short ?? '', nullable: true});
+    ui.tooltip.bind(shortInput.input, 'Shown after the name, e.g. "CPD"');
+    const pluralInput = ui.input.string('Plural', {value: e.plural ?? '', nullable: true});
+    ui.tooltip.bind(pluralInput.input, 'When adding an s to the name is wrong');
+    const descriptionInput = ui.input.string('Description', {value: e.description ?? '', nullable: true});
+    ui.tooltip.bind(descriptionInput.input, 'Shown in the tooltip of the table\'s links');
+    const placementInput = ui.input.choice('Placement', {value: e.hidden ? 'Hidden' : e.more === true ? 'Under More' : e.more === false ? 'In the list' : 'Inferred', items: PLACEMENTS});
+    ui.tooltip.bind(placementInput.input, 'Where the table\'s links go. Inferred: under More for a view the configuration says nothing about');
+    dialog.add(ui.divV([tableInput.root, labelInput.root, shortInput.root, pluralInput.root, descriptionInput.root, placementInput.root], 'ui-form'));
+    dialog.addButton(isEdit ? 'Save' : 'Add', () => {
+      if (!tableInput.value) {
+        grok.shell.error('A table is required');
+        return;
+      }
+      const out: EntityOptions = {...(isEdit ? this.state.entities[tableName!] : {})};
+      const setText = (key: 'label' | 'short' | 'plural' | 'description', v: string | null) => {
+        if (v?.trim()) out[key] = v.trim();
+        else delete out[key];
+      };
+      setText('label', labelInput.value);
+      setText('short', shortInput.value);
+      setText('plural', pluralInput.value);
+      setText('description', descriptionInput.value);
+      delete out.more;
+      delete out.hidden;
+      if (placementInput.value === 'Hidden') out.hidden = true;
+      else if (placementInput.value === 'Under More') out.more = true;
+      else if (placementInput.value === 'In the list') out.more = false;
+      if (isEdit && tableInput.value !== tableName)
+        delete this.state.entities[tableName!];
+      this.state.entities[tableInput.value] = out;
+      this.renderEntitiesTable(tableContainer);
+      dialog.close();
+    });
+    dialog.show({resizable: true});
+  }
+
   private createUniqueColumnsSection(): HTMLDivElement {
     const section = ui.divV([], 'unique-columns-section');
 
@@ -1361,6 +1459,7 @@ export class DBExplorerEditor {
           ref.refSchema ?? this.state.schemaName ?? '-',
           ref.refTable,
           ref.refColumn,
+          [ref.label, ref.reverseLabel].filter((l) => !!l).join(' / ') || '-',
           this.createActionButtons(
             () => this.showExplicitReferenceDialog(index - 1, container),
             () => {
@@ -1370,7 +1469,7 @@ export class DBExplorerEditor {
           )
         ];
       },
-      ['Schema', 'Table', 'Column', 'Ref Schema', 'Ref Table', 'Ref Column', 'Actions']
+      ['Schema', 'Table', 'Column', 'Ref Schema', 'Ref Table', 'Ref Column', 'Labels', 'Actions'],
     );
     table.style.width = '100%';
     container.appendChild(table);
@@ -1413,6 +1512,11 @@ export class DBExplorerEditor {
       items: this.getSchemaColumnNames(refSchemaInput.value ?? this.state.schemaName, refTableInput.value)
     });
     ui.tooltip.bind(refColumnInput.input, 'Referenced column');
+
+    const labelInput = ui.input.string('Label', {value: (ref as ExplicitReference).label ?? '', nullable: true});
+    ui.tooltip.bind(labelInput.input, 'What the row pointed at is, seen from the source row, e.g. "Parent compound". Optional: read from the column name');
+    const reverseLabelInput = ui.input.string('Reverse label', {value: (ref as ExplicitReference).reverseLabel ?? '', nullable: true});
+    ui.tooltip.bind(reverseLabelInput.input, 'What the source rows are called in the Links section of the row pointed at, e.g. "Child compounds". Optional');
 
     this.ensureSchemaLoaded(schemaInput.value ?? this.state.schemaName).then((entry) => {
       if (!entry)
@@ -1466,7 +1570,9 @@ export class DBExplorerEditor {
       columnInput.root,
       refSchemaInput.root,
       refTableInput.root,
-      refColumnInput.root
+      refColumnInput.root,
+      labelInput.root,
+      reverseLabelInput.root,
     ], 'ui-form'));
 
     dialog.addButton(isEdit ? 'Save' : 'Add', () => {
@@ -1483,6 +1589,10 @@ export class DBExplorerEditor {
         refTable: refTableInput.value,
         refColumn: refColumnInput.value
       };
+      if (labelInput.value?.trim())
+        newRef.label = labelInput.value.trim();
+      if (reverseLabelInput.value?.trim())
+        newRef.reverseLabel = reverseLabelInput.value.trim();
 
       if (!this.state.explicitReferences)
         this.state.explicitReferences = [];
@@ -1736,6 +1846,9 @@ export class DBExplorerEditor {
     if (this.state.explicitReferences && this.state.explicitReferences.length > 0)
       config.explicitReferences = this.state.explicitReferences;
 
+    if (Object.keys(this.state.entities).length > 0)
+      config.entities = this.state.entities;
+
     return config;
   }
 
@@ -1781,7 +1894,8 @@ export class DBExplorerEditor {
       uniqueColumns: config.uniqueColumns || {},
       customSelectedColumns: config.customSelectedColumns || {},
       customRenderers: config.customRenderers || [],
-      explicitReferences: config.explicitReferences || []
+      explicitReferences: config.explicitReferences || [],
+      entities: config.entities || {},
     };
 
     if (!this.connectionInput) {

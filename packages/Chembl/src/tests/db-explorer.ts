@@ -23,6 +23,9 @@ category('DB Explorer', () => {
     await renderer.renderAssociations(acc, schemaPromise, 'public', 'molecule_dictionary', df);
     const links = acc.getPane('Links');
     links.expanded = true;
-    expect(links.root.textContent?.includes('public.molecule_dictionary.molregno'), true);
+    // the molecule's own key, read from the column of the same name, and the table that points at it, by name
+    expect(links.root.textContent?.includes('This molecule dictionary'), true);
+    expect(links.root.textContent?.includes('Compound records'), true);
+    expect(links.root.querySelector('[data-db-link="public.compound_records.molregno"]') != null, true);
   });
 });

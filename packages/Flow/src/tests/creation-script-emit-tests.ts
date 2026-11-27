@@ -18,12 +18,14 @@ function chemAvailable(): boolean {
   }
 }
 
+/** Import warnings ride along: a line the importer skipped must fail the test, not just go missing. */
 async function roundTrip(script: string): Promise<CreationScriptResult> {
   const e = makeEditor();
   try {
     const g = buildCreationScriptGraph(script);
     await applyGraphToEditor(g, e.flow);
-    return emitCreationScript(e.flow);
+    const r = emitCreationScript(e.flow);
+    return {...r, warnings: [...g.warnings, ...r.warnings]};
   } finally {
     destroyEditor(e);
   }
@@ -159,14 +161,15 @@ category('Flow: creation script emit', () => {
     const r = await roundTrip([
       'Mol1KLocal = OpenFile("System:AppData/Chem/mol1K.csv")',
       'Mol1K = OpenFile("System:AppData/Chem/mol1K.csv")',
-      'Chem:addChemPropertiesColumns(Mol1K, "molecule", true, true, true, true, true, false, false, false, false)',
+      'Chem:addChemPropertiesColumns(Mol1K, "molecule", true, true, true, true, true, false, false, false, false, ' +
+        'false)',
       'AddNewColumn(Mol1K, "${LogP} + ${MW} + ${HBD}", "smth", subscribeOnChanges = true)',
       'Result = JoinTables("mol1K", "mol1K local", ["prID"], ["prID"], ' +
         '["molecule", "prID", "smth"], ["molecule", "prID"])',
       'Chem:addChemPropertiesColumns(Result, "molecule", false, false, false, false, ' +
-        'false, false, false, true, false)',
+        'false, false, false, true, false, false)',
       'Chem:addChemPropertiesColumns(Result, "mol1K local.molecule", false, false, ' +
-        'false, false, false, false, true, false, false)',
+        'false, false, false, false, true, false, false, false)',
     ].join('\n'));
     expect(r.warnings.length, 0, r.warnings.join(' ; '));
 

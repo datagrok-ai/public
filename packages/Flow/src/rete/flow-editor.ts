@@ -21,13 +21,13 @@ import * as ui from 'datagrok-api/ui';
 import {
   FlowConnection, FlowEditorBridge, FlowNode, FlowScheme, isExecKey, isSetVarNode,
   EXEC_IN_KEY, EXEC_OUT_KEY, hiddenSocketRow, supportsInlinePreview, INLINE_PREVIEW_PROP,
-  INLINE_HOSTED_DATA_KEY, inlinePreviewSize,
+  INLINE_HOSTED_DATA_KEY, inlinePreviewSize, WiredEditor,
 } from './scheme';
 import {TypedSocket} from './sockets';
 import {DgControlComponent, FlowConnectionComponent, FlowNodeComponent, FlowSocketComponent} from './node-component';
 import {InputValueControl} from './nodes/input-value-control';
 import {PROPERTY_INPUT_TYPE, adoptInputProperty, applyPropertyInputShape} from './nodes/input-nodes';
-import {effectiveFuncInputs} from '../utils/func-input-overrides';
+import {customEditorFor, effectiveFuncInputs} from '../utils/func-input-overrides';
 import {getSlotColor, getSlotLetter} from '../types/type-map';
 import {isReservedName} from '../utils/naming';
 import {tid, setTid} from '../utils/test-ids';
@@ -67,6 +67,12 @@ export interface FlowEditorCallbacks {
   /** Re-run just this node from values captured in a prior run. */
   onRerunNode?: (nodeId: string) => void;
   canRerunNode?: (nodeId: string) => boolean;
+  /** Run this node and everything downstream of it, from the captured values of all else. */
+  onRunDownstream?: (nodeId: string) => void;
+  /** A node's captured table, never computing it (an input node's card editor reads its target's tables). */
+  getUpstreamTable?: (sourceNodeId: string) => DG.DataFrame | null;
+  /** Compute a node's table on a user's explicit request. */
+  runUpstreamNode?: (sourceNodeId: string) => Promise<DG.DataFrame | null>;
   /** Suggestion-engine picks for the node an output drag started from — the
    *  drag-out menu leads with them and applies their prefills on selection. */
   getSocketSuggestions?: (nodeId: string, outputKey: string) => Promise<SocketSuggestion[]>;
@@ -306,6 +312,7 @@ export class FlowEditor {
     getZoom: () => this.area.area.transform.k || 1,
     focusNodeForEditing: (nodeId, w, h) => void this.focusNodeForEditing(nodeId, w, h),
     isInlinePreviewPending: (nodeId) => this.callbacks.isInlinePreviewPending?.(nodeId) ?? false,
+    wiredEditor: (nodeId) => this.wiredEditor(nodeId),
   };
 
   /** Reject incompatible connections at pick time, before they enter the data layer. */
@@ -366,6 +373,55 @@ export class FlowEditor {
     this.rebuildValueEditor(source.id);
   }
 
+  /** See {@link FlowEditorBridge.wiredEditor}: the first function input the node feeds that has an editor, with
+   *  the context the function's panel builds for it (captured tables only; computing one is the user's call). */
+  wiredEditor(nodeId: string): WiredEditor | null {
+    for (const c of this.getConnections()) {
+      if (c.source !== nodeId || isExecKey(String(c.targetInput))) continue;
+      const target = this.getNodeById(c.target);
+      const func = target?.dgNodeType === 'func' ? target.dgFunc : undefined;
+      if (!target || !func) continue;
+      const key = String(c.targetInput);
+      const factory = customEditorFor(func, key);
+      let param: DG.Property | undefined;
+      try {
+        param = factory ? effectiveFuncInputs(func).find((p) => p.name === key) : undefined;
+      } catch {
+        continue; // Dart proxy introspection can throw
+      }
+      if (!factory || !param) continue;
+      const table = (p: string): DG.DataFrame | null => {
+        const src = this.getInputSource(target.id, p);
+        return src ? this.callbacks.getUpstreamTable?.(src.node.id) ?? null : null;
+      };
+      return {factory, param, ctx: {
+        inputValue: (name) => target.inputValues[name],
+        columns: (p) => {
+          const t = table(p);
+          return t ? Array.from(t.columns) : null;
+        },
+        table,
+        isConnected: (p) => this.isInputConnected(target.id, p),
+        produceTable: async (p) => {
+          const src = this.getInputSource(target.id, p);
+          return src && this.callbacks.runUpstreamNode ? this.callbacks.runUpstreamNode(src.node.id) : null;
+        },
+        watch: () => {},
+        node: target,
+      }};
+    }
+    return null;
+  }
+
+  /** Input nodes showing their target's editor rebuild it when a run replaced (or first captured) its tables. */
+  refreshWiredEditors(): void {
+    for (const node of this.getNodes()) {
+      const ctl = node.controls['value'];
+      if (node.dgNodeType === 'input' && ctl instanceof InputValueControl && ctl.isStale())
+        this.rebuildValueEditor(node.id);
+    }
+  }
+
   /** Rebuild a node's inline value editor after its type/qualifiers changed shape. */
   rebuildValueEditor(nodeId: string): void {
     const ctl = this.getNodeById(nodeId)?.controls['value'];
@@ -419,6 +475,10 @@ export class FlowEditor {
         this.maybeAutoTypeValueOutput(context.data);
         this.maybeAdoptPropertyInput(context.data);
       }
+      // An input node feeding a function input with its own editor shows that editor: (re)wiring changes which.
+      if ((context.type === 'connectioncreated' || context.type === 'connectionremoved') &&
+          this.editor.getNode(context.data.source)?.dgNodeType === 'input')
+        this.rebuildValueEditor(context.data.source);
       if (context.type === 'connectionremoved')
         this.connectionStatuses.delete(context.data.id);
       if (context.type === 'connectioncreated' || context.type === 'connectionremoved') {
@@ -2677,6 +2737,10 @@ export class FlowEditor {
     let hasRunItem = false;
     if (this.callbacks.onPreviewNode) {
       menu.item('Run up to here & preview', () => this.callbacks.onPreviewNode!(node.id));
+      hasRunItem = true;
+    }
+    if (this.callbacks.onRunDownstream && node.dgNodeType !== 'output') {
+      menu.item('Run from here', () => this.callbacks.onRunDownstream!(node.id));
       hasRunItem = true;
     }
     if (this.callbacks.onRerunNode && this.callbacks.canRerunNode?.(node.id)) {

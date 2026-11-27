@@ -35,6 +35,7 @@ export async function getSchemaReferences(connection: DG.DataConnection, schemaN
     throw new Error(`Schema ${schemaName} not found`);
   const references: ReferenceObject = {[schemaName]: {}};
   const referencedBy: ReferencedByObject = {[schemaName]: {}};
+  const comments: {[tableName: string]: string} = {};
   const schemaRefs = references[schemaName];
   const schemaRefBy = referencedBy[schemaName];
   // the platform reads foreign keys from the connection's own catalog, whichever catalog the tables come from
@@ -42,6 +43,9 @@ export async function getSchemaReferences(connection: DG.DataConnection, schemaN
   for (const table of tables) {
     const tableName = table.friendlyName ?? table.name;
     schemaRefs[tableName] = {};
+    const comment = table.tags?.[DG.Tags.DbComment];
+    if (typeof comment === 'string' && comment.trim().length > 0)
+      comments[tableName] = comment.trim();
     if (!keysKnown)
       continue;
     for (const column of table.columns) {
@@ -54,7 +58,7 @@ export async function getSchemaReferences(connection: DG.DataConnection, schemaN
       schemaRefBy[ref.table][ref.column].push({refTable: tableName, refColumn: column.name, refSchema: schemaName});
     }
   }
-  return {references, referencedBy};
+  return {references, referencedBy, comments: {[schemaName]: comments}};
 }
 
 export async function getSchemaDescriptor(connectionID: string, schemaName: string, description?: string): Promise<DBConnectionDescriptor['schemas'][string]> {

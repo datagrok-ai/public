@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "forge",
-  "version": "0.1.24",
+  "version": "0.1.25",
   "tables": {
     "model": {
       "securityMode": "row",
@@ -16,7 +16,7 @@
         "tags": {"type": "string", "friendlyName": "Tags", "description": "Comma-separated tags, shown in the catalog and the model's Details"},
         "engine_name": {"type": "string", "required": true, "friendlyName": "Method", "description": "Method id: the mlname meta of its functions"},
         "engine_namespace": {"type": "string", "required": true, "friendlyName": "Package", "description": "Package of the method's train function, or the namespace of a script method"},
-        "engine_kind": {"type": "string", "required": true, "choices": ["function", "script"], "friendlyName": "Method type"},
+        "engine_kind": {"type": "string", "required": true, "choices": ["function", "script", "external"], "friendlyName": "Method type"},
         "task": {"type": "string", "required": true, "choices": ["regression", "classification"], "friendlyName": "Task"},
         "target_name": {"type": "string", "required": true, "friendlyName": "Target"},
         "target": {"type": "json", "friendlyName": "Target details", "description": "{name, type, semType?, categories?}"},

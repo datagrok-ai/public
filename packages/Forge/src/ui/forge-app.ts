@@ -8,7 +8,7 @@ import {COMPARE_COLUMNS, CompareModelRow} from '../catalog/compare-models';
 import {GRID_DATE_FORMAT, MODEL_TYPE, VIEW_NAME, VIEW_PATH, VIEW_TYPE} from '../constants';
 import {forgeDb, ModelRow, ModelStorageMode} from '../generated/db';
 import {isRecord} from '../preparation/preparation-options';
-import {modelsChanged} from '../storage/model-store';
+import {modelsChanged, storedModels, syncStatus} from '../storage/model-store';
 import {isOpen} from './apply-model-dialog';
 import {Gallery, SortField} from './gallery';
 import {addModelItems} from './model-actions';
@@ -101,6 +101,7 @@ export class ForgeApp extends DG.ViewBase {
     this.emptyHint = ui.divV([ui.divText('No models yet.'),
       ui.link('Train a model...', () => void launchTraining(null), 'Open the Train view on a table')],
     'forge-gallery-empty');
+    ui.tooltip.bind(refreshIcon, () => syncStatus.value.message || 'Refresh');
     const rowOf = (i: number) => ForgeModelHandler.rowOf(this.modelValues(i));
     this.modelsGallery = new Gallery({key: 'models', noun: 'models',
       placeholder: 'Search models by name, target, method or #tag', grid: this.grid,
@@ -120,6 +121,14 @@ export class ForgeApp extends DG.ViewBase {
     this.subscribeCatalog();
     this.publishLoad(0);
     this.subs.push(
+      syncStatus.subscribe(({checking, message}) => {
+        const isWarning = !checking && message !== '';
+        refreshIcon.classList.toggle('fa-spin', checking);
+        void this.showChecking(checking);
+        refreshIcon.classList.toggle('forge-card-warn', isWarning);
+        // The toolbar's icon colour outweighs the class.
+        refreshIcon.style.color = isWarning ? 'var(--orange-3)' : '';
+      }),
       // Stale from the change, not from the debounced reload.
       modelsChanged.subscribe(() => this.markStale()),
       // A burst of writes (tag chips) reloads once.
@@ -177,7 +186,7 @@ export class ForgeApp extends DG.ViewBase {
 
   static async loadModels(): Promise<DG.DataFrame> {
     const [models, properties] = await Promise.all([
-      forgeDb.models.query()
+      storedModels()
         .select(...CATALOG_COLUMNS)
         .orderBy('created_on', true)
         .df(),
@@ -216,6 +225,18 @@ export class ForgeApp extends DG.ViewBase {
 
   /** A newer load is due: a load still running is superseded and shows nothing, and the pane is busy until the due load
    * is shown. */
+  /** While the models of an empty catalog are checked the view shows only the loader, then its content. */
+  private async showChecking(checking: boolean): Promise<void> {
+    if (checking && this.models.rowCount > 0)
+      return;
+    if (!checking && this.models.rowCount === 0 && syncStatus.value.changed) {
+      this.markStale();
+      await this.refresh();
+    }
+    this.modelsGallery.root.style.visibility = checking ? 'hidden' : '';
+    ui.setUpdateIndicator(this.root, checking, 'Loading models...');
+  }
+
   private markStale(): void {
     this.catalogLoad++;
     this.modelsGallery.root.setAttribute('aria-busy', 'true');

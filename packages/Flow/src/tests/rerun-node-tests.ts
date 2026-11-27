@@ -4,7 +4,9 @@ import {category, test, expect, before} from '@datagrok-libraries/utils/src/test
 import {registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs} from '../rete/node-factory';
 import {emitScript} from '../compiler/script-emitter';
 import {ExecutionController} from '../execution/execution-controller';
-import {makeEditor, destroyEditor, addNode} from './test-utils';
+import {FlowEditor} from '../rete/flow-editor';
+import {makeEditor, destroyEditor, addNode, until} from './test-utils';
+import * as ui from 'datagrok-api/ui';
 
 const SETTINGS = {name: 'T', description: '', tags: []};
 
@@ -117,6 +119,69 @@ category('Flow: rerun node', () => {
       });
     } finally {
       destroyEditor(e);
+    }
+  });
+
+  test('Run from here: the node and its downstream only, other branches read from what was captured', async () => {
+    const addCol = funcTypeName('AddNewColumn');
+    const join = funcTypeName('JoinTables');
+    if (!addCol || !join) return;
+    const e = makeEditor();
+    try {
+      // two branches meeting at a join: a → fa ↘ join ↙ fb ← b
+      const a = await addNode(e.flow, 'Inputs/Table Input');
+      const b = await addNode(e.flow, 'Inputs/Table Input');
+      const fa = await addNode(e.flow, addCol);
+      const fb = await addNode(e.flow, addCol);
+      const j = await addNode(e.flow, join);
+      await e.flow.addConnectionByKeys(a.id, 'table', fa.id, 'table');
+      await e.flow.addConnectionByKeys(b.id, 'table', fb.id, 'table');
+      await e.flow.addConnectionByKeys(fa.id, 'table__pt', j.id, 'table1');
+      await e.flow.addConnectionByKeys(fb.id, 'table__pt', j.id, 'table2');
+
+      const ctrl = new ExecutionController(e.flow);
+      const runs: Array<{onlyNodeIds?: Set<string>; liveExternalInputs?: boolean; preserveState?: boolean}> = [];
+      (ctrl as unknown as {executeInstrumented: (...args: unknown[]) => void}).executeInstrumented =
+        (_s, _d, opts) => {runs.push(opts as typeof runs[number]);};
+      const everything = {[a.id]: {table: {}}, [b.id]: {table: {}}, [fa.id]: {table__pt: {}},
+        [fb.id]: {table__pt: {}}, [j.id]: {result: {}}};
+
+      withRegistry(everything, () => ctrl.runDownstream(b.id, SETTINGS));
+      const ran = [...runs[0].onlyNodeIds!].sort();
+      expect(ran.join(','), [b.id, fb.id, j.id].sort().join(','), 'the second input, its branch and the join');
+      expect(runs[0].liveExternalInputs && runs[0].preserveState, true, 'the first branch is read, not rerun');
+
+      withRegistry({[b.id]: {table: {}}}, () => ctrl.runDownstream(fb.id, SETTINGS));
+      expect(runs[1].onlyNodeIds!.has(fa.id) && runs[1].onlyNodeIds!.has(a.id), true,
+        'an upstream result never captured is computed first');
+      expect(runs[1].onlyNodeIds!.has(b.id), false, 'a captured one is not');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('the node context menu offers Run from here, which runs that node', async () => {
+    const container = ui.div([], {style: {width: '1000px', height: '700px', position: 'absolute', left: '-10000px'}});
+    document.body.appendChild(container);
+    const asked: string[] = [];
+    const flow = new FlowEditor(container, {onRunDownstream: (id) => asked.push(id)});
+    try {
+      const node = await addNode(flow, 'Inputs/String Input', 0, 0);
+      await until(() => !!container.querySelector(`.ff-node[data-node-id="${node.id}"]`));
+      const nodeEl = container.querySelector<HTMLElement>(`.ff-node[data-node-id="${node.id}"]`)!;
+      nodeEl.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true, cancelable: true, clientX: 10, clientY: 10}));
+      const item = (): HTMLElement | undefined =>
+        Array.from(document.querySelectorAll<HTMLElement>('.d4-menu-item-label'))
+          .find((el) => el.textContent?.trim() === 'Run from here');
+      expect(await until(() => item() != null), true, 'the item is offered on an input node');
+      item()!.click();
+      expect(await until(() => asked.length > 0), true, 'clicking the item asks for a run');
+      expect(asked.join(','), node.id, 'from that node');
+    } finally {
+      for (const el of Array.from(document.querySelectorAll('.d4-menu-popup, .d4-menu-dropdown')))
+        el.remove();
+      flow.destroy();
+      container.remove();
     }
   });
 });

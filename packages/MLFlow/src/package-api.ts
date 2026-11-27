@@ -11,4 +11,20 @@ export namespace funcs {
   export async function info(): Promise<void> {
     return await grok.functions.call('MLflow:Info', {});
   }
+
+  /**
+   * Writes the MLflow models you may use into the Forge catalog; returns what was not refreshed
+   */
+  export async function syncMlflow(): Promise<string> {
+    return await grok.functions.call('MLflow:SyncMlflow', {});
+  }
+
+  /**
+   * Predicts with a published MLflow model in its container, which the first application starts
+   * @param {DG.DataFrame} df - The model's input columns, in its order.
+   * @param {any} model - The model reference as UTF-8 json bytes.
+   */
+  export async function applyMlflow(df: DG.DataFrame , model: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('MLflow:ApplyMlflow', { df, model });
+  }
 }

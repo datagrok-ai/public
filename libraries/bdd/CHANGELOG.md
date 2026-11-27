@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Steps: Added `the "X" view should span the "A" and "B" views`: a view docked under two side-by-side views starts at the first one's left edge and ends at the second one's right edge
 * Runner: A suite run leaves out the films — guides in demo or tutorial mode (`@guide` with `@demo` or `@tutorial`) — in both lanes; `grok-bdd guide` films them as before, and `BDD_FILMS=1` runs them as tests. U2Demo's features, whose `@demo` names the app they test, still run
 * Guides: The title card of a `@tutorial` is its scenario's own description, never the feature's paragraph (the maintainer's note), and a scenario is matched to the feature that holds it: features sharing a name ("How-to · Data") filmed in one run gave a clip another feature's paragraph
 * Guides: Added the `@tutorial` tag (renderer `--tutorial`): a demo clip that teaches — what each stop presses is outlined over a lightly dimmed page (an icon gets a box of at least 44 px) from early in the pointer's way until half a second after the press, the pointer moves at a guide's pace and rests on the target before pressing, menus are walked slowly enough to read, each result and each page a set-up changed dissolves in rather than cutting, notes rise into place, and a new note waits until the last one is read

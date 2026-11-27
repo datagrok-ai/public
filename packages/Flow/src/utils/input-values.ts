@@ -6,10 +6,12 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {FlowNode, hostsInlineSketcher, hostsHelmEditor, editorBoxSize,
-  EDITOR_BOX_SIZE_PROP, INLINE_SKETCHER_SIZE} from '../rete/scheme';
-import {isChoicesRefString} from './choice-refs';
+  EDITOR_BOX_SIZE_PROP, INLINE_SKETCHER_SIZE, INLINE_EDITOR_WIDTH, WiredEditor,
+} from '../rete/scheme';
+import {isChoicesRefString, literalChoiceItems} from './choice-refs';
 import {loadChoicesRefItems} from '../panel/choice-input-processor';
 import {setTid} from './test-ids';
+import {effectiveFuncInputs} from './func-input-overrides';
 
 /** Types whose configured value must NOT leak into the `//input:` header default —
  *  a table name / file path / JSON blob is not a valid script default literal. */
@@ -59,8 +61,12 @@ export function resolveInputValue(node: FlowNode): ResolvedInputValue {
     const d = dayjs(s);
     return d.isValid() ? {ok: true, value: d} : {ok: false, reason: `"${s}" is not a valid date`};
   }
-  case 'string_list': case 'column_list':
-    return s === '' ? noValue : {ok: true, value: s.split(',').map((x) => x.trim()).filter(Boolean)};
+  case 'string_list': case 'column_list': {
+    // An editor's value (`{editor: ...}`) is kept as the list itself: its items may hold commas.
+    const items = Array.isArray(raw) ? raw.map((x) => String(x)) : s.split(',').map((x) => x.trim()).filter(Boolean);
+    if (items.length > 0) return {ok: true, value: items};
+    return nullable ? {ok: true, value: null} : noValue;
+  }
   case 'column': case 'dynamic':
     return s === '' ? noValue : {ok: true, value: s};
   case 'map': {
@@ -96,6 +102,10 @@ export interface InputValueEditor {
   input?: DG.InputBase;
   /** The embedded chem sketcher — present only on a Sketcher Input's node-body editor. */
   sketcher?: DG.chem.Sketcher;
+  /** Releases what outlives the element (a hosted input's subscription); called before it is thrown away. */
+  detach?: () => void;
+  /** The data it was built from has changed since (a run replaced its tables): rebuild it. */
+  stale?: () => boolean;
 }
 
 const SCALAR_PROP_TYPES: Record<string, string> = {
@@ -115,7 +125,7 @@ export function inputValueProperty(node: FlowNode): DG.Property | null {
     // the editor builder swaps in the resolved list asynchronously.
     options['choices'] = [choicesRaw];
   } else {
-    const choices = choicesRaw.split(',').map((x) => x.trim()).filter(Boolean);
+    const choices = literalChoiceItems(choicesRaw);
     if (choices.length > 0) options['choices'] = choices;
   }
   const min = parseFloat(String(node.properties['min'] ?? ''));
@@ -138,6 +148,8 @@ export function buildInputValueEditor(node: FlowNode, onUserChange: () => void,
   opts?: {host?: 'node' | 'panel'}): InputValueEditor | null {
   const type = node.dgOutputType ?? 'dynamic';
   if (type === 'blob') return null;
+  const wired = node.dgNodeType === 'input' ? node.editorBridge?.wiredEditor(node.id) : null;
+  if (wired) return buildWiredEditor(node, wired, onUserChange, opts?.host ?? 'panel');
   if (opts?.host === 'node' && hostsInlineSketcher(node))
     return buildInlineSketcherEditor(node, onUserChange);
 
@@ -292,7 +304,8 @@ export function buildInputValueEditor(node: FlowNode, onUserChange: () => void,
       const v = node.properties['defaultValue'];
       syncing = true;
       try {
-        input.stringValue = empty(v) ? '' : (typeof v === 'object' ? JSON.stringify(v) : String(v));
+        input.stringValue = empty(v) ? '' : Array.isArray(v) ? v.join(', ') :
+          typeof v === 'object' ? JSON.stringify(v) : String(v);
       }
       catch { /* leave the editor as-is */ }
       finally { syncing = false; }
@@ -417,9 +430,9 @@ function buildInlineSketcherEditor(node: FlowNode, onUserChange: () => void): In
     sketcher.subs.push(ui.onSizeChanged(sketcher.root).subscribe(() => sketcher!.resize()));
     sketcher.onChanged.subscribe(() => {
       if (!touched) return;
+      // The molfile keeps the drawing (coordinates, wedges, query features); the header gets it as SMILES.
       const smiles = sketcher!.getSmiles();
-      const molblock = sketcher!.getMolFile();
-      node.properties['defaultValue'] = molblock;
+      node.properties['defaultValue'] = sketcher!.getMolFile();
       markMissing();
       const now = JSON.stringify(smiles);
       if (now === last) return;
@@ -462,6 +475,109 @@ function buildInlineSketcherEditor(node: FlowNode, onUserChange: () => void): In
   return editor;
 }
 
+/** An input node feeding a function input that has its own editor (`{editor: ...}`, or a registered one) is edited
+ *  with that editor, built in the function node's context, so the card reads as the function's panel does; the
+ *  value is the input's own. On the card it sits in a resizable box, as big as the editor until the user resizes it. */
+function buildWiredEditor(node: FlowNode, wired: WiredEditor, onUserChange: () => void,
+  host: 'node' | 'panel'): InputValueEditor {
+  const ed = wired.factory(wired.param, wired.ctx);
+  let last = JSON.stringify(node.properties['defaultValue'] ?? '');
+  ed.onChanged = (v): void => {
+    if (ed.isValid && !ed.isValid()) return;
+    const now = JSON.stringify(v ?? '');
+    if (now === last) return;
+    last = now;
+    node.properties['defaultValue'] = v as never;
+    onUserChange();
+  };
+  const sync = (): void => {
+    last = JSON.stringify(node.properties['defaultValue'] ?? '');
+    ed.setValue(node.properties['defaultValue']);
+  };
+  sync();
+  const root = host === 'node' ? resizableBox(node, ed.element, 'ff-editor-box', 'content') : ed.element;
+  if (host === 'node') setTid(root, 'editor-box');
+  // The editor is built from the function node's captured tables (or a notice that there are none yet).
+  const target = wired.ctx.node;
+  const tables = (): unknown[] => (target?.dgFunc ? effectiveFuncInputs(target.dgFunc) : [])
+    .filter((p) => String(p.propertyType) === 'dataframe')
+    .map((p) => wired.ctx.table?.(p.name)?.dart ?? null);
+  const builtFrom = tables();
+  return {root, sync, detach: ed.detach, stale: () => tables().some((t, i) => t !== builtFrom[i])};
+}
+
+/** An in-card box with the native resize handle; a user resize persists into `EDITOR_BOX_SIZE_PROP` — cosmetic,
+ *  no params-changed report. Without a stored size it has the default (the helm box's), or with `'content'` follows
+ *  the size of what it holds, from {@link INLINE_EDITOR_WIDTH} wide (measured: an editor laid out in percentages has
+ *  no intrinsic size to fit by CSS) until the user resizes it. */
+function resizableBox(node: FlowNode, content: HTMLElement, cls: string, fit?: 'content'): HTMLDivElement {
+  const box = ui.div([content], cls);
+  const setSize = (w: number, h: number): void => {
+    box.style.width = `${w}px`;
+    box.style.height = `${h}px`;
+  };
+  /** The size last set to fit the content; null once the user has resized the box (or it was never fitting). */
+  let fitted: {w: number; h: number} | null = null;
+  if (node.properties[EDITOR_BOX_SIZE_PROP] != null || fit !== 'content') {
+    const size = editorBoxSize(node);
+    setSize(size.width, size.height);
+  } else {
+    // laid out at a context panel's width first; the height (and any wider part) is then what the editor needs
+    fitted = {w: INLINE_EDITOR_WIDTH, h: 0};
+    box.style.width = `${INLINE_EDITOR_WIDTH}px`;
+    let pending = false;
+    // The box scrolls (overflow: auto), so its scroll size is everything it holds, overflow included. Content that
+    // grows with the box (a 100%-wide part beside another) overflows by the same amount at any size: once a growth
+    // leaves the same overflow, that side stops following it.
+    let overflow = {w: 0, h: 0};
+    const chasing = {w: false, h: false};
+    const fitContent = (): void => {
+      pending = false;
+      if (!fitted || !box.isConnected || box.scrollWidth === 0) return;
+      const now = {w: box.scrollWidth - box.clientWidth, h: box.scrollHeight - box.clientHeight};
+      chasing.w ||= now.w > 0 && now.w === overflow.w;
+      chasing.h ||= now.h > 0 && now.h === overflow.h;
+      overflow = now;
+      const cs = getComputedStyle(box);
+      const px = (v: string): number => parseFloat(v) || 0;
+      const w = chasing.w ? fitted.w :
+        Math.max(fitted.w, Math.ceil(box.scrollWidth + px(cs.borderLeftWidth) + px(cs.borderRightWidth)));
+      const h = chasing.h ? fitted.h :
+        Math.max(fitted.h, Math.ceil(box.scrollHeight + px(cs.borderTopWidth) + px(cs.borderBottomWidth)));
+      if (w === fitted.w && h === fitted.h) return;
+      fitted = {w, h};
+      setSize(w, h);
+    };
+    const schedule = (): void => {
+      if (pending) return;
+      pending = true;
+      requestAnimationFrame(fitContent);
+    };
+    // The editor builds (asynchronously) and lays itself out inside: watch its parts as they come.
+    const sizes = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(schedule) : null;
+    const watch = (): void => {
+      for (const el of [content, ...Array.from(content.children)]) sizes?.observe(el);
+      schedule();
+    };
+    new MutationObserver(watch).observe(content, {childList: true, subtree: true});
+    watch();
+  }
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(() => {
+      if (!box.style.width || !box.style.height) return;
+      const w = Math.round(parseFloat(box.style.width));
+      const h = Math.round(parseFloat(box.style.height));
+      if (!(w > 0) || !(h > 0)) return;
+      if (fitted && w === fitted.w && h === fitted.h) return; // the size it was given to fit its content
+      fitted = null; // the user resized it: from now on its size is theirs
+      const cur = editorBoxSize(node);
+      if (cur.width !== w || cur.height !== h)
+        node.properties[EDITOR_BOX_SIZE_PROP] = {width: w, height: h};
+    }).observe(box);
+  }
+  return box;
+}
+
 /** The Helm Input's node-body editor sits in a resizable in-card box (native CSS
  *  resize handle) so the HELM canvas can be made bigger. The HELM input pins its
  *  editor host to a fixed 250×250 with inline styles and never tracks a
@@ -470,11 +586,8 @@ function buildInlineSketcherEditor(node: FlowNode, onUserChange: () => void): In
  *  retried until the asynchronously-materialized editor binds. A user resize
  *  persists into `EDITOR_BOX_SIZE_PROP` — cosmetic, no params-changed report. */
 function wrapInHelmBox(node: FlowNode, ed: InputValueEditor): InputValueEditor {
-  const box = ui.div([ed.root], 'ff-helm-box');
+  const box = resizableBox(node, ed.root, 'ff-helm-box');
   setTid(box, 'helm-box');
-  const size = editorBoxSize(node);
-  box.style.width = `${size.width}px`;
-  box.style.height = `${size.height}px`;
   const fit = (): boolean => {
     let host: HTMLElement | null;
     try {
@@ -492,16 +605,6 @@ function wrapInHelmBox(node: FlowNode, ed: InputValueEditor): InputValueEditor {
     const timer = window.setInterval(() => {
       if (fit() || ++tries > 150) clearInterval(timer);
     }, 200);
-  }
-  if (typeof ResizeObserver !== 'undefined') {
-    new ResizeObserver(() => {
-      const w = Math.round(parseFloat(box.style.width) || box.offsetWidth);
-      const h = Math.round(parseFloat(box.style.height) || box.offsetHeight);
-      if (w <= 0 || h <= 0) return;
-      const cur = editorBoxSize(node);
-      if (cur.width !== w || cur.height !== h)
-        node.properties[EDITOR_BOX_SIZE_PROP] = {width: w, height: h};
-    }).observe(box);
   }
   return {root: box, sync: ed.sync, input: ed.input};
 }

@@ -12,6 +12,7 @@ import type {FilesDataSource} from "../dapi";
 import {Entity} from "./entity";
 import {Group} from "./user";
 import {Credentials} from "./data-connection";
+import type {ColumnInfo} from "./table-info";
 import {DockerContainerStatus} from "./types";
 
 declare var DG: any;
@@ -25,6 +26,12 @@ export class Model extends Entity {
   constructor(dart: any) {
     super(dart);
   }
+
+  /** The columns the model takes (its features). */
+  get inputs(): ColumnInfo[] { return toJs(api.grok_Model_Get_Inputs(this.dart)); }
+
+  /** The columns the model returns (its predictions). */
+  get outputs(): ColumnInfo[] { return toJs(api.grok_Model_Get_Outputs(this.dart)); }
 }
 
 /**

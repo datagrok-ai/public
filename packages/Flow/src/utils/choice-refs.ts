@@ -47,6 +47,16 @@ export function isChoicesRefString(s: string): boolean {
   return t !== '' && (isChoiceQueryRef(t) || parseChoiceFuncRef(t) !== null);
 }
 
+/** The items of a literal choices string: comma-separated, each optionally quoted, the whole
+ *  optionally bracketed — `a, b`, `"AA", "BB"` and `["AA", "BB"]` all give `AA`/`BB`-style items. */
+export function literalChoiceItems(raw: string): string[] {
+  let s = (raw ?? '').trim();
+  if (s.startsWith('[') && s.endsWith(']')) s = s.slice(1, -1);
+  return s.split(',')
+    .map((x) => x.trim().replace(/^(['"])(.*)\1$/, '$2').trim())
+    .filter((x) => x.length > 0);
+}
+
 /** Literal selectable values vs a single reference to resolve first — seeding
  *  `hem:getMpoProfileNames(` as a value would be worse than seeding nothing. */
 export function isLiteralChoiceList(choices: readonly unknown[]): boolean {

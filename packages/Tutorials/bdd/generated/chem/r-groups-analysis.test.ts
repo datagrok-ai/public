@@ -8,6 +8,19 @@ sub_features_covered: [tutorials.r-groups-analysis]
 --- */
 import {test} from '@playwright/test';
 import '../../bindings/elements.js';
+import '../../bindings/howto-basics.js';
+import '../../bindings/howto-compute.js';
+import '../../bindings/howto-curves.js';
+import '../../bindings/howto-data-2.js';
+import '../../bindings/howto-data.js';
+import '../../bindings/howto-databases.js';
+import '../../bindings/howto-filters.js';
+import '../../bindings/howto-ml.js';
+import '../../bindings/howto-molecules.js';
+import '../../bindings/howto-more-viewers.js';
+import '../../bindings/howto-scripting.js';
+import '../../bindings/howto-sequences.js';
+import '../../bindings/howto-viewers.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';

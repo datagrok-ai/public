@@ -48,7 +48,7 @@ Predictive modeling (train, apply, catalog) behind the platform's `ML | Models` 
 - Comment annotations only; a `// Words: text` comment right above any function is read as an annotation tag.
 - Logic folders (all but `ui/`) never import `ui/`, log or call `grok.shell`; expected failures throw `ForgeError`.
   Catches: `applyAndRecord`, `runTrainModel`, `saveTrainedModel` (record or clean up, rethrow), `runEvaluateModel` (a
-  cancel becomes `Evaluation was cancelled.`), `TrainingQueue.run`.
+  cancel becomes `Evaluation was cancelled.`), `TrainingQueue.run`, `adoptLegacyFile` (a viewer keeps no file).
 - Pass column lists, never frames: the engine calls, the imputer and the copy upload run on a `sharedFrame` through
   `onFrame`, which gives it back with `releaseFrame` (a frame gets its columns' events). Never write into a user's column.
   `ResultsPane` keeps frames and viewers until `clear()`, a hint or other data; `ui.empty` kills widgets (`close` needs a view).

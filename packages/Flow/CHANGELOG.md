@@ -2,6 +2,12 @@
 
 ## v.next
 
+* String Input and the other input nodes: Choices commit on Enter or when the field loses focus and update the node's editor and the panel; a function reference (`Package:func()`) is checked and written into the input's header, so the run dialog shows its values as a dropdown, and what can't be used is flagged on the field
+* Added: Run from here in a node's context menu: the node and everything after it, with the other branches read from what earlier runs captured
+* Added: An input annotated `{editor: Package:func}` is edited in the node's panel with the input that function returns, fed with the node's tables; a flow input wired into it is edited there and keeps the value, while the run dialog keeps the plain input
+* Added: An input node feeding a function input that has its own editor shows that editor on its card, in a resizable box, and in its panel, the same as the function's panel
+* Table links: A link made in a flow joins the tables its outputs and previews show, and a rerun of the link node replaces its link instead of adding one; deleting the node or closing the flow removes it
+* Toolbox: The function sections' chevrons lead their headers, as in the files tree
 * [#4675](https://github.com/datagrok-ai/public/issues/4675): Fixed publishing a flow "As a new dashboard" taking the tables of the dashboard it had published before, which then failed to open; a cancelled Save project dialog also no longer makes the flow forget that dashboard
 * [#4676](https://github.com/datagrok-ai/public/issues/4676): Fixed a dashboard published while its flow is saved into a space opening without data until the page was reloaded
 * [#4677](https://github.com/datagrok-ai/public/issues/4677): Closing a flow with unsaved changes asks and offers to save them, as do New…, Open from platform…, Import .flow…, Import from a table's history…, a template and a recent flow opened over it. A flow opened and left as it was asks nothing
@@ -18,6 +24,8 @@
 * Added: Functions that output a view support the in-node preview (⊞ toggle), like viewer, widget and graphics outputs
 * Fixed: With autorun on, a node dropped ready to run (all inputs defaulted — e.g. Gasteiger Partial Charges) did not run until it was edited; it now runs at once
 * Fixed: A run popped the bottom output panel open for the selected node even when its in-node preview already shows the result
+* Fixed: A molecule sketched in the Sketcher Input node never reached the saved script's `//input:` default: the node keeps the molfile (it keeps the drawing) and the header gets the molecule as SMILES
+* Fixed: A function node made from a script that shares its name with a saved script (e.g. a flow in a space) took the saved script's inputs and outputs
 * Fixed: The mouse wheel over an on-node editor (the sketcher, the HELM box, any inline value input) zoomed the canvas instead of going to the editor — the node's editor host now keeps the wheel, like the in-node preview already did
 * Added: To Semantic Value utility node — wraps any value into a `DG.SemanticValue` of a configurable semantic type (default Molecule) via `DG.SemanticValue.fromValueType`
 * Improved: An input node whose Choices qualifier is a reference (a `Pkg:func()` call or a `query("…")` — e.g. the organism input of Biologics' Assays by Organism query) now resolves it into the real item list in the value editor, node body and panel alike; a Property Input adopting such a parameter keeps the reference (and, for query references, the owning query's connection) instead of dropping it — including when the platform hands the reference JSON-escaped — and references never leak into the emitted `//input:` header

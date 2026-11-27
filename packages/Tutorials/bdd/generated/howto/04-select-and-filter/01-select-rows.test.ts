@@ -7,6 +7,19 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/elements.js';
+import '../../../bindings/howto-basics.js';
+import '../../../bindings/howto-compute.js';
+import '../../../bindings/howto-curves.js';
+import '../../../bindings/howto-data-2.js';
+import '../../../bindings/howto-data.js';
+import '../../../bindings/howto-databases.js';
+import '../../../bindings/howto-filters.js';
+import '../../../bindings/howto-ml.js';
+import '../../../bindings/howto-molecules.js';
+import '../../../bindings/howto-more-viewers.js';
+import '../../../bindings/howto-scripting.js';
+import '../../../bindings/howto-sequences.js';
+import '../../../bindings/howto-viewers.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
@@ -18,7 +31,7 @@ import {currentRowIs} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
 import {noneSelected, rowsRangeAllSelected, selectedPassFilter, selectedRowCount, someSelected} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {browsePanelClosed, contextPanelClosed, openDataset, simpleModeOff, toolboxPaneHidden} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewerWith, clickArea, clickAreaHolding, dragSelectionOverArea, noErrors, readingHigherThanRemembered, rememberReading} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addViewerWith, clickArea, clickAreaHolding, dragSelectionBetweenAreas, noErrors, readingHigherThanRemembered, rememberReading} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("How-to · Select and filter", () => {
@@ -41,13 +54,14 @@ test.describe("How-to · Select and filter", () => {
     await session.step(30, "And rows 3 to 8 should all be selected", () => rowsRangeAllSelected(page, 3, 8));
     await session.step(32, "When user clicks on the \"cell 11 of AGE\" area of grid holding Control", () => clickAreaHolding(page, "cell 11 of AGE", el("grid"), "Control"), undefined, "Ctrl+click adds a row, or takes it out");
     await session.step(33, "Then 7 rows should be selected", () => selectedRowCount(page, 7));
-    await session.step(35, "When user hovers over \"Selected: 7\" text in status bar", () => hoverOver(page, el("\"Selected: 7\" text in status bar")), undefined, "The status bar counts the selected rows");
+    await session.step(34, "When user hovers over \"Selected: 7\" text in status bar", () => hoverOver(page, el("\"Selected: 7\" text in status bar")));
+    await session.step(35, "And the video says \"The status bar counts the selected rows\"", () => videoSays(page, "The status bar counts the selected rows"));
     await session.step(37, "When user picks \"Select > Invert\" from the top menu", () => pickFromTopMenu(page, "Select > Invert"), undefined, "The Select menu: all, none, invert and more");
     await session.step(38, "Then 5843 rows should be selected", () => selectedRowCount(page, 5843));
     await session.step(40, "When user presses Escape in grid", () => pressKeyIn(page, "Escape", el("grid")), undefined, "Esc clears the selection");
     await session.step(41, "Then no rows should be selected", () => noneSelected(page));
     await session.step(43, "When user remembers the \"rows selected\" reading of scatter plot viewer", () => rememberReading(page, "rows selected", el("scatter plot viewer")), undefined, "On a plot, Shift+drag a box around the points");
-    await session.step(44, "And user drags a selection box over the \"view\" area of scatter plot viewer", () => dragSelectionOverArea(page, "view", el("scatter plot viewer")));
+    await session.step(44, "And user drags a selection box from the \"marker of row 11\" area to the \"marker of row 13\" area of scatter plot viewer", () => dragSelectionBetweenAreas(page, "marker of row 11", "marker of row 13", el("scatter plot viewer")));
     await session.step(45, "Then the \"rows selected\" reading of scatter plot viewer should be higher than remembered", () => readingHigherThanRemembered(page, "rows selected", el("scatter plot viewer")));
     await session.step(46, "And some rows should be selected", () => someSelected(page));
     await session.step(47, "When the video says \"The same rows are selected in the grid and in every viewer\"", () => videoSays(page, "The same rows are selected in the grid and in every viewer"));

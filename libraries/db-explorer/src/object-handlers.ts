@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {DBValueObject, EntryPointOptions, SchemaAndConnection} from './types';
 import {DBExplorerRenderer} from './renderer';
+import {ciEquals, TableNames} from './naming';
 
 
 export const DB_EXPLORER_OBJ_HANDLER_TYPE = 'db-explorer-value';
@@ -19,9 +20,14 @@ export class DBExplorerObjectHandler extends DG.ObjectHandler {
     return DB_EXPLORER_OBJ_HANDLER_TYPE;
   }
   private renderer: DBExplorerRenderer;
+  /** The connection as the configuration names it. A card made before the connection is found carries this name,
+   * and [connectionNqName] the server's once it is: the platform spells a namespace in its own case
+   * (`Mypackage:db` for `MyPackage:db`), so the first card of a page did not open. */
+  private readonly configuredNqName: string;
   isApplicable(x: any): boolean {
-    return x && x.name === DB_EXPLORER_OBJ_HANDLER_TYPE && this.connectionNqName !== null && x.connectionNqName === this.connectionNqName && x.schemaName === this.schemaName &&
-      (x.catalogName ?? null) === (this.catalogName ?? null);
+    return x && x.name === DB_EXPLORER_OBJ_HANDLER_TYPE && this.connectionNqName !== null &&
+      (ciEquals(x.connectionNqName, this.connectionNqName) || ciEquals(x.connectionNqName, this.configuredNqName)) &&
+      x.schemaName === this.schemaName && (x.catalogName ?? null) === (this.catalogName ?? null);
   }
 
   constructor(
@@ -29,10 +35,12 @@ export class DBExplorerObjectHandler extends DG.ObjectHandler {
     protected schemaInfoPromise: () => Promise<SchemaAndConnection | null>,
     public connectionNqName: string,
     public schemaName: string,
-    public catalogName?: string
+    public catalogName?: string,
+    names?: TableNames,
   ) {
     super();
-    this.renderer = new DBExplorerRenderer(schemaInfoPromise, schemaName, options, catalogName);
+    this.configuredNqName = connectionNqName;
+    this.renderer = new DBExplorerRenderer(schemaInfoPromise, schemaName, options, catalogName, names);
   }
 
   addCustomRenderer(
@@ -147,9 +155,10 @@ export class SemValueObjectHandler extends DBExplorerObjectHandler {
     schemaInfoPromise: () => Promise<SchemaAndConnection | null>,
     schemaName: string,
     connectionNqName: string,
-    catalogName?: string
+    catalogName?: string,
+    names?: TableNames,
   ) {
-    super(options, schemaInfoPromise, connectionNqName, schemaName, catalogName);
+    super(options, schemaInfoPromise, connectionNqName, schemaName, catalogName, names);
     if (options && options.regexpExample && options.regexpExample.nonVariablePart && options.regexpExample.regexpMarkup)
       this._rgExample = options.regexpExample;
   }

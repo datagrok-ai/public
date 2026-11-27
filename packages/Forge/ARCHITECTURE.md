@@ -36,7 +36,7 @@ an EMS schema owned by Forge, and the UI on top.
 - **Missing values reach only a method that handles them.** Rows with gaps are skipped or the gaps are imputed before
   the engine is called, unless the method has `meta.mlnativenans` (see "Missing values"); dates and very large whole
   numbers (bigint) are not numerical features.
-- **Later:** more engines, MLflow models and the migration of existing models.
+- **Later:** more engines and the migration of existing models.
 
 ## Components and data flow
 
@@ -2402,8 +2402,8 @@ missing (a restored `models` view shows a one-line note; `grok.ml.applyModel` re
 | `forgeApp` | none; output `view` | **Browse > Platform > Predictive models**, the URL `/models` (`urlNodesMapping['models']` highlights the node), a restored `models` view (without Forge: a one-line note) |
 | `applyModel` | `model`, `table`, `columnNamesMap`, `showProgress`, passed by name | `grok.ml.applyModel(name, table, map, showProgress)` for any name that is not a model of the earlier tool |
 
-The core hides the earlier tool's table pane **Models**, its **Predicted By** row in a column's **Details**, its
-**MLFlow** node and its other panes whether or not Forge is installed; models of the earlier tool are shown without
+The core hides the earlier tool's table pane **Models**, its **Predicted By** row in a column's **Details** and its
+other panes whether or not Forge is installed (its **MLFlow** node stays); models of the earlier tool are shown without
 commands. `ML | Models` and the Browse node exist only with Forge (the commands register after the package functions
 load). Renaming one of these functions or its inputs silently removes the entry point, or breaks `grok.ml.applyModel`;
 `ui-tests.ts` ("the core's entry points exist; Forge has no menu, app or view function of its own") pins them. Publishing or removing Forge
@@ -2522,7 +2522,7 @@ a data change).
 
 The model's menu has no **Add to** (the built-in tool added a model to an open project): a model reaches a Space by
 the platform's drag (see Sharing). Forge has no Browse node of its own (no app); with Forge installed, the core opens
-Forge's view **Models** from **Browse > Platform > Predictive models** (`/models`); the core no longer has the
+Forge's view **Models** from **Browse > Platform > Predictive models** (`/models`); the core keeps its
 **MLFlow** node (see "Core entry points"). The built-in catalog was the core's card gallery (`DG.CardView`-like, with
 a filter panel, grouping and smart search); Forge's gallery keeps its look (search, list/cards/table, sort, count)
 without those (see "Models view"), and a card's double-click no longer opens Edit.
@@ -2790,6 +2790,21 @@ cells show `STORAGE_CAPTIONS` through `onCellPrepare` (`customText`; the stored 
 Method, Task, Target, Data storage, Training rows, Tags and Created, in this order (`grid.columns.setOrder` and
 `setVisible`); `id`, `version`, `updated_on`, `author_id` and the loaded `features`, `options` and `blob` (for the
 card, **Applicable to** and **Download**) stay hidden. "No models yet." is shown while the catalog is empty.
+
+## Migrated models
+
+`databases/forge/0001_migrate_core_models.sql` runs once, on a release publish: every earlier model of a package
+method becomes a promoted Forge row of its author, with `legacy_id` = its old id and without its shares. The model's
+file moves into Forge's folder when the model is first applied.
+
+## Models without a file (the `sync` role)
+
+A package that keeps its models elsewhere has a function with `meta.mlrole: sync` (no inputs): it writes them as the
+caller's own rows with `Forge:registerModel` (`engine_kind` `external`, the reference to the model in `options`),
+deletes the gone ones with `Forge:deleteModel` and returns what it could not refresh. Every list of models reads
+through `storedModels()` (`storage/model-store.ts`), which returns the stored rows and runs the `sync` functions in
+the background, at most once in 30 s; `syncStatus` drives the sync icon of the Apply dialog and the catalog. The
+method's `apply` gets such a row's `options` as UTF-8 json in place of the model file.
 
 ## Engine contract (methods in the UI)
 

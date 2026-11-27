@@ -2,26 +2,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {DBExplorerConfig, DBValueObject, EntryPointOptions, QueryJoinOptions, ReferencedByObject, SchemaAndConnection, SupportedRenderer} from './types';
+import {DBExplorerConfig, DBValueObject, EntryPointOptions, LinkGroup, LinkRef, QueryJoinOptions, SchemaAndConnection, SupportedRenderer} from './types';
 import {queryDB} from './query';
 import {getSchemaReferences} from './utils';
-
-/** Case-insensitive object key lookup */
-function ciGet<T>(obj: {[key: string]: T}, key: string): T | undefined {
-  if (obj[key] !== undefined) return obj[key];
-  const lowerKey = key.toLowerCase();
-  for (const k of Object.keys(obj)) {
-    if (k.toLowerCase() === lowerKey)
-      return obj[k];
-  }
-
-  return undefined;
-}
-
-/** Case-insensitive string comparison */
-function ciEquals(a: string, b: string): boolean {
-  return a.toLowerCase() === b.toLowerCase();
-}
+import {ciEquals, ciGet, lcFirst, linkGroups, roleWords, TableNames, withoutParent} from './naming';
 
 export const MAX_MULTIROW_VALUES = 10;
 /** normal renderer supporting copy and elipsis */
@@ -205,7 +189,8 @@ export class DBExplorerRenderer {
     protected schemaInfoPromise: () => Promise<SchemaAndConnection | null>,
     protected schemaName: string,
     protected entryPointOptions: EntryPointOptions,
-    protected catalogName?: string
+    protected catalogName?: string,
+    protected names: TableNames = new TableNames(),
   ) {}
 
   addHeaderReplacers(replacers: {[tableName: string]: string}) {
@@ -436,168 +421,295 @@ export class DBExplorerRenderer {
 
   async renderAssociations(acc: DG.Accordion, schemaPromise: () => Promise<SchemaAndConnection | null>, curSchema: string, curTable: string, curDf: DG.DataFrame) {
     const schemaAndConnection = await schemaPromise();
-    if (!schemaAndConnection)
+    if (!schemaAndConnection || (curDf?.rowCount ?? 0) === 0)
       return;
-    const addAllAssociated = async (schemaName: string, tableName: string, colName: string, value: any) => {
-      const pi = DG.TaskBarProgressIndicator.create('Opening all associated entries');
-      try {
-        const assocDf = await this.getTable(schemaName, tableName, colName, value, this.entryPointOptions.joinOptions);
-        if (assocDf) {
-          if (assocDf.rowCount === 0) {
-            grok.shell.info(`No associated ${tableName} entries found`);
-            return;
-          }
-          assocDf.name = `${tableName}`;
-          grok.shell.addTableView(assocDf);
-        }
-      } catch (e) {
-        console.error(e);
-        grok.shell.error(`Failed to open associated ${tableName} entries`);
-      } finally {
-        pi.close();
-      }
-    };
-
-    const addIconToPane = (pane: DG.AccordionPane, schemaName: string, tableName: string, colName: string, value: any) => {
-      const icon = ui.icons.add(() => {}, `Add all associated ${tableName} entries to workspace`);
-      // need separate event to avoid click on accordion pane
-      icon.addEventListener('click', (e) => {
-        e.stopImmediatePropagation();
-        e.preventDefault();
-        addAllAssociated(schemaName, tableName, colName, value);
-      });
-      pane.root.getElementsByClassName('d4-accordion-pane-header')?.[0]?.appendChild(icon);
-    };
-
-    const attachOpenInWorkspaceMenu = (schemaName: string, tableName: string, colName: string, value: any, pane: DG.AccordionPane) => {
-      const menu = DG.Menu.popup();
-
-
-      menu.item(`Add all associated ${tableName} entries to workspace`, async () => {
-        addAllAssociated(schemaName, tableName, colName, value);
-      });
-      pane.root.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        setTimeout(() => menu.show());
-      });
-      addIconToPane(pane, schemaName, tableName, colName, value);
-    };
-    // columns in the passed dataframe might be from different tables in the db schema (as a result of queries)
-    // or better yet, from different schemas :)
-    // depending on from where this dataFrame come from
-
-    /** List of column names as they appear in the dataframe, NOT the names in DB */
-    const colList = curDf.columns.names();
-    // set of all db table names (schema qualified) referenced in the current dataframe
-    const dbTableNameSet = new Set<`${string}.${string}`>();
-    dbTableNameSet.add(`${curSchema}.${curTable}`);
-    // build map of actual column name to db column name. P.S. tableName here is the actual table name in db qualified by schema
-    const dbNameToActColNameMap: {[tableName: `${string}.${string}`]: {[colName: string]: string}} = {};
-    colList.forEach((colName) => {
-      const dbTableName = curDf.col(colName)!.getTag(DG.Tags.DbTable);
-      const schema = curDf.col(colName)!.getTag(DG.Tags.DbSchema) ?? curSchema;
-      if (dbTableName)
-        dbTableNameSet.add(`${schema}.${dbTableName}`);
-      const dbColName = curDf.col(colName)!.getTag(DG.Tags.DbColumn);
-      if (dbColName) {
-        const actTableName = dbTableName ?? curTable;
-        const fullActTableName: `${string}.${string}` = `${schema}.${actTableName}`;
-        if (!dbNameToActColNameMap[fullActTableName])
-          dbNameToActColNameMap[fullActTableName] = {};
-        dbNameToActColNameMap[fullActTableName][dbColName] = colName;
-        // in some scenarios, there might be a column that references some other table, and this can cause it to not show up in referencedBy object
-        // so we can add it manually here if it exists in references object
-        // example is when we have molregno column in some other table, we need to account for the fact that it references to molregno in molecule_dictionary table
-        // to easily fix this, we can simply add the db mapping of such columns
-        const refInfo = schemaAndConnection.schema.references[schema]?.[actTableName]?.[dbColName];
-        if (refInfo) {
-          const tableKey: `${string}.${string}` = `${refInfo.refSchema}.${refInfo.refTable}`;
-          if (!dbNameToActColNameMap[tableKey])
-            dbNameToActColNameMap[tableKey] = {};
-          dbNameToActColNameMap[tableKey][refInfo.refColumn] = colName;
-          dbTableNameSet.add(tableKey);
-        }
-      }
-    });
-
-    // all references to all tables referencing any of the db tables in the current dataframe
-    const refTables = Array.from(dbTableNameSet)
-      .map((schemaQualTable) => ({schemaQualTable, schema: schemaQualTable.split('.')[0], table: schemaQualTable.split('.')[1]}))
-      .map((t) => {
-        const obj = {schemaQualTable: t.schemaQualTable, refBys: schemaAndConnection.schema.referencedBy[t.schema]?.[t.table]};
-        return obj;
-      })
-      .filter((t) => t.refBys != null && Object.keys(t.refBys).length > 0);
-    if (refTables.length === 0)
+    this.names.useSchema(schemaAndConnection.schema);
+    const groups = linkGroups(schemaAndConnection.schema, curSchema, curTable, curDf, this.entryPointOptions.joinOptions)
+      .map((g) => ({...g, links: g.links.filter((l) => !this.names.entity(l.schema, l.table)?.hidden)}))
+      .filter((g) => g.links.length > 0);
+    if (groups.length === 0)
       return;
-
-    const _linksPane = acc.addPane('Links', () => {
-      const linksAcc = ui.accordion(`Links to ${curSchema}.${curTable}`);
-      if ((curDf?.rowCount ?? 0) === 0)
-        return ui.divText('No data');
-      refTables.forEach((ref) => {
-        const prefix = `${ref.schemaQualTable}.`;
-        Object.entries(ref.refBys).forEach(([refedColumn, refInfo]) => {
-          const tableColActName = dbNameToActColNameMap[ref.schemaQualTable]?.[refedColumn] ?? refedColumn;
-          const val = curDf.col(tableColActName)?.get(0);
-          if (!val) return;
-          const _pane = linksAcc.addPane(prefix + refedColumn, () => {
-            const colAcc = ui.accordion(`Links to ${ref.schemaQualTable}.${refedColumn}`);
-            // there can be cases when same column is referneced by two or more columns in other table.
-            // example is chembl table molecule_hiearchy where all 3 columns are referencing to molregno
-            // need to account for such cases
-            const tableRefs = new Map<`${string}.${string}`, { refSchema: string, refTable: string; refColumn: string }[]>();
-            refInfo.forEach((ref) => {
-              const qualName = `${ref.refSchema}.${ref.refTable}` as `${string}.${string}`;
-              if (!tableRefs.has(qualName)) tableRefs.set(qualName, []);
-            tableRefs.get(qualName)!.push(ref);
-            });
-
-            tableRefs.forEach((refInfos, refTable) => {
-              const singleColPane = colAcc.addPane(refTable, () => {
-                if (refInfos.length === 1) {
-                  return ui.wait(async () => {
-                    const res = await this.renderMultiRowTable(refInfos[0].refSchema, refInfos[0].refTable, refInfos[0].refColumn, val, this.entryPointOptions.joinOptions);
-                    if (res.rowCount > MAX_MULTIROW_VALUES) {
-                      singleColPane.name = `${singleColPane.name} (${MAX_MULTIROW_VALUES} / ${res.rowCount})`;
-                      addIconToPane(singleColPane, refInfos[0].refSchema, refInfos[0].refTable, refInfos[0].refColumn, val);
-                    }
-                    return res.root;
-                  });
-                }
-                const multiTableAcc = ui.accordion(`Multiple links to ${refTable}`);
-                refInfos.forEach((ref) => {
-                  const colPane = multiTableAcc.addPane(ref.refColumn, () => {
-                    return ui.wait(async () => {
-                      const res = await this.renderMultiRowTable(ref.refSchema, ref.refTable, ref.refColumn, val, this.entryPointOptions.joinOptions);
-                      if (res.rowCount > MAX_MULTIROW_VALUES) {
-                        colPane.name = `${singleColPane.name} (${MAX_MULTIROW_VALUES} / ${res.rowCount})`;
-                        addIconToPane(colPane, ref.refSchema, ref.refTable, ref.refColumn, val);
-                      }
-                      return res.root;
-                    });
-                  });
-                  attachOpenInWorkspaceMenu(ref.refSchema, ref.refTable, ref.refColumn, val, colPane);
-                });
-                return multiTableAcc.root;
-              });
-              if (refInfos.length === 1)
-                attachOpenInWorkspaceMenu(refInfos[0].refSchema, refInfos[0].refTable, refInfos[0].refColumn, val, singleColPane);
-            });
-            return colAcc.root;
-          });
-          const header = _pane.root.querySelector('.d4-accordion-pane-header') as HTMLElement;
-          if (header)
-            ui.tooltip.bind(header, `Data contains ${refedColumn} column from ${ref.schemaQualTable} table. Expand to see all associated entries.`);
-        });
-      });
-
-      return linksAcc.root;
-    });
-    const linksHeader = _linksPane.root.querySelector('.d4-accordion-pane-header') as HTMLElement;
+    const card: CardInfo = {schema: curSchema, table: curTable, df: curDf, connection: schemaAndConnection.connection};
+    const linksPane = acc.addPane('Links', () => this.renderLinks(groups, card));
+    const linksHeader = paneHeader(linksPane);
     if (linksHeader)
-      ui.tooltip.bind(linksHeader, 'Expand to see entries from other tables referencing this entry');
+      ui.tooltip.bind(linksHeader, 'Rows of other tables that point at this entry, or at what it points at');
   }
+
+  /** The Links section: a box for each key the rows point at, headed by what they share with the card, with one pane
+   * for each table they are in */
+  private renderLinks(groups: LinkGroup[], card: CardInfo): HTMLElement {
+    const root = ui.divV([], 'db-explorer-links');
+    Object.assign(root.style, {gap: '8px', width: '100%', minWidth: '0'});
+    for (const g of groups) {
+      const panes = this.linkPanes(g, card);
+      // a wide card opened in a box scrolls inside it, and the box keeps the panel's width
+      Object.assign(panes.style, {padding: '2px 4px 4px 14px', overflowX: 'auto'});
+      const box = ui.divV([this.linkHeading(g, groups, card), panes], 'db-explorer-links-group');
+      Object.assign(box.style, {border: '1px solid var(--grey-2)', borderRadius: '4px', maxWidth: '100%', minWidth: '0',
+        boxSizing: 'border-box'});
+      root.appendChild(box);
+    }
+    return root;
+  }
+
+  /** `This drug`, or `Same target · GROKTGT-000010`: what the rows of the group share with the card */
+  private linkHeading(g: LinkGroup, groups: LinkGroup[], card: CardInfo): HTMLElement {
+    const name = this.names.name(g.target.schema, g.target.table);
+    let text: string;
+    if (g.own)
+      text = `This ${lcFirst(name.singular)}`;
+    else if (g.label)
+      text = `Same ${lcFirst(g.label)}`;
+    else {
+      const sameTable = (t: LinkRef) => ciEquals(t.table, g.target.table) && ciEquals(t.schema, g.target.schema);
+      const twice = groups.filter((x) => !x.own && sameTable(x.target)).length > 1;
+      const self = ciEquals(card.table, g.target.table) && ciEquals(card.schema, g.target.schema);
+      const role = self || twice ? roleWords(g.field, this.names.words(g.target.schema, g.target.table, g.target.column)) : [];
+      text = `Same ${role.length > 0 ? `${role.join(' ')} ` : ''}${lcFirst(name.singular)}`;
+    }
+    const label = ui.span([text]);
+    ui.tooltip.bind(label, () => this.physicalTooltip(g.target.schema, g.target.table, g.target.column, g.value));
+    const parts: HTMLElement[] = [label];
+    if (!g.own) {
+      const value = ui.span([String(g.value)]);
+      Object.assign(value.style, {color: 'var(--blue-1)', cursor: 'pointer'});
+      ui.tooltip.bind(value, () => ui.wait(async () => await this.renderTable(g.target.schema, g.target.table, g.target.column, g.value, this.entryPointOptions.joinOptions)));
+      value.addEventListener('click', (e) => {
+        e.stopImmediatePropagation();
+        grok.shell.setCurrentObject(new DBValueObject(card.connection.nqName, g.target.schema, g.target.table, g.target.column, g.value, undefined, this.catalogName), false, true);
+      });
+      parts.push(ui.span([' · ']), value);
+    }
+    const heading = ui.divH(parts, 'db-explorer-links-heading');
+    Object.assign(heading.style, {padding: '6px 8px', fontWeight: '500', color: 'var(--grey-6)', gap: '4px',
+      alignItems: 'baseline', flexWrap: 'wrap', background: 'var(--grey-1)', borderBottom: '1px solid var(--grey-2)',
+      borderRadius: '4px 4px 0 0'});
+    heading.dataset.dbTarget = `${g.target.schema}.${g.target.table}.${g.target.column}`;
+    return heading;
+  }
+
+  /** The table panes of a group: details first (rows that share the key), then records that have identifiers, then
+   * results; views that repeat other tables are folded under More */
+  private linkPanes(g: LinkGroup, card: CardInfo): HTMLElement {
+    const acc = ui.accordion(`db-explorer-links:${g.target.schema}.${g.target.table}.${g.target.column}`);
+    const items = g.links.map((l) => ({link: l, rank: this.linkRank(l), name: this.linkName(l, g)}));
+    items.filter((it) => it.rank < LINK_RANK_MORE)
+      .sort((a, b) => a.rank - b.rank)
+      .forEach((it) => this.addLinkPane(acc, it.link, it.name, g, card));
+    const more = items.filter((it) => it.rank === LINK_RANK_MORE);
+    if (more.length > 0) {
+      const morePane = acc.addPane('More', () => {
+        const moreAcc = ui.accordion(`db-explorer-links-more:${g.target.schema}.${g.target.table}.${g.target.column}`);
+        more.forEach((it) => this.addLinkPane(moreAcc, it.link, it.name, g, card));
+        return moreAcc.root;
+      });
+      const header = paneHeader(morePane);
+      if (header)
+        ui.tooltip.bind(header, `Tables that repeat what the others hold: ${more.map((it) => it.name).join(', ')}`);
+    }
+    return acc.root;
+  }
+
+  /** 0: details that share the key, 1: records with a key of their own, 2: other rows (results), 3: views folded under More */
+  private linkRank(l: LinkRef): number {
+    const unique = ciGet(this.uniqueColNames, l.table);
+    const known = {unique: !!unique, card: !!this.cardColumns(l.schema, l.table), header: !!ciGet(this.headerReplacers, l.table)};
+    if (this.names.isMore(l.schema, l.table, known, Object.keys(this.customSelectedColumns).length))
+      return LINK_RANK_MORE;
+    const ep = this.names.entryPoint(l.table);
+    if (!ep && (ciEquals(l.column, 'id') || (!!unique && ciEquals(l.column, unique))))
+      return 0;
+    return unique || ep ? 1 : 2;
+  }
+
+  /** `Assay results`, `Hierarchy · as parent`, `Child compounds (CPD)` */
+  linkName(l: LinkRef, g: LinkGroup): string {
+    if (l.reverseLabel)
+      return l.reverseLabel;
+    const n = this.names.name(l.schema, l.table);
+    const targetWords = this.names.words(g.target.schema, g.target.table, g.target.column);
+    let text = n.source === 'table' ? withoutParent(n.plural, targetWords) : n.plural;
+    const sameTable = (x: LinkRef) => ciEquals(x.table, l.table) && ciEquals(x.schema, l.schema);
+    const self = ciEquals(l.table, g.target.table) && ciEquals(l.schema, g.target.schema);
+    const twice = g.links.filter(sameTable).length > 1;
+    let suffix = '';
+    if (self || twice) {
+      const role = roleWords(l.column, targetWords);
+      if (self && role.length === 1 && role[0] === 'parent')
+        text = `Child ${lcFirst(text)}`;
+      else if (self && role.length === 1 && role[0] === 'child')
+        text = `Parent ${lcFirst(text)}`;
+      else if (role.length > 0)
+        suffix = ` · as ${role.join(' ')}`;
+    }
+    return `${text}${n.code ? ` (${n.code})` : ''}${suffix}`;
+  }
+
+  private physicalTooltip(schema: string, table: string, column: string, value: string | number): HTMLElement {
+    const lines = [ui.divText(`${schema}.${table}.${column} = '${value}'`, {style: {fontFamily: 'var(--font-monospace, monospace)'}})];
+    const description = this.names.description(schema, table);
+    if (description)
+      lines.push(ui.divText(description));
+    return ui.divV(lines);
+  }
+
+  /** A pane of the rows of one table that point at the group's key. Its rows are read when it is opened, and their
+   * count is shown on its header then. */
+  private addLinkPane(acc: DG.Accordion, link: LinkRef, name: string, g: LinkGroup, card: CardInfo) {
+    const count = ui.span([], 'db-explorer-links-count');
+    Object.assign(count.style, {color: 'var(--grey-4)', marginLeft: '6px', fontWeight: 'normal', fontVariantNumeric: 'tabular-nums'});
+    const addAll = () => this.addAllAssociated(link, g.value, `${name} of ${g.value}`);
+    const pane = acc.addPane(name, () => ui.wait(async () => {
+      const rows = await this.getTable(link.schema, link.table, link.column, g.value, this.entryPointOptions.joinOptions);
+      count.textContent = rows.rowCount.toLocaleString('en-US');
+      return this.renderLinkRows(rows, link, card, addAll);
+    }));
+    const header = paneHeader(pane);
+    if (!header)
+      return;
+    header.dataset.dbLink = `${link.schema}.${link.table}.${link.column}`;
+    header.appendChild(count);
+    ui.tooltip.bind(header, () => this.physicalTooltip(link.schema, link.table, link.column, g.value));
+    const title = `Add all ${name} to the workspace`;
+    const icon = ui.icons.add(() => {}, title);
+    // its own listener, so that the click does not also open the pane
+    icon.addEventListener('click', (e) => {
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      addAll();
+    });
+    header.appendChild(icon);
+    const menu = DG.Menu.popup().item(title, addAll);
+    pane.root.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      setTimeout(() => menu.show());
+    });
+  }
+
+  private async addAllAssociated(link: LinkRef, value: string | number, viewName: string) {
+    const pi = DG.TaskBarProgressIndicator.create('Opening all associated entries');
+    try {
+      const assocDf = await this.getTable(link.schema, link.table, link.column, value, this.entryPointOptions.joinOptions);
+      if (assocDf.rowCount === 0) {
+        grok.shell.info(`No associated ${link.table} entries found`);
+        return;
+      }
+      assocDf.name = viewName;
+      grok.shell.addTableView(assocDf);
+    } catch (e) {
+      console.error(e);
+      grok.shell.error(`Failed to open associated ${link.table} entries`);
+    } finally {
+      pi.close();
+    }
+  }
+
+  private cardColumns(schema: string, table: string): Set<string> | undefined {
+    return ciGet(this.customSelectedColumns, `${schema}.${table}`) ?? ciGet(this.customSelectedColumns, table);
+  }
+
+  /** The table's key among the rows: its unique column, or the column of its identifier */
+  private keyColumn(table: string, rows: DG.DataFrame): string | null {
+    const name = ciGet(this.uniqueColNames, table) ?? this.names.entryPoint(table)?.column;
+    return (name ? rows.col(name)?.name : null) ?? null;
+  }
+
+  /** The column that names a row in a list: the configured header column, else a column named like a name, else one
+   * of the default header columns; [skip] are the key and the column every row shares */
+  private titleColumn(table: string, rows: DG.DataFrame, skip: string[]): string | null {
+    const usable = (name?: string | null): string | null => {
+      const col = name ? rows.col(name) : null;
+      if (!col || skip.some((s) => ciEquals(s, col.name)))
+        return null;
+      for (let i = 0; i < rows.rowCount; i++) {
+        if (!col.isNone(i))
+          return col.name;
+      }
+      return null;
+    };
+    return usable(ciGet(this.headerReplacers, table)) ??
+      rows.columns.names().map((n) => NAME_COLUMN.test(n) ? usable(n) : null).find((n) => !!n) ??
+      this.defaultHeaderReplacerColumns.map(usable).find((n) => !!n) ?? null;
+  }
+
+  /** The rows of a link, one line each: its key (a link to its card) and its name; the rest of the row opens under it */
+  private async renderLinkRows(rows: DG.DataFrame, link: LinkRef, card: CardInfo, addAll: () => void): Promise<HTMLElement> {
+    if (rows.rowCount === 0)
+      return ui.divText('No records', {style: {color: 'var(--grey-4)'}});
+    const shown = Math.min(rows.rowCount, MAX_MULTIROW_VALUES);
+    const key = this.keyColumn(link.table, rows);
+    // the column the rows point with holds the card's value in every row: it names none of them
+    const skip = [link.column, ...(key ? [key] : [])];
+    const titleCol = this.titleColumn(link.table, rows, skip) ??
+      (key ? null : rows.columns.names().find((n) => !skip.some((s) => ciEquals(s, n)) && !rows.col(n)!.isNone(0)) ?? null);
+    const keys = key ? Array.from({length: rows.rowCount}, (_, i) => rows.col(key)!.getString(i)) : [];
+    const unique = key !== null && new Set(keys).size === keys.length;
+    const cardKey = unique && ciEquals(link.table, card.table) && ciEquals(link.schema, card.schema) ? card.df.col(key!)?.getString(0) : undefined;
+
+    const acc = ui.accordion();
+    for (let i = 0; i < shown; i++) {
+      const pane = acc.addPane('', () => {
+        const bs = DG.BitSet.create(rows.rowCount);
+        bs.set(i, true);
+        return ui.wait(async () => await this.renderDataFrame(rows.clone(bs), link.schema, link.table));
+      });
+      const header = paneHeader(pane);
+      if (!header)
+        continue;
+      const keyValue = key ? keys[i] : '';
+      const title = titleCol && !rows.col(titleCol)!.isNone(i) ? rows.col(titleCol)!.getString(i) : '';
+      header.dataset.dbRow = keyValue || title || `Row ${i + 1}`;
+      const parts: HTMLElement[] = [];
+      if (keyValue) {
+        const id = ownIdRenderer(keyValue, link.table, key!, card.connection.nqName, link.schema, this.catalogName);
+        // the key stays whole; a long name gives way
+        Object.assign(id.style, {flexShrink: '0', maxWidth: 'none'});
+        parts.push(id);
+      }
+      if (title && title !== keyValue) {
+        const t = textRenderer(title, false);
+        Object.assign(t.style, {flexShrink: '1', minWidth: '0'});
+        if (keyValue)
+          t.style.color = 'var(--grey-4)';
+        parts.push(t);
+      }
+      if (parts.length === 0)
+        parts.push(ui.span([`Row ${i + 1}`]));
+      if (cardKey !== undefined && keyValue === cardKey)
+        parts.push(thisTag());
+      const line = ui.divH(parts);
+      Object.assign(line.style, {gap: '8px', alignItems: 'baseline', display: 'inline-flex', minWidth: '0'});
+      header.appendChild(line);
+    }
+    const root = ui.divV([acc.root], 'db-explorer-link-rows');
+    if (rows.rowCount > shown) {
+      const openAll = ui.span(['Open all as a table']);
+      Object.assign(openAll.style, {color: 'var(--blue-1)', cursor: 'pointer'});
+      openAll.addEventListener('click', addAll);
+      const footer = ui.divH([ui.span([`Showing ${shown} of ${rows.rowCount.toLocaleString('en-US')}`]), ui.span(['·']), openAll]);
+      Object.assign(footer.style, {color: 'var(--grey-4)', fontSize: '12px', paddingTop: '4px', gap: '4px'});
+      root.appendChild(footer);
+    }
+    return root;
+  }
+}
+
+type CardInfo = {schema: string, table: string, df: DG.DataFrame, connection: DG.DataConnection};
+
+const LINK_RANK_MORE = 3;
+/** A column that names a row: `name`, `alias`, `pref_name`, `compound_name`, `ALIAS` */
+const NAME_COLUMN = /^(name|alias|title|label|pref_name|display_name)$|_(name|alias)$/i;
+
+function paneHeader(pane: DG.AccordionPane): HTMLElement | null {
+  return pane.root.querySelector('.d4-accordion-pane-header') as HTMLElement | null;
+}
+
+function thisTag(): HTMLElement {
+  const tag = ui.span(['this'], 'db-explorer-this');
+  Object.assign(tag.style, {fontSize: '10px', border: '1px solid var(--grey-2)', borderRadius: '3px', padding: '0 4px', color: 'var(--grey-4)'});
+  ui.tooltip.bind(tag, 'The entry this card is about');
+  return tag;
 }
 
 

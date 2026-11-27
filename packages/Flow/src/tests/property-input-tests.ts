@@ -167,7 +167,7 @@ category('Flow: property input', () => {
       panel.showNode(molInput);
       expect(row('Type') != null, true, 'the mimicked-type combo renders');
       expect(row('SemType') != null, true, 'string family: SemType row');
-      expect(row('Choices (comma-sep)') != null, true, 'string family: Choices row');
+      expect(row('Choices') != null, true, 'string family: Choices row');
       expect(row('Min'), null, 'no numeric rows on a string');
 
       panel.showNode(intInput);

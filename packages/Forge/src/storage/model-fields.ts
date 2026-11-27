@@ -1,4 +1,4 @@
-import {Engine, hasTrainingRows} from '../engines/engine';
+import {Engine, EngineKind, hasTrainingRows} from '../engines/engine';
 import {ForgeError} from '../forge-error';
 import {ModelInsert, TrainingRunInsert, TrainingRunSource, TrainingRunStatus} from '../generated/db';
 import {PreparationOptions} from '../preparation/preparation-options';
@@ -118,6 +118,6 @@ export function tagsOf(text: string | null | undefined): string[] {
   return normalizedTags((text ?? '').split(','));
 }
 
-function engineFieldsOf(engine: Engine): Pick<ModelInsert, 'engine_name' | 'engine_namespace' | 'engine_kind'> {
+function engineFieldsOf(engine: Engine): {engine_name: string; engine_namespace: string; engine_kind: EngineKind} {
   return {engine_name: engine.name, engine_namespace: engine.namespace, engine_kind: engine.kind};
 }

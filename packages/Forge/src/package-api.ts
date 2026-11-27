@@ -80,6 +80,19 @@ export namespace funcs {
   }
 
   /**
+   * Writes your own catalog row of a model kept outside Forge, whose method's apply function gets the row's options as the model. With an id updates the row registered before
+   * @param {string} id - The row to update. Without it a new row is created
+   * @param {string} engine - The method as Forge names it (its functions' meta.mlname)
+   * @param {string} task - regression or classification
+   * @param {any} target - name, type and, optionally, semType of the predicted column
+   * @param {any} features - columns, the list of name, type and, optionally, semType of the model's inputs
+   * @param {any} options - What the method's apply function needs to find the model
+   */
+  export async function registerModel(id: string | undefined, name: string , description: string | undefined, engine: string , task: string , target: any , features: any , options: any ): Promise<string> {
+    return await grok.functions.call('Forge:RegisterModel', { id, name, description, engine, task, target, features, options });
+  }
+
+  /**
    * Lists the installed machine learning methods with their package, type, where they run, roles and settings (hyperparameters) with their defaults and ranges. With a table, marks the methods that can learn from it and the one Forge suggests
    * @param {DG.DataFrame} table - A table to check the methods against, with the view's default features
    * @param {string} target - Name of the column to predict in the table. By default the table's last column
@@ -97,9 +110,10 @@ export namespace funcs {
    * @param {string} tags - Comma-separated tags. A model is listed when it has every one of them
    * @param {DG.DataFrame} table - Only the models whose features all have a column of the same or a close name in this table. Checked in the browser, nothing is uploaded
    * @param {number} limit - At most this many models, newest first
+   * @param {boolean} own - Only the models you created
    */
-  export async function listModels(name?: string , target?: string , task?: string , method?: string , tags?: string , table?: DG.DataFrame , limit?: number ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Forge:ListModels', { name, target, task, method, tags, table, limit });
+  export async function listModels(name?: string , target?: string , task?: string , method?: string , tags?: string , table?: DG.DataFrame , limit?: number , own?: boolean ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Forge:ListModels', { name, target, task, method, tags, table, limit, own });
   }
 
   /**

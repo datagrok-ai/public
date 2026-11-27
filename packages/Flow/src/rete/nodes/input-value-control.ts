@@ -26,8 +26,14 @@ export class InputValueControl extends ClassicPreset.Control {
     this.editor?.sync();
   }
 
+  /** The editor was built from data a run has since replaced. */
+  isStale(): boolean {
+    return this.editor?.stale?.() ?? false;
+  }
+
   /** Throw the cached editor away (a Property Input changed shape) — the next render builds a fresh one. */
   rebuild(): void {
+    this.editor?.detach?.();
     this.editor?.root.remove();
     this.editor = undefined;
   }

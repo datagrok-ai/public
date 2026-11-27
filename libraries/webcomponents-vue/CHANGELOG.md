@@ -1,6 +1,6 @@
 # webcomponents-vue changelog
 
-## v.next
+## 0.5.0 (2026-11-27)
 
 * InputForm: Fixed inputs hidden by a `visible` expression showing when a standalone form opens
 * Added `onPress`, the Enter/Space key handler shared by Tabs, ribbon icons and IconFA

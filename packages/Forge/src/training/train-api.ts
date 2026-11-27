@@ -260,7 +260,7 @@ function featuresOf(table: DG.DataFrame, target: DG.Column, names: string[] | nu
   return names.map((name) => table.getCol(name));
 }
 
-function engineNamed(engines: Engine[], name: string): Engine {
+export function engineNamed(engines: Engine[], name: string): Engine {
   const engine = engines.find((e) => e.name === name);
   if (engine === undefined) {
     throw new ForgeError(`No method '${name}' is installed. ` +

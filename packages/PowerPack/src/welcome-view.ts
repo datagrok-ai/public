@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
-import {powerSearch, showSearchSuggestions} from './search/power-search';
+import {powerSearch, showSearchSuggestions, stopWaitingForHandlers} from './search/power-search';
 import {getSettings, saveSettings, UserWidgetsSettings, widgetHostFromFunc} from './utils';
 import {setWorkspacePreviewHost, setWorkspaceCustomizeEl} from './spotlight/preview-host';
 import {getCurrentUserGroup} from './spotlight/group-favorites';
@@ -22,20 +22,33 @@ export function welcomeView(): DG.View | undefined {
   const inputContainer = ui.div([
     input,
   ], 'ui-input-root,ui-input-type-ahead');
+  const clearIcon = ui.iconFA('times', () => {
+    doSearch('');
+    input.focus();
+  }, 'Clear');
+  clearIcon.classList.add('power-pack-welcome-search-clear');
   const inputHost = ui.div([
     ui.iconFA('search'),
     inputContainer,
+    clearIcon,
   ], 'd4-search-bar,power-pack-welcome-search');
   const helpDiv = ui.divText('Use Ctrl+Space to see suggestions', 'power-search-help-text-container');
   inputHost.appendChild(helpDiv);
 
-  const updateHelp = () => {helpDiv.style.visibility = input.value ? 'visible' : 'hidden';};
+  const updateHelp = () => {
+    helpDiv.style.visibility = input.value ? 'visible' : 'hidden';
+    clearIcon.style.visibility = input.value ? 'visible' : 'hidden';
+  };
   updateHelp();
   input.addEventListener('input', updateHelp);
   input.addEventListener('keydown', (e) => {
     if (e.ctrlKey && e.code === 'Space') {
       e.preventDefault();
       showSearchSuggestions(input);
+    }
+    else if (e.key === 'Escape' && input.value) {
+      e.preventDefault();
+      doSearch('');
     }
   });
   suggestionMenuKeyNavigation(inputContainer);
@@ -81,7 +94,8 @@ export function welcomeView(): DG.View | undefined {
   resizeObserver.observe(view.root);
   view.subs.push(
     rxjs.merge(grok.events.onEvent('grok-panels-changed'), grok.events.onViewAdded, grok.events.onViewRemoved, resized).pipe(debounceTime(50)).subscribe(placeSearch),
-    new rxjs.Subscription(() => resizeObserver.disconnect()));
+    new rxjs.Subscription(() => resizeObserver.disconnect()),
+    new rxjs.Subscription(stopWaitingForHandlers));
   view.root.classList.add('power-pack-welcome-view');
 
   const widgetFunctions = DG.Func.find({meta: {role: DG.FUNC_TYPES.DASHBOARD}, returnType: 'widget'});

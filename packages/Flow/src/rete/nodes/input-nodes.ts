@@ -116,7 +116,9 @@ export class DynamicInputNode extends InputBase {
 }
 
 export class StringListInputNode extends InputBase {
-  constructor() { super('String List Input', 'items', 'string_list', 'value'); }
+  constructor() {
+    super('String List Input', 'items', 'string_list', 'value', {nullable: false, caption: ''});
+  }
 }
 
 export class BlobInputNode extends InputBase {
@@ -151,7 +153,8 @@ const QUALIFIERS_BY_TYPE: Record<string, readonly string[]> = {
   column: ['typeFilter', 'semTypeFilter'],
   column_list: ['typeFilter', 'semTypeFilter'],
   dataframe: [],
-  string_list: [],
+  // nullable: an empty pick is a value (a `list<string> {nullable: true}` parameter)
+  string_list: ['nullable', 'caption'],
 };
 const ALL_QUALIFIER_KEYS = ['nullable', 'caption', 'choices', 'semType', 'min', 'max',
   'showSlider', 'typeFilter', 'semTypeFilter'] as const;
@@ -191,7 +194,8 @@ export function adoptInputProperty(node: FlowNode, prop: DG.Property, func?: DG.
     }
   };
   let t = String(read(() => prop.propertyType) ?? 'dynamic');
-  if (isStringListType(t)) t = 'string_list';
+  // A `list<string>` parameter reports `list` with the element type apart.
+  if (isStringListType(t) || (t === 'list' && read(() => prop.propertySubType) === 'string')) t = 'string_list';
   else if (t === 'num') t = 'double'; // no `num` editor/resolver — mimic as double
   const prevType = String(node.properties['propertyType'] ?? '');
   node.properties['propertyType'] = t;

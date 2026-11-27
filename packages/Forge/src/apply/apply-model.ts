@@ -12,7 +12,7 @@ import {CLASS_PROBABILITIES, isRecord, PreparationOptions, preparationOptionsOf,
   from '../preparation/preparation-options';
 import {replayPostprocessing, replayPreprocessing} from '../preparation/pipeline';
 import {rowCopy} from '../preparation/row-copy';
-import {findModelRow, ownBlob} from '../storage/model-store';
+import {adoptLegacyFile, findModelRow, isExternal, ownBlob, syncModels} from '../storage/model-store';
 import {ColumnSchema, TargetSchema} from '../training/train-model';
 import {recordApplication} from './application-store';
 import {ColumnMapping, exactMapping, MappingProblem, mappingProblems} from './column-matching';
@@ -24,8 +24,8 @@ const YIELD_MS = 50;
 const RAW_COPY_TYPES: string[] = [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT, DG.COLUMN_TYPE.QNUM];
 
 /** The `model` columns applying reads (the system columns come with any query). */
-export const APPLY_COLUMNS = ['name', 'engine_name', 'engine_namespace', 'target_name', 'features', 'options',
-  'blob'] as const;
+export const APPLY_COLUMNS = ['name', 'engine_name', 'engine_namespace', 'engine_kind', 'target_name', 'features',
+  'options', 'blob', 'legacy_id'] as const;
 export type ApplyModelRow = Pick<ModelRow, typeof APPLY_COLUMNS[number] | 'id' | 'created_on'>;
 
 export interface LoadedModel {
@@ -35,6 +35,8 @@ export interface LoadedModel {
   features: ColumnSchema[];
   options: PreparationOptions;
   blobPath: string;
+  /** What the method's `apply` takes as the model when there is no file: the row's `options` as UTF-8 json. */
+  reference?: Uint8Array;
 }
 
 export interface ApplyRequest {
@@ -70,28 +72,39 @@ export interface RowPredictions {
 
 /** The model with the id or the unique name [idOrName], ready to apply. */
 export async function loadModel(idOrName: string): Promise<LoadedModel> {
-  return loadedModelOf(await findModelRow(idOrName, APPLY_COLUMNS), EngineRegistry.discover());
+  const find = () => findModelRow(idOrName, APPLY_COLUMNS);
+  // A synced model has no row before the first sync.
+  const row = await find().catch(async () => {
+    await syncModels();
+    return find();
+  });
+  return loadedModelOf(row, EngineRegistry.discover());
 }
 
 /** {@link loadModel} for a row already read, with the engines already discovered. */
 export function loadedModelOf(row: ApplyModelRow, engines: Engine[]): LoadedModel {
   const name = row.name;
-  if (!row.blob) {
+  const external = isExternal(row);
+  // A migrated model gets its file when first applied.
+  const hasFile = !external && !(row.legacy_id && !row.blob);
+  if (hasFile && !row.blob) {
     throw new ForgeError(`The model '${name}' has no model file, so it cannot be applied. ` +
       'It was not trained and saved in Forge.');
   }
-  const blob = ownBlob(row.blob);
-  if (blob === null)
+  const blob = hasFile ? ownBlob(row.blob) : null;
+  if (hasFile && blob === null)
     throw new ForgeError(`The model '${name}' points to a file outside Forge's storage and cannot be applied.`);
   const features = requiredFeaturesOf(row);
   if (features === null)
     throw new ForgeError(`The model '${name}' has no feature list.`);
-  const engine = engines.find((e) => e.name === row.engine_name && isComplete(e));
+  const engine = engines.find((e) => e.name === row.engine_name &&
+    (external ? e.functions.apply !== undefined : isComplete(e)));
   if (engine === undefined) {
     throw new ForgeError(`The method '${row.engine_name}' is not installed. ` +
       `Install the ${row.engine_namespace} package.`);
   }
-  return {row, engine, features, options: preparationOptionsOf(row.options), blobPath: blob.path};
+  return {row, engine, features, options: preparationOptionsOf(row.options), blobPath: blob?.path ?? '',
+    ...(external ? {reference: new TextEncoder().encode(JSON.stringify(row.options ?? {}))} : {})};
 }
 
 /** Adds the prediction column to the request's table and records the application as completed, failed or
@@ -119,8 +132,9 @@ export async function applyAndRecord(request: ApplyRequest, source: ApplicationS
 
 /** {@link applyAndRecord} under the cancellable task-bar progress "Predicting <target>". */
 export async function applyWithProgress(request: ApplyRequest, source: ApplicationSource): Promise<ApplyResult> {
-  const progress = DG.TaskBarProgressIndicator.create(`Predicting ${request.model.row.target_name}`,
-    {cancelable: true});
+  const row = request.model.row;
+  const progress = DG.TaskBarProgressIndicator.create(
+    isExternal(row) ? `Predicting with ${row.name}` : `Predicting ${row.target_name}`, {cancelable: true});
   try {
     return await applyAndRecord(request, source, progress);
   } finally {
@@ -195,7 +209,8 @@ export async function predictRows(request: ApplyRequest, progress?: LoopProgress
       'predicted. Fill the missing values or choose Impute.');
   }
   const columns = replayPreprocessing(prepared.features, model.options);
-  const blob = await grok.dapi.files.readAsBytes(model.blobPath);
+  const blob = model.reference ?? (model.blobPath === '' ? await adoptLegacyFile(model.row) :
+    await grok.dapi.files.readAsBytes(model.blobPath));
   const {prediction: raw, probabilities} =
     await predictInBatches(model.engine, columns, rowCount, blob, request.batchSize, progress);
   return {columns, raw, labels: replayPostprocessing(raw, model.options, probabilities), keptRows: prepared.keptRows,

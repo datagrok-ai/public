@@ -2,11 +2,11 @@ import type * as _grok from 'datagrok-api/grok';
 import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, expectExceptionAsync, test} from '@datagrok-libraries/test/src/test';
 
 // Predictive models: the engines packages register, and the /ml surface the Train Model view and the
-// Apply dialog use. The JS API covers the entity (grok.dapi.models); creating one, its blobs and images,
-// the zip and the suggestions have no wrapper, so they are called on the endpoints.
+// Apply dialog use. The JS API covers the entity (grok.dapi.models) and reading its file (getBlob); creating one,
+// writing its blobs and images, the zip and the suggestions have no wrapper, so they are called on the endpoints.
 
 const ml = (path: string, init: RequestInit = {}) => fetch(`${grok.dapi.root}/ml${path}`, {credentials: 'include', ...init});
 
@@ -68,6 +68,20 @@ category('Dapi: models', () => {
     }
   });
 
+  test('A model reports its input and output columns', async () => {
+    const id = await saveModel();
+    try {
+      const model = await grok.dapi.models.find(id);
+      expect(model.inputs.map((c) => `${c.name}:${c.type}`).join(','), 'AGE:int,WEIGHT:double');
+      expect(model.outputs.map((c) => `${c.name}:${c.type}`).join(','), 'outcome:double');
+      const listed = (await grok.dapi.models.filter(`friendlyName = "${model.friendlyName}"`).list())[0];
+      expect(listed.inputs.length, 2, 'a listed model has no inputs');
+    }
+    finally {
+      await deleteModel(id);
+    }
+  });
+
   test('Blobs and images round-trip, and the zip holds them with the model', async () => {
     const id = await saveModel();
     try {
@@ -84,6 +98,21 @@ category('Dapi: models', () => {
       const entries = new TextDecoder('latin1').decode(zip);
       for (const name of [`${id}.json`, images[0], '.bin'])
         expect(entries.includes(name), true, `the zip has no ${name}`);
+    }
+    finally {
+      await deleteModel(id);
+    }
+  });
+
+  test('getBlob returns the file of a model, and rejects for a model without one', async () => {
+    const id = await saveModel();
+    try {
+      await expectExceptionAsync(async () => {await grok.dapi.models.getBlob(id);},
+        (e) => `${e?.message ?? e}`.includes('missing on the server'));
+      await ml(`/blobs/${id}?name=&ext=bin`, {method: 'POST', body: new Uint8Array(blob)});
+      const bytes = await grok.dapi.models.getBlob(id);
+      expect(bytes instanceof Uint8Array, true, `${bytes?.constructor?.name}`);
+      expect(Array.from(bytes).join(','), blob.join(','));
     }
     finally {
       await deleteModel(id);

@@ -3,6 +3,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as rxjs from 'rxjs';
+import {delay} from 'rxjs/operators';
 import {widgetHost} from '../utils';
 import {initTemplates, templatesSearch} from './templates-search';
 import {matchAndParseQuery, processPowerSearchTableView}
@@ -30,6 +32,7 @@ let searchGeneration = 0;
 /// search can still append to it afterwards. A rejection nobody handled before still surfaces unhandled.
 export function powerSearch(s: string, host: HTMLDivElement, inputElement: HTMLInputElement): void {
   const generation = ++searchGeneration;
+  stopWaitingForHandlers();
   let pending = 1;
   const settle = () => {
     if (--pending === 0 && generation === searchGeneration && inputElement.value === s)
@@ -50,7 +53,11 @@ export function powerSearch(s: string, host: HTMLDivElement, inputElement: HTMLI
     jsEvalSearch(s, host) ||
     viewsSearch(s, host);
 
-    regexEntitiesSearch(s, host);
+    const entities = entitiesPanel(s);
+    if (entities)
+      host.append(entities);
+    else
+      showEntitiesWhenRecognized(s, host);
     projectsSearch(s, host, track);
     functionEvaluationsSearch(s, host, track);
     searchFunctionsSearch(s, host, track);
@@ -82,11 +89,12 @@ function viewsSearch(s: string, host: HTMLDivElement): boolean {
   return false;
 }
 
-function regexEntitiesSearch(s: string, host: HTMLDivElement): void {
+/// The cards of the ids the search is, when an object handler recognises them
+function entitiesPanel(s: string): HTMLElement | null {
   const ids = s.split(/,\s*/);
   const semValues = ids.map((id) => DG.SemanticValue.parse(id));
   if (semValues.length < 1 || semValues[0]?.semType == null)
-    return;
+    return null;
 
   if (semValues.every((sv) => sv?.semType && sv.semType == semValues[0].semType) &&
     DG.ObjectHandler.forEntity(semValues[0])) {
@@ -105,8 +113,40 @@ function regexEntitiesSearch(s: string, host: HTMLDivElement): void {
     ]);
     for (const sv of semValues)
       itemsPanel.append(DG.ObjectHandler.forEntity(sv)!.renderCard(sv));
-    host.append(panel);
+    return panel;
   }
+  return null;
+}
+
+/// The latest search, while no object handler recognises its ids
+let handlersWait: rxjs.Subscription | null = null;
+
+export function stopWaitingForHandlers(): void {
+  handlersWait?.unsubscribe();
+  handlersWait = null;
+}
+
+/// Shows the cards of the ids once a package that loads after the search brings handlers that recognise them: a
+/// search?q= link opens Home before the autostart of the package with the identifiers has run. An autostart registers
+/// its handlers right after its package loads, so the handlers are counted a task after each package load, and once
+/// when all autostarts have run; the ids are tried again only when the count has grown, and the cards are shown once.
+/// The wait ends with the cards, the next search (which stops it first thing), or the view.
+function showEntitiesWhenRecognized(s: string, host: HTMLDivElement): void {
+  if (!s.trim())
+    return;
+  let handlers = DG.ObjectHandler.list().length;
+  handlersWait = rxjs.merge(grok.events.onPackageLoaded.pipe(delay(0)), rxjs.from(grok.shell.autostartsCompleted))
+    .subscribe(() => {
+      const count = DG.ObjectHandler.list().length;
+      if (count === handlers)
+        return;
+      handlers = count;
+      const panel = entitiesPanel(s);
+      if (panel) {
+        stopWaitingForHandlers();
+        host.prepend(panel);
+      }
+    });
 }
 
 
