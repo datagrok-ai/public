@@ -34,15 +34,6 @@
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/BioNeMo"
   },
-  "properties": [
-    {
-      "name": "apiKey",
-      "propertyType": "string",
-      "defaultValue": "",
-      "description": "Enter NGC api key",
-      "nullable": false
-    }
-  ],
   "category": "Bioinformatics",
   "grok": {
     "testDependencies": [
