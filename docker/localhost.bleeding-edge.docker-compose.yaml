@@ -4,7 +4,7 @@
 # Do not edit the services here -- change the canonical file and regenerate this one, or the
 # two drift and this file ends up starting bleeding-edge images with a body written for an
 # older release. See `localhost.docker-compose.yaml` for the release-binding rationale.
-x-datagrok-release: 1.28.0
+x-datagrok-release: 1.28.1
 
 # Shared by every jkg_* gateway below. They differ only in image and network alias.
 x-jkg: &jkg
@@ -61,7 +61,7 @@ services:
 
   datagrok:
     privileged: true
-    image: datagrok/datagrok:${DATAGROK_VERSION:-1.28.0}
+    image: datagrok/datagrok:${DATAGROK_VERSION:-1.28.1}
     platform: linux/amd64
     environment:
       GROK_PARAMETERS: |

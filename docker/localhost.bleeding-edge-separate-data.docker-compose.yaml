@@ -7,7 +7,7 @@
 # bind the same host ports, so run one at a time.
 # Do not edit the services here -- change the canonical file and regenerate this one. See
 # `localhost.docker-compose.yaml` for the release-binding rationale.
-x-datagrok-release: 1.28.0
+x-datagrok-release: 1.28.1
 
 # Shared by every jkg_* gateway below. They differ only in image and network alias.
 x-jkg: &jkg
@@ -64,7 +64,7 @@ services:
 
   datagrok:
     privileged: true
-    image: datagrok/datagrok:${DATAGROK_VERSION:-1.28.0}
+    image: datagrok/datagrok:${DATAGROK_VERSION:-1.28.1}
     platform: linux/amd64
     environment:
       GROK_PARAMETERS: |

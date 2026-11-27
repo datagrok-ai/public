@@ -13,7 +13,7 @@
 #
 # Overriding a *_VERSION variable opts out of the binding. Only do it for a service you
 # know is compatible.
-x-datagrok-release: 1.28.0
+x-datagrok-release: 1.28.1
 
 # Shared by every jkg_* gateway below. They differ only in image and network alias.
 x-jkg: &jkg
@@ -70,7 +70,7 @@ services:
 
   datagrok:
     privileged: true
-    image: datagrok/datagrok:${DATAGROK_VERSION:-1.28.0}
+    image: datagrok/datagrok:${DATAGROK_VERSION:-1.28.1}
     platform: linux/amd64
     environment:
       GROK_PARAMETERS: |
