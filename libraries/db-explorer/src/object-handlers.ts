@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {DBValueObject, EntryPointOptions, SchemaAndConnection} from './types';
 import {DBExplorerRenderer} from './renderer';
+import {TableNames} from './naming';
 
 
 export const DB_EXPLORER_OBJ_HANDLER_TYPE = 'db-explorer-value';
@@ -29,10 +30,11 @@ export class DBExplorerObjectHandler extends DG.ObjectHandler {
     protected schemaInfoPromise: () => Promise<SchemaAndConnection | null>,
     public connectionNqName: string,
     public schemaName: string,
-    public catalogName?: string
+    public catalogName?: string,
+    names?: TableNames,
   ) {
     super();
-    this.renderer = new DBExplorerRenderer(schemaInfoPromise, schemaName, options, catalogName);
+    this.renderer = new DBExplorerRenderer(schemaInfoPromise, schemaName, options, catalogName, names);
   }
 
   addCustomRenderer(
@@ -147,9 +149,10 @@ export class SemValueObjectHandler extends DBExplorerObjectHandler {
     schemaInfoPromise: () => Promise<SchemaAndConnection | null>,
     schemaName: string,
     connectionNqName: string,
-    catalogName?: string
+    catalogName?: string,
+    names?: TableNames,
   ) {
-    super(options, schemaInfoPromise, connectionNqName, schemaName, catalogName);
+    super(options, schemaInfoPromise, connectionNqName, schemaName, catalogName, names);
     if (options && options.regexpExample && options.regexpExample.nonVariablePart && options.regexpExample.regexpMarkup)
       this._rgExample = options.regexpExample;
   }

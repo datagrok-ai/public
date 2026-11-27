@@ -4,18 +4,59 @@ import {DB_EXPLORER_OBJ_HANDLER_TYPE} from './object-handlers';
 export type ReferenceObject = {
   [schemaName: string]: {
     [tableName: string]: {
-      [columnName: string]: { refSchema: string, refTable: string; refColumn: string }
+      /** [label] names the row the column points at, as seen from the column's row (ExplicitReference.label) */
+      [columnName: string]: { refSchema: string, refTable: string; refColumn: string, label?: string }
     }
   }
 };
 export type ReferencedByObject = {
   [schemaName: string]: {
     [tableName: string]: {
-      [columnName: string]: { refSchema: string, refTable: string; refColumn: string }[]
+      /** [reverseLabel] names the rows that point back, in the Links section (ExplicitReference.reverseLabel) */
+      [columnName: string]: { refSchema: string, refTable: string; refColumn: string, reverseLabel?: string }[]
     }
   }
 };
-export type SchemaInfo = { references: ReferenceObject; referencedBy: ReferencedByObject };
+export type SchemaInfo = {
+  references: ReferenceObject;
+  referencedBy: ReferencedByObject;
+  /** Table comments, from the database or from Datagrok's annotations of it, by schema and table */
+  comments?: {[schemaName: string]: {[tableName: string]: string}};
+};
+
+/** A column that points at a key, or the key itself */
+export type LinkRef = { schema: string; table: string; column: string; reverseLabel?: string };
+
+/** A group of the Links section: the rows that point at one key value of the card */
+export type LinkGroup = {
+  /** The key is the card's own (This drug), not one a column of the card points at (Same target) */
+  own: boolean;
+  /** The key the rows point at */
+  target: LinkRef;
+  value: string | number;
+  /** The card's column the value is read from */
+  field: string;
+  /** ExplicitReference.label of the reference the value is read through */
+  label?: string;
+  links: LinkRef[];
+};
+
+/** How the Links section names and shows the rows of a table. Every field is optional: the rest is inferred */
+export type EntityOptions = {
+  /** One record, e.g. 'Compound' (default: the identifier's semantic type, or the table's name) */
+  label?: string;
+  /** Code shown after the name, e.g. 'CPD' (default: the fixed part of the identifier's pattern) */
+  short?: string;
+  /** More than one record (default: the label with an s) */
+  plural?: string;
+  /** Shown in the tooltip of the table's links (default: the table's comment) */
+  description?: string;
+  /** Fold the table's links under More, or keep them in the list (default: folded when the configuration names
+   * card columns for several tables and none, nor an identifier, a key or a header column, for this one) */
+  more?: boolean;
+  /** Leave the table's links out */
+  hidden?: boolean;
+};
 
 export type SchemaAndConnection = {
   schema: SchemaInfo;
@@ -47,6 +88,10 @@ export type ExplicitReference = {
   refSchema?: string;
   refTable: string;
   refColumn: string;
+  /** The row the column points at, from the column's row: 'Parent compound' (default: read from the column's name) */
+  label?: string;
+  /** The rows that point back, in the Links section of the row pointed at: 'Child compounds' */
+  reverseLabel?: string;
 }
 
 export type DBExplorerConfig = {
@@ -75,6 +120,8 @@ export type DBExplorerConfig = {
         renderer: SupportedRenderer;
     }[];
     explicitReferences?: ExplicitReference[];
+    /** Names and display of tables in the Links section, by table (or schema.table) */
+    entities?: {[tableName: string]: EntityOptions};
 }
 
 export class DBValueObject {

@@ -52,11 +52,31 @@ Feature: Identifiers of a database connection
     And the saved identifiers of "public" in the "System:Datagrok" connection should be "BDD_EVENT_TYPE"
     And no errors should have been logged
 
+  Scenario: A table is named for the Links section of the cards and saved with the identifiers
+    Entity Names names a table in the Links section of every card of the connection; what it leaves out is inferred
+    from the identifiers and the table's own name.
+    When user expands Entity Names section inside identifiers editor
+    And user clicks on add entity name icon
+    Then "Add Entity Name" dialog should be visible
+    When user selects "event_types" in Table input in "Add Entity Name" dialog
+    And user enters "Event type" into Name input in "Add Entity Name" dialog
+    And user enters "EVT" into Code input in "Add Entity Name" dialog
+    And user clicks on ADD button in "Add Entity Name" dialog
+    Then identifiers editor should contain text "Event type"
+    # the schema's configuration was saved in the scenario before: Save asks before it overwrites it
+    When user clicks on Save button in identifiers editor
+    And user clicks on OK button in "Overwrite existing configuration?" dialog
+    Then an info balloon containing "Identifier configuration saved" should have been shown
+    And the saved entity names of "public" in the "System:Datagrok" connection should be "event_types: Event type (EVT)"
+    And no errors should have been logged
+
   Scenario: The saved configuration is listed under the connection and opens from there
     Given the browse panel is open
     And Databases---Postgres---Datagrok tree node inside browse tree is expanded
     When user clicks on Databases---Postgres---Datagrok---Identifiers---public tree node inside browse tree
     Then identifiers editor should contain text "BDD_EVENT_TYPE"
+    When user expands Entity Names section inside identifiers editor
+    Then identifiers editor should contain text "Event type"
     And no errors should have been logged
 
   Scenario: Configure Identifiers on the same schema opens the saved configuration
