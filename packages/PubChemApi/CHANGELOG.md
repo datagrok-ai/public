@@ -1,5 +1,9 @@
 # PubChem changelog
 
+## 1.4.0 (2026-11-27)
+
+* Maintenance release: build toolchain and dependency updates
+
 ## 1.3.1 (2025-07-24)
 
 Changes according to new API

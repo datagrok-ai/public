@@ -1,5 +1,9 @@
 # DrugBank changelog
 
+## 1.3.0 (2026-11-27)
+
+* Maintenance release: build toolchain and dependency updates
+
 ## 1.2.0 (2025-03-29)
 
 Refactoring

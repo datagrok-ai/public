@@ -1,6 +1,6 @@
 # Tutorials changelog
 
-## v.next
+## 1.12.0 (2026-11-27)
 
 * core#440: Fixed the progress ring running one step ahead; a finished tutorial shows a green check
 * App: Opens as a view of the tracks and tutorials, so Browse previews it instead of showing RUN; the Browse tree lists the tracks and tutorials, and selecting one previews it without starting it

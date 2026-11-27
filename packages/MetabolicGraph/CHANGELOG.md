@@ -1,6 +1,6 @@
 # `MetabolicGraph` changelog
 
-## v.next
+## 1.2.0 (2026-11-27)
 
 * AI: Exposed view functions on the Metabolic Graph view (state/model/entity introspection, reaction bounds, FBA, flux sampling, time-course, map navigation and highlighting, analysis save/load) so the AI assistant can read and drive it.
 

@@ -1,6 +1,6 @@
 # GenomeBrowse changelog
 
-## v.next
+## 1.1.0 (2026-11-27)
 
 * GROK-18695: Dependency security updates — refreshed lockfile (dompurify, ws, yaml advisories)
 

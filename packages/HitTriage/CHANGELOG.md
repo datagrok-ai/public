@@ -1,6 +1,6 @@
 # HitTriage changelog
 
-## v.next
+## 1.11.0 (2026-11-27)
 
 * [core#1407](https://github.com/datagrok-ai/core/issues/1407): Campaigns: Fixed the check for another session's saves reading the first row of an empty save log for a campaign not saved yet, which logged an error every 3 s
 * [core#1407](https://github.com/datagrok-ai/core/issues/1407): Campaigns: Fixed releasing a lock reading the first row of an empty result when the lock had already expired

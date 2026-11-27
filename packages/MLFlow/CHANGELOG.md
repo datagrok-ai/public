@@ -1,6 +1,6 @@
 # MLflow changelog
 
-## v.next
+## 1.2.0 (2026-11-27)
 
 * Forge: the published MLflow models you may use appear in the Forge catalog as your own rows; their containers stop after 60 idle minutes
 * Docker: Rebuilt the mlflow container on Wolfi to clear the Debian CVEs; pyenv Pythons bootstrap model environments from current pip/setuptools wheels

@@ -1,5 +1,9 @@
 # ChEMBL API changelog
 
+## 1.3.0 (2026-11-27)
+
+* Maintenance release: build toolchain and dependency updates
+
 ## 1.2.1 (2025-09-22)
 
 ### Bug fixes

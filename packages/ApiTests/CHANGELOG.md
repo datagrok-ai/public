@@ -1,6 +1,6 @@
 # API Tests changelog
 
-## v.next
+## 1.11.0 (2026-11-27)
 
 * Tests: `DataFrame: Methods: Link` 'selection to filter: detach' covers `TableLink.detach()`, the link `grok.data.linkTables` returns
 * [#4677](https://github.com/datagrok-ai/public/issues/4677): Views: Added `View: Unsaved work` for `ViewBase.unsavedWork`

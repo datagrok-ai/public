@@ -1,6 +1,6 @@
 # Admetica changelog
 
-## v.next
+## 1.4.0 (2026-11-27)
 
 * Dependencies: Pinned `uuid` to ^11.1.1 through `overrides`, so the `uuid` 8.3.2 that exceljs 4.4.0 brings is no longer resolved (GHSA-w5hq-g745-h8pq)
 * [public#4226](https://github.com/datagrok-ai/public/issues/4226): Chem | Admetica | Calculate is disabled unless the current table view has a molecule column, instead of showing a message

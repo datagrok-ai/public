@@ -1,6 +1,6 @@
 # SureChEMBL changelog
 
-## v.next
+## 1.2.0 (2026-11-27)
 
 * Tests: The search tests are skipped, with the reason, when the server reports Grok Spawner switched off or unreachable instead of each waiting 20 minutes for a container that never starts
 * Docker: Removed the unused `/opt/py27` data-prep env (stale pip/setuptools/wheel/certifi with no py2.7 upgrades) (VEX)

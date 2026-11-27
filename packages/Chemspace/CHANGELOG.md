@@ -1,6 +1,6 @@
 # Chemspace changelog
 
-## v.next
+## 1.3.0 (2026-11-27)
 
 * App: Opened instantly as a Browse preview instead of showing a RUN button
 * `shipToCountry` is now a choice list of country names (`getShipToCountries`) converted to ISO-2 on entry, instead of a free-text field that silently needed a two-letter code

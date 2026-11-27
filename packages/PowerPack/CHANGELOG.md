@@ -1,6 +1,6 @@
 # Power Pack changelog
 
-## v.next
+## 1.9.0 (2026-11-27)
 
 * Search: a search?q= link to ids now shows their cards once the package with the identifiers has loaded; the ids are tried again only when a package load adds object handlers, and only until they are recognised or the next search
 * Views: Removed saving the scroll of every element of the page on each view change and on every edit in a view; the platform keeps the scroll of views and docked panels itself

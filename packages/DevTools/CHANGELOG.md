@@ -1,6 +1,6 @@
 # Dev Tools changelog
 
-## v.next
+## 1.8.0 (2026-11-27)
 
 * core#1291: Scripts: Signature Editor removes parameter defaults and options and renames the script without any changes
 * Test Manager: Fixed the search box throwing on regular-expression characters such as "(" or "["; it now matches the typed text

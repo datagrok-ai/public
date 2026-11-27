@@ -1,5 +1,9 @@
 # Pyodide package changelog
 
+## 1.5.0 (2026-11-27)
+
+* Maintenance release: build toolchain and dependency updates
+
 ## 1.4.1 (2026-09-16)
 
 * GROK-18695: Updated npm dependencies to clear reported vulnerabilities

@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/metabolicgraph",
   "friendlyName": "Metabolic Graph",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Metabolic graph visualizations and analysis",
   "author": {
     "name": "Dmytro Kovalyov",

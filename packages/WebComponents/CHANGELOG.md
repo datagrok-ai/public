@@ -2,6 +2,10 @@
 
 ## 1.5.0 (2026-11-27)
 
+* Maintenance release: build toolchain and dependency updates
+
+## 1.5.0 (2026-11-27)
+
 - InputForm: Removed the multiple choice overrides for condensed forms, outdated by the platform layout
 - DockManager: Esc no longer closes the active panel
 - Viewer: An options change no longer re-sets the frame and fires `viewer-data-frame-changed` for frames created in JS

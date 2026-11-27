@@ -1,6 +1,6 @@
 # Peptides changelog
 
-## v.next
+## 1.28.0 (2026-11-27)
 
 * [core#1407](https://github.com/datagrok-ai/core/issues/1407): Activity distribution, Logo summary table: Fixed the histograms getting their background color as a CSS string, which a client that checks types rejects for the numeric color property
 * Peptides app: Fixed the Learn more link, which led to a missing page in public's help folder
