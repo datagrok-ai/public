@@ -2,6 +2,7 @@
 
 ## v.next
 
+* `grok check`: Accepts imports from `datagrok-api/u2core`, and a `files` list in `package.json` in place of `.npmignore`
 * `grok test`: Removed the Dartium runner (`--dartium`, `grok test list`, `--logfailed`): the Dart 3 client does not run in Dartium
 * [core#1801](https://github.com/datagrok-ai/core/issues/1801): `grok s shares add --access` accepts `Use` (view and use), `Full` and any single permission name
 * `grok claude`: The `scripting` and `full` profiles start the `jkg_python` and `jkg_r` kernel gateways instead of the retired `jupyter_kernel_gateway` image

@@ -1,6 +1,6 @@
 # bio changelog
 
-## v.next
+## 6.1.0 (2026-11-27)
 
 * `monomer-works/lib-settings.ts`: `setUserLibSettings` sends the settings to the server at once (`grok.userSettings.flush()`, on platforms that have it) instead of leaving them to the 10-second sync, which a session closed sooner never ran: a Bio test category that put the user's libraries back at its end left the test libraries on the server, and the next start loaded every library
 * Added `utils/cell-renderer-connections.ts`: a sequence's connections (the splitted sequence's graph info: BILN cyclizations, HELM bonds) laid out and drawn as brackets over the monomers they join. Shorter bonds sit nearer the monomers and overlapping ones on separate lanes, a chain's head-to-tail ring goes under it, a monomer bonded to three or more others is one comb, and two chains, ladders and branches can go one line per chain. `layoutConnections` decides whether they fit a cell's height

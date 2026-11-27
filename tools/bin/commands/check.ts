@@ -217,8 +217,8 @@ export function checkDatagrokApiImports(packagePath: string, files: string[]): s
   // Regex to find all datagrok-api imports/exports (including re-exports)
   const datagrokApiImportRegex = /^\s*(import|export)\s+.*['"]datagrok-api\/[^'"]+['"]/gm;
 
-  // Regex to validate if import/export is allowed (only dg, grok, ui)
-  const allowedImportRegex = /^\s*(import|export)\s+.*['"]datagrok-api\/(dg|grok|ui|datagrok)['"]/;
+  // Regex to validate if import/export is allowed (dg, grok, ui, and the u2core entry js-api exports for U2)
+  const allowedImportRegex = /^\s*(import|export)\s+.*['"]datagrok-api\/(dg|grok|ui|datagrok|u2core)['"]/;
 
   // Regex to extract the import path for error messages
   const importPathRegex = /['"]datagrok-api\/([^'"]+)['"]/;
@@ -698,7 +698,7 @@ export function checkNpmIgnore(packagePath: string): string[] {
         break;
       }
     }
-  } else
+  } else if (!JSON.parse(fs.readFileSync(path.join(packagePath, 'package.json'), {encoding: 'utf-8'})).files)
     warnings.push('.npmignore doesnt exists');
 
   return warnings;

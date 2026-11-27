@@ -1,6 +1,6 @@
 # tutorials changelog
 
-## v.next
+## 1.8.0 (2026-11-27)
 
 * core#440: Tutorial: Fixed the progress ring running one step ahead
 * Tutorial: The steps pane holds only the running tutorial; closing it returns to the Tutorials view instead of docking the track list

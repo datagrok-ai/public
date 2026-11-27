@@ -1,6 +1,6 @@
 # chem-meta changelog
 
-## v.next
+## 1.3.0 (2026-11-27)
 
 * `macromolecule-assembler.ts`: `IMacromoleculeAssembler.toHelm`, molecules to HELM with a monomer library (the inverse of `assemble`, for Bio's Molecules to HELM), with `ToHelmOptions` (a progress callback) and `ToHelmResult` (HELM, error and counts per row)
 * Added `macromolecule-assembler.ts`: the macromolecule assembler's interface (`IMacromoleculeAssembler`, with synchronous twins after `ready`), its input (`AsmSequence`, the packed `AsmBatch`, `packBatch`, `unpackRow`, `validateAsmSequence`, `asmBatchTransferables`), options and results (`AsmLayout` with the CoordGen layouts 3 and 4, `AsmAtomMap`)

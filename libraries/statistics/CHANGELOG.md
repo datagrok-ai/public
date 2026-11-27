@@ -1,6 +1,6 @@
 # statistics changelog
 
-## v.next
+## 1.13.0 (2026-11-27)
 
 * Fit: The 4PL dose-response fit (`4pl-dose-response`) starts from a Hill slope of 1 per decade, not 10: from 10, a curve sampled at dilution steps fitted as a step between two concentrations (IC50 on a concentration, Hill near -10, R squared down to 0.95)
 
