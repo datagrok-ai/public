@@ -132,7 +132,7 @@ export abstract class Tutorial extends DG.Widget {
     super(ui.div([], 'tutorials-track'));
     this.updateStatus();
     this.progress.max = 0;
-    this.progress.value = 1;
+    this.progress.value = 0;
     this.mainHeader.append(this.headerDiv, this.progressDiv);
     this.root.append(this.mainHeader);
     this.root.append(this.subheader);
@@ -261,6 +261,9 @@ export abstract class Tutorial extends DG.Widget {
     this.describe(desc);
 
     this.completed = !this.closed;
+    if (this.completed)
+      this.progress.value = this.steps;
+    this._showProgress();
     const dataToSave = JSON.stringify({date: new Date().toUTCString(), isCompleted: this.completed});
     await grok.userSettings.add(Tutorial.DATA_STORAGE_KEY, this.name, dataToSave);
     if (this.completed)
@@ -368,7 +371,7 @@ export abstract class Tutorial extends DG.Widget {
     }
     this._showProgress();
 
-    this.progressSteps = ui.divText(`Step: ${this.progress.value} of ${this.steps}`);
+    this.progressSteps = ui.divText(`Step: ${this.currentStep} of ${this.steps}`);
     this.progressDiv.append(this.progressSteps);
 
     // const manualMode = ui.button(ui.iconFA('forward'), () => {
@@ -558,7 +561,7 @@ export abstract class Tutorial extends DG.Widget {
       instructionIndicator,
       instructionDiv,
     ], 'grok-tutorial-entry');
-    const step = this.progress.value;
+    const step = this.currentStep;
     entry.setAttribute('role', 'checkbox');
     entry.setAttribute('aria-label', instructions);
     entry.setAttribute('aria-checked', 'false');
@@ -650,23 +653,29 @@ export abstract class Tutorial extends DG.Widget {
 
     this.progress.value++;
     this.progressSteps.innerHTML = '';
-    this.progressSteps.append(`Step: ${this.progress.value} of ${this.steps}`);
+    this.progressSteps.append(`Step: ${this.currentStep} of ${this.steps}`);
     this._showProgress();
   }
 
+  private get currentStep(): number {
+    return Math.min(this.progress.value + 1, this.steps);
+  }
+
   _showProgress(): void {
-    const step = Math.min(this.progress.value, this.steps);
-    this.progress.setAttribute('aria-valuenow', `${this.progress.value}`);
-    this.progress.setAttribute('aria-valuemax', `${this.steps}`);
-    this.barRing.setAttribute('aria-valuenow', `${step}`);
-    this.barRing.setAttribute('aria-valuemax', `${this.steps}`);
-    this.barRing.style.setProperty('--tutorials-progress', `${100 * step / this.steps}%`);
-    this.barCount.textContent = `${step}/${this.steps}`;
+    const done = Math.min(this.progress.value, this.steps);
+    for (const el of [this.progress, this.barRing]) {
+      el.setAttribute('aria-valuenow', `${done}`);
+      el.setAttribute('aria-valuemax', `${this.steps}`);
+    }
+    this.barRing.style.setProperty('--tutorials-progress', `${100 * done / this.steps}%`);
+    this.barRing.classList.toggle('tutorials-bar-ring-done', this.completed);
+    this.barCount.textContent = `${this.completed ? '' : 'Step '}${this.currentStep}/${this.steps}`;
   }
 
   clearRoot(): void {
     this.completed = false;
-    this.progress.value = 1;
+    this.progress.value = 0;
+    this._showProgress();
     this.barSection.textContent = this.barInstruction.textContent = this.barDescription.textContent = '';
     $(this.headerDiv).empty();
     $(this.progressDiv).empty();
@@ -674,7 +683,7 @@ export abstract class Tutorial extends DG.Widget {
   }
 
   private showFailure(error: any): void {
-    const details = `Tutorial "${this.name}" failed at step ${this.progress.value}: ${error?.stack ?? error}`;
+    const details = `Tutorial "${this.name}" failed at step ${this.currentStep}: ${error?.stack ?? error}`;
     const restart = ui.bigButton('Restart', () => {
       this._closeAll();
       this.clearRoot();

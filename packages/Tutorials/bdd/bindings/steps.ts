@@ -102,14 +102,18 @@ export const tutorialProgress = Then('the tutorial progress should be {int} of {
   const read = () => page.evaluate(() => {
     const ring = document.querySelector('.tutorials-bar [role="progressbar"]');
     const count = document.querySelector('.tutorials-bar-count')?.textContent ?? '';
-    return ring ? `${ring.getAttribute('aria-valuenow')} of ${ring.getAttribute('aria-valuemax')} | ${count}` : 'no progress ring';
+    return ring ? `${count} | ${ring.getAttribute('aria-valuenow')} of ${ring.getAttribute('aria-valuemax')} done` +
+      (ring.classList.contains('tutorials-bar-ring-done') ? ', finished' : '') : 'no progress ring';
   });
-  await expect.poll(read, {message: 'the tutorial progress (ring | count)'}).toBe(`${value} of ${max} | ${value}/${max}`);
-}, {description: 'the bar\'s progress ring and its "N/M" count agree on N of M'});
+  await expect.poll(read, {message: 'the tutorial progress (count | ring)'})
+    .toMatch(new RegExp(`^(Step ${value}/${max} \\| ${value - 1} of ${max} done|${value}/${max} \\| ${value} of ${max} done, finished)$`));
+}, {description: 'the bar\'s "Step N/M" count is on step N, and its ring shows the N-1 steps done before it — or all M, with the finished mark, once the tutorial is completed'});
 
 export const tutorialCompleted = Then('the {string} tutorial should be completed', async (page: Page, name: string) => {
   await expect(page.locator('.tutorials-bar-section'), 'the congratulations in the tutorial bar')
     .toHaveText('Congratulations!');
+  await expect(page.locator('.tutorials-bar [role="progressbar"]'), 'the finished mark on the progress ring')
+    .toHaveClass(/tutorials-bar-ring-done/);
   await showStepList(page);
   await expect.poll(() => page.evaluate(() => Array.from(document.querySelectorAll('.grok-tutorial-entry[role="checkbox"]'))
     .filter((e) => e.getAttribute('aria-checked') !== 'true').map((e) => e.getAttribute('aria-label'))), {message: 'steps not done'}).toEqual([]);
@@ -117,7 +121,7 @@ export const tutorialCompleted = Then('the {string} tutorial should be completed
     const record = grok.userSettings.getValue(key, n);
     return record ? JSON.parse(record).isCompleted === true : false;
   }, [DATA_STORAGE_KEY, name]), {message: `the completion record of "${name}"`}).toBe(true);
-}, {description: 'the congratulations are shown, every step listed is done, and the tutorial\'s record says completed'});
+}, {description: 'the congratulations are shown, the progress ring carries the finished mark, every step listed is done, and the tutorial\'s record says completed'});
 
 export const tutorialStepsListed = Then('the tutorial should have listed {int} steps', async (page: Page, count: number) => {
   await showStepList(page);

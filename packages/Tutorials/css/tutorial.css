@@ -286,6 +286,23 @@ progress[value]::-webkit-progress-value::after {
     conic-gradient(var(--blue-1) var(--tutorials-progress), var(--grey-2) 0);
 }
 
+.tutorials-bar-ring-done {
+  position: relative;
+  background: var(--green-2);
+}
+
+.tutorials-bar-ring-done::after {
+  content: '';
+  position: absolute;
+  left: 5.5px;
+  top: 2.5px;
+  width: 3px;
+  height: 7px;
+  border: solid var(--white);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
 /* Animation */
 /* Add div container with class blob*/
 .blob {
