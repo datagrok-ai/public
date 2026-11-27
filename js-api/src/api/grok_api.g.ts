@@ -1174,6 +1174,7 @@ export interface IDartApi {
   grok_Dapi_RecentProjects(): any;
   grok_Dapi_Notebooks(): any;
   grok_Dapi_Models(): any;
+  grok_Dapi_Models_GetBlob(modelId: String): Promise<any>;
   grok_Dapi_Packages(): any;
   grok_Dapi_Layouts(): any;
   grok_Dapi_Views(): any;

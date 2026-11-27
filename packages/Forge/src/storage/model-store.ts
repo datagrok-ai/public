@@ -120,10 +120,9 @@ export async function saveModel(fields: ModelFields, blob: Uint8Array): Promise<
 }
 
 export async function adoptLegacyFile(row: Pick<ModelRow, 'id' | 'name' | 'legacy_id'>): Promise<Uint8Array> {
-  const file: DG.FileInfo = await grok.functions.call('getModelBlob', {modelId: row.legacy_id}).catch((e) => {
+  const bytes = await grok.dapi.models.getBlob(row.legacy_id!).catch((e) => {
     throw new ForgeError(`The file of the model '${row.name}' cannot be read: ${errorMessage(e)}`);
   });
-  const bytes = file.data;
   if (!bytes?.length)
     throw new ForgeError(`The file of the model '${row.name}' cannot be read: the file is empty`);
   const blob = await writeModelFile(bytes);
