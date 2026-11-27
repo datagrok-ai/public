@@ -1,5 +1,9 @@
 # test changelog
 
+## 1.6.0 (2026-11-27)
+
+* Maintenance release: build toolchain and dependency updates
+
 ## 1.5.0 (WIP)
 
 * A stress run (`stressTest`) no longer sends each test result to the server it loads; the results stay in the run's report. In the nightly sweep these were 157,000 of the server's 575,000 requests and 23% of its request time

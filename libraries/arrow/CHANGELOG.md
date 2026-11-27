@@ -1,6 +1,6 @@
 # arrow changelog
 
-## v.next
+## 1.2.0 (2026-11-27)
 
 * [core#1407](https://github.com/datagrok-ai/core/issues/1407): Fixed a single-precision float column being built as a double column: the column type follows the array Arrow gives
 

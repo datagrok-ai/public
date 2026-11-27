@@ -1,5 +1,9 @@
 # gridext changelog
 
+## 1.6.0 (2026-11-27)
+
+* Maintenance release: build toolchain and dependency updates
+
 ## 1.3.77 (2024-11-18)
 
 * Grid scrolling and current row fixes for pinned columns

@@ -1,6 +1,6 @@
 # U2 changelog
 
-## v.next
+## 1.0.0 (2026-11-27)
 
 * Spaces: `spaceSaveRow()` and `spaceSaveRowFor()` take `SpaceSaveRowOptions` (`placeholder`, `tooltip`) for the empty space box
 * [core#1507](https://github.com/datagrok-ai/core/issues/1507): Spaces: Fixed Open from space drawing an item's name in its icon slot, listing a space's own Files connection not marking a linked item, a cut-off search box and a bare caption as an app's preview, and OPEN doing nothing for an app, a script or a query (they open as in Browse); Down arrow in its search and in the Space picker's goes to the first match. Added `focusRows()` to `VirtualList` and `VirtualTree`

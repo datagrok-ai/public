@@ -1,6 +1,6 @@
 # utils changelog
 
-## v.next
+## 4.8.0 (2026-11-27)
 
 * ngl-stage: Added `nglStageOnPage` (an NGL stage made once its host is on the page and released once the host has left it) and `releaseNglStage` (the stage's WebGL context and its listeners on the document too, which `Stage.dispose()` keeps)
 * BREAKING (release it as 5.0.0): Removed the `u2` namespace (`src/u2.ts`, `src/u2.css`); it moved to `@datagrok-libraries/u2`. `u2.appHeader({iconPath, learnMoreUrl, appTitle, appSubTitle, description, iconSize, bottomLine})` is `new AppHeader({icon, learnMore, title, subtitle, items | description, iconSize, bottomLine}).root`; `u2.panels.vert/horz` are u2's `divV`/`divH`; `u2.tools.runAsync(root, f)` is `ui.setUpdateIndicator` around the call, or u2's `AsyncValue` / `AsyncView`

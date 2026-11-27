@@ -1,6 +1,6 @@
 # math changelog
 
-## v.next
+## 1.3.0 (2026-11-27)
 
 * WebGPU UMAP: `UmapParams.random` (default `Math.random`) seeds the fit, so a seeded generator gives the same coordinates on every run on the same GPU. It draws the initial embedding and one seed, from which every edge gets a random stream of its own in every epoch (a PCG hash of the seed, the epoch and the edge), in place of a buffer of per-edge numbers from `Math.random`. The fit no longer depends on the order the GPU runs its threads in: an epoch runs its edges in 8 interleaved steps, each reading the embeddings the step before left and adding its moves to them with integer atomics; before, threads read embeddings other threads were changing, and two runs never matched. Layouts keep as many nearest neighbors as the CPU ones (30K-row swiss roll: 0.70 of 15 kept, against 0.64 before and 0.70 on the CPU; 100K rows: 0.62, against 0.52 before) and take about as long on a discrete GPU, up to about 20% longer on an integrated one
 * WebGPU UMAP: Fixed negative samples now and then reading past the last vertex: the sample index was computed in f32 and could round up to the vertex count
