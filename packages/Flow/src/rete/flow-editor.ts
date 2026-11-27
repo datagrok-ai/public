@@ -67,6 +67,8 @@ export interface FlowEditorCallbacks {
   /** Re-run just this node from values captured in a prior run. */
   onRerunNode?: (nodeId: string) => void;
   canRerunNode?: (nodeId: string) => boolean;
+  /** Run this node and everything downstream of it, from the captured values of all else. */
+  onRunDownstream?: (nodeId: string) => void;
   /** Suggestion-engine picks for the node an output drag started from — the
    *  drag-out menu leads with them and applies their prefills on selection. */
   getSocketSuggestions?: (nodeId: string, outputKey: string) => Promise<SocketSuggestion[]>;
@@ -2677,6 +2679,10 @@ export class FlowEditor {
     let hasRunItem = false;
     if (this.callbacks.onPreviewNode) {
       menu.item('Run up to here & preview', () => this.callbacks.onPreviewNode!(node.id));
+      hasRunItem = true;
+    }
+    if (this.callbacks.onRunDownstream && node.dgNodeType !== 'output') {
+      menu.item('Run from here', () => this.callbacks.onRunDownstream!(node.id));
       hasRunItem = true;
     }
     if (this.callbacks.onRerunNode && this.callbacks.canRerunNode?.(node.id)) {

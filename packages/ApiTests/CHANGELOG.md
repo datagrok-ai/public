@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tests: `DataFrame: Methods: Link` 'selection to filter: detach' covers `TableLink.detach()`, the link `grok.data.linkTables` returns
 * [#4677](https://github.com/datagrok-ai/public/issues/4677): Views: Added `View: Unsaved work` for `ViewBase.unsavedWork`
 * Tests: `Dapi` 'admin.getMetrics' checks the queue as the server sends it (RabbitMQ message totals, or null), and `ui: spaceSaveRow` tells an installed PowerPack by its functions: `grok.dapi.packages` lists the registry's packages too, so the test failed on a stand without PowerPack
 * [public#4627](https://github.com/datagrok-ai/public/issues/4627): Fixed `JS: domain handlers` 'row permissions and ribbon actions follow a real grant': it grants `Delete` to a probe user instead of revoking the caller's own

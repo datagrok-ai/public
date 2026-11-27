@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {ChoiceFuncRef, parseChoiceFuncRef, isChoiceQueryRef} from '../utils/choice-refs';
+import {ChoiceFuncRef, parseChoiceFuncRef, isChoiceQueryRef, literalChoiceItems} from '../utils/choice-refs';
 
 export {parseChoiceFuncRef, isChoiceQueryRef};
 export type {ChoiceFuncRef};
@@ -21,6 +21,51 @@ export function resolveChoiceFunc(ref: ChoiceFuncRef): DG.Func | null {
     }
   });
   return byPackage[0] ?? candidates[0];
+}
+
+/** A function reference as the platform reads it in a header — `Pkg:func(args)` with the function's
+ *  real nqName — or null when the reference resolves to nothing or can't be spelled there: the
+ *  platform splits a `choices:` value on commas, so a reference with several arguments would break. */
+export function headerChoicesRef(raw: string): string | null {
+  const ref = parseChoiceFuncRef(raw);
+  if (!ref || ref.args.length > 1) return null;
+  const func = resolveChoiceFunc(ref);
+  if (!func) return null;
+  return `${func.nqName}(${ref.args.map((a) => `"${a}"`).join('')})`;
+}
+
+/** What a typed choices string is: the canonical text to store, or why it can't be used. A literal
+ *  list is stored as `a, b`; a function reference (`Pkg:func()`, also typed without the parentheses)
+ *  must name a function that exists, takes the arguments given and returns something to choose from. */
+export function checkChoices(raw: string): {value: string} | {error: string} {
+  const s = (raw ?? '').trim();
+  if (s === '' || isChoiceQueryRef(s)) return {value: s}; // a query reference resolves on its adopted connection
+  const bare = /^(\w+):(\w+)$/.exec(s);
+  const ref = parseChoiceFuncRef(bare ? `${s}()` : s);
+  if (ref) {
+    const func = resolveChoiceFunc(ref);
+    const inPackage = func != null && ((): boolean => {
+      try {
+        return func.nqName.split(':')[0].toLowerCase().endsWith(ref.packagePrefix.toLowerCase());
+      } catch {
+        return true;
+      }
+    })();
+    if (!func || !inPackage) {
+      // `Pkg:value` with no parentheses may just be a literal value with a colon in it
+      if (bare) return {value: literalChoiceItems(s).join(', ')};
+      return {error: `No function ${ref.packagePrefix}:${ref.funcName} is registered`};
+    }
+    const required = func.inputs.filter((p) => !p.nullable && p.defaultValue == null).length;
+    if (ref.args.length < required || ref.args.length > func.inputs.length)
+      return {error: `${func.nqName} takes ${func.inputs.length} argument(s), ${ref.args.length} given`};
+    if (func.outputs.length === 0)
+      return {error: `${func.nqName} returns nothing to choose from`};
+    if (ref.args.length > 1)
+      return {error: 'A choices function can take one argument at most: the run dialog splits choices on commas'};
+    return {value: `${func.nqName}(${ref.args.map((a) => `"${a}"`).join('')})`};
+  }
+  return {value: literalChoiceItems(s).join(', ')};
 }
 
 export function choiceValuesFrom(result: unknown): string[] {

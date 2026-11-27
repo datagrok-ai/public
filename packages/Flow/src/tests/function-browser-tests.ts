@@ -287,6 +287,42 @@ category('Flow: function browser', () => {
     }
   });
 
+  test('section chevrons lead the header, as in the files tree, inside the platform toolbox', async () => {
+    const browser = new FunctionBrowser({
+      onFunctionDoubleClick: () => {}, onBuiltinNodeDoubleClick: () => {},
+      onFileDoubleClick: () => {}, onLocalFilesPicked: () => {},
+    });
+    // The platform's `.d4-toolbox` rule moves the chevron after the title; the browser lives in one.
+    const toolbox = document.createElement('div');
+    toolbox.className = 'd4-toolbox';
+    toolbox.appendChild(browser.root);
+    document.body.appendChild(toolbox);
+    const lsKey = 'Accordion:funcflow.toolbox';
+    const saved = localStorage.getItem(lsKey);
+    try {
+      browser.render();
+      const header = browser.root.querySelector('[data-testid="ff-browser-section-inputs"]') as HTMLElement;
+      const chevron = (): CSSStyleDeclaration => getComputedStyle(header, '::after');
+      // The platform animates the rotation (0.1 s): read it once the transition has ended.
+      const settled = (): Promise<void> => new Promise((r) => setTimeout(r, 250));
+      if (browser.accordion!.getPane('Inputs').expanded) {
+        header.click();
+        await settled();
+      }
+      expect(chevron().order, '-1', 'the chevron is the first item of the header');
+      expect(chevron().position, 'static', 'laid out in the row, not shifted after the title');
+      expect(chevron().backgroundImage.includes('chevron.svg'), true, 'the files tree\'s chevron');
+      expect(chevron().transform, 'matrix(0, -1, 1, 0, 0, 0)', 'a collapsed pane points right');
+      header.click();
+      await settled();
+      expect(chevron().transform, 'matrix(1, 0, 0, 1, 0, 0)', 'an expanded pane points down');
+    } finally {
+      toolbox.remove();
+      if (saved == null) localStorage.removeItem(lsKey);
+      else localStorage.setItem(lsKey, saved);
+    }
+  });
+
   test('orderDomainSection floats the flagship package + most-used ops to the top', async () => {
     // only name / func.name / packageName drive the sort
     const mk = (name: string, pkg: string): FuncInfo => ({

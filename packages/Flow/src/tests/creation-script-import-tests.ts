@@ -16,8 +16,10 @@ import {
 const PASSTHROUGH = '__pt';
 const SETTINGS = {name: 'Imported', description: '', tags: ['funcflow']};
 
+// The parser requires every non-optional parameter, defaulted or not: a call must pass all ten of
+// Chem's property flags (MW … molecularFormula), or the line does not parse.
 const CHEM_PROPS_CALL =
-  'Chem:addChemPropertiesColumns(Mol1K, "molecule", true, true, true, true, false, false, false, false, false)';
+  'Chem:addChemPropertiesColumns(Mol1K, "molecule", true, true, true, true, false, false, false, false, false, false)';
 const CHEM_SCRIPT = [
   'Mol1K = OpenFile("System:AppData/Chem/mol1K.csv") //{"timestamp": 1781179268730}',
   `${CHEM_PROPS_CALL} //{"timestamp": 1781179278878}`,
@@ -358,18 +360,20 @@ category('Flow: creation script import', () => {
       const FULL_SCRIPT = [
         'Mol1KLocal = OpenTable("65d4d9d0-48b0-11f1-e424-4b91b3dfc6ce")',
         'Mol1K = OpenFile("System:AppData/Chem/mol1K.csv") // {"timestamp": 1781796656926}',
-        'Chem:addChemPropertiesColumns(Mol1K, "molecule", true, true, true, true, true, false, false, false, false)',
+        'Chem:addChemPropertiesColumns(Mol1K, "molecule", true, true, true, true, true, false, false, false, false, ' +
+          'false)',
         'AddNewColumn(Mol1K, "${LogP} + ${MW} + ${HBD}", "smth", subscribeOnChanges = true)',
         'Result = JoinTables("mol1K", "mol1K local", ["prID"], ["prID"], ' +
           '["molecule", "prID", "IDDB", "MW", "HBA", "HBD", "LogP", "LogS", "smth"], ' +
           '["molecule", "prID", "IDDB"])',
         'Chem:addChemPropertiesColumns(Result, "molecule", false, false, false, false, ' +
-          'false, false, false, true, false)',
+          'false, false, false, true, false, false)',
         'Chem:addChemPropertiesColumns(Result, "mol1K local.molecule", false, false, ' +
-          'false, false, false, false, true, false, false)',
+          'false, false, false, false, true, false, false, false)',
       ].join('\n');
 
       const g = buildCreationScriptGraph(FULL_SCRIPT);
+      expect(g.warnings.length, 0, `unexpected warnings: ${g.warnings.join(' | ')}`);
       await applyGraphToEditor(g, e.flow);
 
       expect(nodesByLabel(g, 'Select Column').length, 0, 'no Select Column nodes');

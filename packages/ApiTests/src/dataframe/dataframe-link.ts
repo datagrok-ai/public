@@ -126,6 +126,21 @@ category('DataFrame: Methods: Link', () => {
     }
   });
 
+  test('selection to filter: detach', async () => {
+    const t1 = DG.DataFrame.fromColumns([DG.Column.fromStrings('k', ['a', 'b', 'c'])]);
+    const t2 = DG.DataFrame.fromColumns([DG.Column.fromStrings('k', ['a', 'a', 'b', 'c', 'c', 'c'])]);
+    const link = grok.data.linkTables(t1, t2, ['k'], ['k'], [DG.SYNC_TYPE.SELECTION_TO_FILTER]);
+    expect(link instanceof DG.TableLink, true, 'linkTables returns a DG.TableLink');
+    t1.selection.set(0, true);
+    expect(t2.filter.trueCount, 2, 'the selection of "a" filters the target');
+    link.detach();
+    expect(t2.filter.trueCount, 6, 'detach shows every target row again');
+    t1.selection.set(2, true);
+    expect(t2.filter.trueCount, 6, 'a selection change after detach does not filter the target');
+    link.detach();
+    expect(t2.filter.trueCount, 6, 'a second detach changes nothing');
+  });
+
   test('filter to filter: closing the source table releases the target', async () => {
     const df1 = DF1.clone();
     const df2 = DF2.clone();

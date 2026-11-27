@@ -7,7 +7,7 @@ import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {FlowNode, hostsInlineSketcher, hostsHelmEditor, editorBoxSize,
   EDITOR_BOX_SIZE_PROP, INLINE_SKETCHER_SIZE} from '../rete/scheme';
-import {isChoicesRefString} from './choice-refs';
+import {isChoicesRefString, literalChoiceItems} from './choice-refs';
 import {loadChoicesRefItems} from '../panel/choice-input-processor';
 import {setTid} from './test-ids';
 
@@ -59,8 +59,12 @@ export function resolveInputValue(node: FlowNode): ResolvedInputValue {
     const d = dayjs(s);
     return d.isValid() ? {ok: true, value: d} : {ok: false, reason: `"${s}" is not a valid date`};
   }
-  case 'string_list': case 'column_list':
-    return s === '' ? noValue : {ok: true, value: s.split(',').map((x) => x.trim()).filter(Boolean)};
+  case 'string_list': case 'column_list': {
+    // An editor's value (`{editor: ...}`) is kept as the list itself: its items may hold commas.
+    const items = Array.isArray(raw) ? raw.map((x) => String(x)) : s.split(',').map((x) => x.trim()).filter(Boolean);
+    if (items.length > 0) return {ok: true, value: items};
+    return nullable ? {ok: true, value: null} : noValue;
+  }
   case 'column': case 'dynamic':
     return s === '' ? noValue : {ok: true, value: s};
   case 'map': {
@@ -115,7 +119,7 @@ export function inputValueProperty(node: FlowNode): DG.Property | null {
     // the editor builder swaps in the resolved list asynchronously.
     options['choices'] = [choicesRaw];
   } else {
-    const choices = choicesRaw.split(',').map((x) => x.trim()).filter(Boolean);
+    const choices = literalChoiceItems(choicesRaw);
     if (choices.length > 0) options['choices'] = choices;
   }
   const min = parseFloat(String(node.properties['min'] ?? ''));
@@ -292,7 +296,8 @@ export function buildInputValueEditor(node: FlowNode, onUserChange: () => void,
       const v = node.properties['defaultValue'];
       syncing = true;
       try {
-        input.stringValue = empty(v) ? '' : (typeof v === 'object' ? JSON.stringify(v) : String(v));
+        input.stringValue = empty(v) ? '' : Array.isArray(v) ? v.join(', ') :
+          typeof v === 'object' ? JSON.stringify(v) : String(v);
       }
       catch { /* leave the editor as-is */ }
       finally { syncing = false; }
@@ -417,9 +422,9 @@ function buildInlineSketcherEditor(node: FlowNode, onUserChange: () => void): In
     sketcher.subs.push(ui.onSizeChanged(sketcher.root).subscribe(() => sketcher!.resize()));
     sketcher.onChanged.subscribe(() => {
       if (!touched) return;
+      // The molfile keeps the drawing (coordinates, wedges, query features); the header gets it as SMILES.
       const smiles = sketcher!.getSmiles();
-      const molblock = sketcher!.getMolFile();
-      node.properties['defaultValue'] = molblock;
+      node.properties['defaultValue'] = sketcher!.getMolFile();
       markMissing();
       const now = JSON.stringify(smiles);
       if (now === last) return;

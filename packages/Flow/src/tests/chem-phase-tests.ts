@@ -28,6 +28,7 @@ import {estimateNodeWidth} from '../rete/graph-layout';
 import type {FlowEditor} from '../rete/flow-editor';
 import {tid} from '../utils/test-ids';
 import {makeEditor, destroyEditor, addNode, until} from './test-utils';
+import {emitScript} from '../compiler/script-emitter';
 
 /** Null when the package isn't deployed on this server (tests that need it skip). */
 function typeNameOf(nqName: string): string | null {
@@ -593,7 +594,7 @@ category('Flow: sketcher input', () => {
     }
   });
 
-  test('sketching writes SMILES into the configured value and reports the edit', async () => {
+  test('sketching writes the molfile into the configured value, the header gets it as SMILES', async () => {
     const node = createNode('Inputs/Sketcher Input')!;
     let edits = 0;
     const ed = buildInputValueEditor(node, () => edits++, {host: 'node'})!;
@@ -606,11 +607,21 @@ category('Flow: sketcher input', () => {
       ed.root.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true}));
       ed.sketcher!.setSmiles('c1ccccc1');
       ed.sketcher!.onChanged.next(null);
-      expect(String(node.properties['defaultValue'] ?? '') !== '', true, 'the SMILES landed in the value');
+      expect(DG.chem.isMolBlock(String(node.properties['defaultValue'] ?? '')), true,
+        'the molfile landed in the value: it keeps the drawing');
       expect(edits, 1, 'exactly one reported edit');
       const r = resolveInputValue(node);
       expect(r.ok, true, 'the run can feed the sketched molecule to the prepared call');
-      expect(String(r.value).includes('\n'), false, 'SMILES, never a multiline molfile (header emission)');
+      const e = makeEditor();
+      try {
+        await e.flow.addNodeAt(node, 0, 0);
+        const line = emitScript(e.flow, {name: 'SketchTest', description: '', tags: []}, {})
+          .split('\n').find((l) => l.startsWith('//input:'))!;
+        expect(/= "c1ccccc1"|= "C1=CC=CC=C1"/i.test(line), true, `the header default is the SMILES (${line})`);
+        expect(line.includes('M  END'), false, 'never the multiline molfile');
+      } finally {
+        destroyEditor(e);
+      }
       // The same molecule again is not another edit.
       ed.sketcher!.onChanged.next(null);
       expect(edits, 1, 'an unchanged value never re-reports');

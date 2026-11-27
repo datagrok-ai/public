@@ -7,6 +7,7 @@ import {getParamDisplayName} from './dart-proxy-utils';
 import {mpoColumnMappingEditor, mpoMappingRequirements} from '../panel/editors/mpo-mapping-editor';
 import {columnFormulaEditor, expressionRequirements, rowConditionEditor} from '../panel/editors/expression-editor';
 import {aggregationEditor} from '../panel/editors/aggregation-editor';
+import {annotatedEditor, editorAnnotation} from '../panel/editors/annotated-editor';
 import {aggregationProblems, parseAggregations} from '../ops/data-ops';
 // Type-only (erased at build time), so the scheme ↔ overrides pair avoids a runtime import cycle.
 import type {FlowNode} from '../rete/scheme';
@@ -191,9 +192,14 @@ export function funcValidatorOf(func: DG.Func): FuncNodeValidator | undefined {
   };
 }
 
+/** The registered editor of an input, else the one its parameter names (`{editor: Package:func}`). */
 export function customEditorFor(func: DG.Func, inputName: string): CustomInputEditorFactory | null {
   try {
-    return CUSTOM_FUNC_INPUT_EDITORS[func.nqName]?.[inputName] ?? null;
+    const registered = CUSTOM_FUNC_INPUT_EDITORS[func.nqName]?.[inputName];
+    if (registered) return registered;
+    const param = func.inputs.find((p) => p.name === inputName);
+    const ref = param ? editorAnnotation(param) : null;
+    return ref ? annotatedEditor(ref) : null;
   } catch {
     return null;
   }

@@ -1,11 +1,13 @@
 /** Generates the runnable Datagrok JavaScript from `CompiledStep[]` — clean, or
  *  instrumented (each step wrapped in try/catch firing `funcflow.exec.<runId>` events). */
 
+import * as DG from 'datagrok-api/dg';
 import {FlowEditor, outputOrderRank} from '../rete/flow-editor';
 import {FlowNode, isExecKey, isSetVarNode} from '../rete/scheme';
 import {CompiledStep, compileGraph} from './graph-compiler';
 import {NON_HEADER_DEFAULT_TYPES} from '../utils/input-values';
-import {isChoicesRefString} from '../utils/choice-refs';
+import {isChoicesRefString, literalChoiceItems} from '../utils/choice-refs';
+import {headerChoicesRef} from '../panel/choice-input-processor';
 import {isReservedName} from '../utils/naming';
 
 export interface ScriptSettings {
@@ -212,6 +214,7 @@ function stashLine(step: CompiledStep, node: FlowNode | undefined): string | nul
       if (inExpr && inExpr !== 'undefined') entries.push(`${JSON.stringify(key)}: ${inExpr}`);
     }
   }
+  if (node && isLinkTablesNode(node)) entries.push(`${JSON.stringify(LINK_STASH_KEY)}: ${step.variableName}`);
   if (entries.length === 0) return null;
   return `__ff_stash(${JSON.stringify(step.nodeId)}, {${entries.join(', ')}});`;
 }
@@ -225,8 +228,9 @@ function buildInputLine(step: CompiledStep, node: FlowNode): string | null {
 
   // A configured table name / file path / JSON blob is not a valid script
   // default literal — those feed the prepared call at run time instead.
-  const defaultVal = step.properties['defaultValue'];
-  if (defaultVal !== undefined && defaultVal !== '' && defaultVal !== null &&
+  const defaultVal = headerDefault(step.properties['defaultValue'], outputType);
+  // Nor is a list: the platform reads no list default from a header.
+  if (defaultVal !== undefined && defaultVal !== '' && defaultVal !== null && !Array.isArray(defaultVal) &&
       !NON_HEADER_DEFAULT_TYPES.has(outputType) && headerSafeDefault(defaultVal))
     line = `//input: ${outputType} ${paramName} = ${formatHeaderDefault(defaultVal, outputType)}`;
 
@@ -237,11 +241,15 @@ function buildInputLine(step: CompiledStep, node: FlowNode): string | null {
   if (step.properties['caption']) qualifiers.push(`caption: ${step.properties['caption']}`);
   if (step.properties['choices']) {
     const rawChoices = String(step.properties['choices']);
-    // A choices REFERENCE (func call / query) can't be spelled in a header line —
-    // its quotes/parens/commas would corrupt the options block; editors resolve it live.
-    if (!isChoicesRefString(rawChoices)) {
-      const items = rawChoices.split(',').map((s) => s.trim()).filter(Boolean);
-      qualifiers.push(`choices: [${items.map((s) => `"${s}"`).join(', ')}]`);
+    // A function reference is spelled with the function's real name, as the run dialog resolves it; one that
+    // resolves to nothing, has several arguments or is a query can't be (the platform splits choices on
+    // commas) — the value editors still resolve those live.
+    if (isChoicesRefString(rawChoices)) {
+      const ref = headerChoicesRef(rawChoices);
+      if (ref) qualifiers.push(`choices: ${ref}`);
+    } else {
+      const items = literalChoiceItems(rawChoices);
+      if (items.length > 0) qualifiers.push(`choices: [${items.map((s) => `"${s}"`).join(', ')}]`);
     }
   }
   if (step.properties['min'] !== undefined && step.properties['min'] !== '')
@@ -472,8 +480,10 @@ function emitPreamble(runId: string): string[] {
     'function __ff_summarize(v, declaredType) {',
     '  if (v == null) return {type:\'null\', value:null};',
     '  if (v.rowCount !== undefined && v.columns !== undefined)',
+    // The table itself, not a copy: every later step works on its own snapshot (`__ff_clone`), so it stays
+    // this node's state, and its preview, an output tab and a link made in the flow all share the instance.
     '    return {type:\'dataframe\', rows:v.rowCount, cols:v.columns.length,',
-    '      colNames:v.columns.names(), clone:v.clone()};',
+    '      colNames:v.columns.names(), clone:v};',
     '  if (v.length !== undefined && v.name !== undefined && v.toList) {',
     // A one-column DataFrame from a clone, so a later in-place mutation of the
     // source table can't change it.
@@ -527,6 +537,11 @@ function emitPreamble(runId: string): string[] {
     'function __ff_dims(v) {',
     '  return (v != null && v.rowCount !== undefined && v.columns !== undefined) ?',
     '    {type:\'dataframe\', rows:v.rowCount, cols:v.columns.length} : null;',
+    '}',
+    // Column names of a column list (or of names already), for `grok.data.linkTables`.
+    'function __ff_names(v) {',
+    '  var items = v == null ? [] : Array.isArray(v) ? v : (typeof v.toList === \'function\' ? v.toList() : [v]);',
+    '  return items.map(function (c) { return c != null && c.name !== undefined ? c.name : String(c); });',
     '}',
     // Snapshot a dataframe crossing into a step — a func step works on its own
     // copy so in-place transformations never mutate the upstream captured value.
@@ -599,6 +614,26 @@ function singleDataframeInputExpr(step: CompiledStep, node: FlowNode | undefined
   return exprs.length === 1 ? exprs[0] : null;
 }
 
+/** The live-registry key a link node's link is kept under; the controller removes it when the node makes a new one. */
+export const LINK_STASH_KEY = '__link';
+
+export function isLinkTablesNode(node: FlowNode): boolean {
+  try {
+    return node.dgFunc?.nqName.toLowerCase() === 'core:linktables';
+  } catch {
+    return false;
+  }
+}
+
+/** A flow run links through `grok.data.linkTables`, which hands the link back (core's LinkTables function
+ *  doesn't), so that the node's next run can remove it; a server without it returns nothing. */
+function linkTablesCall(step: CompiledStep): string {
+  const arg = (name: string): string => (step.callInputs ?? step.inputs).get(name) ?? 'undefined';
+  return `grok.data.linkTables(${arg('table1')}, ${arg('table2')}, __ff_names(${arg('keys1')}), ` +
+    `__ff_names(${arg('keys2')}), [${arg('linkType')}], ` +
+    `{filterAllOnNoRowsSelected: ${arg('filterAllOnNoRowsSelected')} === true})`;
+}
+
 function emitFuncStepInstrumented(step: CompiledStep, options: EmitOptions, flow: FlowEditor): string[] {
   const paramsStr = funcCallParamsStr(step);
 
@@ -611,9 +646,12 @@ function emitFuncStepInstrumented(step: CompiledStep, options: EmitOptions, flow
   for (const [snapVar] of snapshots) lines.push(`let ${snapVar};`);
   lines.push('try {');
   for (const [snapVar, srcExpr] of snapshots) lines.push(`  ${snapVar} = __ff_clone(${srcExpr});`);
-  lines.push(`  ${step.variableName} = await grok.functions.call('${step.funcName}', ${paramsStr});`);
-
   const node = flow.getNodeById(step.nodeId);
+  if (node && isLinkTablesNode(node))
+    lines.push(`  ${step.variableName} = ${linkTablesCall(step)};`);
+  else
+    lines.push(`  ${step.variableName} = await grok.functions.call('${step.funcName}', ${paramsStr});`);
+
   // Only with exactly one connected dataframe input is the in-place association
   // unambiguous; otherwise fall back to the plain column summary.
   const singleDfInput = singleDataframeInputExpr(step, node);
@@ -762,6 +800,17 @@ function emitBreakpointCode(step: CompiledStep): string[] {
  *  the `{semType: …}` qualifiers and failing validation. Newlines (molfiles) have no
  *  unescape on the parse side either. Unsafe values simply stay out of the header —
  *  runs feed them through the configured-value channel regardless. */
+/** A sketched molecule is stored as a molfile (it keeps the drawing), which spans lines no header can hold:
+ *  the header gets the same molecule as SMILES, or no default when Chem can't convert it. */
+function headerDefault(value: unknown, type: string): unknown {
+  if (type !== 'string' || typeof value !== 'string' || !DG.chem.isMolBlock(value)) return value;
+  try {
+    return DG.chem.convert(value, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles) || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function headerSafeDefault(value: unknown): boolean {
   const s = String(value);
   return !s.includes('{') && !s.includes('}') && !s.includes('\n') && !s.includes('\r');

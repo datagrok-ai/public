@@ -10,7 +10,7 @@ import {ExecutionState, NodeExecStatus, ExecEvent} from './execution-state';
 import {ExecutionVisualizer, errorSummary, normalizeErrorMessage} from './execution-visualizer';
 import {OutputPreviewPanel} from './output-preview';
 import {graphicsElement} from './value-inspector';
-import {emitScript, ScriptSettings, EmitOptions} from '../compiler/script-emitter';
+import {emitScript, ScriptSettings, EmitOptions, LINK_STASH_KEY} from '../compiler/script-emitter';
 import {validateGraph} from '../compiler/validator';
 import {sliceUpTo, sliceDownFrom} from '../compiler/graph-compiler';
 import {topologicalSort} from '../compiler/topological-sort';
@@ -18,6 +18,9 @@ import {ValueSummary} from './execution-state';
 import {FlowNode, isExecKey, nodeMissingRequirements, inlinePreviewEnabled,
   INLINE_HOSTED_DATA_KEY} from '../rete/scheme';
 import {resolveInputValue, inputBlockReason} from '../utils/input-values';
+
+/** A table link a run made (`DG.TableLink`; nothing on a server without it). */
+type Detachable = {detach?: () => void};
 
 /** Grow a dirty node set upstream until every crossing connection comes from a
  *  captured (`hasLive`) output — the smallest slice runnable with `liveExternalInputs`. */
@@ -80,6 +83,9 @@ export class ExecutionController {
   /** Headless-run completion callback; skips the preview / end-of-run UI. */
   private pendingOnComplete: (() => void) | null = null;
   private runNodeIds: Set<string> | null = null;
+  /** The table link each link node made in its latest run. It outlives the node going stale (its tables are
+   *  still shown) and goes when the node makes a new one, is deleted, or the view closes. */
+  private readonly links = new Map<string, Detachable>();
   private runFailedNodeId: string | null = null;
   private runIsBackground = false;
   outputPreview: OutputPreviewPanel;
@@ -306,6 +312,42 @@ export class ExecutionController {
       onlyNodeIds: new Set([nodeId]), focusNodeId: nodeId,
       skipValidation: true, preserveState: true, liveExternalInputs: true,
     });
+  }
+
+  /** A link node of the run that linked its (new) tables replaces the link it made before. */
+  private adoptLinks(): void {
+    const reg = (globalThis as {__ffFlowLive?: Record<string, Record<string, unknown>>}).__ffFlowLive;
+    for (const id of this.runNodeIds ?? []) {
+      const link = reg?.[id]?.[LINK_STASH_KEY] as Detachable | undefined;
+      if (link == null || this.links.get(id) === link) continue;
+      this.detachLink(id);
+      this.links.set(id, link);
+    }
+  }
+
+  private detachLink(nodeId: string): void {
+    const link = this.links.get(nodeId);
+    this.links.delete(nodeId);
+    try {
+      link?.detach?.();
+    } catch (e) {
+      console.warn('Flow: could not remove a table link', e);
+    }
+  }
+
+  /** "Run from here": the node and everything downstream of it. Every other input is read from what
+   *  earlier runs captured, so a branch that doesn't depend on this node never reruns; an upstream
+   *  result that isn't captured (never run, or stale) is computed first. */
+  runDownstream(nodeId: string, settings: ScriptSettings): 'started' | 'busy' {
+    if (this.state.isRunning) return 'busy';
+    const runSet = expandToLiveBoundary(this.flow, sliceDownFrom(this.flow, nodeId),
+      (id, outputKey) => this.hasLiveValue(id, outputKey));
+    const whole = runSet.size >= this.flow.getNodeCount();
+    this.executeInstrumented(settings, false, {
+      onlyNodeIds: whole ? undefined : runSet, focusNodeId: nodeId,
+      preserveState: !whole, liveExternalInputs: !whole,
+    });
+    return 'started';
   }
 
   /** Every node with no fresh result plus its downstream — what switching
@@ -608,6 +650,7 @@ export class ExecutionController {
       this.onBreakpointHit?.(event.nodeId);
       break;
     case 'run-complete':
+      this.adoptLinks();
       this.state.endRun();
       this.currentCall = null;
       // A halted run must explain itself on the nodes it never reached — a
@@ -659,6 +702,7 @@ export class ExecutionController {
   }
 
   stopRun(): void {
+    this.adoptLinks();
     if (this.subscription) {
       this.subscription.unsubscribe();
       this.subscription = null;
@@ -749,6 +793,7 @@ export class ExecutionController {
   }
 
   private forgetNode(nodeId: string): void {
+    this.detachLink(nodeId);
     this.state.forgetNode(nodeId);
     this.visualizer.forgetNode(nodeId);
     const reg = (globalThis as {__ffFlowLive?: Record<string, unknown>}).__ffFlowLive;
@@ -769,6 +814,7 @@ export class ExecutionController {
 
   dispose(): void {
     this.stopRun();
+    for (const id of [...this.links.keys()]) this.detachLink(id);
     this.visualizer.resetAllNodes();
     // The captured DataFrame clones on the page-global registry must not outlive the view.
     this.clearLiveRegistry();

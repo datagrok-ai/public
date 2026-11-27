@@ -17,9 +17,10 @@ import {
   inputCaptionOf,
 } from '../utils/func-input-overrides';
 import {buildInputValueEditor} from '../utils/input-values';
+import {editorAnnotation} from './editors/annotated-editor';
 import {PROPERTY_INPUT_TYPE, applyPropertyInputShape} from '../rete/nodes/input-nodes';
 import {ColumnPickRequest} from './column-picker';
-import { processChoiceInput } from './choice-input-processor';
+import {checkChoices, processChoiceInput} from './choice-input-processor';
 
 const PROP_TOOLTIPS: Record<string, string> = {
   'Title': 'Display name shown on the node',
@@ -32,7 +33,6 @@ const PROP_TOOLTIPS: Record<string, string> = {
   'SemType Filter': 'Only show columns matching this semantic type',
   'Type Filter': 'Only show columns matching this data type',
   'Show Slider': 'Display a slider control in the script run dialog',
-  'Choices (comma-sep)': 'Restrict input to predefined values, separated by commas',
   'Output Type': 'Datagrok type for this output parameter',
   'Caption': 'Display label shown to users in the script run dialog',
   'Min': 'Minimum allowed value',
@@ -301,6 +301,13 @@ export class PropertyPanel {
             continue;
           }
           if (this.flow.isInputConnected(node.id, inp.name)) {
+            // A flow input wired into an input with its own editor (`{editor: ...}`) is edited here,
+            // with that editor, and keeps the value: the run dialog asks for it as a plain input.
+            const source = custom && editorAnnotation(inp) ? this.flow.getInputSource(node.id, inp.name) : null;
+            if (custom && source?.node.dgNodeType === 'input') {
+              content.appendChild(this.createCustomInputRow(custom, inp, node, tip, source.node));
+              continue;
+            }
             const row = ui.div([ui.divText(`${label}: connected`)], 'funcflow-prop-row');
             ui.tooltip.bind(row, tip);
             content.appendChild(row);
@@ -385,8 +392,7 @@ export class PropertyPanel {
         content.appendChild(this.createCombo('SemType', semCur, semItems, (v) => {node.properties['semType'] = v;}));
       }
       if (node.properties['choices'] !== undefined)
-        content.appendChild(this.createTextarea('Choices (comma-sep)', String(node.properties['choices'] ?? ''), (v) => {node.properties['choices'] = v;},
-          'Comma-separated list of allowed values — the run dialog and the value editor show them as a dropdown', false, 'Choices'));
+        content.appendChild(this.createChoicesRow(node));
       if (node.properties['min'] !== undefined)
         content.appendChild(this.createTextarea('Min', String(node.properties['min'] ?? ''), (v) => {node.properties['min'] = v;}));
       if (node.properties['max'] !== undefined)
@@ -693,6 +699,44 @@ export class PropertyPanel {
     return this.propRow(ui.div([input.root], 'funcflow-prop-row funcflow-dg-row'), label);
   }
 
+  /** Choices are committed on Enter or when the field loses focus, never per keystroke: the node's value editor
+   *  (on the card and in this panel) is rebuilt from them. What can't be used is flagged on the field and not stored. */
+  private createChoicesRow(node: FlowNode): HTMLElement {
+    let committed = String(node.properties['choices'] ?? '');
+    let error: string | null = null;
+    const input = ui.input.string('Choices', {
+      tooltipText: 'Allowed values separated by commas, or a function that returns them, such as ' +
+        'Package:getNames() — the run dialog and the value editor show them as a dropdown',
+    });
+    PropertyPanel.initInputValue(input, committed);
+    input.addValidator(() => error);
+    const commit = (): void => {
+      const check = checkChoices(String(input.value ?? ''));
+      error = 'error' in check ? check.error : null;
+      input.validate();
+      if ('error' in check || check.value === committed) return;
+      committed = check.value;
+      if (String(input.value ?? '') !== committed) input.value = committed;
+      node.properties['choices'] = committed;
+      this.flow.rebuildValueEditor(node.id);
+      this.paramsChanged();
+      // The Value row above shows the new choices; deferred so this event finishes before its DOM goes.
+      setTimeout(() => {
+        if (this.currentNode === node) this.showNode(node, this.currentExecState);
+      });
+    };
+    input.input.addEventListener('keydown', (ev) => {
+      if ((ev as KeyboardEvent).key === 'Enter') commit();
+    });
+    input.input.addEventListener('change', commit);
+    input.input.addEventListener('input', () => {
+      if (error == null) return;
+      error = null;
+      input.validate();
+    });
+    return this.dgRow('Choices', input);
+  }
+
   /** Single-line DG string row; `cosmetic` edits (Title, Description) never report an invalidating change. */
   private createTextarea(
     label: string, value: string, onChange: (v: string) => void, inputTooltip?: string, cosmetic = false,
@@ -772,10 +816,13 @@ export class PropertyPanel {
     input.addOptions(pencil);
   }
 
+  /** `valueHost`: the flow input wired into this input; its value is the one edited, and its edit invalidates
+   *  it and everything after it. */
   private createCustomInputRow(
-    factory: CustomInputEditorFactory, param: DG.Property, node: FlowNode, tip: string,
+    factory: CustomInputEditorFactory, param: DG.Property, node: FlowNode, tip: string, valueHost?: FlowNode,
   ): HTMLElement {
-    const report = this.changeReporter(node.inputValues[param.name]);
+    const stored = valueHost ? valueHost.properties['defaultValue'] : node.inputValues[param.name];
+    const report = this.changeReporter(stored);
     const ed = factory(param, {
       inputValue: (name) => node.inputValues[name],
       // Captured columns/tables only — resolving an uncomputed table would mean running the flow while a panel renders.
@@ -787,13 +834,22 @@ export class PropertyPanel {
       node,
     });
     this.editorDisposers.push(ed);
+    let hostValue = stored;
     ed.onChanged = (v): void => {
       if (ed.isValid && !ed.isValid()) return;
+      if (valueHost) {
+        if (PropertyPanel.sameValue(hostValue, v)) return;
+        hostValue = v;
+        valueHost.properties['defaultValue'] = v;
+        this.flow.rebuildValueEditor(valueHost.id);
+        this.flow.notifyNodeParamsChanged(valueHost.id);
+        return;
+      }
       node.inputValues[param.name] = v;
       report(v);
       this.notifyInputChanged(param.name, v);
     };
-    ed.setValue(node.inputValues[param.name]);
+    ed.setValue(stored);
     ui.tooltip.bind(ed.element, tip);
     return this.propRow(ui.div([ed.element], 'funcflow-prop-row funcflow-dg-row'), param.name);
   }

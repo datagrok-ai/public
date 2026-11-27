@@ -505,6 +505,28 @@
   flex: 0 0 auto;
 }
 
+/* The platform toolbox puts a pane's chevron after its title; here it leads, as in the files tree above. */
+.funcflow-tree-container .d4-accordion-pane-header {
+  padding-left: 0;
+}
+
+.funcflow-tree-container .d4-accordion-pane-header::after {
+  order: -1;
+  content: '';
+  position: static;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  /* The platform's own image (the files tree's chevron), served by the platform: not bundled. */
+  /* webpackIgnore: true */
+  background: url('/images/chevron.svg') center no-repeat;
+  transform: rotate(-90deg);
+}
+
+.funcflow-tree-container .d4-accordion-pane-header.expanded::after {
+  transform: rotate(0deg);
+}
+
 .funcflow-subsections .d4-accordion-pane-header {
   font-size: 12px;
 }

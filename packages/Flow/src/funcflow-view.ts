@@ -468,6 +468,15 @@ export class FuncFlowView extends DG.ViewBase {
     });
   }
 
+  private runDownstream(nodeId: string): void {
+    const outcome = this.executionController?.runDownstream(nodeId, {
+      name: this.flowSettings.scriptName,
+      description: this.flowSettings.scriptDescription,
+      tags: this.flowSettings.tags,
+    });
+    if (outcome === 'busy') grok.shell.info('The flow is running; try again when it finishes.');
+  }
+
   private rerunNode(nodeId: string): void {
     this.executionController?.rerunNode(nodeId, {
       name: this.flowSettings.scriptName,
@@ -585,6 +594,7 @@ export class FuncFlowView extends DG.ViewBase {
       },
       onPreviewNode: (nodeId: string) => this.previewNodeData(nodeId),
       onRerunNode: (nodeId: string) => this.rerunNode(nodeId),
+      onRunDownstream: (nodeId: string) => this.runDownstream(nodeId),
       // In-node preview: the node component mounts the captured live viewer/widget root.
       getInlinePreviewContent: (nodeId: string) =>
         this.executionController?.inlinePreviewRoot(nodeId) ?? null,
@@ -948,10 +958,9 @@ export class FuncFlowView extends DG.ViewBase {
 
   private async addFuncNode(func: DG.Func, dropEvent?: MouseEvent): Promise<void> {
     // Explicit intent — a func outside the catalog allowlist registers on the fly.
-    const info = getRegisteredFuncs().find((f) => f.func.name === func.name);
     let typeName: string;
     try {
-      typeName = info?.nodeTypeName ?? ensureFuncNodeType(func);
+      typeName = ensureFuncNodeType(func);
     } catch {
       grok.shell.warning(`Function "${func.name}" is not available as a node`);
       return;
