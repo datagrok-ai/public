@@ -57,7 +57,6 @@ export class DomainForm extends Control {
   private readonly _form = signal<ObjectForm | null>(null);
   private _constraints: DomainConstraint[] = [];
   private readonly _violations = new Map<string, string>();
-  // an update sends only the edited columns: a stored value a tightened rule refuses holds no Save off until edited
   private readonly _stored = new Map<Input<unknown>, ReadonlySignal<boolean>>();
   private readonly _violationsVersion = signal(0);
   private _attached = new Set<string>();
@@ -83,7 +82,6 @@ export class DomainForm extends Control {
     this.problem = computed(() => {
       const form = this._form.value;
       source.changeCount.value;
-      // a row with nothing pending is not in the batch: a stored value its rules refuse holds nothing off
       if (form === null || (!(form.target as RowView)[Rows.STATE] &&
           Object.keys(form.unwrittenValues.value).length === 0))
         return null;
@@ -97,7 +95,6 @@ export class DomainForm extends Control {
         const message = this._violations.get(c.name);
         if (message === undefined)
           continue;
-        // a constraint is a rule over the whole row, which the exemption of a stored value does not reach
         const input = this._attached.has(c.name) ? form.input(c.columns[0]) : undefined;
         if (input === undefined || this._stored.get(input)?.value)
           return input === undefined ? message : DomainTable.named(capital(input.label), message);
@@ -182,7 +179,6 @@ export class DomainForm extends Control {
       this._shown?.dispose();
       this._editSub?.unsubscribe();
     });
-    // a delete over a pending edit keeps the change count: the writer's own tick is what moves
     const deleted = computed(() => {
       source.changeCount.value;
       this._changed.value;
@@ -194,7 +190,7 @@ export class DomainForm extends Control {
       const gone = deleted.value;
       untracked(() => this._show(current, gone ? access.narrow({edit: false}) : access, gone));
     });
-    // the editing state moves under the form — a discard, a save, another control's write, a reload in place
+    // the editing state moves under the form — a discard, a save, another control's write
     let synced = false;
     this.effect(() => {
       const edit = source.edit.value;
@@ -402,7 +398,6 @@ export class DomainForm extends Control {
     return form;
   }
 
-  // a stored value the rules refuse is shown on its field at once; it holds Save off only once edited
   private static _markStored(input: Input<unknown>, stored: ReadonlySignal<boolean>): void {
     if (input instanceof ChoiceInput) {
       const stale = input.peek();
@@ -425,7 +420,6 @@ export class DomainForm extends Control {
     });
   }
 
-  // a held value the filter would not offer gets a note, never an error: filters only narrow the picker
   private _noteOutsideFilters(form: ObjectForm, row: RowView, table: DomainTable | undefined): void {
     for (const [name, filter] of Object.entries(table?.info.refFilters ?? {})) {
       const input = form.input(name);
@@ -455,7 +449,6 @@ export class DomainForm extends Control {
               if (p === undefined || !DomainTable.isReference(p))
                 return text(v);
               const known = await DomainForm.captionOf(p, String(v)).catch(() => null);
-              // mid-sentence: "… is not in a site you cannot see"
               return known !== null && known !== String(v) ? known.replace(/^A(n?) (.* you cannot see)$/, 'a$1 $2') :
                 `${withArticle(DomainTable.captionOf(p).toLowerCase())} you cannot see`;
             };

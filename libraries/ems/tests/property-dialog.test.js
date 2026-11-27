@@ -12,19 +12,16 @@ const {domains} = await import('../src/dg/facade.js');
 
 const copy = (x) => JSON.parse(JSON.stringify(x));
 const NAME = 'grit';
-// a package schema as manifest() answers it: no extVersion, the server never serves one
 const MANIFEST = {name: NAME, version: '5', tables: {issue: {extensible: true,
   columns: {title: {type: 'string'}, mine: {type: 'string', origin: 'user'}}}}};
-const PLAN = (extra) => ({version: '5', destructive: false, drops: {tables: [], columns: []}, ...extra});
+const PLAN = (extra) => ({version: '5', destructive: false, drops: {tables: [], columns: []}, typeChanges: [],
+  uniqueDrops: [], autoNumberChanges: {}, businessKeyChanges: [], constraintDrops: {}, ...extra});
 
-/** The extension path as the server runs it: a plan echoes the current ext_version, any other ifVersion is a
- * version conflict, a commit moves it on; `server.plan` is what the server plans for an extension beyond that. */
 function stub(calls, server) {
   grok.shell.settings = {enableDomainDatabases: true};
   grok.dapi.permissions = {check: async () => true};
   DG.Property.propertyOptions = Object.fromEntries(['friendlyName', 'description', 'choices', 'min', 'max', 'format']
     .map((name) => [name, {name, type: name === 'choices' ? 'list' : 'string'}]));
-  // the registry says who owns a column; manifest() answers without `origin`, as the server does
   const tables = () => Object.entries(server.manifest.tables).map(([name, t]) => server.table?.() ?? {name,
     origin: 'package', userColumns: Object.keys(t.columns).filter((c) => t.columns[c].origin === 'user')});
   const named = (entity) => ({filter: (f) => ({list: async () => f === `name = "${NAME}"` ? [entity()] : []})});
@@ -71,7 +68,7 @@ scoped('Edit properties saves against the extension version it was opened at: a 
   const server = {manifest: MANIFEST, extVersion: 96};
   stub(calls, server);
   const {done} = await openAndAdd();
-  server.extVersion = 97; // someone else extends the table meanwhile
+  server.extVersion = 97;
   await save();
   assert.deepEqual(extensions(calls).map((c) => c[1].ifVersion), ['96']);
   assert.match(byKind(document, 'status-line')[0].textContent, /Someone else changed these properties meanwhile/);
@@ -79,7 +76,6 @@ scoped('Edit properties saves against the extension version it was opened at: a 
   assert.equal(await done, false);
 });
 
-// an older server cannot say who owns a column: a full-state extension sent without knowing would drop the user's
 scoped('on a server without DomainTable.userColumns Edit properties refuses, and nothing is sent', async () => {
   const calls = [];
   stub(calls, {manifest: MANIFEST, extVersion: 96, table: () => ({name: 'issue'})});
@@ -89,7 +85,6 @@ scoped('on a server without DomainTable.userColumns Edit properties refuses, and
 
 scoped('the confirmation lists the drops the server plans, not the client diff, and SAVE waits for consent', async () => {
   const calls = [];
-  // the client only adds a column; the server's plan also drops one that holds values and retypes another
   stub(calls, {manifest: MANIFEST, extVersion: 96, plan: {destructive: true,
     drops: {tables: [], columns: [{table: 'issue', column: 'mine', nonNullValues: 3}]},
     typeChanges: [{table: 'issue', column: 'title', to: 'int'}]}});

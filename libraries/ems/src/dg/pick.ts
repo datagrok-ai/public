@@ -31,7 +31,6 @@ export interface DomainPickOptions extends InputOptions<string | null> {
   params?: () => Record<string, unknown>;
   /** The schema the `$name`s belong to — the hint's captions. */
   siblings?: FilterSchema;
-  /** A row of a hierarchy table whose subtree is not offered: the row a parent is being picked for. */
   notUnder?: string;
   placeholder?: string;
   /** Row presentation; the caption over its detail by default. */
@@ -75,7 +74,6 @@ export class DomainPick extends PickInput<PickItem> {
             const page = await DomainPick.page(table, query, {limit, filter: outside === undefined ? bound.filter :
               bound.filter === undefined ? outside : [outside, 'and', bound.filter]});
             more = page.more;
-            // the server answers a reader without View with no rows: only the access tells it from an empty table
             denied = page.items.length === 0 && query.trim() === '' && (await t.access()).can.view === false ?
               DomainErrors.noAccess(t.info) : null;
             if (denied !== null)
@@ -155,8 +153,7 @@ export class DomainPick extends PickInput<PickItem> {
   /** The item behind an id; a draft id is the draft's caption from the live source holding it,
    * no query issued; an id the table does not answer is shown as itself. A table with an app caption
    * reads the row; otherwise a backend that declares `resolveNames` answers it there — over the
-   * platform the registry's resolver, batched and cached, which asks for the name column even where the
-   * caller cannot read it; every other backend reads the row. */
+   * platform the registry's resolver, batched and cached; every other backend reads the row. */
   static async resolve(table: string, id: string): Promise<PickItem> {
     const draft = Rows.isDraft(id) ? DomainSource.draftOf(id) : undefined;
     if (draft !== undefined) {
@@ -185,7 +182,6 @@ export class DomainPick extends PickInput<PickItem> {
         throw e;
       return unseen(nounOf(t.info, true));
     }
-    // an unanswered id over a table without View is a row the caller cannot see; any other is a stale reference
     return (await t.access().catch(() => undefined))?.can.view === false ? unseen(nounOf(t.info, true)) :
       {id, name: id};
   }

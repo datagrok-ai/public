@@ -87,7 +87,6 @@ export function locations(options = {}) {
   return hierarchyBackend(options).tableSync('stock.location');
 }
 
-/** Waits until `cond()` holds, polling, with a generous cap so a loaded machine cannot race a short timer. */
 export async function until(cond, cap = 2000) {
   const end = Date.now() + cap;
   while (!cond() && Date.now() < end)
@@ -95,7 +94,6 @@ export async function until(cond, cap = 2000) {
   await flush();
 }
 
-/** Makes the frame reads of `address` wait for `release()` while `hold` is on: a read in flight. */
 export function holdFrames(backend, address) {
   const gate = {hold: false, waiting: [], frames: 0, release: () => {
     gate.hold = false;
@@ -113,7 +111,6 @@ export function holdFrames(backend, address) {
   return gate;
 }
 
-/** A test that leaves the backends, the notifications, the DOM and the live scopes as it found them. */
 export function scoped(name, body) {
   test(name, async () => {
     const live = Scope.liveCount;

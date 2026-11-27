@@ -14,7 +14,6 @@ const grok = await import('datagrok-api/grok');
 const BASE = '/apps/T/Issues';
 const buttonNamed = (text) => [...document.body.querySelectorAll('button')].find((b) => b.textContent === text);
 
-/** The schema as Edit properties… left it: the issue table's columns with `change` applied. */
 function reshaped(change) {
   const issue = SCHEMA.tables.issue;
   const schema = {...SCHEMA, tables: {...SCHEMA.tables, issue: {...issue, columns: change({...issue.columns})}}};
@@ -22,7 +21,6 @@ function reshaped(change) {
   return new MemoryDomainBackend(schema, {rows: {project: backend().tableSync('grit.project').rows, issue: rows}});
 }
 
-/** A docked app over grit.issue, the views the reload docks, and the cleanup. */
 async function docked(address = 'grit.issue', options = {path: BASE}) {
   emsBackends.domain = backend();
   const table = await domains.table(address);

@@ -197,7 +197,6 @@ scoped('a cell the server refused is shown, holds no Save, and the next save is 
   state.setValue('i1', 'title', 'Aspirin');
   const real = DG.DomainSession.prototype.save;
   let sent = 0;
-  // as the platform maps a field error the server answered onto its cell
   DG.DomainSession.prototype.save = async function() {
     this.lastRefusal = ++sent > 1 ? null : {message: 'Title already belongs to i7', editor: this.editors[0],
       code: 'validation'};

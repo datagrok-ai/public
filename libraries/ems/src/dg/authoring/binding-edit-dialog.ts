@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
 import {computed, signal, div, divV, span, plural, Section, BoolInput, badge, Scope} from '@datagrok-libraries/u2';
+import {errorCode} from '../../core/domain-backend.js';
 import {DomainErrors} from '../errors.js';
 import {groupInput} from '@datagrok-libraries/u2/dg';
 import {BindingWizard} from './binding-dialog.js';
@@ -446,7 +447,7 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
       plan = await this._handle.apply(payload, {dryRun: true});
     } catch (e) {
       const demanded = (e as {body?: {plan?: DG.DomainApplyPlan}} | null)?.body?.plan;
-      if (DomainErrors.codeOf(e) === 'destructive-confirmation-required' && demanded !== undefined)
+      if (errorCode(e) === 'destructive-confirmation-required' && demanded !== undefined)
         plan = demanded;
       else
         refusal = e;
@@ -481,7 +482,7 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
     try {
       answer = await this._handle.apply(body);
     } catch (e) {
-      const code = DomainErrors.codeOf(e);
+      const code = errorCode(e);
       if (code === 'version-conflict' || code === 'access-conflict') {
         await this._rebase(payload, e);
         return false;

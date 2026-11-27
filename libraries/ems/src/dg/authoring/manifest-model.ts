@@ -1,4 +1,5 @@
 import {computed, signal, Signal, ReadonlySignal} from '@datagrok-libraries/u2';
+import type {DomainOrigin} from 'datagrok-api/dg';
 import {ManifestRules} from './manifest-rules.js';
 
 export interface ManifestColumnJson {
@@ -215,8 +216,7 @@ export interface ManifestPatch {
   dropTables?: string[];
 }
 
-/** Who owns what on a plugin schema, by table logical name; the manifest never carries it. */
-export type ManifestOwnership = Record<string, {origin: 'package' | 'user', userColumns: string[]}>;
+export type ManifestOwnership = Record<string, {origin: DomainOrigin, userColumns: string[]}>;
 
 export interface ManifestModelOptions {
   friendlyName?: string;
@@ -225,7 +225,6 @@ export interface ManifestModelOptions {
   /** Edit mode: the registered manifest, the immutable baseline the draft annotates and extends. */
   baseline?: ManifestJson;
   extend?: boolean;
-  /** Extend mode: the columns the user owns. */
   ownership?: ManifestOwnership;
 }
 
@@ -787,7 +786,6 @@ export class ManifestModel {
     const patch: ExtendPatch = {};
     for (const state of this._tables.values()) {
       const own = [...state.columns.values()].filter((c) => c.owned && (c.registered || c.included));
-      // full state over columns whose owner is unknown would drop the user's: no patch at all
       if (own.length > 0 && state.registered && this._ownership[state.logical] === undefined)
         throw new Error(`u2: who owns the columns of ${state.logical} is unknown — an extension cannot be sent`);
       const now = Object.fromEntries(own.filter((c) => c.included).map((c) => [c.logical, this._columnJSON(c, false)]));

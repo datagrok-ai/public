@@ -198,7 +198,6 @@ function _shared(rows: readonly RowView[], column: string): unknown {
   return seen.size === 1 ? [...seen][0] : undefined;
 }
 
-// the one value every row the filter matches holds: the first row's, unless a second row holds another
 async function _sharedMatching(source: DomainSource, column: string): Promise<unknown> {
   const table = DomainTable.of(source)!.table;
   const scope = DomainFilters.treeOf(source.query.peek(), source.schema);

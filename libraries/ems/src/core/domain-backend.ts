@@ -2,6 +2,8 @@ import {Rows} from '@datagrok-libraries/u2';
 import type {IProperty, AccessData, DomainCondition, DomainConditionTree, DataFrameLike} from '@datagrok-libraries/u2';
 import type {EditState} from './edit-state.js';
 
+export type DomainOnDelete = 'cascade' | 'setnull' | 'restrict';
+
 /** The registry's reflection of a table (js-api `DomainTableInfo`): naming, keys, and what the
  * schema declares for search, constraints, ref filters, custom permissions and the tables that
  * reference this one. */
@@ -24,23 +26,17 @@ export interface DomainTableInfoLike {
   refFilters: Record<string, string>;
   /** The custom permission names the schema declares — `can.<name>` / `~can_<name>`. */
   permissions: string[];
-  /** Every table with a ref column pointing here; `label` is that column's caption, `onDelete` its referential
-   * action (`restrict` where none is declared). */
-  childTables: {schema: string, table: string, fkColumn: string, label: string,
-    onDelete: 'cascade' | 'setnull' | 'restrict'}[];
+  /** Every table with a ref column pointing here; `label` is that column's caption. */
+  childTables: {schema: string, table: string, fkColumn: string, label: string, onDelete: DomainOnDelete}[];
   /** Whether the schema declares the table a hierarchy (`hierarchy: true`): exactly one ref
    * column targets the table itself, and {@link DomainTableLike.ancestors} walks it. */
   hierarchy?: boolean;
   /** That self-referencing column, when the table is a hierarchy. */
   parentColumn?: string | null;
-  /** How many required columns with no default the caller may not read. */
   hiddenRequired?: number;
-  /** The caller may not read the name column or a business-key column. */
   hiddenName?: true;
 }
 
-/** A table's `info` narrowed to the columns `readable` keeps: a name or parent column the caller cannot read is
- * none, and a business key with a part of it unreadable is no key (the rest of it would address several rows). */
 export function readableInfo<T extends DomainTableInfoLike>(info: T, columns: readonly IProperty[],
   readable: (name: string) => boolean): T {
   const hidden = columns.filter((p) => !readable(p.name!) && p.nullable === false &&
@@ -157,7 +153,6 @@ export interface DomainProbeLike {
  * schema or `'<schema>.<table>'`; an insert may name itself with `ref`, and any op's value
  * `'$<ref>'` — earlier or later in the batch — is replaced by that row's id. */
 export interface DomainTransactionOpLike {
-  /** A `restore` carries `id` and undoes a landed soft delete, under the Delete grant. */
   op: 'insert' | 'update' | 'delete' | 'restore';
   table: string;
   ref?: string;
@@ -190,7 +185,6 @@ export interface DomainBatchOptionsLike {
   errorOnDuplicate?: boolean;
 }
 
-/** One line of a {@link DomainBatchReportLike}. */
 export interface DomainBatchRowLike {
   index?: number;
   id?: string | null;
@@ -210,8 +204,6 @@ export interface DomainBatchReportLike {
   merged?: number;
   skipped?: number;
   errorCount?: number;
-  /** One per row the server itemizes; a refusal of the whole statement (a multi-row CHECK) is an entry with no
-   * `index` and no `id`: no row is to blame. */
   rows: DomainBatchRowLike[];
   error?: string;
 }
@@ -257,7 +249,7 @@ export interface AuditEntryLike {
 export interface DomainFrameLike {
   df: DataFrameLike;
   edit: EditState;
-  /** Answers how many rows the server answered for `spec`: the offset the next page starts at. */
+  /** Answers the number of rows appended. */
   append(spec: DomainQueryLike): Promise<number>;
   dispose(): void;
 }
@@ -265,7 +257,6 @@ export interface DomainFrameLike {
 export interface DomainTableLike {
   /** `'<schema>.<table>'`. */
   address: string;
-  /** The columns the caller may read, system columns included. */
   properties: IProperty[];
   info: DomainTableInfoLike;
   /** What the table can do at all — declared, never guessed; see {@link DomainSupportLike}. */
@@ -320,10 +311,7 @@ export interface DomainBackend {
    * id is a key; an id the caller may not see, or that no row answers, maps to null. A backend
    * without one is read row by row. */
   resolveNames?(table: string, ids: readonly string[]): Promise<Record<string, string | null>>;
-  /** Every writer's pending batch as ONE transaction; a refusal is thrown as a `DomainBackendError` (the
-   * platform's `reported`, after the js-api `DomainSession`'s own dialogs). */
   saveAll(edits: EditState[]): Promise<void>;
-  /** Drops every cached access snapshot the backend keeps. */
   dropAccess(): void;
 }
 
@@ -331,8 +319,7 @@ export interface DomainBackend {
 export const emsBackends: {domain?: DomainBackend} = {};
 
 /** What a backend throws: the server's error family by `code` (`'version-conflict'`,
- * `'validation'`, `'not-found'`, `'forbidden'`), the message for the user; `reported` when the
- * platform already showed it. */
+ * `'validation'`, `'not-found'`, `'forbidden'`), the message for the user. */
 export class DomainBackendError extends Error {
   constructor(readonly code: string, message: string, readonly reported = false) {
     super(message);
@@ -340,21 +327,16 @@ export class DomainBackendError extends Error {
   }
 }
 
-/** The error family of anything either backend throws: `DomainBackendError.code`, the js-api
- * `DomainError.code` (the server's `body.error`), `'forbidden'` for a 403 that names none; `''` for anything else. */
 export function errorCode(e: unknown): string {
   const {code, status} = typeof e === 'object' && e !== null ? e as {code?: unknown, status?: unknown} : {};
   return typeof code === 'string' && code !== '' ? code : status === 403 ? 'forbidden' : '';
 }
 
-/** Why `parent` cannot become the parent of the rows being moved: `among` finds one of them in it and its
- * ancestors, once the pending `moved` (row id → new parent, drafts included) have landed. */
 export async function hierarchyCycle(table: DomainTableLike, parent: unknown,
   among: (ids: string[]) => boolean | Promise<boolean>, moved: ReadonlyMap<unknown, unknown> = new Map(),
   name?: unknown): Promise<string | null> {
   const jumped = new Set<unknown>();
   for (let from = parent; ;) {
-    // a draft has no ancestors on the server yet: its chain goes on through its pending parent
     const chain = typeof from !== 'string' || from === '' ? [] : Rows.isDraft(from) || table.ancestors === undefined ?
       [from] : [from, ...(await table.ancestors(from)).map((a) => a.id).reverse()];
     const at = chain.findIndex((id) => moved.has(id));
@@ -371,11 +353,12 @@ export async function hierarchyCycle(table: DomainTableLike, parent: unknown,
 }
 
 /** The table's noun in lower case, singular for one row. */
-export function nounOf(info: {singularName?: string, pluralName?: string}, one = false): string {
+export type Nouns = {singularName?: string, pluralName?: string};
+
+export function nounOf(info: Nouns, one = false): string {
   return (one ? info.singularName || 'row' : info.pluralName || 'rows').replace(/_/g, ' ').toLowerCase();
 }
 
-/** "an assay", "a site". */
 export function withArticle(noun: string): string {
   return `${/^[aeiou]/i.test(noun) ? 'an' : 'a'} ${noun}`;
 }

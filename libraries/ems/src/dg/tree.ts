@@ -25,7 +25,6 @@ export interface DomainTreeOptions<TRow extends DomainRowLike = DomainRowLike> {
 const PAGE_SIZE = 500;
 /** The id of the synthetic {@link DomainTreeOptions.allNode} row — no row of the table carries it. */
 const ALL = '~all';
-/** An id no node carries: `expandPath` to it opens every branch on the way and selects nothing. */
 const NONE = '~none';
 
 /** A `VirtualTree` over a hierarchy table, a branch loaded when it is opened. Nodes are plain rows: no frame, no
@@ -113,7 +112,6 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     return this._table?.info.parentColumn ?? null;
   }
 
-  /** Reads the roots and every open branch again; the selected row stays selected while the tree still reaches it. */
   async refresh(): Promise<void> {
     const first = !this._read;
     this._loading.value = true;
@@ -125,7 +123,6 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
       const roots = await this._children(null);
       if (this.scope.isDisposed)
         return;
-      // taken as the new roots land: a node the user picked or opened during the read is the one kept
       const {open, selected} = this._shape();
       this.tree.setRoots(roots);
       this._read = true;
@@ -136,7 +133,6 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
         await this.expandTo(reveal);
       else if (selected === null || !await this._reselect(selected, table))
         this._clear();
-      // the server answers a reader without View with no rows: only the access tells it from an empty table
       if (roots.every((node) => node.data === undefined) && !Access.from(await table.table.access()).can('view'))
         this._error.value = DomainErrors.noAccess(table.info);
     } catch (e) {
@@ -168,7 +164,6 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     return this.tree.selectedNode.peek()?.data?.id === id;
   }
 
-  // the keys from the root down to every open branch (parents first) and to the selected node
   private _shape(): {open: string[][], selected: string[] | null} {
     const chain: string[] = [];
     const open: string[][] = [];
@@ -185,7 +180,6 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     return {open, selected};
   }
 
-  // where it was; a row moved since is found by its ancestors
   private async _reselect(path: string[], table: DomainTable<TRow>): Promise<boolean> {
     await this.tree.expandPath(path);
     const id = path[path.length - 1];

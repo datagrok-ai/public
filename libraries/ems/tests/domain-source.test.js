@@ -1112,28 +1112,6 @@ source('another session\'s insert before the window does not repeat a row on the
   src.dispose();
 });
 
-source('paging a sort full of ties re-reads nothing: every sorted read ends with the row id', async () => {
-  emsBackends.domain = backend();
-  const gate = holdFrames(emsBackends.domain, 'grit.issue');
-  const table = emsBackends.domain.tableSync('grit.issue');
-  const query = table.query.bind(table);
-  const sorts = [];
-  let flip = false;
-  // a server orders the rows a sort leaves tied as it likes, differently from one read to the next
-  table.query = (spec) => {
-    sorts.push(spec.sort);
-    return query(/(^|,)id$/.test(spec.sort) ? spec : {...spec, sort: `${spec.sort},${(flip = !flip) ? '!' : ''}id`});
-  };
-  const src = await issues({pageSize: 1, sort: 'done'});
-  await src.loadMore();
-  await src.loadMore();
-  assert.equal(gate.frames, 1, 'no window read');
-  assert.deepEqual(src.rows.items.value.map((r) => r.id), ['i2', 'i3', 'i1']);
-  assert.deepEqual([...new Set(sorts)], ['done,id']);
-  assert.equal(src.sort.value, 'done');
-  src.dispose();
-});
-
 source('a draft nothing was typed into survives every re-read of the rows it sits among, and stays current', async () => {
   emsBackends.domain = backend();
   const src = await issues({pageSize: 2, sort: 'title'});

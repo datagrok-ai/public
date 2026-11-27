@@ -1808,7 +1808,6 @@ scoped('domains.views: a view per table, addressed and brought forward, where it
   }
 });
 
-// row-mode tables: no table-level View, every row reachable through its own grant
 scoped('a user who reaches rows only through row grants sees them: picker, child tab and row page panes', async () => {
   const fields = Object.fromEntries(['key', 'name', 'project_id', 'number', 'title'].map((c) => [c, 'readonly']));
   emsBackends.domain = backend({access: {can: {view: false, insert: false, edit: false, delete: false, share: false},

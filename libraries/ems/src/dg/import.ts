@@ -16,9 +16,7 @@ import {ImportLinks} from './import-links.js';
 import {DomainAddress} from './address.js';
 import type {ImportLink, LinkField, LinkMatch} from './import-links.js';
 
-/** A report line once it is placed: on its row of the batch. */
 type Placed = DomainBatchRowLike & {index: number, id: string | null};
-/** A report whose statement-level refusals are notes, every line on its row. */
 type Report = Omit<DomainBatchReportLike, 'rows'> & {rows: Placed[]};
 
 export interface DomainImportOptions {
@@ -133,9 +131,7 @@ const OUTCOMES: Record<string, {label: string, variant: BadgeVariant}> = {
 };
 /** Rows of the report's key lookup per query. */
 const KEY_CHUNK = 500;
-/** A users filter rides in the URL encoded twice: this keeps each read well under what a proxy allows. */
 const USER_FILTER_BYTES = 6000;
-/** User reads at once. */
 const USER_READS = 4;
 
 /** One row of the mapping step — the target is the choice input the flow keeps for that column. */
@@ -159,12 +155,10 @@ export async function openImport(table: DomainTable, options: DomainImportOption
   const writable = table.access.columnPolicy().forDraft();
   const derived = table.importer?.derives ?? [];
   const stuck = DomainTable.unsettable(table.properties, table.info, table.access, derived);
-  // a row the caller cannot fill every required column of can only update
   const inserts = stuck.length === 0 && !table.info.hiddenRequired;
   const key = table.info.businessKey;
   const updates = table.table.support.batch.upsert && key.length > 0 &&
     key.every((k) => table.properties.some((p) => p.name === k)) && !stuck.some((p) => key.includes(p.name!));
-  // the column the server numbers is still how Add or update finds a row
   const auto = updates ? await autoNumbered(table) : null;
   const targets = table.properties.filter((p) => !derived.includes(p.name!) &&
     (writable.field(p.name!) === 'editable' || p.name === auto));
@@ -188,7 +182,6 @@ export async function openImport(table: DomainTable, options: DomainImportOption
   });
 }
 
-// the registry does not say which key column the server numbers; the schema's manifest does (undefined: unread)
 async function autoNumbered(table: DomainTable): Promise<string | null | undefined> {
   const at = table.address.indexOf('.');
   const manifest = await grok.dapi.domains.schema(table.address.slice(0, at)).manifest().catch(() => null);
@@ -379,7 +372,6 @@ class ImportFlow {
       this._linkStatus.value = status;
   }
 
-  // a file column of keys mapped to the name finds nothing: what mapping it to the key would find
   private async _foundByKey(frame: DG.DataFrame, link: ImportLink, fields: [LinkField, string][]):
     Promise<string | null> {
     const key = link.target.info.businessKey;
@@ -517,11 +509,9 @@ class ImportFlow {
     const keys = this._writeBack?.peek() !== true ? 0 :
       kept.filter((p) => p.verdict.existing !== undefined).length +
       (report?.rows.filter((r) => r.predicted === 'skip' && r.existingId !== undefined).length ?? 0);
-    // what would land: every row sent where there is no dry run, null where the dry run did not see them all
     const valid = report === null ? sent.length : sent.length > PREVIEW_ROWS ? null :
       report.willInsert + report.willUpdate;
     const noun = (n: number) => plural(n, nounOf(this._table.info, true), nounOf(this._table.info));
-    // the counts are what the batch WOULD do row by row; all-or-nothing makes one bad row the verdict on all of them
     const aborts = options.allOrNothing !== false && errors > 0;
     this._importText.value = refusal !== null ? 'Import' :
       aborts ? `Nothing to import while ${plural(errors, 'row has', 'rows have')} errors` :
@@ -559,7 +549,6 @@ class ImportFlow {
       'and no row is valid' : 'no row would be added or updated'}.`;
   }
 
-  // a batch the server refuses whole answers even a dry run with `error` set and no counts
   private static _refused(answer: DomainBatchValidationLike | DomainBatchReportLike): answer is DomainBatchReportLike {
     return !('validateOnly' in answer);
   }
@@ -575,7 +564,6 @@ class ImportFlow {
       rows: refused.map((r) => ({index: r.index, predicted: 'error', errors: r.errors}))};
   }
 
-  // a refusal of the whole statement names no row: a CHECK is judged per row here, anything else is a note
   private async _attributed(rows: DomainBatchRowLike[], payloads: Record<string, unknown>[]):
     Promise<{rows: Placed[], notes: {message: string, at: number[]}[]}> {
     const out = new Map<number, Placed>();
@@ -654,7 +642,6 @@ class ImportFlow {
 
   private _row(index: number, planned: Planned, kind: string, note: string, errors: DomainImportError[]):
     DomainImportRow {
-    // a user named by login or name reads as typed; the payload carries the id
     const typed = Object.fromEntries(this._targets.filter((p) => p.semType === 'User' && p.name! in planned.cells)
       .map((p) => [p.name!, planned.cells[p.name!]]));
     return {index, values: {...planned.cells, ...planned.payload, ...typed}, kind, label: planned.verdict.label ?? '',
@@ -776,7 +763,6 @@ class ImportFlow {
     const prepare = this._table.importer?.prepare;
     const verdicts = prepare === undefined ? [] : await prepare(rows, progress);
     return cells.map((cell, i): Planned => {
-      // a row the server never sees has every problem said here, the ones it would have found too
       const verdict = missed[i].length > 0 ?
         {error: [...missed[i], ...this._validate(rows[i]), ...this._valueProblems(rows[i])].join('; ')} :
         verdicts[i] ?? {};
@@ -789,7 +775,6 @@ class ImportFlow {
     });
   }
 
-  // a user column takes a login or a name too, where exactly one user answers to it
   private async _namedUsers(rows: Record<string, unknown>[]): Promise<void> {
     const columns = this._targets.filter((p) => p.semType === 'User');
     const named = [...new Set(rows.flatMap((row) => columns.flatMap((p) => {
@@ -805,10 +790,10 @@ class ImportFlow {
       }));
     }
     const ids = new Map<string, string | null>();
-    for (const user of users.values()) {
-      const key = user.friendlyName?.toLowerCase();
-      if (key)
-        ids.set(key, ids.has(key) ? null : user.id);
+    for (const {id, friendlyName, firstName, lastName} of users.values()) {
+      const names = [friendlyName, firstName, lastName, `${firstName ?? ''} ${lastName ?? ''}`.trim()];
+      for (const key of new Set(names.filter((n) => !!n).map((n) => n.toLowerCase())))
+        ids.set(key, ids.has(key) ? null : id);
     }
     for (const user of [...users.values()].filter((u) => !!u.login))
       ids.set(user.login.toLowerCase(), user.id);
@@ -822,7 +807,6 @@ class ImportFlow {
     }
   }
 
-  // a login as typed or lowercased; a name as a first name, a last name, or both split at a space
   private static _userClauses(v: string): string[] {
     const q = (s: string) => JSON.stringify(s);
     const words = v.split(/\s+/);
@@ -831,7 +815,6 @@ class ImportFlow {
         `(firstName = ${q(words.slice(0, i + 1).join(' '))} and lastName = ${q(words.slice(i + 1).join(' '))})`));
   }
 
-  // the names in filters that fit the URL, measured as sent: encoded twice
   private static _userFilters(named: string[]): string[] {
     const size = (s: string) => encodeURIComponent(encodeURIComponent(s)).length;
     const or = size(' or ');
@@ -840,7 +823,6 @@ class ImportFlow {
     for (const v of named) {
       const clauses = ImportFlow._userClauses(v);
       const more = clauses.reduce((n, c) => n + size(c) + or, 0);
-      // a value too long for any URL is not looked up: its row says it names no single user
       if (more > USER_FILTER_BYTES)
         continue;
       if (bytes + more > USER_FILTER_BYTES) {
@@ -856,7 +838,6 @@ class ImportFlow {
   private _validate(row: Record<string, unknown>): string[] {
     const validators = this._table.validators;
     const problems = this._targets.map((prop) => [prop.name!, ImportLinks.idProblem(prop, row[prop.name!])]);
-    // the server numbers new rows only outside Add or update, which needs the number on every row
     if (this._auto !== null && this._auto in row && isEmpty(row[this._auto]))
       problems.push([this._auto, 'A new row needs Add new rows mode']);
     for (const column of validators.columns)
@@ -886,7 +867,6 @@ class ImportFlow {
     const rows: Record<string, unknown>[] = Array.from({length: count}, () => ({}));
     for (const [target, name] of mapping) {
       const column = frame.columns.byName(name);
-      // a key as the app shows it (`C10-0042`) is the number it stands for
       const key = this._table.info.businessKey.includes(target) ? this._targets.find((p) => p.name === target &&
         p.format && ['int', 'bigint'].includes(p.propertyType ?? p.type ?? '')) : undefined;
       for (let i = 0; i < count; i++) {
@@ -1019,7 +999,6 @@ class ImportFlow {
     const typed = column.semType ? this._targets.filter((p) => p.semType === column.semType) : [];
     const found = hit((a) => a === want) ?? hit((a) => a.startsWith(want) || want.startsWith(a)) ??
       hit((a) => a.includes(want) || want.includes(a)) ?? (typed.length === 1 ? typed[0].name! : SKIP);
-    // an exported key re-imported to add rows would stop the mapping step: the server numbers those
     const target = found === this._auto && this._mode?.peek() !== 'upsert' ? SKIP : found;
     const link = this._links.get(target);
     if (link === undefined || plain(link.prop.name!) === want || ImportFlow._ids(column))
@@ -1243,7 +1222,6 @@ class ImportFlow {
     return outcomes;
   }
 
-  // the server itemizes at most 1,000 rows; splitting the batch would let an all-or-nothing import land in part
   private async _itemized(report: Report, plan: Planned[]): Promise<Report> {
     const listed = new Set(report.rows.map((r) => r.index));
     const missing = plan.flatMap((p, i) => p.payload === null || listed.has(i) ? [] : [i]);

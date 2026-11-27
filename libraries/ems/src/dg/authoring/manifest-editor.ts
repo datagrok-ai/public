@@ -22,7 +22,6 @@ export interface ManifestEditorOptions {
   access?: Partial<AccessJson>;
   /** Edit mode: the registered manifest (`GET …/manifest`, with `version` and `incarnation`). */
   baseline?: ManifestJson;
-  /** Extend mode: who owns which column, from the registry (the manifest never says). */
   ownership?: ManifestOwnership;
   /** Edit mode: the access snapshot (`GET …/access`); null when it could not be read — access
    * is then shown as far as it goes and never changed. */
@@ -226,7 +225,6 @@ export class ManifestEditor extends Control {
     return {payload, changes, blockers: model.blockers.peek()};
   }
 
-  /** The extension apply body, guarded by the baseline's `extVersion` against a concurrent extension. */
   extendPlan(): {payload: {ifVersion: string, extend: ExtendPatch}, changes: ManifestChange[]} {
     return {payload: {ifVersion: this.model.extVersion!, extend: this.model.extendPatch()},
       changes: this.model.changes()};

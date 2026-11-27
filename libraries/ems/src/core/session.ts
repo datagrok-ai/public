@@ -6,7 +6,7 @@ import type {DomainSource} from './domain-source.js';
 export interface DomainSession {
   readonly isDirty: ReadonlySignal<boolean>;
   readonly changeCount: ReadonlySignal<number>;
-  /** Why Save is off: the first source's {@link DomainSource.validity}, null when the batch may be sent. */
+  /** The first blocking problem, null when the batch may be saved. */
   readonly validity: ReadonlySignal<string | null>;
   readonly isSaving: ReadonlySignal<boolean>;
   /** A batch landed — the paired form returns the focus to its fields. */
@@ -56,7 +56,6 @@ export class SharedSession implements DomainSession {
     this.sources = this._sources;
     this.isDirty = computed(() => this._sources.value.some((s) => s.isDirty.value));
     this.changeCount = computed(() => this._sources.value.reduce((n, s) => n + s.changeCount.value, 0));
-    // a source with nothing pending is not in the batch: what it shows holds no Save
     this.validity = computed(() => this._sources.value.filter((s) => s.isDirty.value).map((s) => s.validity.value)
       .find((v) => v !== null) ?? null);
     this.isSaving = computed(() => this._saving.value || this._sources.value.some((s) => s.isSaving.value));
@@ -95,7 +94,6 @@ export class SharedSession implements DomainSession {
     try {
       let dirty: DomainSource[];
       let batch: DomainSource[];
-      // every source is checked (a check takes back an earlier refusal), and an edit made meanwhile again
       for (;;) {
         dirty = this._sources.peek().filter((s) => s.isDirty.peek());
         batch = this._withReferenced(dirty);
@@ -115,7 +113,6 @@ export class SharedSession implements DomainSession {
       const verb = states.size !== 1 ? 'saved' : states.has('deleted') ? 'deleted' :
         states.has('restored') ? 'restored' : 'saved';
 
-      // dirty, yet no row carries a change: refused, never announced as saved
       if (batch.every((s) => s.pending().length === 0)) {
         SharedSession._unwritten(dirty);
         return false;
@@ -136,7 +133,6 @@ export class SharedSession implements DomainSession {
       } catch (e) {
         for (const source of batch)
           source.fail(e);
-        // every control over those tables follows the re-read access, not only the sources that sent the batch
         if (errorCode(e) === 'forbidden') {
           emsBackends.domain!.dropAccess();
           await Promise.all(this._sources.peek().filter((s) => batch.some((b) => b.table === s.table))
@@ -169,7 +165,6 @@ export class SharedSession implements DomainSession {
       } finally {
         SharedSession._hold(batch, false);
       }
-      // a row the conflict dialog reloaded is not written; a writer that built no op for its changes still holds them
       const unwritten = batch.filter((s) => (written.get(s) ?? 0) === 0);
       SharedSession._unwritten(unwritten.filter((s) => s.isDirty.peek()));
       const landing = batch.filter((s) => !unwritten.includes(s)).map((s) => {
@@ -267,7 +262,6 @@ export class SharedSession implements DomainSession {
     return false;
   }
 
-  // the server keeps no hierarchy acyclic: a row moved under its own descendant drops out of every tree
   private async _cycle(batch: readonly DomainSource[]): Promise<boolean> {
     for (const address of new Set(batch.map((s) => s.table))) {
       const sources = batch.filter((s) => s.table === address);

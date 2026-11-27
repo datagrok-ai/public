@@ -324,7 +324,6 @@ scoped('a New from the children toolbar is an unsaved change of its own: the gat
 
 scoped('a Save that deletes the parent and adds a child under it is refused whole', async () => {
   const memory = emsBackends.domain = crm();
-  // a company with no children: only the new child stands in the way of its delete
   memory.tableSync('crm.company').rows.push({id: 'c3', name: 'Initech'});
   const companies = await domains.table('crm.company');
   const parent = testOwner().build(() => companies.source({pageSize: 10}));

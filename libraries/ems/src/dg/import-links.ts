@@ -44,7 +44,6 @@ export class ImportLinks {
       null;
   }
 
-  /** What is wrong with a non-id value in a user or group column, as a row's error; null otherwise. */
   static idProblem(prop: IProperty, value: unknown): string | null {
     return typeof value !== 'string' || value === '' || DomainAddress.ID.test(value) ? null :
       prop.semType === 'User' ? `"${value}" names no single user` :

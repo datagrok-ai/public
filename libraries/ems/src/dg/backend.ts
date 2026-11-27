@@ -69,7 +69,6 @@ export class DgDomainBackend implements DomainBackend {
     try {
       if (await session.save())
         return;
-      // the platform session worded and ballooned the refusal; one over the cells is the writers' validity
       const refusal = session.lastRefusal!;
       const message = refusal.message === DG.DomainSession.CELL_ERRORS ?
         edits.map((edit) => edit.validity.peek()).find((v) => v !== null) ?? refusal.message : refusal.message;
@@ -141,7 +140,6 @@ export class DgDomainTable implements DomainTableLike {
       access.support.version && access.can.view);
   }
 
-  /** Whether the caller may read a column: only `access().fields` leaves a restricted one out. */
   static readable(access: DG.DomainAccess): (name: string) => boolean {
     const fields = Access.from(access);
     return (name) => fields.field(name) !== 'hidden';
@@ -247,7 +245,6 @@ export class DgDomainTable implements DomainTableLike {
     return {...spec, filter: DgDomainTable.bound(spec.filter)} as DG.DomainQuerySpec;
   }
 
-  /** `$me` bound to the caller: the query an app keeps, its address and its recent searches say `$me`. */
   static bound(filter: DomainQueryLike['filter']): DomainQueryLike['filter'] {
     const me = {me: grok.shell.user.id};
     if (typeof filter === 'string') {

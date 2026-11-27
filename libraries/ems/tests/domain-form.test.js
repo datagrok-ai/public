@@ -661,7 +661,6 @@ scoped('a write the writer throws on is a problem on its field: Save is refused,
   src.currentRow.value = src.rows.byKey('i1');
   const form = testOwner().build(() => domains.form(src));
   await flush();
-  // a frame that lost the column since the form was built
   const edit = src.edit.peek();
   const setValue = edit.setValue;
   edit.setValue = (key, column, value) => {
@@ -1227,7 +1226,6 @@ scoped('a draft shows the column defaults, so a required column with one is alre
   draft.dispose();
 });
 scoped('a stored value a tightened rule refuses is shown, and holds Save off only once its field is edited', async () => {
-  // `score` holds 50 under a max lowered to 10, `kind` holds a choice removed since
   const memory = emsBackends.domain = new MemoryDomainBackend({name: 'desk', tables: {
     ticket: {businessKey: ['code'], columns: {
       code: {type: 'string', required: true, isName: true},
@@ -1260,7 +1258,6 @@ scoped('a stored value a tightened rule refuses is shown, and holds Save off onl
   src.dispose();
 });
 
-// the frame holds a string_list or json cell as its JSON text: the form shows and saves the values
 scoped('string_list and json fields show their stored values and save what is added, nothing when unchanged', async () => {
   const memory = emsBackends.domain = new MemoryDomainBackend({name: 'qa', tables: {item: {columns: {
     name: {type: 'string', isName: true}, tags: {type: 'string_list'}, meta: {type: 'json'}}}}},

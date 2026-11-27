@@ -1,4 +1,4 @@
-import {emsBackends, capital, nounOf, DomainBackendError} from '../core/domain-backend.js';
+import {emsBackends, capital, errorCode, nounOf, DomainBackendError} from '../core/domain-backend.js';
 import * as DG from 'datagrok-api/dg';
 import {Access, Rows, Filters, allowedActions, divV, span, timestamp, text, notify, computed, untracked, EMPTY}
   from '@datagrok-libraries/u2';
@@ -48,13 +48,10 @@ export type {CreateBindingOptions, BindingResult, AccessOutcome} from './authori
 export type {EditBindingResult} from './authoring/binding-edit-dialog.js';
 const REF_ADDRESS = /^\w+\.\w+$/;
 
-/** A grammar constraint of a table, parsed: the columns it names, the first the field its message is on. */
 export class DomainConstraint {
   constructor(readonly name: string, readonly message: string, readonly root: FilterGroup,
     readonly columns: string[], private readonly _properties: readonly FilterProperty[]) {}
 
-  /** Per record, whether it satisfies the constraint under SQL CHECK null semantics (an empty column makes its own
-   * comparison unknown, not the whole constraint); null where it cannot be judged here — the server still is. */
   async admits(records: readonly Record<string, unknown>[]): Promise<boolean[] | null> {
     try {
       const mask = await Filters.toCheckMask(Filters.recordsFrame(records, this._properties), this.root);
@@ -72,7 +69,6 @@ export interface DomainAction<TRow extends DomainRowLike = DomainRowLike> {
   icon?: string;
   requires?: Capability;
   disabled?: Reason;
-  /** Why it is off for this one row, when it is. */
   disabledFor?(row: RowView<TRow>): Reason;
   when?(row: RowView<TRow>): boolean;
   run(row: RowView<TRow>): void;
@@ -209,13 +205,12 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     return this.table.properties;
   }
 
-  /** The table's grammar constraints, parsed once; one that does not parse is left to the server. */
   get constraints(): DomainConstraint[] {
     if (this._constraints !== undefined)
       return this._constraints;
     const properties = this.properties.map(filterProperty);
     this._constraints = this.info.constraints.flatMap((c) => {
-      const {root, problems} = Filters.parse(c.expr, {properties});
+      const {root, problems} = Filters.parse(c.expr, {properties}, 'domain');
       if (problems.length > 0)
         return [];
       const columns: string[] = [];
@@ -252,7 +247,6 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     return capital(prop.friendlyName ?? (prop.name ?? '').replace(/_/g, ' '));
   }
 
-  /** `message` under `caption`, unless it starts with it ("CAS must look like 50-78-2"). */
   static named(caption: string, message: string): string {
     if (message === EMPTY)
       return `${caption} is required`;
@@ -263,7 +257,6 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
       !/^\w/.test(message.slice(caption.length)) ? message : `${caption}: ${message}`;
   }
 
-  /** The number a whole-number key stands for as typed, bare or in its property's `format`; null otherwise. */
   static parseKey(prop: IProperty, typed: string): number | null {
     const format = prop.format ?? '';
     const prefix = format.replace(/0+$/, '');
@@ -294,12 +287,10 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     return semType === 'User' || semType === 'Group' || REF_ADDRESS.test(semType);
   }
 
-  /** Whether the server fills a draft's `prop` on save. */
   static isAssignedOnSave(info: DomainTableInfoLike, prop: IProperty): boolean {
     return (prop.defaultValue ?? null) !== null || (prop.nullable !== false && info.businessKey.includes(prop.name!));
   }
 
-  /** The required columns a new row cannot get a value for from the caller. */
   static unsettable(properties: readonly IProperty[], info: DomainTableInfoLike, access: Access,
     except: readonly string[] = []): IProperty[] {
     const draft = access.columnPolicy().forDraft();
@@ -315,7 +306,6 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
       columns.filter((p) => draft.field(p.name!) !== 'hidden').map(caption), info.hiddenRequired);
   }
 
-  /** Why the caller cannot create a savable row on `source`'s table; null when they can. */
   static noCreate(source: DomainSource): string | null {
     if (source.edit.value === undefined || !source.access.value.can('insert'))
       return null;
@@ -400,7 +390,6 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
    * claims the rows. */
   static handlerRenderer(table: DomainTable): ObjectRenderer<RowView> {
     const inner = handlerRenderer<DG.DomainRow>();
-    // the titles read the caption the table has now: an app's own replaces this one's
     const plain = DomainTable.schemaRenderer(() => ({properties: table.properties, info: table.info}),
       (row) => table.renderer.caption(row));
     // a draft has no identity the handler could show; a handler card counts only when the handler
@@ -434,7 +423,6 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
         return name === row.id ? by(row, (x) => inner.caption(x), plain.caption) : name;
       },
       icon: (row) => by(row, (x) => inner.icon(x), (r) => span(plain.caption(r))),
-      // with no name column the platform's item is the row's id: the caption the table has is the better name
       listItem: (row) => table.info.nameColumn == null ? plain.listItem!(row) :
         by(row, (x) => inner.listItem(x), plain.listItem!),
       markup: (row) => table.info.nameColumn == null ? plain.listItem!(row) :
@@ -465,7 +453,6 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
       return Rows.isDraft(row) ? {text: `New ${nounOf(info, true)}`, draft: true} :
         {text: row.id, draft: false};
     };
-    // a title is never an id: a row named by its id alone reads as its noun
     const titleOf = (row: RowView): HTMLElement => {
       const {text, draft} = label(row);
       const caption = captionOf?.(row) ?? text;
@@ -504,7 +491,7 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     DomainTable._byRow.set(source.currentRow, source);
     source.guard(() => this._validate(source), computed(() => {
       source.revision.value;
-      return this._firstProblem(source)?.message ?? null;
+      return this._firstProblem(source, false)?.message ?? null;
     }));
     // last resort, after every guard: the writer refused over a cell and named neither
     source.nameCell = (row, column, problem) => nameCell(this, row as RowView<TRow>, column, problem, source);
@@ -536,9 +523,8 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
   private _fieldsToFix(source: DomainSource<TRow>, error: unknown): string[] {
     const row = source.currentRow.peek();
     const about = source.problemRow.peek();
-    if (DomainErrors.codeOf(error) !== 'validation' || row === null || (about !== null && about !== row.id))
+    if (errorCode(error) !== 'validation' || row === null || (about !== null && about !== row.id))
       return [];
-    // a rule over several columns is fixed where its message says, not on the field it is attached to
     if (this.validators.columns.some((name) => this.validators.check(name, row[name], row) !== null))
       return [];
     const edit = source.edit.peek();
@@ -555,9 +541,9 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     return found.message;
   }
 
-  private _firstProblem(source: DomainSource<TRow>): {row: RowView<TRow>, message: string} | null {
+  private _firstProblem(source: DomainSource<TRow>, counted = true): {row: RowView<TRow>, message: string} | null {
     return firstProblem(this, source.pending().filter((row) =>
-      row[Rows.STATE] !== 'deleted' && row[Rows.STATE] !== 'restored'), source);
+      row[Rows.STATE] !== 'deleted' && row[Rows.STATE] !== 'restored'), source, counted);
   }
 }
 
@@ -574,20 +560,23 @@ async function configured<TRow extends DomainRowLike>(table: DomainTable<TRow>):
   return table;
 }
 
-/** The first problem the table's validators find over `rows`, named by row and column or by its row count. */
+/** The first problem the table's validators find over `rows`, named by row and column. */
 export function firstProblem<TRow extends DomainRowLike>(table: DomainTable<TRow>, rows: Iterable<RowView<TRow>>,
-  source?: DomainSource<TRow>): {row: RowView<TRow>, message: string} | null {
-  const columns = table.validators.columns;
+  source?: DomainSource<TRow>, counted = true): {row: RowView<TRow>, message: string} | null {
   let found: {row: RowView<TRow>, column: string, problem: string} | null = null;
   let count = 0;
   for (const row of rows) {
-    const column = columns.find((c) => table.validators.check(c, row[c], row) !== null);
-    if (column === undefined)
-      continue;
-    const problem = table.validators.check(column, row[column], row)!;
-    found ??= {row, column, problem};
-    if (column === found.column && problem === found.problem)
-      count++;
+    for (const column of table.validators.columns) {
+      const problem = table.validators.check(column, row[column], row);
+      if (problem === null)
+        continue;
+      found ??= {row, column, problem};
+      if (column === found.column && problem === found.problem)
+        count++;
+      break;
+    }
+    if (found !== null && !counted)
+      break;
   }
   // the refusal names the row it is about: from a list, "Status: …" alone names nothing
   return found === null ? null :
@@ -603,7 +592,7 @@ function nameCell<TRow extends DomainRowLike>(table: DomainTable<TRow>, row: Row
   return `${subject}: ${DomainTable.named(caption, problem)}`;
 }
 
-/** The row's caption or, where that names nothing, its place among the source's rows. */
+/** The row's caption — or, where that is only its id, its place among the source's rows: "Order line 2". */
 function rowName<TRow extends DomainRowLike>(table: DomainTable<TRow>, row: RowView<TRow>,
   source?: DomainSource<TRow>): string {
   const caption = table.renderer.caption(row);
@@ -613,7 +602,6 @@ function rowName<TRow extends DomainRowLike>(table: DomainTable<TRow>, row: RowV
   return at < 0 ? caption : `${capital(nounOf(table.info, true))} ${at + 1}`;
 }
 
-/** Whether a caption names nothing: empty, a uuid, or the row's ids with only numbers around them. */
 export function madeOfIds<TRow extends DomainRowLike>(table: DomainTable<TRow>, row: RowView<TRow>,
   caption: string): boolean {
   if (caption === '' || DomainAddress.ID.test(caption))
@@ -625,7 +613,6 @@ export function madeOfIds<TRow extends DomainRowLike>(table: DomainTable<TRow>, 
       ids.push(value);
   }
   let rest = caption;
-  // a whole token: the id "5" is not in "2025"
   for (const id of ids.sort((x, y) => y.length - x.length)) {
     const escaped = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     rest = rest.replace(new RegExp(`(?<![0-9a-zA-Z])${escaped}(?![0-9a-zA-Z])`, 'g'), ' ');

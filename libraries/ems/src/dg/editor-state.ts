@@ -156,7 +156,6 @@ export class EditorEditState implements EditState {
     this.editor.detach();
   }
 
-  // a cell the server refused is shown, and the next save asks the server again
   private _validity(): string | null {
     const editor = this.editor;
     for (let row = 0; row < this.df.rowCount; row++) {

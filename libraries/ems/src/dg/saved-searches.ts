@@ -20,14 +20,12 @@ const same = (a: DomainSearch, b: DomainSearch, schema: FilterSchema = {properti
   normalized(a.q, schema) === normalized(b.q, schema) && a.search === b.search && a.sort === b.sort;
 const label = (s: DomainSearch) => [s.q, s.search && `Search "${s.search}"`].filter((x) => x).join(' · ');
 
-/** The keys of `sort` over columns the list can be ordered by: the server refuses a read that names an unknown one. */
 export function sortable(sort: string, properties: readonly IProperty[]): string {
   const columns = new Set(properties.filter(DomainTable.isSortable).map((p) => p.name));
   return sort.split(',').map((key) => key.trim())
     .filter((key) => key !== '' && columns.has(key.replace(/^!/, '').replace(/^prop\./, ''))).join(',');
 }
 
-/** The query text in the form the box sends, so the server parses what the box validated. */
 export function normalized(q: string, schema: FilterSchema): string {
   if (q.trim() === '' || schema.properties.length === 0)
     return q;
@@ -36,9 +34,7 @@ export function normalized(q: string, schema: FilterSchema): string {
 }
 
 export class SavedSearches {
-  // per table, the server's answer plus this tab's writes, written key by key: another tab may have changed others
   private static readonly _saved = new Map<string, Signal<Map<string, DomainSearch>>>();
-  // per table, bumped by every read and write: a read answering after a later one is dropped
   private static readonly _turn = new Map<string, number>();
   private static readonly _current = new WeakMap<DomainSource, Signal<string | null>>();
 
@@ -51,7 +47,6 @@ export class SavedSearches {
     return SavedSearches._of(table).value;
   }
 
-  /** Reads the saved searches of `table` from the server again: what another tab saved or deleted shows. */
   static async reload(table: string): Promise<void> {
     const turn = SavedSearches._next(table);
     const stored: Record<string, string> | null = await grok.dapi.userDataStorage.get(savedKey(table));
@@ -74,7 +69,6 @@ export class SavedSearches {
     return saved;
   }
 
-  /** The saved search `name` collides with (names compare trimmed and ignoring case), or null. */
   static taken(table: string, name: string): string | null {
     const key = name.trim().toLowerCase();
     return [...SavedSearches.saved(table).keys()].find((k) => k.trim().toLowerCase() === key) ?? null;
@@ -156,7 +150,6 @@ export class SavedSearches {
       current.value = null;
       return;
     }
-    // the list's own search is what is recorded: a fresh read of the saved ones is not a new search
     const saved = untracked(() => SavedSearches.saved(source.table));
     const match = [...saved].find(([, s]) => same(s, search, source.schema));
     if (match !== undefined)
@@ -164,13 +157,11 @@ export class SavedSearches {
     SavedSearches.record(source.table, search);
   }
 
-  /** Opens on this tab's copy at once and reads the server's again: what another tab saved shows the next time. */
   static historyButton(source: DomainSource): HTMLButtonElement {
     return iconButton('history', () => void SavedSearches._fresh(source.table),
       {tooltip: 'Saved and recent searches', menu: () => SavedSearches._history(source)});
   }
 
-  // what this tab and the others saved, as the server has it now; this tab's copy where the read fails
   private static _fresh(table: string): Promise<void> {
     return SavedSearches.reload(table).catch((e) => void DomainErrors.report(e));
   }

@@ -71,7 +71,6 @@ export class DomainViews {
    * docks. */
   async show(address: string): Promise<DG.ViewBase> {
     const {entry, rest} = this._route(address);
-    // any click makes its view current: bring this one forward only once the click that asked for it is done
     await new Promise((resolve) => setTimeout(resolve));
     return DomainApp.openAt(this.baseOf(entry.table), rest) ?? grok.shell.addView(await this._new(address));
   }
@@ -92,8 +91,6 @@ export class DomainViews {
     return view;
   }
 
-  /** Rebuilds every open view of the schema's tables over the properties they have now ({@link DomainApp.rebuild});
-   * one that fails is reported and the others go on. */
   static async reload(schema: string): Promise<void> {
     DomainTable.forget(schema);
     for (const app of [...DomainApp.live]) {
@@ -135,7 +132,6 @@ export class DomainViews {
 
   // the router hands over the path alone: where the address bar is this view's, its query is replayed from there
   private _at(entry: DomainViewEntry, rest: string): string {
-    // a package's main app answers at `/apps/<Package>` for views that live under `/apps/<Package>/<Package>`
     const base = this.baseOf(entry.table);
     const short = base.replace(this._options.path, this._options.path.replace(/(\/[^/]+)\1$/i, '$1'));
     const path = window.location.pathname.toLowerCase();

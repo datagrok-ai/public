@@ -2,17 +2,17 @@
 
 ## v.next
 
-* Save: A refusal the server would repeat holds Save until the next edit; fixed stale deletes, restores and misleading messages, a grid naming the wrong field, and "Failed to fetch"
+* Save: A refusal the server would repeat holds Save until the next edit; fixed stale deletes, restores and messages
 * Save: A stored value a rule refuses holds Save only once edited; a move into its own subtree is refused
-* Refresh: Always offered; keeps the current row, the selection, unsaved edits and an open cell
-* Lists: Fixed Load more, search, filters, sort and the selection around saves; titles never show an id
-* Permissions: Fixed stale access, wrong "no access" messages, and New, sort and filters the user cannot use
-* Forms: Fixed JSON, list and number values; deleted records are read-only with Undo or Restore
-* Delete: Asks first where a delete leaves rows of other tables unlinked; child grids can delete rows
-* Import: Fixed previews, reports, key and name mapping and large files; Add or update maps an auto-numbered key; a user column takes a login or name
+* Refresh: Always offered; keeps the current row, the selection and unsaved edits
+* Lists: Fixed Load more, search, filters, sort and the selection around saves
+* Permissions: Fixed stale access and wrong "no access" messages
+* Forms: Fixed JSON, list and number values; deleted records are read-only
+* Delete: Asks first where a delete unlinks rows of other tables; child grids delete rows
+* Import: Fixed previews, reports, key and name mapping and large files; a user column takes a login or name
 * Properties: Pages rebuild after Edit properties; fixed concurrent edits dropping user columns
-* Search: Fixed saved searches being lost or erased across tabs
-* Table view: Sums show their unit, or "mixed units"
+* Search: Fixed saved searches lost across tabs
+* Table view: Sums show their unit
 * [core#611](https://github.com/datagrok-ai/core/issues/611): Domain schemas: a named error code for an unknown group on grants — the binding dialog reads `unknown-group` instead of matching the message
 * History: Fixed "Show older" turning off with no reason while it loads; it now says "Loading older entries…"
 * u2-domain-pick: Fixed a pick bound to a read-only path rendering a spec error instead of a read-only input

@@ -2,12 +2,22 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {computed, div, divV, span, plural, statusLine, signal, Signal, Dialog, BoolInput, notify}
   from '@datagrok-libraries/u2';
+import {errorCode} from '../../core/domain-backend.js';
 import {DomainErrors} from '../errors.js';
 import {BindingWizard} from './binding-dialog.js';
 import {ManifestEditor} from './manifest-editor.js';
 import type {ManifestChange, ManifestJson, ManifestOwnership} from './manifest-model.js';
 
 const OPTIONS = ['friendlyName', 'description', 'choices', 'min', 'max', 'format'] as const;
+
+interface Consequence {
+  verb: string;
+  noun: [one: string, many: string];
+  text: string;
+  said: boolean;
+  count?: number;
+  notes?: HTMLElement[];
+}
 
 export class PropertyDialog {
   private static readonly _extensible = new Map<string, Promise<Set<string>>>();
@@ -56,7 +66,6 @@ export class PropertyDialog {
     return new Set(Object.keys(tables).filter((t) => tables[t].extensible === true));
   }
 
-  // the token is read FIRST, so a change landing between the reads is a conflict, never an overwrite
   private static async _baseline(handle: DG.DomainSchemaClient): Promise<{manifest: ManifestJson,
     ownership: ManifestOwnership}> {
     const {extVersion} = await handle.apply({}, {dryRun: true});
@@ -67,13 +76,11 @@ export class PropertyDialog {
     return {manifest: {...manifest, extVersion: String(extVersion)}, ownership};
   }
 
-  // the filter may match names in another case: the schema is the one spelled exactly so
   private static async _schema(schemas: DG.HttpDataSource<DG.DomainSchema>, name: string):
     Promise<DG.DomainSchema | undefined> {
     return (await schemas.filter(`name = ${JSON.stringify(name)}`).list()).find((s) => s.name === name);
   }
 
-  // a column read as the plugin's is left out of the full-state extension, which the server takes as a drop
   private static async _ownership(schema: string, tables: string[]): Promise<ManifestOwnership> {
     const entity = await PropertyDialog._schema(grok.dapi.domains.schemas.include('tables.columns.property'), schema);
     if (entity === undefined)
@@ -107,7 +114,7 @@ export class PropertyDialog {
       await handle.apply({...payload, confirmDestructive: plan.destructive});
     }
     catch (e) {
-      if (DomainErrors.codeOf(e) !== 'version-conflict') {
+      if (errorCode(e) !== 'version-conflict') {
         editor.diagnostics.value = BindingWizard.issues(e);
         throw new Error(DomainErrors.message(e));
       }
@@ -123,7 +130,6 @@ export class PropertyDialog {
     return true;
   }
 
-  // built from the server's plan, not the client's diff: SAVE confirms the whole plan, each part once
   private static _confirm(changes: ManifestChange[], plan: DG.DomainApplyPlan): Promise<boolean> {
     const counted = (n: number | undefined, one: string, many: string): HTMLElement[] =>
       n !== undefined && n > 0 ? [span(`${plural(n, one, many)} deleted`, 'u2-binding-change-note')] : [];
@@ -131,34 +137,34 @@ export class PropertyDialog {
       changes.some((c) => c.removes && c.table === table && c.column === column);
     const edited = (table: string, column: string): boolean => changes.some((c) => c.table === table &&
       c.column === column && (c.id.endsWith(':decl') || c.id.endsWith(':ref')));
-    const {tables, columns} = plan.drops;
-    const constraints = Object.entries(plan.constraintDrops as {[table: string]: string[]} | null ?? {});
-    const values = (d: DG.DomainApplyPlan['drops']['columns'][number]) => d.nonNullValues ?? 0;
-    const rows = (t: DG.DomainApplyPlan['drops']['tables'][number]) => t.liveRows ?? 0;
-    const column = (t: string, c: string) => `Column ${t}.${c}`;
-    type Item = {n: number, text: string, said: boolean, notes?: HTMLElement[]};
-    const item = (text: string, said: boolean, n = 1, notes?: HTMLElement[]): Item => ({n, text, said, notes});
-    // per kind: what the plan does, a line each unless a client change says it already, and the consent's words
-    const kinds: [verb: string, one: string, many: string, items: Item[]][] = [
-      ['delete', 'stored value', 'stored values', columns.filter((d) => values(d) > 0).map((d) =>
-        item(`${column(d.table, d.column)} dropped`, removed(d.table, d.column), values(d),
-          counted(values(d), 'value', 'values')))],
-      ['delete', 'row', 'rows', tables.filter((t) => rows(t) > 0).map((t) =>
-        item(`Table ${t.name} dropped`, removed(t.name), rows(t), counted(rows(t), 'row', 'rows')))],
-      ['drop', 'column', 'columns', columns.filter((d) => values(d) === 0).map((d) =>
-        item(`${column(d.table, d.column)} dropped`, removed(d.table, d.column)))],
-      ['drop', 'table', 'tables', tables.filter((t) => rows(t) === 0).map((t) =>
-        item(`Table ${t.name} dropped`, removed(t.name)))],
-      ['change the type of', 'column', 'columns', (plan.typeChanges ?? []).map((t) =>
-        item(`${column(t.table, t.column)}: type changes to ${t.to}`, edited(t.table, t.column)))],
-      ['drop', 'unique constraint', 'unique constraints', (plan.uniqueDrops ?? []).map((u) =>
-        item(`${column(u.table, u.column)}: unique constraint dropped`, edited(u.table, u.column)))],
-      ['change the auto-numbering of', 'column', 'columns', Object.entries(plan.autoNumberChanges ?? {})
-        .flatMap(([t, cs]) => cs.map((c) => item(`${column(t, c)}: auto-numbering changes`, edited(t, c))))],
-      ['change', 'business key', 'business keys', (plan.businessKeyChanges ?? []).map((k) => item(`Table ${k.table}: ` +
-        `business key ${k.businessKey.length === 0 ? 'removed' : `changes to ${k.businessKey.join(', ')}`}`, false))],
-      ['drop', 'constraint', 'constraints', constraints.flatMap(([table, names]) =>
-        names.map((k) => item(`Table ${table}: constraint ${k} dropped`, false)))],
+    const {drops: {tables, columns}, typeChanges, uniqueDrops, autoNumberChanges, businessKeyChanges} = plan;
+    const constraints = Object.entries(plan.constraintDrops);
+    const values = (d: {nonNullValues?: number}): number => d.nonNullValues ?? 0;
+    const rows = (t: {liveRows?: number}): number => t.liveRows ?? 0;
+    const column = (t: string, c: string): string => `Column ${t}.${c}`;
+    const consequences: Consequence[] = [
+      ...columns.filter((d) => values(d) > 0).map((d): Consequence => ({verb: 'delete', noun: ['stored value',
+        'stored values'], count: values(d), text: `${column(d.table, d.column)} dropped`,
+      said: removed(d.table, d.column), notes: counted(values(d), 'value', 'values')})),
+      ...tables.filter((t) => rows(t) > 0).map((t): Consequence => ({verb: 'delete', noun: ['row', 'rows'],
+        count: rows(t), text: `Table ${t.name} dropped`, said: removed(t.name),
+        notes: counted(rows(t), 'row', 'rows')})),
+      ...columns.filter((d) => values(d) === 0).map((d): Consequence => ({verb: 'drop', noun: ['column', 'columns'],
+        text: `${column(d.table, d.column)} dropped`, said: removed(d.table, d.column)})),
+      ...tables.filter((t) => rows(t) === 0).map((t): Consequence => ({verb: 'drop', noun: ['table', 'tables'],
+        text: `Table ${t.name} dropped`, said: removed(t.name)})),
+      ...typeChanges.map((t): Consequence => ({verb: 'change the type of', noun: ['column', 'columns'],
+        text: `${column(t.table, t.column)}: type changes to ${t.to}`, said: edited(t.table, t.column)})),
+      ...uniqueDrops.map((u): Consequence => ({verb: 'drop', noun: ['unique constraint', 'unique constraints'],
+        text: `${column(u.table, u.column)}: unique constraint dropped`, said: edited(u.table, u.column)})),
+      ...Object.entries(autoNumberChanges).flatMap(([t, cs]) => cs.map((c): Consequence => ({
+        verb: 'change the auto-numbering of', noun: ['column', 'columns'],
+        text: `${column(t, c)}: auto-numbering changes`, said: edited(t, c)}))),
+      ...businessKeyChanges.map((k): Consequence => ({verb: 'change', noun: ['business key', 'business keys'],
+        text: `Table ${k.table}: business key ${k.businessKey.length === 0 ? 'removed' :
+          `changes to ${k.businessKey.join(', ')}`}`, said: false})),
+      ...constraints.flatMap(([table, names]) => names.map((k): Consequence => ({verb: 'drop',
+        noun: ['constraint', 'constraints'], text: `Table ${table}: constraint ${k} dropped`, said: false}))),
     ];
     const lost = (c: ManifestChange): HTMLElement[] => !c.removes ? [] : c.column === undefined ?
       counted(tables.find((t) => t.name === c.table)?.liveRows, 'row', 'rows') :
@@ -166,13 +172,15 @@ export class PropertyDialog {
     const lines = [
       ...changes.map((c) => div([span(c.text), ...lost(c)],
         `u2-binding-change${c.removes ? ' u2-binding-change-removes' : ''}`)),
-      ...kinds.flatMap(([, , , items]) => items.filter((i) => !i.said).map((i) =>
-        div([span(i.text), ...i.notes ?? []], 'u2-binding-change u2-binding-change-removes'))),
+      ...consequences.filter((c) => !c.said).map((c) =>
+        div([span(c.text), ...c.notes ?? []], 'u2-binding-change u2-binding-change-removes')),
     ];
-    const parts = kinds.flatMap(([verb, one, many, items]) => {
-      const n = items.reduce((sum, i) => sum + i.n, 0);
-      return n === 0 ? [] : [`${verb} ${plural(n, one, many)}`];
-    });
+    const totals = new Map<string, {verb: string, noun: [string, string], count: number}>();
+    for (const {verb, noun, count = 1} of consequences) {
+      const key = `${verb} ${noun[1]}`;
+      totals.set(key, {verb, noun, count: (totals.get(key)?.count ?? 0) + count});
+    }
+    const parts = [...totals.values()].map(({verb, noun: [one, many], count}) => `${verb} ${plural(count, one, many)}`);
     const words = parts.length === 0 ? 'apply the destructive changes' : parts.length === 1 ? parts[0] :
       `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
     const confirmed = signal(false);

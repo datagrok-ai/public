@@ -67,8 +67,7 @@ under its own `SharedSession`:
   under the ribbon.
 - **The status bar** is the session's summary while it is dirty ("3 unsaved changes in 2 tables"),
   else the page's ("50 of 2,077 substances", "New substance", "Substance saved"). A `live` list that has
-  seen the server move while something it holds is unsaved, a tab another view's save left behind, and a
-  page whose properties were edited over pending changes say "Data changed — Refresh".
+  seen the server move while something it holds is unsaved says "Data changed — Refresh".
 - **Three gates in front of dropping unsaved changes**, each the same Save / Discard / Cancel
   dialog: in-app navigation (a row, Back, a filter or preset change), the view's ✕
   (`onViewRemoving`), the browser's unload (`beforeunload`, armed exactly while dirty).
@@ -162,10 +161,10 @@ const report = await domains.import(table);             // DG.DomainBatchReport,
 A four-step wizard: **source** (any open frame, or any file the platform can read — the same
 table input the platform's own dialogs use), **mapping** (source column → target, auto-matched by
 name; only the columns the caller may write are offered), **preview** (the schema's own rules over
-the first 1,000 rows — the commit judges the rest — plus the blocking problems: no source, nothing
-mapped, two columns mapped to one target, an unmapped upsert key, a missing required column) and **report** (the server's, which
+the first 1,000 rows, plus the blocking problems: no source, nothing mapped, two columns mapped to
+one target, an unmapped upsert key, a missing required column) and **report** (the server's, which
 is the authority). Only the MAPPED columns are posted, under their target names — a skipped or
-renamed source column never reaches the server; the source frame only gets the key column, replacing one so named.
+renamed source column never reaches the server; the source frame only gets the key column.
 
 ## Rules the controls follow (so the app does not re-implement them)
 

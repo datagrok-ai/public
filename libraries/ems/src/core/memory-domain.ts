@@ -3,7 +3,7 @@ import {Filters, Access, MemoryFrame, Rows, isEmpty, Component} from '@datagrok-
 import type {FilterCondition, FilterGroup, IProperty, AccessData, FieldAccess,
   MemoryColumn} from '@datagrok-libraries/u2';
 import {DomainBackendError, isUnscoped, toPlural, toSingular, readableInfo} from './domain-backend.js';
-import type {AuditEntryLike, DomainBackend, DomainBatchOptionsLike, DomainBatchReportLike,
+import type {AuditEntryLike, DomainBackend, DomainOnDelete, DomainBatchOptionsLike, DomainBatchReportLike,
   DomainBatchValidationLike, DomainBatchValidationRowLike, DomainFrameLike, DomainProbeLike,
   DomainQueryLike, DomainReadScope, DomainSupportLike, DomainTableInfoLike, DomainTableLike,
   DomainTransactionOpLike, DomainTransactionResultLike} from './domain-backend.js';
@@ -27,8 +27,7 @@ export interface MemoryColumnJson {
   searchable?: boolean;
   /** A ref column's grammar filter over its target (`$<column>` = this table's sibling). */
   filter?: string;
-  /** A ref column's referential action, as the server's `onDelete`. */
-  onDelete?: 'cascade' | 'setnull' | 'restrict';
+  onDelete?: DomainOnDelete;
   semType?: string;
   default?: unknown;
 }
@@ -357,7 +356,6 @@ export class MemoryDomainBackend implements DomainBackend {
 export class MemoryTable implements DomainTableLike {
   /** The server's `maxUpdateWhereRows` (= `maxDeleteWhereRows`). */
   static readonly maxUpdateWhereRows = 1000;
-  /** The server's `maxBatchReportRows`: a batch report itemizes at most this many rows. */
   static readonly maxBatchReportRows = 1000;
   /** How deep `ancestors` walks before it gives up — the server's recursion cap. */
   static readonly maxPathDepth = 64;
@@ -771,7 +769,7 @@ export class MemoryTable implements DomainTableLike {
     return chain.reverse();
   }
 
-  /** The schema's rules as the server refuses on them; an update is checked over the columns it sends alone. */
+  /** The schema's rules — required, choices, min, max — as the server's `_validateRow` refuses on. */
   check(row: Row, index: number, columns?: string[]): void {
     for (const prop of this._columns) {
       if (columns !== undefined && !columns.includes(prop.name!))
@@ -782,7 +780,6 @@ export class MemoryTable implements DomainTableLike {
     }
   }
 
-  /** The business key's unique index over the live rows; an update is checked when it sends a key column. */
   checkKey(rows: Row[], row: Row, index: number, columns?: string[]): void {
     const key = this._info.businessKey;
     if (key.length > 0 && (columns === undefined || key.some((c) => columns.includes(c))) &&
@@ -791,14 +788,12 @@ export class MemoryTable implements DomainTableLike {
       throw new DomainBackendError('validation', `Operation ${index}: duplicate business key (${key.join(', ')})`);
   }
 
-  // a bulk edit and an upload carry values, never `$` references
   private static _literal(values: Row): Row {
     const escape = (v: unknown): unknown => Array.isArray(v) ? v.map(escape) :
       typeof v === 'string' && v.startsWith('$') ? `$${v}` : v;
     return Object.fromEntries(Object.entries(values).map(([k, v]) => [k, escape(v)]));
   }
 
-  /** A written value as the server coerces it, for the cells the frame holds as text. */
   decode(column: string, value: unknown, index: number): unknown {
     const prop = this.properties.find((p) => p.name === column);
     if (prop === undefined || !isJsonCell(prop) || value === null || value === undefined)
@@ -876,7 +871,6 @@ export class MemoryTable implements DomainTableLike {
     return rows;
   }
 
-  // `under` becomes its ids, `fuzzy` a substring match; a text operator reads any column as text (`::text`)
   private _resolved(root: FilterGroup): FilterGroup {
     const cast = (name: string) => this._columns.some((p) => p.name === name && p.propertyType !== 'string_list');
     return {...root, nodes: root.nodes.map((node) => 'nodes' in node ? this._resolved(node) :

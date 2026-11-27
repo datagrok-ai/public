@@ -255,6 +255,6 @@ export class DomainFilters extends Control {
   static treeOf(query: string | FilterGroup, schema?: FilterSchema): FilterGroup {
     if (typeof query !== 'string')
       return query;
-    return query.trim() === '' ? Filters.group('and') : Filters.parse(query, schema).root;
+    return query.trim() === '' ? Filters.group('and') : Filters.parse(query, schema, 'domain').root;
   }
 }

@@ -601,7 +601,6 @@ scoped('a batch of deletes alone is "deleted", not "saved" — in the table\'s o
 
 scoped('a refusal about a whole row names the reason, not just "the changes were refused"', async () => {
   const memory = backend();
-  // the platform path: the sentence the js-api session worked out; nothing reaches a cell, so `validity` stays null
   emsBackends.domain = {
     table: (address) => memory.table(address),
     saveAll: () => Promise.reject(new DomainBackendError('restrict',
@@ -642,7 +641,6 @@ scoped('the shared overlay host does not outlive the dialogs in it', async () =>
   issues.dispose();
 });
 
-/** The memory backend, except that a save `refuse(edits)` answers an error for is refused: `sent` counts the saves. */
 function refusing(refuse) {
   const memory = backend();
   const out = {memory, sent: 0, dropped: 0};
@@ -656,7 +654,6 @@ function refusing(refuse) {
 const holds = (edits, id, test) => edits.find((e) => e.df.rows.some((r) => r.id === id && test(r)));
 const refusal = (message, code = 'validation') => new DomainBackendError(code, `Cannot save: ${message}`, true);
 
-// a refusal every source of the batch shows goes with the next edit, whichever source its cause is in
 scoped('a refused parent key fixed in the parent enables Save again', async () => {
   let offline = false;
   refusing((edits) => offline ? new DomainBackendError('network', 'The server cannot be reached') :
@@ -717,7 +714,6 @@ scoped('a landing that wrote nothing: reloaded away lets the prompt through, a c
   const asking = confirmDiscard(session);
   fire(buttonNamed('SAVE'), 'click');
   assert.equal(await asking, false, 'SAVE in the prompt holds the navigation over a refused save');
-  // RELOAD drops the conflicting writer's edits inside `saveAll`, which still lands
   memory.saveAll = async ([edit]) => (edit.discard(), edit.onSaved.fire({assigned: {}, written: 0}));
   const again = confirmDiscard(session);
   fire(buttonNamed('SAVE'), 'click');

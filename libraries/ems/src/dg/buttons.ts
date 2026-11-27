@@ -71,8 +71,7 @@ export function discardButton(target: SessionTarget,
  * edits; a function receives the row that was current (the one just saved, say) so an app carries
  * fields over from one entry to the next. The press is a change of its own — the draft counts
  * against the session from the start, unlike the create page's initial row. Permission ⇒ hidden:
- * absent without the `insert` capability; state ⇒ off, saying "Loading…", until the table is loaded.
- * `disabled` is the caller's own reason to keep it off; `null` while it has none. */
+ * absent without the `insert` capability; state ⇒ off, saying "Loading…", until the table is loaded. */
 export function newButton(source: DomainSource,
   values: Record<string, unknown> | ((last: RowView | null) => Record<string, unknown>) = {},
   options: SessionButtonOptions & {disabled?: () => string | null} = {}): Control {

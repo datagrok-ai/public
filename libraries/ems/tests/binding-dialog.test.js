@@ -331,7 +331,6 @@ scoped('a validation is bound to the exact payload: a change since is not valida
   assert.equal(result.name, 'nw');
   assert.deepEqual(result.access, {applied: [], failed: []});
   assert.equal(document.querySelector('.u2-dialog'), null);
-  // the completion boundary, then the opened app reading the caller's access afresh
   assert.equal(grok.dapi.domains.invalidated, invalidated + 2, 'the completion boundary once, the open once');
 });
 

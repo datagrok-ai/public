@@ -23,7 +23,6 @@ export interface DomainListOptions {
   empty?: string;
   /** What an empty, unfiltered list offers as its primary action. */
   create?: () => void;
-  /** False while another control shows the same source and owns its current row and selection. */
   active?: ReadonlySignal<boolean>;
 }
 
@@ -39,8 +38,6 @@ export class DomainList extends Control {
   /** The rows are not the ones the filter box reads as — set while that filter is invalid, so
    * they are shown dimmed instead of as the answer (`DomainApp` wires it to `DomainFilters`). */
   readonly stale: Signal<boolean> = signal(false);
-  // a second Delete while the first still asks is the same delete
-  /** The name of the delete action, whatever its caption. */
   static readonly DELETE = 'Delete';
   private static readonly _asking = new WeakSet<DomainSource>();
 
@@ -164,8 +161,6 @@ export class DomainList extends Control {
     return allowedActions([run], {access: source.access.peek(), row});
   }
 
-  /** Marks `rows` deleted once the user agrees to what the delete leaves without its link: the rows a `setnull`
-   * reference holds them by, counted per table. */
   static async confirmDelete(source: DomainSource, rows: readonly RowView[]): Promise<void> {
     if (DomainList._asking.has(source))
       return;
@@ -184,7 +179,6 @@ export class DomainList extends Control {
     const ids = rows.map((row) => row.id);
     const saved = ids.filter((id) => !Rows.isDraft(id));
     const info = source.schema.info;
-    // a setnull reference loses its link; a restrict one is the server's to refuse, a cascade deletes with the row
     const unlinking = saved.length === 0 ? [] : info.childTables.filter((c) => c.onDelete === 'setnull');
     const counts = await Promise.allSettled(unlinking.map(async (c) => {
       const child = await DomainTable.shared(`${c.schema}.${c.table}`);

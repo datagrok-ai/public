@@ -12,14 +12,12 @@ import {DomainErrors} from './errors.js';
 import {DomainDataTable} from './grid.js';
 
 const LIMIT = 100000;
-// the statistics in the field's own unit: a count, a variance or a shape has another one, or none
 const IN_UNIT: string[] = [DG.AGG.FIRST, DG.AGG.MIN, DG.AGG.MAX, DG.AGG.SUM, DG.AGG.MED, DG.AGG.AVG, DG.AGG.STDEV,
   DG.AGG.Q1, DG.AGG.Q2, DG.AGG.Q3, 'geomean'];
-// all else is computed from the values, so it means nothing across units
 const COUNTS: string[] = [DG.AGG.TOTAL_COUNT, DG.AGG.VALUE_COUNT, DG.AGG.UNIQUE_COUNT, DG.AGG.MISSING_VALUE_COUNT];
 
 /** Where an aggregated field lives: its table, the column naming the list's row (`batch_id.compound_id` one table
- * away), the field, and whether it is a quantity measured in the row's `unit`. */
+ * away), and the field. */
 interface Linked {
   address: string;
   path: string;
@@ -44,7 +42,6 @@ export function domainOutput(source: DomainSource, table: DomainTable, exclude: 
   const aggregations = signal<ColumnAggregation[]>([]);
   const values = signal(new Map<string, Record<string, unknown>>());
   const linked = new Map<string, Linked>();
-  // a key names a row: typed as text, it is counted, never summed — and never the new row's first pick
   const keys = new Set<string>();
   let built = false;
   let gen = 0;
@@ -117,7 +114,6 @@ export function domainOutput(source: DomainSource, table: DomainTable, exclude: 
         const row = found.get(String(result.get(path, i))) ?? {};
         for (const a of list) {
           const value = result.get(outputKey(a), i);
-          // the first value is one value, in the first row's unit
           const mixed = result.get('#units', i) > 1 && a.aggregation !== DG.AGG.FIRST;
           row[outputKey(a)] = !measured.includes(a) ? value : mixed ? 'mixed units' :
             IN_UNIT.includes(a.aggregation) ? `${DomainDataTable.number(value)} ${result.get('#unit', i)}` : value;

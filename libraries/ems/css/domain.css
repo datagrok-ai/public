@@ -426,7 +426,7 @@
   color: var(--dg-error);
 }
 
-/* the search box shrinks before the view does, never below its placeholder; its panel keeps the icons beside it */
+/* the search box shrinks before the view does, or the whole view scrolls sideways */
 .u2-domain-search {
   flex: 1 1 auto;
   min-width: 120px;

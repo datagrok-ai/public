@@ -33,7 +33,6 @@ function scoped(name, body) {
   });
 }
 
-/** The server's saved searches of grit.issue start as `stored`, and this tab has read them. */
 async function cleared(stored = {}) {
   dapi.userDataStorage.values = {'ems-searches|grit.issue': stored};
   await SavedSearches.reload('grit.issue');
@@ -428,7 +427,6 @@ scoped('Save as new search under a taken name is refused, not a silent replace',
   src.dispose();
 });
 
-// a whole group written from this tab's copy would bring back what another tab deleted since
 scoped('saved searches are written one by one: what another tab deleted stays deleted', async () => {
   const stored = await cleared({Alpha: '{"q":"","search":"alpha","sort":""}'});
   delete stored.Alpha;

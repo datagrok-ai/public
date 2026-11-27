@@ -9,10 +9,10 @@ import {backends, Scope, Control, notify} from '@datagrok-libraries/u2';
 import {SCHEMA, backend} from './domain-fixtures.mjs';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
-const {domains} = await import('../src/dg/facade.js');
+const {domains, DomainTable} = await import('../src/dg/facade.js');
+const {ImportLinks} = await import('../src/dg/import-links.js');
 const DG = await import('datagrok-api/dg');
 const grok = await import('datagrok-api/grok');
-// a project id as the platform has them: an import maps a reference column of non-uuids to its find-by field
 const P1 = '9b2c4f1a-3e5d-4a7b-8c6e-1f0a2d3b4c5e';
 
 function scoped(name, body) {
@@ -296,9 +296,9 @@ scoped('only the mapped columns are posted, under their target names', async () 
   const memory = backend();
   const users = grok.dapi.users;
   const tester = '1f2e3d4c-5b6a-4789-8abc-def012345678';
-  // the users the file names are read by a filter, never the whole list
   grok.dapi.users = {...users, filter: (f) => ({list: async () =>
-    f.includes('firstName = "Tester"') ? [{id: tester, login: 'tester', friendlyName: 'Tester'}] : []})};
+    f.includes('lastName = "Tester"') ?
+    [{id: tester, login: 'ann', firstName: 'Ann', lastName: 'Tester', friendlyName: 'Ann Tester'}] : []})};
   const {running} = await opened(memory, frame(['project_id', 'title', 'note', 'reporter'],
     [{project_id: P1, title: 'Imported', note: 'skipped', reporter: 'Tester'}]));
   await toMapping();
@@ -608,7 +608,6 @@ scoped('a commit past the 1,000 rows the server itemizes still writes back every
   const memory = emsBackends.domain = backend();
   const table = memory.tableSync('grit.project');
   const batch = table.batch.bind(table);
-  // the server's report: errors, then duplicates, then inserts, the first 1,000 of them
   const rank = {error: 0, duplicate: 1, inserted: 3};
   table.batch = async (rows, options) => {
     const report = await batch(rows, options);
@@ -639,10 +638,8 @@ scoped('a commit past the 1,000 rows the server itemizes still writes back every
   await running;
 });
 
-// a failed table CHECK aborts the statement: the server answers 409 with an entry on no row, whichever broke it
 scoped('a dry run the server refuses whole over a CHECK puts it on the rows that break it, as SQL reads NULL', async () => {
   const memory = backend();
-  // a row's own refusal carries its status, an insert's without an id: it stays on its row
   const own = {index: 2, id: null, status: 'error', errors: [{column: 'title', code: 'unique', message: 'Duplicate'}]};
   memory.tableSync('grit.issue').validate = async () => ({error: 'validation', rows: [{errors: [
     {column: null, code: 'check', message: 'Weight is positive', constraint: 'weight_positive'},
@@ -684,8 +681,6 @@ scoped('an import refuses up front when a required column cannot be written, unl
   await flush();
   fire(buttonNamed('CANCEL'), 'click');
   assert.equal(await running, null);
-  // a required column outside the key the caller cannot set: every insert would be refused; a key the server
-  // assigns is still how a row is found
   emsBackends.domain = backend({access: {can: {view: true, insert: true, edit: true, delete: true, share: true},
     fields: {project_id: 'editable', title: 'readonly', number: 'readonly'}}});
   noDryRun(emsBackends.domain);
@@ -702,4 +697,23 @@ scoped('an import refuses up front when a required column cannot be written, unl
   assert.match(reason(), /^1 row has errors/, 'a row without its number is not sent');
   fire(buttonNamed('CANCEL'), 'click');
   assert.equal(await updating, null);
+});
+
+const GROK_ID = {name: 'molregno', propertyType: 'int', type: 'int', format: 'DG-000000', friendlyName: 'Grok ID'};
+const link = {
+  prop: {name: 'compound_id', semType: 'moltrack.compound'},
+  target: {address: 'moltrack.compound', info: {singularName: 'Compound', pluralName: 'Compounds'}, properties: [GROK_ID]},
+  fields: [{prop: GROK_ID, path: 'molregno'}],
+};
+const STORED = [{id: 'c72', molregno: 72}, {id: 'c73', molregno: 73}, {id: 'big', molregno: 2 ** 53}];
+
+test('an import links a key typed as its format to the record the bare number names, and to no other', async () => {
+  const table = grok.dapi.domains.table;
+  grok.dapi.domains.table = () => ({query: async ({filter}) => STORED.filter((r) => filter[0].value.includes(r.molregno))});
+  const found = await ImportLinks.resolve(link, link.fields,
+    [['DG-000072'], ['dg-000073'], ['72'], ['nonesuch'], ['9007199254740993']]);
+  assert.deepEqual(found.map((m) => m.id), ['c72', 'c73', 'c72', null, null]);
+  assert.equal(found[3].error, 'No compound with Grok ID nonesuch');
+  assert.equal(DomainTable.parseKey({...GROK_ID, format: 'C10-0000'}, 'C10-0042'), 42, 'a zero in the literal prefix is not a digit');
+  grok.dapi.domains.table = table;
 });

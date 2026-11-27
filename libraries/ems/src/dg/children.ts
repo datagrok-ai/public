@@ -158,7 +158,6 @@ export class DomainChildren extends Control {
     if (row === null || Rows.isDraft(row))
       return;
     const opened = this.tabs.activeTab.peek();
-    // a table the caller may not view answers a count of 0: not a count to show
     const counts = await Promise.all(entries.map((e) => this._denied(e) !== null ? null :
       e.table.table.count({filter: `${e.fk} = "${row.id}"`})
         .then((n) => n === 0 && !e.table.access.can('view') ? null : n, () => null)));
@@ -212,7 +211,6 @@ export class DomainChildren extends Control {
         const body = grid?.root ??
           divH([domains.list(child).root, domains.form(child).root], 'u2-domain-children-split');
         const empty = span('', 'u2-domain-children-empty');
-        // a child saved under a parent the same Save deletes would land live under a row in the trash
         const add = domains.newButton(child, {}, {disabled: () => {
           this.parent.changeCount.value;
           this.parent.rows.items.value;

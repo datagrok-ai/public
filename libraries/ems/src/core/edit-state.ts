@@ -1,3 +1,4 @@
+import {TYPE} from 'datagrok-api/u2core';
 import {signal, computed, ReadonlySignal, Emitter, EMPTY, isEmpty, FrameRows, Rows} from '@datagrok-libraries/u2';
 import type {ObservableLike, IProperty, Access, MemoryFrame} from '@datagrok-libraries/u2';
 import type {DomainTableLike, DomainTransactionOpLike, DomainTransactionResultLike} from './domain-backend.js';
@@ -7,7 +8,6 @@ export type RowState = '' | 'new' | 'modified' | 'deleted' | 'restored';
 /** What a landed batch answers: every draft id the writer stamped → the id the server gave. */
 export interface EditSaved {
   assigned: Record<string, string>;
-  /** Rows this writer's transaction wrote. */
   written: number;
 }
 
@@ -16,7 +16,7 @@ export interface EditState {
   /** Changed cells, as the platform editor counts: an edited row its cells, a new or deleted
    * row once, a pristine draft not at all. */
   readonly changeCount: ReadonlySignal<number>;
-  /** The first problem the client finds, null when the batch may be sent: what keeps Save off. */
+  /** The first blocking problem, null when the batch may be saved. */
   readonly validity: ReadonlySignal<string | null>;
   readonly isSaving: ReadonlySignal<boolean>;
   /** The key of the row that changed, null for a change touching several. */
@@ -25,7 +25,6 @@ export interface EditState {
   readonly onSaved: ObservableLike<EditSaved>;
   isChanged(key: string, column: string): boolean;
   errorOf(key: string, column: string): string | null;
-  /** Whether the cell's error is the server's answer to the last save: shown, never holding Save off. */
   refused(key: string, column: string): boolean;
   setValue(key: string, column: string, value: unknown): void;
   /** Adds a draft; answers its stamped `~new:` id — the key `RowsLike.byKey` finds it under.
@@ -57,13 +56,11 @@ export interface EditState {
 
 type Row = Record<string, unknown>;
 
-/** A list or map column, which a frame holds as its JSON text. */
-export function isJsonCell(prop: IProperty): boolean {
-  const type = prop.propertyType ?? prop.type;
-  return type === 'string_list' || type === 'map';
+export function isJsonCell({propertyType, type}: IProperty): boolean {
+  const kind = propertyType ?? type;
+  return kind === TYPE.STRING_LIST || kind === TYPE.MAP;
 }
 
-/** A value as a frame cell of `prop` holds it: a list or a plain object as its JSON text. */
 export function jsonCell(prop: IProperty, value: unknown): unknown {
   if (!isJsonCell(prop) || typeof value !== 'object' || value === null)
     return value;
@@ -71,13 +68,11 @@ export function jsonCell(prop: IProperty, value: unknown): unknown {
   return Array.isArray(value) || proto === Object.prototype || proto === null ? JSON.stringify(value) : value;
 }
 
-/** Whether two cells hold the same JSON value, however its text is spelled. */
 export function sameJson(a: unknown, b: unknown): boolean {
   const x = jsonOf(a);
   return x !== undefined && x === jsonOf(b);
 }
 
-// the JSON of a list, an object or their text, keys in order; undefined for anything else
 function jsonOf(v: unknown): string | undefined {
   try {
     const value = typeof v !== 'string' ? v : /^\s*[[{]/.test(v) ? JSON.parse(v) : undefined;
@@ -104,6 +99,7 @@ export interface MemoryPendingOp {
 export class MemoryEditState implements EditState {
   readonly isDirty: ReadonlySignal<boolean>;
   readonly changeCount: ReadonlySignal<number>;
+  /** The first blocking problem, null when the batch may be saved. */
   readonly validity: ReadonlySignal<string | null>;
   readonly isSaving: ReadonlySignal<boolean>;
   readonly onChanged = new Emitter<string | null>();
@@ -153,7 +149,6 @@ export class MemoryEditState implements EditState {
     return prop === undefined || row === undefined ? null : this._error(row, prop);
   }
 
-  // a refused transaction is thrown whole: no cell carries the server's answer
   refused(): boolean {
     return false;
   }
@@ -302,8 +297,8 @@ export class MemoryEditState implements EditState {
   }
 
   /** The batch in row order, as the js-api editor builds it: an insert names itself with its
-   * draft id, a value that is a draft id of `drafts` (by default this writer's own) becomes the `$` reference
-   * the server resolves, a literal leading `$` is escaped; `id` is never sent. */
+   * draft id, a value that is a draft id of `drafts` (by default this writer's own) becomes the `$`
+   * reference the server resolves, a literal leading `$` is escaped; `id` is never sent. */
   buildOps(drafts: ReadonlySet<string> = this.draftIds()): MemoryPendingOp[] {
     const table = this._table.address;
     const pending: MemoryPendingOp[] = [];
@@ -321,9 +316,8 @@ export class MemoryEditState implements EditState {
           if (row[name] != null)
             values[name] = MemoryEditState._reference(row[name], drafts);
         }
-        // the platform frame holds no empty bool, so its editor always sends one
         for (const prop of this._table.properties) {
-          if (prop.propertyType === 'bool' && writable.includes(prop.name!))
+          if (prop.propertyType === TYPE.BOOL && writable.includes(prop.name!))
             values[prop.name!] ??= false;
         }
         pending.push({row, op: {op: 'insert', table, ref: String(row.id), values}});

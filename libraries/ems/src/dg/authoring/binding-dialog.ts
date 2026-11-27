@@ -4,6 +4,7 @@ import {Permission} from 'datagrok-api/dg';
 import {computed, signal, Control, div, divV, link, span, plural, Wizard, Section, ChoiceInput, Form, badge,
   notify} from '@datagrok-libraries/u2';
 import type {WizardOptions} from '@datagrok-libraries/u2';
+import {errorCode} from '../../core/domain-backend.js';
 import {DomainErrors} from '../errors.js';
 import {route} from '../routes.js';
 import {groupInput} from '@datagrok-libraries/u2/dg';
@@ -124,7 +125,7 @@ export abstract class BindingWizard<TResult> extends Control {
     const errors = (e as {errors?: unknown} | null)?.errors;
     if (Array.isArray(errors) && errors.length > 0)
       return errors as ManifestDiagnostic[];
-    return [{code: DomainErrors.codeOf(e) || 'error', message: DomainErrors.message(e)}];
+    return [{code: errorCode(e) || 'error', message: DomainErrors.message(e)}];
   }
 
   // one string with sorted keys, read so that the signals it depends on are tracked
@@ -199,7 +200,7 @@ export abstract class BindingWizard<TResult> extends Control {
 
   protected static _answered(e: unknown): boolean {
     const status = (e as {status?: unknown} | null)?.status;
-    return DomainErrors.codeOf(e) !== '' && !(typeof status === 'number' && status >= 500);
+    return errorCode(e) !== '' && !(typeof status === 'number' && status >= 500);
   }
 
   // a connector that never answers (a catalog it cannot open) must not hold the dialog
@@ -215,7 +216,7 @@ export abstract class BindingWizard<TResult> extends Control {
     const message = DomainErrors.message(e);
     if (/^XMLHttpRequest error\.?$/.test(message))
       return 'The connection to the server failed';
-    return (e as {status?: unknown} | null)?.status === 0 && DomainErrors.codeOf(e) === '' ?
+    return (e as {status?: unknown} | null)?.status === 0 && errorCode(e) === '' ?
       `Could not reach the server (${message})` : message;
   }
 }
@@ -738,7 +739,7 @@ export class BindingDialog extends BindingWizard<BindingResult> {
         access.applied.push(op.label);
       } catch (e) {
         const message = DomainErrors.message(e);
-        const gone = op.group !== undefined && DomainErrors.codeOf(e) === 'unknown-group';
+        const gone = op.group !== undefined && errorCode(e) === 'unknown-group';
         failed.push({op, message: gone ? `group ${op.group!.label} no longer exists` : message, final: gone});
         if (op.kind === 'restrict')
           broken.add(op.table);
