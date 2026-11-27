@@ -6,7 +6,8 @@ Feature: Run history records every run of the function view and brings any back
   Mine / Starred / Failed filters. The pencil names a run, the star keeps it, a click on a row brings the
   run's inputs back at its own address, and the author can delete a run. The panel leaves with its view
   and comes back with it. A function that reruns on every input change records one run once the inputs
-  rest, and Save to space links a run into a space (the Space row is PowerPack's).
+  rest, Save to space links a run into a space (the Space row is PowerPack's), and a package function's
+  history lists its runs (Compute2's ObjectCooling2; only the runs this feature makes are deleted).
 
   Two JavaScript scripts and a space are made through the API; the scripts, every run they record and
   the space are deleted at feature start and end.
@@ -115,3 +116,13 @@ Feature: Run history records every run of the function view and brings any back
     When user clicks on "Run history" icon
     Then "Run #1" run should be visible
     And changes of "Run #1" run should contain text "rows 8"
+
+  Scenario: A package function's history lists its runs
+    Given the "Compute2" package is installed
+    And the runs of the "ObjectCooling2" function made from now on are deleted at the end
+    When user opens the address "/func/Compute2.ObjectCooling2"
+    And user clicks on RUN button
+    Then run header should contain text "Run #"
+    When user clicks on "Run history" icon
+    Then run history should be visible
+    And first run in run history should be visible

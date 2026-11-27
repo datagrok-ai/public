@@ -55,9 +55,30 @@ export const runsDeleted = Given('the runs of the {string} function are deleted 
   await deleteRuns(page, func);
 }, {tier: 'api', description: 'every run of the function, with the tables starring kept, at feature start and end'});
 
+async function ownRunIds(page: Page, func: string): Promise<string[]> {
+  return page.evaluate(async (name) => {
+    const filter = `func.name = "${name}" and session.user.id = "${grok.shell.user.id}"`;
+    return (await grok.dapi.functions.calls.allPackageVersions().filter(filter).list({pageSize: 5000})).map((c: any) => c.id);
+  }, func);
+}
+
+/* For a shared function (a package's model): only the runs this user made after the step, by their ids. */
+export const ownRunsDeleted = Given('the runs of the {string} function made from now on are deleted at the end',
+  async (page: Page, func: string) => {
+    const before = new Set(await ownRunIds(page, func));
+    atFeatureEnd(page, async () => {
+      const made = (await ownRunIds(page, func)).filter((id) => !before.has(id));
+      await page.evaluate(async (ids) => {
+        const calls = grok.dapi.functions.calls.allPackageVersions();
+        for (const id of ids)
+          await calls.delete(await calls.find(id));
+      }, made);
+    }, true);
+  }, {tier: 'api', description: 'the runs of the function this user makes after the step, deleted by id at feature end'});
+
 /* An analysis form puts a switch with each input instead of in its label; the switch turns the input into a
    range (sensitivity analysis), a fitted input or a target (fitting). */
-export const analysisSwitch = When('user switches on {string} in the analysis form', async (page: Page, caption: string) => {
+async function setAnalysisSwitch(page: Page, caption: string, on: boolean): Promise<void> {
   const label = page.locator('label', {hasText: new RegExp(`^${caption.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`)})
     .filter({visible: true}).first();
   const root = label.locator('xpath=ancestor::*[contains(@class, "ui-input-root")][1]');
@@ -65,14 +86,22 @@ export const analysisSwitch = When('user switches on {string} in the analysis fo
   const inside = root.locator('.ui-input-switch');
   const toggle = (await inside.count()) > 0 ? inside.first() : root.locator('xpath=preceding-sibling::*[1]').locator('.ui-input-switch').first();
   await toggle.scrollIntoViewIfNeeded();
-  if (await toggle.evaluate((e) => e.classList.contains('ui-input-switch-on')))
+  if (await toggle.evaluate((e) => e.classList.contains('ui-input-switch-on')) === on)
     return;
   const clicked = await toggle.elementHandle();
   await toggle.click();
   // switching on rebuilds the input (a range shows "<caption> min" and "max"), so the switch may be replaced
-  await expect.poll(() => clicked!.evaluate((e) => !e.isConnected || e.classList.contains('ui-input-switch-on')),
-    {message: `the switch of "${caption}" turned on`}).toBe(true);
-}, {description: 'the switch of the input captioned so in a fitting or sensitivity analysis view; one already on stays on'});
+  await expect.poll(() => clicked!.evaluate((e, want) => !e.isConnected || e.classList.contains('ui-input-switch-on') === want, on),
+    {message: `the switch of "${caption}" turned ${on ? 'on' : 'off'}`}).toBe(true);
+}
+
+export const analysisSwitch = When('user switches on {string} in the analysis form',
+  (page: Page, caption: string) => setAnalysisSwitch(page, caption, true),
+  {description: 'the switch of the input captioned so in a fitting or sensitivity analysis view; one already on stays on'});
+
+export const analysisSwitchOff = When('user switches off {string} in the analysis form',
+  (page: Page, caption: string) => setAnalysisSwitch(page, caption, false),
+  {description: 'the switch of the input captioned so in a fitting or sensitivity analysis view; one already off stays off'});
 
 /* A space holds a run as a link (a project relation); the JS API lists a space's children without them. */
 export const spaceLinksRun = Then('the space {string} on the server should link a run of the {string} function',
