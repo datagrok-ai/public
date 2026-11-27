@@ -45,7 +45,6 @@ export class Permission {
   static CREATE_DOMAIN_SCHEMA = 'CreateDomainSchema';
 }
 
-/** js-api's \`DomainSession\` (domains-session.ts): a saving host drives it; a test replaces \`save\`. */
 export class DomainSession {
   constructor(editors) { this.editors = editors; this.lastRefusal = null; }
   async save() { return true; }
@@ -224,11 +223,9 @@ export const dapi = {
   domains: {
     invalidated: 0,
     invalidateUiCaches() { dapi.domains.invalidated++; },
-    /** A schema's manifest, as \`manifests[name]\` holds it. */
     manifests: {},
     schema: (name) => ({manifest: async () => dapi.domains.manifests[name] ?? {name, tables: {}}}),
   },
-  /** The server's per-user storage, \`values\` by group: what another tab writes lands here too. */
   userDataStorage: {values: {}, get: async (name) => ({...dapi.userDataStorage.values[name]}),
     postValue: async (name, key, value) => void ((dapi.userDataStorage.values[name] ??= {})[key] = value),
     remove: async (name, key) => void delete dapi.userDataStorage.values[name]?.[key]},
@@ -249,7 +246,6 @@ export const userSettings = {values: {}, get: (name) => userSettings.values[name
   getValue: (name, key) => userSettings.values[name]?.[key],
   add: (name, key, value) => (userSettings.values[name] ??= {})[key] = value,
   delete: (name, key) => delete userSettings.values[name]?.[key],
-  /** js-api user_settings_storage.ts: sends pending writes to the server now instead of at the 10 s sync. */
   flush: async () => {}};
 
 /** Ad-hoc function registration (js-api functions.ts:137): every registration, newest last, and

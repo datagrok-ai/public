@@ -98,7 +98,7 @@ export class FrameRows implements RowsLike<RowView> {
   /** The row index behind a key, -1 when the frame no longer holds it. */
   indexOf(key: string): number {
     const at = this._index.get(key) ?? -1;
-    // the frame can move under the index before its rebuild (a silent removal, a new frame): never read another row
+    // the frame can move before the index is rebuilt
     return at >= 0 && this.keyAt(at) === key ? at : -1;
   }
 

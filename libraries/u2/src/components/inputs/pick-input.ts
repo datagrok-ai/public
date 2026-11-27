@@ -29,7 +29,7 @@ export class PickInput<T> extends Input<string | null, PickInputOptions<T>> {
     return this._typeAhead;
   }
 
-  /** The box reads as a dropdown and a click opens the list — for a short lookup; typing still narrows it. */
+  /** The box reads as a dropdown and a click opens the list — for a short lookup. */
   asDropdown(): void {
     const input = this._typeAhead.root.querySelector('input')!;
     this.root.classList.add('u2-pick-dropdown');

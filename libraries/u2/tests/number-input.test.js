@@ -48,7 +48,6 @@ function type(input, text) {
   return el;
 }
 
-// a platform int column wraps what it cannot hold (3000000000 is stored as -1294967296)
 smoke('an int input without bounds is held to the int32 range', () => {
   const input = mount(new NumberInput({label: 'Count', mode: 'int'}));
   type(input, '3000000000');
@@ -291,7 +290,6 @@ smoke('P74: a bound signal holding undefined builds and shows an empty field; st
   input.dispose();
 });
 
-// the display text is rounded: reading it back on blur would round the stored value
 smoke('format: focus and blur without an edit keep the full-precision value and fire no change', () => {
   let changes = 0;
   const input = mount(new NumberInput({format: (v) => v.toFixed(2), value: 1.23456, onChanged: () => changes++}));

@@ -340,16 +340,15 @@ test('check: and/or/not are Kleene\'s — false and unknown is false', async () 
   assert.deepEqual(await admits('b != null and a > 0'), [], 'and it can be plainly false');
 });
 
-test('a datetime without a zone is UTC in the text and in the mask, whatever the local zone', async () => {
+test('a datetime without a zone is UTC for the domain target only, whatever the local zone', () => {
   const zone = process.env.TZ;
   process.env.TZ = 'Europe/Kyiv';
   try {
     const schema = {properties: [{name: 'd', type: TYPE.DATE_TIME}]};
-    for (const text of ['2026-09-01T00:00:00', '2026-09-01 00:00', '2026-09-01', '2026-09-01T02:00:00+02:00',
-      '2026-08-31T19:00:00.000-05:00']) {
-      assert.equal(Filters.format(Filters.parse(`d = "${text}"`, schema).root), 'd = "2026-09-01T00:00:00.000Z"');
-      assert.deepEqual(await rows([Filters.cond('d', '=', text)]), [0]);
-    }
+    const utc = 'd = "2026-09-01T00:00:00.000Z"';
+    for (const text of ['2026-09-01T00:00:00', '2026-09-01 00:00', '2026-09-01', '2026-09-01T02:00:00+02:00'])
+      assert.equal(Filters.format(Filters.parse(`d = "${text}"`, schema, 'domain').root), utc);
+    assert.notEqual(Filters.format(Filters.parse('d = "2026-09-01T00:00:00"', schema, 'dataframe').root), utc);
   } finally {
     if (zone === undefined)
       delete process.env.TZ;

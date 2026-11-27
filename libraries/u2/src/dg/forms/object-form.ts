@@ -581,71 +581,69 @@ export class ObjectForm extends Form {
 
   static coerce(kind: Kind, value: unknown): any {
     switch (kind) {
-      case 'bool':
-        return value === true;
-      case 'int':
-      case 'float':
-      case 'qnum': {
-        if (typeof value === 'number')
-          return value;
-        const parsed = value === null || value === undefined || value === '' ? NaN : Number(value);
-        return isFinite(parsed) ? parsed : null;
-      }
-      // js-api marshals a Dart `BigInt` to a JS one and back (`wrappers_impl.ts`); a property
-      // that hands over the digits as text is read here just as well
-      case 'bigint':
-        return typeof value === 'bigint' ? value :
-          (value === null || value === undefined ? null : BigIntInput.parse(String(value)) ?? null);
-      case 'choice':
-        return value === null || value === undefined ? null : String(value);
-      case 'datetime': {
-        if (value === null || value === undefined || value === '')
-          return null;
-        if (value instanceof Date)
-          return value;
+    case 'bool':
+      return value === true;
+    case 'int':
+    case 'float':
+    case 'qnum': {
+      if (typeof value === 'number')
+        return value;
+      const parsed = value === null || value === undefined || value === '' ? NaN : Number(value);
+      return isFinite(parsed) ? parsed : null;
+    }
+    // js-api marshals a Dart `BigInt` to a JS one and back (`wrappers_impl.ts`); a property
+    // that hands over the digits as text is read here just as well
+    case 'bigint':
+      return typeof value === 'bigint' ? value :
+        (value === null || value === undefined ? null : BigIntInput.parse(String(value)) ?? null);
+    case 'choice':
+      return value === null || value === undefined ? null : String(value);
+    case 'datetime': {
+      if (value === null || value === undefined || value === '')
+        return null;
+      if (value instanceof Date)
+        return value;
         // dayjs values (Dart-bound datetime props) expose toDate()
-        const dayjsLike = value as {toDate?: () => Date};
-        const date = typeof dayjsLike.toDate === 'function' ? dayjsLike.toDate() : new Date(value as string | number);
-        return isNaN(date.getTime()) ? null : date;
-      }
-      case 'list': {
-        if (Array.isArray(value))
-          return value;
-        if (value === null || value === undefined || value === '')
-          return [];
-        const parsed = ObjectForm.fromJsonText(value);
-        return Array.isArray(parsed) ? parsed.map((item) => item === null ? '' : String(item)) :
-          ListInput.parse(String(value));
-      }
-      case 'map': {
-        if (typeof value === 'object' && value !== null && !Array.isArray(value))
-          return value;
-        const parsed = ObjectForm.fromJsonText(value);
-        return ObjectForm._isRecord(parsed) ? parsed : {};
-      }
-      // the platform's own value (a FileInfo), handed to the platform's own editor untouched
-      case 'file':
-        return value ?? null;
-      default:
-        return text(value);
+      const dayjsLike = value as {toDate?: () => Date};
+      const date = typeof dayjsLike.toDate === 'function' ? dayjsLike.toDate() : new Date(value as string | number);
+      return isNaN(date.getTime()) ? null : date;
+    }
+    case 'list': {
+      if (Array.isArray(value))
+        return value;
+      if (value === null || value === undefined || value === '')
+        return [];
+      const parsed = ObjectForm._fromJsonText(value);
+      return Array.isArray(parsed) ? parsed.map((item) => item === null ? '' : String(item)) :
+        ListInput.parse(String(value));
+    }
+    case 'map': {
+      if (typeof value === 'object' && value !== null && !Array.isArray(value))
+        return value;
+      const parsed = ObjectForm._fromJsonText(value);
+      return ObjectForm._isRecord(parsed) ? parsed : {};
+    }
+    // the platform's own value (a FileInfo), handed to the platform's own editor untouched
+    case 'file':
+      return value ?? null;
+    default:
+      return text(value);
     }
   }
 
-  /** A cell holding the JSON text of an array or object, as that value; `undefined` otherwise. */
-  static fromJsonText(value: unknown): unknown {
+  private static _fromJsonText(value: unknown): unknown {
     if (typeof value !== 'string' || !/^\s*[[{]/.test(value))
       return undefined;
     try {
       return JSON.parse(value);
-    } catch (_) {
+    } catch {
       return undefined;
     }
   }
 
   /** Identity for echo suppression. `Object.is` decides the scalars, but {@link coerce} builds a
    * fresh `Date`, list or record on every read of an empty or foreign-shaped value, so identity
-   * alone would report an edit — and fire `onChanged` — the moment the field is constructed. Lists
-   * and plain objects compare by value, any other object by identity of its own keys' values. */
+   * alone would report an edit — and fire `onChanged` — the moment the field is constructed. */
   static same(a: unknown, b: unknown): boolean {
     return ObjectForm._sameValue(a, b, new Map());
   }

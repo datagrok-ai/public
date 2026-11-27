@@ -1,17 +1,8 @@
 import {Format} from './format.js';
-import {Dates} from './dates.js';
 
-/** A value as the text a field shows: null is empty, a Date or a dayjs is spelled (a UTC midnight as its day,
- * {@link Dates.isDateOnly}), anything else is String(). */
+/** A value as the text a field shows: null and undefined are empty, everything else is String(). */
 export function text(value: unknown): string {
-  if (value === null || value === undefined)
-    return '';
-  const date = value instanceof Date ? value : typeof value === 'object' && 'toDate' in value &&
-    typeof value.toDate === 'function' ? value.toDate() : undefined;
-  if (!(date instanceof Date))
-    return String(value);
-  return isNaN(date.getTime()) ? '' : Format.spelled(date, Dates.isDateOnly(date) ? {utc: true} :
-    {time: true, seconds: date.getTime() % 60000 !== 0});
+  return value === null || value === undefined ? '' : String(value);
 }
 
 /** What a required field with nothing in it says — matched by text where a form words the same

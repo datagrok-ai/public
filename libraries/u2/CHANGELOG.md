@@ -2,11 +2,10 @@
 
 ## v.next
 
-* Text: `text()` spells a Date or a dayjs instead of its raw GMT string, a UTC-midnight one as its day
-* Typeahead: Enter takes the one row a search leaves; fixed an arrow press before Escape changing the pick
+* Pick: A dropdown takes typing; Enter takes only a chosen row (`TypeAhead.explicitEnter`)
 * Lists: Added `DataTableColumn.sortable` and a lead row to `selectKeys`; fixed a delete losing the selection
-* Forms: Fixed JSON in map and list fields, numbers rounding on blur, and `1e400` reading as Infinity; added `ObjectForm.fromJsonText`
-* Filters: A datetime without a time zone is read as UTC (`Filters.instant`); unknown names suggest quoting
+* Forms: Fixed JSON text in map and list fields, numbers rounding on blur, `1e400` as Infinity, ints past int32
+* Filters: A datetime without a zone is UTC for the `'domain'` target
 * Apps: Fixed browser Back cancelled over unsaved changes leaving the address bar on the page not opened
 * [core#1507](https://github.com/datagrok-ai/core/issues/1507): Spaces: Fixed Open from space drawing an item's name in its icon slot, listing a space's own Files connection not marking a linked item, a cut-off search box and a bare caption as an app's preview, and OPEN doing nothing for an app, a script or a query (they open as in Browse); Down arrow in its search and in the Space picker's goes to the first match. Added `focusRows()` to `VirtualList` and `VirtualTree`
 * [core#1507](https://github.com/datagrok-ai/core/issues/1507): Spaces: Fixed the Space row refusing to move a project into a space that links it: `spaceHasName()` takes the project that does not count

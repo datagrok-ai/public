@@ -676,7 +676,6 @@ test('ObjectForm.same: a cyclic value or a Dart-backed wrapper compares without 
   const b = {k: 'v'};
   b.self = b;
   assert.equal(ObjectForm.same(a, b), true, 'two equal cyclic objects are the same, not a RangeError');
-  // js-api's wrapper of a Dart object (a FileInfo): its `dart` is cyclic through its type information
   class Wrapper {
     constructor(dart) { this.dart = dart; }
   }

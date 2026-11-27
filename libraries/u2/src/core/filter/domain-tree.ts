@@ -8,7 +8,7 @@ import type {FilterTarget} from './validate.js';
 import {fuzzyPair, isCondition, negate, parseTree} from './grammar.js';
 import {spanOf} from '../span.js';
 import {escapeLike, operators} from './operators.js';
-import {instant, kindOf} from './kinds.js';
+import {kindOf} from './kinds.js';
 
 const BARE_PATH = /^[A-Za-z]\w*(\.[A-Za-z]\w*)*$/;
 const ESCAPED: Record<string, string> = {'\\': '\\\\', '"': '\\"', '\'': '\\\'', '\n': '\\n', '\r': '\\r', '\t': '\\t',
@@ -53,7 +53,12 @@ function placeholder(v: unknown): FilterScalar | undefined {
     undefined;
 }
 
-function typed(v: unknown, prop: FilterProperty | null): FilterScalar {
+// the server reads a datetime with a time and no zone as UTC
+function instant(text: string, target?: FilterTarget): number {
+  return Date.parse(target === 'domain' && /[T ]\d\d?:\d\d(:\d\d(\.\d+)?)?$/i.test(text) ? `${text}Z` : text);
+}
+
+function typed(v: unknown, prop: FilterProperty | null, target?: FilterTarget): FilterScalar {
   if (v instanceof Date) {
     const span = spanOf(v);
     return span === undefined ? v : {span};
@@ -66,12 +71,11 @@ function typed(v: unknown, prop: FilterProperty | null): FilterScalar {
   const kind = kindOf(prop);
   if (kind === KIND.REF && prop.ref && v !== '@current')
     return {type: prop.ref, id: v};
-  if (kind === KIND.DATE_TIME && !Number.isNaN(instant(v)))
-    return new Date(instant(v));
-  return v;
+  const ms = kind === KIND.DATE_TIME ? instant(v, target) : NaN;
+  return Number.isNaN(ms) ? v : new Date(ms);
 }
 
-function conditionFrom(c: DomainCondition, schema?: FilterSchema): FilterCondition {
+function conditionFrom(c: DomainCondition, schema?: FilterSchema, target?: FilterTarget): FilterCondition {
   const proto = Object.getPrototypeOf(c);
   if (proto !== Object.prototype && proto !== null)
     throw new FilterError('condition is not a plain object');
@@ -84,7 +88,8 @@ function conditionFrom(c: DomainCondition, schema?: FilterSchema): FilterConditi
     segments[0] = head.name;
   const property = segments.join('.');
   const prop = segments.length === 1 ? head : null;
-  const value = (v: unknown): FilterValue => Array.isArray(v) ? v.map((x) => typed(x, prop)) : typed(v, prop);
+  const value = (v: unknown): FilterValue => Array.isArray(v) ? v.map((x) => typed(x, prop, target)) :
+    typed(v, prop, target);
   const op = c.operator;
   const v = c.value;
   const text = (): FilterValue => placeholder(v) ?? String(v);
@@ -116,19 +121,20 @@ function conditionFrom(c: DomainCondition, schema?: FilterSchema): FilterConditi
 }
 
 /** A sub-list that is a fold — a fuzzy pair or a `between` pair — as one condition, else null. */
-function foldedList(list: DomainConditionTree, schema?: FilterSchema): FilterCondition | null {
+function foldedList(list: DomainConditionTree, schema?: FilterSchema, target?: FilterTarget): FilterCondition | null {
   const pair = fuzzyPair(list);
   if (pair)
-    return conditionFrom(pair.fuzzy, schema);
+    return conditionFrom(pair.fuzzy, schema, target);
   if (list.length !== 3 || list[1] !== 'and' || !isCondition(list[0]) || !isCondition(list[2]))
     return null;
   const [low, , high] = list as [DomainCondition, 'and', DomainCondition];
   if (low.operator !== '>=' || high.operator !== '<=' || low.property !== high.property)
     return null;
-  return conditionFrom({property: low.property, operator: 'between', value: [low.value, high.value]}, schema);
+  return conditionFrom({property: low.property, operator: 'between', value: [low.value, high.value]}, schema,
+    target);
 }
 
-function groupFrom(list: DomainConditionTree, schema?: FilterSchema): FilterGroup {
+function groupFrom(list: DomainConditionTree, schema?: FilterSchema, target?: FilterTarget): FilterGroup {
   const runs: FilterNode[][] = [[]];
   let placed = false;
   let sticky: 'and' | 'or' | null = null;
@@ -142,11 +148,11 @@ function groupFrom(list: DomainConditionTree, schema?: FilterSchema): FilterGrou
     }
     let node: FilterNode | null;
     if (isCondition(item))
-      node = conditionFrom(item, schema);
+      node = conditionFrom(item, schema, target);
     else {
-      node = foldedList(item, schema);
+      node = foldedList(item, schema, target);
       if (!node) {
-        const sub = groupFrom(item, schema);
+        const sub = groupFrom(item, schema, target);
         node = sub.nodes.length === 0 ? null : sub.nodes.length === 1 && isGroup(sub.nodes[0]) ? sub.nodes[0] : sub;
       }
     }
@@ -166,8 +172,9 @@ function groupFrom(list: DomainConditionTree, schema?: FilterSchema): FilterGrou
 
 /** AND-over-OR grouping with sticky connectors; `between`, `in`, `is null`, `like`
  * shapes and fuzzy pairs fold back; with a schema, ref and datetime values get typed. */
-export function fromDomainTree(tree: DomainConditionTree | DomainCondition, schema?: FilterSchema): FilterGroup {
-  let root = groupFrom(Array.isArray(tree) ? tree : [tree], schema);
+export function fromDomainTree(tree: DomainConditionTree | DomainCondition, schema?: FilterSchema,
+  target?: FilterTarget): FilterGroup {
+  let root = groupFrom(Array.isArray(tree) ? tree : [tree], schema, target);
   while (root.nodes.length === 1 && isGroup(root.nodes[0]))
     root = root.nodes[0];
   return root;
@@ -317,6 +324,6 @@ export function parse(text: string, schema?: FilterSchema, target?: FilterTarget
   const {tree, errors} = parseTree(text, options);
   if (errors.length > 0)
     return {root: group('and'), problems: errors};
-  const root = fromDomainTree(tree, schema);
+  const root = fromDomainTree(tree, schema, target);
   return {root, problems: schema ? validate(root, schema, target) : []};
 }

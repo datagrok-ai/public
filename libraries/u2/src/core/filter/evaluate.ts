@@ -1,7 +1,7 @@
 import {BitArray} from 'datagrok-api/u2core';
 import {FilterError, KIND, isColumnRef, isGroup, isParam, isSpan} from './model.js';
 import type {FilterCondition, FilterGroup, FilterKind, FilterScalar} from './model.js';
-import {domainValue, instant, kindOf} from './kinds.js';
+import {domainValue, kindOf} from './kinds.js';
 import type {FilterProperty} from './schema.js';
 import type {IProperty} from '../property-like.js';
 import {resolveSpan} from '../span.js';
@@ -164,7 +164,7 @@ export class ColumnEvaluator {
       }
       case KIND.DATE_TIME: {
         const ms = v instanceof Date ? v.getTime() : isSpan(v) ?
-          resolveSpan(v.span, ctx.now).getTime() : typeof v === 'number' ? v : instant(String(v));
+          resolveSpan(v.span, ctx.now).getTime() : typeof v === 'number' ? v : Date.parse(String(v));
         return ms * 1000;
       }
       case KIND.BIG_INT:
@@ -225,7 +225,7 @@ function recordsColumn(name: string, prop: FilterProperty,
     case KIND.DATE_TIME:
       return column(() => Float64Array.from(rows, (_, i) => {
         const v = cell(i);
-        return v === null ? FLOAT_NULL : (v instanceof Date ? v.getTime() : instant(String(v))) * 1000;
+        return v === null ? FLOAT_NULL : (v instanceof Date ? v.getTime() : Date.parse(String(v))) * 1000;
       }));
     case KIND.BOOL:
       return column(() => BitArray.create(n, (i) => cell(i) === true).getBuffer());

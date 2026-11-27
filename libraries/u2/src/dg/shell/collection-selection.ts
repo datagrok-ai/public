@@ -15,11 +15,9 @@ export interface SelectableCollection {
   readonly currentRow: Signal<RowView | null>;
   readonly rows: RowsLike<RowView>;
   readonly df: ReadonlySignal<DataFrameLike | undefined>;
-  /** The frame's selected rows; a control that takes the collection over adopts them. */
   readonly selection?: ReadonlySignal<readonly RowView[]>;
 }
 
-/** The keys a source's user picked, kept past the control that held them. */
 const KEPT = new WeakMap<object, string[]>();
 
 /** Binds `rows` (any `VirtualRows`) to `source` inside `owner`'s scope, and answers nothing: the
@@ -35,7 +33,6 @@ const KEPT = new WeakMap<object, string[]>();
 export function collectionSelection(source: SelectableCollection, rows: VirtualRows<RowView>,
   options: {owner: Control, active?: ReadonlySignal<boolean>}): void {
   const owner = options.owner;
-  // two controls over one source must not both write: the one out of view leaves the source alone
   const active = options.active ?? signal(true);
   // the list's selection and the source's current row are one thing, written in either direction —
   // seeded from the row that is current already, so the first effect does not clear it
@@ -49,7 +46,7 @@ export function collectionSelection(source: SelectableCollection, rows: VirtualR
     if (row?.id !== source.currentRow.peek()?.id)
       source.currentRow.value = row;
   });
-  // the source moving the current row off a row that left is not the user's pick: the selection stays
+  // a current row moved off a removed row keeps the user's selection
   let leadId = current?.id ?? null;
   const picked = signal(false);
   owner.effect(() => {

@@ -126,7 +126,6 @@ export class ViewSync {
   private _restoreFromUrl(): void {
     if (!this._host.isCurrentView() || !this._host.owns(location.pathname))
       return;
-    // a move the app refused (unsaved changes, CANCEL) keeps its page: the entry gets that page's address back
     void this._host.open(`${location.pathname}${location.search}`).then((moved) => {
       const here = this._host.path.peek();
       if (moved === false && here !== `${location.pathname}${location.search}`)

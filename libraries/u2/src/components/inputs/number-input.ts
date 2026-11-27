@@ -22,8 +22,7 @@ export interface NumberInputOptions extends InputOptions<number | null> {
 }
 
 const INT = /^-?\d+$/;
-/** The range of the platform's `int` column: a frame column silently wraps a larger number, and
- * -2147483648 is its null. */
+// -2147483648 is the int column's null
 const INT32_MIN = -2147483647;
 const INT32_MAX = 2147483647;
 const FLOAT = /^-?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/;
@@ -262,7 +261,6 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
     return this._bad.value !== null;
   }
 
-  // a blur over the displayed text must not parse a `format`-rounded value back
   private _commit(): void {
     if (this._input.value === this._written)
       return;

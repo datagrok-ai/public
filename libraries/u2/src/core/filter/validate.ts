@@ -4,7 +4,7 @@ import {checkLocks, property} from './schema.js';
 import type {FilterProperty, FilterSchema, FilterTemplate} from './schema.js';
 import {operators} from './operators.js';
 import type {FilterOperator} from './operators.js';
-import {instant, kindOf} from './kinds.js';
+import {kindOf} from './kinds.js';
 import {isSpanText} from '../span.js';
 
 export type FilterTarget = 'domain' | 'dataframe';
@@ -32,8 +32,8 @@ function badScalar(v: FilterScalar, kind: FilterKind, prop: FilterProperty, op: 
         return `${bare} — under takes a ${prop.ref ?? 'row'} — pick one from the list`;
       if (prop.ref)
         return `${bare} — did you mean \`${prop.name}.name ${op.id} "${v.column}"\`?`;
-      return kind === KIND.STRING || kind === KIND.STRING_LIST || prop.choices !== undefined ||
-        COMPARISONS.includes(op.id) ? `${bare} — quote a text value` : bare;
+      return kind === KIND.STRING || kind === KIND.STRING_LIST || prop.choices !== undefined ?
+        `${bare} — quote a text value` : bare;
     }
     if (!COMPARISONS.includes(op.id))
       return `Operator "${op.id}" does not accept a column`;
@@ -55,7 +55,7 @@ function badScalar(v: FilterScalar, kind: FilterKind, prop: FilterProperty, op: 
       break;
     case KIND.DATE_TIME:
       if (v instanceof Date ? Number.isNaN(v.getTime()) : isSpan(v) ? !isSpanText(v.span) :
-        typeof v !== 'string' || Number.isNaN(instant(v)))
+        typeof v !== 'string' || Number.isNaN(Date.parse(v)))
         return bad('a date or a time span');
       break;
     case KIND.BOOL:

@@ -59,8 +59,6 @@ export class TypeAhead<T> extends Control {
   readonly text: ReadonlySignal<string>;
   readonly isOpen: ReadonlySignal<boolean>;
   readonly machineState: ReadonlySignal<TypeAheadState>;
-  /** Enter picks only a row the user moved to, or the one row named exactly as typed — a dropdown's
-   * first row is highlighted to be seen, not to be taken. */
   explicitEnter = false;
 
   private readonly _input = document.createElement('input');
@@ -172,8 +170,7 @@ export class TypeAhead<T> extends Control {
       this._pendingPick = false;
       if (view.kind !== 'ready')
         return;
-      const exact = this._exact(view.items);
-      this._commit(exact >= 0 || !this.explicitEnter ? Math.max(exact, 0) : this._lone(view.items),
+      this._commit(this.explicitEnter ? this._lone(view.items) : Math.max(this._exact(view.items), 0),
         document.activeElement === input);
     });
 
@@ -242,71 +239,71 @@ export class TypeAhead<T> extends Control {
   private _send(ev: TypeAheadEvent): void {
     const state = this._machine.peek();
     switch (ev.type) {
-      case 'focus':
-        if (state === 'idle')
-          this._machine.value = 'focused';
+    case 'focus':
+      if (state === 'idle')
+        this._machine.value = 'focused';
         // the first candidates, not the held item's name as a query
-        if (this._openOnFocus) {
-          if (this._source && this.selected.peek() !== null)
-            this._source.query('');
-          else
-            this._refresh();
-          this._openPopup();
-        }
-        break;
-      case 'blur':
-        this._dismiss();
-        this._machine.value = 'idle';
-        // text that is not a pick never survives a blur; a host that restores a pick of its own
-        // (its blur listener runs after this one) has had its say by then
-        queueMicrotask(() => {
-          if (!this.scope.isDisposed && !this._pendingPick && this.selected.peek() === null && this._text.peek() !== '')
-            this.resync();
-        });
-        break;
-      case 'input':
-        this._refresh();
-        this._openPopup();
-        break;
-      case 'arrowDown':
-        if (state === 'open') {
-          this._moved = true;
-          this._list.move(1);
-          break;
-        }
-        this._refresh();
-        this._openPopup();
-        break;
-      case 'arrowUp':
-        if (state === 'open') {
-          this._moved = true;
-          this._list.move(-1);
-        }
-        break;
-      case 'enter':
-        if (state !== 'open')
-          break;
-        if (this.selected.peek() !== null && this._list.activeIndex.peek() < 0)
-          this._dismiss();
-        else if (this._view.peek().kind === 'ready') {
-          this._commit(this.explicitEnter && !this._moved ? this._lone(this._items.peek()) :
-            this._list.activeIndex.peek());
-        } else if (this._view.peek().kind === 'loading' || this._view.peek().kind === 'idle')
-          this._pendingPick = true;
-        break;
-      case 'escape':
-        if (state === 'open')
-          this._dismiss();
+      if (this._openOnFocus) {
+        if (this._source && this.selected.peek() !== null)
+          this._source.query('');
         else
-          this._clear();
+          this._refresh();
+        this._openPopup();
+      }
+      break;
+    case 'blur':
+      this._dismiss();
+      this._machine.value = 'idle';
+      // text that is not a pick never survives a blur; a host that restores a pick of its own
+      // (its blur listener runs after this one) has had its say by then
+      queueMicrotask(() => {
+        if (!this.scope.isDisposed && !this._pendingPick && this.selected.peek() === null && this._text.peek() !== '')
+          this.resync();
+      });
+      break;
+    case 'input':
+      this._refresh();
+      this._openPopup();
+      break;
+    case 'arrowDown':
+      if (state === 'open') {
+        this._moved = true;
+        this._list.move(1);
         break;
-      case 'tab':
-      case 'dismiss':
+      }
+      this._refresh();
+      this._openPopup();
+      break;
+    case 'arrowUp':
+      if (state === 'open') {
+        this._moved = true;
+        this._list.move(-1);
+      }
+      break;
+    case 'enter':
+      if (state !== 'open')
+        break;
+      if (this.selected.peek() !== null && this._list.activeIndex.peek() < 0)
         this._dismiss();
-        break;
-      case 'select':
-        this._commit(ev.index);
-        break;
+      else if (this._view.peek().kind === 'ready') {
+        this._commit(this.explicitEnter && !this._moved ? this._lone(this._items.peek()) :
+          this._list.activeIndex.peek());
+      } else if (this._view.peek().kind === 'loading' || this._view.peek().kind === 'idle')
+        this._pendingPick = true;
+      break;
+    case 'escape':
+      if (state === 'open')
+        this._dismiss();
+      else
+        this._clear();
+      break;
+    case 'tab':
+    case 'dismiss':
+      this._dismiss();
+      break;
+    case 'select':
+      this._commit(ev.index);
+      break;
     }
   }
 
@@ -384,18 +381,16 @@ export class TypeAhead<T> extends Control {
       this._source.query(this._text.peek());
   }
 
-  // the row named exactly as typed, else the one row left; -1 when the choice is not the user's yet
-  private _lone(items: T[]): number {
-    const exact = this._exact(items);
-    return exact >= 0 || items.length !== 1 ? exact : 0;
-  }
-
-  // the one row whose text is what was typed; -1 for none or several
   private _exact(items: T[]): number {
     const typed = this._text.peek().trim().toLowerCase();
-    const at = items.findIndex((item) => this._itemText(item).toLowerCase() === typed);
-    return at >= 0 && items.findIndex((item, i) => i > at && this._itemText(item).toLowerCase() === typed) < 0 ?
-      at : -1;
+    return items.findIndex((item) => this._itemText(item).toLowerCase() === typed);
+  }
+
+  private _lone(items: T[]): number {
+    const exact = this._exact(items);
+    if (exact >= 0)
+      return this._exact(items.slice(exact + 1)) < 0 ? exact : -1;
+    return items.length === 1 ? 0 : -1;
   }
 
   private _commit(index: number, focus = true): void {
