@@ -71,7 +71,7 @@ export interface IDartApi {
   grok_View_Get_BasePath(v: any): any;
   grok_View_Set_BasePath(v: any, s: String): any;
   grok_View_Get_SaveToProject(v: any): any;
-  grok_View_Set_SaveToProject(v: any, x: Bool): any;
+  grok_View_Set_SaveToProject(v: any, x: Boolean): any;
   grok_View_Get_Description(v: any): any;
   grok_View_Set_Description(v: any, s: String): any;
   grok_View_Get_Type(v: any): any;
@@ -883,8 +883,7 @@ export interface IDartApi {
   grok_DomainRowEditor_OpenClone(row: any): Promise<any>;
   grok_DomainRowPicker_Pick(schemaName: String, tableName: String): Promise<any>;
   grok_DomainRowPicker_PickPopup(schemaName: String, tableName: String, anchor: any): Promise<any>;
-  grok_DomainConflictDialog_Show(subject: String): Promise<any>;
-  grok_DomainConflictDialog_ShowFor(subject: String, op: String): Promise<any>;
+  grok_DomainConflictDialog_Show(subject: String, op?: String): Promise<any>;
   grok_DomainMeta_ConfirmDelete(row: any): Promise<any>;
   grok_DomainMeta_ShareRow(row: any): Promise<any>;
   grok_DomainMeta_ShowHistory(row: any): any;

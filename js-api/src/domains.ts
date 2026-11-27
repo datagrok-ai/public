@@ -124,8 +124,7 @@ export interface DomainManifestIssue {
   /** The issue as worded for the author. */
   message: string;
 }
-/** Per-row failure list of a validation-failed write ({@link DomainValidationError.rows}); no `index` where the
- * server refused the whole statement. */
+/** Per-row failure list of a validation-failed write ({@link DomainValidationError.rows}). */
 export interface DomainRowErrors { index?: number; id?: string | null; errors: DomainColumnError[]; }
 
 /** Result of one inserted row. */
@@ -497,7 +496,7 @@ export interface DomainRegisteredManifest extends DomainManifest {
   /** The schema row's creation instant (ISO 8601): what {@link DomainApplyBody.ifIncarnation} names.
    * A name deleted and re-created starts at version `'1'` again with a new incarnation. */
   incarnation: string;
-  /** Plugin schema: the `ifVersion` of an extension apply ({@link DomainApplyPlan.extVersion} of a dry run). */
+  /** Plugin schema: the `ifVersion` of an extension apply. */
   extVersion?: string;
 }
 
@@ -815,8 +814,8 @@ export interface DomainApplyPlan {
   autoNumberChanges: {[table: string]: string[]};
   /** Table-level toggles (audit, name column, relations, permissions), per kind. */
   alters: {[kind: string]: unknown};
-  /** Declared constraints dropped. */
-  constraintDrops: unknown;
+  /** Declared constraints dropped, by table. */
+  constraintDrops: {[table: string]: string[]};
   /** Data pre-checks a destructive change would violate. */
   violations: unknown[];
   /** Manifest issues that refuse the plan (empty on an answered plan — a refusal rejects). */
@@ -841,7 +840,7 @@ export interface DomainApplyPlan {
   /** Set on the answer of a commit that found nothing to change — the schema already holds what
    * the body declares: nothing is written and `version` stays the one the apply was made against. */
   noop?: true;
-  /** Package-managed schema: the schema's `ext_version`, sent as `ifVersion` by the next extension apply. */
+  /** Package-managed schema: the extension version the apply moved to. */
   extVersion?: number;
 }
 
@@ -917,6 +916,12 @@ export interface DomainAccess {
   support: DomainSupport;
 }
 
+export type DomainOnDelete = 'cascade' | 'setnull' | 'restrict';
+
+export type DomainOrigin = 'package' | 'user';
+
+export type DomainConflictOp = 'delete' | 'restore';
+
 /** FK-inverted reference to a child (detail) table — drives detail-table links
  * and entity-view child tabs (see `DomainRegistryClient.tableInfo`). */
 export interface DomainChildTableRef {
@@ -929,8 +934,7 @@ export interface DomainChildTableRef {
   /** Friendly label of the FK column ('issue_id' → 'Issue') — disambiguates
    * children referencing the same parent through several columns. */
   label: string;
-  /** The FK's referential action; `restrict` where the manifest declares none. */
-  onDelete: 'cascade' | 'setnull' | 'restrict';
+  onDelete: DomainOnDelete;
 }
 
 /** Registry metadata of one domain table (see `grok.dapi.domains.registry`). */
@@ -980,7 +984,7 @@ export interface DomainTableInfo {
 
 /** Per-row outcome inside a {@link DomainBatchReport}. */
 export interface DomainBatchRowResult {
-  /** The row's position in the batch; absent on a refusal of the whole statement. */
+  /** The row's position in the batch. */
   index?: number;
   /** The row's id; null where nothing landed. */
   id: string | null;
@@ -1003,7 +1007,7 @@ export class DomainError extends Error {
    * 'forbidden' | 'not-found' | 'unsupported' | 'manifest-validation' | 'invalid-mode' | 'id-collision' |
    * 'destructive-confirmation-required' | 'not-user-managed' | 'not-package-managed' |
    * 'schema-management-unavailable' | 'apply-failed' | 'delete-failed' | 'unknown-group' | 'external-unreachable' |
-   * 'network' (the request never reached the server). */
+   * 'network'. */
   get code(): string { return `${this.body['error'] ?? (this.status === 403 ? 'forbidden' : '')}`; }
   /** Index of the failing op in a transaction ops list; undefined otherwise. */
   get opIndex(): number | undefined { return this.body['opIndex']; }
@@ -1338,7 +1342,8 @@ export interface DomainTransactionOp {
   ref?: string;
   values?: object;
   id?: string;
-  /** Optimistic-concurrency guard for update, delete and restore ops on a version-guarded table. */
+  /** Optimistic-concurrency guard for update, delete and restore ops on a platform-stored table
+   * (`support.concurrency === 'version'`). */
   expectedVersion?: number;
   /** Old-value guard for update ops on an external table (`support.concurrency === 'expected'`):
    * the columns' values as last read, every one AND-ed to the key; a mismatch refuses the whole

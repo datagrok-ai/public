@@ -1,12 +1,9 @@
-// The built bundle's DomainFrameEditor.buildOps and resolveConflict, run on an editor whose frame, client and
-// access are stubs (the Dart DataFrame is not available in Node).
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {loadBundle} = require('../load-bundle.cjs');
 
 const {DG, sandbox} = loadBundle(process.env.JS_API_BUNDLE || undefined);
 const E = DG.DomainFrameEditor;
-// the bundle runs in its own realm: compare its objects by value
 const plain = (v) => JSON.parse(JSON.stringify(v ?? null));
 
 function frame(cols) {
@@ -31,7 +28,6 @@ function frame(cols) {
   return df;
 }
 
-/** An editor over one persisted row in [state], its client answering get() with [fresh] and recording the options. */
 function editor(state, fresh, {concurrency = 'version'} = {}) {
   const ed = Object.create(E.prototype);
   const reads = [];
@@ -39,7 +35,7 @@ function editor(state, fresh, {concurrency = 'version'} = {}) {
     _df: frame({id: ['r1'], name: ['Mine'], version: [1], [DG.DOMAIN_DELETED_COLUMN]: [state === 'restored'],
       [E.STATE_COLUMN]: [state], [E.CHANGES_COLUMN]: [''], [E.ERRORS_COLUMN]: ['']}),
     _propByName: new Map(), _parsed: new Map(), _contributions: new Map(), _snapshots: new Map(), _unguarded: new Set(), _pristine: new Set(),
-    _info: {nameColumn: 'name'},
+    _info: {nameColumn: 'name', businessKey: [], singularName: 'Item'},
     access: {fields: {name: 'editable'}, support: {concurrency}},
     client: {table: 'item', get: async (id, options) => { reads.push({id, options}); return fresh; }},
     _onConflict: {next() {}}, _onChanged: {next() {}}, _onDirtyChanged: {next() {}},
@@ -53,9 +49,8 @@ function editor(state, fresh, {concurrency = 'version'} = {}) {
 const conflict = (current) => new DG.DomainVersionConflictError(`Version conflict: expected 1, current ${current}`, 409,
   {error: 'version-conflict', id: 'r1', currentVersion: current, expectedVersion: 1, opIndex: 0});
 
-/** The dialog the platform shows, answered with [decision]. */
 function dialog(decision) {
-  sandbox.grok_DomainConflictDialog_Show = sandbox.grok_DomainConflictDialog_ShowFor = () => Promise.resolve(decision);
+  sandbox.grok_DomainConflictDialog_Show = () => Promise.resolve(decision);
 }
 
 test('a stale delete, RELOAD of a row the server no longer has: the row leaves the frame, as a saved delete', async () => {
@@ -87,7 +82,6 @@ test('a stale update, RELOAD: json and string_list values land as the JSON text 
 test('a stale update, CANCEL: the edit stays pending, marked as a conflict, and the refusal says so in words', async () => {
   dialog(null);
   const {ed} = editor('modified', null);
-  ed._info.singularName = 'Item';
   ed._df.cols[E.CHANGES_COLUMN][0] = JSON.stringify({name: 'Theirs'});
   const failing = {op: {op: 'update', table: 'item', id: 'r1'}, row: 0};
   assert.equal(await ed.resolveConflict(conflict(2), failing), false);

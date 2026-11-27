@@ -5,8 +5,9 @@
 * Removed the Dartium fallbacks (`ui.onSizeChanged`, `ui.tools.waitForElementInDom`, forms, `GridCellWidget`, `BigIntColumn`) and `DG._isDartium()`
 * [#4677](https://github.com/datagrok-ai/public/issues/4677): Views: Added `ViewBase.unsavedWork`, which a view overrides to name the changes a close would lose: a close the user starts then asks first and offers to save them
 * [#4650](https://github.com/datagrok-ai/public/issues/4650): Added `ui.markdown(text, {sanitize: true})` for untrusted text: scripts and event handlers do not run
-* Domains: Added `DomainTable.origin`, `userColumns` and `DomainSession.lastRefusal.code`; `showConflictDialog` and `buildOps` take new arguments
-* Domains: Stale deletes and restores raise the conflict dialog; refusals name rows and columns by caption; a request that never reached the server is `DomainError.code` `'network'`
+* Domains: Added `DomainTable.origin`, `userColumns`, `DomainChildTableRef.onDelete`, refusal codes and `showConflictDialog(subject, op)`
+* Domains: `buildOps(drafts)` rewrites only the given draft ids (by default the editor's own) as references
+* Domains: Stale deletes and restores raise the conflict dialog; refusals name rows by caption
 * Domains: Fixed `~new:` text, `json` cells, deleting a row deleted elsewhere, and server-refused cells holding the next save
 * Chem: Fixed a SMILES with stereo centres, an aromatic N-H, a charge or an isotope pasted into a substructure filter's sketcher text box being read as SMARTS (`Nc1ncnc2c1c(Br)cn2[C@@H]3OC[C@@H](O)[C@H]3O`: every atom drawn aromatic- or aliphatic-only, and Similar found nothing). Only an H count a SMILES does not need (`[NH2]c1ccccc1`, `[CH3]c`, `[OH]`) still makes the text SMARTS, so that the H count stays the query's; a canonical SMILES stays a molecule, as when pasted on the canvas. A typed `c1cc[nH]c1` again finds N-substituted pyrroles too
 * Chem: Added `DG.chem.ISketcherOptions`, the third argument of `new DG.chem.Sketcher(mode, validationFunc, options)`: `sketcherType` shows that sketcher in the host whatever the session's (`DG.chem.currentSketcherType`, left as it is), and `showInput: false` leaves out the host's input row (the molecule field and its ≡ menu), the sketcher taking the whole host (Chem's Sketcher app)

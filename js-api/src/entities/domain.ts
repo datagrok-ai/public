@@ -7,6 +7,7 @@
 import {toJs} from '../wrappers';
 import {IDartApi} from '../api/grok_api.g';
 import {Entity} from './entity';
+import type {DomainOrigin} from '../domains';
 import dayjs from 'dayjs';
 
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
@@ -54,13 +55,10 @@ export class DomainTable extends Entity {
   /** Whether writes leave an in-transaction audit trail. */
   get audit(): boolean { return api.grok_DomainTable_Get_Audit(this.dart); }
 
-  /** Who owns the table: `'package'` (deployed by the plugin) or `'user'`; undefined on a server
-   * that does not say. */
-  get origin(): 'package' | 'user' | undefined { return api.grok_DomainTable_Get_Origin?.(this.dart); }
+  get origin(): DomainOrigin | undefined { return api.grok_DomainTable_Get_Origin(this.dart) ?? undefined; }
 
-  /** The columns a user added to the table; needs `.include('tables.columns.property')`. Undefined
-   * on a server that does not say. */
-  get userColumns(): string[] | undefined { return toJs(api.grok_DomainTable_Get_UserColumns?.(this.dart)); }
+  /** Needs `.include('tables.columns.property')`. */
+  get userColumns(): string[] { return toJs(api.grok_DomainTable_Get_UserColumns(this.dart)); }
 }
 
 

@@ -61,7 +61,6 @@ export interface DomainSessionRefusal {
   editor: DomainFrameEditor | null;
   /** The transaction-wide index of the failing op, where the server named one. */
   opIndex?: number;
-  /** The server's error code (`DomainError.code`). */
   code?: string;
 }
 
@@ -160,7 +159,7 @@ export class DomainSession implements IEditorHost {
 
   /** Every editor's batch (`prepareSave`), in editor order — what {@link save}
    * concatenates; null when any editor refused (a blocking cell error, already
-   * reported). A value is a reference when it is the draft id of any editor's row. */
+   * reported). */
   buildOps(): DomainSessionPart[] | null {
     const parts: DomainSessionPart[] = [];
     const drafts = new Set(this.editors.flatMap((editor) => [...editor.draftIds()]));
@@ -235,10 +234,9 @@ export class DomainSession implements IEditorHost {
             balloon.error(e?.message ?? `${e}`);
             return this._refuse(e?.message ?? `${e}`, null, e?.opIndex, e?.code);
           }
-          // a row someone else already deleted: this delete has landed, the rest of the batch goes on
+          // deleted elsewhere already: this delete has landed
           if (e instanceof DomainNotFoundError && at.failing.op.op === 'delete') {
-            const pending = parts.find((p) => p.editor === at.editor)!.pending;
-            pending.splice(pending.indexOf(at.failing), 1);
+            at.pending.splice(at.pending.indexOf(at.failing), 1);
             gone.set(at.editor, [...(gone.get(at.editor) ?? []), at.failing]);
             attempt--;
             continue;
@@ -337,13 +335,13 @@ export class DomainSession implements IEditorHost {
 
   /** The editor and pending op a transaction-wide `opIndex` points at. */
   private _locate(parts: DomainSessionPart[], index: unknown):
-      {editor: DomainFrameEditor; failing: DomainPendingOp} | null {
+      {editor: DomainFrameEditor; failing: DomainPendingOp; pending: DomainPendingOp[]} | null {
     if (typeof index !== 'number' || index < 0)
       return null;
     let offset = 0;
     for (const part of parts) {
       if (index < offset + part.pending.length)
-        return {editor: part.editor, failing: part.pending[index - offset]};
+        return {editor: part.editor, failing: part.pending[index - offset], pending: part.pending};
       offset += part.pending.length;
     }
     return null;
