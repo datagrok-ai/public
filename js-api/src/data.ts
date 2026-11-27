@@ -303,6 +303,28 @@ export interface LinkTablesOptions {
   filterAllOnNoRowsSelected?: boolean;
 }
 
+/**
+ * A link between two tables, made by {@link Data.linkTables}: changes to the first table's current row, mouse-over row,
+ * filter or selection are applied to the second one until {@link detach} is called.
+ * @example
+ * const link = grok.data.linkTables(t1, t2, ['id'], ['id'], [DG.SYNC_TYPE.SELECTION_TO_FILTER]);
+ * link.detach();
+ * @see {@link https://public.datagrok.ai/js/samples/data-frame/join-link/link-tables-detach} */
+export class TableLink {
+  public dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  /** Removes the link: changes to the first table no longer reach the second one, and what the link set there is
+   * reset. A "to filter" link refilters the second table without it (its other filters stay), a "to selection" link
+   * clears the second table's selection, and "row to row" clears its current row. Calling it again does nothing. */
+  detach(): void {
+    api.grok_DataFrameLink_Detach(this.dart);
+  }
+}
+
 export class Data {
   public demo: DemoDatasets = new DemoDatasets();
   public files: Files = new Files();
@@ -339,14 +361,19 @@ export class Data {
   }
 
   /**
-   * Links tables by the specified key columns using the specified link types (such as "current row to filter", see {@link DG.SYNC_TYPE}).
+   * Links tables by the specified key columns using the specified link types (such as "current row to filter", see {@link DG.SYNC_TYPE}),
+   * and returns the link; {@link TableLink.detach} removes it.
    * Tables are synchronized on the first change, set the {@link initialSync} option to reflect the current table state according to the sync type.
+   * @example
+   * const link = grok.data.linkTables(t1, t2, ['id'], ['id'], [DG.SYNC_TYPE.SELECTION_TO_FILTER]);
+   * link.detach();
+   * @see {@link https://public.datagrok.ai/js/samples/data-frame/join-link/link-tables}
    * */
-  linkTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], linkTypes: SyncType[], options?: LinkTablesOptions): void;
-  linkTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], linkTypes: SyncType[], initialSync?: boolean, filterAllOnNoRowsSelected?: boolean): void;
-  linkTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], linkTypes: SyncType[], initialSync: boolean | LinkTablesOptions = false, filterAllOnNoRowsSelected = false): void {
+  linkTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], linkTypes: SyncType[], options?: LinkTablesOptions): TableLink;
+  linkTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], linkTypes: SyncType[], initialSync?: boolean, filterAllOnNoRowsSelected?: boolean): TableLink;
+  linkTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], linkTypes: SyncType[], initialSync: boolean | LinkTablesOptions = false, filterAllOnNoRowsSelected = false): TableLink {
     const o: LinkTablesOptions = typeof initialSync === 'boolean' ? {initialSync, filterAllOnNoRowsSelected} : initialSync ?? {};
-    api.grok_LinkTables(t1.dart, t2.dart, keyColumns1, keyColumns2, linkTypes, o.initialSync ?? false, o.filterAllOnNoRowsSelected ?? false);
+    return new TableLink(api.grok_LinkTables(t1.dart, t2.dart, keyColumns1, keyColumns2, linkTypes, o.initialSync ?? false, o.filterAllOnNoRowsSelected ?? false));
   };
 
   /**

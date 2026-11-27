@@ -4,6 +4,7 @@
 
 * Spaces: `ui.spaceSaveRow()` takes `{placeholder, tooltip}` as its fourth argument, the empty space box's text and its tooltip, for a dialog that saves something other than a project
 * Models: Added `grok.dapi.models.getBlob(modelId)`: the file of a model the caller may view, as bytes
+* Data: `grok.data.linkTables` returns the link it made, a `DG.TableLink` (it returned nothing before); `TableLink.detach()` removes the link and resets what it set on the second table (filter, selection, current row)
 * Removed the Dartium fallbacks (`ui.onSizeChanged`, `ui.tools.waitForElementInDom`, forms, `GridCellWidget`, `BigIntColumn`) and `DG._isDartium()`
 * [#4677](https://github.com/datagrok-ai/public/issues/4677): Views: Added `ViewBase.unsavedWork`, which a view overrides to name the changes a close would lose: a close the user starts then asks first and offers to save them
 * [#4650](https://github.com/datagrok-ai/public/issues/4650): Added `ui.markdown(text, {sanitize: true})` for untrusted text: scripts and event handlers do not run

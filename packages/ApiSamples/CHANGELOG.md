@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Added data-frame/join-link/link-tables-detach.js (`grok.data.linkTables` returns the link, `TableLink.detach()` removes it)
 * [#4677](https://github.com/datagrok-ai/public/issues/4677): ui/views/unsaved-work.js: a view that asks before its unsaved changes are lost
 * dapi/domains/handler.js creates the issue it shows and deletes it, instead of failing on a tracker with no issues
 * Tests: Skipped the samples a test stand cannot run: the ai/ samples that need a model, dapi/cloud-logs.js (AWS), data-access/db-ddl.js and db-table-writes.js (a writable database) and ui/dialogs/pick-file.js (a dialog only a user closes)
