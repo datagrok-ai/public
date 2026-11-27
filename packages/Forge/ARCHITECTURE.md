@@ -2791,6 +2791,12 @@ Method, Task, Target, Data storage, Training rows, Tags and Created, in this ord
 `setVisible`); `id`, `version`, `updated_on`, `author_id` and the loaded `features`, `options` and `blob` (for the
 card, **Applicable to** and **Download**) stay hidden. "No models yet." is shown while the catalog is empty.
 
+## Migrated models
+
+`databases/forge/0001_migrate_core_models.sql` runs once, on a release publish: every earlier model of a package
+method becomes a promoted Forge row of its author, with `legacy_id` = its old id and without its shares. The model's
+file moves into Forge's folder when the model is first applied.
+
 ## Models without a file (the `sync` role)
 
 A package that keeps its models elsewhere has a function with `meta.mlrole: sync` (no inputs): it writes them as the

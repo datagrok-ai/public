@@ -106,13 +106,37 @@ export function ownBlob(blob: string | undefined): {folder: string; path: string
   return {folder, path: `${folder}/${match[2]}`};
 }
 
+async function writeModelFile(bytes: Uint8Array): Promise<string> {
+  const path = `${BLOB_ROOT}/${DG.Utils.uuid4()}/model.bin`;
+  await grok.dapi.files.write(path, bytes);
+  return FILE_PREFIX + path;
+}
+
 export async function saveModel(fields: ModelFields, blob: Uint8Array): Promise<string> {
   // The blob goes first, so a failed insert leaves an unreachable file, never a row without its blob.
-  const path = `${BLOB_ROOT}/${DG.Utils.uuid4()}/model.bin`;
-  await grok.dapi.files.write(path, blob);
-  const [{id}] = await forgeDb.models.insert({...fields, blob: FILE_PREFIX + path});
+  const [{id}] = await forgeDb.models.insert({...fields, blob: await writeModelFile(blob)});
   modelsChanged.next();
   return id;
+}
+
+export async function adoptLegacyFile(row: Pick<ModelRow, 'id' | 'name' | 'legacy_id'>): Promise<Uint8Array> {
+  const bytes = await grok.dapi.models.getBlob(row.legacy_id!).catch((e) => {
+    throw new ForgeError(`The file of the model '${row.name}' cannot be read: ${errorMessage(e)}`);
+  });
+  if (!bytes?.length)
+    throw new ForgeError(`The file of the model '${row.name}' cannot be read: the file is empty`);
+  const blob = await writeModelFile(bytes);
+  try {
+    await forgeDb.models.update(row.id, {blob});
+  } catch (e) {
+    await grok.dapi.files.delete(ownBlob(blob)!.folder);
+    // A user who can only view the model applies the bytes.
+    if (e instanceof DG.DomainForbiddenError)
+      return bytes;
+    throw e;
+  }
+  modelsChanged.next();
+  return bytes;
 }
 
 /** Saves [model] and links its training run: `copy` uploads its columns first and deletes them again when the save
