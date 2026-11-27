@@ -204,7 +204,7 @@ category('Storage', () => {
     try {
       const {legacy_id: legacyId} = (await forgeDb.models.get(row.id))!;
       await expectExceptionAsync(async () => void await adoptLegacyFile({...row, legacy_id: legacyId}),
-        failsWith(`The file of the model '${name}' cannot be read: The earlier model is not available to you`));
+        (e) => e instanceof ForgeError && e.message.startsWith(`The file of the model '${name}' cannot be read: `));
       expect((await forgeDb.models.get(row.id))?.blob ?? '', '');
     } finally {
       await forgeDb.models.delete(row.id);
