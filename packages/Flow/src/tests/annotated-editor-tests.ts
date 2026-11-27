@@ -11,6 +11,9 @@ import {PropertyPanel} from '../panel/property-panel';
 import {emitScript} from '../compiler/script-emitter';
 import {resolveInputValue} from '../utils/input-values';
 import {makeEditor, destroyEditor, addNode, until} from './test-utils';
+import {FlowEditor} from '../rete/flow-editor';
+import {InputValueControl} from '../rete/nodes/input-value-control';
+import * as ui from 'datagrok-api/ui';
 
 const SETTINGS = {name: 'AnnotatedEditorTest', description: '', tags: []};
 /** A registered function returning a `DG.InputBase` (PowerPack's cron value editor); the tests needing it skip
@@ -134,6 +137,96 @@ category('Flow: editor annotation', () => {
     } finally {
       panel.root.remove();
       destroyEditor(e);
+    }
+  });
+
+  test('a flow input wired into an input with an editor shows that editor on its card and in its own panel',
+    async () => {
+      if (!editorDeployed()) return;
+      const container = ui.div([], {style: {width: '1000px', height: '700px', position: 'absolute', left: '-10000px'}});
+      document.body.appendChild(container);
+      const edits: string[] = [];
+      const flow = new FlowEditor(container, {onGraphEdited: (e) => {
+        if (e.kind === 'params-changed') edits.push(e.nodeId);
+      }});
+      const panel = new PropertyPanel(flow);
+      document.body.appendChild(panel.root);
+      try {
+        const func = await addNode(flow, ensureFuncNodeType(annotatedScript(EDITOR)));
+        const input = await addNode(flow, 'Inputs/Property Input');
+        await flow.addConnectionByKeys(input.id, 'value', func.id, 'schedule');
+        input.properties['defaultValue'] = '0 * * * *';
+        flow.rebuildValueEditor(input.id);
+        const control = input.controls['value'] as InputValueControl;
+        const card = control.element()!;
+        document.body.appendChild(card);
+        expect(card.getAttribute('data-testid'), 'ff-editor-box', 'the card hosts the editor in a resizable box');
+        const select = (): HTMLSelectElement | null => card.querySelector('select.pp-cron-preset-select');
+        expect(await until(() => select() != null, 10_000), true, 'the function input\'s editor is on the card');
+        expect(select()!.value, '0 * * * *', 'showing the flow input\'s value');
+        const fits = (): boolean =>
+          card.scrollWidth <= card.clientWidth + 1 && card.scrollHeight <= card.clientHeight + 1;
+        expect(await until(fits, 3000), true, 'the box holds the whole editor ' +
+          `(${card.scrollWidth}×${card.scrollHeight} in ${card.clientWidth}×${card.clientHeight})`);
+        expect(input.properties['editorSize'] === undefined, true,
+          'a size fitted to the editor is not stored: only a resize is');
+        select()!.value = '*/5 * * * *';
+        select()!.dispatchEvent(new Event('change', {bubbles: true}));
+        expect(await until(() => input.properties['defaultValue'] === '*/5 * * * *'), true,
+          'an edit on the card is the flow input\'s value');
+        expect(edits.includes(input.id), true, 'reported as an edit of the flow input');
+
+        panel.showNode(input);
+        expect(await until(() => panel.root.querySelector('[data-param="Value"] select.pp-cron-preset-select') != null,
+          10_000), true, 'the flow input\'s own panel shows the editor too');
+
+        panel.showNode(func);
+        const inPanel = (): HTMLSelectElement | null =>
+          panel.root.querySelector('[data-param="schedule"] select.pp-cron-preset-select');
+        expect(await until(() => inPanel() != null, 10_000), true, 'the function node\'s panel shows it');
+        inPanel()!.value = '*/15 * * * *';
+        inPanel()!.dispatchEvent(new Event('change', {bubbles: true}));
+        expect(await until(() => select()?.value === '*/15 * * * *'), true, 'the card follows an edit in the panel');
+        expect(control.element() === card, true, 'brought in step, not rebuilt');
+
+        const wire = flow.getConnections().find((c) => c.source === input.id)!;
+        await flow.editor.removeConnection(wire.id);
+        const plain = control.element()!;
+        expect(plain !== card && plain.querySelector('.pp-cron-preset-select') == null, true,
+          'unwired, the card goes back to the plain input');
+      } finally {
+        panel.root.remove();
+        flow.destroy();
+        container.remove();
+      }
+    });
+
+  test('a card editor is rebuilt after a run only when the tables it reads have changed', async () => {
+    if (!editorDeployed()) return;
+    const container = ui.div([], {style: {width: '1000px', height: '700px', position: 'absolute', left: '-10000px'}});
+    document.body.appendChild(container);
+    let captured: DG.DataFrame | null = null;
+    const flow = new FlowEditor(container, {getUpstreamTable: () => captured});
+    try {
+      const func = await addNode(flow, ensureFuncNodeType(annotatedScript(EDITOR)));
+      const table = await addNode(flow, 'Inputs/Table Input');
+      const input = await addNode(flow, 'Inputs/Property Input');
+      await flow.addConnectionByKeys(table.id, 'table', func.id, 'table');
+      await flow.addConnectionByKeys(input.id, 'value', func.id, 'schedule');
+      const control = input.controls['value'] as InputValueControl;
+      const first = control.element();
+      flow.refreshWiredEditors();
+      expect(control.element() === first, true, 'nothing changed: the card keeps its editor');
+      captured = DG.DataFrame.fromCsv('a\n1\n');
+      expect(control.isStale(), true, 'a captured table it did not have makes it stale');
+      flow.refreshWiredEditors();
+      const second = control.element();
+      expect(second !== first, true, 'rebuilt from the new table');
+      flow.refreshWiredEditors();
+      expect(control.element() === second, true, 'and kept while that table stays');
+    } finally {
+      flow.destroy();
+      container.remove();
     }
   });
 });

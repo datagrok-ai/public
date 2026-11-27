@@ -652,6 +652,8 @@ export class ExecutionController {
     case 'run-complete':
       this.adoptLinks();
       this.state.endRun();
+      // an input node's card editor built from its target's tables rebuilds when the run replaced them
+      this.flow.refreshWiredEditors();
       this.currentCall = null;
       // A halted run must explain itself on the nodes it never reached — a
       // silent grey branch gives the user no path to the actual cause.

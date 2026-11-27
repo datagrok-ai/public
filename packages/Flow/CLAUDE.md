@@ -879,6 +879,17 @@ the INPUT node — it and its downstream go stale; with autorun off nothing reru
 Such a value is a list, so `string_list` inputs accept an array value (`resolveInputValue`,
 `stringListToArrayLiteral`, the card shows it joined), and a list default never rides the header (the
 platform reads none); the prepared call gets it from `configuredInputValues`.
+**The input node shows that editor too**, on its card and in its own panel's Value row (any input node, any
+function input with an editor, registered or annotated): `FlowEditor.wiredEditor(nodeId)` (on the bridge) finds the
+first function input it feeds that has one and builds the function node's context (its captured tables through the
+view's `getUpstreamTable` / `runUpstreamNode` callbacks); `buildWiredEditor` in input-values.ts stores the value in
+the input node and, on the card, puts the editor in a resizable `ff-editor-box` (`resizableBox`, shared with the helm
+box): `INLINE_EDITOR_WIDTH` (440) wide and as tall as the editor, wider if the editor needs it (measured from the
+box's scroll size as the editor builds; a side whose overflow stays the same after growing, as with a 100%-wide part
+beside another, stops following), until the user drags the handle, which stores `editorSize`. A (dis)connection
+rebuilds the source input node's editor; a run's completion rebuilds
+the cards whose tables it replaced (`refreshWiredEditors`, `InputValueEditor.stale`); an edit in the function's panel
+syncs the card (`notifyNodeParamsChanged`), never rebuilds it.
 
 ## Uploaded Files — local file → node ([utils/uploaded-files.ts](src/utils/uploaded-files.ts))
 

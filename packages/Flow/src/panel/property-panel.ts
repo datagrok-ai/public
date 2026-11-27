@@ -374,6 +374,7 @@ export class PropertyPanel {
       }));
 
       const valueEditor = buildInputValueEditor(node, () => this.paramsChanged());
+      if (valueEditor?.detach) this.editorDisposers.push(valueEditor);
       if (valueEditor)
         content.appendChild(this.propRow(ui.div([valueEditor.root], 'funcflow-prop-row funcflow-dg-row'), 'Value'));
 
@@ -841,7 +842,7 @@ export class PropertyPanel {
         if (PropertyPanel.sameValue(hostValue, v)) return;
         hostValue = v;
         valueHost.properties['defaultValue'] = v;
-        this.flow.rebuildValueEditor(valueHost.id);
+        // also brings the input node's card editor in step
         this.flow.notifyNodeParamsChanged(valueHost.id);
         return;
       }

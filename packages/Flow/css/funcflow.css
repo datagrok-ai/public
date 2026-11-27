@@ -2066,6 +2066,28 @@
   margin: 0;
 }
 
+/* ===== An input node feeding a function input with its own editor: that editor in a resizable box ===== */
+
+/* Sized to the editor it holds (measured in input-values.ts) until the resize handle sets a size (editorSize). */
+.ff-node:has(.ff-editor-box) {
+  max-width: none;
+}
+
+.ff-editor-box {
+  margin-top: 4px;
+  padding: 4px;
+  border: 1px solid var(--grey-2, #dbdcdf);
+  border-radius: 4px;
+  background: #ffffff;
+  overflow: auto;
+  resize: both;
+  box-sizing: border-box;
+  min-width: 200px;
+  min-height: 120px;
+  max-width: 1200px;
+  max-height: 1200px;
+}
+
 /* Connection paths */
 .ff-connection {
   z-index: -1;

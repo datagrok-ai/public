@@ -595,6 +595,13 @@ export class FuncFlowView extends DG.ViewBase {
       onPreviewNode: (nodeId: string) => this.previewNodeData(nodeId),
       onRerunNode: (nodeId: string) => this.rerunNode(nodeId),
       onRunDownstream: (nodeId: string) => this.runDownstream(nodeId),
+      // An input node's card shows its target's editor, built from the target's captured tables.
+      getUpstreamTable: (sourceNodeId: string) => this.executionController?.cloneForNode(sourceNodeId) ?? null,
+      runUpstreamNode: (sourceNodeId: string) => this.executionController.produceTableForNode(sourceNodeId, {
+        name: this.flowSettings.scriptName,
+        description: this.flowSettings.scriptDescription,
+        tags: this.flowSettings.tags,
+      }),
       // In-node preview: the node component mounts the captured live viewer/widget root.
       getInlinePreviewContent: (nodeId: string) =>
         this.executionController?.inlinePreviewRoot(nodeId) ?? null,
