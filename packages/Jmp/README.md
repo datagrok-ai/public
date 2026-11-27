@@ -108,7 +108,19 @@ node ../../libraries/bdd/bin/grok-bdd.js compile
 DATAGROK_URL=<stand url> node ../../libraries/bdd/bin/grok-bdd.js run --reporter=list
 ```
 
-`files/golden/` holds what JMPReader.jl reads from each test file; `tools/jmp2json.jl` regenerates
-it.
+## Test files
+
+`files/` is published with the package, so its files also show in Browse under
+Files › App Data › JmpReader.
+
+| Folder | What it holds | Used by |
+|---|---|---|
+| `jmpreader/` | JMPReader.jl's 19 test files (MIT), unchanged | parser tests |
+| `golden/` | what JMPReader.jl reads from each of them, as JSON; `tools/jmp2json.jl` regenerates it | reference tests, which compare our parse with it |
+| `tests/` | files made here: a truncated file, CSV under a `.jmp` name, a column layout no JMP writes, synthetic saved analyses; one JMP 15 file shared by a user and anonymized | robustness and analysis tests |
+| `public/` | 12 research tables published openly (CC0, CC BY 4.0), saved by JMP 10–18 | tests of real files, BDD features, the how-to guide |
+
+Where each file comes from and its licence: [CREDITS.md](CREDITS.md) and
+[docs/JMP_PLUGIN.md](docs/JMP_PLUGIN.md) §9.2.
 
 See [CREDITS.md](CREDITS.md) for third-party attributions.

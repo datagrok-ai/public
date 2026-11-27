@@ -20,7 +20,7 @@ The `.jmp` parser in `src/formats/jmp/` is a TypeScript port of JMPReader.jl.
 The test fixtures in `files/jmpreader/` are copied unchanged from that
 repository's `test/` directory.
 
-- Upstream: https://github.com/jaakkor2/JMPReader.jl
+- Upstream: <https://github.com/jaakkor2/JMPReader.jl>
 - Ported from commit: `9fd68aa2651a8dde002ecdbd06af4d8d832b18f2` (v0.2.4, 2026-10-16)
 - License: **MIT**
 
@@ -53,7 +53,7 @@ property list after a column's descriptor bytes, and the value-label
 payload) follows jmp-convert's reader. No source is copied; the layout is
 re-implemented in TypeScript.
 
-- Upstream: https://github.com/davidmathers/jmp-convert
+- Upstream: <https://github.com/davidmathers/jmp-convert>
 - Read at commit: `5024c5aba8be0cbfaa21e5a3be85cd9f8a33c3fc` (2026-09-25)
 - License: **MIT**, Copyright (c) 2026 David Mathers
 
@@ -66,7 +66,7 @@ once by the platform host and shared across all packages.
 
 | Component | Version | License    | Upstream                          |
 |-----------|---------|------------|-----------------------------------|
-| RxJS      | 6.x     | Apache-2.0 | https://github.com/ReactiveX/rxjs |
+| RxJS      | 6.x     | Apache-2.0 | <https://github.com/ReactiveX/rxjs> |
 
 ---
 
@@ -93,24 +93,25 @@ users of the plugin.
 
 ---
 
-## 5. Test data (`files/public/`, not bundled)
+## 5. Test data (`files/public/`)
 
-Data files that researchers published openly, renamed after their source. Used only by the
-package tests. CC0 asks for no attribution; those files are credited here anyway. The CC BY 4.0
-files are used under that licence (https://creativecommons.org/licenses/by/4.0/), unchanged apart
-from its name.
+Data files that researchers published openly, renamed after their source. Used by the package
+tests, the BDD features and the how-to guide; published with the package as App Data, not part
+of the bundle. CC0 asks for no attribution; those files are credited here anyway. The CC BY 4.0
+files are used under that licence (<https://creativecommons.org/licenses/by/4.0/>), unchanged apart
+from their names.
 
 | File | Original name | Licence | Dataset |
 |---|---|---|---|
-| `dryad-t76hdr7xq-hadmsc.jmp` | `hAdMSC_siTcad+APN.jmp` | CC0 1.0 | Nakamura, Kita, Tanaka et al. (2020), *Adiponectin stimulates exosome release to enhance mesenchymal stem cell driven therapy of heart failure in mice*. Dryad, https://doi.org/10.5061/dryad.t76hdr7xq |
+| `dryad-t76hdr7xq-hadmsc.jmp` | `hAdMSC_siTcad+APN.jmp` | CC0 1.0 | Nakamura, Kita, Tanaka et al. (2020), *Adiponectin stimulates exosome release to enhance mesenchymal stem cell driven therapy of heart failure in mice*. Dryad, <https://doi.org/10.5061/dryad.t76hdr7xq> |
 | `dryad-t76hdr7xq-tac2wks.jmp` | `TAC2wks_hMSC(siTcad).jmp` | CC0 1.0 | same dataset |
-| `dryad-60nn7-keiser-2016.jmp` | `Keiser et al 2016 - Data File for Proceedings B.jmp` | CC0 1.0 | Keiser, Pinter-Wollman, Augustine et al. (2016), *Data from: Individual differences in boldness influence patterns of social interactions and the transmission of cuticular bacteria among group-mates*. Dryad, https://doi.org/10.5061/dryad.60nn7 |
-| `dryad-6b340-acoustic.jmp` | `Acoustic_Dryad.jmp` | CC0 1.0 | Warwick, Travis, Lemmon (2015), *Data from: Geographic variation in the Pine Barrens Treefrog (Hyla andersonii): concordance of genetic, morphometric, and acoustic signal data*. Dryad, https://doi.org/10.5061/dryad.6b340 |
-| `dataverse-jylsxj-rlrva.jmp` | `RLRVAsummary_with_code.jmp` | CC0 1.0 | Altman, McDonald (2013), *Replication data for: A Half-Century of Virginia Redistricting Battles: Shifting from Rural Malapportionment to Voting Rights to Public Participation*. Harvard Dataverse, https://doi.org/10.7910/DVN/JYLSXJ |
-| `dataverse-hqaihu-figure4.jmp` | `Figure4Replication.jmp` | CC0 1.0 | Altman, McDonald (2015), *Replication Data for: Redistricting and Polarization*. Harvard Dataverse, https://doi.org/10.7910/DVN/HQAIHU |
-| `dataverse-jvinzu-rat.jmp` | `Rat.jmp` | CC0 1.0 | Bender (2025), *Closed-Loop Electrical Block of Vagus Nerve Scales from Rodent to Porcine Cardiac Models*. Harvard Dataverse, https://doi.org/10.7910/DVN/JVINZU |
-| `zenodo-6149318-ivt-rna-dsd.jmp` | `Exp6- RNA IVT DSD.jmp` | CC BY 4.0 | Samnuan, Blakney, McKay, Shattock (2022), *Design-of-Experiments In Vitro Transcription Yield Optimization of Self-Amplifying RNA*. Zenodo, https://doi.org/10.5281/zenodo.6149318 |
-| `mdpi-bioengineering-11-01089-wp1.jmp` | `Model_WP1.jmp` | CC BY 4.0 | Kunzelmann, Wittmann, Presser et al. (2024), *Lifecycle DoE: The Companion for a Holistic Development Process*. Bioengineering 11(11):1089, supplementary file S1, https://doi.org/10.3390/bioengineering11111089 |
+| `dryad-60nn7-keiser-2016.jmp` | `Keiser et al 2016 - Data File for Proceedings B.jmp` | CC0 1.0 | Keiser, Pinter-Wollman, Augustine et al. (2016), *Data from: Individual differences in boldness influence patterns of social interactions and the transmission of cuticular bacteria among group-mates*. Dryad, <https://doi.org/10.5061/dryad.60nn7> |
+| `dryad-6b340-acoustic.jmp` | `Acoustic_Dryad.jmp` | CC0 1.0 | Warwick, Travis, Lemmon (2015), *Data from: Geographic variation in the Pine Barrens Treefrog (Hyla andersonii): concordance of genetic, morphometric, and acoustic signal data*. Dryad, <https://doi.org/10.5061/dryad.6b340> |
+| `dataverse-jylsxj-rlrva.jmp` | `RLRVAsummary_with_code.jmp` | CC0 1.0 | Altman, McDonald (2013), *Replication data for: A Half-Century of Virginia Redistricting Battles: Shifting from Rural Malapportionment to Voting Rights to Public Participation*. Harvard Dataverse, <https://doi.org/10.7910/DVN/JYLSXJ> |
+| `dataverse-hqaihu-figure4.jmp` | `Figure4Replication.jmp` | CC0 1.0 | Altman, McDonald (2015), *Replication Data for: Redistricting and Polarization*. Harvard Dataverse, <https://doi.org/10.7910/DVN/HQAIHU> |
+| `dataverse-jvinzu-rat.jmp` | `Rat.jmp` | CC0 1.0 | Bender (2025), *Closed-Loop Electrical Block of Vagus Nerve Scales from Rodent to Porcine Cardiac Models*. Harvard Dataverse, <https://doi.org/10.7910/DVN/JVINZU> |
+| `zenodo-6149318-ivt-rna-dsd.jmp` | `Exp6- RNA IVT DSD.jmp` | CC BY 4.0 | Samnuan, Blakney, McKay, Shattock (2022), *Design-of-Experiments In Vitro Transcription Yield Optimization of Self-Amplifying RNA*. Zenodo, <https://doi.org/10.5281/zenodo.6149318> |
+| `mdpi-bioengineering-11-01089-wp1.jmp` | `Model_WP1.jmp` | CC BY 4.0 | Kunzelmann, Wittmann, Presser et al. (2024), *Lifecycle DoE: The Companion for a Holistic Development Process*. Bioengineering 11(11):1089, supplementary file S1, <https://doi.org/10.3390/bioengineering11111089> |
 | `mdpi-bioengineering-11-01089-wp1-3.jmp` | `Model_WP1_3.jmp` | CC BY 4.0 | same article |
-| `figshare-15044331-das28.jmp` | `DAS280M v BL IGS.jmp` | CC BY 4.0 | Thirkettle (2021), *On A Knife Edge: the role of interferon pathways in the adaptive immune response and potential progression to RA pathogenesis*. Newcastle University, figshare, https://doi.org/10.25405/data.ncl.15044331.v1 |
-| `btpr-42-e88508-phase-dependent-doe.jmp` | `BTPR-42-e88508-s003.jmp` | CC BY 4.0 | Kienzle, Junghans, Wittmann et al. (2026), *Multivariate phase-dependent optimization of bioprocesses boosts performance and quality — Why timing (of exposure) matters*. Biotechnology Progress 42(4):e88508, supporting file S3, https://doi.org/10.1002/btpr.88508 |
+| `figshare-15044331-das28.jmp` | `DAS280M v BL IGS.jmp` | CC BY 4.0 | Thirkettle (2021), *On A Knife Edge: the role of interferon pathways in the adaptive immune response and potential progression to RA pathogenesis*. Newcastle University, figshare, <https://doi.org/10.25405/data.ncl.15044331.v1> |
+| `btpr-42-e88508-phase-dependent-doe.jmp` | `BTPR-42-e88508-s003.jmp` | CC BY 4.0 | Kienzle, Junghans, Wittmann et al. (2026), *Multivariate phase-dependent optimization of bioprocesses boosts performance and quality — Why timing (of exposure) matters*. Biotechnology Progress 42(4):e88508, supporting file S3, <https://doi.org/10.1002/btpr.88508> |
