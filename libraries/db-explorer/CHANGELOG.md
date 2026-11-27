@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Fixed the first card of a page not opening in the context panel when the server spells the connection's namespace in another case than the configuration (a value made before the connection was found kept the configured name)
 * Links: the rows that point at a card are grouped in a box headed by what they share with it (`This drug`, `Same target · GROKTGT-000010`), one box for each key the card holds, each read from the column that holds it
 * Links: a table is named from the configuration's `entities`, else from its identifier's semantic type and pattern (`DG_BIOLOGICS_DRUG_ID`, `GROKMOL-`: `Drugs (GROKMOL)`), else from its own name without the words most tables of its schema share (`stg_assay_results_v1`: `Assay results`; `sequence_regions` under a sequence: `Regions`); a table that points at the card twice, or at its own table, says how (`Hierarchy · as parent`, `Child compounds`)
 * Links: a table's rows are read and counted when its pane opens, for every size; each row is one line, its key and its name, and opens its card in place; the card's own row is tagged `this`; views a curated configuration says nothing about fold under More; the table and column behind a line, and the table's comment, are in its tooltip

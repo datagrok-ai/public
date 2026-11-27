@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
-import {powerSearch, showSearchSuggestions} from './search/power-search';
+import {powerSearch, showSearchSuggestions, stopWaitingForHandlers} from './search/power-search';
 import {getSettings, saveSettings, UserWidgetsSettings, widgetHostFromFunc} from './utils';
 import {setWorkspacePreviewHost, setWorkspaceCustomizeEl} from './spotlight/preview-host';
 import {getCurrentUserGroup} from './spotlight/group-favorites';
@@ -94,7 +94,8 @@ export function welcomeView(): DG.View | undefined {
   resizeObserver.observe(view.root);
   view.subs.push(
     rxjs.merge(grok.events.onEvent('grok-panels-changed'), grok.events.onViewAdded, grok.events.onViewRemoved, resized).pipe(debounceTime(50)).subscribe(placeSearch),
-    new rxjs.Subscription(() => resizeObserver.disconnect()));
+    new rxjs.Subscription(() => resizeObserver.disconnect()),
+    new rxjs.Subscription(stopWaitingForHandlers));
   view.root.classList.add('power-pack-welcome-view');
 
   const widgetFunctions = DG.Func.find({meta: {role: DG.FUNC_TYPES.DASHBOARD}, returnType: 'widget'});

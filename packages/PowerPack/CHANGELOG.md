@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Search: a search?q= link to ids now shows their cards once the package with the identifiers has loaded; the ids are tried again only when a package load adds object handlers, and only until they are recognised or the next search
 * Spaces: `spaceSaveRow` takes `placeholder` and `tooltip`, the empty space box's text and its tooltip, for a dialog that saves something other than a project
 * Home: Added a clear (x) button to the Search everywhere input; it empties the search and brings back the widgets, as does Esc
 * Spotlight: The Recent list reads only the user's latest 5000 events, so it stays fast for accounts with hundreds of thousands of events a month
