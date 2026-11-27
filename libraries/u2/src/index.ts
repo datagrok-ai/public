@@ -228,4 +228,4 @@ export {requireBackend} from './sources/backends.js';
 export {U2_KINDS, kindCatalog} from './core/kinds.js';
 export type {U2KindEntry, U2KindDef, U2Family, U2Gesture, U2StateKey, U2NameSource} from './core/kinds.js';
 
-export const VERSION = '0.1.0';
+export const VERSION = '1.0.0';
