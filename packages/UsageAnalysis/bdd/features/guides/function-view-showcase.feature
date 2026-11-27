@@ -4,9 +4,10 @@ Feature: Function view · What's new
   camera), one scenario per clip, cut into one reel with `guide-render.py --reel`. Compute2's ObjectCooling2 model
   (Newton's law of cooling) opens in the core function view at /func/Compute2.ObjectCooling2: the form above the
   results with the viewers the script declares, the "Inputs changed" note and a re-run in place, the link with the
-  current inputs, the Excel / PowerPoint exports, fitting with its fitted coefficient applied back to the form, the
+  current inputs, the result table opened as a table view with its viewers, the run saved as a project, a built-in
+  function opened by its link, the Excel / PowerPoint exports, fitting with its fitted coefficient applied back to the form, the
   Run history panel (name, star, bring an older run back) and Save to space. ObjectCooling2 is a shared model, so
-  only the runs this feature makes are deleted at its end, by id; the space is a fixture deleted with it.
+  only the runs this feature makes are deleted at its end, by id; the space and the project are fixtures deleted with it.
 
   Background:
     Given user is logged in
@@ -40,6 +41,39 @@ Feature: Function view · What's new
     Then function results should not contain text "Inputs changed"
     And "Line chart" viewer should be visible
 
+  Scenario: Open the results as a table view, viewers and all
+    The + icon opens the result table in its own view, with its viewers as you left them.
+
+    Given user opens the address "/func/Compute2.ObjectCooling2"
+    And user clicks on RUN button
+    And "Line chart" viewer should be visible
+    When user picks "Overview > Area Chart" from the context menu of line chart viewer
+    # caption: Add an overview to the chart
+    Then "overviewType" property of line chart viewer should be "Area Chart"
+    When user clicks on "Add table to workspace" icon
+    And user hovers over line chart viewer
+    # caption: The table opens with the chart as you left it
+    Then the "simulation" table view should open with 21600 rows
+    And "overviewType" property of line chart viewer should be "Area Chart"
+
+  Scenario: Save the run as a project
+    Save keeps the run, its tables and viewers, as a project.
+
+    Given no project named "Cooling study {time}" is on the server
+    And user opens the address "/func/Compute2.ObjectCooling2"
+    And user clicks on RUN button
+    And "Line chart" viewer should be visible
+    When user clicks on "Save" button
+    Then "Save project" dialog should be visible
+    When user enters "Cooling study {time}" into Name text input in "Save project" dialog
+    And user clicks on OK in the Save project dialog and the project uploads
+    Then 1 project named "Cooling study {time}" should be on the server
+    When user clicks on browse tab
+    And user clicks on Dashboards tree node inside browse tree
+    And user enters "Cooling study {time}" into gallery search
+    # caption: There it is, in Dashboards
+    Then "Cooling study {time}" gallery card should be visible
+
   Scenario: Share a link with the inputs
     The copy icon puts the inputs into the address.
 
@@ -48,6 +82,16 @@ Feature: Function view · What's new
     And user clicks on copy icon
     # caption: The link carries the inputs
     Then the clipboard should contain text "area=0.12"
+
+  Scenario: Open any function by its link
+    Any function, built-in ones too, opens from its address with the inputs filled in.
+
+    When user opens the address "/func/Sin?x=1"
+    # caption: /func/Sin?x=1
+    Then "X" input should have value "1"
+    When user clicks on RUN button
+    # caption: sin(1)
+    Then "Result" input should have a value between 0.84 and 0.85
 
   Scenario: Export a run
     A run goes to Excel or PowerPoint, its viewers included.
@@ -89,13 +133,13 @@ Feature: Function view · What's new
     Name a run, star it, and bring an older one back.
 
     Given user opens the address "/func/Compute2.ObjectCooling2"
-    And user clicks on "Run history" icon
-    And run history should be visible
     When user clicks on RUN button
     And user enters "20" into "Heat transfer coefficient" input
     And user clicks on RUN button
+    And user clicks on "Run history" icon
+    Then run history should be visible
     # caption: What changed against the run before
-    Then changes of first run should contain text "heatTransferCoeff 8.300 → 20"
+    And changes of first run should contain text "heatTransferCoeff 8.300 → 20"
     When user clicks on "Edit title, description and tags" icon in run header
     And user enters "Fast cooling" into "Title" input
     And user clicks on OK button
