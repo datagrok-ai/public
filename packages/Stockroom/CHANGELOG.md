@@ -2,10 +2,9 @@
 
 ## v.next
 
-* Safety Data Sheets: Sheets are named by substance, revision and language; messages say sheet or statement
-* Locations: Links open and follow a location
-* Locations: Renamed the tree app Stockroom locations and the flat list Location list
-* Stockroom: `/apps/Stockroom` opens the app; an address naming no view says so
+* Safety Data Sheets: Named by substance, revision and language
+* Locations: Links open a location; the apps are Stockroom locations and Location list
+* Stockroom: `/apps/Stockroom` opens the app; an unknown view address says so
 * Locations: The containers' source is built under an owner the view disposes, so the view no longer fails with a u2 `owner-missing` error where u2 is strict (dev, tests)
 * Locations: Added New container to a location's context menu
 * Locations: Showed the container count in the Containers header

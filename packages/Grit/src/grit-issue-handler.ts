@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {gritDb, IssueRow} from './generated/db';
+import {gritDb, IssueRow, ProjectRow} from './generated/db';
 
 /** semType (= entity type) of `grit.issue` rows. */
 const ISSUE_TYPE = 'grit.issue';
@@ -17,36 +17,44 @@ const priorityColors: {[key: string]: string} = {
 };
 const typeColor = '#6c5fc7';
 
-/** id → name maps of the small lookup tables (status/priority/issue_type), and id → key of the projects. Render
+/** id → name maps of the small lookup tables (status/priority/issue_type). Render
  * methods are synchronous, so {@link warmLookups} is kicked off at package init and
  * badges appear once the maps are in (rows arrive over the network anyway). */
 let lookupNames: Map<string, string> | null = null;
 let lookupsLoading: Promise<Map<string, string>> | null = null;
 let projectKeys: string[] = [];
+const PAGE = 1000;
+
+async function allProjects(): Promise<Pick<ProjectRow, 'id' | 'key'>[]> {
+  const rows: Pick<ProjectRow, 'id' | 'key'>[] = [];
+  for (let offset = 0; ; offset += PAGE) {
+    const page = await gritDb.projects.query({columns: ['key'], sort: 'id', limit: PAGE, offset});
+    rows.push(...page);
+    if (page.length < PAGE)
+      return rows;
+  }
+}
 
 export function warmLookups(): Promise<Map<string, string>> {
   return lookupsLoading ??= Promise
     .all([gritDb.statuses.query({}), gritDb.priorities.query({}), gritDb.issueTypes.query({}),
-      gritDb.projects.query({})])
+      allProjects()])
     .then(([statuses, priorities, types, projects]) => {
       projectKeys = projects.map((p) => p.key);
       return lookupNames = new Map([
         ...[...statuses, ...priorities, ...types].map((r): [string, string] => [r.id, r.name]),
         ...projects.map((p): [string, string] => [p.id, p.key])]);
     }, (e) => {
-      // a failed read is asked again by the next caller, not kept for the page
       lookupsLoading = null;
       throw e;
     });
 }
 
-/** Reads the lookups again; the old names show until the new ones are in. */
 export function reloadLookups(): Promise<Map<string, string>> {
   lookupsLoading = null;
   return warmLookups();
 }
 
-/** The project key as stored, for one typed in any case; as typed where no project has it. */
 export function projectKey(typed: string): string {
   return projectKeys.find((key) => key.toLowerCase() === typed.toLowerCase()) ?? typed;
 }

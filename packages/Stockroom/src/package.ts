@@ -25,14 +25,11 @@ Editors.register({
   }}),
 });
 
-// a safety data sheet has no name of its own: the substance, the revision and the language name it
 domains.configure('stockroom.sds_document', (sheets) => {
   sheets.renderer = {...sheets.renderer, caption: (r) =>
     [r['~caption_substance_id'], r.revision && `rev. ${r.revision}`, r.language].filter((v) => !!v).join(' · ')};
 }, {id: 'stockroom'});
 
-/** A view per stockroom table under `/apps/Stockroom/Stockroom`, the substances at its root; `/apps/Stockroom` is the
- * Stockroom app too, and `/apps/Stockroom/Locations` the Stockroom locations app. */
 const views = domains.views({
   path: '/apps/Stockroom/Stockroom',
   views: [
@@ -128,14 +125,13 @@ export async function stockroomLocations(): Promise<DG.ViewBase> {
         addAt(node);
     }, {disabled: computed(() => tree.selected.value === null ? 'Select a location first' : null)}));
     add.root.dataset.u2 = 'new-container-button';
-    // as an app's Refresh: through the gate, access asked afresh; the containers after the tree settles
     const refreshing = signal(false);
     const reload = Control.build(() => button('Refresh', () => void (async () => {
       if (!await confirmDiscard(session, {action: 'reload the rows'}))
         return;
       refreshing.value = true;
       try {
-        emsBackends.domain?.dropAccess?.();
+        emsBackends.domain?.dropAccess();
         const query = source.query.peek();
         await tree.refresh();
         if (source.query.peek() === query)

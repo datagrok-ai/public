@@ -159,9 +159,10 @@ category('Dapi: domains batch', () => {
       const predicted = new Map(preview.rows.map((r) => [r.index, r.predicted]));
       const committed: {[status: string]: string} =
         {inserted: 'insert', updated: 'update', duplicate: 'skip', error: 'error'};
-      for (const row of report.rows)
-        expect(predicted.get(row.index ?? -1), committed[row.status],
-          `row ${row.index}: predicted ${predicted.get(row.index ?? -1)}, committed ${row.status}`);
+      for (const {index = -1, status} of report.rows) {
+        expect(predicted.get(index), committed[status],
+          `row ${index}: predicted ${predicted.get(index)}, committed ${status}`);
+      }
     } finally {
       await purge(p);
     }

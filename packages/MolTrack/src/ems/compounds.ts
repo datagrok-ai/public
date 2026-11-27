@@ -37,7 +37,6 @@ export class Compounds {
       verdicts: new Map()};
     pane.section.root.classList.add('moltrack-identity');
     self.own(DomainFilters.registerOperators(app.table.address, StructureSearch.operators()));
-    // the verdict on the structure it was derived from: a field never refuses a new drawing on the last one's
     self.own((app.table as DomainTable<CompoundRow>).validators.add('original_structure', (value, row) => {
       const verdict = pane.verdicts.get(row.id);
       return verdict !== undefined && verdict.input === (value ?? '') ? verdict.problem : null;

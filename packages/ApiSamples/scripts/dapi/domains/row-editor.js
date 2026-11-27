@@ -26,6 +26,7 @@ await handler.editRow(row);                                  // true when saved
 
 // The standard optimistic-concurrency dialog, for code that saves by itself:
 // resolves 'reload' | 'overwrite' | null, and the caller applies the decision.
+// A stale delete or restore passes its op: showConflictDialog(subject, 'delete').
 // Snapshot AFTER the dialogs: editRow may have written, so a version read before them can
 // already be behind — and then the FIRST save conflicts, not the deliberate second one.
 const current = await issues.get(row.id);

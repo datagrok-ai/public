@@ -14,7 +14,7 @@ grok.shell.info(props.map((p) => `${p.name}: ${p.propertyType}` +
 // detail-table links ('comment' and 'issue_label' reference grit.issue).
 const info = await grok.dapi.domains.registry.tableInfo(table);
 grok.shell.info(`name column: ${info.nameColumn}, business key: ${info.businessKey}\n` +
-  `children: ${info.childTables.map((c) => `${c.schema}.${c.table} via ${c.fkColumn} ("${c.label}")`).join(', ')}`);
+  `children: ${info.childTables.map((c) => `${c.schema}.${c.table} via ${c.fkColumn} ("${c.label}", on delete ${c.onDelete})`).join(', ')}`);
 
 // Effective access of the CURRENT user — server-truth permission probes on
 // the securing entity plus per-field editability under column security. Gate UI

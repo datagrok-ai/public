@@ -293,6 +293,7 @@ category('Dapi: domain registry', () => {
     expect(child!.schema, 'apitests');
     expect(child!.fkColumn, 'item_id');
     expect(child!.label, 'Item', 'friendly FK label (the _id suffix dropped)');
+    expect(child!.onDelete, 'cascade');
   });
 
   test('tableInfo: grit.issue childTables list comment', async () => {

@@ -94,7 +94,6 @@ export const issuesOptions: DomainViewOptions = {mode: 'cards', itemHeight: 48, 
   shortcuts: {'m': 'Assign to me', 'c': 'Close'},
   setup: (app) => {
     const source = app.listSource;
-    // the names the cards show: read as the app opens and when the same rows are read again, not per page
     void reloadLookups().catch(() => {});
     let shown: string | undefined;
     app.effect(() => {
@@ -106,13 +105,12 @@ export const issuesOptions: DomainViewOptions = {mode: 'cards', itemHeight: 48, 
         untracked(() => void reloadLookups().catch(() => {}));
       shown = read;
     });
-    // a typed handle (`GRIT-12`, `#12`) filters on the number in place of the filter in force, until the next search
     let derived: string | null = null;
     let kept = source.query.peek();
     app.effect(() => {
       const typed = source.search.value.trim();
-      const m = /^(?:([A-Za-z][A-Za-z0-9_]*)-|#)(\d+)$/.exec(typed);
-      const n = m === null ? NaN : Number(m[2]);
+      const [, key, digits] = /^(?:([A-Za-z][A-Za-z0-9_]*)-|#)(\d+)$/.exec(typed) ?? [];
+      const n = digits === undefined ? NaN : Number(digits);
       const held = derived !== null && source.query.peek() === derived;
       if (!Number.isSafeInteger(n) || n < 1 || n > INT_MAX) {
         if (typed !== '' && held)
@@ -123,10 +121,11 @@ export const issuesOptions: DomainViewOptions = {mode: 'cards', itemHeight: 48, 
       }
       if (!held)
         kept = source.query.peek();
-      derived = `${m![1] === undefined ? '' : `project_id.key = "${projectKey(m![1])}" and `}number = ${n}`;
+      const query = `${key === undefined ? '' : `project_id.key = "${projectKey(key)}" and `}number = ${n}`;
+      derived = query;
       batch(() => {
         source.search.value = '';
-        source.query.value = derived!;
+        source.query.value = query;
       });
     });
   },

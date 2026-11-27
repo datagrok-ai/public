@@ -3,9 +3,9 @@
 ## v.next
 
 * core#1765: Detectors: Declared the column types the semantic type detectors check, so the platform no longer calls them for other columns
-* Home: Shows when a table is not shared with you, and disables Register with the reason when you cannot add
-* Import: Fixed an import of more than 100 already registered structures being refused
-* Register: Fixed a valid structure drawn after an invalid one staying refused
+* Home: Says when a table is not shared with you; Register says why it is off
+* Import: Fixed imports of more than 100 registered structures
+* Register: Fixed a valid structure after an invalid one staying refused
 * Import: Added finding linked records by their fields: map a file column to Batch › EPA Batch ID, Assay Run › Cell Lot and the like
 * Compounds: Added a table view with Output columns and Aggregations over batches and assay results under the filters
 * Compounds: Fixed the Identity pane's Parent row being added to an identity that another compound had replaced meanwhile

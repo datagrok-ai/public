@@ -61,6 +61,13 @@ category('Dapi: domain errors', () => {
     }
   });
 
+  test('a request that never reached the server: code network', async () => {
+    const err = DG.toDomainError({'#domainError': true, 'message': 'XMLHttpRequest error', 'status': 0,
+      'body': {}});
+    expect(err instanceof DG.DomainError, true);
+    expect(err.code, 'network');
+  });
+
   test('malformed filter: DomainFilterError with status 400', async () => {
     const err = await thrown(() => items().query({filter: 'no_such_column = "x"'}));
     expect(err instanceof DG.DomainFilterError, true,

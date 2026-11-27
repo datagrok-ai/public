@@ -523,9 +523,9 @@ category('JS: domain handlers', () => {
   });
 
   test('openers: conflict dialog resolves the decision', async () => {
-    for (const [button, expected] of [['RELOAD', 'reload'], ['OVERWRITE', 'overwrite'],
-      ['CANCEL', null]] as [string, string | null][]) {
-      const pending = DG.DomainObjectHandler.showConflictDialog('SKU-CONFLICT');
+    for (const [button, expected, op] of [['RELOAD', 'reload'], ['OVERWRITE', 'overwrite'],
+      ['CANCEL', null], ['RELOAD', 'reload', 'delete']] as [string, string | null, 'delete'?][]) {
+      const pending = DG.DomainObjectHandler.showConflictDialog('SKU-CONFLICT', op);
       try {
         click(await openDialog('Conflicting changes'), button);
         expect(await pending, expected, `${button} must resolve ${expected}`);

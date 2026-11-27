@@ -283,7 +283,7 @@ category('Dapi: domain lifecycle', () => {
       const [things] = (await grok.dapi.domains.schemas.include('tables.columns.property')
         .filter(`name = "${name}"`).first()).tables;
       expect(things.origin, 'user');
-      expect(things.userColumns!.join(), 'name');
+      expect(things.userColumns.join(), 'name');
     } finally {
       await handle.delete();
     }

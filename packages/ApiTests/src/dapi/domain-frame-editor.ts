@@ -613,14 +613,16 @@ category('Dapi: domain frame editor', () => {
     (DG.DomainObjectHandler as any).showConflictDialog = async () => 'reload';
     try {
       await items().delete(id);
-      const editor = await DomainFrameEditor.create(items() as any, {query: {...specFor(prefix), deleted: 'only'} as any});
+      const editor = await DomainFrameEditor.create(items() as any,
+        {query: {...specFor(prefix), deleted: 'only'} as any});
       editor.markRestored(0);
       await items().restore(id);
       await items().delete(id);
       const trashed = (await items().get(id, {deleted: 'include'})).version;
       const failing = editor.buildOps()[0];
-      const conflict = new DG.DomainVersionConflictError(`Version conflict: expected ${failing.op.expectedVersion}`,
-        409, {error: 'version-conflict', id, currentVersion: trashed, expectedVersion: failing.op.expectedVersion, opIndex: 0});
+      const {expectedVersion} = failing.op;
+      const conflict = new DG.DomainVersionConflictError(`Version conflict: expected ${expectedVersion}`, 409,
+        {error: 'version-conflict', id, currentVersion: trashed, expectedVersion, opIndex: 0});
       expect(await editor.resolveConflict(conflict, failing), true, 'reload did not resolve the restore conflict');
       expect(editor.stateOf(0), '', 'reload kept the restore staged');
       expect(editor.dataFrame.get('version', 0), trashed, 'reload did not read the trashed row');
@@ -858,7 +860,8 @@ category('Dapi: domain frame editor', () => {
     const meta = DG.Property.fromOptions({name: 'meta', type: DG.TYPE.MAP, nullable: true});
     expect(validateCellValue(meta, '{"k":"v"}'), null, 'a json cell as its JSON text was rejected');
     expect(validateCellValue(meta, {k: 'v'}), null, 'a json cell as an object was rejected');
-    expect(validateCellValue(meta, ['k']), 'Types differ. Expected: map, passed: list', 'a list in a json cell was accepted');
+    expect(validateCellValue(meta, ['k']), 'Types differ. Expected: map, passed: list',
+      'a list in a json cell was accepted');
   });
 
   test('Grid.attachEditor: platform decoration, hidden service columns, capability gating', async () => {
