@@ -1,0 +1,408 @@
+/* The band chart of the Plan and Analyze views: the area between a lower and an upper column along X (a predicted
+   range, an observed one), with a line through it, one band per category of the split column. A control of this
+   package, not a platform viewer: the line chart cannot fill between two columns (its whiskers and moving-average
+   band are other things), and a general viewer for it is the platform's call. echarts draws it; each band is a
+   custom series drawing one polygon, since a stack on two value axes stacks X, not Y. */
+import {maxOf, minOf} from './format';
+import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
+import {Control} from '@datagrok-libraries/u2';
+import type {ReadonlySignal} from '@datagrok-libraries/u2';
+import * as echarts from 'echarts/core';
+import {BarChart, CustomChart, LineChart, ScatterChart} from 'echarts/charts';
+import {GridComponent, LegendComponent, MarkAreaComponent, MarkLineComponent, TooltipComponent}
+  from 'echarts/components';
+import {CanvasRenderer} from 'echarts/renderers';
+import type {EChartsOption} from 'echarts';
+
+import {chartMenu} from './report';
+import {esc, sig} from './sheet';
+import {colorTick} from './colors';
+
+echarts.use([BarChart, CustomChart, LineChart, ScatterChart, GridComponent, LegendComponent, MarkAreaComponent,
+  MarkLineComponent, TooltipComponent, CanvasRenderer]);
+
+export interface BandChartOptions {
+  x: string;
+  lower: string;
+  upper: string;
+  /** a line through each band (a median) */
+  line?: string;
+  /** one band per category, in the column's colour coding */
+  split?: string;
+  xTitle?: string;
+  yTitle?: string;
+  /** the Y title also heads the tooltip (a measure that needs naming where its values are read) */
+  yInTooltip?: boolean;
+  /** a logarithmic Y axis: the view's Linear / Log switch */
+  log?: ReadonlySignal<boolean>;
+  /** markers on the line */
+  markers?: boolean;
+  /** a forecast's chart: its scale set by the reference lines (see chartOption), not by how far its range reaches */
+  fit?: boolean;
+  /** drawn again when this changes: what changes the table's reference lines but not the table (Monitor's notes) */
+  redrawOn?: ReadonlySignal<unknown>;
+  /** the categories whose line is dashed (a prediction beside what was observed) */
+  dashed?: string[];
+  /** a category's marker (an echarts symbol): Compare's mark per study, as its dose chart (round 3, analyst 13) */
+  symbols?: {[category: string]: string};
+  /** the animals behind each point: said in the tooltip, and the line dashed where fewer than 3 remain (a median of
+   *  one or two animals is no group's) */
+  count?: string;
+  /** false: no legend of its own (the view draws its key: Compare's, one line per study) */
+  legend?: boolean;
+  /** room beyond the first and last X (a point at either end drawn whole, not cut by the axis) */
+  xPad?: boolean;
+}
+
+/** Below this many animals a point's median is not read as its group's: its stretch of line is dashed. */
+export const FEW_ANIMALS = 3;
+/** Past this many bands (a control and 6 treated arms) the ranges are drawn one at a time: the one the mouse is on,
+ *  else the one clicked; the others are their lines. */
+export const MANY_BANDS = 7;
+
+/** The lines a legend of `names` takes, wrapped, in a chart `width` px wide (about 7 px a character, 34 for the mark
+ *  and the gap): the legend wraps and the plot moves down, never paged (names cut) nor dropped (QA 0.1.3 D19). */
+export function legendLines(names: string[], width: number): number {
+  const room = Math.max(width - 40, 1);
+  let lines = 1;
+  let used = 0;
+  for (const n of names) {
+    const w = 7 * n.length + 34;
+    if (used > 0 && used + w > room) {
+      lines++;
+      used = 0;
+    }
+    used += w;
+  }
+  return lines;
+}
+
+/** Past this many lines a legend scrolls on one line (its arrows) instead of wrapping: the plot never pushed away
+ *  (Compare's 12 studies pushed it off the screen, QA 0.1.3 round 3 chaos 22). */
+export const MAX_LEGEND_LINES = 3;
+/** A legend of `names` in a chart `width` px wide: wrapped over its lines, or past MAX_LEGEND_LINES one scrolled line. */
+export function legendLayout(names: string[], width: number): {lines: number, type: 'plain' | 'scroll'} {
+  const lines = legendLines(names, width);
+  return lines > MAX_LEGEND_LINES ? {lines: 1, type: 'scroll'} : {lines, type: 'plain'};
+}
+
+/** One category's points, sorted by X; `row` is one of its rows, where its colour is read. */
+export interface Band {name: string, x: number[], lower: number[], upper: number[], line: number[] | null, row: number,
+  /** the animals behind each point (NaN: not known); null: no count given */
+  n?: number[] | null}
+
+/** A constant formula line of the table: `${X} = 19` vertical, `${any other column} = 1500` horizontal. */
+export interface RefLine {value: number, vertical: boolean, title: string, color: string, dashed: boolean}
+
+const DEFAULT_FORMAT = '#0.###';
+const TEXT = '#4d5261';
+
+/** The chart over the table `table` gives (none: an empty chart), redrawn when it or the Log switch changes. */
+export class BandChart extends Control {
+  /** What the last draw showed. */
+  bands: Band[] = [];
+  // past MANY_BANDS: the band the mouse is on and the one clicked (again: let go), the only ranges drawn
+  private hovered: string | null = null;
+  private picked: string | null = null;
+  private render: () => void = () => {};
+  private readonly chart: echarts.ECharts;
+
+  constructor(table: ReadonlySignal<DG.DataFrame | undefined>, private readonly options: BandChartOptions) {
+    super();
+    this.root.classList.add('pmx-band-chart');
+    this.root.style.position = 'relative';
+    const host = ui.div([], {style: {position: 'absolute', inset: '0'}});
+    this.root.append(host);
+    this.chart = initQuietly(host);
+    // (resized: drawn again, the legend's lines depend on the width)
+    this.subscribe(ui.onSizeChanged(host), () => {
+      this.chart.resize();
+      if (this.bands.length > 1)
+        this.render();
+    });
+    const focus = (hovered: string | null, picked: string | null) => {
+      if (this.bands.length <= MANY_BANDS || (hovered === this.hovered && picked === this.picked))
+        return;
+      [this.hovered, this.picked] = [hovered, picked];
+      this.render();
+    };
+    this.chart.on('mouseover', {seriesType: 'line'}, (e: any) => focus(e.seriesName, this.picked));
+    this.chart.on('mouseout', {seriesType: 'line'}, () => focus(null, this.picked));
+    this.chart.on('click', {seriesType: 'line'}, (e: any) =>
+      focus(this.hovered, this.picked === e.seriesName ? null : e.seriesName));
+    this.own(() => this.chart.dispose());
+    this.effect(() => {
+      void options.redrawOn?.value;
+      this.draw(table.value, options.log?.value ?? false);
+    });
+    // a study's colour changed: drawn again once the stages have repainted their frames (in their own effects)
+    let live = true;
+    this.own(() => live = false);
+    this.effect(() => {
+      if (colorTick.value)
+        setTimeout(() => live && this.draw(table.peek(), options.log?.peek() ?? false));
+    });
+  }
+
+  private draw(df: DG.DataFrame | undefined, log: boolean): void {
+    const o = this.options;
+    const [x, lower, upper] = [o.x, o.lower, o.upper].map((n) => df?.col(n) ?? null);
+    if (!df || !x || !lower || !upper) {
+      this.bands = [];
+      this.chart.clear();
+      return;
+    }
+    const line = o.line ? df.col(o.line) : null;
+    const split = o.split ? df.col(o.split) : null;
+    this.bands = collectBands(df, x, lower, upper, line, split, o.count ? df.col(o.count) : null);
+    const y = line ?? upper;
+    const fmt = {xUnits: x.meta.units ?? '', yUnits: y.meta.units ?? '', x: x.meta.format || DEFAULT_FORMAT,
+      y: y.meta.format || '0.0', xOwn: !!x.meta.format, yOwn: !!y.meta.format, xTitle: o.xTitle || x.name,
+      ...o.yInTooltip ? {yTitle: o.yTitle ?? y.name} : {}};
+    const xTitle = axisTitle(fmt.xTitle, fmt.xUnits);
+    const yTitle = axisTitle(o.yTitle || (line ? line.name : `${lower.name} – ${upper.name}`), fmt.yUnits, log);
+    // the split column's colour coding when it has one, else the categorical palette in band order
+    const coded = split !== null && split.meta.colors.getType() !== DG.COLOR_CODING_TYPE.OFF ? split : null;
+    const colors = this.bands.map((b, k) =>
+      DG.Color.toHtml(coded ? DG.Color.getRowColor(coded, b.row) : DG.Color.getCategoricalColor(k)));
+    const refs = refLines(df.meta.formulaLines.items, x.name);
+    const bands = this.bands;
+    if (!bands.some((b) => b.name === this.picked))
+      this.picked = null;
+    this.render = () => this.chart.setOption(chartOption(bands, colors, refs,
+      {xTitle, yTitle, log, markers: o.markers ?? false, fit: o.fit ?? false, fmt, dashed: o.dashed ?? [],
+        symbols: o.symbols,
+        legend: o.legend !== false, legendLayout: legendLayout(bands.map((b) => b.name), this.chart.getWidth()),
+        xPad: o.xPad ?? false, focus: this.hovered ?? this.picked}), true);
+    this.render();
+  }
+}
+
+/** echarts.init without its warning about a host not sized yet (it is resized when it is). */
+export function initQuietly(host: HTMLElement): echarts.ECharts {
+  const warn = console.warn;
+  console.warn = () => {};
+  // its right-click menu: Save as PNG, Copy as image, as Datagrok's viewers have
+  chartMenu(host);
+  try {
+    return echarts.init(host);
+  } finally {
+    console.warn = warn;
+  }
+}
+
+type Look = {xTitle: string, yTitle: string, log: boolean, markers: boolean, fit: boolean, dashed: string[],
+  legend: boolean, xPad: boolean, symbols?: {[category: string]: string},
+  /** the legend's lines, wrapped, or one scrolled (legendLayout); none: one plain */
+  legendLayout?: {lines: number, type: 'plain' | 'scroll'},
+  /** past MANY_BANDS, the one band whose range is drawn (null: none, the lines alone) */
+  focus?: string | null,
+  fmt: {xUnits: string, yUnits: string, x: string, y: string, xTitle: string, yTitle?: string, xOwn?: boolean,
+    yOwn?: boolean}};
+
+export function chartOption(bands: Band[], colors: string[], refs: RefLine[], look: Look): EChartsOption {
+  const series: object[] = [];
+  // past MANY_BANDS the ranges overlap into one wash: only the focused one is filled (its series stays, empty, so the
+  // Y extent does not jump as the mouse moves)
+  const filled = (b: Band) => bands.length <= MANY_BANDS || b.name === look.focus;
+  bands.forEach((b, k) => {
+    const color = colors[k];
+    const pairs = (ys: number[]) => b.x.map((x, i) => [x, ys[i]]);
+    // the polygon, upper edge forward and lower edge back, drawn once on the first item; every item's lower and
+    // upper still set the Y extent; a band of one point (a group's interval) is a vertical bar
+    const outline = [...pairs(b.upper), ...pairs(b.lower).reverse()];
+    series.push({name: b.name, type: 'custom', silent: true, clip: true, itemStyle: {color},
+      data: b.x.map((x, i) => [x, b.lower[i], b.upper[i]]), encode: {x: 0, y: [1, 2]},
+      renderItem: (params: any, api: any) => params.dataIndex !== 0 ? null : b.x.length === 1 ? {type: 'polyline',
+        shape: {points: outline.map((p) => api.coord(p))}, style: {stroke: color, lineWidth: 2, opacity: 0.6}} :
+        !filled(b) ? null : {type: 'polygon', shape: {points: outline.map((p) => api.coord(p))},
+          style: {fill: color, opacity: 0.25}}});
+    series.push(...lineSeries(b, color, look.markers, look.dashed.includes(b.name), look.symbols?.[b.name]));
+  });
+  // vertical titles in two rows, every other one by day raised: neighbours (today, the expected end) never overlap
+  const verticals = refs.filter((r) => r.vertical).sort((p, q) => p.value - q.value);
+  const raised = (r: RefLine) => verticals.indexOf(r) % 2 === 1;
+  if (refs.length && bands.length) {
+    // the reference lines ride an empty series; its radius-0 points keep a horizontal one inside the Y axis
+    series.push({type: 'scatter', symbolSize: 0, silent: true, tooltip: {show: false},
+      data: refs.filter((r) => !r.vertical).map((r) => [bands[0].x[0], r.value]),
+      markLine: {silent: true, symbol: 'none', animation: false, data: refs.map((r) => ({
+        [r.vertical ? 'xAxis' : 'yAxis']: r.value, name: r.title,
+        lineStyle: {color: r.color, type: r.dashed ? 'dashed' : 'solid', width: 1},
+        // a vertical line's title above the plot, a horizontal one's along it at its start
+        label: {formatter: r.title, position: r.vertical ? 'end' : 'insideStartTop', color: TEXT,
+          ...(r.vertical ? {align: 'right', distance: raised(r) ? 19 : 5} : {})},
+      }))}});
+  }
+  const axisName = {nameLocation: 'middle', nameTextStyle: {color: TEXT}} as const;
+  // what the study is read against sets the scale, not how far a forecast's range reaches: on a linear axis up to a
+  // little above the highest level (the endpoint, the humane limit) unless a median rises above it, and to a little
+  // past the last day marked (the end of the study); the bands are clipped there
+  const levels = look.fit ? refs.filter((r) => !r.vertical).map((r) => r.value) : [];
+  const days = look.fit ? refs.filter((r) => r.vertical).map((r) => r.value) : [];
+  const medians = bands.flatMap((b) => b.line ?? []);
+  const yMax = !look.log && levels.length && maxOf(levels) > 0 ?
+    Math.max(1.3 * maxOf(levels), ...medians.filter(Number.isFinite)) : undefined;
+  // that top, and ticks that divide it: echarts' own step (300) stopped at 1800 under a top of 2000. The extent as
+  // echarts reads it: the bands, the medians and the reference levels
+  const extent = Math.max(...[...bands.flatMap((b) => b.upper), ...medians, ...levels].filter(Number.isFinite));
+  const yTop = yMax !== undefined && extent > 0 ? niceCeil(Math.min(extent, yMax)) : undefined;
+  const xMax = days.length ? Math.ceil(maxOf(days) * 1.08) : undefined;
+  // on a log axis, from the decade of the smallest median (or lower edge, without medians), not of a forecast's
+  // range far below the data (it went down to 0.01 mm³); the bands are clipped there
+  const lows = (medians.length ? medians : bands.flatMap((b) => b.lower)).filter((v) => Number.isFinite(v) && v > 0);
+  const yMin = look.log && lows.length ? 10 ** Math.floor(Math.log10(minOf(lows))) : undefined;
+  return {
+    animation: false,
+    // containLabel holds the tick labels, not the axis names: room for the Y name, the X name and a vertical
+    // line's title
+    grid: {left: 44, right: 20,
+      top: (look.legend && bands.length > 1 ? 8 + 24 * (look.legendLayout?.lines ?? 1) : 12) + (verticals.length ? 18 : 0) +
+        (verticals.length > 1 ? 14 : 0),
+      bottom: 36, containLabel: true},
+    // wrapped over the lines it needs, every name whole (a paged legend cut names and hid groups); past a few lines
+    // one scrolled line
+    legend: {show: look.legend && bands.length > 1, type: look.legendLayout?.type ?? 'plain', top: 4, left: 20,
+      right: 20},
+    tooltip: {trigger: 'axis', formatter: (params: any) => tooltip(params as any[], bands, look.fmt)},
+    xAxis: {type: 'value', scale: true, name: look.xTitle, nameGap: 26, ...axisName,
+      ...(look.xPad ? {boundaryGap: ['4%', '4%']} : {}),
+      ...(xMax !== undefined ? {max: (e: {max: number}) => Math.min(e.max, xMax)} : {})},
+    // on a log axis the minor ticks are labelled too (2, 5 per decade): a decade alone reads as a linear axis
+    yAxis: {type: look.log ? 'log' : 'value', scale: true, name: look.yTitle, nameGap: 52, ...axisName,
+      ...(yTop !== undefined ? {max: yTop, interval: niceStep(yTop)} : {}),
+      // a log axis ends on round values (1, 2 or 5 times a power of ten), never on the data's own extremes
+      ...(look.log ? {min: (e: {min: number}) => niceFloor(Math.max(e.min, yMin ?? 0)),
+        max: (e: {max: number}) => niceCeil(e.max),
+        axisLabel: {formatter: (v: number) => String(Number(v.toPrecision(3)))},
+        minorTick: {show: true, splitNumber: 2},
+        minorSplitLine: {show: true, lineStyle: {opacity: 0.4}}} : {})},
+    series,
+  } as EChartsOption;
+}
+
+/** A band's line: solid, or dashed for a prediction; with counts, dashed over each stretch where a point has fewer than
+ *  FEW_ANIMALS animals (each stretch a series of its own, of the band's name: one legend entry, and every series keeps
+ *  the band's indices, its other points empty, so the tooltip reads each point by its index). */
+export function lineSeries(b: Band, color: string, markers: boolean, dashed: boolean, symbol?: string): object[] {
+  if (!b.line)
+    return [];
+  const line = b.line;
+  const at = (keep: (i: number) => boolean) => b.x.map((x, i) => [x, keep(i) ? line[i] : null]);
+  const style = (dash: boolean) => ({name: b.name, type: 'line', triggerLineEvent: true, symbol: markers && !dashed ? symbol ?? 'circle' : 'none',
+    symbolSize: symbol ? 7 : 4,
+    lineStyle: {color, width: 2, type: dash ? 'dashed' : 'solid'}, itemStyle: {color}});
+  const n = b.n;
+  if (dashed || !n)
+    return [{...style(dashed), data: at(() => true)}];
+  const few = (i: number) => n[i] < FEW_ANIMALS;
+  // a segment is dashed when either end is a thin point; consecutive dashed segments make one stretch
+  const stretches: [number, number][] = [];
+  for (let i = 0; i + 1 < b.x.length; i++) {
+    if (!few(i) && !few(i + 1))
+      continue;
+    const last = stretches[stretches.length - 1];
+    if (last && last[1] === i)
+      last[1] = i + 1;
+    else
+      stretches.push([i, i + 1]);
+  }
+  return [{...style(false), data: at((i) => !few(i))},
+    ...stretches.map(([s, e]) => ({...style(true), data: at((i) => i >= s && i <= e)}))];
+}
+
+/** The tick step of an axis from 0 to `top` (niceCeil's): 4 steps for 2 × 10^p (500s to 2000), else 5 (200s to
+ *  1000, 500s to 2500, 1000s to 5000). */
+export function niceStep(top: number): number {
+  const k = top / 10 ** Math.floor(Math.log10(top));
+  return top / (Math.abs(k - 2) < 1e-9 ? 4 : 5);
+}
+
+/** A round number at or above `v` (1, 2, 2.5 or 5 times a power of ten): an axis' top. */
+export function niceCeil(v: number): number {
+  if (!(v > 0))
+    return v;
+  const p = 10 ** Math.floor(Math.log10(v));
+  return [1, 2, 2.5, 5, 10].map((m) => m * p).find((x) => x >= v - 1e-9)!;
+}
+
+/** A round number at or below `v` (1, 2 or 5 times a power of ten): a log axis' bottom. */
+export function niceFloor(v: number): number {
+  if (!(v > 0))
+    return v;
+  const p = 10 ** Math.floor(Math.log10(v));
+  return [5, 2, 1].map((m) => m * p).find((x) => x <= v + 1e-9)!;
+}
+
+/** X, then lower / line / upper of every band at that point (each series at its own index: bands of different
+ *  categories need not share their X values). */
+export function tooltip(params: any[], bands: Band[], fmt: Look['fmt']): string {
+  if (!params.length)
+    return '';
+  const rows = new Set<string>();
+  const u = fmt.yUnits ? ` ${fmt.yUnits}` : '';
+  // a column with no format of its own: the app's number format (no float noise, thousands separated)
+  const y = (v: number) => fmt.yOwn ? DG.format(v, fmt.y) : sig(v);
+  for (const p of params) {
+    const b = bands.find((b) => b.name === p.seriesName);
+    const i = p.dataIndex;
+    if (!b || i >= b.x.length)
+      continue;
+    const range = `${y(b.lower[i])} – ${y(b.upper[i])}${u}`;
+    // the animals behind the point, of the most the group had
+    const n = b.n?.[i];
+    const most = b.n ? maxOf(b.n.filter(Number.isFinite)) : NaN;
+    const of = Number.isFinite(n) ? `, ${n} of ${most} animal${most === 1 ? '' : 's'}` : '';
+    const name = b.name === '' ? '' : `<b>${esc(b.name)}</b>: `;
+    rows.add(`${name}${b.line ? `${y(b.line[i])}${u} (${range})` : range}${of}`);
+  }
+  const xu = fmt.xUnits ? ` ${fmt.xUnits}` : '';
+  const x = params[0].data[0];
+  return [`${esc(fmt.xTitle)}: ${fmt.xOwn ? DG.format(x, fmt.x) : sig(x)}${xu}`, ...fmt.yTitle ? [esc(fmt.yTitle)] : [],
+    ...rows].join('<br>');
+}
+
+/** "Tumor volume (mm³)", "Tumor volume (mm³, log scale)": the units once, when given and not already in the title,
+ *  and the scale when it is not linear. */
+export function axisTitle(title: string, units: string, log = false): string {
+  const notes = [units && !title.includes(units) ? units : '', log ? 'log scale' : ''].filter((n) => n);
+  return notes.length ? `${title} (${notes.join(', ')})` : title;
+}
+
+/** The table's formula lines the chart draws: the visible constant ones. Other formulas need the platform's
+ *  evaluator and are skipped; `DG.FormulaLinesHelper.getMeta` names the column but does not split off the constant,
+ *  hence the pattern. */
+export function refLines(items: DG.FormulaLine[], xName: string): RefLine[] {
+  const out: RefLine[] = [];
+  for (const f of items) {
+    const m = /^\s*\$\{(.+?)\}\s*=\s*(-?[\d.]+(?:[eE][-+]?\d+)?)\s*$/.exec(f.formula ?? '');
+    if (!m || f.visible === false || (f.type && f.type !== 'line'))
+      continue;
+    out.push({value: Number(m[2]), vertical: m[1] === xName, title: f.title ?? '', color: f.color || '#9aa5b1',
+      dashed: (f.style ?? 'dashed') !== 'solid'});
+  }
+  return out;
+}
+
+/** The filtered rows with X, lower and upper present, grouped by the split category and sorted by X. */
+export function collectBands(df: DG.DataFrame, x: DG.Column, lower: DG.Column, upper: DG.Column,
+  line: DG.Column | null, split: DG.Column | null, count: DG.Column | null = null): Band[] {
+  const byName = new Map<string, number[]>();
+  for (let i = df.filter.findNext(-1, true); i !== -1; i = df.filter.findNext(i, true)) {
+    if (x.isNone(i) || lower.isNone(i) || upper.isNone(i))
+      continue;
+    const name = split ? (split.isNone(i) ? '' : String(split.get(i))) : '';
+    let rows = byName.get(name);
+    if (!rows)
+      byName.set(name, rows = []);
+    rows.push(i);
+  }
+  return [...byName].map(([name, rows]) => {
+    rows.sort((a, b) => x.get(a) - x.get(b));
+    const values = (c: DG.Column) => rows.map((i) => c.get(i) as number);
+    return {name, row: rows[0], x: values(x), lower: values(lower), upper: values(upper),
+      line: line ? rows.map((i) => line.isNone(i) ? NaN : line.get(i)) : null,
+      n: count ? rows.map((i) => count.isNone(i) ? NaN : count.get(i)) : null};
+  });
+}

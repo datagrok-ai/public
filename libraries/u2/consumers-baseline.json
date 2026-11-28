@@ -974,6 +974,58 @@
         "u2/no-unowned-root": 0
       }
     },
+    "packages/PmxStudio": {
+      "files": 93,
+      "u2Files": 28,
+      "valueValue": 0,
+      "valuePeek": 0,
+      "runInScope": 0,
+      "runWith": 0,
+      "runWithUndefined": 0,
+      "newScope": 0,
+      "viewZoo": 0,
+      "freeSubscribe": 0,
+      "enabledOpt": 0,
+      "okEnabled": 0,
+      "deepDgIndex": 0,
+      "deepImports": 0,
+      "controlBuild": 0,
+      "newAppHeader": 0,
+      "rawSubscribe": 22,
+      "tsInternalSelectors": 2,
+      "subclassU2": 8,
+      "subclassEms": 0,
+      "classBuildsUi": 0,
+      "cssFiles": 2,
+      "cssLines": 546,
+      "cssInternalLines": 5,
+      "cssImportant": 19,
+      "commentLines": 4454,
+      "fileHeaders": 55,
+      "privateDocs": 0,
+      "classes": {
+        "subclassU2": [
+          "packages/PmxStudio/src/arms-input.ts: ArmCard (line 184)",
+          "packages/PmxStudio/src/arms-input.ts: ArmsInput (line 601)",
+          "packages/PmxStudio/src/arms-input.ts: CorrectionInput (line 744)",
+          "packages/PmxStudio/src/band-chart.ts: BandChart (line 58)",
+          "packages/PmxStudio/src/km-chart.ts: KmChart (line 18)",
+          "packages/PmxStudio/src/line-input.ts: LineInput (line 65)",
+          "packages/PmxStudio/src/spider-chart.ts: SpiderChart (line 52)",
+          "packages/PmxStudio/src/spider-chart.ts: WaterfallChart (line 104)"
+        ],
+        "subclassEms": [],
+        "classBuildsUi": []
+      },
+      "lint": {
+        "u2/comments": 21,
+        "u2/no-snapshot-in-live-slot": 0,
+        "u2/reason-text": 0,
+        "u2/no-raw-column-list": 1,
+        "u2/build-in-owner": 0,
+        "u2/no-unowned-root": 1
+      }
+    },
     "packages/PowerPack": {
       "files": 53,
       "u2Files": 5,
@@ -1387,6 +1439,36 @@
       ]
     },
     {
+      "date": "2026-11-10",
+      "reason": "PmxStudio becomes a u2 consumer (PR #4416): its code is recorded as it is after owning its subscriptions and styling its own classes. What stays: 8 class components (chart and input controls written before function components were the documented form); StatCard's value, label and change restyled for a compact card (4 CSS lines: u2 has no option for it); a ButtonGroup label, a form category and the loader's spinner looked up by class (u2 has no option for a count in a label, a folded category or a spinner size); 7 subscriptions that follow a table the view swaps, each unsubscribed by hand; one table built inside its caller's effect and one results table read as rows (no-unowned-root and no-raw-column-list see neither)",
+      "grown": [
+        "packages/PmxStudio rawSubscribe: 0 → 7",
+        "packages/PmxStudio tsInternalSelectors: 0 → 2",
+        "packages/PmxStudio subclassU2: 0 → 8",
+        "packages/PmxStudio cssLines: 0 → 470",
+        "packages/PmxStudio cssInternalLines: 0 → 4",
+        "packages/PmxStudio cssImportant: 0 → 11",
+        "packages/PmxStudio fileHeaders: 0 → 41"
+      ]
+    },
+    {
+      "date": "2026-11-10",
+      "reason": "PmxStudio becomes a u2 consumer (PR #4416): its code is recorded as it is after owning its subscriptions and styling its own classes. What stays: 8 class components (chart and input controls written before function components were the documented form); StatCard's value, label and change restyled for a compact card (4 CSS lines: u2 has no option for it); a ButtonGroup label, a form category and the loader's spinner looked up by class (u2 has no option for a count in a label, a folded category or a spinner size); 7 subscriptions that follow a table the view swaps, each unsubscribed by hand; one table built inside its caller's effect and one results table read as rows (no-unowned-root and no-raw-column-list see neither)",
+      "grown": [
+        "packages/PmxStudio u2/comments: 0 → 18",
+        "packages/PmxStudio u2/no-raw-column-list: 0 → 1",
+        "packages/PmxStudio u2/no-unowned-root: 0 → 1"
+      ]
+    },
+    {
+      "date": "2026-11-11",
+      "reason": "PmxStudio: one look for 'you can change this' across the app (a discreet dotted underline on hint links and on settable StatCard labels), until u2 offers a quiet link variant and a StatCard label class",
+      "grown": [
+        "packages/PmxStudio cssLines: 470 → 472",
+        "packages/PmxStudio cssInternalLines: 4 → 5"
+      ]
+    },
+    {
       "date": "2026-11-16",
       "reason": "Chem: Crux Sketch takes Datagrok's look in its own dialogs, fields, buttons and tooltips through its host-look custom properties (css/crux-sketcher.css), set from Datagrok's colour variables so the theme follows; Chem's other counts are lowered to what they are now",
       "grown": [
@@ -1412,6 +1494,80 @@
       "reason": "PowerPack: home search placed in the tab strip or ribbon",
       "grown": [
         "packages/PowerPack cssLines: 1817 → 1824"
+      ]
+    },
+    {
+      "date": "2026-11-26",
+      "reason": "PmxStudio release after QA: platform events (input onChanged in dialogs, DataFrame edits, view removal) each unsubscribed by hand or ending with their dialog; library column widths and reduced motion at narrow screens and StatCard sizing need !important over inline styles; file headers kept as module docs",
+      "grown": [
+        "packages/PmxStudio rawSubscribe: 7 → 17",
+        "packages/PmxStudio cssLines: 472 → 478",
+        "packages/PmxStudio cssImportant: 11 → 19",
+        "packages/PmxStudio fileHeaders: 41 → 55"
+      ]
+    },
+    {
+      "date": "2026-11-26",
+      "reason": "PmxStudio release after QA: platform events (input onChanged in dialogs, DataFrame edits, view removal) each unsubscribed by hand or ending with their dialog; library column widths and reduced motion at narrow screens and StatCard sizing need !important over inline styles; file headers kept as module docs",
+      "grown": [
+        "packages/PmxStudio u2/comments: 18 → 21"
+      ]
+    },
+    {
+      "date": "2026-11-26",
+      "reason": "PmxStudio 0.1.1: the Overview cards' demo foot and the read-file summary in the Open a study dialog (hub.css)",
+      "grown": [
+        "packages/PmxStudio cssLines: 478 → 501"
+      ]
+    },
+    {
+      "date": "2026-11-26",
+      "reason": "PmxStudio 0.1.1: a dialog's own onClose frees its purpose in modal() (ui.ts); it ends with the dialog",
+      "grown": [
+        "packages/PmxStudio rawSubscribe: 17 → 18"
+      ]
+    },
+    {
+      "date": "2026-11-26",
+      "reason": "PmxStudio 0.1.2: rawSubscribe +1 is the app-lifetime onCurrentViewChanged handler in handlers.ts (clears a stage's object when another view becomes current; registered once as the module loads, nothing owns it but the app); cssLines +7 are the context panel's verdict mark and the Actions pane separator",
+      "grown": [
+        "packages/PmxStudio rawSubscribe: 18 → 19",
+        "packages/PmxStudio cssLines: 501 → 508"
+      ]
+    },
+    {
+      "date": "2026-11-27",
+      "reason": "PmxStudio 0.1.3: cssLines +1 is the one media query that folds the stage steps to their dots on a narrow window (QA 0.1.3 designer #20)",
+      "grown": [
+        "packages/PmxStudio cssLines: 508 → 509"
+      ]
+    },
+    {
+      "date": "2026-11-27",
+      "reason": "PmxStudio 0.1.3: cssLines +35 are the redesigned top bar (home icon, centred stage steps, study chip, each with its own hover), Customize this page in place and the animal context panel's sections",
+      "grown": [
+        "packages/PmxStudio cssLines: 509 → 544"
+      ]
+    },
+    {
+      "date": "2026-11-27",
+      "reason": "PmxStudio 0.1.3: cssLines +2 hold the Overview header's stage filters at the Compare buttons' 28 px, so a tick never moves the list (hub.css, 59c288b07a)",
+      "grown": [
+        "packages/PmxStudio cssLines: 544 → 546"
+      ]
+    },
+    {
+      "date": "2026-11-27",
+      "reason": "PmxStudio 0.1.3 review fixes: rawSubscribe +2 are the app's onViewRemoved watch while a page of the app is open (app-open.ts, unsubscribed with the last page) and the tables' change counter behind the unsaved marker (native.ts, unsubscribed with its view); the study grid's column-change list (study-table.ts) replaces the per-cell lookups and the monitor's onRowsAdded folds into one debounced onDataChanged",
+      "grown": [
+        "packages/PmxStudio rawSubscribe: 19 → 21"
+      ]
+    },
+    {
+      "date": "2026-11-28",
+      "reason": "PmxStudio 0.1.3 final QA (navigation): rawSubscribe +1 is the unsaved-changes dialog's close, watched to answer Save / Discard / Cancel when the user moves away from a page with changes not saved (Back, another study opened), unsubscribed as the dialog closes",
+      "grown": [
+        "packages/PmxStudio rawSubscribe: 21 → 22"
       ]
     }
   ]

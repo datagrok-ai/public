@@ -1,0 +1,157 @@
+animal,group,day,volume
+V1,Vehicle,0,249.8
+V1,Vehicle,2,257.9
+V1,Vehicle,4,342.8
+V1,Vehicle,7,352.3
+V1,Vehicle,9,471.8
+V1,Vehicle,11,425.5
+V1,Vehicle,14,676.4
+V1,Vehicle,16,797.2
+V1,Vehicle,18,791.3
+V1,Vehicle,21,1086.8
+V1,Vehicle,23,1102.6
+V1,Vehicle,25,1195.6
+V1,Vehicle,28,1564.7
+V2,Vehicle,0,146.4
+V2,Vehicle,2,182.8
+V2,Vehicle,4,218.7
+V2,Vehicle,7,334.4
+V2,Vehicle,9,354.4
+V2,Vehicle,11,457.2
+V2,Vehicle,14,602.2
+V2,Vehicle,16,610.3
+V2,Vehicle,18,784.2
+V2,Vehicle,21,1081.1
+V2,Vehicle,23,1413.6
+V2,Vehicle,25,1742.4
+V2,Vehicle,28,2215.1
+V3,Vehicle,0,138.4
+V3,Vehicle,2,179.9
+V3,Vehicle,4,189.8
+V3,Vehicle,7,213.1
+V3,Vehicle,9,293.3
+V3,Vehicle,11,276.7
+V3,Vehicle,14,382.5
+V3,Vehicle,16,431.4
+V3,Vehicle,18,509.7
+V3,Vehicle,21,556.4
+V3,Vehicle,23,677.7
+V3,Vehicle,25,794.5
+V3,Vehicle,28,991.0
+V4,Vehicle,0,143.8
+V4,Vehicle,2,164.1
+V4,Vehicle,4,156.3
+V4,Vehicle,7,192.0
+V4,Vehicle,9,249.8
+V4,Vehicle,11,232.1
+V4,Vehicle,14,336.9
+V4,Vehicle,16,330.0
+V4,Vehicle,18,407.1
+V4,Vehicle,21,522.1
+V4,Vehicle,23,574.7
+V4,Vehicle,25,644.0
+V4,Vehicle,28,779.2
+V5,Vehicle,0,135.1
+V5,Vehicle,2,157.4
+V5,Vehicle,4,162.8
+V5,Vehicle,7,195.6
+V5,Vehicle,9,206.5
+V5,Vehicle,11,223.2
+V5,Vehicle,14,297.0
+V5,Vehicle,16,323.9
+V5,Vehicle,18,368.5
+V5,Vehicle,21,414.6
+V5,Vehicle,23,428.3
+V5,Vehicle,25,413.1
+V5,Vehicle,28,483.7
+V6,Vehicle,0,165.3
+V6,Vehicle,2,192.7
+V6,Vehicle,4,256.3
+V6,Vehicle,7,280.3
+V6,Vehicle,9,389.5
+V6,Vehicle,11,529.6
+V6,Vehicle,14,608.5
+V6,Vehicle,16,657.3
+V6,Vehicle,18,894.8
+V6,Vehicle,21,1112.2
+V6,Vehicle,23,1059.5
+V6,Vehicle,25,1540.8
+V6,Vehicle,28,1713.1
+D1,Drug A,0,123.8
+D1,Drug A,2,141.1
+D1,Drug A,4,158.1
+D1,Drug A,7,150.0
+D1,Drug A,9,186.7
+D1,Drug A,11,186.0
+D1,Drug A,14,220.9
+D1,Drug A,16,256.9
+D1,Drug A,18,262.2
+D1,Drug A,21,309.0
+D1,Drug A,23,329.4
+D1,Drug A,25,332.6
+D1,Drug A,28,358.1
+D2,Drug A,0,166.3
+D2,Drug A,2,178.9
+D2,Drug A,4,208.6
+D2,Drug A,7,212.2
+D2,Drug A,9,261.2
+D2,Drug A,11,241.5
+D2,Drug A,14,281.4
+D2,Drug A,16,354.9
+D2,Drug A,18,350.3
+D2,Drug A,21,403.2
+D2,Drug A,23,455.6
+D2,Drug A,25,390.2
+D2,Drug A,28,443.7
+D3,Drug A,0,143.7
+D3,Drug A,2,152.6
+D3,Drug A,4,156.7
+D3,Drug A,7,256.6
+D3,Drug A,9,203.7
+D3,Drug A,11,201.3
+D3,Drug A,14,246.7
+D3,Drug A,16,297.9
+D3,Drug A,18,311.1
+D3,Drug A,21,398.6
+D3,Drug A,23,358.4
+D3,Drug A,25,419.5
+D3,Drug A,28,402.6
+D4,Drug A,0,154.5
+D4,Drug A,2,171.6
+D4,Drug A,4,179.5
+D4,Drug A,7,238.1
+D4,Drug A,9,257.5
+D4,Drug A,11,255.0
+D4,Drug A,14,238.2
+D4,Drug A,16,303.4
+D4,Drug A,18,325.2
+D4,Drug A,21,355.6
+D4,Drug A,23,429.3
+D4,Drug A,25,379.3
+D4,Drug A,28,476.5
+D5,Drug A,0,128.6
+D5,Drug A,2,152.7
+D5,Drug A,4,183.0
+D5,Drug A,7,183.2
+D5,Drug A,9,194.0
+D5,Drug A,11,217.1
+D5,Drug A,14,272.6
+D5,Drug A,16,287.0
+D5,Drug A,18,276.7
+D5,Drug A,21,316.0
+D5,Drug A,23,297.8
+D5,Drug A,25,338.0
+D5,Drug A,28,385.1
+D6,Drug A,0,117.6
+D6,Drug A,2,151.4
+D6,Drug A,4,144.1
+D6,Drug A,7,154.5
+D6,Drug A,9,168.3
+D6,Drug A,11,193.4
+D6,Drug A,14,220.4
+D6,Drug A,16,191.0
+D6,Drug A,18,218.4
+D6,Drug A,21,232.4
+D6,Drug A,23,272.4
+D6,Drug A,25,277.5
+D6,Drug A,28,292.0

@@ -1,0 +1,20 @@
+{
+ "name": "pdx_history",
+ "version": 1,
+ "doc": "A PDX model's own history weighed against PMX Studio's PDX reference. ln lambda: ln of a control group's exponential growth rate (1/day), the slope of ln V on day. Aggregates of the atlas corpus only.",
+ "metric": "ln_lambda",
+ "mu": -2.5661582700543883,
+ "tau_model": 0.4540940524622071,
+ "tau_study": 0.24339807775634087,
+ "sigma_animal": 0.2723895976827105,
+ "window_volume_mm3": 356.78474255088327,
+ "tau_lab": 0.15,
+ "n_for_group_means": 3,
+ "provenance": {
+  "prior": "D1B prior A, rerun on the frozen R7 corpus (analysis/out_pdx/d1_r7_rerun)",
+  "corpus_sha256": "79ee85b8d16e36b14856f52aa677de806a7eb4e6c85ad59e8e0bb8070d6fbe50",
+  "prior_sha256": "8093a8618019d47238c983766ac6218193a315881dd1be576f5408a22462b83a",
+  "tau_lab": "PDXNet, 2 models x 5 centres: tau 0.15 [0.08; 0.30]",
+  "validated": "history k=1 within one lab: width ratio 0.687, coverage 0.938 (accept). Not validated: another lab (tau_lab), group means (n), the conversion to log alpha"
+ }
+}

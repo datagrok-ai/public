@@ -1,0 +1,1008 @@
+/* A study's measurements live in Datagrok's own table view, as any table does; PMX Studio adds to it what it knows
+   of a study. What the outlier rules find (outlier-rules.ts) is painted on the cells, with its reasons on hover; the
+   grid's context menu gets PMX Studio's items (detectors.js) to flag a value or an animal, a value to look at that
+   stays in the analysis, or to exclude it, left out of the analysis with its reason; the view's menu gets the rules
+   and a paste that adds rows. The marks are columns of the table itself (Excluded, Flagged, Mark reason), visible,
+   filterable and editable like any other, so they travel with the study file; each one set from the menu is written
+   to the study's log (who, when, what). Nothing is ever deleted: an excluded row stays, greyed. A table is a study once
+   Monitor or Analyze has run on it: its columns' roles are kept on it (STUDY_TAG), which is what the menu and the
+   painting look for. */
+import {minOf} from './format';
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+import {button, divH, signal, span} from '@datagrok-libraries/u2';
+import {TableInput} from '@datagrok-libraries/u2/dg';
+
+import {DEFAULT_RULES, Finding, OutlierRules, RULE_LIMITS, RulesSource, canEditLabRules, findOutliers, labRules,
+  rulesInForce, rulesProblem, saveLabRules, saveUserRules, userRules} from './outlier-rules';
+import {groupsByAnimal} from './animal-group';
+import {StudyInputs as StudyNames} from './explore';
+import {ROLES, WEIGHT, pastedNumber, plural} from './wide-table';
+import {EXCLUDED, FLAGGED, MARK_REASON, STUDY_TAG, addLog, groupsShown, roleColumns, ticked} from './study-file';
+import {metaOf, weightChangeText} from './study-meta';
+import {colorsOfTable, paint} from './colors';
+import {PanelFact, dialogLine, objectPanel, okNamed, showCentred, signed, sparkline, stageOf,
+  modal, preparing} from './ui';
+import {esc} from './sheet';
+import {ReadingCheck, checkTyped} from './reading-check';
+
+export {pastedNumber};
+
+/* The marks (study-file.ts's EXCLUDED, FLAGGED, MARK_REASON) are visible columns created on first use; a tick typed
+   straight into the grid counts as well, and so does a study file's own Excluded column (true, yes, 1, x). */
+export type Mark = 'flagged' | 'excluded';
+
+const COLORS = {finding: DG.Color.fromHtml('#fff1c2'), flagged: DG.Color.fromHtml('#ffd8a8'),
+  excluded: DG.Color.fromHtml('#9aa5b1')};
+
+/** Keeps the columns' roles on the study table (a run of Monitor or Analyze) and decorates its open table views. */
+export function tagStudy(n: StudyNames | null): void {
+  if (!n)
+    return;
+  // a role held by a hidden column (`~…`) is not taken over by a visible one
+  const held = (role: string, name: string): string => {
+    const was = studyOf(n.study)?.[role as 'group'];
+    return was?.startsWith('~') && !name.startsWith('~') ? was : name;
+  };
+  const roles = JSON.stringify({animal: n.animal, group: held('group', n.group), day: n.day, volume: n.volume,
+    bodyWeight: n.bodyWeight});
+  if (n.study.getTag(STUDY_TAG) !== roles)
+    n.study.setTag(STUDY_TAG, roles);
+  for (const v of grok.shell.tableViews)
+    decorateStudyView(v);
+}
+
+/** A table as a study: its columns by role (null: not a study, or a role's column gone). */
+export function studyOf(df: DG.DataFrame | null | undefined): StudyNames | null {
+  try {
+    const r = JSON.parse(df?.getTag(STUDY_TAG) || 'null');
+    return df && r && [r.animal, r.group, r.day, r.volume].every((c) => df.col(c)) ?
+      {study: df, ...r, bodyWeight: r.bodyWeight && df.col(r.bodyWeight) ? r.bodyWeight : null} : null;
+  } catch {
+    return null;
+  }
+}
+
+/** `x` (a call's inputs) with the excluded rows of its study left out: the engine never sees them. The columns among
+ *  the inputs are taken from the kept table by name. */
+export function withoutExcluded<T extends object>(x: T): T {
+  const study = (x as {study?: unknown}).study;
+  if (!(study instanceof DG.DataFrame))
+    return x;
+  const excluded = study.col(EXCLUDED);
+  const out = DG.BitSet.create(study.rowCount, (i) => ticked(excluded, i));
+  if (out.trueCount === 0)
+    return x;
+  const kept = study.clone(out.invert());
+  kept.name = study.name;
+  return Object.fromEntries(Object.entries(x).map(([k, v]) => [k, v === study ? kept :
+    v instanceof DG.Column && kept.col(v.name) ? kept.col(v.name) : v])) as T;
+}
+
+/** What was excluded and why, for the report (null: nothing): a whole animal once, else each measurement. */
+export function exclusionsOf(n: StudyNames | null): string | null {
+  const df = n?.study;
+  const marks = df ? marksOf(df) : [];
+  if (!n || !df || !marks.some((m) => m.state === 'excluded'))
+    return null;
+  const byAnimal = new Map<string, number[]>();
+  for (let i = 0; i < df.rowCount; i++) {
+    const a = String(df.get(n.animal, i));
+    byAnimal.set(a, [...(byAnimal.get(a) ?? []), i]);
+  }
+  const parts: string[] = [];
+  byAnimal.forEach((rows, a) => {
+    const out = rows.filter((i) => marks[i].state === 'excluded');
+    // a tick typed straight into the grid has no reason and no log line, and the report says so
+    const why = (i: number) => ` (${marks[i].reason || 'no reason given'})`;
+    if (out.length === rows.length && new Set(out.map((i) => marks[i].reason)).size === 1)
+      parts.push(`animal ${a}, all its measurements${why(out[0])}`);
+    else
+      out.forEach((i) => parts.push(`${a} on day ${df.get(n.day, i)}${why(i)}`));
+  });
+  return `Left out by the investigator (who and when, in the study's log): ${parts.join('; ')}`;
+}
+
+/** A row's mark (excluded over flagged) and its reason. */
+function markOf(df: DG.DataFrame, i: number): {state: Mark | '', reason: string} {
+  const r = df.col(MARK_REASON);
+  return {state: ticked(df.col(EXCLUDED), i) ? 'excluded' : ticked(df.col(FLAGGED), i) ? 'flagged' : '',
+    reason: !r || r.isNone(i) ? '' : String(r.get(i))};
+}
+
+/** Each marked animal's mark: excluded when every row of it is (it is out of the analysis), partly when only some
+ *  are (it is still analysed, on the rest), else flagged. */
+export function animalMarks(n: StudyNames): Map<string, Mark | 'partly'> {
+  const col = n.study.col(n.animal);
+  const rows = new Map<string, {all: number, out: number, flagged: boolean}>();
+  if (col) {
+    marksOf(n.study).forEach((m, i) => {
+      const a = String(col.get(i));
+      const r = rows.get(a) ?? {all: 0, out: 0, flagged: false};
+      rows.set(a, {all: r.all + 1, out: r.out + (m.state === 'excluded' ? 1 : 0),
+        flagged: r.flagged || m.state === 'flagged'});
+    });
+  }
+  const out = new Map<string, Mark | 'partly'>();
+  rows.forEach((r, a) => {
+    if (r.out > 0 || r.flagged)
+      out.set(a, r.out === r.all ? 'excluded' : r.out > 0 ? 'partly' : 'flagged');
+  });
+  return out;
+}
+
+/** One animal's readings, by day: the volumes kept (excluded rows left out), its group, the rows excluded and flagged
+ *  with their reasons, its first and last body weight (null: none weighed) and every weighing by day. */
+export function animalReadings(n: StudyNames, animal: string): {days: number[], volumes: number[], group: string,
+  excluded: number, flagged: number, reasons: string[], weights: [number, number] | null, weightDay0: number | null,
+  weighed: [number, number][]} {
+  const df = n.study;
+  const [a, g, d, v] = [n.animal, n.group, n.day, n.volume].map((c) => df.col(c)!);
+  const w = n.bodyWeight ? df.col(n.bodyWeight) : null;
+  const kept: [number, number][] = [];
+  const weighed: [number, number][] = [];
+  const reasons = new Set<string>();
+  let [group, excluded, flagged] = ['', 0, 0];
+  for (let i = 0; i < df.rowCount; i++) {
+    if (String(a.get(i)) !== animal)
+      continue;
+    group ||= g.isNone(i) ? '' : String(g.get(i));
+    const m = markOf(df, i);
+    if (m.state === 'excluded')
+      excluded++;
+    if (m.state === 'flagged')
+      flagged++;
+    if (m.state && m.reason)
+      reasons.add(m.reason);
+    if (m.state === 'excluded' || d.isNone(i))
+      continue;
+    if (!v.isNone(i) && Number.isFinite(v.get(i)))
+      kept.push([d.get(i), v.get(i)]);
+    if (w && !w.isNone(i) && Number.isFinite(Number(w.get(i))))
+      weighed.push([d.get(i), Number(w.get(i))]);
+  }
+  kept.sort((x, y) => x[0] - y[0]);
+  weighed.sort((x, y) => x[0] - y[0]);
+  return {days: kept.map((x) => x[0]), volumes: kept.map((x) => x[1]), group, excluded, flagged,
+    reasons: [...reasons], weights: weighed.length ? [weighed[0][1], weighed[weighed.length - 1][1]] : null,
+    weightDay0: weighed.length ? weighed[0][0] : null, weighed};
+}
+
+/** A % change with its sign either way: "+4%", "−3%", "0%" (what rounds to 0 has none). */
+export const gain = (x: number) => `${Math.round(x) > 0 ? '+' : ''}${signed(x)}`;
+
+/** An animal's facts: its tumor (curve and last volume), readings, weight and marks, then `extra`. */
+export function animalFacts(n: StudyNames, animal: string, o: {color?: string, extra?: PanelFact[],
+  /** the study's weight-loss limit (%): a change near it worded as its check words it */
+  weightLimit?: number | null}): PanelFact[] {
+  const r = animalReadings(n, animal);
+  const last = r.volumes.length ? r.volumes[r.volumes.length - 1] : null;
+  const readings: PanelFact = {label: 'Readings', value: r.days.length ?
+    `${r.days.length}, day ${r.days[0]} to ${r.days[r.days.length - 1]}` : '0'};
+  return [
+    {label: 'Tumor', value: divH([sparkline(r.days, r.volumes, o.color), span(last === null ? '—' :
+      ` ${Math.round(last)} mm³ on day ${r.days[r.days.length - 1]}`)])},
+    readings,
+    // a gain with its "+", as Needs attention writes it (signed() marks only a loss)
+    ...r.weights ? [{label: 'Body weight', value: `${r.weights[1].toFixed(1)} g · ${weightChangeText(100 *
+      (r.weights[1] / r.weights[0] - 1), o.weightLimit)} since day ${r.weightDay0}`}] : [],
+    ...r.excluded ? [{label: 'Excluded', value: plural(r.excluded, 'reading')}] : [],
+    ...r.flagged ? [{label: 'Flagged', value: plural(r.flagged, 'reading')}] : [],
+    ...r.reasons.length ? [{label: 'Why', value: r.reasons.join('; ')}] : [],
+    ...o.extra ?? []];
+}
+
+/** An animal in the context panel outside a stage (a study open nowhere): its group under its name only when
+ *  `showGroup` (a blinded study's stays hidden), then its facts. The stages show theirs (animal-panel.ts). */
+export function animalPanel(n: StudyNames, animal: string, o: {color?: string, showGroup: boolean,
+  extra?: PanelFact[], weightLimit?: number | null}): HTMLElement {
+  const group = o.showGroup ? animalReadings(n, animal).group : '';
+  return objectPanel({title: animal, color: o.showGroup ? o.color : undefined, subtitle: group || undefined,
+    facts: animalFacts(n, animal, o)});
+}
+
+/** An animal as a line of a group's panel: name, curve, last volume, its status in a word or two; a click shows the
+ *  animal itself. */
+export function animalLine(n: StudyNames, animal: string, color: string, status: string,
+  open: () => void): HTMLElement {
+  const r = animalReadings(n, animal);
+  const last = r.volumes.length ? `${Math.round(r.volumes[r.volumes.length - 1])} mm³` : '—';
+  // a long status cut to the line, whole on hover (the panel is narrow: wrapped, it pushed the other panes away)
+  const st = span(status);
+  Object.assign(st.style, {minWidth: '0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+    color: 'var(--dg-text-color-muted, #7d8792)'});
+  st.title = status;
+  const line = divH([span(animal), sparkline(r.days, r.volumes, color, 80, 18), span(last), ...status ? [st] : []]);
+  Object.assign(line.style, {gap: '8px', alignItems: 'center', cursor: 'pointer', flexWrap: 'nowrap', minWidth: '0'});
+  (line.firstElementChild as HTMLElement).style.minWidth = '48px';
+  line.onclick = open;
+  return line;
+}
+
+/** The marks of a table, row by row. */
+function marksOf(df: DG.DataFrame): {state: Mark | '', reason: string}[] {
+  return Array.from({length: df.rowCount}, (_, i) => markOf(df, i));
+}
+
+/** Marks rows (or clears them, `state` null) and writes it to the study's log. Flagging leaves an exclusion and its
+ *  reason as they are: only clearing brings a row back. */
+export function mark(df: DG.DataFrame, rows: number[], state: Mark | null, reason: string, what: string): void {
+  // the three columns together, in this order, the first time a row is marked
+  const [e, f, r] = state === null ? [df.col(EXCLUDED), df.col(FLAGGED), df.col(MARK_REASON)] :
+    [df.columns.getOrCreate(EXCLUDED, DG.TYPE.BOOL), df.columns.getOrCreate(FLAGGED, DG.TYPE.BOOL),
+      df.columns.getOrCreate(MARK_REASON, DG.TYPE.STRING)];
+  // what the rows had: a clear says what it cleared, and a clear of nothing is no change to log
+  const had = rows.map((i) => ticked(e, i) ? 'excluded' : ticked(f, i) ? 'flagged' : '');
+  if (state === null && had.every((h) => !h))
+    return;
+  for (const i of rows) {
+    const wasOut = ticked(e, i);
+    if (state === null) {
+      e?.set(i, false, false);
+      f?.set(i, false, false);
+      r?.set(i, '', false);
+    } else {
+      (state === 'excluded' ? e : f)!.set(i, true, false);
+      if (reason && !(state === 'flagged' && wasOut))
+        r!.set(i, reason, false);
+    }
+  }
+  df.fireValuesChanged();
+  // in a blinded study, whether whoever marked them knew the groups (ARRIVE asks)
+  const how = !metaOf(df)?.blinded ? '' : groupsShown(df) ? ' (groups revealed)' : ' (blinded)';
+  addLog(df, (state ? `${state === 'excluded' ? 'Excluded' : 'Flagged'} ${what}${reason ? `: ${reason}` : ''}` :
+    had.includes('excluded') ? `Included ${what} in the analysis again` : `Cleared the flag on ${what}`) + how);
+}
+
+/** A context menu's item (detectors.js): flags or excludes the rows, asking why (required to exclude), or clears
+ *  their marks. */
+export function markRows(df: DG.DataFrame, rows: number[], action: string, what: string, done = () => {}): void {
+  if (action === 'correct')
+    return correctDialog(df, rows[0], done);
+  if (action === 'clear') {
+    mark(df, rows, null, '', what);
+    done();
+    return;
+  }
+  const exclude = action === 'exclude';
+  const reason = ui.input.textArea('Reason', {value: ''});
+  (reason.input as HTMLTextAreaElement).placeholder = exclude ? 'Required: it is reported' : 'Optional';
+  const d = modal('mark-rows', `${exclude ? 'Exclude' : 'Flag'} ${what}`);
+  if (!d)
+    return;
+  d.add(dialogLine(exclude ? 'Left out of the analysis' : 'Stays in the analysis, marked to look at',
+    exclude ? 'Left out of the analysis and the forecasts, and reported with its reason' : undefined))
+    .add(reason)
+    .onOK(() => {
+      const text = (reason.value ?? '').trim();
+      if (exclude && text === '')
+        grok.shell.warning('Write why: an exclusion is reported with its reason');
+      else {
+        mark(df, rows, exclude ? 'excluded' : 'flagged', text, what);
+        done();
+      }
+    });
+  const ok = okNamed(d, exclude ? 'Exclude' : 'Flag');
+  showCentred(d);
+  // an exclusion is reported with its reason: the button waits for one (the dialog would close, losing what was typed)
+  if (exclude) {
+    const sync = () => ok.disabled = (reason.value ?? '').trim() === '';
+    reason.input.addEventListener('input', sync);
+    sync();
+  }
+}
+
+/** The columns a reading is typed in: the volume, or the caliper's length and width when the volume is computed
+ *  from them (caliperVolume's formula); the body weight when the study has one. */
+export interface ReadingColumns {volume: DG.Column, caliper: {length: DG.Column, width: DG.Column} | null,
+  weight: DG.Column | null}
+export function readingColumns(df: DG.DataFrame, volume: DG.Column, weight: DG.Column | null): ReadingColumns {
+  const f = /^\$\{(.+)\} \* \$\{(.+)\} \* \$\{\2\} \/ 2$/.exec(volume.getTag(DG.TAGS.FORMULA) ?? '');
+  const [l, w] = f ? [df.col(f[1]), df.col(f[2])] : [null, null];
+  return {volume, caliper: l && w ? {length: l, width: w} : null, weight};
+}
+
+/** The caliper's volume, as caliperVolume's column computes it (mm³). */
+export const ellipsoid = (length: number, width: number) => length * width * width / 2;
+
+/** A study's reading columns, by its roles (null: not a study). */
+function readingsOf(df: DG.DataFrame): {n: StudyNames, cols: ReadingColumns} | null {
+  const n = studyOf(df);
+  return n ? {n, cols: readingColumns(df, df.col(n.volume)!, n.bodyWeight ? df.col(n.bodyWeight) : null)} : null;
+}
+
+/** An animal's latest reading with a volume, not excluded: its row (null: none). */
+export function lastReadingRow(n: StudyNames, animal: string): number | null {
+  const [a, d, v, out] = [n.study.col(n.animal)!, n.study.col(n.day)!, n.study.col(n.volume)!, n.study.col(EXCLUDED)];
+  let best: number | null = null;
+  for (let i = 0; i < n.study.rowCount; i++) {
+    if (String(a.get(i)) === animal && !d.isNone(i) && !v.isNone(i) && !ticked(out, i) &&
+      (best === null || d.get(i) >= d.get(best)))
+      best = i;
+  }
+  return best;
+}
+
+/** Writes new values into one row (column name to value) and logs old → new with the reason; nothing changed, nothing
+ *  written. Returns the log line (null: no change). */
+export function correctValues(df: DG.DataFrame, row: number, values: {[column: string]: number}, reason: string,
+  what: string): string | null {
+  const changes = Object.entries(values).filter(([c, x]) => {
+    const col = df.col(c)!;
+    return col.isNone(row) || col.get(row) !== x;
+  });
+  if (!changes.length)
+    return null;
+  const was = (c: string) => df.col(c)!.isNone(row) ? 'empty' : String(+Number(df.col(c)!.get(row)).toFixed(2));
+  const text = `Corrected ${what}: ${changes.map(([c, x]) => `${c} ${was(c)} → ${x}`).join(', ')}` +
+    (reason ? ` (${reason})` : '');
+  for (const [c, x] of changes)
+    df.col(c)!.set(row, x, false);
+  df.fireValuesChanged();
+  addLog(df, text);
+  return text;
+}
+
+/** "Correct this value…": the row's volume (or caliper readings) and body weight, a reason required, old → new in the
+ *  study's log. */
+export function correctDialog(df: DG.DataFrame, row: number, done = () => {}): void {
+  const r = readingsOf(df);
+  if (!r)
+    return;
+  const what = `${r.n.study.get(r.n.animal, row)} on day ${r.n.study.get(r.n.day, row)}`;
+  // typed as text and read as the day's entry reads it (decimal commas; "abc" or "1e9" not a number), checked by
+  // the same rule (checkTyped): a correction and an entry never disagree (QA 0.1.3 round 3: technician N3, N4, N15)
+  const num = (c: DG.Column, label: string): [DG.Column, DG.InputBase<string>, string] => {
+    const i = ui.input.string(label, {value: c.isNone(row) ? '' : String(+Number(c.get(row)).toFixed(3))});
+    (i.input as HTMLInputElement).inputMode = 'decimal';
+    return [c, i, label];
+  };
+  const fields: [DG.Column, DG.InputBase<string>, string][] = [
+    ...r.cols.caliper ? [num(r.cols.caliper.length, 'Length (mm)'), num(r.cols.caliper.width, 'Width (mm)')] :
+      [num(r.cols.volume, 'Volume (mm³)')],
+    ...r.cols.weight ? [num(r.cols.weight, 'Body weight (g)')] : []];
+  const typed = (i: DG.InputBase<string>) => pastedNumber(i.value ?? '');
+  const reason = ui.input.string('Reason *', {value: '', tooltipText: 'Required: it goes in the log with the change'});
+  (reason.input as HTMLInputElement).placeholder = 'Required: it goes in the log';
+  const d = modal('correct-reading', `Correct ${what}`);
+  if (!d)
+    return;
+  // each value checked as the day's entry checks it (checkReading), against the animal's reading before this one
+  const status = dialogLine('');
+  const valuesNow = (): {[c: string]: number} => {
+    const values: {[c: string]: number} = {};
+    for (const [c, i] of fields) {
+      const x = typed(i);
+      if (x !== null && Number.isFinite(x))
+        values[c.name] = x;
+    }
+    if (r.cols.caliper && values[r.cols.caliper.length.name] !== undefined &&
+      values[r.cols.caliper.width.name] !== undefined) {
+      // (the computed column follows its readings; set too, so every reader has it at once)
+      values[r.cols.volume.name] = ellipsoid(values[r.cols.caliper.length.name], values[r.cols.caliper.width.name]);
+    }
+    return values;
+  };
+  const checks = (): ReadingCheck[] => {
+    const v = valuesNow();
+    // a value the row has, erased: no reading (taking a day off is Enter today's values' Remove this day's values)
+    const erased = fields.filter(([c, i]) => !c.isNone(row) && typed(i) === null)
+      .map(([, , label]) => `Type the ${label[0].toLowerCase()}${label.slice(1)}`);
+    // a field that is no number: said for that field, its value not read
+    const unread = fields.filter(([, i]) => Number.isNaN(typed(i)))
+      .map(([, , label]): ReadingCheck => ({kind: 'impossible', why: `${label}: not a number, write it as a plain ` +
+        'number'}));
+    const weight = r.cols.weight;
+    return [...erased.map((why): ReadingCheck => ({kind: 'impossible', why})), ...unread,
+      checkTyped(v[r.cols.volume.name] ?? null, {before: readingBefore(df, r.n, row, r.cols.volume)}),
+      ...weight ? [checkTyped(v[weight.name] ?? null, {weight: true,
+        before: readingBefore(df, r.n, row, weight)})] : []].filter((x): x is ReadingCheck => !!x);
+  };
+  d.add(dialogLine('The old value stays in the study\'s log, with the new one and why'))
+    .add(ui.inputs([...fields.map(([, i]) => i), reason])).add(status)
+    .onOK(() => {
+      if (checks().some((k) => k.kind === 'impossible') || !(reason.value ?? '').trim())
+        return;
+      if (correctValues(df, row, valuesNow(), (reason.value ?? '').trim(), what))
+        done();
+    });
+  const ok = okNamed(d, 'Correct');
+  const sync = () => {
+    const found = checks().filter((k) => k.kind !== 'ok');
+    const bad = found.find((k) => k.kind === 'impossible');
+    status.textContent = found.map((k) => k.why).join('; ');
+    status.style.color = bad ? 'var(--dg-red, #d9534f)' : found.length ? 'var(--dg-orange, #e08a00)' : '';
+    const noReason = (reason.value ?? '').trim() === '';
+    ok.disabled = !!bad || noReason;
+    ok.title = bad ? bad.why : noReason ? 'Write the reason first: it goes in the log' : '';
+  };
+  for (const i of [...fields.map(([, x]) => x), reason])
+    i.input.addEventListener('input', sync);
+  sync();
+  showCentred(d);
+}
+
+/** The animal's reading in `col` before `row`'s day (null: none), what a corrected value is read against. */
+function readingBefore(df: DG.DataFrame, n: StudyNames, row: number, col: DG.Column): number | null {
+  const [a, d] = [df.col(n.animal)!, df.col(n.day)!];
+  let best: number | null = null;
+  for (let i = 0; i < df.rowCount; i++) {
+    if (String(a.get(i)) === String(a.get(row)) && !d.isNone(i) && d.get(i) < d.get(row) && !col.isNone(i) &&
+      (best === null || d.get(i) > d.get(best)))
+      best = i;
+  }
+  return best === null ? null : col.get(best);
+}
+
+/** What the rules in force find in a study, row by row. */
+export function findingsOf(n: StudyNames): Map<number, Finding[]> {
+  const values = (name: string | null) => {
+    const c = name ? n.study.col(name) : null;
+    return c ? Array.from({length: n.study.rowCount}, (_, i) => c.isNone(i) ? null : c.get(i)) : null;
+  };
+  const text = (name: string) => (values(name) ?? []).map((a) => a === null ? null : String(a));
+  const animal = text(n.animal);
+  const groups = groupsByAnimal(animal, text(n.group));
+  // an excluded row is out of the rules too: it is neither looked at again nor what the others are compared with
+  const out = n.study.col(EXCLUDED);
+  const kept = <T>(xs: (T | null)[] | null) => xs && xs.map((x, i) => ticked(out, i) ? null : x);
+  const found = new Map<number, Finding[]>();
+  for (const f of findOutliers({animal: kept(animal)!, group: groups, day: values(n.day) ?? [],
+    volume: kept(values(n.volume)) ?? [], weight: kept(values(n.bodyWeight))}, rulesInForce().rules))
+    found.set(f.row, [...(found.get(f.row) ?? []), f]);
+  return found;
+}
+
+const ADD = '(add the column)';
+
+/** The tumor volume from caliper readings as a calculated column, length × width² / 2 (the modified ellipsoid,
+ *  mm³), recomputed by the platform as the readings are typed; the length and width columns are added when the
+ *  table has none. An empty volume column is replaced; one with values stays, the new one beside it. */
+export async function caliperVolume(df: DG.DataFrame, length: string, width: string): Promise<string> {
+  const l = length === ADD ? df.columns.getOrCreate('length', DG.TYPE.FLOAT).name : length;
+  const w = width === ADD ? df.columns.getOrCreate('width', DG.TYPE.FLOAT).name : width;
+  const old = df.col('volume');
+  const empty = !old || old.stats.missingValueCount === df.rowCount;
+  if (old && empty)
+    df.columns.remove('volume');
+  const name = empty ? 'volume' : df.columns.getUnusedName('volume (caliper)');
+  await df.columns.addNewCalculated(name, `\${${l}} * \${${w}} * \${${w}} / 2`);
+  addLog(df, `Volume from calipers: "${name}" = ${l} × ${w}² / 2`);
+  return name;
+}
+
+function caliperDialog(df: DG.DataFrame): void {
+  const nums = df.columns.toList().filter((c) => c.isNumerical && !/volume|day|weight/i.test(c.name))
+    .map((c) => c.name);
+  const guess = (re: RegExp) => nums.find((n) => re.test(n)) ?? ADD;
+  const length = ui.input.choice('Length (mm)', {items: [ADD, ...nums], value: guess(/^(l|len|length|long)/i),
+    nullable: false});
+  const width = ui.input.choice('Width (mm)', {items: [ADD, ...nums], value: guess(/^(w|wid|width|short)/i),
+    nullable: false});
+  const d = modal('calipers', 'Volume from calipers');
+  if (!d)
+    return;
+  d.add(dialogLine('Volume = length × width² / 2 (mm³)', 'Recomputed as the readings are typed. A column not ' +
+      'in the table yet is added.'))
+    .add(ui.inputs([length, width]))
+    .onOK(() => void caliperVolume(df, length.value!, width.value!).then((name) => grok.shell.info(name ===
+      'volume' ? 'The volume now follows the caliper readings' : `Added "${esc(name)}": pick it as the volume in PMX ` +
+      'Studio, the study\'s own volume column has values'), (e) => grok.shell.error(String(e?.message ?? e))));
+  okNamed(d, 'Add volume');
+  showCentred(d);
+}
+
+/** A new study typed by hand: its columns, no rows. */
+export function emptyStudy(): DG.DataFrame {
+  const df = DG.DataFrame.fromColumns([DG.Column.string('animal', 0), DG.Column.string('group', 0),
+    DG.Column.float('day', 0), DG.Column.float('volume', 0), DG.Column.float('body_weight', 0)]);
+  df.name = 'New study';
+  return df;
+}
+
+/** Rows pasted from a spreadsheet, added at the end of `df` (the grid's own paste writes over the cells there):
+ *  with a header row, each pasted column goes to the table's column of its name (or of its role: animal, group, day,
+ *  volume, body weight); without one, in the table's order. Returns how many rows were added: all of them, or none
+ *  and an error that names the cells it could not read (a number is never guessed at). */
+export function appendPasted(df: DG.DataFrame, text: string): number {
+  const raw = text.replace(/\r/g, '').split('\n').filter((l) => l.trim() !== '');
+  if (raw.length === 0)
+    return 0;
+  if (!raw.some((l) => l.includes('\t')) && /[;,]/.test(raw[0])) {
+    throw new Error('Nothing added: the text is not cells copied from a spreadsheet (it has no tabs between its ' +
+      'values). Open the file as a table, or copy the cells from a spreadsheet');
+  }
+  const lines = raw.map((l) => l.split('\t'));
+  const visible = df.columns.names().filter((c) => !c.startsWith('~'));
+  const roles: RegExp[] = [...ROLES.map(([, re]) => re), WEIGHT];
+  const target = (cell: string): string | null => {
+    const name = cell.trim();
+    const exact = visible.find((c) => c.toLowerCase() === name.toLowerCase());
+    // a role's word with a number in it is a value ("Mouse 1", "Group 2"), not a heading
+    const role = /\d/.test(name) ? undefined : roles.find((re) => re.test(name));
+    return exact ?? (role ? visible.find((c) => role.test(c)) ?? null : null);
+  };
+  const numeric = (c: string) => c.trim() !== '' && !Number.isNaN(Number(c.trim().replace(',', '.')));
+  const header = lines[0].map(target);
+  if (header[0] !== null && lines[0].length > 2 && lines[0].slice(1).every(numeric)) {
+    throw new Error('Nothing added: this looks like a wide table (a column per day). Paste one row per animal and ' +
+      'day: animal, group, day, volume');
+  }
+  const hasHeader = header.filter((h) => h !== null).length >= Math.min(2, lines[0].length) &&
+    lines[0].every((c) => !numeric(c));
+  const columns = (hasHeader ? header : visible.slice(0, lines[0].length)).map((c) => c ? df.col(c) : null);
+  const body = hasHeader ? lines.slice(1) : lines;
+  // every cell read before any row is added
+  const unread: string[] = [];
+  const values = body.map((cells, r) => columns.map((col, k) => {
+    const v = (cells[k] ?? '').trim();
+    if (!col || v === '')
+      return null;
+    if (!col.isNumerical)
+      return v;
+    const x = pastedNumber(v);
+    if (Number.isNaN(x))
+      unread.push(`row ${r + 1}, ${col.name}: "${v}"`);
+    return x;
+  }));
+  if (unread.length > 0) {
+    throw new Error(`Nothing added: ${plural(unread.length, 'value')} could not be read as ` +
+      `numbers (${unread.slice(0, 4).join('; ')}${unread.length > 4 ? '; …' : ''}). Write them as plain numbers, ` +
+      'without units or thousands separators');
+  }
+  for (const cells of values) {
+    const row = df.rows.addNew(null, false).idx;
+    cells.forEach((v, k) => {
+      if (v !== null)
+        columns[k]!.set(row, v, false);
+    });
+  }
+  df.fireValuesChanged();
+  return body.length;
+}
+
+// whoever shows what the rules find, told when the rules in force change
+const rulesWatchers = new Set<() => void>();
+function rulesChanged(): void {
+  rulesWatchers.forEach((fn) => fn());
+}
+export function onRulesChanged(fn: () => void): () => void {
+  rulesWatchers.add(fn);
+  return () => rulesWatchers.delete(fn);
+}
+
+/** The rules dialog: each rule on or off with its threshold; saved as the user's own, or for the whole lab by who may,
+ *  and back to the lab's. */
+export async function rulesDialog(): Promise<void> {
+  // (who may change the lab's rules is asked before the dialog shows: a second click meanwhile opens nothing more)
+  await preparing(RULES_DIALOG, rulesDialogNow);
+}
+
+const RULES_DIALOG = 'outlier-rules';
+
+async function rulesDialogNow(): Promise<void> {
+  const {rules, from} = rulesInForce();
+  const canLab = await canEditLabRules().catch(() => false);
+  const impossible = ui.input.bool('Impossible values', {value: rules.impossible,
+    tooltipText: 'A negative volume or body weight; an animal measured twice on one day'});
+  const jumpOn = ui.input.bool('Jumps between measurements', {value: rules.jump.on});
+  const fold = ui.input.float('Times larger or smaller', {value: rules.jump.fold, min: RULE_LIMITS.fold[0],
+    max: RULE_LIMITS.fold[1],
+    tooltipText: 'A volume that changed since the animal’s previous one this many times more, or less, than its ' +
+      'group’s did over the same days (a caliper typo, a misread animal)'});
+  const groupOn = ui.input.bool('Far from its group', {value: rules.group.on});
+  const mads = ui.input.float('Robust deviations', {value: rules.group.mads, min: RULE_LIMITS.mads[0],
+    max: RULE_LIMITS.mads[1],
+    tooltipText: 'How far from the group’s median on that day, in robust deviations (MAD) of log volume'});
+  const minAnimals = ui.input.int('In groups of at least', {value: rules.group.minAnimals,
+    min: RULE_LIMITS.minAnimals[0], max: RULE_LIMITS.minAnimals[1]});
+  const weightOn = ui.input.bool('Weight falls fast', {value: rules.weightDrop.on});
+  const percent = ui.input.float('Loss since the last weighing (%)', {value: rules.weightDrop.percent,
+    min: RULE_LIMITS.percent[0], max: RULE_LIMITS.percent[1]});
+  // an emptied threshold reads as no number, refused below like one out of range (not silently a default)
+  const read = (): OutlierRules => ({impossible: impossible.value, jump: {on: jumpOn.value, fold: fold.value ?? NaN},
+    group: {on: groupOn.value, mads: mads.value ?? NaN, minAnimals: minAnimals.value ?? NaN},
+    weightDrop: {on: weightOn.value, percent: percent.value ?? NaN}});
+  const set = (r: OutlierRules) => {
+    impossible.value = r.impossible;
+    jumpOn.value = r.jump.on;
+    fold.value = r.jump.fold;
+    groupOn.value = r.group.on;
+    mads.value = r.group.mads;
+    minAnimals.value = r.group.minAnimals;
+    weightOn.value = r.weightDrop.on;
+    percent.value = r.weightDrop.percent;
+  };
+  const whose: {[s in RulesSource]: string} = {user: 'Your own rules', lab: 'The lab’s rules',
+    default: 'PMX Studio’s default rules'};
+  // a rule's thresholds only while it is on
+  const follow = () => {
+    fold.enabled = jumpOn.value;
+    mads.enabled = minAnimals.enabled = groupOn.value;
+    percent.enabled = weightOn.value;
+  };
+  [jumpOn, groupOn, weightOn].forEach((x) => x.onChanged.subscribe(follow));
+  follow();
+  const d = modal(RULES_DIALOG, 'Outlier rules');
+  if (!d)
+    return;
+  d.add(dialogLine(`${whose[from]} in force`, 'A value they find is only painted, for you to look at: nothing ' +
+    'leaves the analysis unless you exclude it.' + (!canLab && labRules() ? ' The lab’s rules are changed by its ' +
+    'responsible group.' : '')));
+  d.add(ui.inputs([impossible, jumpOn, fold, groupOn, mads, minAnimals, weightOn, percent]));
+  d.addButton('Defaults', () => set(DEFAULT_RULES));
+  if (userRules()) {
+    d.addButton('Use the lab’s', () => {
+      saveUserRules(null);
+      rulesChanged();
+      d.close();
+    });
+  }
+  // the input's min and max only underline a value out of range: Save stays off until every threshold is valid,
+  // with the allowed range said under the inputs
+  const problem = ui.divText('');
+  problem.style.color = 'var(--red-3, #d64545)';
+  d.add(problem);
+  let saves: HTMLButtonElement[] = [];
+  const check = () => {
+    const p = rulesProblem(read());
+    problem.textContent = p ? `Not saved until valid. ${p}` : '';
+    saves.forEach((b) => b.disabled = !!p);
+  };
+  if (canLab) {
+    d.addButton('Save for the lab', () => {
+      const p = rulesProblem(read());
+      if (p)
+        return grok.shell.warning(`The lab’s rules were not saved. ${p}`);
+      saveLabRules(read()).then(() => {
+        grok.shell.info('The lab’s rules are saved: everyone without rules of their own follows them');
+        rulesChanged();
+        d.close();
+      }, (e) => grok.shell.error(`The lab’s rules were not saved: ${e?.message ?? e}`));
+    });
+  }
+  d.onOK(() => {
+    // Enter can reach OK while it is disabled: refuse here too
+    const p = rulesProblem(read());
+    if (p)
+      return grok.shell.warning(`Rules not saved. ${p}`);
+    saveUserRules(read());
+    rulesChanged();
+    grok.shell.info('Rules saved');
+  });
+  saves = [okNamed(d, 'Save as mine'), ...canLab ? [d.getButton('Save for the lab')] : []];
+  [fold, mads, minAnimals, percent].forEach((x) => x.onChanged.subscribe(check));
+  check();
+  showCentred(d);
+}
+
+/** A study's table view as PMX Studio shows it: what the rules find painted, the marks, the reasons on hover, and
+ *  PMX Studio's menu (paste rows, the rules, back to the study's views). Once per view; a table that is not a study is
+ *  left alone. */
+export function decorateStudyView(view: DG.TableView): void {
+  const root = view.root;
+  const df = view.dataFrame;
+  if (root.dataset.pmxStudy || !studyOf(df))
+    return;
+  root.dataset.pmxStudy = '1';
+  const grid = view.grid;
+  let findings = new Map<number, Finding[]>();
+  const rerun = () => {
+    cells = null;
+    const n = studyOf(df);
+    if (n)
+      dayFormat(df.col(n.day)!);
+    findings = n ? findingsOf(n) : new Map();
+    grid.invalidate();
+  };
+  // what a painted cell reads (the mark columns, each study column's kind), resolved once per change of the table's
+  // columns or roles, not per cell: a repaint paints every visible cell
+  let cells: {excluded: DG.Column | null, flagged: DG.Column | null, kinds: Map<string, Finding['on']>} | null = null;
+  const cellsNow = () => {
+    if (!cells) {
+      const n = studyOf(df);
+      const kinds = new Map<string, Finding['on']>();
+      if (n) {
+        for (const c of [n.animal, n.group, n.day])
+          kinds.set(c, 'row');
+        if (n.bodyWeight)
+          kinds.set(n.bodyWeight, 'weight');
+        kinds.set(n.volume, 'volume');
+      }
+      cells = {excluded: df.col(EXCLUDED), flagged: df.col(FLAGGED), kinds};
+    }
+    return cells;
+  };
+  const columnsChanged = () => cells = null;
+  const subs = [grid.onCellPrepare((gc) => {
+    if (!gc.isTableCell || gc.tableRowIndex === null || !gc.tableColumn)
+      return;
+    const i = gc.tableRowIndex;
+    const c = cellsNow();
+    const state = ticked(c.excluded, i) ? 'excluded' : ticked(c.flagged, i) ? 'flagged' : '';
+    if (state === 'excluded')
+      gc.style.textColor = COLORS.excluded;
+    if (state === 'flagged')
+      gc.style.backColor = COLORS.flagged;
+    else if (findings.has(i)) {
+      const kind = c.kinds.get(gc.tableColumn.name);
+      if (kind && findings.get(i)!.some((f) => f.on === kind || f.on === 'row'))
+        gc.style.backColor = COLORS.finding;
+    }
+  }), DG.debounce(df.onDataChanged, 300).subscribe(rerun),
+  ...[df.onColumnsAdded, df.onColumnsRemoved, df.onColumnNameChanged, df.onMetadataChanged]
+    .map((e) => e.subscribe(columnsChanged))];
+  grid.onCellTooltip((gc, x, y) => {
+    if (!gc.isTableCell || gc.tableRowIndex === null)
+      return false;
+    const m = markOf(df, gc.tableRowIndex);
+    const lines = [...(m.state ? [`${m.state === 'excluded' ? 'Excluded from the analysis' : 'Flagged'}` +
+      `${m.reason ? `: ${m.reason}` : ''}`] : []), ...(findings.get(gc.tableRowIndex) ?? []).map((f) => f.reason)];
+    if (lines.length === 0)
+      return false;
+    ui.tooltip.show(ui.divV(lines.map((l) => ui.divText(l))), x, y);
+    return true;
+  });
+  const stopRules = onRulesChanged(rerun);
+  const removed = grok.events.onViewRemoved.subscribe((v) => {
+    if (v.root !== root)
+      return;
+    subs.forEach((s) => s.unsubscribe());
+    stopRules();
+    removed.unsubscribe();
+  });
+
+  // the browser's permission prompt can hold the read with nothing else on screen: a read not back in a moment says
+  // what it waits for
+  const paste = () => {
+    const waiting = window.setTimeout(() => grok.shell.info('Allow clipboard access in the browser to paste the ' +
+      'rows'), 500);
+    return navigator.clipboard.readText().finally(() => window.clearTimeout(waiting)).then(pasted,
+      () => grok.shell.warning('The browser did not give the clipboard: allow it, then try again'));
+  };
+  const pasted = (text: string) => {
+    try {
+      const n = appendPasted(df, text);
+      grok.shell.info(n ? `${plural(n, 'row')} added from the clipboard` : 'Nothing to paste');
+    } catch (e: any) {
+      grok.shell.warning(String(e?.message ?? e));
+    }
+  };
+  const back = () => {
+    // the stage views (every view is named PMX Studio; the stage is on its root): the last one opened, not the home
+    const pmx = [...grok.shell.views].filter((v) => stageOf(v) && stageOf(v) !== 'home').pop();
+    if (pmx)
+      setTimeout(() => grok.shell.v = pmx);
+    else
+      grok.shell.warning('No PMX Studio view is open');
+  };
+  view.ribbonMenu.group('PMX Studio')
+    .item('Paste rows at the end', () => void paste())
+    .item('Outlier rules…', () => void rulesDialog())
+    .item('Volume from calipers…', () => caliperDialog(df))
+    .item('Back to PMX Studio', back);
+  rerun();
+}
+
+/** Monitor's and Analyze's Study field keeps its study (`held`: the call's) when its table leaves the workspace.
+ *  Closing a table's last view closes the table, and the field, which lists the open tables, would drop it; the
+ *  platform has no way to keep a table open without a view. The field still offers it and still gives the call that
+ *  frame; "Open the table" opens it again. ponytail: shadows two members of u2's TableInput on this one field; if u2
+ *  gains an option to keep a closed table, use that. */
+export function keepStudyField(input: TableInput | null | undefined, held: () => DG.DataFrame | null): void {
+  if (!input)
+    return;
+  const proto = Object.getPrototypeOf(input);
+  const tableOf = Object.getOwnPropertyDescriptor(TableInput.prototype, 'table')!;
+  const closed = () => {
+    const df = held();
+    return df && !grok.shell.tables.some((t) => t.id === df.id) ? df : null;
+  };
+  const setItems = proto.setItems as (items: string[]) => void;
+  input.setItems = (items: string[]) => {
+    const df = closed();
+    setItems.call(input, df && !items.includes(df.name) ? [...items, df.name] : items);
+  };
+  Object.defineProperty(input, 'table', {configurable: true,
+    get: () => {
+      const df = closed();
+      return df && input.value === df.name ? df : tableOf.get!.call(input);
+    },
+    set: (x: DG.DataFrame | null) => tableOf.set!.call(input, x)});
+}
+
+/** Whole days shown as whole numbers (0, 3, not 0.00, 3.00); a fractional day typed in brings the decimals back. A
+ *  format of the user's own is left alone. */
+export function dayFormat(day: DG.Column): void {
+  const own = day.getTag(DG.TAGS.FORMAT);
+  if (day.type !== DG.TYPE.FLOAT || (own && own !== '0'))
+    return;
+  const whole = Array.from(day.getRawData().subarray(0, day.length)).every((v, i) => day.isNone(i) ||
+    Number.isInteger(v));
+  if (whole !== (own === '0'))
+    day.meta.format = whole ? '0' : null;
+}
+
+/** Opens (or brings back) the study's own table view. */
+export function openStudyTable(df: DG.DataFrame): void {
+  const view = [...grok.shell.tableViews].find((v) => v.dataFrame.id === df.id) ?? grok.shell.addTableView(df);
+  decorateStudyView(view);
+  // its groups in the study's colours; one changed in the grid is the study's (paint watches it)
+  const n = studyOf(df);
+  const colors = colorsOfTable(df);
+  if (n && Object.keys(colors).length)
+    paint(df, n.group, colors);
+  // after the click: the platform makes the clicked view current again once the click is handled (stages.ts)
+  setTimeout(() => grok.shell.v = view);
+}
+
+/** The rules in force, one line each. */
+function ruleLines(r: OutlierRules): string[] {
+  return [...r.impossible ? ['Impossible values (negative, measured twice a day)'] : [],
+    ...r.jump.on ? [`Volume jumps ${r.jump.fold}× more than its group's`] : [],
+    ...r.group.on ? [`Volume far from its group (${r.group.mads} robust deviations)`] : [],
+    ...r.weightDrop.on ? [`Weight falls over ${r.weightDrop.percent}% since the last weighing`] : []];
+}
+
+/** Where Monitor and Analyze show the study's data: one line, what the rules found and the marks, and the way to its
+ *  table view. `refresh` after each result. */
+export function studyDataLine(names: () => StudyNames | null): {root: HTMLElement, refresh: () => void,
+  dispose: () => void} {
+  const head = span('');
+  const tail = span('');
+  // how to work it: on screen, not in a report
+  const howTo = span(' Right-click a value in the table to flag or exclude it.', 'pmx-noprint');
+  const open = () => {
+    const df = names()?.study;
+    if (df)
+      openStudyTable(df);
+  };
+  // the values the rules find, highlighted in the table: a link to it that selects their rows and shows the first,
+  // the rules in force on hover
+  const showFindings = () => {
+    const n = names();
+    if (!n)
+      return;
+    const found = findingsOf(n);
+    n.study.selection.init((i) => found.has(i));
+    openStudyTable(n.study);
+    const first = minOf(found.keys());
+    if (!Number.isFinite(first))
+      return;
+    n.study.currentRowIdx = first;
+    // after openStudyTable has made the view current
+    setTimeout(() => {
+      const grid = [...grok.shell.tableViews].find((v) => v.dataFrame.id === n.study.id)?.grid;
+      grid?.scrollToCell(n.animal, grid.tableRowToGrid(first));
+    });
+  };
+  const check = ui.link('', showFindings);
+  ui.tooltip.bind(check, () => {
+    const r = rulesInForce();
+    const whose = {user: 'Your rules', lab: 'The lab’s rules', default: 'The default rules'}[r.from];
+    return ui.divV([ui.divText(`${whose} (Outlier rules, in the table's menu):`),
+      ...ruleLines(r.rules).map((l) => ui.divText(`· ${l}`)), ui.divText('Click to select them in the table.')]);
+  });
+  const root = divH([ui.span([head, check, tail, howTo]), button('Open the table', open)], 'pmx-study-line');
+  const refresh = () => {
+    const n = names();
+    root.hidden = !n;
+    if (!n)
+      return;
+    const findings = findingsOf(n).size;
+    const marks = marksOf(n.study);
+    const flagged = marks.filter((m) => m.state === 'flagged').length;
+    const excluded = marks.filter((m) => m.state === 'excluded').length;
+    head.textContent = `Study data: ${n.study.rowCount} measurements · `;
+    check.textContent = `${plural(findings, 'value')} to check`;
+    tail.textContent = ` · ${flagged} flagged · ${excluded} excluded.`;
+  };
+  return {root, refresh, dispose: onRulesChanged(refresh)};
+}
+
+/** The animals selected in a study, as Datagrok links its viewers: through the table's own selection. An animal is
+ *  selected when any of its rows is; picking one selects its rows (with Ctrl, Cmd or Shift, adds it to the selection
+ *  or takes it out; picked again alone, clears it). The table view, its viewers and the context panel follow, and a
+ *  chart that shows animals reads `animals` to mark them. */
+export class AnimalSelection {
+  readonly animals = signal<ReadonlySet<string>>(new Set());
+  private study: StudyNames | null = null;
+  private sub: {unsubscribe(): void} | null = null;
+
+  /** Follows `s`'s table (null: none). */
+  attach(s: StudyNames | null): void {
+    if (s?.study === this.study?.study && s?.animal === this.study?.animal)
+      return;
+    this.sub?.unsubscribe();
+    this.study = s;
+    this.sub = s ? s.study.onSelectionChanged.subscribe(() => this.read()) : null;
+    this.read();
+  }
+
+  /** Selects `animals` (and only them): their rows in the study table. */
+  select(animals: ReadonlySet<string>): void {
+    if (!this.study || sameSet(animals, this.animals.peek()))
+      return;
+    const col = this.study.study.col(this.study.animal)!;
+    this.study.study.selection.init((i) => animals.has(String(col.get(i))));
+  }
+
+  /** A click on an animal: it alone; with Ctrl, Cmd or Shift, added or taken out; alone and picked again, none. */
+  pick(animal: string, e?: MouseEvent | KeyboardEvent): void {
+    const now = this.animals.peek();
+    const next = new Set(now);
+    if (e && (e.ctrlKey || e.metaKey || e.shiftKey)) {
+      if (!next.delete(animal))
+        next.add(animal);
+    } else {
+      next.clear();
+      if (!(now.size === 1 && now.has(animal)))
+        next.add(animal);
+    }
+    this.select(next);
+  }
+
+  dispose(): void {
+    this.sub?.unsubscribe();
+    this.sub = null;
+  }
+
+  private read(): void {
+    const s = this.study;
+    const col = s?.study.col(s.animal);
+    const got = new Set<string>();
+    if (s && col) {
+      for (const i of s.study.selection.getSelectedIndexes())
+        got.add(String(col.get(i)));
+    }
+    if (!sameSet(got, this.animals.peek()))
+      this.animals.value = got;
+  }
+}
+
+const sameSet = (a: ReadonlySet<string>, b: ReadonlySet<string>) => a.size === b.size && [...a].every((x) => b.has(x));
+
+/** A derived table of animals (`col`: their names) kept in step with `sel` both ways: what is selected in the study
+ *  is selected here, and a selection made here (a lasso on its viewer) selects those animals in the study. */
+export function mirrorSelection(df: DG.DataFrame, col: string, sel: AnimalSelection): () => void {
+  const names = df.col(col)!;
+  let writing = false;
+  const fromStudy = () => {
+    writing = true;
+    const on = sel.animals.peek();
+    df.selection.init((i) => on.has(String(names.get(i))));
+    writing = false;
+  };
+  const sub = df.onSelectionChanged.subscribe(() => {
+    if (!writing)
+      sel.select(new Set(Array.from(df.selection.getSelectedIndexes(), (i) => String(names.get(i)))));
+  });
+  fromStudy();
+  return () => sub.unsubscribe();
+}
+
+/** A blinded study's group column is the platform's hidden kind (`~group`): no filter, column list, viewer, tooltip or
+ *  export offers it until the groups are revealed, when it has its name back. Renamed in place: the column, its
+ *  values and the form's reading of it stay; the roles tag follows. */
+export function blindColumn(df: DG.DataFrame): void {
+  let g: DG.Column;
+  try {
+    g = roleColumns(df).group;
+  } catch {
+    return;
+  }
+  const name = groupsShown(df) ? g.name.replace(/^~/, '') : g.name.startsWith('~') ? g.name : `~${g.name}`;
+  if (name !== g.name && !df.col(name)) {
+    g.name = name;
+    const tag = df.getTag(STUDY_TAG);
+    if (tag)
+      df.setTag(STUDY_TAG, JSON.stringify({...JSON.parse(tag), group: name}));
+  }
+  // an open table view keeps its own column list: its grid follows (a `~` column is not drawn)
+  for (const v of grok.shell.tableViews) {
+    const gc = v.dataFrame.id === df.id ? v.grid.columns.byName(g.name) : null;
+    if (gc)
+      gc.visible = !g.name.startsWith('~');
+  }
+}

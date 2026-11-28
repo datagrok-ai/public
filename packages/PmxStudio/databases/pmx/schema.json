@@ -1,0 +1,82 @@
+{
+  "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
+  "name": "pmx",
+  "version": "1.5.0",
+  "tables": {
+    "code": {
+      "securityMode": "row",
+      "promotion": "lazy",
+      "defaultRowVisibility": "none",
+      "grants": {"All users": ["view", "edit"]},
+      "friendlyName": "Study IDs",
+      "description": "The lab-wide counter of study IDs: a row is inserted to take the next number (PMX-<year>-<number>). View and Edit on the table let everyone take a number (Edit is the insert grant); each row is private to whoever took it",
+      "columns": {
+        "number": {"type": "int", "min": 1, "autoNumber": true, "description": "Assigned by the engine. A label, not the identity (the row id is): the server accepts a supplied value and forbids unique on an auto-numbered column, so the app never updates a code row"}
+      }
+    },
+    "plan": {
+      "securityMode": "row",
+      "promotion": "lazy",
+      "defaultRowVisibility": "none",
+      "audit": false,
+      "filters": [{"column": "line"}, {"column": "owner"}, {"column": "updated_on"}],
+      "grants": {"All users": ["view", "edit"]},
+      "friendlyName": "Plans",
+      "singularName": "Plan",
+      "description": "A saved plan: the .pmxplan document whole, and what the Overview lists and searches by. View and Edit on the table only let everyone read the table and insert (Edit is the insert grant): a row stays private to its author until shared to read (row security, defaultRowVisibility none). No audit: the document holds a blinded study's allocation, and an audit trail would keep and show its earlier versions",
+      "columns": {
+        "name": {"type": "string", "required": true, "isName": true, "searchable": true, "friendlyName": "Name"},
+        "code": {"type": "string", "searchable": true, "friendlyName": "ID", "description": "The study ID (document study.id); legacy IDs may repeat"},
+        "line": {"type": "string", "searchable": true, "friendlyName": "Model key", "description": "Atlas line, or new:pdx:<id> for a model's own history"},
+        "model": {"type": "string", "searchable": true, "friendlyName": "Model", "description": "What lists show: the atlas line, or the name the user gave a model outside the atlas"},
+        "owner": {"type": "user", "friendlyName": "Owner", "description": "The Datagrok user the row belongs to: whoever saved it first, or whose copy it is"},
+        "run_by": {"type": "string", "searchable": true, "friendlyName": "Run by", "description": "Who runs the study, free text (Study details' Run by, e.g. a CRO technician without an account); empty by default"},
+        "tags": {"type": "string_list", "friendlyName": "Tags"},
+        "compounds": {"type": "string", "friendlyName": "Compounds", "description": "Empty while a blinded study's groups are hidden"},
+        "drugs": {"type": "string_list", "friendlyName": "Drugs", "description": "Empty while a blinded study's groups are hidden"},
+        "treatment": {"type": "string", "searchable": true, "friendlyName": "Treatment", "description": "Empty while a blinded study's groups are hidden"},
+        "start": {"type": "datetime", "friendlyName": "Day 0", "description": "Day 0 (randomization) at midnight UTC: EMS has no date-only type; the document keeps YYYY-MM-DD"},
+        "end_day": {"type": "int", "friendlyName": "Last day planned", "description": "A whole study day"},
+        "document": {"type": "json", "required": true, "friendlyName": "Plan", "description": "The SavedPlan document whole. jsonb returns its keys reordered: nothing compares its text (a plan is known by planKey, its canonical name and inputs)"},
+        "source": {"type": "string", "friendlyName": "Imported from", "description": "sha256 of the imported file text: the same file is not imported twice by its author"},
+        "copy_of": {"type": "string", "friendlyName": "Copy of", "description": "The row id this one was copied from (Save as my copy, from a row shared to read)"},
+        "copy_owner": {"type": "user", "friendlyName": "Copied from", "description": "Whose the original row is (Save as my copy)"},
+        "copy_file_owner": {"type": "string", "friendlyName": "Copied from the file of", "description": "The owner named in someone else's .pmxplan / .pmxstudy file brought in as the user's copy, as the file names them"}
+      }
+    },
+    "study": {
+      "securityMode": "row",
+      "promotion": "lazy",
+      "defaultRowVisibility": "none",
+      "audit": false,
+      "filters": [{"column": "stage", "type": "categories"}, {"column": "line"}, {"column": "owner"}, {"column": "updated_on"}],
+      "grants": {"All users": ["view", "edit"]},
+      "friendlyName": "Studies",
+      "singularName": "Study",
+      "description": "A followed study: the .pmxstudy document whole, and what the Overview lists and searches by. View and Edit on the table only let everyone read the table and insert (Edit is the insert grant): a row stays private to its author until shared to read (row security, defaultRowVisibility none). No audit: the document holds a blinded study's allocation, and an audit trail would keep and show its earlier versions",
+      "columns": {
+        "name": {"type": "string", "required": true, "isName": true, "searchable": true, "friendlyName": "Name"},
+        "code": {"type": "string", "searchable": true, "friendlyName": "ID", "description": "The study ID (document meta.id); legacy IDs may repeat"},
+        "plan_id": {"type": "ref", "ref": "plan", "onDelete": "setnull", "friendlyName": "Plan", "description": "The plan row it was followed from; the document keeps its own frozen copy"},
+        "stage": {"type": "int", "min": 2, "max": 3, "friendlyName": "Stage", "description": "2 followed (Monitor), 3 finished (Analyze)"},
+        "line": {"type": "string", "searchable": true, "friendlyName": "Model key", "description": "Atlas line, or new:pdx:<id> for a model's own history"},
+        "model": {"type": "string", "searchable": true, "friendlyName": "Model", "description": "What lists show: the atlas line, or the name the user gave a model outside the atlas"},
+        "owner": {"type": "user", "friendlyName": "Owner", "description": "The Datagrok user the row belongs to: whoever saved it first, or whose copy it is"},
+        "run_by": {"type": "string", "searchable": true, "friendlyName": "Run by", "description": "Who runs the study, free text (Study details' Run by, e.g. a CRO technician without an account); empty by default"},
+        "tags": {"type": "string_list", "friendlyName": "Tags"},
+        "compounds": {"type": "string", "friendlyName": "Compounds", "description": "Empty while a blinded study's groups are hidden"},
+        "drugs": {"type": "string_list", "friendlyName": "Drugs", "description": "Empty while a blinded study's groups are hidden"},
+        "treatment": {"type": "string", "searchable": true, "friendlyName": "Treatment", "description": "Empty while a blinded study's groups are hidden"},
+        "start": {"type": "datetime", "friendlyName": "Day 0", "description": "Day 0 (randomization) at midnight UTC: EMS has no date-only type; the document keeps YYYY-MM-DD"},
+        "last_day": {"type": "int", "friendlyName": "Last day measured", "description": "A whole study day"},
+        "next_day": {"type": "int", "friendlyName": "Next day", "description": "A whole study day"},
+        "end_day": {"type": "int", "friendlyName": "Last day planned", "description": "A whole study day"},
+        "document": {"type": "json", "required": true, "friendlyName": "Study", "description": "The SavedStudy document whole. jsonb returns its keys reordered: nothing compares its text"},
+        "source": {"type": "string", "friendlyName": "Imported from", "description": "sha256 of the imported file text: the same file is not imported twice by its author"},
+        "copy_of": {"type": "string", "friendlyName": "Copy of", "description": "The row id this one was copied from (Save as my copy, from a row shared to read)"},
+        "copy_owner": {"type": "user", "friendlyName": "Copied from", "description": "Whose the original row is (Save as my copy)"},
+        "copy_file_owner": {"type": "string", "friendlyName": "Copied from the file of", "description": "The owner named in someone else's .pmxplan / .pmxstudy file brought in as the user's copy, as the file names them"}
+      }
+    }
+  }
+}

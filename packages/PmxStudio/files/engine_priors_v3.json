@@ -1,0 +1,5343 @@
+{
+ "version": "engine_priors_v3",
+ "model": "gompertz_reduced",
+ "equation": "log V(t) = q + (log V(0) - q) e^{-beta t}, q = log_v_ref + alpha / beta;  measured log V = log V + k (c0 + c1/sqrt(V)) t_df + session shift (per study and day)",
+ "provenance": {
+  "atlas_sha256": "3eb0e7da7d5ae10e7b34567dbc0068e2a096329ab5c024df84f83648b9708567",
+  "engine": "Crux nlmixr2 fit (saem: population; focei: per paper) + stats.map_prior",
+  "priors_exponential": "Crux stats.map_prior (crux-core 60e03782b1966603ee295ea0ecc39c41a4eef423, crux fn batch)",
+  "states": "strict controls verified; compatible controls screened",
+  "validation": "analysis/validate_denovo.py (leave-one-paper-out, de novo)",
+  "within_sds": "analysis/twin.py --fit: marginal likelihood of the base-pool controls, Nelder-Mead on the log sds, sd_study_log_beta profiled",
+  "v2": "analysis/lab_distribution.py (labs' joint log alpha / log beta by deconvolution) and analysis/calibrate_v2.py --labs (indirect inference against the atlas's controls, Crux stats.tumor_study_simulate)",
+  "n2_aliases": {
+   "distance_mean6": "alias of tie_stream_mean (N2 C3, D361): the mean over the C3 tie streams, no longer a mean of 6 streams; the true 6-stream mean stays in the calibration's starts"
+  },
+  "map_robust": "log_alpha's robust component: sd max(sigma, 3 x map_sd) at the MAP mean (Crux stats.map_prior robust_n); sigma, the within-paper sd of one animal, is narrower than the MAP (export_engine_priors.robust_map)",
+  "v3": {
+   "rule": "MC38, CT26, B16F10 verbatim from v2; c0, c1 frozen on them; new lines tiered, the rest pooled",
+   "lines": {
+    "4T1": {
+     "line_class": "syngeneic",
+     "tier": "Full",
+     "pooled_fields": [
+      "noise.c0_c1_curve",
+      "twin.sd_log_alpha",
+      "twin.sd_log_beta",
+      "twin.sd_process",
+      "twin.first_factor",
+      "twin.start_df",
+      "twin.slow_share",
+      "twin.slow_shift",
+      "twin.skew"
+     ],
+     "pool_source": {
+      "fields": [
+       "MC38",
+       "CT26",
+       "B16F10"
+      ],
+      "twin": [
+       "MC38",
+       "CT26",
+       "B16F10"
+      ]
+     },
+     "papers": 61,
+     "experiments": 118,
+     "animals": 730,
+     "start_sd_w": 0.9736842105263158
+    },
+    "LLC": {
+     "line_class": "syngeneic",
+     "tier": "Own spreads",
+     "pooled_fields": [
+      "noise.k",
+      "noise.df",
+      "noise.sd_session",
+      "take.nonprogressing_map",
+      "noise.c0_c1_curve",
+      "twin.sd_log_alpha",
+      "twin.sd_log_beta",
+      "twin.sd_process",
+      "twin.first_factor",
+      "twin.start_df",
+      "twin.slow_share",
+      "twin.slow_shift",
+      "twin.skew"
+     ],
+     "pool_source": {
+      "fields": [
+       "MC38",
+       "CT26",
+       "B16F10",
+       "4T1"
+      ],
+      "twin": [
+       "MC38",
+       "CT26",
+       "B16F10"
+      ]
+     },
+     "papers": 26,
+     "experiments": 48,
+     "animals": 277,
+     "start_sd_w": 0.9387755102040817
+    },
+    "Panc02": {
+     "line_class": "syngeneic",
+     "tier": "Own spreads",
+     "pooled_fields": [
+      "noise.k",
+      "noise.df",
+      "noise.sd_session",
+      "take.nonprogressing_map",
+      "noise.c0_c1_curve",
+      "twin.sd_log_alpha",
+      "twin.sd_log_beta",
+      "twin.sd_process",
+      "twin.first_factor",
+      "twin.start_df",
+      "twin.slow_share",
+      "twin.slow_shift",
+      "twin.skew"
+     ],
+     "pool_source": {
+      "fields": [
+       "MC38",
+       "CT26",
+       "B16F10",
+       "4T1"
+      ],
+      "twin": [
+       "MC38",
+       "CT26",
+       "B16F10"
+      ]
+     },
+     "papers": 14,
+     "experiments": 33,
+     "animals": 195,
+     "start_sd_w": 0.8928571428571429
+    },
+    "Hepa1-6": {
+     "line_class": "syngeneic",
+     "tier": "Own spreads",
+     "pooled_fields": [
+      "noise.k",
+      "noise.df",
+      "noise.sd_session",
+      "take.nonprogressing_map",
+      "noise.c0_c1_curve",
+      "twin.sd_log_alpha",
+      "twin.sd_log_beta",
+      "twin.sd_process",
+      "twin.first_factor",
+      "twin.start_df",
+      "twin.slow_share",
+      "twin.slow_shift",
+      "twin.skew"
+     ],
+     "pool_source": {
+      "fields": [
+       "MC38",
+       "CT26",
+       "B16F10",
+       "4T1"
+      ],
+      "twin": [
+       "MC38",
+       "CT26",
+       "B16F10"
+      ]
+     },
+     "papers": 17,
+     "experiments": 48,
+     "animals": 225,
+     "start_sd_w": 0.926829268292683
+    },
+    "EMT6": {
+     "line_class": "syngeneic",
+     "tier": "Thin",
+     "pooled_fields": [
+      "sd_within.log_alpha",
+      "sd_within.log_beta",
+      "study_prior.sd_log_alpha",
+      "study_prior.sd_log_beta",
+      "study_prior.rho",
+      "study_prior.size_factor",
+      "noise.k",
+      "noise.df",
+      "noise.sd_session",
+      "take.nonprogressing_map",
+      "noise.c0_c1_curve",
+      "twin.sd_log_alpha",
+      "twin.sd_log_beta",
+      "twin.sd_process",
+      "twin.first_factor",
+      "twin.start_df",
+      "twin.slow_share",
+      "twin.slow_shift",
+      "twin.skew"
+     ],
+     "pool_source": {
+      "fields": [
+       "MC38",
+       "CT26",
+       "B16F10",
+       "4T1"
+      ],
+      "twin": [
+       "MC38",
+       "CT26",
+       "B16F10"
+      ]
+     },
+     "papers": 12,
+     "experiments": 21,
+     "animals": 142,
+     "start_sd_w": 0.8636363636363636
+    },
+    "MDA-MB-231": {
+     "line_class": "cdx",
+     "tier": "Own spreads",
+     "pooled_fields": [
+      "noise.k",
+      "noise.df",
+      "noise.sd_session",
+      "take.nonprogressing_map",
+      "noise.c0_c1_curve",
+      "twin.sd_log_alpha",
+      "twin.sd_log_beta",
+      "twin.sd_process",
+      "twin.first_factor",
+      "twin.start_df",
+      "twin.slow_share",
+      "twin.slow_shift",
+      "twin.skew"
+     ],
+     "pool_source": {
+      "fields": [
+       "MC38",
+       "CT26",
+       "B16F10"
+      ],
+      "twin": [
+       "MC38",
+       "CT26",
+       "B16F10"
+      ]
+     },
+     "papers": 27,
+     "experiments": 45,
+     "animals": 267,
+     "start_sd_w": 0.9375
+    },
+    "A549": {
+     "line_class": "cdx",
+     "tier": "Thin",
+     "pooled_fields": [
+      "sd_within.log_alpha",
+      "sd_within.log_beta",
+      "study_prior.sd_log_alpha",
+      "study_prior.sd_log_beta",
+      "study_prior.rho",
+      "study_prior.size_factor",
+      "noise.k",
+      "noise.df",
+      "noise.sd_session",
+      "take.nonprogressing_map",
+      "noise.c0_c1_curve",
+      "twin.sd_log_alpha",
+      "twin.sd_log_beta",
+      "twin.sd_process",
+      "twin.first_factor",
+      "twin.start_df",
+      "twin.slow_share",
+      "twin.slow_shift",
+      "twin.skew"
+     ],
+     "pool_source": {
+      "fields": [
+       "MC38",
+       "CT26",
+       "B16F10"
+      ],
+      "twin": [
+       "MC38",
+       "CT26",
+       "B16F10"
+      ]
+     },
+     "papers": 12,
+     "experiments": 22,
+     "animals": 110,
+     "start_sd_w": 0.8695652173913043
+    },
+    "PDX-NSCLC": {
+     "line_class": "pdx",
+     "tier": "Own spreads",
+     "pooled_fields": [
+      "noise.k",
+      "noise.df",
+      "noise.sd_session",
+      "take.nonprogressing_map",
+      "noise.c0_c1_curve",
+      "twin.sd_log_alpha",
+      "twin.sd_log_beta",
+      "twin.sd_process",
+      "twin.first_factor",
+      "twin.start_df",
+      "twin.slow_share",
+      "twin.slow_shift",
+      "twin.skew"
+     ],
+     "pool_source": {
+      "fields": [
+       "MC38",
+       "CT26",
+       "B16F10"
+      ],
+      "twin": [
+       "MC38",
+       "CT26",
+       "B16F10"
+      ]
+     },
+     "papers": 47,
+     "experiments": 49,
+     "animals": 355,
+     "start_sd_w": 0.9423076923076923
+    },
+    "PDX-PDAC": {
+     "line_class": "pdx",
+     "tier": "Own spreads",
+     "pooled_fields": [
+      "noise.k",
+      "noise.df",
+      "noise.sd_session",
+      "take.nonprogressing_map",
+      "noise.c0_c1_curve",
+      "twin.sd_log_alpha",
+      "twin.sd_log_beta",
+      "twin.sd_process",
+      "twin.first_factor",
+      "twin.start_df",
+      "twin.slow_share",
+      "twin.slow_shift",
+      "twin.skew"
+     ],
+     "pool_source": {
+      "fields": [
+       "MC38",
+       "CT26",
+       "B16F10"
+      ],
+      "twin": [
+       "MC38",
+       "CT26",
+       "B16F10"
+      ]
+     },
+     "papers": 28,
+     "experiments": 34,
+     "animals": 201,
+     "start_sd_w": 0.918918918918919
+    }
+   },
+   "twin_refit": "MC38, CT26, B16F10: twin refitted on the final data (twin.py --fit-twin, Crux stats.tumor_twin_fit; analysis/out_x1/analysis/out_curated/twin_original); the new lines' pooled twin is its median; v2 keeps the 2026-10-24 fit"
+  },
+  "guards": {
+   "fired": 0,
+   "waived": 5,
+   "passed": 867,
+   "recorded": 238,
+   "waivers": [
+    {
+     "guard": "G-lab-edge",
+     "line": "MC38",
+     "value": "grid_edge_mass 7.623993469916665e-06",
+     "reason": "grid_edge_mass 7.2e-6 (sealed 5.7e-6) above the grid's 1e-6 design (twin.py:61-62): MC38's posterior reaches the grid border; N2 widens the grid / lab starts",
+     "until": "N2"
+    },
+    {
+     "guard": "G-omega-floor",
+     "line": "PDX-NSCLC",
+     "value": "free (0.04433), sealed floored",
+     "reason": "D530: expected state free. OMEGA_FLOOR no longer binds on PDX-NSCLC (free 0.0443, sealed floored; FRAGILITY D6): corpus v3 15 papers / 67 animals -> patch_c16c 48 / 381, FOCEi covariance computed (sealed NA). Floored again: the waiver matches no firing and G-waiver-stale fires",
+     "until": "N2"
+    },
+    {
+     "guard": "G-lab-edge",
+     "line": "Panc02",
+     "value": "grid_edge_mass 1.204070411259881e-06",
+     "reason": "D533/D535: grid_edge_mass 1.204e-6 (sealed 3.4e-8) above the grid's 1e-6 design (twin.py:61-71): the log beta border at ~4.4 sd on both sides, new_study sd_log_beta 1.43 -> 1.68 (paper level 0.77 -> 1.12) on the patch_c16c corpus (probe B c16c, bit-identical on two runs); N2 centres the grid on the lab mean or widens B_HALF",
+     "until": "N2"
+    },
+    {
+     "guard": "G-lab-edge",
+     "line": "PDX-NSCLC",
+     "value": "grid_edge_mass 1.7382377550919408e-06",
+     "reason": "D533/D535: grid_edge_mass 1.738e-6 above the grid's 1e-6 design (twin.py:61-71): the low log beta border at ~4.2 sd, the lab mean log beta -5.06 against the grid centre (the line's prior log beta) -3.95, sd 1.51; not comparable 1:1 with tree S (Thin pooled there, 15 papers, 2.7e-8; own fit on 48 papers now); N2 centres the grid on the lab mean or widens B_HALF",
+     "until": "N2"
+    },
+    {
+     "guard": "G-lab-edge",
+     "line": "PDX-PDAC",
+     "value": "grid_edge_mass 2.3005165485682627e-06",
+     "reason": "D533/D535: grid_edge_mass 2.301e-6 (sealed 4.1e-7) above the grid's 1e-6 design (twin.py:61-71): the log beta border at ~4.2 sd on both sides, new_study sd_log_beta 1.58 -> 1.73 (experiment level 0.17 -> 0.51) on the patch_c16c corpus; N2 centres the grid on the lab mean or widens B_HALF",
+     "until": "N2"
+    }
+   ],
+   "guards": [
+    {
+     "guard": "G-cal-converged",
+     "records": 0,
+     "passed": 10,
+     "fired": 0,
+     "status": "pass"
+    },
+    {
+     "guard": "G-cal-reps",
+     "records": 0,
+     "passed": 2,
+     "fired": 0,
+     "status": "pass"
+    },
+    {
+     "guard": "G-cal-tie",
+     "records": 7,
+     "passed": 3,
+     "fired": 0,
+     "status": "record"
+    },
+    {
+     "guard": "G-crux-sha",
+     "records": 0,
+     "passed": 2,
+     "fired": 0,
+     "status": "pass"
+    },
+    {
+     "guard": "G-curated",
+     "records": 2,
+     "passed": 3,
+     "fired": 0,
+     "status": "record"
+    },
+    {
+     "guard": "G-curation",
+     "records": 36,
+     "passed": 2,
+     "fired": 0,
+     "status": "record"
+    },
+    {
+     "guard": "G-curation-parse",
+     "records": 3,
+     "passed": 6,
+     "fired": 0,
+     "status": "record"
+    },
+    {
+     "guard": "G-env",
+     "records": 0,
+     "passed": 39,
+     "fired": 0,
+     "status": "pass"
+    },
+    {
+     "guard": "G-exceptions",
+     "records": 0,
+     "passed": 189,
+     "fired": 0,
+     "status": "pass"
+    },
+    {
+     "guard": "G-explore-lost",
+     "records": 0,
+     "passed": 28,
+     "fired": 0,
+     "status": "pass"
+    },
+    {
+     "guard": "G-fits-all",
+     "records": 0,
+     "passed": 31,
+     "fired": 0,
+     "status": "pass"
+    },
+    {
+     "guard": "G-lab-converged",
+     "records": 0,
+     "passed": 12,
+     "fired": 0,
+     "status": "pass"
+    },
+    {
+     "guard": "G-lab-edge",
+     "records": 0,
+     "passed": 8,
+     "fired": 0,
+     "status": "waived"
+    },
+    {
+     "guard": "G-logged-sha",
+     "records": 9,
+     "passed": 9,
+     "fired": 0,
+     "status": "record"
+    },
+    {
+     "guard": "G-loo-flag",
+     "records": 0,
+     "passed": 9,
+     "fired": 0,
+     "status": "pass"
+    },
+    {
+     "guard": "G-model-choice",
+     "records": 31,
+     "passed": 0,
+     "fired": 0,
+     "status": "record"
+    },
+    {
+     "guard": "G-model-winner",
+     "records": 0,
+     "passed": 31,
+     "fired": 0,
+     "status": "pass"
+    },
+    {
+     "guard": "G-nulls",
+     "records": 0,
+     "passed": 31,
+     "fired": 0,
+     "status": "pass"
+    },
+    {
+     "guard": "G-nulls-pending",
+     "records": 9,
+     "passed": 0,
+     "fired": 0,
+     "status": "record"
+    },
+    {
+     "guard": "G-omega-floor",
+     "records": 1,
+     "passed": 10,
+     "fired": 0,
+     "status": "waived"
+    },
+    {
+     "guard": "G-origin-decisions",
+     "records": 50,
+     "passed": 50,
+     "fired": 0,
+     "status": "record"
+    },
+    {
+     "guard": "G-point-flags",
+     "records": 8,
+     "passed": 14,
+     "fired": 0,
+     "status": "record"
+    },
+    {
+     "guard": "G-regression-expected",
+     "records": 1,
+     "passed": 1,
+     "fired": 0,
+     "status": "record"
+    },
+    {
+     "guard": "G-run-id",
+     "records": 0,
+     "passed": 60,
+     "fired": 0,
+     "status": "pass"
+    },
+    {
+     "guard": "G-sealed-ref",
+     "records": 0,
+     "passed": 76,
+     "fired": 0,
+     "status": "pass"
+    },
+    {
+     "guard": "G-series-origin",
+     "records": 50,
+     "passed": 50,
+     "fired": 0,
+     "status": "record"
+    },
+    {
+     "guard": "G-simeoni-ok",
+     "records": 0,
+     "passed": 12,
+     "fired": 0,
+     "status": "pass"
+    },
+    {
+     "guard": "G-site-exclude",
+     "records": 2,
+     "passed": 2,
+     "fired": 0,
+     "status": "record"
+    },
+    {
+     "guard": "G-start-branch",
+     "records": 2,
+     "passed": 10,
+     "fired": 0,
+     "status": "record"
+    },
+    {
+     "guard": "G-start-sd",
+     "records": 0,
+     "passed": 12,
+     "fired": 0,
+     "status": "pass"
+    },
+    {
+     "guard": "G-take-null",
+     "records": 0,
+     "passed": 24,
+     "fired": 0,
+     "status": "pass"
+    },
+    {
+     "guard": "G-take-source",
+     "records": 0,
+     "passed": 15,
+     "fired": 0,
+     "status": "pass"
+    },
+    {
+     "guard": "G-tier-above",
+     "records": 2,
+     "passed": 0,
+     "fired": 0,
+     "status": "record"
+    },
+    {
+     "guard": "G-tier-margin",
+     "records": 0,
+     "passed": 60,
+     "fired": 0,
+     "status": "pass"
+    },
+    {
+     "guard": "G-tree",
+     "records": 0,
+     "passed": 19,
+     "fired": 0,
+     "status": "pass"
+    },
+    {
+     "guard": "G-twin-refit",
+     "records": 0,
+     "passed": 1,
+     "fired": 0,
+     "status": "pass"
+    },
+    {
+     "guard": "G-twin-validation",
+     "records": 4,
+     "passed": 0,
+     "fired": 0,
+     "status": "record"
+    },
+    {
+     "guard": "G-v2-sha",
+     "records": 1,
+     "passed": 2,
+     "fired": 0,
+     "status": "record"
+    },
+    {
+     "guard": "G-within",
+     "records": 0,
+     "passed": 4,
+     "fired": 0,
+     "status": "pass"
+    },
+    {
+     "guard": "G-within-fit",
+     "records": 0,
+     "passed": 26,
+     "fired": 0,
+     "status": "pass"
+    },
+    {
+     "guard": "G-within-polish",
+     "records": 0,
+     "passed": 4,
+     "fired": 0,
+     "status": "pass"
+    },
+    {
+     "guard": "G-written",
+     "records": 20,
+     "passed": 0,
+     "fired": 0,
+     "status": "record"
+    }
+   ],
+   "sha256": "7743eb80853aa34f4596233aea6ed49c0a04808c5c99b6e13371766d17382147"
+  },
+  "inputs": {
+   "analysis/chain_declared.json": "4ccf3efd2578bb97ecec938cfb5b009120d85ef4991ed53a3e22de41b359803d",
+   "analysis/chain_guards.py": "63e589f15b97c4a1d6e5bc3e25a642ea56401c9f65ab644bef7a826d948828dd",
+   "analysis/models/gompertz.R": "f20feb07d8553e4d344698090653306cb82690c700e87260b795dab2d04f0777",
+   "analysis/models/power.R": "91f37e0945628c9f1cfd680a28dd405fe215216b568e5b544eef478de1f072ef",
+   "analysis/models/simeoni.R": "758e435cba6e8477ef1defbfd1259114b539eef67b0ddf634ac5e8f581ef446d",
+   "analysis/models/simeoni_psi20.R": "d7769508b42360143ec6c6e2d06e987abc0b25d778a10502c9dbdf7715804f00",
+   "analysis/out_curated/twin_fit_v21.json": "8454047a9a9ac13da7dd6acca214cefa022a189f25bbaf4712b590adf66b0e4b",
+   "analysis/out_x1/analysis/out_curated/twin_original/twin_fit_v2.json": "7c82d5be99d9752e12d5b9ddd4ea0429849f26c5e3f10ac5d0b70ab8109aa36a",
+   "analysis/out_x1/analysis/out_curated/twin_original/twin_loo_MC38_CT26_B16F10.csv": "996300bf09663058ade598c185c55a1929b8c8c4de35fd3dfcab2350b8250ee5",
+   "data/atlas/engine_priors_v2.json": "474719522505d362451a9a8be05dda0dcec671fc11d4b3552365cdce81383b37",
+   "data/curation/block_facets.csv": "a32c9c9edc9c692048172731c2177cf6dbc0b195d8abf71a0c0f92131b69679a",
+   "data/curation/block_facets_x1.csv": "761cd2ede005c5e01c84f8761288fbb7449e23919e6795d6fb43f30b00395827",
+   "data/curation/block_facets_x1_dryrun.csv": "16a313a50ef03d2bd5ccf67fd15695e38ea20a08d9b6e3c651cd38b35a75464b",
+   "data/curation/block_facets_x1_pdxrepo.csv": "2b2c294d8271fbc2549c1cb7ecabd9acce88ba45cc9b0c2aed17860128e34a41",
+   "data/curation/compatible_exceptions.csv": "1c549407b686da1005ae04091d3efe6b6057d42b4da5c8c6ef9773f00b2dffdf",
+   "data/curation/desk_answers.csv": "cb4b5664211e49523ba7e26ce6dc61f02b4e29815174900e3bb097878a741d01",
+   "data/curation/manual_blocks.csv": "3d334db2756b4ff3a3c19256d44fc8658a470e78c9a4142c79c7f612dc4bc504",
+   "data/curation/point_exclusions.csv": "47e8b0156dbb56526b55b5eaecb5a412be2b680b2dbb975e0513074fa77d4c16",
+   "data/curation/point_exclusions_pre_d59.csv": "72bc71f94827b57e9acb3556bcc1865fa98b3e989f8ac7b565947f01982b3b8b",
+   "data/curation/point_flags.csv": "31a00de1922611b8ebef7c5ff3af8c513c7e9d9d8d099c07464a06dec9bb86fe",
+   "data/curation/treated_arms.csv": "aaa97737e53ef284963d8e5d24fc97e8ba8982d1efc921996b58cb8d458334f0",
+   "data/curation/treated_arms_x1.csv": "618726a1b2e377a79202e9d81c496cc056b4f877c5d10acd73535c49d412bd64",
+   "data/curation/value_scale.csv": "c92e87a34e0b9c5c0194258df615bb461b3b43e903d5800079970117d9dbadd8",
+   "data/raw/b16f10_campaign_animals.csv": "369c643dcffb24b4fcd8e74e53571add11cdb4726a3b1f8a12886b968cabe2a8",
+   "data/raw/ct26_campaign_animals.csv": "de5d22e92eaf7fa74355e4d926595bdca52e3a58f6a7b7e4a8494671bfe0241c",
+   "data/raw/manual_animals.csv": "56195a6f7bb8bcb2a3c8e9f26b9804de3dc2c7a9f8148bb790a09bf9e8e8792d",
+   "data/raw/mc38_commbio_animals.csv": "bfa593c339b01c1893b9596dfe08fa207a3f5e898257f42c8519bf0b5fda5205",
+   "data/raw/mc38_natcomm_animals.csv": "495c9ee89984cb6203ca7a4ab9416d2c15871fd57926ca2dc90fe55f1ab60215",
+   "data/raw/mc38_natcomm_oversize_animals.csv": "45b9070d23dfefb8b6a96848c0ab25b3b862b13bdb5834f6adcfe8a87820fcbf",
+   "data/raw/starter_animals.csv": "ea1621cc976b20f55b68ae5e76d20e6062272cdcae82f1564ca20d1a21d647d2",
+   "data/raw/x1_22rv1_animals.csv": "1d6497da292f4e2961d55bfa7bbcd5add38cbd4e72069b8fb70786878252c724",
+   "data/raw/x1_4t1_animals.csv": "da6a20f2d5e005bb1e1c942b9a920fe464f864c621063b2757bcc360d6f6d30b",
+   "data/raw/x1_a20_animals.csv": "c7138789112fc47f2f65e182a4462a3d39c6355b75ae9114349f23b686a213c9",
+   "data/raw/x1_a375_animals.csv": "c1984564673765ae88d9db2f07d2d222b884559fc8d05340ebc05adc579db929",
+   "data/raw/x1_a375w2_animals.csv": "72109aa6ec36f07e26d367af89b35c5d60d0ce8c3af6973fab61ffbd7914232d",
+   "data/raw/x1_a549_animals.csv": "097891623286edf514851eeb1541b80801781d669a5b46a81fe80c7d3a2c26a3",
+   "data/raw/x1_a549w2_animals.csv": "b1a9b776116e318ded3c10efefd439497f3447d744ffe7c4ebe338a7dc7266f2",
+   "data/raw/x1_c12_animals.csv": "644e87692beb0f4957dd93ae0d848ae0dd3036f72e7c96727fd62558670a06b6",
+   "data/raw/x1_c13_animals.csv": "018f8c1eafa5f3a9b34901c281c7572060176731a0f491dae97b2dc063d54b94",
+   "data/raw/x1_c7_animals.csv": "ab45b652a7228f1ae2a0a72404b49dea992c56682610453f9bd56f8d9c149160",
+   "data/raw/x1_emt6_animals.csv": "3118dfd13e5317e5011081eccae22e2712d27731e5ae81545435fc3a3505ef01",
+   "data/raw/x1_h1975_animals.csv": "13509af84c9093d84a81207fd9d7b5ae7dc131e04ceacd5d477ab3d1628d5517",
+   "data/raw/x1_hct116_animals.csv": "da04a8732eee65954240f33e5962024f31bfb92037218d0e39602440c0f36782",
+   "data/raw/x1_hepa16_animals.csv": "fe64b359313794b563285295fd4a759138788678f21ea5663eb731446dac07e6",
+   "data/raw/x1_hepa16c5_animals.csv": "893fe3ae15b9e07b597b48715a81a82f7df4adc3381683e7b2dee88360f9d334",
+   "data/raw/x1_llc_animals.csv": "5757e714705492cd7629272e07dfd9c54952fc55b578e5cd76ea9cce4dd3f6cb",
+   "data/raw/x1_llcc5_animals.csv": "e1d95fbfccd32b00d66a5b6dba66ae737379e4992b14d85d5bbadec0f04dd683",
+   "data/raw/x1_mb49_animals.csv": "eb22c9f0ecfe53426dfa2f77e90666fbcc7794922b137a3722992800b74763d0",
+   "data/raw/x1_mda231_animals.csv": "11d5e5bb25bf64a8f7413be308f956c335249cd6ee973afc0057b27fb90a83b3",
+   "data/raw/x1_mda231w2_animals.csv": "978440a4bddbe67b3fbdd9bd9126dca19996a37e219e4ed27f38741d036ba318",
+   "data/raw/x1_miapaca_animals.csv": "1ae22d89310c4fb1c63312dbcea3ff01807a56aee36834189baa12ff144686f9",
+   "data/raw/x1_mv411_animals.csv": "60c5dc203291c448862f7569f889058f6c3b263828d89100f342d4ecb142678e",
+   "data/raw/x1_n87_animals.csv": "d4002f387405da3bb627fcbc8640302f7ec42aef494ea77993b4b42721c3f17f",
+   "data/raw/x1_panc02_animals.csv": "770436bd8d217315284ece9d59000de64f6a2151a6862850d47642ad05dfb41a",
+   "data/raw/x1_pdacrec_animals.csv": "b85ce24309a56626f0db01eba066d907ca1081c3d964019f94cdcb42bf59edef",
+   "data/raw/x1_pdx_animals.csv": "c97c8d09958c52250ff63ebfff3efb0c36b0901c3f201c72e305cab9ef5f57b2",
+   "data/raw/x1_pdxcamp_animals.csv": "688cee7f1922f9b8cbabf10a5f73f9beea93c9d61846bce97750e38ce413db41",
+   "data/raw/x1_pdxjax_animals.csv": "97f3116336bf74be05210fdba1f79fd6d7cc8f5186aee6f2ae2902bd7bf98257",
+   "data/raw/x1_pdxrepo_animals.csv": "3c5a0adb9011a559e321df4163be5f26287dd3a9c1eb662dd3bbf89d5473bd27",
+   "data/raw/x1_renca_animals.csv": "8262a51b32a9a2ff65a8fa3d31717bfde445ad6f2f22a4e2c645a59eaf8b56a6",
+   "data/raw/x1_skov3_animals.csv": "f5a5afb7ee1270fadc1db8d0931fc0d0562cc991186f1e7c28fcbfcd7b6788ac",
+   "data/raw/x1_skov3w2_animals.csv": "6732c18630f826553d0c292010a167949ee647450272e12fd95cd19adebfbf66"
+  },
+  "env": {
+   "variables": {
+    "CRUX_BIN": "sha256 f026c9a7073cd8fdb8cff8dec8bb1fe6ec99b4e49ff3af91ebcac746c0bc28e6",
+    "CRUX_REV": "60e03782b1966603ee295ea0ecc39c41a4eef423",
+    "TWIN_ENGINE": "crux",
+    "TWIN_CRUX_VARIANT": "gpu",
+    "TWIN_WORKERS": "4",
+    "X1_LINES": "4T1,LLC,Panc02,Hepa1-6,MDA-MB-231,PDX-NSCLC,PDX-PDAC,EMT6,A549",
+    "CAL_STARTS_PARALLEL": "1",
+    "WGPU_ALLOW_UNDERLYING_NONCOMPLIANT_ADAPTER": "1",
+    "LAB_PRIOR_K": "unset",
+    "LAB_PRIOR_H_SCALE": "unset"
+   },
+   "versions": {
+    "python": "3.13.2",
+    "numpy": "2.4.2",
+    "scipy": "1.17.1",
+    "pandas": "3.0.2"
+   }
+  }
+ },
+ "lines": {
+  "MC38": {
+   "papers": 41,
+   "animals": 833,
+   "log_alpha": {
+    "mixture": [
+     {
+      "kind": "map",
+      "w": 0.8,
+      "a": -1.5968139393631218,
+      "b": 0.3683183866690178
+     },
+     {
+      "kind": "robust",
+      "w": 0.2,
+      "a": -1.5968139393631218,
+      "b": 1.1049595469363573
+     }
+    ],
+    "map_mean": -1.5968139396203953,
+    "map_sd": 0.368319848978787,
+    "map_q025": -2.3230188823393405,
+    "map_q975": -0.8709334489347009,
+    "tau": 0.3570780740932256,
+    "ess": 0.04809636090423174
+   },
+   "log_beta": -3.738443278354992,
+   "log_v_ref": 4.249219539133,
+   "sd_within": {
+    "log_alpha": 0.1108516938025093,
+    "log_beta": 0.056317525821231444,
+    "log_v0": 0.6906773324948894
+   },
+   "sd_residual_log_v": 0.2624112157901799,
+   "take": {
+    "nonprogressing_map": 0.0025962329138917977,
+    "nonprogressing": 1,
+    "animals": 967,
+    "definition": "last positive volume <= first positive volume, or never positive"
+   },
+   "facet_shifts_log_rate": [
+    {
+     "facet": "cell:antigen",
+     "shift_log_lambda": -0.2739909573506027,
+     "se": 0.13824073206549536,
+     "ci95": [
+      -0.5449427921989736,
+      -0.0030391225022317
+     ],
+     "papers": 4,
+     "sd_ratio_vs_strict": 0.9639063005379472
+    },
+    {
+     "facet": "cell:genetic_mod",
+     "shift_log_lambda": 0.0300979612779628,
+     "se": 0.07143358096409436,
+     "ci95": [
+      -0.1099118574116621,
+      0.1701077799675878
+     ],
+     "papers": 15,
+     "sd_ratio_vs_strict": 0.8962999452521971
+    },
+    {
+     "facet": "cell:resistant_or_derived",
+     "shift_log_lambda": 0.2012999143488497,
+     "se": 0.23368428125713447,
+     "ci95": [
+      -0.2567212769151338,
+      0.6593211056128333
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 0.6494311866182508
+    },
+    {
+     "facet": "ctrl:active_cotreatment",
+     "shift_log_lambda": 0.1934079505288456,
+     "se": 0.24763763220686558,
+     "ci95": [
+      -0.2919618085966109,
+      0.6787777096543022
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 1.131110897254953
+    },
+    {
+     "facet": "ctrl:control_plus_agent",
+     "shift_log_lambda": 0.2814895216914624,
+     "se": 0.1211190866244402,
+     "ci95": [
+      0.0440961119075596,
+      0.5188829314753651
+     ],
+     "papers": 12,
+     "sd_ratio_vs_strict": 0.8492115407422417
+    },
+    {
+     "facet": "host:depleted",
+     "shift_log_lambda": -0.3597691035328283,
+     "se": 0.16927059962318539,
+     "ci95": [
+      -0.6915394787942717,
+      -0.027998728271385
+     ],
+     "papers": 5,
+     "sd_ratio_vs_strict": 0.824852330774501
+    },
+    {
+     "facet": "host:gene_modified",
+     "shift_log_lambda": 0.1352261580912671,
+     "se": 0.06923184198673403,
+     "ci95": [
+      -0.0004682522027316,
+      0.2709205683852658
+     ],
+     "papers": 15,
+     "sd_ratio_vs_strict": 1.1054616887423747
+    },
+    {
+     "facet": "host:immunodeficient",
+     "shift_log_lambda": 0.3168999725602658,
+     "se": 0.10331582874583556,
+     "ci95": [
+      0.1144009482184282,
+      0.5193989969021036
+     ],
+     "papers": 14,
+     "sd_ratio_vs_strict": 0.6590490473371318
+    },
+    {
+     "facet": "host:not_stated",
+     "shift_log_lambda": 0.1910565711165325,
+     "se": 0.20200034351549026,
+     "ci95": [
+      -0.2048641021738283,
+      0.5869772444068935
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 0.8121623647580838
+    },
+    {
+     "facet": "readout:unit_assumed",
+     "shift_log_lambda": 0.1104202368037104,
+     "se": 0.18999029628353153,
+     "ci95": [
+      -0.2619607439120113,
+      0.4828012175194323
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 0.9547954745903146
+    },
+    {
+     "facet": "site:not_stated",
+     "shift_log_lambda": 0.1601135687931397,
+     "se": 0.11464508510604482,
+     "ci95": [
+      -0.0645907980147081,
+      0.3848179356009876
+     ],
+     "papers": 4,
+     "sd_ratio_vs_strict": 0.4996028450999856
+    },
+    {
+     "facet": "site:sc_bilateral_contralateral",
+     "shift_log_lambda": -0.1264166609369077,
+     "se": 0.13448262661777877,
+     "ci95": [
+      -0.3900026091077541,
+      0.1371692872339386
+     ],
+     "papers": 5,
+     "sd_ratio_vs_strict": 1.3071290126926942
+    },
+    {
+     "facet": "site:sc_bilateral_primary",
+     "shift_log_lambda": -0.1380003103606319,
+     "se": 0.20870846401281534,
+     "ci95": [
+      -0.54706889982575,
+      0.271068279104486
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 0.7000491233759273
+    }
+   ],
+   "map_settings": {
+    "family": "normal",
+    "tau_prior": "halfnormal",
+    "tau_a": 1.0,
+    "robust_weight": 0.2,
+    "ess": "elir",
+    "sigma": 0.1,
+    "robust_n": 0.008190440181287152
+   },
+   "start_sd": 0.2138383795213481,
+   "sd_process": 0.0,
+   "study_prior": {
+    "mean_log_alpha": -1.5635796078608895,
+    "sd_log_alpha": 0.40657715049352405,
+    "mean_log_beta": -4.155619575808329,
+    "sd_log_beta": 1.6577523264849245,
+    "rho": 0.8133271372415974,
+    "size_factor": 0.9,
+    "deconvolution": {
+     "paper": {
+      "sd_log_alpha": 0.35318147750022816,
+      "sd_log_beta": 1.4674935162509262,
+      "rho": 0.806312120001587
+     },
+     "experiment": {
+      "sd_log_alpha": 0.28167901113327504,
+      "sd_log_beta": 1.113207814821203,
+      "rho": 0.8255580850228045
+     },
+     "loglik": -1835.4057426154613,
+     "loglik_independent": -1884.055264443159,
+     "papers": 44,
+     "experiments": 150
+    }
+   },
+   "noise": {
+    "c0": 0.054552708645625864,
+    "c1": 0.8588851445696877,
+    "k": 0.6863884969273617,
+    "df": 3.2378021460476623,
+    "sd_session": 0.07615290640819629
+   },
+   "calibration": {
+    "distance": 5.740623137131815,
+    "evaluations": 83,
+    "converged": true,
+    "experiments": 149,
+    "statistics": {
+     "noise_sd": {
+      "atlas": 0.16073198216202597,
+      "se": 0.007595926139103884,
+      "calibrated": 0.16493536154292315,
+      "v1_caliper_only": 0.16504868672545087
+     },
+     "tail95": {
+      "atlas": 2.5528165783149985,
+      "se": 0.11475443108101586,
+      "calibrated": 2.413085244419783,
+      "v1_caliper_only": 2.1566868116677473
+     },
+     "tail99": {
+      "atlas": 4.07243544929228,
+      "se": 0.2740095142838104,
+      "calibrated": 4.01239790810681,
+      "v1_caliper_only": 3.1169111729945596
+     },
+     "session_sd": {
+      "atlas": 0.08450590518768303,
+      "se": 0.006625877027136159,
+      "calibrated": 0.0811731005613082,
+      "v1_caliper_only": 0.024222134546973643
+     },
+     "slope_sd_med": {
+      "atlas": 0.024299915623146182,
+      "se": 0.0011930735891404894,
+      "calibrated": 0.023350682970141923,
+      "v1_caliper_only": 0.02543665448073646
+     },
+     "slope_sd_q75": {
+      "atlas": 0.03262838684107605,
+      "se": 0.001563707722297106,
+      "calibrated": 0.03196693342916167,
+      "v1_caliper_only": 0.03575674925337451
+     },
+     "mean_slope_sd": {
+      "atlas": 0.06223981206587387,
+      "se": 0.004974467856573141,
+      "calibrated": 0.06736656856103473,
+      "v1_caliper_only": 0.09101435023186244
+     },
+     "end_sd_med": {
+      "atlas": 0.2862390666408524,
+      "se": 0.015226491596595148,
+      "calibrated": 0.30653429777920255,
+      "v1_caliper_only": 0.3171488790875593
+     }
+    }
+   },
+   "twin": {
+    "sd_log_alpha": 0.10658498806151384,
+    "sd_log_beta": 0.07160270275282508,
+    "sd_process": 0.10589252810325066,
+    "first_factor": 0.8882960257446304,
+    "start_df": 3,
+    "slow_share": 0.01943341571850825,
+    "slow_shift": 0.8393241876592809,
+    "skew": 0.8357297029468109,
+    "validation": {
+     "loo_coverage_90": 0.8754806811939205,
+     "measurements": 5461,
+     "below": 0.06921809192455594,
+     "above": 0.05530122688152353
+    },
+    "conformal": {
+     "levels": {
+      "90": {
+       "lo": 0.0916085087711589,
+       "hi": 0.9285527917033468
+      },
+      "99": {
+       "lo": 0.015252739628647333,
+       "hi": 0.9913553717355066
+      }
+     },
+     "papers": 44,
+     "points": 5461,
+     "pooled": false,
+     "validated": {
+      "90": {
+       "miss_lo": 0.049080872993588584,
+       "miss_hi": 0.049610510541397534,
+       "cover": 0.9013086164650139
+      },
+      "99": {
+       "miss_lo": 0.0052119015924323945,
+       "miss_hi": 0.005120444490273525,
+       "cover": 0.9896676539172942
+      }
+     },
+     "source": "conformal_fit.py 2026-11-22 on monitor_points_orig.csv, monitor_points_x1.csv (monitor_validate, Crux 60e03782b1966603ee295ea0ecc39c41a4eef423)"
+    },
+    "next_ranges": {
+     "levels": {
+      "90": {
+       "lo": 0.05,
+       "hi": 0.95
+      },
+      "99": {
+       "lo": 0.005,
+       "hi": 0.995
+      }
+     },
+     "observed": {
+      "90": {
+       "miss_lo": 0.03176791868436778,
+       "miss_hi": 0.06257173153168026
+      },
+      "99": {
+       "miss_lo": 0.0028207468494387032,
+       "miss_hi": 0.0075104081220139455
+      }
+     },
+     "papers": 306,
+     "points": 30026,
+     "pooled": true,
+     "source": "conformal_fit.py ranges 2026-11-22 on monitor_points_orig.csv, monitor_points_x1.csv (monitor_validate, Crux 60e03782b1966603ee295ea0ecc39c41a4eef423, nominal levels): descriptive, post hoc to PUBLICATION_PLAN W2 rule 8; the predictive before measuring; per study (equal weight) mean of the share of measured next values outside the previous session's range, all lines pooled; in-sample"
+    }
+   }
+  },
+  "CT26": {
+   "papers": 37,
+   "animals": 504,
+   "log_alpha": {
+    "mixture": [
+     {
+      "kind": "map",
+      "w": 0.8,
+      "a": -1.3502738607940072,
+      "b": 0.27917796942474693
+     },
+     {
+      "kind": "robust",
+      "w": 0.2,
+      "a": -1.3502738607940072,
+      "b": 0.8375375234692125
+     }
+    ],
+    "map_mean": -1.3502738615319734,
+    "map_sd": 0.2791791744897367,
+    "map_q025": -1.9018649733440582,
+    "map_q975": -0.7997088961507757,
+    "tau": 0.2690823414422781,
+    "ess": 0.08371373383677383
+   },
+   "log_beta": -3.0666326133064663,
+   "log_v_ref": 4.173426057655535,
+   "sd_within": {
+    "log_alpha": 0.10136841942052599,
+    "log_beta": 0.10101497884033331,
+    "log_v0": 0.6729604363952708
+   },
+   "sd_residual_log_v": 0.2308115646478371,
+   "take": {
+    "nonprogressing_map": 0.003510743630271657,
+    "nonprogressing": 12,
+    "animals": 618,
+    "definition": "last positive volume <= first positive volume, or never positive"
+   },
+   "facet_shifts_log_rate": [
+    {
+     "facet": "cell:antigen",
+     "shift_log_lambda": -0.2501264545418246,
+     "se": 0.1297339540058831,
+     "ci95": [
+      -0.5044050043933556,
+      0.0041520953097063
+     ],
+     "papers": 4,
+     "sd_ratio_vs_strict": 0.4971886620058888
+    },
+    {
+     "facet": "cell:genetic_mod",
+     "shift_log_lambda": -0.2111502275826193,
+     "se": 0.08343920862099612,
+     "ci95": [
+      -0.3746910764797717,
+      -0.0476093786854669
+     ],
+     "papers": 6,
+     "sd_ratio_vs_strict": 1.8699912745007337
+    },
+    {
+     "facet": "cell:other",
+     "shift_log_lambda": 0.3646177849291597,
+     "se": 0.2059482385886444,
+     "ci95": [
+      -0.0390407627045832,
+      0.7682763325629027
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 1.318673138083554
+    },
+    {
+     "facet": "ctrl:control_plus_agent",
+     "shift_log_lambda": 0.2114296490136738,
+     "se": 0.13340494493593438,
+     "ci95": [
+      -0.0500440430607575,
+      0.4729033410881052
+     ],
+     "papers": 6,
+     "sd_ratio_vs_strict": 0.9395707076916534
+    },
+    {
+     "facet": "host:depleted",
+     "shift_log_lambda": -0.5729526841095149,
+     "se": 0.18580461414599286,
+     "ci95": [
+      -0.937129727835661,
+      -0.208775640383369
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 1.575431077576537
+    },
+    {
+     "facet": "host:immunodeficient",
+     "shift_log_lambda": 0.2388146092888996,
+     "se": 0.1338787442128128,
+     "ci95": [
+      -0.0235877293682134,
+      0.5012169479460127
+     ],
+     "papers": 5,
+     "sd_ratio_vs_strict": 0.6582733618603327
+    },
+    {
+     "facet": "readout:unit_assumed",
+     "shift_log_lambda": -0.0256764098781056,
+     "se": 0.1458237911578519,
+     "ci95": [
+      -0.3114910405474954,
+      0.260138220791284
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 0.4523807686536006
+    },
+    {
+     "facet": "site:sc_bilateral_contralateral",
+     "shift_log_lambda": 0.1234447724232957,
+     "se": 0.14504073157155556,
+     "ci95": [
+      -0.1608350614569531,
+      0.4077246063035447
+     ],
+     "papers": 5,
+     "sd_ratio_vs_strict": 0.8090166425484223
+    }
+   ],
+   "map_settings": {
+    "family": "normal",
+    "tau_prior": "halfnormal",
+    "tau_a": 1.0,
+    "robust_weight": 0.2,
+    "ess": "elir",
+    "sigma": 0.1,
+    "robust_n": 0.014255795378743594
+   },
+   "start_sd": 0.18581078140759477,
+   "sd_process": 0.0,
+   "study_prior": {
+    "mean_log_alpha": -1.3124761572250248,
+    "sd_log_alpha": 0.40315592247115445,
+    "mean_log_beta": -3.3212086271508765,
+    "sd_log_beta": 1.0632543328314241,
+    "rho": 0.9355384140113919,
+    "size_factor": 0.9,
+    "deconvolution": {
+     "paper": {
+      "sd_log_alpha": 0.2445714768192153,
+      "sd_log_beta": 0.7258503268163697,
+      "rho": 0.89969070049857
+     },
+     "experiment": {
+      "sd_log_alpha": 0.37529310344889694,
+      "sd_log_beta": 0.9321117877667098,
+      "rho": 0.9587289224614031
+     },
+     "loglik": -954.5002175495028,
+     "loglik_independent": -1009.7328799888492,
+     "papers": 37,
+     "experiments": 92
+    }
+   },
+   "noise": {
+    "c0": 0.041148240192064055,
+    "c1": 0.6478433995959415,
+    "k": 0.5177319227191395,
+    "df": 2.308343445425069,
+    "sd_session": 0.06761393975851301
+   },
+   "calibration": {
+    "distance": 11.882339463595915,
+    "evaluations": 106,
+    "converged": true,
+    "experiments": 91,
+    "statistics": {
+     "noise_sd": {
+      "atlas": 0.1338701193649043,
+      "se": 0.00705315366637328,
+      "calibrated": 0.14147618779361568,
+      "v1_caliper_only": 0.16272363707489446
+     },
+     "tail95": {
+      "atlas": 2.9152729111633415,
+      "se": 0.14547174747287245,
+      "calibrated": 2.6237711111944444,
+      "v1_caliper_only": 2.143027618032338
+     },
+     "tail99": {
+      "atlas": 4.8385219159815716,
+      "se": 0.5957485447167952,
+      "calibrated": 4.98600228578802,
+      "v1_caliper_only": 2.9838576453101124
+     },
+     "session_sd": {
+      "atlas": 0.08094425684990215,
+      "se": 0.008305904416035395,
+      "calibrated": 0.07308455334491677,
+      "v1_caliper_only": 0.02254970862203662
+     },
+     "slope_sd_med": {
+      "atlas": 0.027903273921855407,
+      "se": 0.001963383230748927,
+      "calibrated": 0.02677358366653784,
+      "v1_caliper_only": 0.03686794020789004
+     },
+     "slope_sd_q75": {
+      "atlas": 0.04386359278008417,
+      "se": 0.004000142190528656,
+      "calibrated": 0.03621993058211034,
+      "v1_caliper_only": 0.04963647772363192
+     },
+     "mean_slope_sd": {
+      "atlas": 0.06309885508184392,
+      "se": 0.006017994559518728,
+      "calibrated": 0.0625187427311586,
+      "v1_caliper_only": 0.09336969743922258
+     },
+     "end_sd_med": {
+      "atlas": 0.2619578821220898,
+      "se": 0.018203575471015927,
+      "calibrated": 0.28607760517014286,
+      "v1_caliper_only": 0.3752134983444365
+     }
+    }
+   },
+   "twin": {
+    "sd_log_alpha": 0.12657472144507056,
+    "sd_log_beta": 0.07973447207028611,
+    "sd_process": 0.0818024985483818,
+    "first_factor": 0.9552234745535081,
+    "start_df": 3,
+    "slow_share": 0.016745985536068708,
+    "slow_shift": 1.614094905286807,
+    "skew": 0.8123372200447545,
+    "validation": {
+     "loo_coverage_90": 0.8740950582310356,
+     "measurements": 3177,
+     "below": 0.07239534151715454,
+     "above": 0.05350960025180988
+    },
+    "conformal": {
+     "levels": {
+      "90": {
+       "lo": 0.07997564090224814,
+       "hi": 0.9440630017777658
+      },
+      "99": {
+       "lo": 0.015252739628647333,
+       "hi": 0.9913553717355066
+      }
+     },
+     "papers": 37,
+     "points": 3177,
+     "pooled": false,
+     "validated": {
+      "90": {
+       "miss_lo": 0.0489766109755226,
+       "miss_hi": 0.048849789097503676,
+       "cover": 0.9021735999269737
+      },
+      "99": {
+       "miss_lo": 0.0052119015924323945,
+       "miss_hi": 0.005120444490273525,
+       "cover": 0.9896676539172942
+      }
+     },
+     "source": "conformal_fit.py 2026-11-22 on monitor_points_orig.csv, monitor_points_x1.csv (monitor_validate, Crux 60e03782b1966603ee295ea0ecc39c41a4eef423)"
+    },
+    "next_ranges": {
+     "levels": {
+      "90": {
+       "lo": 0.05,
+       "hi": 0.95
+      },
+      "99": {
+       "lo": 0.005,
+       "hi": 0.995
+      }
+     },
+     "observed": {
+      "90": {
+       "miss_lo": 0.03176791868436778,
+       "miss_hi": 0.06257173153168026
+      },
+      "99": {
+       "miss_lo": 0.0028207468494387032,
+       "miss_hi": 0.0075104081220139455
+      }
+     },
+     "papers": 306,
+     "points": 30026,
+     "pooled": true,
+     "source": "conformal_fit.py ranges 2026-11-22 on monitor_points_orig.csv, monitor_points_x1.csv (monitor_validate, Crux 60e03782b1966603ee295ea0ecc39c41a4eef423, nominal levels): descriptive, post hoc to PUBLICATION_PLAN W2 rule 8; the predictive before measuring; per study (equal weight) mean of the share of measured next values outside the previous session's range, all lines pooled; in-sample"
+    }
+   }
+  },
+  "B16F10": {
+   "papers": 28,
+   "animals": 404,
+   "log_alpha": {
+    "mixture": [
+     {
+      "kind": "map",
+      "w": 0.8,
+      "a": -0.9312801752744002,
+      "b": 0.22969047442323917
+     },
+     {
+      "kind": "robust",
+      "w": 0.2,
+      "a": -0.9312801752744002,
+      "b": 0.6890748194500211
+     }
+    ],
+    "map_mean": -0.9312801760171829,
+    "map_sd": 0.22969160648333842,
+    "map_q025": -1.3858395418735259,
+    "map_q975": -0.47792753796886217,
+    "tau": 0.2191172161568712,
+    "ess": 0.12367246117837041
+   },
+   "log_beta": -3.050317324767918,
+   "log_v_ref": 3.803849550142152,
+   "sd_within": {
+    "log_alpha": 0.07851412969775559,
+    "log_beta": 0.08245331035817506,
+    "log_v0": 0.9839581844786724
+   },
+   "sd_residual_log_v": 0.2888034195102635,
+   "take": {
+    "nonprogressing_map": 0.0044252543466515165,
+    "nonprogressing": 1,
+    "animals": 541,
+    "definition": "last positive volume <= first positive volume, or never positive"
+   },
+   "facet_shifts_log_rate": [
+    {
+     "facet": "cell:antigen",
+     "shift_log_lambda": -0.2100895709876779,
+     "se": 0.0822993549480361,
+     "ci95": [
+      -0.3713963066858287,
+      -0.0487828352895272
+     ],
+     "papers": 7,
+     "sd_ratio_vs_strict": 1.253715852480674
+    },
+    {
+     "facet": "cell:genetic_mod",
+     "shift_log_lambda": -0.2179562410704677,
+     "se": 0.06375618788818266,
+     "ci95": [
+      -0.3429183693313057,
+      -0.0929941128096297
+     ],
+     "papers": 6,
+     "sd_ratio_vs_strict": 1.2554769503024077
+    },
+    {
+     "facet": "cell:reporter",
+     "shift_log_lambda": -0.157889442281907,
+     "se": 0.09281123539578714,
+     "ci95": [
+      -0.3397994636576498,
+      0.0240205790938358
+     ],
+     "papers": 4,
+     "sd_ratio_vs_strict": 1.9108534455945247
+    },
+    {
+     "facet": "ctrl:active_cotreatment",
+     "shift_log_lambda": -0.1350465398990362,
+     "se": 0.1661240100768572,
+     "ci95": [
+      -0.4606495996496764,
+      0.1905565198516039
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 1.8740276222130756
+    },
+    {
+     "facet": "ctrl:control_plus_agent",
+     "shift_log_lambda": 0.0719193642507775,
+     "se": 0.09745051852947256,
+     "ci95": [
+      -0.1190836520669887,
+      0.2629223805685437
+     ],
+     "papers": 7,
+     "sd_ratio_vs_strict": 1.4542697640214188
+    },
+    {
+     "facet": "host:gene_modified",
+     "shift_log_lambda": -0.1313308661474073,
+     "se": 0.07308542372802135,
+     "ci95": [
+      -0.2745782966543292,
+      0.0119165643595145
+     ],
+     "papers": 7,
+     "sd_ratio_vs_strict": 1.3256605469035458
+    },
+    {
+     "facet": "host:immunodeficient",
+     "shift_log_lambda": -0.0044054457504155,
+     "se": 0.11657331219104283,
+     "ci95": [
+      -0.2328891376448595,
+      0.2240782461440284
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 0.792635844491423
+    },
+    {
+     "facet": "site:intradermal",
+     "shift_log_lambda": -0.3287241456947207,
+     "se": 0.10442105624000839,
+     "ci95": [
+      -0.5333894159251371,
+      -0.1240588754643042
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 1.5286885539802282
+    },
+    {
+     "facet": "site:not_stated",
+     "shift_log_lambda": -0.1319738510660671,
+     "se": 0.13751216158738933,
+     "ci95": [
+      -0.4014976877773502,
+      0.1375499856452159
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 1.1167767043350294
+    },
+    {
+     "facet": "site:sc_bilateral_contralateral",
+     "shift_log_lambda": 0.0522122741636516,
+     "se": 0.10144328324180216,
+     "ci95": [
+      -0.1466165609902806,
+      0.2510411093175839
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 1.2826581494505769
+    },
+    {
+     "facet": "site:sc_bilateral_primary",
+     "shift_log_lambda": -0.0182047592042432,
+     "se": 0.11958653822672483,
+     "ci95": [
+      -0.2525943741286239,
+      0.2161848557201374
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 1.1763682971853824
+    }
+   ],
+   "map_settings": {
+    "family": "normal",
+    "tau_prior": "halfnormal",
+    "tau_a": 1.0,
+    "robust_weight": 0.2,
+    "ess": "elir",
+    "sigma": 0.1,
+    "robust_n": 0.021060430287315673
+   },
+   "start_sd": 0.30189037745950703,
+   "sd_process": 0.0,
+   "study_prior": {
+    "mean_log_alpha": -0.9089343540125245,
+    "sd_log_alpha": 0.30568014855043624,
+    "mean_log_beta": -3.2715343252834694,
+    "sd_log_beta": 0.8837771154412513,
+    "rho": 0.9069916655411512,
+    "size_factor": 0.9,
+    "deconvolution": {
+     "paper": {
+      "sd_log_alpha": 0.24372610289672783,
+      "sd_log_beta": 0.6129980964328312,
+      "rho": 0.9431932352298082
+     },
+     "experiment": {
+      "sd_log_alpha": 0.2365503065512923,
+      "sd_log_beta": 0.7671423565568681,
+      "rho": 0.8904364643720694
+     },
+     "loglik": -1223.193876862526,
+     "loglik_independent": -1264.3377035856247,
+     "papers": 33,
+     "experiments": 88
+    }
+   },
+   "noise": {
+    "c0": 0.06493330879061306,
+    "c1": 1.0223187022719107,
+    "k": 0.8169984099384001,
+    "df": 2.851824039835491,
+    "sd_session": 0.09321738402931923
+   },
+   "calibration": {
+    "distance": 2.0981763946688083,
+    "evaluations": 107,
+    "converged": true,
+    "experiments": 85,
+    "statistics": {
+     "noise_sd": {
+      "atlas": 0.1984632353085364,
+      "se": 0.012239513461956847,
+      "calibrated": 0.20293559468576056,
+      "v1_caliper_only": 0.1652234484173502
+     },
+     "tail95": {
+      "atlas": 2.5445956287772167,
+      "se": 0.14103801595884313,
+      "calibrated": 2.510219530027652,
+      "v1_caliper_only": 2.208409400871512
+     },
+     "tail99": {
+      "atlas": 4.211461545877892,
+      "se": 0.33524995808357627,
+      "calibrated": 4.297604717213567,
+      "v1_caliper_only": 3.230390579370511
+     },
+     "session_sd": {
+      "atlas": 0.09701382272900737,
+      "se": 0.009430127616197404,
+      "calibrated": 0.09535092164779603,
+      "v1_caliper_only": 0.017342472370785678
+     },
+     "slope_sd_med": {
+      "atlas": 0.040919724199487736,
+      "se": 0.00374673128547659,
+      "calibrated": 0.04068461147513876,
+      "v1_caliper_only": 0.043689591619882964
+     },
+     "slope_sd_q75": {
+      "atlas": 0.06018000725342864,
+      "se": 0.005259044332610382,
+      "calibrated": 0.054521139114417055,
+      "v1_caliper_only": 0.056685559706984065
+     },
+     "mean_slope_sd": {
+      "atlas": 0.07449050316545859,
+      "se": 0.007196934194820921,
+      "calibrated": 0.07492534369227144,
+      "v1_caliper_only": 0.10855944186793935
+     },
+     "end_sd_med": {
+      "atlas": 0.29195651581499193,
+      "se": 0.03366400343597718,
+      "calibrated": 0.3189446617700406,
+      "v1_caliper_only": 0.3604823685510317
+     }
+    }
+   },
+   "twin": {
+    "sd_log_alpha": 0.11440657809188168,
+    "sd_log_beta": 0.007227528945858041,
+    "sd_process": 0.09053214894411571,
+    "first_factor": 0.6776042961502695,
+    "start_df": 3,
+    "slow_share": 8.921729036528086e-05,
+    "slow_shift": 488.86204693674506,
+    "skew": 0.8950020056674524,
+    "validation": {
+     "loo_coverage_90": 0.8785372224640836,
+     "measurements": 2297,
+     "below": 0.06878537222464083,
+     "above": 0.05267740531127558
+    },
+    "conformal": {
+     "levels": {
+      "90": {
+       "lo": 0.07945727791057461,
+       "hi": 0.9235389789169917
+      },
+      "99": {
+       "lo": 0.015252739628647333,
+       "hi": 0.9913553717355066
+      }
+     },
+     "papers": 33,
+     "points": 2297,
+     "pooled": false,
+     "validated": {
+      "90": {
+       "miss_lo": 0.051173820096263437,
+       "miss_hi": 0.049350957435462445,
+       "cover": 0.899475222468274
+      },
+      "99": {
+       "miss_lo": 0.0052119015924323945,
+       "miss_hi": 0.005120444490273525,
+       "cover": 0.9896676539172942
+      }
+     },
+     "source": "conformal_fit.py 2026-11-22 on monitor_points_orig.csv, monitor_points_x1.csv (monitor_validate, Crux 60e03782b1966603ee295ea0ecc39c41a4eef423)"
+    },
+    "next_ranges": {
+     "levels": {
+      "90": {
+       "lo": 0.05,
+       "hi": 0.95
+      },
+      "99": {
+       "lo": 0.005,
+       "hi": 0.995
+      }
+     },
+     "observed": {
+      "90": {
+       "miss_lo": 0.03176791868436778,
+       "miss_hi": 0.06257173153168026
+      },
+      "99": {
+       "miss_lo": 0.0028207468494387032,
+       "miss_hi": 0.0075104081220139455
+      }
+     },
+     "papers": 306,
+     "points": 30026,
+     "pooled": true,
+     "source": "conformal_fit.py ranges 2026-11-22 on monitor_points_orig.csv, monitor_points_x1.csv (monitor_validate, Crux 60e03782b1966603ee295ea0ecc39c41a4eef423, nominal levels): descriptive, post hoc to PUBLICATION_PLAN W2 rule 8; the predictive before measuring; per study (equal weight) mean of the share of measured next values outside the previous session's range, all lines pooled; in-sample"
+    }
+   }
+  },
+  "4T1": {
+   "papers": 61,
+   "animals": 730,
+   "log_alpha": {
+    "mixture": [
+     {
+      "kind": "map",
+      "w": 0.8,
+      "a": -1.4101712720016093,
+      "b": 0.4010213304562639
+     },
+     {
+      "kind": "robust",
+      "w": 0.2,
+      "a": -1.4101712720016093,
+      "b": 1.203068103284558
+     }
+    ],
+    "map_mean": -1.4101712722260609,
+    "map_sd": 0.4010227010948482,
+    "map_q025": -2.1992230642562323,
+    "map_q975": -0.6213961936101539,
+    "tau": 0.392938789914695,
+    "ess": 0.040571783120023255
+   },
+   "log_beta": -2.807364737115182,
+   "log_v_ref": 4.311402917286136,
+   "sd_within": {
+    "log_alpha": 0.046168651514296985,
+    "log_beta": 0.17692628888448858,
+    "log_v0": 0.6467583880516856
+   },
+   "sd_residual_log_v": 0.1759705244748902,
+   "take": {
+    "nonprogressing_map": 0.0019789535342600697,
+    "nonprogressing": 0,
+    "animals": 778,
+    "definition": "last positive volume <= first positive volume, or never positive"
+   },
+   "facet_shifts_log_rate": [
+    {
+     "facet": "cell:genetic_mod",
+     "shift_log_lambda": -0.1798782215552647,
+     "se": 0.09022286667563467,
+     "ci95": [
+      -0.3567150402395087,
+      -0.0030414028710208
+     ],
+     "papers": 12,
+     "sd_ratio_vs_strict": 1.7533849005426736
+    },
+    {
+     "facet": "cell:not_stated",
+     "shift_log_lambda": 0.1704961630387076,
+     "se": 0.15438866906158258,
+     "ci95": [
+      -0.1321056283219942,
+      0.4730979543994095
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 1.2540654506410345
+    },
+    {
+     "facet": "cell:reporter",
+     "shift_log_lambda": -0.0538141490562802,
+     "se": 0.10618312823697262,
+     "ci95": [
+      -0.2619330804007466,
+      0.1543047822881861
+     ],
+     "papers": 11,
+     "sd_ratio_vs_strict": 1.4961968942305115
+    },
+    {
+     "facet": "ctrl:active_cotreatment",
+     "shift_log_lambda": -0.1313325935684785,
+     "se": 0.20741628702105783,
+     "ci95": [
+      -0.537868516129752,
+      0.2752033289927948
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 0.3521863979232322
+    },
+    {
+     "facet": "host:immunodeficient",
+     "shift_log_lambda": 0.0799143683211533,
+     "se": 0.09181712310386113,
+     "ci95": [
+      -0.1000471929624145,
+      0.2598759296047211
+     ],
+     "papers": 11,
+     "sd_ratio_vs_strict": 0.9385600549589288
+    },
+    {
+     "facet": "host:not_stated",
+     "shift_log_lambda": -0.1325469393944564,
+     "se": 0.10168558718270164,
+     "ci95": [
+      -0.3318506902725516,
+      0.0667568114836388
+     ],
+     "papers": 4,
+     "sd_ratio_vs_strict": 1.3752711104335398
+    },
+    {
+     "facet": "host:strain_not_stated",
+     "shift_log_lambda": 0.0259462202027793,
+     "se": 0.16273577966529237,
+     "ci95": [
+      -0.2930159079411937,
+      0.3449083483467524
+     ],
+     "papers": 5,
+     "sd_ratio_vs_strict": 1.4432874728411842
+    },
+    {
+     "facet": "other",
+     "shift_log_lambda": 0.3192972891953254,
+     "se": 0.13497520120318587,
+     "ci95": [
+      0.0547458948370811,
+      0.5838486835535698
+     ],
+     "papers": 5,
+     "sd_ratio_vs_strict": 1.3657960058228873
+    },
+    {
+     "facet": "readout:unit_assumed",
+     "shift_log_lambda": 0.043554737307019,
+     "se": 0.1485861152053649,
+     "ci95": [
+      -0.2476740484954961,
+      0.3347835231095343
+     ],
+     "papers": 5,
+     "sd_ratio_vs_strict": 0.7186429211385803
+    },
+    {
+     "facet": "site:not_stated",
+     "shift_log_lambda": -0.0572507364787572,
+     "se": 0.08982866013806574,
+     "ci95": [
+      -0.2333149103493661,
+      0.1188134373918516
+     ],
+     "papers": 14,
+     "sd_ratio_vs_strict": 1.2749618250773322
+    },
+    {
+     "facet": "site:orthotopic",
+     "shift_log_lambda": -0.0940250005949193,
+     "se": 0.07036712200353107,
+     "ci95": [
+      -0.2319445597218402,
+      0.0438945585320016
+     ],
+     "papers": 36,
+     "sd_ratio_vs_strict": 1.5044641534226486
+    },
+    {
+     "facet": "site:sc_bilateral_contralateral",
+     "shift_log_lambda": 0.130532523852709,
+     "se": 0.15027198450864082,
+     "ci95": [
+      -0.1640005657842269,
+      0.4250656134896451
+     ],
+     "papers": 5,
+     "sd_ratio_vs_strict": 1.1592218225828124
+    },
+    {
+     "facet": "site:sc_bilateral_primary",
+     "shift_log_lambda": 0.065810731720432,
+     "se": 0.20514457734115002,
+     "ci95": [
+      -0.336272639868222,
+      0.4678941033090861
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 1.1863168849065773
+    }
+   ],
+   "map_settings": {
+    "family": "normal",
+    "tau_prior": "halfnormal",
+    "tau_a": 1.0,
+    "robust_weight": 0.2,
+    "ess": "elir",
+    "sigma": 0.1,
+    "robust_n": 0.006909069714156999
+   },
+   "start_sd": 0.09748231704272167,
+   "sd_process": 0.0,
+   "study_prior": {
+    "mean_log_alpha": -1.339326913601449,
+    "sd_log_alpha": 0.4619513550203422,
+    "mean_log_beta": -2.8641615418078645,
+    "sd_log_beta": 0.8646718274285643,
+    "rho": 0.9270611460786895,
+    "size_factor": 0.9,
+    "deconvolution": {
+     "paper": {
+      "sd_log_alpha": 0.40296675816735145,
+      "sd_log_beta": 0.6150957850917658,
+      "rho": 0.9584204975194514
+     },
+     "experiment": {
+      "sd_log_alpha": 0.3179204531553111,
+      "sd_log_beta": 0.738031817901339,
+      "rho": 0.93594443062137
+     },
+     "loglik": 66.6085352897644,
+     "loglik_independent": -18.38162875175476,
+     "papers": 64,
+     "experiments": 118
+    }
+   },
+   "noise": {
+    "c0": 0.030057345508385656,
+    "c1": 0.4732268696326379,
+    "k": 0.3781850015761124,
+    "df": 2.211421387560674,
+    "sd_session": 0.0459214504744931
+   },
+   "calibration": {
+    "distance": 27.32531438472585,
+    "evaluations": 141,
+    "converged": true,
+    "experiments": 118,
+    "statistics": {
+     "noise_sd": {
+      "atlas": 0.09710943794984829,
+      "se": 0.005109678554621935,
+      "calibrated": 0.10032967822324192,
+      "v1_caliper_only": 0.15976783248292023
+     },
+     "tail95": {
+      "atlas": 2.919474700094628,
+      "se": 0.1249327346929618,
+      "calibrated": 2.6788925622294784,
+      "v1_caliper_only": 2.1021493449995754
+     },
+     "tail99": {
+      "atlas": 4.835022436790417,
+      "se": 0.2974788943346215,
+      "calibrated": 4.988832563562099,
+      "v1_caliper_only": 2.915894148800885
+     },
+     "session_sd": {
+      "atlas": 0.05636754702511489,
+      "se": 0.004520184775278434,
+      "calibrated": 0.050876978908510284,
+      "v1_caliper_only": 0.01732386126210378
+     },
+     "slope_sd_med": {
+      "atlas": 0.019503909810578812,
+      "se": 0.0014548580398948499,
+      "calibrated": 0.016920387565369913,
+      "v1_caliper_only": 0.020044641274098034
+     },
+     "slope_sd_q75": {
+      "atlas": 0.026760812216540503,
+      "se": 0.0014657056972464146,
+      "calibrated": 0.023920987228297778,
+      "v1_caliper_only": 0.02944254424685499
+     },
+     "mean_slope_sd": {
+      "atlas": 0.05006913619382752,
+      "se": 0.0037537266402743632,
+      "calibrated": 0.05965180254250501,
+      "v1_caliper_only": 0.10990886197353114
+     },
+     "end_sd_med": {
+      "atlas": 0.17865192792476545,
+      "se": 0.009143269525381413,
+      "calibrated": 0.20459799759924502,
+      "v1_caliper_only": 0.25146268970581404
+     }
+    },
+    "tied_fits": {
+     "status": "poorly_identified",
+     "rule": "N2 C3 tied set: converged starts with |paired difference| < 2 SE over the C3 tie streams; the tied starts differ beyond the growth spreads (D362); distance_mean6 is an alias of tie_stream_mean (D361)",
+     "aliases": {
+      "distance_mean6": "alias of tie_stream_mean (N2 C3, D361): the mean over the C3 tie streams, no longer a mean of 6 streams; the true 6-stream mean stays in the calibration's starts"
+     },
+     "why": "calibrate_v2 C3 (2 starts tied with the kept one)",
+     "starts": 2,
+     "solutions": [
+      {
+       "start": 0,
+       "best": true,
+       "params": {
+        "k": 0.3781850015761124,
+        "noise_df": 2.211421387560674,
+        "sd_session": 0.0459214504744931,
+        "sd_log_alpha": 0.046168651514296985,
+        "sd_log_beta": 0.17692628888448858,
+        "sd_study_log_beta": 0.9
+       },
+       "sd_within": {
+        "log_alpha": 0.046168651514296985,
+        "log_beta": 0.17692628888448858
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.4619513550203422,
+        "sd_log_beta": 0.8646718274285643
+       },
+       "noise": {
+        "c0": 0.030057345508385656,
+        "c1": 0.4732268696326379,
+        "k": 0.3781850015761124,
+        "df": 2.211421387560674,
+        "sd_session": 0.0459214504744931
+       },
+       "tie_stream_mean": 31.43955297182571,
+       "tie_streams": 32,
+       "tie_se_vs_best": null,
+       "distance_mean6": 31.43955297182571
+      },
+      {
+       "start": 1,
+       "best": false,
+       "params": {
+        "k": 0.36846439555456445,
+        "noise_df": 2.2150248803983565,
+        "sd_session": 0.04436342185523631,
+        "sd_log_alpha": 0.04218188016109419,
+        "sd_log_beta": 0.18488001709251922,
+        "sd_study_log_beta": 0.9
+       },
+       "sd_within": {
+        "log_alpha": 0.04218188016109419,
+        "log_beta": 0.18488001709251922
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.4619513550203422,
+        "sd_log_beta": 0.8646718274285643
+       },
+       "noise": {
+        "c0": 0.02928477226374904,
+        "c1": 0.46106337309169027,
+        "k": 0.36846439555456445,
+        "df": 2.2150248803983565,
+        "sd_session": 0.04436342185523631
+       },
+       "tie_stream_mean": 32.022437347466955,
+       "tie_streams": 32,
+       "tie_se_vs_best": 3.113647819711179,
+       "distance_mean6": 32.022437347466955
+      }
+     ]
+    }
+   },
+   "twin": {
+    "sd_log_alpha": 0.11440657809188168,
+    "sd_log_beta": 0.07160270275282508,
+    "sd_process": 0.09053214894411571,
+    "first_factor": 0.8882960257446304,
+    "start_df": 3.0,
+    "slow_share": 0.016745985536068708,
+    "slow_shift": 1.614094905286807,
+    "skew": 0.8357297029468109,
+    "validation": {
+     "loo_coverage_90": 0.9222873900293255,
+     "measurements": 5456,
+     "below": 0.03262463343108504,
+     "above": 0.045087976539589444
+    },
+    "conformal": {
+     "levels": {
+      "90": {
+       "lo": 0.10802855212361048,
+       "hi": 0.9407861830555984
+      },
+      "99": {
+       "lo": 0.015252739628647333,
+       "hi": 0.9913553717355066
+      }
+     },
+     "papers": 64,
+     "points": 5456,
+     "pooled": false,
+     "validated": {
+      "90": {
+       "miss_lo": 0.04960859806304364,
+       "miss_hi": 0.04974794124515626,
+       "cover": 0.9006434606918001
+      },
+      "99": {
+       "miss_lo": 0.0052119015924323945,
+       "miss_hi": 0.005120444490273525,
+       "cover": 0.9896676539172942
+      }
+     },
+     "source": "conformal_fit.py 2026-11-22 on monitor_points_orig.csv, monitor_points_x1.csv (monitor_validate, Crux 60e03782b1966603ee295ea0ecc39c41a4eef423)"
+    },
+    "next_ranges": {
+     "levels": {
+      "90": {
+       "lo": 0.05,
+       "hi": 0.95
+      },
+      "99": {
+       "lo": 0.005,
+       "hi": 0.995
+      }
+     },
+     "observed": {
+      "90": {
+       "miss_lo": 0.03176791868436778,
+       "miss_hi": 0.06257173153168026
+      },
+      "99": {
+       "miss_lo": 0.0028207468494387032,
+       "miss_hi": 0.0075104081220139455
+      }
+     },
+     "papers": 306,
+     "points": 30026,
+     "pooled": true,
+     "source": "conformal_fit.py ranges 2026-11-22 on monitor_points_orig.csv, monitor_points_x1.csv (monitor_validate, Crux 60e03782b1966603ee295ea0ecc39c41a4eef423, nominal levels): descriptive, post hoc to PUBLICATION_PLAN W2 rule 8; the predictive before measuring; per study (equal weight) mean of the share of measured next values outside the previous session's range, all lines pooled; in-sample"
+    }
+   },
+   "line_class": "syngeneic",
+   "host_class": "immunocompetent",
+   "tumour_type": "breast",
+   "tier": "Full",
+   "pooled_fields": [
+    "noise.c0_c1_curve",
+    "twin.sd_log_alpha",
+    "twin.sd_log_beta",
+    "twin.sd_process",
+    "twin.first_factor",
+    "twin.start_df",
+    "twin.slow_share",
+    "twin.slow_shift",
+    "twin.skew"
+   ],
+   "start_window": {
+    "lo": 80.0,
+    "hi": 200.0
+   }
+  },
+  "LLC": {
+   "papers": 26,
+   "animals": 277,
+   "log_alpha": {
+    "mixture": [
+     {
+      "kind": "map",
+      "w": 0.8,
+      "a": -1.2073825207190203,
+      "b": 0.40308390541976674
+     },
+     {
+      "kind": "robust",
+      "w": 0.2,
+      "a": -1.2073825207190203,
+      "b": 1.2092578446068087
+     }
+    ],
+    "map_mean": -1.207382520742458,
+    "map_sd": 0.4030859482022693,
+    "map_q025": -2.0042122694419477,
+    "map_q975": -0.4105893305368571,
+    "tau": 0.3838218880912028,
+    "ess": 0.040157627917909784
+   },
+   "log_beta": -3.134839231394123,
+   "log_v_ref": 3.486952127287264,
+   "sd_within": {
+    "log_alpha": 0.08792257402199191,
+    "log_beta": 0.04991462375536342,
+    "log_v0": 0.8823591653146347
+   },
+   "sd_residual_log_v": 0.2973193951482743,
+   "take": {
+    "nonprogressing_map": 0.0025962329138917977,
+    "nonprogressing": 1,
+    "animals": 335,
+    "definition": "last positive volume <= first positive volume, or never positive"
+   },
+   "facet_shifts_log_rate": [
+    {
+     "facet": "cell:genetic_mod",
+     "shift_log_lambda": 0.1097861694400034,
+     "se": 0.09587901801168577,
+     "ci95": [
+      -0.0781367058629006,
+      0.2977090447429076
+     ],
+     "papers": 11,
+     "sd_ratio_vs_strict": 0.5978463513137778
+    },
+    {
+     "facet": "host:gene_modified",
+     "shift_log_lambda": -0.0428021944296784,
+     "se": 0.16320053489099343,
+     "ci95": [
+      -0.3626752428160255,
+      0.2770708539566687
+     ],
+     "papers": 4,
+     "sd_ratio_vs_strict": 1.1206460238584035
+    },
+    {
+     "facet": "host:strain_not_stated",
+     "shift_log_lambda": 0.0576449415878415,
+     "se": 0.1464398712703571,
+     "ci95": [
+      -0.2293772061020584,
+      0.3446670892777415
+     ],
+     "papers": 6,
+     "sd_ratio_vs_strict": 0.5268313786400699
+    },
+    {
+     "facet": "readout:unit_assumed",
+     "shift_log_lambda": -0.1128378888103126,
+     "se": 0.12765157061578009,
+     "ci95": [
+      -0.3630349672172416,
+      0.1373591895966163
+     ],
+     "papers": 5,
+     "sd_ratio_vs_strict": 0.6741583213066882
+    },
+    {
+     "facet": "site:not_stated",
+     "shift_log_lambda": -0.1391204914138333,
+     "se": 0.11095436528180583,
+     "ci95": [
+      -0.3565910473661728,
+      0.078350064538506
+     ],
+     "papers": 8,
+     "sd_ratio_vs_strict": 0.7579092702813254
+    }
+   ],
+   "map_settings": {
+    "family": "normal",
+    "tau_prior": "halfnormal",
+    "tau_a": 1.0,
+    "robust_weight": 0.2,
+    "ess": "elir",
+    "sigma": 0.1,
+    "robust_n": 0.006838520815882436
+   },
+   "start_sd": 0.3035991518915839,
+   "sd_process": 0.0,
+   "study_prior": {
+    "mean_log_alpha": -1.2726850396404057,
+    "sd_log_alpha": 0.3818281491372404,
+    "mean_log_beta": -3.6824812495365493,
+    "sd_log_beta": 0.9443936109157365,
+    "rho": 0.8948369945141562,
+    "size_factor": 0.9,
+    "deconvolution": {
+     "paper": {
+      "sd_log_alpha": 0.34321678954414087,
+      "sd_log_beta": 0.839973474148547,
+      "rho": 0.8458926425594442
+     },
+     "experiment": {
+      "sd_log_alpha": 0.24938577911313548,
+      "sd_log_beta": 0.6289118450336967,
+      "rho": 0.9850628224961703
+     },
+     "loglik": -789.8645417690277,
+     "loglik_independent": -816.3791816234589,
+     "papers": 33,
+     "experiments": 48
+    }
+   },
+   "noise": {
+    "c0": 0.047850474418844956,
+    "c1": 0.7533642720828145,
+    "k": 0.6020602098232506,
+    "df": 2.58008374263028,
+    "sd_session": 0.07188342308335466
+   },
+   "calibration": {
+    "distance": 13.896379238320083,
+    "evaluations": 40,
+    "converged": true,
+    "experiments": 47,
+    "statistics": {
+     "noise_sd": {
+      "atlas": 0.189368653881517,
+      "se": 0.014492509747440872,
+      "calibrated": 0.16913891356613933,
+      "v1_caliper_only": 0.18492021844746348
+     },
+     "tail95": {
+      "atlas": 2.7021891864794365,
+      "se": 0.2774432377994897,
+      "calibrated": 2.7821095614776885,
+      "v1_caliper_only": 2.3091526867759598
+     },
+     "tail99": {
+      "atlas": 4.616844474326487,
+      "se": 0.4645475834884773,
+      "calibrated": 5.120199168808748,
+      "v1_caliper_only": 3.4774745572698547
+     },
+     "session_sd": {
+      "atlas": 0.07941565169545145,
+      "se": 0.02306674204174527,
+      "calibrated": 0.07081358994095495,
+      "v1_caliper_only": 0.0
+     },
+     "slope_sd_med": {
+      "atlas": 0.03201048308202325,
+      "se": 0.0016889225419892916,
+      "calibrated": 0.029069575249533467,
+      "v1_caliper_only": 0.03677141320682392
+     },
+     "slope_sd_q75": {
+      "atlas": 0.0420868622592592,
+      "se": 0.003049279970285646,
+      "calibrated": 0.03977170915585704,
+      "v1_caliper_only": 0.05094667487234308
+     },
+     "mean_slope_sd": {
+      "atlas": 0.07438912009871829,
+      "se": 0.006237153286290039,
+      "calibrated": 0.07121378856638023,
+      "v1_caliper_only": 0.1398231027009478
+     },
+     "end_sd_med": {
+      "atlas": 0.26034808757668004,
+      "se": 0.021815131530181043,
+      "calibrated": 0.329432320421464,
+      "v1_caliper_only": 0.37216612875683497
+     }
+    },
+    "identification": {
+     "status": "poorly_identified",
+     "rule": "N2 C3 tied set: converged starts with |paired difference| < 2 SE over the C3 tie streams; distance_mean6 is an alias of tie_stream_mean (D354, D361)",
+     "aliases": {
+      "distance_mean6": "alias of tie_stream_mean (N2 C3, D361): the mean over the C3 tie streams, no longer a mean of 6 streams; the true 6-stream mean stays in the calibration's starts"
+     },
+     "why": "calibrate_v2 C3 (3 starts tied with the kept one)",
+     "starts": 3,
+     "sd_log_alpha": [
+      0.0855289297874726,
+      0.08792257402199191
+     ],
+     "sd_log_beta": [
+      0.04991462375536342,
+      0.05268685493648263
+     ],
+     "sd_study_log_beta": [
+      0.9,
+      0.9
+     ],
+     "solutions": [
+      {
+       "sd_within": {
+        "log_alpha": 0.08654666313905905,
+        "log_beta": 0.05268685493648263
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.3818281491372404,
+        "sd_log_beta": 0.9443936109157365
+       },
+       "tie_stream_mean": 19.612774706508358,
+       "tie_streams": 32,
+       "tie_se_vs_best": 0.1859975412945275,
+       "distance_mean6": 19.612774706508358,
+       "best": false,
+       "start": 0
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.0855289297874726,
+        "log_beta": 0.05178904721714222
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.3818281491372404,
+        "sd_log_beta": 0.9443936109157365
+       },
+       "tie_stream_mean": 19.450634891036444,
+       "tie_streams": 32,
+       "tie_se_vs_best": 0.21200723257509863,
+       "distance_mean6": 19.450634891036444,
+       "best": false,
+       "start": 5
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.08792257402199191,
+        "log_beta": 0.04991462375536342
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.3818281491372404,
+        "sd_log_beta": 0.9443936109157365
+       },
+       "tie_stream_mean": 19.256166518017373,
+       "tie_streams": 32,
+       "tie_se_vs_best": null,
+       "distance_mean6": 19.256166518017373,
+       "best": true,
+       "start": 8
+      }
+     ]
+    }
+   },
+   "twin": {
+    "sd_log_alpha": 0.11440657809188168,
+    "sd_log_beta": 0.07160270275282508,
+    "sd_process": 0.09053214894411571,
+    "first_factor": 0.8882960257446304,
+    "start_df": 3.0,
+    "slow_share": 0.016745985536068708,
+    "slow_shift": 1.614094905286807,
+    "skew": 0.8357297029468109,
+    "validation": {
+     "loo_coverage_90": 0.9073660714285714,
+     "measurements": 1792,
+     "below": 0.049107142857142856,
+     "above": 0.04352678571428571
+    },
+    "conformal": {
+     "levels": {
+      "90": {
+       "lo": 0.0803179919249478,
+       "hi": 0.938377255548125
+      },
+      "99": {
+       "lo": 0.015252739628647333,
+       "hi": 0.9913553717355066
+      }
+     },
+     "papers": 33,
+     "points": 1792,
+     "pooled": false,
+     "validated": {
+      "90": {
+       "miss_lo": 0.0496637328067423,
+       "miss_hi": 0.04979496171714237,
+       "cover": 0.9005413054761153
+      },
+      "99": {
+       "miss_lo": 0.0052119015924323945,
+       "miss_hi": 0.005120444490273525,
+       "cover": 0.9896676539172942
+      }
+     },
+     "source": "conformal_fit.py 2026-11-22 on monitor_points_orig.csv, monitor_points_x1.csv (monitor_validate, Crux 60e03782b1966603ee295ea0ecc39c41a4eef423)"
+    },
+    "next_ranges": {
+     "levels": {
+      "90": {
+       "lo": 0.05,
+       "hi": 0.95
+      },
+      "99": {
+       "lo": 0.005,
+       "hi": 0.995
+      }
+     },
+     "observed": {
+      "90": {
+       "miss_lo": 0.03176791868436778,
+       "miss_hi": 0.06257173153168026
+      },
+      "99": {
+       "miss_lo": 0.0028207468494387032,
+       "miss_hi": 0.0075104081220139455
+      }
+     },
+     "papers": 306,
+     "points": 30026,
+     "pooled": true,
+     "source": "conformal_fit.py ranges 2026-11-22 on monitor_points_orig.csv, monitor_points_x1.csv (monitor_validate, Crux 60e03782b1966603ee295ea0ecc39c41a4eef423, nominal levels): descriptive, post hoc to PUBLICATION_PLAN W2 rule 8; the predictive before measuring; per study (equal weight) mean of the share of measured next values outside the previous session's range, all lines pooled; in-sample"
+    }
+   },
+   "line_class": "syngeneic",
+   "host_class": "immunocompetent",
+   "tumour_type": "lung",
+   "tier": "Own spreads",
+   "pooled_fields": [
+    "noise.k",
+    "noise.df",
+    "noise.sd_session",
+    "take.nonprogressing_map",
+    "noise.c0_c1_curve",
+    "twin.sd_log_alpha",
+    "twin.sd_log_beta",
+    "twin.sd_process",
+    "twin.first_factor",
+    "twin.start_df",
+    "twin.slow_share",
+    "twin.slow_shift",
+    "twin.skew"
+   ],
+   "start_window": {
+    "lo": 80.0,
+    "hi": 200.0
+   }
+  },
+  "Panc02": {
+   "papers": 14,
+   "animals": 195,
+   "log_alpha": {
+    "mixture": [
+     {
+      "kind": "map",
+      "w": 0.19202063383994905,
+      "a": -2.0498003929605,
+      "b": 0.7570248529487263
+     },
+     {
+      "kind": "map",
+      "w": 0.607979366160051,
+      "a": -2.047232750374399,
+      "b": 0.4835821871512497
+     },
+     {
+      "kind": "robust",
+      "w": 0.2,
+      "a": -2.0478490508204708,
+      "b": 1.6845036833517129
+     }
+    ],
+    "map_mean": -2.047849051350685,
+    "map_sd": 0.561501227783902,
+    "map_q025": -3.165287353032617,
+    "map_q975": -0.93172422187477,
+    "tau": 0.5117430355979178,
+    "ess": 0.022170487323267197
+   },
+   "log_beta": -4.306155271584113,
+   "log_v_ref": 4.595859285870152,
+   "sd_within": {
+    "log_alpha": 0.016757365168074707,
+    "log_beta": 0.2899517080013779,
+    "log_v0": 0.6988007087438476
+   },
+   "sd_residual_log_v": 0.2266024463240337,
+   "take": {
+    "nonprogressing_map": 0.0025962329138917977,
+    "nonprogressing": 3,
+    "animals": 234,
+    "definition": "last positive volume <= first positive volume, or never positive"
+   },
+   "facet_shifts_log_rate": [
+    {
+     "facet": "cell:genetic_mod",
+     "shift_log_lambda": 0.0673565920185996,
+     "se": 0.1272135777206062,
+     "ci95": [
+      -0.1819820203137886,
+      0.3166952043509878
+     ],
+     "papers": 5,
+     "sd_ratio_vs_strict": 2.2886358263066717
+    },
+    {
+     "facet": "host:concomitant_other_tumour",
+     "shift_log_lambda": 0.0375098504000153,
+     "se": 0.2782616248314749,
+     "ci95": [
+      -0.5078829342696755,
+      0.5829026350697061
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 0.4146928795942081
+    },
+    {
+     "facet": "host:immunodeficient",
+     "shift_log_lambda": 0.7326166584552624,
+     "se": 0.22953705637798075,
+     "ci95": [
+      0.2827240279544201,
+      1.1825092889561046
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 0.4072969955467699
+    },
+    {
+     "facet": "other",
+     "shift_log_lambda": 0.021841231163958,
+     "se": 0.1469148018120299,
+     "ci95": [
+      -0.2661117803876206,
+      0.3097942427155365
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 0.5030393697484656
+    },
+    {
+     "facet": "site:orthotopic",
+     "shift_log_lambda": -0.082752943654358,
+     "se": 0.18167654251846208,
+     "ci95": [
+      -0.4388389669905437,
+      0.2733330796818277
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 1.0475908521687023
+    },
+    {
+     "facet": "site:sc_bilateral_primary",
+     "shift_log_lambda": 0.3841550830609218,
+     "se": 0.23612263074359105,
+     "ci95": [
+      -0.0786452731965166,
+      0.8469554393183603
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 0.3648973660319797
+    }
+   ],
+   "map_settings": {
+    "family": "normal",
+    "tau_prior": "halfnormal",
+    "tau_a": 1.0,
+    "robust_weight": 0.2,
+    "ess": "elir",
+    "sigma": 0.1,
+    "robust_n": 0.0035241636723420348
+   },
+   "start_sd": 0.2270358225303239,
+   "sd_process": 0.0,
+   "study_prior": {
+    "mean_log_alpha": -1.911525698987191,
+    "sd_log_alpha": 0.5266891698769586,
+    "mean_log_beta": -4.328914382849712,
+    "sd_log_beta": 1.5137558164148321,
+    "rho": 0.8388678842345328,
+    "size_factor": 0.9,
+    "deconvolution": {
+     "paper": {
+      "sd_log_alpha": 0.4822571584409935,
+      "sd_log_beta": 1.117265109671921,
+      "rho": 0.8514995542687526
+     },
+     "experiment": {
+      "sd_log_alpha": 0.33151017805155875,
+      "sd_log_beta": 1.2572499865568172,
+      "rho": 0.8802912012130832
+     },
+     "loglik": -400.3531800210476,
+     "loglik_independent": -417.11923775076866,
+     "papers": 17,
+     "experiments": 33
+    }
+   },
+   "noise": {
+    "c0": 0.047850474418844956,
+    "c1": 0.7533642720828145,
+    "k": 0.6020602098232506,
+    "df": 2.58008374263028,
+    "sd_session": 0.07188342308335466
+   },
+   "calibration": {
+    "distance": 11.522303183432815,
+    "evaluations": 38,
+    "converged": true,
+    "experiments": 33,
+    "statistics": {
+     "noise_sd": {
+      "atlas": 0.11378544193676594,
+      "se": 0.011761825035117373,
+      "calibrated": 0.15038349063737322,
+      "v1_caliper_only": 0.15756323595039481
+     },
+     "tail95": {
+      "atlas": 3.12162058892387,
+      "se": 0.2742003363608136,
+      "calibrated": 2.544163686716533,
+      "v1_caliper_only": 2.1081587656926066
+     },
+     "tail99": {
+      "atlas": 4.864677086065203,
+      "se": 0.6782499107260335,
+      "calibrated": 4.564488842432903,
+      "v1_caliper_only": 2.975278499990604
+     },
+     "session_sd": {
+      "atlas": 0.07084556658056779,
+      "se": 0.01017024840753015,
+      "calibrated": 0.06839871849827699,
+      "v1_caliper_only": 0.0
+     },
+     "slope_sd_med": {
+      "atlas": 0.018890323641245734,
+      "se": 0.0062519131803751,
+      "calibrated": 0.014999332796633156,
+      "v1_caliper_only": 0.0187649317151454
+     },
+     "slope_sd_q75": {
+      "atlas": 0.03764894592685646,
+      "se": 0.00487136538954306,
+      "calibrated": 0.02456701305960436,
+      "v1_caliper_only": 0.027239437990710325
+     },
+     "mean_slope_sd": {
+      "atlas": 0.06254086741171108,
+      "se": 0.011513126892540252,
+      "calibrated": 0.06187820340422516,
+      "v1_caliper_only": 0.0876874047355797
+     },
+     "end_sd_med": {
+      "atlas": 0.2005954276789858,
+      "se": 0.01834981293575752,
+      "calibrated": 0.2369255976812236,
+      "v1_caliper_only": 0.2918315239585118
+     }
+    },
+    "identification": {
+     "status": "poorly_identified",
+     "rule": "N2 C3 tied set: converged starts with |paired difference| < 2 SE over the C3 tie streams; distance_mean6 is an alias of tie_stream_mean (D354, D361)",
+     "aliases": {
+      "distance_mean6": "alias of tie_stream_mean (N2 C3, D361): the mean over the C3 tie streams, no longer a mean of 6 streams; the true 6-stream mean stays in the calibration's starts"
+     },
+     "why": "calibrate_v2 C3 (7 starts tied with the kept one)",
+     "starts": 7,
+     "sd_log_alpha": [
+      0.01267004505631026,
+      0.03553033486309542
+     ],
+     "sd_log_beta": [
+      0.13378181478621398,
+      0.2899517080013779
+     ],
+     "sd_study_log_beta": [
+      0.9,
+      0.9
+     ],
+     "solutions": [
+      {
+       "sd_within": {
+        "log_alpha": 0.01267004505631026,
+        "log_beta": 0.22607918411931718
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.5266891698769586,
+        "sd_log_beta": 1.5137558164148321
+       },
+       "tie_stream_mean": 14.47727134065908,
+       "tie_streams": 32,
+       "tie_se_vs_best": 0.23156701027443366,
+       "distance_mean6": 14.47727134065908,
+       "best": false,
+       "start": 0
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.014475626132137109,
+        "log_beta": 0.24100120866643493
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.5266891698769586,
+        "sd_log_beta": 1.5137558164148321
+       },
+       "tie_stream_mean": 14.273624551305033,
+       "tie_streams": 32,
+       "tie_se_vs_best": 0.19990892900388335,
+       "distance_mean6": 14.273624551305033,
+       "best": false,
+       "start": 1
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.03553033486309542,
+        "log_beta": 0.13378181478621398
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.5266891698769586,
+        "sd_log_beta": 1.5137558164148321
+       },
+       "tie_stream_mean": 14.624798268972576,
+       "tie_streams": 32,
+       "tie_se_vs_best": 0.2833350670264397,
+       "distance_mean6": 14.624798268972576,
+       "best": false,
+       "start": 3
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.015908004045670762,
+        "log_beta": 0.24619646774412898
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.5266891698769586,
+        "sd_log_beta": 1.5137558164148321
+       },
+       "tie_stream_mean": 14.251057088190086,
+       "tie_streams": 32,
+       "tie_se_vs_best": 0.19998792720639966,
+       "distance_mean6": 14.251057088190086,
+       "best": false,
+       "start": 4
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.02261576293803651,
+        "log_beta": 0.17589388733180278
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.5266891698769586,
+        "sd_log_beta": 1.5137558164148321
+       },
+       "tie_stream_mean": 14.41896022539102,
+       "tie_streams": 32,
+       "tie_se_vs_best": 0.25770307036174284,
+       "distance_mean6": 14.41896022539102,
+       "best": false,
+       "start": 8
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.014523594279308046,
+        "log_beta": 0.2478596164090625
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.5266891698769586,
+        "sd_log_beta": 1.5137558164148321
+       },
+       "tie_stream_mean": 14.204386663314644,
+       "tie_streams": 32,
+       "tie_se_vs_best": 0.18489784887170851,
+       "distance_mean6": 14.204386663314644,
+       "best": false,
+       "start": 9
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.016757365168074707,
+        "log_beta": 0.2899517080013779
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.5266891698769586,
+        "sd_log_beta": 1.5137558164148321
+       },
+       "tie_stream_mean": 14.094824664466636,
+       "tie_streams": 32,
+       "tie_se_vs_best": null,
+       "distance_mean6": 14.094824664466636,
+       "best": true,
+       "start": 10
+      }
+     ]
+    }
+   },
+   "twin": {
+    "sd_log_alpha": 0.11440657809188168,
+    "sd_log_beta": 0.07160270275282508,
+    "sd_process": 0.09053214894411571,
+    "first_factor": 0.8882960257446304,
+    "start_df": 3.0,
+    "slow_share": 0.016745985536068708,
+    "slow_shift": 1.614094905286807,
+    "skew": 0.8357297029468109,
+    "validation": {
+     "loo_coverage_90": 0.910908052541405,
+     "measurements": 1751,
+     "below": 0.03712164477441462,
+     "above": 0.051970302684180465
+    },
+    "conformal": {
+     "levels": {
+      "90": {
+       "lo": 0.09702296397218232,
+       "hi": 0.9161786604399557
+      },
+      "99": {
+       "lo": 0.015252739628647333,
+       "hi": 0.9913553717355066
+      }
+     },
+     "papers": 17,
+     "points": 1751,
+     "pooled": false,
+     "validated": {
+      "90": {
+       "miss_lo": 0.04788522654157914,
+       "miss_hi": 0.04895268767952163,
+       "cover": 0.9031620857788992
+      },
+      "99": {
+       "miss_lo": 0.0052119015924323945,
+       "miss_hi": 0.005120444490273525,
+       "cover": 0.9896676539172942
+      }
+     },
+     "source": "conformal_fit.py 2026-11-22 on monitor_points_orig.csv, monitor_points_x1.csv (monitor_validate, Crux 60e03782b1966603ee295ea0ecc39c41a4eef423)"
+    },
+    "next_ranges": {
+     "levels": {
+      "90": {
+       "lo": 0.05,
+       "hi": 0.95
+      },
+      "99": {
+       "lo": 0.005,
+       "hi": 0.995
+      }
+     },
+     "observed": {
+      "90": {
+       "miss_lo": 0.03176791868436778,
+       "miss_hi": 0.06257173153168026
+      },
+      "99": {
+       "miss_lo": 0.0028207468494387032,
+       "miss_hi": 0.0075104081220139455
+      }
+     },
+     "papers": 306,
+     "points": 30026,
+     "pooled": true,
+     "source": "conformal_fit.py ranges 2026-11-22 on monitor_points_orig.csv, monitor_points_x1.csv (monitor_validate, Crux 60e03782b1966603ee295ea0ecc39c41a4eef423, nominal levels): descriptive, post hoc to PUBLICATION_PLAN W2 rule 8; the predictive before measuring; per study (equal weight) mean of the share of measured next values outside the previous session's range, all lines pooled; in-sample"
+    }
+   },
+   "line_class": "syngeneic",
+   "host_class": "immunocompetent",
+   "tumour_type": "pancreas",
+   "tier": "Own spreads",
+   "pooled_fields": [
+    "noise.k",
+    "noise.df",
+    "noise.sd_session",
+    "take.nonprogressing_map",
+    "noise.c0_c1_curve",
+    "twin.sd_log_alpha",
+    "twin.sd_log_beta",
+    "twin.sd_process",
+    "twin.first_factor",
+    "twin.start_df",
+    "twin.slow_share",
+    "twin.slow_shift",
+    "twin.skew"
+   ],
+   "start_window": {
+    "lo": 80.0,
+    "hi": 200.0
+   }
+  },
+  "Hepa1-6": {
+   "papers": 17,
+   "animals": 225,
+   "log_alpha": {
+    "mixture": [
+     {
+      "kind": "map",
+      "w": 0.5973313352871567,
+      "a": -1.4042545966580064,
+      "b": 0.37415067730424395
+     },
+     {
+      "kind": "map",
+      "w": 0.2026686647128434,
+      "a": -1.40279144294444,
+      "b": 0.5653638126103325
+     },
+     {
+      "kind": "robust",
+      "w": 0.2,
+      "a": -1.403883927396259,
+      "b": 1.2921021780421156
+     }
+    ],
+    "map_mean": -1.4038839270702619,
+    "map_sd": 0.43070072601403875,
+    "map_q025": -2.25891889251348,
+    "map_q975": -0.5481401283371816,
+    "tau": 0.39792600956813556,
+    "ess": 0.2668889736461959
+   },
+   "log_beta": -2.694502080930969,
+   "log_v_ref": 4.479490419749705,
+   "sd_within": {
+    "log_alpha": 0.0644289587749833,
+    "log_beta": 0.1352568970287708,
+    "log_v0": 0.7201867091802707
+   },
+   "sd_residual_log_v": 0.173193151814876,
+   "take": {
+    "nonprogressing_map": 0.0025962329138917977,
+    "nonprogressing": 5,
+    "animals": 312,
+    "definition": "last positive volume <= first positive volume, or never positive"
+   },
+   "facet_shifts_log_rate": [
+    {
+     "facet": "cell:genetic_mod",
+     "shift_log_lambda": 0.0912361393529798,
+     "se": 0.11303509333745346,
+     "ci95": [
+      -0.1303126435884289,
+      0.3127849222943887
+     ],
+     "papers": 8,
+     "sd_ratio_vs_strict": 1.3889030281421613
+    },
+    {
+     "facet": "cell:not_stated",
+     "shift_log_lambda": -0.0078475876665265,
+     "se": 0.21474083367081015,
+     "ci95": [
+      -0.4287396216613144,
+      0.4130444463282613
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 0.8286198026454853
+    },
+    {
+     "facet": "ctrl:active_cotreatment",
+     "shift_log_lambda": -0.0447224826918399,
+     "se": 0.3124685056424458,
+     "ci95": [
+      -0.6571607537510338,
+      0.5677157883673538
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 0.6988385341540664
+    },
+    {
+     "facet": "ctrl:control_plus_agent",
+     "shift_log_lambda": -0.1431903220105939,
+     "se": 0.2346877784783081,
+     "ci95": [
+      -0.6031783678280778,
+      0.31679772380689
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 0.4996022445968213
+    },
+    {
+     "facet": "host:depleted",
+     "shift_log_lambda": 0.5071861923505802,
+     "se": 0.2839743571660148,
+     "ci95": [
+      -0.0494035476948089,
+      1.0637759323959692
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 0.3615484960268937
+    },
+    {
+     "facet": "host:gene_modified",
+     "shift_log_lambda": 0.5072613766848625,
+     "se": 0.21537454408746975,
+     "ci95": [
+      0.0851272702734217,
+      0.9293954830963032
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 0.4674252506820284
+    },
+    {
+     "facet": "host:immunodeficient",
+     "shift_log_lambda": 0.5523896142170234,
+     "se": 0.16709092129437297,
+     "ci95": [
+      0.2248914084800523,
+      0.8798878199539943
+     ],
+     "papers": 5,
+     "sd_ratio_vs_strict": 0.7657738619568649
+    },
+    {
+     "facet": "host:not_stated",
+     "shift_log_lambda": 0.5924004112795725,
+     "se": 0.1940083060097426,
+     "ci95": [
+      0.2121441315004771,
+      0.972656691058668
+     ],
+     "papers": 6,
+     "sd_ratio_vs_strict": 1.259698720915595
+    },
+    {
+     "facet": "host:strain_not_stated",
+     "shift_log_lambda": -0.4838328187735874,
+     "se": 0.17548025167949002,
+     "ci95": [
+      -0.8277741120653879,
+      -0.139891525481787
+     ],
+     "papers": 5,
+     "sd_ratio_vs_strict": 1.2002791780030335
+    },
+    {
+     "facet": "readout:unit_assumed",
+     "shift_log_lambda": 0.0787414979170789,
+     "se": 0.12763824570134485,
+     "ci95": [
+      -0.1714294636575569,
+      0.3289124594917149
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 0.7698793720224287
+    },
+    {
+     "facet": "site:not_stated",
+     "shift_log_lambda": -0.3035244961139482,
+     "se": 0.2062786016891334,
+     "ci95": [
+      -0.7078305554246498,
+      0.1007815631967531
+     ],
+     "papers": 4,
+     "sd_ratio_vs_strict": 0.6511193914849358
+    }
+   ],
+   "map_settings": {
+    "family": "normal",
+    "tau_prior": "halfnormal",
+    "tau_a": 1.0,
+    "robust_weight": 0.2,
+    "ess": "elir",
+    "sigma": 0.2676448833148571,
+    "robust_n": 0.04290660708455833
+   },
+   "start_sd": 0.16240520999256172,
+   "sd_process": 0.0,
+   "study_prior": {
+    "mean_log_alpha": -1.363404906816786,
+    "sd_log_alpha": 0.4628186199340995,
+    "mean_log_beta": -2.7287217169230478,
+    "sd_log_beta": 0.9934514297284978,
+    "rho": 0.7941404768444776,
+    "size_factor": 0.9,
+    "deconvolution": {
+     "paper": {
+      "sd_log_alpha": 0.41260943136956757,
+      "sd_log_beta": 0.7884157212660791,
+      "rho": 0.7150202675868563
+     },
+     "experiment": {
+      "sd_log_alpha": 0.30691892854238173,
+      "sd_log_beta": 0.7725620915575923,
+      "rho": 0.9201639420750363
+     },
+     "loglik": -72.09740048646927,
+     "loglik_independent": -93.36521154642105,
+     "papers": 18,
+     "experiments": 48
+    }
+   },
+   "noise": {
+    "c0": 0.047850474418844956,
+    "c1": 0.7533642720828145,
+    "k": 0.6020602098232506,
+    "df": 2.58008374263028,
+    "sd_session": 0.07188342308335466
+   },
+   "calibration": {
+    "distance": 2.106966532060693,
+    "evaluations": 33,
+    "converged": true,
+    "experiments": 48,
+    "statistics": {
+     "noise_sd": {
+      "atlas": 0.07441787370950836,
+      "se": 0.028237681056991322,
+      "calibrated": 0.14722839461946824,
+      "v1_caliper_only": 0.15539050294777043
+     },
+     "tail95": {
+      "atlas": 5.067703692268267,
+      "se": 1.0159577989483577,
+      "calibrated": 2.5344119209363978,
+      "v1_caliper_only": 2.0911282088745167
+     },
+     "tail99": {
+      "atlas": 8.854335070346,
+      "se": 2.0939090291905536,
+      "calibrated": 4.519818298183613,
+      "v1_caliper_only": 2.9674991544771894
+     },
+     "session_sd": {
+      "atlas": 0.09603885757574186,
+      "se": 0.01738900142466705,
+      "calibrated": 0.08274750191382492,
+      "v1_caliper_only": 0.04241830886160781
+     },
+     "slope_sd_med": {
+      "atlas": 0.020628708106541556,
+      "se": 0.0016608840285256988,
+      "calibrated": 0.021584519258430086,
+      "v1_caliper_only": 0.0271720676332748
+     },
+     "slope_sd_q75": {
+      "atlas": 0.028133100392186916,
+      "se": 0.009707841141159312,
+      "calibrated": 0.031523613704138885,
+      "v1_caliper_only": 0.037618869146086364
+     },
+     "mean_slope_sd": {
+      "atlas": 0.07145080481401456,
+      "se": 0.007225278047946299,
+      "calibrated": 0.07490908050406339,
+      "v1_caliper_only": 0.12340229358025069
+     },
+     "end_sd_med": {
+      "atlas": 0.234740961309732,
+      "se": 0.01865661301206021,
+      "calibrated": 0.21247216841353123,
+      "v1_caliper_only": 0.2653576306088916
+     }
+    },
+    "identification": {
+     "status": "poorly_identified",
+     "rule": "N2 C3 tied set: converged starts with |paired difference| < 2 SE over the C3 tie streams; distance_mean6 is an alias of tie_stream_mean (D354, D361)",
+     "aliases": {
+      "distance_mean6": "alias of tie_stream_mean (N2 C3, D361): the mean over the C3 tie streams, no longer a mean of 6 streams; the true 6-stream mean stays in the calibration's starts"
+     },
+     "why": "calibrate_v2 C3 (7 starts tied with the kept one)",
+     "starts": 7,
+     "sd_log_alpha": [
+      0.05343460338981264,
+      0.08828542493591544
+     ],
+     "sd_log_beta": [
+      0.0527203495800399,
+      0.15825165311167444
+     ],
+     "sd_study_log_beta": [
+      0.9,
+      0.9
+     ],
+     "solutions": [
+      {
+       "sd_within": {
+        "log_alpha": 0.08484511896174454,
+        "log_beta": 0.06845795647689845
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.4628186199340995,
+        "sd_log_beta": 0.9934514297284978
+       },
+       "tie_stream_mean": 2.680807494126486,
+       "tie_streams": 16,
+       "tie_se_vs_best": 0.1553426425311184,
+       "distance_mean6": 2.680807494126486,
+       "best": false,
+       "start": 0
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.0644289587749833,
+        "log_beta": 0.1352568970287708
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.4628186199340995,
+        "sd_log_beta": 0.9934514297284978
+       },
+       "tie_stream_mean": 2.394462428736063,
+       "tie_streams": 16,
+       "tie_se_vs_best": null,
+       "distance_mean6": 2.394462428736063,
+       "best": true,
+       "start": 1
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.08619228585669254,
+        "log_beta": 0.059303308395890854
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.4628186199340995,
+        "sd_log_beta": 0.9934514297284978
+       },
+       "tie_stream_mean": 2.611218769009791,
+       "tie_streams": 16,
+       "tie_se_vs_best": 0.17491823853566646,
+       "distance_mean6": 2.611218769009791,
+       "best": false,
+       "start": 2
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.08828542493591544,
+        "log_beta": 0.0527203495800399
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.4628186199340995,
+        "sd_log_beta": 0.9934514297284978
+       },
+       "tie_stream_mean": 2.6428176936542043,
+       "tie_streams": 16,
+       "tie_se_vs_best": 0.17186422845347482,
+       "distance_mean6": 2.6428176936542043,
+       "best": false,
+       "start": 5
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.0634566201442622,
+        "log_beta": 0.13755501494201777
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.4628186199340995,
+        "sd_log_beta": 0.9934514297284978
+       },
+       "tie_stream_mean": 2.530252182292875,
+       "tie_streams": 16,
+       "tie_se_vs_best": 0.08516904263810471,
+       "distance_mean6": 2.530252182292875,
+       "best": false,
+       "start": 6
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.08537209839054816,
+        "log_beta": 0.055713532941480175
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.4628186199340995,
+        "sd_log_beta": 0.9934514297284978
+       },
+       "tie_stream_mean": 2.4954792857961716,
+       "tie_streams": 16,
+       "tie_se_vs_best": 0.15554984177194794,
+       "distance_mean6": 2.4954792857961716,
+       "best": false,
+       "start": 8
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.05343460338981264,
+        "log_beta": 0.15825165311167444
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.4628186199340995,
+        "sd_log_beta": 0.9934514297284978
+       },
+       "tie_stream_mean": 2.542494828234383,
+       "tie_streams": 16,
+       "tie_se_vs_best": 0.13602296938619904,
+       "distance_mean6": 2.542494828234383,
+       "best": false,
+       "start": 10
+      }
+     ]
+    }
+   },
+   "twin": {
+    "sd_log_alpha": 0.11440657809188168,
+    "sd_log_beta": 0.07160270275282508,
+    "sd_process": 0.09053214894411571,
+    "first_factor": 0.8882960257446304,
+    "start_df": 3.0,
+    "slow_share": 0.016745985536068708,
+    "slow_shift": 1.614094905286807,
+    "skew": 0.8357297029468109,
+    "validation": {
+     "loo_coverage_90": 0.9397721106890938,
+     "measurements": 1843,
+     "below": 0.0396093326098752,
+     "above": 0.020618556701030927
+    },
+    "conformal": {
+     "levels": {
+      "90": {
+       "lo": 0.08425541534820859,
+       "hi": 0.9134487200928814
+      },
+      "99": {
+       "lo": 0.015252739628647333,
+       "hi": 0.9913553717355066
+      }
+     },
+     "papers": 18,
+     "points": 1843,
+     "pooled": false,
+     "validated": {
+      "90": {
+       "miss_lo": 0.04886251921045735,
+       "miss_hi": 0.04977708721559479,
+       "cover": 0.9013603935739478
+      },
+      "99": {
+       "miss_lo": 0.0052119015924323945,
+       "miss_hi": 0.005120444490273525,
+       "cover": 0.9896676539172942
+      }
+     },
+     "source": "conformal_fit.py 2026-11-22 on monitor_points_orig.csv, monitor_points_x1.csv (monitor_validate, Crux 60e03782b1966603ee295ea0ecc39c41a4eef423)"
+    },
+    "next_ranges": {
+     "levels": {
+      "90": {
+       "lo": 0.05,
+       "hi": 0.95
+      },
+      "99": {
+       "lo": 0.005,
+       "hi": 0.995
+      }
+     },
+     "observed": {
+      "90": {
+       "miss_lo": 0.03176791868436778,
+       "miss_hi": 0.06257173153168026
+      },
+      "99": {
+       "miss_lo": 0.0028207468494387032,
+       "miss_hi": 0.0075104081220139455
+      }
+     },
+     "papers": 306,
+     "points": 30026,
+     "pooled": true,
+     "source": "conformal_fit.py ranges 2026-11-22 on monitor_points_orig.csv, monitor_points_x1.csv (monitor_validate, Crux 60e03782b1966603ee295ea0ecc39c41a4eef423, nominal levels): descriptive, post hoc to PUBLICATION_PLAN W2 rule 8; the predictive before measuring; per study (equal weight) mean of the share of measured next values outside the previous session's range, all lines pooled; in-sample"
+    }
+   },
+   "line_class": "syngeneic",
+   "host_class": "immunocompetent",
+   "tumour_type": "liver",
+   "tier": "Own spreads",
+   "pooled_fields": [
+    "noise.k",
+    "noise.df",
+    "noise.sd_session",
+    "take.nonprogressing_map",
+    "noise.c0_c1_curve",
+    "twin.sd_log_alpha",
+    "twin.sd_log_beta",
+    "twin.sd_process",
+    "twin.first_factor",
+    "twin.start_df",
+    "twin.slow_share",
+    "twin.slow_shift",
+    "twin.skew"
+   ],
+   "start_window": {
+    "lo": 80.0,
+    "hi": 200.0
+   }
+  },
+  "EMT6": {
+   "papers": 12,
+   "animals": 142,
+   "log_alpha": {
+    "mixture": [
+     {
+      "kind": "map",
+      "w": 0.6173179246093924,
+      "a": -1.7205931826633258,
+      "b": 0.2253037020327723
+     },
+     {
+      "kind": "map",
+      "w": 0.18268207539060766,
+      "a": -1.7164292748506385,
+      "b": 0.3870535767373385
+     },
+     {
+      "kind": "robust",
+      "w": 0.2,
+      "a": -1.7196423435121295,
+      "b": 0.8126896306481726
+     }
+    ],
+    "map_mean": -1.7196423427214846,
+    "map_sd": 0.2708965435493884,
+    "map_q025": -2.2599647930042677,
+    "map_q975": -1.1768694773314674,
+    "tau": 0.23943285236279394,
+    "ess": 0.09904424750123751
+   },
+   "log_beta": -3.83653409221288,
+   "log_v_ref": 4.592584593447354,
+   "sd_within": {
+    "log_alpha": 0.08075121143494907,
+    "log_beta": 0.09251632847671329,
+    "log_v0": 0.442572582958658
+   },
+   "sd_residual_log_v": 0.1875956298816348,
+   "take": {
+    "nonprogressing_map": 0.0025962329138917977,
+    "nonprogressing": 0,
+    "animals": 151,
+    "definition": "last positive volume <= first positive volume, or never positive"
+   },
+   "facet_shifts_log_rate": [
+    {
+     "facet": "cell:reporter",
+     "shift_log_lambda": 0.2694605454968026,
+     "se": 0.17194605171034957,
+     "ci95": [
+      -0.0675537158554825,
+      0.6064748068490878
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 1.1533140037467258
+    },
+    {
+     "facet": "site:orthotopic",
+     "shift_log_lambda": 0.1619107795769105,
+     "se": 0.11000283687269341,
+     "ci95": [
+      -0.0536947806935686,
+      0.3775163398473896
+     ],
+     "papers": 9,
+     "sd_ratio_vs_strict": 1.7512086517409504
+    }
+   ],
+   "map_settings": {
+    "family": "normal",
+    "tau_prior": "halfnormal",
+    "tau_a": 1.0,
+    "robust_weight": 0.2,
+    "ess": "elir",
+    "sigma": 0.1,
+    "robust_n": 0.015140860670940696
+   },
+   "start_sd": 0.11199177505734073,
+   "sd_process": 0.0,
+   "study_prior": {
+    "mean_log_alpha": -1.6364755626470193,
+    "sd_log_alpha": 0.396883082282755,
+    "mean_log_beta": -3.7598907568962376,
+    "sd_log_beta": 1.1266714310294712,
+    "rho": 0.8972234755847749,
+    "size_factor": 0.9,
+    "deconvolution": {
+     "paper": {
+      "sd_log_alpha": 0.31525759499777134,
+      "sd_log_beta": 0.8508581427515722,
+      "rho": 0.9104345837593872
+     },
+     "experiment": {
+      "sd_log_alpha": 0.2980539629380619,
+      "sd_log_beta": 0.89528855091391,
+      "rho": 0.9083549414902196
+     },
+     "loglik": -124.83270233869553,
+     "loglik_independent": null,
+     "papers": 12,
+     "experiments": 21
+    }
+   },
+   "noise": {
+    "c0": 0.04553485212691383,
+    "c1": 0.7169068048671418,
+    "k": 0.5729247820164493,
+    "df": 2.5013496920167047,
+    "sd_session": 0.0676812657110687
+   },
+   "calibration": {
+    "distance": null,
+    "evaluations": 0,
+    "converged": false,
+    "experiments": 21,
+    "statistics": {}
+   },
+   "twin": {
+    "sd_log_alpha": 0.11440657809188168,
+    "sd_log_beta": 0.07160270275282508,
+    "sd_process": 0.09053214894411571,
+    "first_factor": 0.8882960257446304,
+    "start_df": 3.0,
+    "slow_share": 0.016745985536068708,
+    "slow_shift": 1.614094905286807,
+    "skew": 0.8357297029468109,
+    "validation": {
+     "loo_coverage_90": 0.9031531531531531,
+     "measurements": 888,
+     "below": 0.041666666666666664,
+     "above": 0.05518018018018018
+    },
+    "conformal": {
+     "levels": {
+      "90": {
+       "lo": 0.08718411979956225,
+       "hi": 0.9513225717676037
+      },
+      "99": {
+       "lo": 0.015252739628647333,
+       "hi": 0.9913553717355066
+      }
+     },
+     "papers": 12,
+     "points": 888,
+     "pooled": false,
+     "validated": {
+      "90": {
+       "miss_lo": 0.04901828555365365,
+       "miss_hi": 0.046444872151486065,
+       "cover": 0.9045368422948603
+      },
+      "99": {
+       "miss_lo": 0.0052119015924323945,
+       "miss_hi": 0.005120444490273525,
+       "cover": 0.9896676539172942
+      }
+     },
+     "source": "conformal_fit.py 2026-11-22 on monitor_points_orig.csv, monitor_points_x1.csv (monitor_validate, Crux 60e03782b1966603ee295ea0ecc39c41a4eef423)"
+    },
+    "next_ranges": {
+     "levels": {
+      "90": {
+       "lo": 0.05,
+       "hi": 0.95
+      },
+      "99": {
+       "lo": 0.005,
+       "hi": 0.995
+      }
+     },
+     "observed": {
+      "90": {
+       "miss_lo": 0.03176791868436778,
+       "miss_hi": 0.06257173153168026
+      },
+      "99": {
+       "miss_lo": 0.0028207468494387032,
+       "miss_hi": 0.0075104081220139455
+      }
+     },
+     "papers": 306,
+     "points": 30026,
+     "pooled": true,
+     "source": "conformal_fit.py ranges 2026-11-22 on monitor_points_orig.csv, monitor_points_x1.csv (monitor_validate, Crux 60e03782b1966603ee295ea0ecc39c41a4eef423, nominal levels): descriptive, post hoc to PUBLICATION_PLAN W2 rule 8; the predictive before measuring; per study (equal weight) mean of the share of measured next values outside the previous session's range, all lines pooled; in-sample"
+    }
+   },
+   "line_class": "syngeneic",
+   "host_class": "immunocompetent",
+   "tumour_type": "breast",
+   "tier": "Thin",
+   "pooled_fields": [
+    "sd_within.log_alpha",
+    "sd_within.log_beta",
+    "study_prior.sd_log_alpha",
+    "study_prior.sd_log_beta",
+    "study_prior.rho",
+    "study_prior.size_factor",
+    "noise.k",
+    "noise.df",
+    "noise.sd_session",
+    "take.nonprogressing_map",
+    "noise.c0_c1_curve",
+    "twin.sd_log_alpha",
+    "twin.sd_log_beta",
+    "twin.sd_process",
+    "twin.first_factor",
+    "twin.start_df",
+    "twin.slow_share",
+    "twin.slow_shift",
+    "twin.skew"
+   ],
+   "start_window": {
+    "lo": 80.0,
+    "hi": 200.0
+   }
+  },
+  "MDA-MB-231": {
+   "papers": 27,
+   "animals": 267,
+   "log_alpha": {
+    "mixture": [
+     {
+      "kind": "map",
+      "w": 0.8,
+      "a": -1.9189921999100428,
+      "b": 0.43840087123495924
+     },
+     {
+      "kind": "robust",
+      "w": 0.2,
+      "a": -1.9189921999100428,
+      "b": 1.3152090956591231
+     }
+    ],
+    "map_mean": -1.918992199590226,
+    "map_sd": 0.4384030318863744,
+    "map_q025": -2.785137364936885,
+    "map_q975": -1.0523893688138506,
+    "tau": 0.4181970186948727,
+    "ess": 0.033948153416465135
+   },
+   "log_beta": -3.587811950910342,
+   "log_v_ref": 3.4100065209612462,
+   "sd_within": {
+    "log_alpha": 0.04375216650370171,
+    "log_beta": 0.08498644349088325,
+    "log_v0": 1.5811345751369474
+   },
+   "sd_residual_log_v": 0.3404782975646063,
+   "take": {
+    "nonprogressing_map": 0.003510743630271657,
+    "nonprogressing": 0,
+    "animals": 290,
+    "definition": "last positive volume <= first positive volume, or never positive"
+   },
+   "facet_shifts_log_rate": [
+    {
+     "facet": "cell:genetic_mod",
+     "shift_log_lambda": 0.2135521361336139,
+     "se": 0.13032319903602996,
+     "ci95": [
+      -0.0418813339770048,
+      0.4689856062442327
+     ],
+     "papers": 12,
+     "sd_ratio_vs_strict": 1.3069640149219537
+    },
+    {
+     "facet": "other",
+     "shift_log_lambda": 0.6830094132091397,
+     "se": 0.25254893884576246,
+     "ci95": [
+      0.1880134930714453,
+      1.178005333346834
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 1.6125216731006091
+    },
+    {
+     "facet": "readout:unit_assumed",
+     "shift_log_lambda": 0.4546297607182783,
+     "se": 0.20089271211669998,
+     "ci95": [
+      0.0608800449695463,
+      0.8483794764670103
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 1.1722788319922497
+    },
+    {
+     "facet": "site:not_stated",
+     "shift_log_lambda": 0.5291042202728163,
+     "se": 0.20980252706389635,
+     "ci95": [
+      0.1178912672275795,
+      0.9403171733180532
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 1.1419251720732646
+    },
+    {
+     "facet": "site:orthotopic",
+     "shift_log_lambda": 0.019910432941381,
+     "se": 0.13032668013225945,
+     "ci95": [
+      -0.2355298601178475,
+      0.2753507260006096
+     ],
+     "papers": 14,
+     "sd_ratio_vs_strict": 1.3239495073980694
+    }
+   ],
+   "map_settings": {
+    "family": "normal",
+    "tau_prior": "halfnormal",
+    "tau_a": 1.0,
+    "robust_weight": 0.2,
+    "ess": "elir",
+    "sigma": 0.1,
+    "robust_n": 0.005781098813763744
+   },
+   "start_sd": 0.2657664084737879,
+   "sd_process": 0.0,
+   "study_prior": {
+    "mean_log_alpha": -1.7743081377689582,
+    "sd_log_alpha": 0.46163748352275985,
+    "mean_log_beta": -3.7660845670967253,
+    "sd_log_beta": 1.02721180071981,
+    "rho": 0.8609832148596082,
+    "size_factor": 0.9,
+    "deconvolution": {
+     "paper": {
+      "sd_log_alpha": 0.4834361512969118,
+      "sd_log_beta": 1.0931420914444323,
+      "rho": 0.8552376282201457
+     },
+     "experiment": {
+      "sd_log_alpha": 0.17142702138300575,
+      "sd_log_beta": 0.32819517970887463,
+      "rho": 0.9257482057410563
+     },
+     "loglik": -703.085333943367,
+     "loglik_independent": -726.1709302663803,
+     "papers": 29,
+     "experiments": 45
+    }
+   },
+   "noise": {
+    "c0": 0.054552708645625864,
+    "c1": 0.8588851445696877,
+    "k": 0.6863884969273617,
+    "df": 2.851824039835491,
+    "sd_session": 0.07615290640819629
+   },
+   "calibration": {
+    "distance": 2.183884956932619,
+    "evaluations": 36,
+    "converged": true,
+    "experiments": 42,
+    "statistics": {
+     "noise_sd": {
+      "atlas": 0.09959040443322287,
+      "se": 0.013217341599216162,
+      "calibrated": 0.17179542226338437,
+      "v1_caliper_only": 0.1775918358707205
+     },
+     "tail95": {
+      "atlas": 3.882592095223117,
+      "se": 0.42744947647572384,
+      "calibrated": 2.663394266982742,
+      "v1_caliper_only": 2.3055798929457043
+     },
+     "tail99": {
+      "atlas": 6.436984818906264,
+      "se": 0.7996214079008358,
+      "calibrated": 4.890676966465322,
+      "v1_caliper_only": 3.568087789666464
+     },
+     "session_sd": {
+      "atlas": 0.06099677302418741,
+      "se": 0.018825730124841518,
+      "calibrated": 0.07574532127314337,
+      "v1_caliper_only": 0.016872587328720885
+     },
+     "slope_sd_med": {
+      "atlas": 0.011934828703050265,
+      "se": 0.0017712417074739637,
+      "calibrated": 0.013242904754892064,
+      "v1_caliper_only": 0.018824227887888775
+     },
+     "slope_sd_q75": {
+      "atlas": 0.023196780251244845,
+      "se": 0.0039009805656891904,
+      "calibrated": 0.019798205558607805,
+      "v1_caliper_only": 0.026395812145458535
+     },
+     "mean_slope_sd": {
+      "atlas": 0.06165875996765387,
+      "se": 0.007848902583562136,
+      "calibrated": 0.054474018335138485,
+      "v1_caliper_only": 0.0773450967855038
+     },
+     "end_sd_med": {
+      "atlas": 0.25648469334740454,
+      "se": 0.04025847536963919,
+      "calibrated": 0.2482775042943443,
+      "v1_caliper_only": 0.3351549135709636
+     }
+    },
+    "identification": {
+     "status": "poorly_identified",
+     "rule": "N2 C3 tied set: converged starts with |paired difference| < 2 SE over the C3 tie streams; distance_mean6 is an alias of tie_stream_mean (D354, D361)",
+     "aliases": {
+      "distance_mean6": "alias of tie_stream_mean (N2 C3, D361): the mean over the C3 tie streams, no longer a mean of 6 streams; the true 6-stream mean stays in the calibration's starts"
+     },
+     "why": "calibrate_v2 C3 (4 starts tied with the kept one)",
+     "starts": 4,
+     "sd_log_alpha": [
+      0.005870991216880462,
+      0.04375216650370171
+     ],
+     "sd_log_beta": [
+      0.08498644349088325,
+      0.12143243480475709
+     ],
+     "sd_study_log_beta": [
+      0.9,
+      0.9
+     ],
+     "solutions": [
+      {
+       "sd_within": {
+        "log_alpha": 0.026474538825492496,
+        "log_beta": 0.11502417852831472
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.46163748352275985,
+        "sd_log_beta": 1.02721180071981
+       },
+       "tie_stream_mean": 3.5647952889322916,
+       "tie_streams": 16,
+       "tie_se_vs_best": 0.15670638231767653,
+       "distance_mean6": 3.5647952889322916,
+       "best": false,
+       "start": 1
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.04375216650370171,
+        "log_beta": 0.08498644349088325
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.46163748352275985,
+        "sd_log_beta": 1.02721180071981
+       },
+       "tie_stream_mean": 3.4714953965311417,
+       "tie_streams": 16,
+       "tie_se_vs_best": null,
+       "distance_mean6": 3.4714953965311417,
+       "best": true,
+       "start": 2
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.032417199863160356,
+        "log_beta": 0.11673945412947441
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.46163748352275985,
+        "sd_log_beta": 1.02721180071981
+       },
+       "tie_stream_mean": 3.707190744567356,
+       "tie_streams": 16,
+       "tie_se_vs_best": 0.12155262522797343,
+       "distance_mean6": 3.707190744567356,
+       "best": false,
+       "start": 4
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.005870991216880462,
+        "log_beta": 0.12143243480475709
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.46163748352275985,
+        "sd_log_beta": 1.02721180071981
+       },
+       "tie_stream_mean": 3.758283266370599,
+       "tie_streams": 16,
+       "tie_se_vs_best": 0.1737187514985046,
+       "distance_mean6": 3.758283266370599,
+       "best": false,
+       "start": 10
+      }
+     ]
+    }
+   },
+   "twin": {
+    "sd_log_alpha": 0.11440657809188168,
+    "sd_log_beta": 0.07160270275282508,
+    "sd_process": 0.09053214894411571,
+    "first_factor": 0.8882960257446304,
+    "start_df": 3.0,
+    "slow_share": 0.016745985536068708,
+    "slow_shift": 1.614094905286807,
+    "skew": 0.8357297029468109,
+    "validation": {
+     "loo_coverage_90": 0.8805659592176446,
+     "measurements": 2403,
+     "below": 0.08614232209737828,
+     "above": 0.033291718684977115
+    },
+    "conformal": {
+     "levels": {
+      "90": {
+       "lo": 0.09821626815871169,
+       "hi": 0.9207397145461859
+      },
+      "99": {
+       "lo": 0.015252739628647333,
+       "hi": 0.9913553717355066
+      }
+     },
+     "papers": 29,
+     "points": 2403,
+     "pooled": false,
+     "validated": {
+      "90": {
+       "miss_lo": 0.052018680767997476,
+       "miss_hi": 0.04870653995451237,
+       "cover": 0.8992747792774902
+      },
+      "99": {
+       "miss_lo": 0.0052119015924323945,
+       "miss_hi": 0.005120444490273525,
+       "cover": 0.9896676539172942
+      }
+     },
+     "source": "conformal_fit.py 2026-11-22 on monitor_points_orig.csv, monitor_points_x1.csv (monitor_validate, Crux 60e03782b1966603ee295ea0ecc39c41a4eef423)"
+    },
+    "next_ranges": {
+     "levels": {
+      "90": {
+       "lo": 0.05,
+       "hi": 0.95
+      },
+      "99": {
+       "lo": 0.005,
+       "hi": 0.995
+      }
+     },
+     "observed": {
+      "90": {
+       "miss_lo": 0.03176791868436778,
+       "miss_hi": 0.06257173153168026
+      },
+      "99": {
+       "miss_lo": 0.0028207468494387032,
+       "miss_hi": 0.0075104081220139455
+      }
+     },
+     "papers": 306,
+     "points": 30026,
+     "pooled": true,
+     "source": "conformal_fit.py ranges 2026-11-22 on monitor_points_orig.csv, monitor_points_x1.csv (monitor_validate, Crux 60e03782b1966603ee295ea0ecc39c41a4eef423, nominal levels): descriptive, post hoc to PUBLICATION_PLAN W2 rule 8; the predictive before measuring; per study (equal weight) mean of the share of measured next values outside the previous session's range, all lines pooled; in-sample"
+    }
+   },
+   "line_class": "cdx",
+   "host_class": "immunodeficient",
+   "tumour_type": "breast",
+   "tier": "Own spreads",
+   "pooled_fields": [
+    "noise.k",
+    "noise.df",
+    "noise.sd_session",
+    "take.nonprogressing_map",
+    "noise.c0_c1_curve",
+    "twin.sd_log_alpha",
+    "twin.sd_log_beta",
+    "twin.sd_process",
+    "twin.first_factor",
+    "twin.start_df",
+    "twin.slow_share",
+    "twin.slow_shift",
+    "twin.skew"
+   ],
+   "start_window": {
+    "lo": 80.0,
+    "hi": 500.0
+   }
+  },
+  "A549": {
+   "papers": 12,
+   "animals": 110,
+   "log_alpha": {
+    "mixture": [
+     {
+      "kind": "map",
+      "w": 0.1898031503346226,
+      "a": -1.9839272012606521,
+      "b": 0.8039676349895307
+     },
+     {
+      "kind": "map",
+      "w": 0.6101968496653775,
+      "a": -1.9775117795625579,
+      "b": 0.4869329318024773
+     },
+     {
+      "kind": "robust",
+      "w": 0.2,
+      "a": -1.9790338636238372,
+      "b": 1.7343448641040364
+     }
+    ],
+    "map_mean": -1.9790338648676449,
+    "map_sd": 0.5781149547013432,
+    "map_q025": -3.1344004154435963,
+    "map_q975": -0.8272758048058535,
+    "tau": 0.5170837520054163,
+    "ess": 0.021374441560046663
+   },
+   "log_beta": -3.364086303617968,
+   "log_v_ref": 4.265164392225222,
+   "sd_within": {
+    "log_alpha": 0.09862093238130115,
+    "log_beta": 0.07337267633852664,
+    "log_v0": 1.3195319400542473
+   },
+   "sd_residual_log_v": 0.2085810130234307,
+   "take": {
+    "nonprogressing_map": 0.003510743630271657,
+    "nonprogressing": 0,
+    "animals": 132,
+    "definition": "last positive volume <= first positive volume, or never positive"
+   },
+   "facet_shifts_log_rate": [
+    {
+     "facet": "cell:genetic_mod",
+     "shift_log_lambda": -0.096321846421633,
+     "se": 0.2144885033735712,
+     "ci95": [
+      -0.5167193130338326,
+      0.3240756201905665
+     ],
+     "papers": 7,
+     "sd_ratio_vs_strict": 0.4632259550216834
+    },
+    {
+     "facet": "host:immunodeficient",
+     "shift_log_lambda": -0.1101047307439665,
+     "se": 0.21525472991146066,
+     "ci95": [
+      -0.5320040013704294,
+      0.3117945398824964
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 0.5781252737387885
+    },
+    {
+     "facet": "readout:unit_assumed",
+     "shift_log_lambda": 0.1310037461385439,
+     "se": 0.2733865673076454,
+     "ci95": [
+      -0.404833925784441,
+      0.6668414180615289
+     ],
+     "papers": 5,
+     "sd_ratio_vs_strict": 0.5824558680226825
+    },
+    {
+     "facet": "site:not_stated",
+     "shift_log_lambda": 0.2111741043015668,
+     "se": 0.2446116458811214,
+     "ci95": [
+      -0.2682647216254311,
+      0.6906129302285648
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 0.4948735784544846
+    }
+   ],
+   "map_settings": {
+    "family": "normal",
+    "tau_prior": "halfnormal",
+    "tau_a": 1.0,
+    "robust_weight": 0.2,
+    "ess": "elir",
+    "sigma": 0.1,
+    "robust_n": 0.003324521017002631
+   },
+   "start_sd": 0.08300784086086005,
+   "sd_process": 0.0,
+   "study_prior": {
+    "mean_log_alpha": -1.8471050559396998,
+    "sd_log_alpha": 0.37591210330473074,
+    "mean_log_beta": -3.8183096320746293,
+    "sd_log_beta": 1.2385090244152883,
+    "rho": 0.883980578875486,
+    "size_factor": 0.9,
+    "deconvolution": {
+     "paper": {
+      "sd_log_alpha": 0.2887664091973611,
+      "sd_log_beta": 0.9555308997972103,
+      "rho": 0.8828245712899292
+     },
+     "experiment": {
+      "sd_log_alpha": 0.29125564536006887,
+      "sd_log_beta": 0.9593107833399874,
+      "rho": 0.8959760233135045
+     },
+     "loglik": -116.09991537034512,
+     "loglik_independent": null,
+     "papers": 15,
+     "experiments": 22
+    }
+   },
+   "noise": {
+    "c0": 0.05282605801315895,
+    "c1": 0.8317005259704313,
+    "k": 0.6646635787379388,
+    "df": 2.73464853966687,
+    "sd_session": 0.07775049025341606
+   },
+   "calibration": {
+    "distance": null,
+    "evaluations": 0,
+    "converged": false,
+    "experiments": 22,
+    "statistics": {}
+   },
+   "twin": {
+    "sd_log_alpha": 0.11440657809188168,
+    "sd_log_beta": 0.07160270275282508,
+    "sd_process": 0.09053214894411571,
+    "first_factor": 0.8882960257446304,
+    "start_df": 3.0,
+    "slow_share": 0.016745985536068708,
+    "slow_shift": 1.614094905286807,
+    "skew": 0.8357297029468109,
+    "validation": {
+     "loo_coverage_90": 0.8992628992628993,
+     "measurements": 814,
+     "below": 0.03931203931203931,
+     "above": 0.06142506142506143
+    },
+    "conformal": {
+     "levels": {
+      "90": {
+       "lo": 0.08512068958259562,
+       "hi": 0.9195323436639837
+      },
+      "99": {
+       "lo": 0.015252739628647333,
+       "hi": 0.9913553717355066
+      }
+     },
+     "papers": 15,
+     "points": 814,
+     "pooled": false,
+     "validated": {
+      "90": {
+       "miss_lo": 0.05360170487948266,
+       "miss_hi": 0.053728395061728405,
+       "cover": 0.8926699000587889
+      },
+      "99": {
+       "miss_lo": 0.0052119015924323945,
+       "miss_hi": 0.005120444490273525,
+       "cover": 0.9896676539172942
+      }
+     },
+     "source": "conformal_fit.py 2026-11-22 on monitor_points_orig.csv, monitor_points_x1.csv (monitor_validate, Crux 60e03782b1966603ee295ea0ecc39c41a4eef423)"
+    },
+    "next_ranges": {
+     "levels": {
+      "90": {
+       "lo": 0.05,
+       "hi": 0.95
+      },
+      "99": {
+       "lo": 0.005,
+       "hi": 0.995
+      }
+     },
+     "observed": {
+      "90": {
+       "miss_lo": 0.03176791868436778,
+       "miss_hi": 0.06257173153168026
+      },
+      "99": {
+       "miss_lo": 0.0028207468494387032,
+       "miss_hi": 0.0075104081220139455
+      }
+     },
+     "papers": 306,
+     "points": 30026,
+     "pooled": true,
+     "source": "conformal_fit.py ranges 2026-11-22 on monitor_points_orig.csv, monitor_points_x1.csv (monitor_validate, Crux 60e03782b1966603ee295ea0ecc39c41a4eef423, nominal levels): descriptive, post hoc to PUBLICATION_PLAN W2 rule 8; the predictive before measuring; per study (equal weight) mean of the share of measured next values outside the previous session's range, all lines pooled; in-sample"
+    }
+   },
+   "line_class": "cdx",
+   "host_class": "immunodeficient",
+   "tumour_type": "lung",
+   "tier": "Thin",
+   "pooled_fields": [
+    "sd_within.log_alpha",
+    "sd_within.log_beta",
+    "study_prior.sd_log_alpha",
+    "study_prior.sd_log_beta",
+    "study_prior.rho",
+    "study_prior.size_factor",
+    "noise.k",
+    "noise.df",
+    "noise.sd_session",
+    "take.nonprogressing_map",
+    "noise.c0_c1_curve",
+    "twin.sd_log_alpha",
+    "twin.sd_log_beta",
+    "twin.sd_process",
+    "twin.first_factor",
+    "twin.start_df",
+    "twin.slow_share",
+    "twin.slow_shift",
+    "twin.skew"
+   ],
+   "start_window": {
+    "lo": 80.0,
+    "hi": 500.0
+   }
+  },
+  "PDX-NSCLC": {
+   "papers": 48,
+   "animals": 381,
+   "log_alpha": {
+    "mixture": [
+     {
+      "kind": "map",
+      "w": 0.8,
+      "a": -2.5197292168348744,
+      "b": 0.42026872028905826
+     },
+     {
+      "kind": "robust",
+      "w": 0.2,
+      "a": -2.5197292168348744,
+      "b": 1.260810843080617
+     }
+    ],
+    "map_mean": -2.519729217160337,
+    "map_sd": 0.420270281026885,
+    "map_q025": -3.3476786855568155,
+    "map_q975": -1.6922228470652694,
+    "tau": 0.4093112563089312,
+    "ess": 0.1637418829515688
+   },
+   "log_beta": -3.953699366325098,
+   "log_v_ref": 4.956449788031136,
+   "sd_within": {
+    "log_alpha": 0.17188768710538457,
+    "log_beta": 0.025721182338191484,
+    "log_v0": 0.5013874339566066
+   },
+   "sd_residual_log_v": 0.1447964513925415,
+   "take": {
+    "nonprogressing_map": 0.003510743630271657,
+    "nonprogressing": 0,
+    "animals": 382,
+    "definition": "last positive volume <= first positive volume, or never positive"
+   },
+   "facet_shifts_log_rate": [
+    {
+     "facet": "other:subjects_are_tumours",
+     "shift_log_lambda": -0.3646998029035971,
+     "se": 0.27378329591274636,
+     "ci95": [
+      -0.90131506289258,
+      0.1719154570853857
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 0.1117732529765528
+    }
+   ],
+   "map_settings": {
+    "family": "normal",
+    "tau_prior": "halfnormal",
+    "tau_a": 1.0,
+    "robust_weight": 0.2,
+    "ess": "elir",
+    "sigma": 0.21053652156336652,
+    "robust_n": 0.027883996299226044
+   },
+   "start_sd": 0.2794380654331394,
+   "sd_process": 0.0,
+   "study_prior": {
+    "mean_log_alpha": -2.5946518512306596,
+    "sd_log_alpha": 0.47183348097706235,
+    "mean_log_beta": -5.057398940199137,
+    "sd_log_beta": 1.3573218916548377,
+    "rho": 0.7921710352288437,
+    "size_factor": 0.9,
+    "deconvolution": {
+     "paper": {
+      "sd_log_alpha": 0.45303326782303743,
+      "sd_log_beta": 0.7918655019853573,
+      "rho": 0.8477033638700805
+     },
+     "experiment": {
+      "sd_log_alpha": 0.2638347990175981,
+      "sd_log_beta": 1.2835191925277325,
+      "rho": 0.9515411336040135
+     },
+     "loglik": 154.4430200457573,
+     "loglik_independent": 136.0570210814476,
+     "papers": 48,
+     "experiments": 53
+    }
+   },
+   "noise": {
+    "c0": 0.054552708645625864,
+    "c1": 0.8588851445696877,
+    "k": 0.6863884969273617,
+    "df": 2.851824039835491,
+    "sd_session": 0.07615290640819629
+   },
+   "calibration": {
+    "distance": 3.1901278807925775,
+    "evaluations": 38,
+    "converged": true,
+    "experiments": 53,
+    "statistics": {
+     "noise_sd": {
+      "atlas": 0.07178065887247331,
+      "se": 0.007168889611126287,
+      "calibrated": 0.15881138258470368,
+      "v1_caliper_only": 0.148029487609305
+     },
+     "tail95": {
+      "atlas": 3.2637987462595817,
+      "se": 0.276919497516567,
+      "calibrated": 2.3644475103129725,
+      "v1_caliper_only": 2.0461826422276577
+     },
+     "tail99": {
+      "atlas": 5.69987746532175,
+      "se": 0.7536636383511083,
+      "calibrated": 3.9039477464530665,
+      "v1_caliper_only": 2.7723348174762004
+     },
+     "session_sd": {
+      "atlas": 0.04850936997719478,
+      "se": 0.006433494833944962,
+      "calibrated": 0.0759871768747984,
+      "v1_caliper_only": 0.0
+     },
+     "slope_sd_med": {
+      "atlas": 0.012496728662376944,
+      "se": 0.0010704060503841167,
+      "calibrated": 0.012968553655640713,
+      "v1_caliper_only": 0.010813518703621943
+     },
+     "slope_sd_q75": {
+      "atlas": 0.017515103955664794,
+      "se": 0.0015170552540941392,
+      "calibrated": 0.018413009142488317,
+      "v1_caliper_only": 0.014445638850965767
+     },
+     "mean_slope_sd": {
+      "atlas": 0.03168236885342532,
+      "se": 0.0038271314882314346,
+      "calibrated": 0.03156553605259007,
+      "v1_caliper_only": 0.036384033144291755
+     },
+     "end_sd_med": {
+      "atlas": 0.41048901557550904,
+      "se": 0.032835389025015115,
+      "calibrated": 0.3570915147076966,
+      "v1_caliper_only": 0.2829374614395293
+     }
+    },
+    "identification": {
+     "status": "poorly_identified",
+     "rule": "N2 C3 tied set: converged starts with |paired difference| < 2 SE over the C3 tie streams; distance_mean6 is an alias of tie_stream_mean (D354, D361)",
+     "aliases": {
+      "distance_mean6": "alias of tie_stream_mean (N2 C3, D361): the mean over the C3 tie streams, no longer a mean of 6 streams; the true 6-stream mean stays in the calibration's starts"
+     },
+     "why": "calibrate_v2 C3 (10 starts tied with the kept one)",
+     "starts": 10,
+     "sd_log_alpha": [
+      0.1690701991744123,
+      0.17807157512331304
+     ],
+     "sd_log_beta": [
+      0.025721182338191484,
+      0.29384815523417873
+     ],
+     "sd_study_log_beta": [
+      0.9,
+      0.9
+     ],
+     "solutions": [
+      {
+       "sd_within": {
+        "log_alpha": 0.17807157512331304,
+        "log_beta": 0.04822089998286793
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.47183348097706235,
+        "sd_log_beta": 1.3573218916548377
+       },
+       "tie_stream_mean": 3.3156879806461816,
+       "tie_streams": 16,
+       "tie_se_vs_best": 0.09990311276707402,
+       "distance_mean6": 3.3156879806461816,
+       "best": false,
+       "start": 0
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.1752237700646921,
+        "log_beta": 0.08538954361260165
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.47183348097706235,
+        "sd_log_beta": 1.3573218916548377
+       },
+       "tie_stream_mean": 3.358120523793381,
+       "tie_streams": 16,
+       "tie_se_vs_best": 0.10335723584492651,
+       "distance_mean6": 3.358120523793381,
+       "best": false,
+       "start": 1
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.17105221590099898,
+        "log_beta": 0.03430159829954547
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.47183348097706235,
+        "sd_log_beta": 1.3573218916548377
+       },
+       "tie_stream_mean": 3.3460734179120024,
+       "tie_streams": 16,
+       "tie_se_vs_best": 0.06820366424295242,
+       "distance_mean6": 3.3460734179120024,
+       "best": false,
+       "start": 2
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.1735254604598717,
+        "log_beta": 0.133553379007272
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.47183348097706235,
+        "sd_log_beta": 1.3573218916548377
+       },
+       "tie_stream_mean": 3.369182543733988,
+       "tie_streams": 16,
+       "tie_se_vs_best": 0.14211315346528722,
+       "distance_mean6": 3.369182543733988,
+       "best": false,
+       "start": 3
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.17188768710538457,
+        "log_beta": 0.025721182338191484
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.47183348097706235,
+        "sd_log_beta": 1.3573218916548377
+       },
+       "tie_stream_mean": 3.256756142753013,
+       "tie_streams": 16,
+       "tie_se_vs_best": null,
+       "distance_mean6": 3.256756142753013,
+       "best": true,
+       "start": 5
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.1780586725256395,
+        "log_beta": 0.04869626411334373
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.47183348097706235,
+        "sd_log_beta": 1.3573218916548377
+       },
+       "tie_stream_mean": 3.3154884670614875,
+       "tie_streams": 16,
+       "tie_se_vs_best": 0.10284173950101949,
+       "distance_mean6": 3.3154884670614875,
+       "best": false,
+       "start": 6
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.16946176702467117,
+        "log_beta": 0.29384815523417873
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.47183348097706235,
+        "sd_log_beta": 1.3573218916548377
+       },
+       "tie_stream_mean": 3.5524737933426076,
+       "tie_streams": 16,
+       "tie_se_vs_best": 0.1761443666262815,
+       "distance_mean6": 3.5524737933426076,
+       "best": false,
+       "start": 7
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.1729580087713798,
+        "log_beta": 0.13366659229079988
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.47183348097706235,
+        "sd_log_beta": 1.3573218916548377
+       },
+       "tie_stream_mean": 3.3592933975308217,
+       "tie_streams": 16,
+       "tie_se_vs_best": 0.14472747751497403,
+       "distance_mean6": 3.3592933975308217,
+       "best": false,
+       "start": 8
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.17357892026041535,
+        "log_beta": 0.13307493272119217
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.47183348097706235,
+        "sd_log_beta": 1.3573218916548377
+       },
+       "tie_stream_mean": 3.387649100308868,
+       "tie_streams": 16,
+       "tie_se_vs_best": 0.14785504709921485,
+       "distance_mean6": 3.387649100308868,
+       "best": false,
+       "start": 9
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.1690701991744123,
+        "log_beta": 0.29153160481540863
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.47183348097706235,
+        "sd_log_beta": 1.3573218916548377
+       },
+       "tie_stream_mean": 3.4739157018939655,
+       "tie_streams": 16,
+       "tie_se_vs_best": 0.17950433633464127,
+       "distance_mean6": 3.4739157018939655,
+       "best": false,
+       "start": 10
+      }
+     ]
+    }
+   },
+   "twin": {
+    "sd_log_alpha": 0.11440657809188168,
+    "sd_log_beta": 0.07160270275282508,
+    "sd_process": 0.09053214894411571,
+    "first_factor": 0.8882960257446304,
+    "start_df": 3.0,
+    "slow_share": 0.016745985536068708,
+    "slow_shift": 1.614094905286807,
+    "skew": 0.8357297029468109,
+    "validation": {
+     "loo_coverage_90": 0.871204857782039,
+     "measurements": 3129,
+     "below": 0.0572067753275807,
+     "above": 0.07158836689038031
+    },
+    "conformal": {
+     "levels": {
+      "90": {
+       "lo": 0.1104325142146532,
+       "hi": 0.9013409929910527
+      },
+      "99": {
+       "lo": 0.015252739628647333,
+       "hi": 0.9913553717355066
+      }
+     },
+     "papers": 48,
+     "points": 3129,
+     "pooled": false,
+     "validated": {
+      "90": {
+       "miss_lo": 0.04931605983619558,
+       "miss_hi": 0.05027703297885403,
+       "cover": 0.9004069071849504
+      },
+      "99": {
+       "miss_lo": 0.0052119015924323945,
+       "miss_hi": 0.005120444490273525,
+       "cover": 0.9896676539172942
+      }
+     },
+     "source": "conformal_fit.py 2026-11-22 on monitor_points_orig.csv, monitor_points_x1.csv (monitor_validate, Crux 60e03782b1966603ee295ea0ecc39c41a4eef423)"
+    },
+    "next_ranges": {
+     "levels": {
+      "90": {
+       "lo": 0.05,
+       "hi": 0.95
+      },
+      "99": {
+       "lo": 0.005,
+       "hi": 0.995
+      }
+     },
+     "observed": {
+      "90": {
+       "miss_lo": 0.03176791868436778,
+       "miss_hi": 0.06257173153168026
+      },
+      "99": {
+       "miss_lo": 0.0028207468494387032,
+       "miss_hi": 0.0075104081220139455
+      }
+     },
+     "papers": 306,
+     "points": 30026,
+     "pooled": true,
+     "source": "conformal_fit.py ranges 2026-11-22 on monitor_points_orig.csv, monitor_points_x1.csv (monitor_validate, Crux 60e03782b1966603ee295ea0ecc39c41a4eef423, nominal levels): descriptive, post hoc to PUBLICATION_PLAN W2 rule 8; the predictive before measuring; per study (equal weight) mean of the share of measured next values outside the previous session's range, all lines pooled; in-sample"
+    }
+   },
+   "line_class": "pdx",
+   "host_class": "immunodeficient",
+   "tumour_type": "NSCLC",
+   "tier": "Own spreads",
+   "pooled_fields": [
+    "noise.k",
+    "noise.df",
+    "noise.sd_session",
+    "take.nonprogressing_map",
+    "noise.c0_c1_curve",
+    "twin.sd_log_alpha",
+    "twin.sd_log_beta",
+    "twin.sd_process",
+    "twin.first_factor",
+    "twin.start_df",
+    "twin.slow_share",
+    "twin.slow_shift",
+    "twin.skew"
+   ],
+   "start_window": {
+    "lo": 80.0,
+    "hi": 500.0
+   }
+  },
+  "PDX-PDAC": {
+   "papers": 29,
+   "animals": 205,
+   "log_alpha": {
+    "mixture": [
+     {
+      "kind": "map",
+      "w": 0.8,
+      "a": -2.186994989610957,
+      "b": 0.4577093305714332
+     },
+     {
+      "kind": "robust",
+      "w": 0.2,
+      "a": -2.186994989610957,
+      "b": 1.3731346697642388
+     }
+    ],
+    "map_mean": -2.186994988684625,
+    "map_sd": 0.4577115565880826,
+    "map_q025": -3.091132687093203,
+    "map_q975": -1.2816589395896858,
+    "tau": 0.43700787825690846,
+    "ess": 0.031144362431377956
+   },
+   "log_beta": -4.269558854811472,
+   "log_v_ref": 4.400631405042413,
+   "sd_within": {
+    "log_alpha": 0.1156757829530351,
+    "log_beta": 0.11823979715380958,
+    "log_v0": 0.6790573694407835
+   },
+   "sd_residual_log_v": 0.1817965598886549,
+   "take": {
+    "nonprogressing_map": 0.003510743630271657,
+    "nonprogressing": 0,
+    "animals": 205,
+    "definition": "last positive volume <= first positive volume, or never positive"
+   },
+   "facet_shifts_log_rate": [
+    {
+     "facet": "cell:genetic_mod",
+     "shift_log_lambda": 0.5122389450521729,
+     "se": 0.31326808104443093,
+     "ci95": [
+      -0.1017664937949117,
+      1.1262443838992575
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 0.6044281701521752
+    },
+    {
+     "facet": "cell:other",
+     "shift_log_lambda": -0.1021714700851929,
+     "se": 0.13303327340074386,
+     "ci95": [
+      -0.3629166859506509,
+      0.158573745780265
+     ],
+     "papers": 13,
+     "sd_ratio_vs_strict": 0.9991346291563656
+    },
+    {
+     "facet": "ctrl:active_cotreatment",
+     "shift_log_lambda": -0.7914270405799086,
+     "se": 0.21369804163284273,
+     "ci95": [
+      -1.2102752021802805,
+      -0.372578878979537
+     ],
+     "papers": 4,
+     "sd_ratio_vs_strict": 1.5836182690425575
+    },
+    {
+     "facet": "ctrl:control_plus_agent",
+     "shift_log_lambda": 0.1221957013420534,
+     "se": 0.27074616741507707,
+     "ci95": [
+      -0.4084667867914975,
+      0.6528581894756045
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 0.5944141472199839
+    },
+    {
+     "facet": "host:immunodeficient",
+     "shift_log_lambda": -0.1605771785779441,
+     "se": 0.21095869249749363,
+     "ci95": [
+      -0.5740562158730317,
+      0.2529018587171434
+     ],
+     "papers": 4,
+     "sd_ratio_vs_strict": 1.5618171239322107
+    },
+    {
+     "facet": "host:not_stated",
+     "shift_log_lambda": -0.21321732241639,
+     "se": 0.22029336765376978,
+     "ci95": [
+      -0.6449923230177788,
+      0.2185576781849987
+     ],
+     "papers": 5,
+     "sd_ratio_vs_strict": 0.6685334691871165
+    },
+    {
+     "facet": "host:strain_not_stated",
+     "shift_log_lambda": -0.5728726508647063,
+     "se": 0.3221589007896185,
+     "ci95": [
+      -1.2043040964123586,
+      0.0585587946829461
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 0.7023015154667256
+    },
+    {
+     "facet": "readout:unit_assumed",
+     "shift_log_lambda": -0.0568581403498349,
+     "se": 0.17804077333917886,
+     "ci95": [
+      -0.4058180560946255,
+      0.2921017753949557
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 0.233464441750205
+    },
+    {
+     "facet": "site:not_stated",
+     "shift_log_lambda": 0.0018831980676866,
+     "se": 0.179944999715775,
+     "ci95": [
+      -0.3508090013752323,
+      0.3545753975106057
+     ],
+     "papers": 9,
+     "sd_ratio_vs_strict": 1.0170017674552465
+    }
+   ],
+   "map_settings": {
+    "family": "normal",
+    "tau_prior": "halfnormal",
+    "tau_a": 1.0,
+    "robust_weight": 0.2,
+    "ess": "elir",
+    "sigma": 0.1,
+    "robust_n": 0.005303636304084217
+   },
+   "start_sd": 0.01216077053207153,
+   "sd_process": 0.0,
+   "study_prior": {
+    "mean_log_alpha": -1.9635074166410988,
+    "sd_log_alpha": 0.5777661912135231,
+    "mean_log_beta": -4.153589393856988,
+    "sd_log_beta": 1.5572273727081818,
+    "rho": 0.8527408152351338,
+    "size_factor": 0.9,
+    "deconvolution": {
+     "paper": {
+      "sd_log_alpha": 0.5830343539686722,
+      "sd_log_beta": 1.65355116528868,
+      "rho": 0.8487061806603544
+     },
+     "experiment": {
+      "sd_log_alpha": 0.26867584490381563,
+      "sd_log_beta": 0.5094533632653313,
+      "rho": 0.9422255508126879
+     },
+     "loglik": -362.70714604854584,
+     "loglik_independent": -382.171874165535,
+     "papers": 29,
+     "experiments": 35
+    }
+   },
+   "noise": {
+    "c0": 0.054552708645625864,
+    "c1": 0.8588851445696877,
+    "k": 0.6863884969273617,
+    "df": 2.851824039835491,
+    "sd_session": 0.07615290640819629
+   },
+   "calibration": {
+    "distance": 0.7593263606684526,
+    "evaluations": 30,
+    "converged": true,
+    "experiments": 35,
+    "statistics": {
+     "noise_sd": {
+      "atlas": 0.08512248869980464,
+      "se": 0.009495628998162748,
+      "calibrated": 0.1620703805093237,
+      "v1_caliper_only": 0.1562420791192114
+     },
+     "tail95": {
+      "atlas": 3.0344697746363454,
+      "se": 0.24066597520850253,
+      "calibrated": 2.464202997372238,
+      "v1_caliper_only": 2.0784176005892108
+     },
+     "tail99": {
+      "atlas": 5.022518787223191,
+      "se": 0.47191385071954883,
+      "calibrated": 4.149589978303961,
+      "v1_caliper_only": 2.8462078194454423
+     },
+     "session_sd": {
+      "atlas": 0.030879698996031,
+      "se": 0.0085054763728495,
+      "calibrated": 0.07703849661757182,
+      "v1_caliper_only": 0.0
+     },
+     "slope_sd_med": {
+      "atlas": 0.013692133770956159,
+      "se": 0.001362844465027076,
+      "calibrated": 0.014072964221459454,
+      "v1_caliper_only": 0.01367218044383752
+     },
+     "slope_sd_q75": {
+      "atlas": 0.018583983378966547,
+      "se": 0.0036333027571241365,
+      "calibrated": 0.021180009945980238,
+      "v1_caliper_only": 0.020330573370036832
+     },
+     "mean_slope_sd": {
+      "atlas": 0.04784763233638973,
+      "se": 0.015200628308816213,
+      "calibrated": 0.05095068606635045,
+      "v1_caliper_only": 0.05839021663630711
+     },
+     "end_sd_med": {
+      "atlas": 0.2800182728754752,
+      "se": 0.019409176464389756,
+      "calibrated": 0.27304594690677453,
+      "v1_caliper_only": 0.2764680746381024
+     }
+    },
+    "identification": {
+     "status": "poorly_identified",
+     "rule": "N2 C3 tied set: converged starts with |paired difference| < 2 SE over the C3 tie streams; distance_mean6 is an alias of tie_stream_mean (D354, D361)",
+     "aliases": {
+      "distance_mean6": "alias of tie_stream_mean (N2 C3, D361): the mean over the C3 tie streams, no longer a mean of 6 streams; the true 6-stream mean stays in the calibration's starts"
+     },
+     "why": "calibrate_v2 C3 (5 starts tied with the kept one)",
+     "starts": 5,
+     "sd_log_alpha": [
+      0.1156757829530351,
+      0.11951285563992169
+     ],
+     "sd_log_beta": [
+      0.055750440414219164,
+      0.11823979715380958
+     ],
+     "sd_study_log_beta": [
+      0.9,
+      0.9
+     ],
+     "solutions": [
+      {
+       "sd_within": {
+        "log_alpha": 0.11951285563992169,
+        "log_beta": 0.06299640699426834
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.5777661912135231,
+        "sd_log_beta": 1.5572273727081818
+       },
+       "tie_stream_mean": 1.7964503773699443,
+       "tie_streams": 16,
+       "tie_se_vs_best": 0.1841383725511244,
+       "distance_mean6": 1.7964503773699443,
+       "best": false,
+       "start": 2
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.1163329926223444,
+        "log_beta": 0.11637509089814359
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.5777661912135231,
+        "sd_log_beta": 1.5572273727081818
+       },
+       "tie_stream_mean": 1.7281707171365337,
+       "tie_streams": 16,
+       "tie_se_vs_best": 0.08261578006255509,
+       "distance_mean6": 1.7281707171365337,
+       "best": false,
+       "start": 3
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.11800896283938406,
+        "log_beta": 0.055750440414219164
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.5777661912135231,
+        "sd_log_beta": 1.5572273727081818
+       },
+       "tie_stream_mean": 1.7682193560960406,
+       "tie_streams": 16,
+       "tie_se_vs_best": 0.16245097863692742,
+       "distance_mean6": 1.7682193560960406,
+       "best": false,
+       "start": 5
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.11740350272680945,
+        "log_beta": 0.08545248627796642
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.5777661912135231,
+        "sd_log_beta": 1.5572273727081818
+       },
+       "tie_stream_mean": 1.7216072560723972,
+       "tie_streams": 16,
+       "tie_se_vs_best": 0.1117598671209124,
+       "distance_mean6": 1.7216072560723972,
+       "best": false,
+       "start": 8
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.1156757829530351,
+        "log_beta": 0.11823979715380958
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.5777661912135231,
+        "sd_log_beta": 1.5572273727081818
+       },
+       "tie_stream_mean": 1.6119736423649633,
+       "tie_streams": 16,
+       "tie_se_vs_best": null,
+       "distance_mean6": 1.6119736423649633,
+       "best": true,
+       "start": 9
+      }
+     ]
+    }
+   },
+   "twin": {
+    "sd_log_alpha": 0.11440657809188168,
+    "sd_log_beta": 0.07160270275282508,
+    "sd_process": 0.09053214894411571,
+    "first_factor": 0.8882960257446304,
+    "start_df": 3.0,
+    "slow_share": 0.016745985536068708,
+    "slow_shift": 1.614094905286807,
+    "skew": 0.8357297029468109,
+    "validation": {
+     "loo_coverage_90": 0.8468981217985202,
+     "measurements": 1757,
+     "below": 0.07797381900967558,
+     "above": 0.07512805919180421
+    },
+    "conformal": {
+     "levels": {
+      "90": {
+       "lo": 0.11224291570898967,
+       "hi": 0.9546349390344944
+      },
+      "99": {
+       "lo": 0.015252739628647333,
+       "hi": 0.9913553717355066
+      }
+     },
+     "papers": 29,
+     "points": 1757,
+     "pooled": false,
+     "validated": {
+      "90": {
+       "miss_lo": 0.049206579311954775,
+       "miss_hi": 0.05029053647909114,
+       "cover": 0.9005028842089541
+      },
+      "99": {
+       "miss_lo": 0.0052119015924323945,
+       "miss_hi": 0.005120444490273525,
+       "cover": 0.9896676539172942
+      }
+     },
+     "source": "conformal_fit.py 2026-11-22 on monitor_points_orig.csv, monitor_points_x1.csv (monitor_validate, Crux 60e03782b1966603ee295ea0ecc39c41a4eef423)"
+    },
+    "next_ranges": {
+     "levels": {
+      "90": {
+       "lo": 0.05,
+       "hi": 0.95
+      },
+      "99": {
+       "lo": 0.005,
+       "hi": 0.995
+      }
+     },
+     "observed": {
+      "90": {
+       "miss_lo": 0.03176791868436778,
+       "miss_hi": 0.06257173153168026
+      },
+      "99": {
+       "miss_lo": 0.0028207468494387032,
+       "miss_hi": 0.0075104081220139455
+      }
+     },
+     "papers": 306,
+     "points": 30026,
+     "pooled": true,
+     "source": "conformal_fit.py ranges 2026-11-22 on monitor_points_orig.csv, monitor_points_x1.csv (monitor_validate, Crux 60e03782b1966603ee295ea0ecc39c41a4eef423, nominal levels): descriptive, post hoc to PUBLICATION_PLAN W2 rule 8; the predictive before measuring; per study (equal weight) mean of the share of measured next values outside the previous session's range, all lines pooled; in-sample"
+    }
+   },
+   "line_class": "pdx",
+   "host_class": "immunodeficient",
+   "tumour_type": "PDAC",
+   "tier": "Own spreads",
+   "pooled_fields": [
+    "noise.k",
+    "noise.df",
+    "noise.sd_session",
+    "take.nonprogressing_map",
+    "noise.c0_c1_curve",
+    "twin.sd_log_alpha",
+    "twin.sd_log_beta",
+    "twin.sd_process",
+    "twin.first_factor",
+    "twin.start_df",
+    "twin.slow_share",
+    "twin.slow_shift",
+    "twin.skew"
+   ],
+   "start_window": {
+    "lo": 80.0,
+    "hi": 500.0
+   }
+  }
+ },
+ "measurement_error": {
+  "model": "sd(log V) = c0 + c1 / sqrt(V mm3)",
+  "c0": 0.07947788881928043,
+  "c1": 1.2513105164415084,
+  "triples": 8761,
+  "overall_sd": 0.15843249204324908,
+  "bands": [
+   {
+    "band": "(0.0, 50.0]",
+    "median_volume": 32.87501,
+    "sd": 0.3208445042349471,
+    "triples": 375
+   },
+   {
+    "band": "(50.0, 100.0]",
+    "median_volume": 77.13499999999999,
+    "sd": 0.20782901600028156,
+    "triples": 848
+   },
+   {
+    "band": "(100.0, 300.0]",
+    "median_volume": 182.3945,
+    "sd": 0.16849252441865656,
+    "triples": 3408
+   },
+   {
+    "band": "(300.0, 1000.0]",
+    "median_volume": 502.13296325,
+    "sd": 0.14087297626273756,
+    "triples": 3586
+   },
+   {
+    "band": "(1000.0, inf]",
+    "median_volume": 1241.408125,
+    "sd": 0.10724974726486705,
+    "triples": 544
+   }
+  ],
+  "method": "Crux stats.tumor_measurement_error (crux-core 60e03782b1966603ee295ea0ecc39c41a4eef423): robust second-difference estimator on consecutive triples (<= 8 days) of base-pool controls"
+ },
+ "models": {
+  "MC38": {
+   "class": "syngeneic",
+   "tumour_type": "colon",
+   "host_class": "immunocompetent",
+   "tier": "Full",
+   "papers": 41,
+   "animals": 833,
+   "organ": "colon"
+  },
+  "CT26": {
+   "class": "syngeneic",
+   "tumour_type": "colon",
+   "host_class": "immunocompetent",
+   "tier": "Full",
+   "papers": 37,
+   "animals": 504,
+   "organ": "colon"
+  },
+  "B16F10": {
+   "class": "syngeneic",
+   "tumour_type": "melanoma",
+   "host_class": "immunocompetent",
+   "tier": "Full",
+   "papers": 28,
+   "animals": 404,
+   "organ": "skin"
+  },
+  "4T1": {
+   "class": "syngeneic",
+   "tumour_type": "breast",
+   "host_class": "immunocompetent",
+   "tier": "Full",
+   "papers": 61,
+   "animals": 730,
+   "organ": "breast"
+  },
+  "LLC": {
+   "class": "syngeneic",
+   "tumour_type": "lung",
+   "host_class": "immunocompetent",
+   "tier": "Own spreads",
+   "papers": 26,
+   "animals": 277,
+   "organ": "lung"
+  },
+  "Panc02": {
+   "class": "syngeneic",
+   "tumour_type": "pancreas",
+   "host_class": "immunocompetent",
+   "tier": "Own spreads",
+   "papers": 14,
+   "animals": 195,
+   "organ": "pancreas"
+  },
+  "Hepa1-6": {
+   "class": "syngeneic",
+   "tumour_type": "liver",
+   "host_class": "immunocompetent",
+   "tier": "Own spreads",
+   "papers": 17,
+   "animals": 225,
+   "organ": "liver"
+  },
+  "EMT6": {
+   "class": "syngeneic",
+   "tumour_type": "breast",
+   "host_class": "immunocompetent",
+   "tier": "Thin",
+   "papers": 12,
+   "animals": 142,
+   "organ": "breast"
+  },
+  "MDA-MB-231": {
+   "class": "cdx",
+   "tumour_type": "breast",
+   "host_class": "immunodeficient",
+   "tier": "Own spreads",
+   "papers": 27,
+   "animals": 267,
+   "organ": "breast"
+  },
+  "A549": {
+   "class": "cdx",
+   "tumour_type": "lung",
+   "host_class": "immunodeficient",
+   "tier": "Thin",
+   "papers": 12,
+   "animals": 110,
+   "organ": "lung"
+  },
+  "PDX-NSCLC": {
+   "class": "pdx",
+   "tumour_type": "NSCLC",
+   "host_class": "immunodeficient",
+   "tier": "Own spreads",
+   "papers": 47,
+   "animals": 355,
+   "organ": "lung"
+  },
+  "PDX-PDAC": {
+   "class": "pdx",
+   "tumour_type": "PDAC",
+   "host_class": "immunodeficient",
+   "tier": "Own spreads",
+   "papers": 28,
+   "animals": 201,
+   "organ": "pancreas"
+  }
+ }
+}

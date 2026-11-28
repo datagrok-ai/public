@@ -1,0 +1,65 @@
+{
+  "name": "@datagrok/pmxstudio",
+  "friendlyName": "PMX Studio",
+  "version": "0.1.3",
+  "description": "PMX Studio Preclinical: de novo design of xenograft and syngeneic efficacy studies from a curated atlas of historical controls",
+  "dependencies": {
+    "@datagrok-libraries/test": "workspace:^",
+    "@datagrok-libraries/u2": "workspace:^",
+    "datagrok-api": "workspace:^",
+    "dayjs": "catalog:",
+    "echarts": "^5.0.0"
+  },
+  "scripts": {
+    "build": "grok api && grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts src",
+    "test": "grok test"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/PmxStudio"
+  },
+  "author": {
+    "name": "Guillermo Canudo-Barreras",
+    "email": "gcbarreras@datagrok.ai"
+  },
+  "category": "Health",
+  "properties": [
+    {
+      "name": "labGroup",
+      "propertyType": "string",
+      "defaultValue": "",
+      "nullable": true,
+      "description": "The Datagrok group whose members may change the lab's outlier rules for everyone (Administrators always can)"
+    },
+    {
+      "name": "outlierRules",
+      "propertyType": "string",
+      "defaultValue": "",
+      "nullable": true,
+      "description": "The lab's outlier rules for the study table (JSON, written from the table's Rules dialog; empty: the defaults)"
+    },
+    {
+      "name": "humaneLimit",
+      "propertyType": "int",
+      "nullable": true,
+      "description": "The lab's humane limit for the tumor volume (mm³), from its approved protocol: a new plan or study starts from it (empty: 1500)"
+    },
+    {
+      "name": "domainStorage",
+      "friendlyName": "Save in Datagrok",
+      "propertyType": "bool",
+      "defaultValue": true,
+      "nullable": false,
+      "description": "Save plans and studies as rows of PMX Studio's domain tables (on by default; shared rows open read-only for others). Off: as files in each user's Home, for a lab that needs several people editing one study"
+    }
+  ]
+}

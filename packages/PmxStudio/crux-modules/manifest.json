@@ -1,0 +1,79 @@
+{
+ "generated_by": "tools/parity/wasm-modules/modules.py build (each module's cruxModuleInfo())",
+ "core": "chem",
+ "modules": {
+  "pmx": {
+   "title": "PMX Studio: tumour growth inhibition, tumour study design / simulation / monitoring, the tumour twin, synergy, LS-means contrasts, post-hoc tests, scipy.stats distributions, competing risks",
+   "js": "pmx/crux_wasm.js",
+   "wasm": "pmx/crux_wasm_bg.wasm",
+   "features": [],
+   "functions": 0,
+   "abi": 1,
+   "fns": "pmx/fns.json",
+   "thread": "worker",
+   "compute": "pmx/compute.json",
+   "hash": {
+    "js": "00d3fd077a9d0706",
+    "wasm": "367af3e48ec5d4c5"
+   }
+  }
+ },
+ "functions": {
+  "stats.barnard": "pmx",
+  "stats.bliss_independence": "pmx",
+  "stats.boschloo": "pmx",
+  "stats.chi2_contingency": "pmx",
+  "stats.contrast": "pmx",
+  "stats.correlation": "pmx",
+  "stats.describe": "pmx",
+  "stats.dist_eval": "pmx",
+  "stats.dunnett": "pmx",
+  "stats.emmeans": "pmx",
+  "stats.f_oneway": "pmx",
+  "stats.fdr": "pmx",
+  "stats.fisher_exact": "pmx",
+  "stats.joint_tests": "pmx",
+  "stats.kruskal": "pmx",
+  "stats.mannwhitneyu": "pmx",
+  "stats.normality": "pmx",
+  "stats.outliers": "pmx",
+  "stats.posthoc": "pmx",
+  "stats.synergy": "pmx",
+  "stats.tgi": "pmx",
+  "stats.ttest": "pmx",
+  "stats.tukey_hsd": "pmx",
+  "stats.tumor_allocate": "pmx",
+  "stats.tumor_body_weight": "pmx",
+  "stats.tumor_body_weight_simulate": "pmx",
+  "stats.tumor_combination_design": "pmx",
+  "stats.tumor_combination_effects": "pmx",
+  "stats.tumor_effect_from_study": "pmx",
+  "stats.tumor_growth_curves": "pmx",
+  "stats.tumor_growth_model": "pmx",
+  "stats.tumor_growth_rates": "pmx",
+  "stats.tumor_growth_synergy": "pmx",
+  "stats.tumor_measurement_error": "pmx",
+  "stats.tumor_monitor": "pmx",
+  "stats.tumor_plan_checks": "pmx",
+  "stats.tumor_study_design": "pmx",
+  "stats.tumor_study_simulate": "pmx",
+  "stats.tumor_survival": "pmx",
+  "stats.tumor_twin": "pmx",
+  "stats.tumor_twin_fit": "pmx",
+  "stats.tumor_twin_loglik": "pmx",
+  "stats.tumor_twin_loo_parts": "pmx",
+  "stats.variance_test": "pmx",
+  "stats.wilcoxon": "pmx",
+  "survival.fine_gray": "pmx",
+  "survival.gray_test": "pmx"
+ },
+ "exports": {
+  "fnDataset": [
+   "pmx"
+  ],
+  "fnSource": [
+   "pmx"
+  ]
+ },
+ "isolated": []
+}
