@@ -1,6 +1,6 @@
 # db-explorer changelog
 
-## v.next
+## 1.8.0 (2026-11-27)
 
 * Fixed the first card of a page not opening in the context panel when the server spells the connection's namespace in another case than the configuration (a value made before the connection was found kept the configured name)
 * Links: the rows that point at a card are grouped in a box headed by what they share with it (`This drug`, `Same target · GROKTGT-000010`), one box for each key the card holds, each read from the column that holds it

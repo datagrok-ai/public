@@ -12,13 +12,13 @@
     "access": "public"
   },
   "friendlyName": "Tutorials",
-  "version": "1.7.11",
+  "version": "1.8.0",
   "description": "Helpers for creating tutorials",
   "dependencies": {
     "@datagrok-libraries/compute-utils": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",
     "cash-dom": "catalog:",
-    "datagrok-api": "^1.27.7",
+    "datagrok-api": "workspace:^",
     "dayjs": "catalog:",
     "rxjs": "catalog:"
   },

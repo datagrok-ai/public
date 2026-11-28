@@ -1,6 +1,6 @@
 # API Samples changelog
 
-## v.next
+## 1.3.0 (2026-11-27)
 
 * Added data-frame/join-link/link-tables-detach.js (`grok.data.linkTables` returns the link, `TableLink.detach()` removes it)
 * [#4677](https://github.com/datagrok-ai/public/issues/4677): ui/views/unsaved-work.js: a view that asks before its unsaved changes are lost

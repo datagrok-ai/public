@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/eps-viewer",
   "friendlyName": "EPS Viewer",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "author": {
     "name": "Datagrok",
     "email": "info@datagrok.ai"

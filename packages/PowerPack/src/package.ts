@@ -22,7 +22,6 @@ import {viewersDialog} from './viewers-gallery';
 import {windowsManagerPanel} from './windows-manager';
 import {initSearch, createFuncTableViewWidget} from './search/power-search';
 import {newUsersSearch, registerDGUserHandler} from './dg-db';
-import {merge} from 'rxjs';
 import {HelpObjectHandler} from './search/help-entity';
 import {SpotlightWidget} from './spotlight/spotlight-widget';
 import {showFocusedPreview} from './spotlight/preview-host';
@@ -455,29 +454,6 @@ export class PackageFunctions {
 
     _properties = _package.settings;
     registerDGUserHandler(); // lazy without await
-
-    // saving and restoring the scrolls when changing views
-    const maxDepth = 40;
-    const elementMap = new Map<HTMLElement, number>();
-    const getScrolledChild = (node: HTMLElement, depth = 0) => {
-      if (depth > maxDepth)
-        return;
-      if (node.scrollTop)
-        elementMap.set(node, node.scrollTop);
-      node.children && Array.from(node.children)
-        .forEach((child) => getScrolledChild(child as HTMLElement, depth + 1));
-    };
-    const setScrolls = () => {
-      elementMap.forEach((scroll, node) => {
-        if (document.body.contains(node)) {
-          node.scrollTop = scroll;
-          elementMap.delete(node);
-        }
-      });
-    };
-    merge(grok.events.onCurrentViewChanging, grok.events.onViewChanging)
-      .subscribe((_) => getScrolledChild(document.body));
-    DG.debounce(merge(grok.events.onCurrentViewChanged, grok.events.onViewChanged), 100).subscribe((_) => setScrolls());
   }
 
   @grok.decorators.autostart({description: 'Windows Manager'})

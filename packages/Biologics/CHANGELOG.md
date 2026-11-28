@@ -1,5 +1,9 @@
 # Biologics changelog
 
+## 1.1.0 (2026-11-27)
+
+* Maintenance release: build toolchain and dependency updates
+
 ## 1.0.12 (2026-05-04)
 
 * Version bump without code changes

@@ -2,6 +2,10 @@
 
 ## 1.48.0 (2026-11-27)
 
+* Maintenance release: build toolchain and dependency updates
+
+## 1.48.0 (2026-11-27)
+
 * Fitting: `acceptedFitting$` answers null when the function has no scalar outputs and the view closes at once; it used to never answer
 * Sensitivity analysis: Fixed the help link of the view, which opened a missing page
 * Custom function view: Added `HistoryInput`, an input for a saved run of a model, picked in Compute2's Open dialog

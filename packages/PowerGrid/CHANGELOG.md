@@ -1,6 +1,6 @@
 # Power Grid changelog
 
-## v.next
+## 1.9.0 (2026-11-27)
 
 * core#1765: Detectors: Declared the column types the semantic type detectors check, so the platform no longer calls them for other columns
 * [core#637](https://github.com/datagrok-ai/core/issues/637): GPU scatter plot: Made markers take the alpha of their colors (marker opacity and category colors), as the core draws them

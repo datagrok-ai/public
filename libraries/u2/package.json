@@ -8,7 +8,7 @@
     "email": "askalkin@datagrok.ai"
   },
   "fullName": "U2",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Next-gen Datagrok UI library: design tokens, headless signal-based components, standalone gallery",
   "type": "module",
   "main": "./dist/src/index.js",

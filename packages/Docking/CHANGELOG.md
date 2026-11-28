@@ -1,6 +1,6 @@
 # Docking changelog
 
-## v.next
+## 1.4.0 (2026-11-27)
 
 * Tests: Added an AutoDock panel test that the receptor is shown together with the pose
 * Tests: The AutoDock tests are skipped, with the reason, when the server reports Grok Spawner switched off or unreachable instead of each waiting 5 minutes for a container that never starts

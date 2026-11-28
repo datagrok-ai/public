@@ -1,6 +1,6 @@
 {
   "name": "@datagrok-libraries/bdd",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Behavioral automation for Datagrok: Gherkin features bound to the u2 and platform vocabulary, compiled into Playwright specs that packages own",
   "type": "module",
   "bin": {

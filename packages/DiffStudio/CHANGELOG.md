@@ -1,6 +1,6 @@
 # Diff Studio changelog
 
-## v.next
+## 1.8.0 (2026-11-27)
 
 * Fixed Start, Finish and Step accepting an invalid range silently
 * Demos: Fixed the empty help panel in the Diff Studio, PK-PD and Bioreactor demos

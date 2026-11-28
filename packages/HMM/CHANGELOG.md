@@ -1,6 +1,6 @@
 # HMM changelog
 
-## 0.1.0 (unreleased)
+## 1.0.0 (2026-11-27)
 
 * [public#4226](https://github.com/datagrok-ai/public/issues/4226): Profile HMM Search, Profile HMM Logo, Build
   Profile HMM, Homology Search and Find Domains are disabled until the current table has a macromolecule column.

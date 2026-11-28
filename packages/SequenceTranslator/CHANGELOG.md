@@ -1,6 +1,6 @@
 # Sequence Translator changelog
 
-## v.next
+## 1.12.0 (2026-11-27)
 
 * Oligo Translator: Each Translator keeps its own bulk choices (table, sequence column, Input format, Output format): they lived in one EventBus for the whole page, so a Translator showing Nucleotides converted to the format, or from the table, another Translator had picked; a closed Translator, alone or in the Oligo Toolkit, no longer follows the tables opened after it (its subscriptions ended with neither view)
 * PolyTool: Enumerate: Fixed a "This column is read-only" warning on every double-click of a placeholder's Monomers cell, the gesture that opens Select Monomers

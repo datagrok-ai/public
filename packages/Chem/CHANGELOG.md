@@ -1,6 +1,6 @@
 # Chem changelog
 
-## v.next
+## 2.0.0 (2026-11-27)
 
 * SAR Matrix demos: The tour shows by itself only the first time a demo is opened in a browser, on green cards that leave with their view and come back with it; the icon in the viewer's header starts it over from the Summary
 * core#1765: Detectors: Declared the column types the semantic type detectors check, so the platform no longer calls them for other columns

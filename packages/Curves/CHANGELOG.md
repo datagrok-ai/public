@@ -1,6 +1,6 @@
 # Curves changelog
 
-## v.next
+## 1.14.0 (2026-11-27)
 
 * core#1765: Detectors: Declared the column types the semantic type detectors check, so the platform no longer calls them for other columns
 * Fit: 4PL dose-response curves (the default of Data to Curves) fit their Hill slope instead of staying near the -10 they started from (statistics library)

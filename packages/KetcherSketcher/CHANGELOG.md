@@ -1,6 +1,6 @@
 # Ketcher Sketcher changelog
 
-## v.next
+## 2.5.0 (2026-11-27)
 
 * [core#877](https://github.com/datagrok-ai/core/issues/877): Sketcher: Fixed "couldnt find ketcher instance" when a Ketcher sketcher was closed or suspended while a SMARTS export waited for its turn
 * Fixed Ketcher staying 500 px wide in a dialog shown with a size until the dialog was resized by hand: it fills its host's width (500 px at least, which the host keeps)

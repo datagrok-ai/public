@@ -1,6 +1,6 @@
 # Proteomics changelog
 
-## v.next
+## 1.4.0 (2026-11-27)
 
 * core#1765: Detectors: Declared the column types the semantic type detectors check, so the platform no longer calls them for other columns
 * [core#637](https://github.com/datagrok-ai/core/issues/637): PCA plot: Fixed confidence ellipses not being drawn: their colors were HTML strings with a near-zero opacity; they now take ARGB colors with a 15% fill

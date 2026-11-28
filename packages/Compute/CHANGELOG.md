@@ -1,5 +1,9 @@
 # Compute changelog
 
+## 1.46.0 (2026-11-27)
+
+* Maintenance release: build toolchain and dependency updates
+
 ## 1.45.5 (2026-11-27)
 
 * Dependencies: Pinned `uuid` to ^11.1.1 through `overrides`, so the `uuid` 8.3.2 that exceljs 4.4.0 brings is no longer resolved (GHSA-w5hq-g745-h8pq)

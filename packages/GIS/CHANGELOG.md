@@ -1,6 +1,6 @@
 # GIS changelog
 
-## v.next
+## 1.4.0 (2026-11-27)
 
 * core#1765: Detectors: Declared the column types the semantic type detectors check, so the platform no longer calls them for other columns
 

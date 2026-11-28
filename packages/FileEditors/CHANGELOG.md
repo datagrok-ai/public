@@ -1,6 +1,6 @@
 # File Editors changelog
 
-## v.next
+## 1.4.0 (2026-11-27)
 
 * PDF, DOCX, RTF: The preview view is named after the file (its tab had no title)
 * RTF: Fixed the preview failing to load its renderer (the bundle was dropped in the rspack migration)

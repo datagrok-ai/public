@@ -1,6 +1,6 @@
 # CVM Tests changelog
 
-## v.next
+## 1.6.0 (2026-11-27)
 
 * Tests: Cut about two minutes from the suite. `jsCvmCancel` now reports progress while it waits, so a cancel frees the single-task Node worker instead of leaving it asleep for the rest of the minute (the next test, `meta.server alias`, waited 55s for it), and `Cancellation` cancels on the first progress report instead of after a fixed 5s; the node worker benchmark runs before `Celery: node worker`, so its cold start is the container's first start; `Proxy WebSocket` runs before the test that stops its container; `Env: reuse existing environment` shares the pip-only environment
 * Tests: Gave `Files: OpenFile` `Open big csv` the 120s budget its sibling has for the same 574k-row file; it timed out at the 30s default on CI

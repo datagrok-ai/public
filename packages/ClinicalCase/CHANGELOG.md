@@ -1,6 +1,6 @@
 # Clinical Case changelog
 
-## v.next
+## 1.5.0 (2026-11-27)
 
 * Docker: Rebuilt the clinical-case image on Wolfi (multi-stage, no pip or build tools in the final image) to clear the Debian CVEs; the worker starts with default queue and host names when TASK_QUEUE_NAME/CELERY_HOSTNAME are unset
 * Docker: Fixed the check_health task: CDISC CORE 1.0.0 has a `version` command, not a `--version` option

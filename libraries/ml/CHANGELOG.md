@@ -1,6 +1,6 @@
 # ml changelog
 
-## v.next
+## 6.12.0 (2026-11-27)
 
 * Multi-column dimensionality reduction: The UMAP random seed applies on the GPU too: the same seed gives the same coordinates (on the same GPU). If the GPU fit fails, the CPU fit that replaces it gives what a CPU run with that seed gives
 

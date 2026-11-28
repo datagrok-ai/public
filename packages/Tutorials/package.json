@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/tutorials",
   "friendlyName": "Tutorials",
-  "version": "1.11.4",
+  "version": "1.12.0",
   "author": {
     "name": "Dmytro Kovalyov",
     "email": "dkovalyov@datagrok.ai"

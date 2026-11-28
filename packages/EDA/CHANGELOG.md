@@ -1,6 +1,6 @@
 # EDA changelog
 
-## v.next
+## 1.10.0 (2026-11-27)
 
 * Reduce Dimensionality: UMAP's Random Seed applies with Use WebGPU too: the same seed gives the same coordinates (on the same GPU). Test: `Dimensionality reduction: UMAP random seed`
 
