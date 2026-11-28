@@ -1,6 +1,6 @@
 # Samples changelog
 
-## v.next
+## 1.6.0 (2026-11-27)
 
 * [public#4636](https://github.com/datagrok-ai/public/issues/4636): Fixed the MySQL and MariaDB sample queries having no inputs and failing with an SQL syntax error
 * Notebooks: Migrated sample notebooks to datagrok-api 0.1.0

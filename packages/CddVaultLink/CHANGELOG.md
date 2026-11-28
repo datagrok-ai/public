@@ -1,6 +1,6 @@
 # CDD Vault Link changelog
 
-## v.next
+## 1.2.0 (2026-11-27)
 
 * App: The landing header is u2's `AppHeader` (moved out of `@datagrok-libraries/utils`): the same icon, bullets and Learn more
 

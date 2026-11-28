@@ -1,6 +1,6 @@
 # Grokky changelog
 
-## v.next
+## 1.1.0 (2026-11-27)
 
 * [public#4667](https://github.com/datagrok-ai/public/issues/4667): A wand suggestion opens in its own tab (Help, Execute or Query) without asking the model which one fits
 * Search: Help and Execute no longer wait on browser tools that the search bar never answers

@@ -1,6 +1,6 @@
 # Notebooks changelog
 
-## v.next
+## 1.7.0 (2026-11-27)
 
 * Added the `@DATAGROK_API_URL` placeholder for the server API URL
 * [public#4660](https://github.com/datagrok-ai/public/issues/4660): Fixed the session token being shown when a notebook is opened and in cell outputs

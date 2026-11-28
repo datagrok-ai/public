@@ -1,6 +1,6 @@
 # UI Tests changelog
 
-## v.next
+## 1.4.0 (2026-11-27)
 
 * Tests: `UI: Groups` creates its own group, so `group.panel` no longer needs a stand that already has groups
 * [core#1050](https://github.com/datagrok-ai/core/issues/1050): Replaced fixed delays and short `awaitCheck` polls with event and state waits, unskipped six fixed tests, registered the eight `gui/viewers` suites, and removed the obsolete Add New Column, Leaflet and Packages tests

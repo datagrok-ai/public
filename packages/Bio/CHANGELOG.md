@@ -1,6 +1,6 @@
 # Bio changelog
 
-## v.next
+## 3.0.0 (2026-11-27)
 
 * core#1765: Detectors: Declared the column types the semantic type detectors check, so the platform no longer calls them for other columns
 * Sequence space: UMAP's Random Seed applies with Use WebGPU too: the same seed gives the same coordinates (on the same GPU). Test: `sequenceSpace`, sequenceSpace: same seed, same coordinates, on the GPU and on the CPU

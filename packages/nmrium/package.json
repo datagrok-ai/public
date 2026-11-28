@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/nmrium",
   "friendlyName": "NMRium",
-  "version": "1.3.1",
+  "version": "1.4.0",
   "description": "Datagrok package for NMR data visualization",
   "author": {
     "name": "Davit Rizhinashvili",

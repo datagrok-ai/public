@@ -1,6 +1,6 @@
 # Bionemo changelog
 
-## v.next
+## 1.4.0 (2026-11-27)
 
 * core#1837: BioNeMo: NGC API key is kept in package settings instead of package credentials
 

@@ -1,5 +1,9 @@
 # Arrow changelog
 
+## 1.7.0 (2026-11-27)
+
+* Maintenance release: build toolchain and dependency updates
+
 ## 1.6.1 (2026-09-10)
 
 * Version bump without code changes

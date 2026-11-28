@@ -1,5 +1,9 @@
 # Jira Connect changelog
 
+## 1.3.0 (2026-11-27)
+
+* Maintenance release: build toolchain and dependency updates
+
 ## 1.2.4 (2026-07-15)
 
 * Migrated issue search from the removed `/rest/api/3/search` endpoint (HTTP 410) to the enhanced, token-paginated `/rest/api/3/search/jql`; fixed a null-response crash ("Cannot read properties of null (reading 'errorMessages')")

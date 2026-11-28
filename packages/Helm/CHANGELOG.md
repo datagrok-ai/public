@@ -1,6 +1,6 @@
 # Helm changelog
 
-## v.next
+## 3.1.0 (2026-11-27)
 
 * Renderer: Reports where it drew a monomer in a cell (`getMonomerPoint(gridCell, position)` of the renderer back, the inverse of its hover hit test), so a test or a filmed demo can point at one monomer
 * HELM editor: Fixed the monomer that follows the mouse after a click on a palette tile staying on the page once Escape closed the editor. The cell editor (a double click) and the HELM input's editor destroy the editor when their dialog closes, however it closes; it kept its document listeners after every edit. Test: `helm-web-editor`, cell editor Escape

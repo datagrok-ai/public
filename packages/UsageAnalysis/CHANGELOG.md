@@ -1,6 +1,6 @@
 # Usage Analysis changelog
 
-## v.next
+## 2.8.0 (2026-11-27)
 
 * Reports widget: Report descriptions use the full width of the card, cut with an ellipsis instead of at 30 characters, with the full text in the tooltip
 * Usage widget: System shows how many services run and names only those that do not, instead of a list that scrolled inside the card; hovering it lists every service

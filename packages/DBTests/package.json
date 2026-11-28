@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/dbtests",
   "friendlyName": "DB Tests",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "description": "Automated tests for JDBC Providers",
   "author": {
     "name": "Oleksandra Serhiienko",

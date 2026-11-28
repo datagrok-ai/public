@@ -1,5 +1,9 @@
 # Alation changelog
 
+## 1.4.0 (2026-11-27)
+
+* Maintenance release: build toolchain and dependency updates
+
 ## 1.3.0 (2025-08-29)
 
 Packages: Replaced default permissions
