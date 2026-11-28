@@ -1,6 +1,6 @@
 # BDD library changelog
 
-## v.next
+## 1.0.0 (2026-11-28)
 
 * Steps: Added `the "X" view should span the "A" and "B" views`: a view docked under two side-by-side views starts at the first one's left edge and ends at the second one's right edge
 * Runner: A suite run leaves out the films — guides in demo or tutorial mode (`@guide` with `@demo` or `@tutorial`) — in both lanes; `grok-bdd guide` films them as before, and `BDD_FILMS=1` runs them as tests. U2Demo's features, whose `@demo` names the app they test, still run
