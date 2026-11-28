@@ -3,6 +3,8 @@
    with each part's CRC-32. No platform imports. */
 
 /** A run of text: plain, bold, or a field the user fills (grey, in brackets). A '\n' breaks the line. */
+import {maxOf} from './format';
+
 export type Run = string | {text: string, bold?: boolean, fill?: boolean};
 /** A table cell: one run or several. */
 export type Cell = Run | Run[];
@@ -32,7 +34,7 @@ const para = (c: Cell, style?: string) => `<w:p>${style ? `<w:pPr><w:pStyle w:va
 const bold = (c: Cell): Run[] => list(c).map((x) => typeof x === 'string' ? {text: x, bold: true} : {...x, bold: true});
 
 function table(b: {rows: Cell[][], head?: boolean, widths?: number[]}, width: number): string {
-  const cols = Math.max(...b.rows.map((r) => r.length));
+  const cols = maxOf(b.rows.map((r) => r.length));
   const rel = b.widths?.length === cols ? b.widths : Array(cols).fill(1);
   const sum = rel.reduce((a, x) => a + x, 0);
   const tw = rel.map((x) => Math.floor(width * x / sum));

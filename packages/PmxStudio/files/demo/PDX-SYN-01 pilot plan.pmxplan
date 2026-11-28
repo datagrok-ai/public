@@ -5,7 +5,7 @@
   "created": "2026-11-24T20:44:24.569Z",
   "author": "demo",
   "study": {
-    "id": "PMX-2026-0005",
+    "id": "PMX-DEMO-PDX-SYN-01",
     "description": "",
     "owner": "demo",
     "project": "",
@@ -57,7 +57,7 @@
       }
     ],
     "power": 80,
-    "correction": "holm",
+    "correction": "bonferroni",
     "n": null,
     "lastDay": null,
     "tgiScenarios": null,

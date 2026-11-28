@@ -6,7 +6,7 @@ import {ButtonGroup, div, icon, Input, InputOptions, Reason, signal, span, Toolt
 import type {ReadonlySignal} from '@datagrok-libraries/u2';
 
 import {historyDialog} from './history-dialog';
-import {HISTORY_PREFIX, TumorModel, enginePriors, historyModelName, tumorModels} from './priors';
+import {HISTORY_PREFIX, TumorModel, enginePriors, historyKeys, historyModelName, tumorModels} from './priors';
 import {setUserSetting, userSetting} from './ui';
 
 export type ModelClass = TumorModel['class'];
@@ -68,13 +68,21 @@ export class LineInput extends Input<string | null, InputOptions<string | null>>
   get models(): ReadonlySignal<{[line: string]: TumorModel} | null | undefined> {return this._models;}
 
   constructor(options: InputOptions<string | null>) {
-    super(options, 'MC38');
+    // no model assumed: a study read from a file, or one without a plan, waits for one picked (QA 0.1.3 round 3)
+    super(options, null);
     this.root.dataset.u2 = 'pmx-line-input';
     // each model with the papers and animals of its growth prior, the ones the plan's protocol cites (the models'
     // own listing counts a narrower set for some PDX models: 47 papers against the prior's 48)
     void Promise.all([tumorModels(), enginePriors()]).then(([m, p]) => this._models.value = Object.fromEntries(
       Object.entries(m).map(([l, x]) => [l, {...x, papers: p.lines[l]?.papers ?? x.papers,
         animals: p.lines[l]?.animals ?? x.animals}])), () => this._models.value = {});
+    // a model the atlas does not have (a plan file edited by hand, a model since removed) is not kept as if it were
+    // one: the field says so and the plan waits for a model from the list (QA 0.1.3 final designer #30)
+    this.addValidator((v) => {
+      const models = this._models.value;
+      return !v || !models || !Object.keys(models).length || v in models || v.startsWith(HISTORY_PREFIX) ? null :
+        `"${v}" is not a tumor model of the atlas: pick one from the list`;
+    });
   }
 
   protected createEditor(): HTMLElement {
@@ -176,7 +184,9 @@ export class LineInput extends Input<string | null, InputOptions<string | null>>
         const v = this.value;
         const m = this._models.value?.[v ?? ''];
         const own = historyModelName(v);
-        name.textContent = own ?? (v?.startsWith(HISTORY_PREFIX) ? 'Own history, not loaded' : v ?? '');
+        // (none yet: a study read from a file names no model, and none is assumed)
+        name.textContent = own ?? (v?.startsWith(HISTORY_PREFIX) ? 'Own history, not loaded' :
+          v || 'Pick the tumor model');
         note.style.display = FIT_NOTES[v ?? ''] ? '' : 'none';
         note.setAttribute('aria-label', FIT_NOTES[v ?? ''] ?? '');
         kind.textContent = own ? 'Own history · PDX' :
@@ -221,13 +231,31 @@ export class LineInput extends Input<string | null, InputOptions<string | null>>
           return;
         }
         const found = modelsFound(models, cls.value, query.value);
+        // the models planned from their history in this session, to pick again after another (read each time the
+        // list opens: one added meanwhile is there)
+        void open.value;
+        const words = query.value.toLowerCase().split(/\s+/).filter((w) => w);
+        const mine = cls.value !== null && cls.value !== 'pdx' ? [] : historyKeys().filter((k) =>
+          words.every((w) => (historyModelName(k) ?? '').toLowerCase().includes(w)));
+        const ownItem = (key: string) => {
+          const item = div([div([span(historyModelName(key) ?? key, 'pmx-line-item-name'),
+            span('Own history · PDX', 'pmx-line-item-type')])], 'pmx-line-item');
+          item.dataset.line = key;
+          item.setAttribute('role', 'option');
+          item.setAttribute('aria-selected', String(key === chosen));
+          item.addEventListener('click', () => pick(key));
+          return item;
+        };
+        const ownGroup = mine.length ? [Object.assign(span('Your models', 'pmx-line-group'), {role: 'presentation'}),
+          ...mine.map(ownItem)] : [];
         // (a class's heading is no option: a screen reader reads it as text, not as a model to pick)
         const heading = (c: ModelClass) => {
           const e = span(CLASSES.find((x) => x.cls === c)!.label, 'pmx-line-group');
           e.setAttribute('role', 'presentation');
           return e;
         };
-        list.replaceChildren(...found.length === 0 ? [span('No model matches', 'pmx-line-empty')] :
+        list.replaceChildren(...ownGroup, ...found.length === 0 ? mine.length ? [] :
+          [span('No model matches', 'pmx-line-empty')] :
           found.flatMap((g) => [heading(g.cls),
             ...g.lines.map((line) => {
               const m = models[line];

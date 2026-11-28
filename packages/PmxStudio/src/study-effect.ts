@@ -5,7 +5,7 @@
    the model and the days it checks here, without calling Crux; the rest Crux's function checks. */
 import {ArmPart, controlByName, parseArmName} from './arm-name';
 import {crux, rows} from './crux';
-import {finite, isFiniteNumber as num, median, SEED} from './engine';
+import {finite, isFiniteNumber as num, SEED} from './engine';
 import type {DrugPk, SavedExposure} from './exposure';
 import {StudyMeta, armParts} from './study-meta';
 import {entered} from './sheet';
@@ -50,9 +50,13 @@ export interface PreviousStudy {
   name: string;
   line: string | null;
   meta: StudyMeta | null;
-  rows: {animal: string, group: string | null, day: number | null, volume: number | null}[];
+  /** `flagged`: a measurement the study marked as doubtful (kept by the analysis, left out of Compare's ranges) */
+  rows: {animal: string, group: string | null, day: number | null, volume: number | null, flagged?: true}[];
   /** the exposure Analyze kept with it (the patients' and NCA's per group; older studies: none) */
   exposure?: SavedExposure;
+  /** a study still running (a table open in the workspace not marked finished): its effect is interim, offered last
+   *  and labelled so */
+  interim?: true;
 }
 
 /** A group of an earlier study that received the arm's drug alone, with its control. */
@@ -66,8 +70,7 @@ export interface Anchor {
   readDay: number | null;
   /** every such day, in order: the days the effect can be read on (the plan's own day must be one) */
   days: number[];
-  /** percent: the analysis's TGI when the study kept it (Analyze, as Compare shows it), else 1 - median treated /
-   *  median control on readDay */
+  /** percent: the analysis's TGI when the study kept it (Analyze, as Compare shows it), else growthTgi on readDay */
   tgi: number | null;
   /** whether `tgi` is the analysis's, read on `tgiDay` */
   analyzed: boolean;
@@ -115,6 +118,34 @@ export function readDaysOf(study: PreviousStudy, arm: string, control: string): 
     .sort((a, b) => a - b);
 }
 
+/** The app's one TGI (%), as Analyze's groups table reads it (Crux stats.tgi, change 'paired'): 100 (1 − ΔT/ΔC), Δ
+ *  the mean over the group's animals measured on `day` of each one's change from its first volume from day 0. Used
+ *  where no analysis was kept; null: no animal of the group or the control measured that day, or the control did not
+ *  grow. */
+export function growthTgi(rows: PreviousStudy['rows'], arm: string, control: string, day: number | null):
+  number | null {
+  if (day === null)
+    return null;
+  const change = (g: string) => {
+    const first = new Map<string, {day: number, v: number}>();
+    const on = new Map<string, number>();
+    for (const r of rows) {
+      const v = finite(r.volume);
+      if (r.group !== g || r.day === null || r.day < FIRST_DOSE_DAY || r.day > day || v === null)
+        continue;
+      const f = first.get(r.animal);
+      if (!f || r.day < f.day)
+        first.set(r.animal, {day: r.day, v});
+      if (r.day === day)
+        on.set(r.animal, v);
+    }
+    const d = [...on].map(([a, v]) => v - first.get(a)!.v);
+    return d.length ? d.reduce((t, x) => t + x, 0) / d.length : NaN;
+  };
+  const [dt, dc] = [change(arm), change(control)];
+  return Number.isFinite(dt) && dc > 0 ? 100 * (1 - dt / dc) : null;
+}
+
 /** Of a study's groups that can anchor `armName`, the one whose dose is nearest the arm's on a log scale (the dose
  *  ratio is what Crux scales by, within a quarter to four times), whatever their order in the file; null: none. */
 export function nearestAnchor(anchors: Anchor[], armName: string): Anchor | null {
@@ -139,17 +170,14 @@ export function anchorsIn(study: PreviousStudy, armName: string): Anchor[] {
       return [];
     const days = readDaysOf(study, arm, control);
     const readDay = days.length ? days[days.length - 1] : null;
-    const at = (g: string) => study.rows.filter((r) => r.group === g && r.day === readDay)
-      .map((r) => finite(r.volume)).filter((v): v is number => v !== null);
-    // the analysis's own TGI first, so Plan says what Analyze said of that study (the medians' ratio is another number)
+    // the analysis's own TGI first, so Plan says what Analyze said of that study; else the same TGI from its rows
     const kept = study.exposure?.effect;
     const own = kept?.tgi?.[arm];
     if (num(own)) {
       return [{study, arm, control, part: parts[0], readDay, days, tgi: own, analyzed: true,
         tgiDay: kept!.day ?? null}];
     }
-    const tgi = readDay === null ? null : 100 * (1 - median(at(arm)) / median(at(control)));
-    return [{study, arm, control, part: parts[0], readDay, days, tgi: Number.isFinite(tgi) ? tgi : null,
+    return [{study, arm, control, part: parts[0], readDay, days, tgi: growthTgi(study.rows, arm, control, readDay),
       analyzed: false, tgiDay: readDay}];
   });
 }
@@ -335,11 +363,10 @@ export const linkedScenarios = (arms: {fromStudy?: FromStudy | null}[]) =>
   arms.flatMap((a) => a.fromStudy?.range && a.fromStudy.point !== null ?
     [a.fromStudy.range[0], a.fromStudy.point].map(round).filter((t) => t > 0 && t < 100) : []);
 
-/** The note under an arm: "You have a study of LD4172 at 10 mg/kg (TGI 45%, day 21)." TGI only when it is the
- *  analysis's; a study never analyzed says its medians' ratio, which is not Analyze's TGI. */
+/** The note under an arm: "You have a study of LD4172 at 10 mg/kg (TGI 45%, day 21)." The analysis's TGI,
+ *  else the same TGI from the study's rows (growthTgi). */
 export function offerText(a: Anchor, planLine: string | null = null): string {
-  const effect = a.tgi === null ? '' : a.analyzed ? `TGI ${round(a.tgi)}%` :
-    `median volume ${round(100 - a.tgi)}% of the control's`;
+  const effect = a.tgi === null ? '' : `TGI ${round(a.tgi)}%`;
   const said = [effect, a.tgiDay === null ? '' : `day ${a.tgiDay}`].filter((s) => s).join(', ');
   return `You have a study of ${a.part.drug} at ${a.part.dose!.value} ${a.part.dose!.unit}` +
     // the study's model when it is not the plan's: an effect seen in another model is not this one's (nor, unsaid,

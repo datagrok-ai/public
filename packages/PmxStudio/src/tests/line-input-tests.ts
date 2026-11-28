@@ -25,7 +25,9 @@ category('Tumor models', () => {
   test('the picker holds a line name, as the functions take it', async () => {
     const root = Scope.root('line input test');
     const input = root.build(() => new LineInput({label: 'Tumor model'}));
-    expect(input.value, 'MC38');
+    // none assumed until one is picked (QA 0.1.3 round 3: no MC38 by default)
+    expect(input.value, null);
+    expect(input.root.querySelector('.pmx-line-name')!.textContent, 'Pick the tumor model');
     input.value = '4T1';
     expect(input.value, '4T1');
     root.dispose();

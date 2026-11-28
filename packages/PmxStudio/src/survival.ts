@@ -3,6 +3,7 @@
    treated group's log-rank test against the control. Projected (on request, labelled as such): each animal still
    under the endpoint carried on at the log-linear rate of its last measurements to a horizon (projectedRows, closed
    form), the same Crux KM over it; the log-rank tests stay the measured study's. */
+import {maxOf} from './format';
 import * as DG from 'datagrok-api/dg';
 
 import {crux, named, rows} from './crux';
@@ -107,7 +108,7 @@ export function projectedRows(rows: VolumeRow[], endpoint: number, horizon: numb
   const out: VolumeRow[] = [];
   // an animal that left before the study's last measurement (found dead, removed) is not carried on: it was not
   // there to be followed
-  const studyLast = Math.max(...[...by.values()].flat().map((r) => r.day));
+  const studyLast = maxOf([...by.values()].flat().map((r) => r.day));
   for (const own of by.values()) {
     own.sort((a, b) => a.day - b.day);
     const last = own[own.length - 1];

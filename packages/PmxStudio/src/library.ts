@@ -26,6 +26,8 @@ export interface LibraryEntry {
   /** the drugs its groups receive, each once (their details, else their names) */
   drugs: string;
   owner: string;
+  /** who runs it, when not the owner (Study details' Run by; empty: the owner) */
+  runBy?: string;
   tags: string[];
   /** ms since the epoch */
   updated: number;
@@ -64,17 +66,23 @@ export function entryOf(text: string, updated: number, file: DG.FileInfo | null 
     const arms = (plan?.predicted.arms ?? []).map((a) => a.name);
     const compounds = !shown ? '' : compoundsOf(meta) || arms.join(', ') || groups.join(', ');
     const names = [...new Set([...(meta?.groups ?? []).map((g) => g.group), ...arms, ...groups])];
-    const drugs = !shown ? '' : [...new Set(names.flatMap((n) => armParts(n, meta).map((p) => p.drug)))].join(', ');
+    // each drug once, however its arms write it ("Trametinib", "trametinib"): the first writing kept
+    const byKey = new Map<string, string>();
+    for (const p of names.flatMap((n) => armParts(n, meta)))
+      byKey.set(p.key, byKey.get(p.key) ?? p.drug);
+    const drugs = !shown ? '' : [...byKey.values()].join(', ');
     // what each treated group receives, the groups apart by "; " as treatmentOf writes them (a ", " or " + " between
     // groups read as one list of drugs, or as a combination): else the plan's arms, else the study's treated groups
     const control = controlOf(groups, meta);
     const treatment = !shown ? '' : treatmentOf(meta) || arms.join('; ') ||
       groups.filter((g) => g !== control).join('; ');
     // the model: the plan's, else the one chosen for the study
-    const line = plan?.history?.name ?? plan?.predicted.line ?? study?.history?.name ?? study?.line ?? '';
+    const line = plan?.history?.name || plan?.predicted.line || study?.history?.name || study?.line || '';
     return {kind: study ? 'study' : 'plan', stage: study ? (study.finished === true ? 3 : 2) : 1, file, text,
-      id: meta?.id ?? '', name: x.name ?? '',
-      line, compounds, drugs, owner: meta?.owner || plan?.author || '', tags: meta?.tags ?? [],
+      // (a followed study still named as a new table's default goes by its plan's name)
+      id: meta?.id ?? '', name: (study && (!x.name || x.name === 'New study') && plan?.name) || (x.name ?? ''),
+      line, compounds, drugs, owner: meta?.owner || plan?.author || '', runBy: meta?.runBy ?? '',
+      tags: meta?.tags ?? [],
       updated, treatment, start: meta?.start ?? null,
       day: days.length ? days.reduce((a, b) => Math.max(a, b)) : null,
       next: days.length ? futureDays(days, plan, meta?.start)[0] : null,
@@ -100,9 +108,9 @@ export function libraryOf(entries: (LibraryEntry | null)[]): LibraryEntry[] {
   return [...kept.values()].sort((a, b) => b.updated - a.updated);
 }
 
-/** Whether an entry has every word of `query` in its ID, name, line, drugs, treatment, owner or tags. */
+/** Whether an entry has every word of `query` in its ID, name, line, drugs, treatment, owner, run by or tags. */
 export function matches(e: LibraryEntry, query: string): boolean {
-  const text = [e.id, e.name, e.line, e.drugs, e.treatment, e.owner, ...e.tags].join(' ').toLowerCase();
+  const text = [e.id, e.name, e.line, e.drugs, e.treatment, e.owner, e.runBy ?? '', ...e.tags].join(' ').toLowerCase();
   return query.toLowerCase().split(/\s+/).filter((w) => w).every((w) => text.includes(w));
 }
 
@@ -120,7 +128,8 @@ type Index = {[file: string]: Omit<LibraryEntry, 'file' | 'text'> | {updated: nu
 
 /** The index file's format: another (or none) is rebuilt. Any change to entryOf or LibraryEntry, or to what parsePlan
  *  or parseStudy accept, raises it. */
-export const INDEX_VERSION = 5;
+// (6: the rows of 0.1.3's first indexing kept a study's groups joined by " + ", as one combination: QA 0.1.3 A16)
+export const INDEX_VERSION = 6;
 /** Whether a file's text is a PMX Studio plan or study, of any version. */
 const ours = (text: string): boolean => {
   try {
@@ -172,6 +181,31 @@ export function libraryReader(show: (entries: LibraryEntry[]) => void, fs: Libra
   return read;
 }
 
+/** Runs the calls given to it at most `n` at a time, the rest queued in order (a slot is handed straight to the next
+ *  call, so none slips in between). */
+export function limited(n: number): <T>(fn: () => Promise<T>) => Promise<T> {
+  let active = 0;
+  const queue: (() => void)[] = [];
+  return async (fn) => {
+    if (active < n)
+      active++;
+    else
+      await new Promise<void>((r) => queue.push(r));
+    try {
+      return await fn();
+    } finally {
+      const next = queue.shift();
+      if (next)
+        next();
+      else
+        active--;
+    }
+  };
+}
+
+/** How many files the library reads at once (the first listing may read hundreds). */
+const READS_AT_ONCE = 6;
+
 /** The user's plans and studies: listed (names and dates only) and each one's row from the index; a file the index
  *  has no row for, or an older one (saved before the index, or changed outside the app), is read once and its row
  *  kept. No study is read otherwise, and nothing is computed. A folder that fails to list fails the reading (a
@@ -182,6 +216,7 @@ export async function myLibrary(fs: LibraryFiles = grok.dapi.files, onListed = (
   onListed();
   const files = [...plans, ...studies];
   let changed = false;
+  const read = limited(READS_AT_ONCE);
   const entries = await Promise.all(files.map(async (f) => {
     // (a file with no date is read every time: a change to it could not be seen; one of another date than its row,
     // a copy restored too, is read again)
@@ -194,7 +229,7 @@ export async function myLibrary(fs: LibraryFiles = grok.dapi.files, onListed = (
       return {...row, file: f, text: ''} as LibraryEntry;
     // (a file that fails to read, maybe in passing, is read again next time, and so is one of ours this version cannot
     // read; one that is no PMX Studio file is not, until it changes)
-    const text = await fs.readAsText(f).catch(() => null);
+    const text = await read(() => fs.readAsText(f)).catch(() => null);
     const e = text === null ? null : entryOf(text, dated ? updated : 0, f);
     if (text !== null && dated && (e || !ours(text))) {
       index[f.fileName] = e ? rowOf(e, updated) : {updated, unreadable: true};

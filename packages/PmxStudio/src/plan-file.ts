@@ -6,13 +6,15 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {Arm, armsOf} from './arms-input';
+import {noBidi, parseArmName} from './arm-name';
 import {PlanFrames, PlanInputs, declarationOf} from './frames';
 import {PlanChecks, planChecks} from './plan-checks';
-import {StudyDeclaration, finite, isFiniteNumber as fin} from './engine';
-import {StudyMeta, parseMeta} from './study-meta';
+import {MAX_ARMS, StudyDeclaration, finite, isFiniteNumber as fin, tgiProblem, tooManyArms} from './engine';
+import {StudyMeta, onlyGroups, parseMeta} from './study-meta';
 import {_package} from './package';
 import {priorsText} from './priors';
 import {cruxManifestText} from './crux';
+import {canonical, sameJson} from './format';
 import {SavedHistory, historyOf, registerHistory, savedHistory} from './history-models';
 
 export const PLAN_EXT = 'pmxplan';
@@ -84,10 +86,14 @@ export interface SavedPlan {
     /** the study's last day, the day the median control reaches the endpoint, and 8 in 10 studies' range of it */
     studyEnd: number; endpointDay: number; durationQ10: number; durationQ90: number | null;
     nControl: number | null;
-    /** each arm with its animals, the animals it needed for the plan's power, its power (assurance) by animals
-     *  per arm, and the kill rate that gives its declared effect: Monitor's chance of success rests on that rate, so
+    /** the control's animals to randomize, the analyzable ones and those lost after randomization (older plans:
+     *  none, read as the analyzable) */
+    randomiseControl?: number | null;
+    /** each arm with its animals (`randomise`: to randomize, as randomiseControl), the animals it needed for the
+     *  plan's power, its power (assurance) by animals per arm, and the kill rate that gives its declared effect: Monitor's chance of success rests on that rate, so
      *  it is kept as planned (a plan saved before these were kept has none of them) */
-    arms: (Arm & {n: number | null, nNeeded?: number | null, power?: PowerAt[], killRate?: number | null})[];
+    arms: (Arm & {n: number | null, randomise?: number | null, nNeeded?: number | null, power?: PowerAt[],
+      killRate?: number | null})[];
     /** what a study run as planned should observe, as 95% ranges: the end, the controls' growth, each arm's effect */
     checks: PlanChecks;
     /** the plan as Plan showed it, to show it again at once: its tables (d42, base64, by PlanFrames key), the inputs
@@ -213,7 +219,7 @@ export async function planOf(name: string, call: DG.FuncCall, f: PlanFrames, stu
   // (each arm's kind as planned: one read from its name follows the model's host, frames.ts planFrames)
   const arms = armsOf(inputs.arms as DG.DataFrame).map((arm, i) => ({...arm,
     therapy: (a.col('therapy_key') ? a.get('therapy_key', i) : arm.therapy) as Arm['therapy'],
-    n: finite(a.get('n', i)),
+    n: finite(a.get('n', i)), randomise: a.col('randomise') ? finite(a.get('randomise', i)) : null,
     nNeeded: finite(a.get('n_needed', i)), power: curve(a.get('arm', i)),
     killRate: finite(a.get('kill_rate_per_day', i))}));
   const d = declarationOf(inputs as unknown as PlanInputs);
@@ -224,14 +230,36 @@ export async function planOf(name: string, call: DG.FuncCall, f: PlanFrames, stu
   const history = savedHistory(d.line);
   return {...savedPlan(name, inputs, {line: v('line'), endpoint: v('endpoint'), vRand: v('v_rand'),
     studyEnd: v('study_end'), endpointDay: v('endpoint_day'), durationQ10: v('duration_q10'),
-    durationQ90: n('duration_q90'), nControl: n('n_control'), arms, checks}, study),
+    durationQ90: n('duration_q90'), nControl: n('n_control'),
+    randomiseControl: f.plan.col('randomise_control') ? n('randomise_control') : null, arms, checks}, study),
   ...await provenance().then((x) => ({provenance: x}), () => ({})), ...history ? {history} : {}};
 }
 
-/** A plan as one text whatever its file's spacing or its study's details since: its name and inputs
- *  (StudyLink.plan). */
+/** A plan as one text whatever its file's spacing, its keys' order or its study's details since: its name and inputs,
+ *  each object's keys sorted (a plan read back from its row's json comes with its keys reordered) (StudyLink.plan). */
 export const planKey = (p: {name: string, inputs: unknown} | null | undefined): string | null =>
-  p ? JSON.stringify([p.name, p.inputs]) : null;
+  p ? JSON.stringify(canonical([p.name, p.inputs])) : null;
+/** Whether the inputs a plan's kept tables were computed from (`asked`, their JSON text) are `inputs`. */
+export function sameAsked(asked: string, inputs: unknown): boolean {
+  try {
+    return sameJson(JSON.parse(asked), inputs);
+  } catch {
+    return false;
+  }
+}
+
+/** A study's plan text as Plan opens it from that study: with the study's own ID, not the one its plan came with (QA
+ *  0.1.3 round 4 chaos N3: a study saved from the demo opened Plan as "… · PMX-DEMO-CT26"). Text not read: as is. */
+export function planOfStudy<T extends string | null | undefined>(text: T, id: string | null | undefined): T | string {
+  if (!text || !id)
+    return text;
+  try {
+    const p = JSON.parse(text);
+    if (p?.study && p.study.id !== id)
+      return JSON.stringify({...p, study: {...p.study, id}});
+  } catch {} // (a damaged plan: Plan says so)
+  return text;
+}
 
 /** The plan key of a study table's plan (null: none, or not readable). */
 export function planKeyOf(df: DG.DataFrame | null | undefined): string | null {
@@ -243,11 +271,23 @@ export function planKeyOf(df: DG.DataFrame | null | undefined): string | null {
   }
 }
 
+/** The groups a plan randomizes, the control as Vehicle: each with its animals to randomize (the analyzable and those
+ *  lost after randomization, as Plan's "to randomize" counts them), else, a plan saved before these were kept, its
+ *  analyzable ones. The day-0 IDs and Propose groups both count by it (QA 0.1.3 round 4 designer D4: 60 asked, 78
+ *  planned). */
+export function randomizedGroups(plan: SavedPlan): {name: string, n: number}[] {
+  const p = plan.predicted;
+  const many = (r: number | null | undefined, n: number | null | undefined) => fin(r) && r > 0 ? r : n ?? 0;
+  return [{name: 'Vehicle', n: many(p.randomiseControl, p.nControl)},
+    ...p.arms.map((a) => ({name: a.name, n: many(a.randomise, a.n)}))];
+}
+
 /** A plan read from a file someone may have edited or sent: checked before use. */
 export function parsePlan(text: string): SavedPlan {
   let p: any;
   try {
-    p = JSON.parse(text);
+    // (no text-direction controls in any of its names: they reverse them on screen and in the documents)
+    p = JSON.parse(noBidi(text, true));
   } catch {
     throw new Error('Not a PMX Studio plan: the file cannot be read (cut short, or another kind of file). ' +
       'Open the .pmxplan file saved from Plan.');
@@ -275,9 +315,15 @@ export function parsePlan(text: string): SavedPlan {
     throw new Error('The plan file is damaged: some of what Plan predicted is missing. Open another copy of it, or ' +
       'make the plan again in Plan.');
   }
+  // values Plan could not have saved (a file edited by hand): refused with what is wrong, never shown as "NaN%" or
+  // cut to fit (QA 0.1.3 final designer #2, #11)
+  const bad = badValues(p);
+  if (bad)
+    throw new Error(`This plan cannot be opened: ${bad}. Correct the file, or make the plan again in Plan.`);
+  // (a plan saved before a removed arm left its details: its doses dropped here, for every reader)
   const study = parseMeta(p.study);
   if (study)
-    p.study = study;
+    p.study = onlyGroups(study, ['Control', ...pr.arms.map((a: any) => a.name)]);
   else
     delete p.study;
   const prov = provenanceOf(p.provenance);
@@ -297,6 +343,46 @@ export function parsePlan(text: string): SavedPlan {
   } else
     delete p.history;
   return p as SavedPlan;
+}
+
+/** What in a plan's file Plan could not have saved, in words ('' when nothing): more arms than a study holds, an
+ *  endpoint or volume at randomization not above 0, an arm's TGI not above 0 and below complete regression (tgiMax)
+ *  or its T/C not above 0 to 100%. */
+export function badValues(p: any): string {
+  const arms: any[] = Array.isArray(p?.inputs?.arms) ? p.inputs.arms : [];
+  const most = Math.max(arms.length, Array.isArray(p?.predicted?.arms) ? p.predicted.arms.length : 0);
+  if (most > MAX_ARMS) {
+    const extra = arms.slice(MAX_ARMS).map((a) => `"${a?.name ?? ''}"`).join(', ');
+    return tooManyArms(most).replace(/\.$/, '') + (extra ? ` (past the ${MAX_ARMS}th: ${extra})` : '');
+  }
+  const positive = (x: unknown, what: string) => x != null && x !== '' && !(Number(x) > 0) ?
+    `the ${what} is ${x}, not above 0` : '';
+  // (Plan predicts for the model of its inputs: two models are a file edited by hand, its preview and Plan disagreeing)
+  if (typeof p?.inputs?.line === 'string' && p.inputs.line !== p?.predicted?.line)
+    return `its model is ${p.inputs.line}, but its predictions are for ${p.predicted?.line}`;
+  const said = positive(p?.inputs?.endpoint, 'endpoint volume') ||
+    positive(p?.predicted?.endpoint, 'endpoint volume') ||
+    positive(p?.inputs?.vRand, 'volume at randomization');
+  if (said)
+    return said;
+  // a TGI above 0 and below complete regression (tgiMax: past 100% the tumors shrink), a T/C above 0 to 100%
+  const [endpoint, v0] = [Number(p?.inputs?.endpoint ?? p?.predicted?.endpoint ?? 1000),
+    Number(p?.inputs?.vRand ?? p?.predicted?.vRand ?? 100)];
+  const why = (a: any) => a?.metric === 'TC' ? Number(a?.effect) > 0 && Number(a?.effect) <= 100 ? null :
+    'it must be above 0 and at most 100%' : tgiProblem(Number(a?.effect), endpoint, v0)
+    ?.replace('Expected TGI: ', 'it must be ') ?? null;
+  const effect = [...arms, ...p?.predicted?.arms ?? []].find((a) => why(a) !== null);
+  if (effect)
+    return `arm "${effect.name}": expected ${effect.metric === 'TC' ? 'T/C' : 'TGI'} is ${effect.effect}%, ` +
+      why(effect);
+  // a dose below 0 (or no number), in an arm's name or a group's details: Plan's own check, its words (QA 0.1.3
+  // round 4 technician R4-3: dropped silently, "dose from the group details")
+  const named = arms.flatMap((a) => parseArmName(String(a?.name ?? '')).filter((x) => x.negative))[0];
+  if (named)
+    return `${named.drug}: a dose cannot be below 0`;
+  const dosed = (Array.isArray(p?.study?.groups) ? p.study.groups : []).find((g: any) => g?.dose != null &&
+    !(typeof g.dose === 'number' && Number.isFinite(g.dose) && g.dose >= 0));
+  return dosed ? `group "${dosed.group}": a dose cannot be below 0 (it is ${dosed.dose})` : '';
 }
 
 /** The folder of the user's plans, in their Home. */

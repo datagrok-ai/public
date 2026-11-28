@@ -1,4 +1,5 @@
 // read from the file alone (no engine, no index, nothing computed)
+import {maxOf} from './format';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
@@ -38,7 +39,7 @@ export function studySummary(s: SavedStudy): string[] {
   return [
     ...parseMeta(s.meta)?.id ? [parseMeta(s.meta)!.id] : [],
     `${animals}${shown && groups.length ? ` in ${plural(groups.length, 'group')}` : ''}, measured on ` +
-      `${plural(days.length, 'day')}${days.length ? `, the last day ${Math.max(...days)}` : ''}`,
+      `${plural(days.length, 'day')}${days.length ? `, the last day ${maxOf(days)}` : ''}`,
     ...!shown ? ['Blinded: the groups are shown in Monitor once someone reveals them'] :
       groups.map((g) => `${g}: ${plural(animalsOf(g), 'animal')}`),
     ...s.rows.some((r) => typeof r.weight === 'number') ? ['Body weight measured'] : [],

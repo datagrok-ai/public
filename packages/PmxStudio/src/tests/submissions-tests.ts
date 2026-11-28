@@ -21,6 +21,19 @@ const facts: PlanDocFacts = {title: 'MC38 plan', meta: null, line: 'MC38',
   implant: 18, measurements: 7, therapies: ['small molecule']};
 
 category('Submissions', () => {
+  test('a damaged zip throws, its offsets never read past its end', async () => {
+    const bytes = await docx([{p: ['Plain']}], {title: 'T'});
+    const failed = async (b: Uint8Array) => unzip(b, () => true).then(() => '', (e) => String(e?.message ?? e));
+    // the end record kept, the files before it cut away: its index points past the bytes left
+    const cut = bytes.slice(bytes.length - 22);
+    expect((await failed(cut)).length > 0, true, 'a cut zip read');
+    // an index offset pointing past the end
+    const wrong = bytes.slice();
+    new DataView(wrong.buffer).setUint32(wrong.length - 22 + 16, wrong.length + 100, true);
+    expect(await failed(wrong), 'the zip is cut short');
+    expect(await failed(new Uint8Array(10)), 'not a zip');
+  });
+
   test('docx: a zip Word reads, with the text, the table and the fields to fill', async () => {
     expect(crc32(new TextEncoder().encode('123456789')), 0xcbf43926);
     const bytes = await docx([{heading: 'Title & <more>'}, {p: ['Plain ', fill('Grant code')]},
@@ -44,7 +57,7 @@ category('Submissions', () => {
     const items = formItems(studyPlanForm(facts));
     expect(items.length, 11);
     expect(items.filter((i) => i.done).map((i) => i.item).join(', '),
-      'Inclusion and exclusion criteria, Randomisation and blinding, Outcome measures and statistics',
+      'Inclusion and exclusion criteria, Randomization and blinding, Outcome measures and statistics',
       'the EDA diagram: always the user; blinding off is said');
     // no details yet: the animals and what each group receives come from them
     expect(items.filter((i) => i.fix === 'details').map((i) => i.item).join(', '),
@@ -94,22 +107,26 @@ category('Submissions', () => {
   });
 });
 
+/** A group's test in words, as analyze.ts growthRateWords gives it. */
+const G = 'grows 4.1%/day slower (95% CI 2.0–6.3%), p < 0.001';
+
 category('Submissions: CTD table', () => {
   const study: CtdStudy = {id: 'PMX-2026-014', name: 'MC38 study', compounds: ['Cpd-X'], animals: 'mouse, C57BL/6',
     line: 'MC38', endpointDay: 21, correction: '',
     groups: [{name: 'Vehicle', control: true, given: '', route: '', n: 10, nadir: -2.04, lost: 0},
-      {name: 'Cpd-X', control: false, given: 'Cpd-X 10 mg/kg QD', route: 'PO', n: 9, tgi: 61.6, tgiLower: 40.2,
-        tgiUpper: 80.4, tc: 38.4, p: 0.0004, regressions: {complete: 1, partial: 2}, nadir: -8.2, lost: 1}]};
+      {name: 'Cpd-X', control: false, given: 'Cpd-X 10 mg/kg QD', route: 'PO', n: 9, tgi: 61.6,
+        growth: G, rate: '−4.1 (−6.3 to −2.0)', tc: 38.4, p: 0.0004, regressions: {complete: 1, partial: 2}, nadir: -8.2, lost: 1}]};
 
   test('one row per group, the study on its first; the findings as M4S tabulates them', async () => {
     const rows = ctdRows([study]);
     expect(rows.length, 3);
-    expect(rows[1].slice(0, 11).join(' | '), 'PMX-2026-014 | mouse, C57BL/6; MC38 tumour model; endpoint day 21 | ' +
+    expect(rows[1].slice(0, 11).join(' | '), 'PMX-2026-014 | mouse, C57BL/6; MC38 tumor model; endpoint day 21 | ' +
       'Vehicle (control) |  | 10 | Control | — | — | — | −2.0%; 0 | No');
     expect(rows[2].slice(0, 2).join(), ',', 'the study is said once');
-    expect(rows[2].slice(2, 10).join(' | '), 'Cpd-X 10 mg/kg QD | PO | 9 | 62 [40, 80] | 38 | <0.001 | ' +
+    // (numbers in the cell; the sentence in the prose: round 3)
+    expect(rows[2].slice(2, 10).join(' | '), 'Cpd-X 10 mg/kg QD | PO | 9 | 62 | 38 | −4.1 (−6.3 to −2.0); p < 0.001 | ' +
       '1 CR, 2 PR | −8.2%; 1');
-    expect(overviewRows([study])[1].slice(0, 3).join(' | '), 'Primary pharmacodynamics: antitumour activity, ' +
+    expect(overviewRows([study])[1].slice(0, 3).join(' | '), 'Primary pharmacodynamics: antitumor activity, ' +
       'MC38 | mouse, C57BL/6 | PO');
     // a group without its dose: a field to fill, and the checklist sends to the study's details
     const bare = {...study, compounds: [], groups: [study.groups[0], {...study.groups[1], given: '', route: ''}]};
@@ -243,7 +260,7 @@ category('Submissions: checklists', () => {
 
 category('Submissions: combinations and IB', () => {
   const g = (name: string, given: string, tgi: number, p: number, nadir: number) =>
-    ({name, control: false, given, route: 'PO', n: 8, tgi, tgiLower: tgi - 20, tgiUpper: tgi + 20, p, nadir, lost: 0});
+    ({name, control: false, given, route: 'PO', n: 8, tgi, p, nadir, lost: 0});
   const study: CtdStudy = {id: 'PMX-2', name: 'combo', compounds: ['Cpd-X', 'Cpd-Y'], animals: 'mouse, BALB/c',
     line: 'CT26', endpointDay: 18, correction: '', groups: [
       {name: 'Vehicle', control: true, given: '', route: '', n: 8, nadir: -1, lost: 0},
@@ -254,9 +271,14 @@ category('Submissions: combinations and IB', () => {
   test('S9: each combination against its two drugs alone, with where it stands', async () => {
     const rows = combinationRows([study]);
     expect(rows.length, 2);
-    expect(rows[1].join(' | '), 'PMX-2 | CT26 | Cpd-X 10 mg/kg QD + Cpd-Y 5 mg/kg Q3D: TGI 75% (95% CI 55 to 95), ' +
-      'p <0.001 | Cpd-X 10 mg/kg QD: TGI 40% (95% CI 20 to 60), p 0.010 | Cpd-Y 5 mg/kg Q3D: TGI 30% (95% CI 10 to ' +
-      '50), p 0.040 | Better than each drug alone');
+    expect(rows[1].join(' | '), 'PMX-2 | CT26 | Cpd-X 10 mg/kg QD + Cpd-Y 5 mg/kg Q3D: TGI 75%, ' +
+      'p <0.001 | Cpd-X 10 mg/kg QD: TGI 40%, p 0.010 | Cpd-Y 5 mg/kg Q3D: TGI 30%, p 0.040 | Better than each ' +
+      'drug alone');
+    // with the test: its numbers in the table, the sentence left to the prose (round 3)
+    const worded = {...study, groups: study.groups.map((x, i) => i === 1 ? {...x, growth: G,
+      rate: '−4.1 (−6.3 to −2.0)'} : x)};
+    expect(combinationRows([worded])[1][3], 'Cpd-X 10 mg/kg QD: TGI 40%, growth vs control −4.1 (−6.3 to −2.0) ' +
+      '%/day, p 0.010');
     expect(combinationRows([{...study, combinations: [{ab: 3, a: 1, b: 2}]}])[1][5], '—', 'not decided');
     expect(combinationRows([{...study, combinations: undefined}]).length, 1, 'kept before: no rows');
     const items = ctdItems(study);
@@ -267,15 +289,15 @@ category('Submissions: combinations and IB', () => {
   test('IB: the models, each drug alone, the combination, body weight; nothing not recorded', async () => {
     const p = ibParagraphs([study]);
     expect(p.length, 3, 'no NCA: no exposure sentence');
-    expect(p[0], 'The in vivo antitumour activity of Cpd-X and Cpd-Y was studied in 1 study in 1 tumour model ' +
-      '(CT26) in the mouse. Against the control: Cpd-X 10 mg/kg QD PO in CT26: TGI 40% (95% CI 20 to 60), p 0.010 ' +
-      'on day 18; Cpd-Y 5 mg/kg Q3D PO in CT26: TGI 30% (95% CI 10 to 50), p 0.040 on day 18.');
+    expect(p[0], 'The in vivo antitumor activity of Cpd-X and Cpd-Y was studied in 1 study in 1 tumor model ' +
+      '(CT26) in the mouse. Against the control: Cpd-X 10 mg/kg QD PO in CT26: TGI 40% on day 18, ' +
+      'p 0.010; Cpd-Y 5 mg/kg Q3D PO in CT26: TGI 30% on day 18, p 0.040.');
     expect(p[1].startsWith('In combination: Cpd-X 10 mg/kg QD + Cpd-Y 5 mg/kg Q3D in CT26: TGI 75%') &&
       p[1].endsWith('; better than each drug alone.'), true);
     expect(p[2], 'The lowest mean body-weight change from day 0 in a treated group was −9.0% (Cpd-X 10 mg/kg QD + ' +
       'Cpd-Y 5 mg/kg Q3D, CT26); 0 treated animals died or were removed for weight loss.');
     // a summary of one compound (the Overview's): it is the test article, the other only given with it
-    expect(ibParagraphs([study], 'Cpd-X')[0].startsWith('The in vivo antitumour activity of Cpd-X was studied'), true);
+    expect(ibParagraphs([study], 'Cpd-X')[0].startsWith('The in vivo antitumor activity of Cpd-X was studied'), true);
     const article = ctdBlocks([study], {sub: 'x', drug: 'Cpd-X'})
       .find((b: any) => Array.isArray(b.p) && b.p[0]?.text === 'Test article: ') as any;
     expect(article.p[1], 'Cpd-X (given with Cpd-Y in combination)');

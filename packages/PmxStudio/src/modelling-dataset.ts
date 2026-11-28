@@ -15,6 +15,7 @@ import {drugKey} from './arm-name';
 import {okNamed, showCentred, modal} from './ui';
 import {plural} from './wide-table';
 import {entered} from './sheet';
+import {mean, minOf} from './format';
 
 /** The concentrations NCA read: its table and mapping (subject, time, concentration, blq, lloq and their units), and
  *  the column that names the group, if any. */
@@ -23,8 +24,10 @@ export interface PkSource {table: DG.DataFrame, mapping: any, groupCol: string |
 /** What the dialog lets the user set: each group's first dosing day (default 0; a first day its schedule writes wins),
  *  a dose in mg/kg its details and name do not give (by line label: the group, or "group, drug" for a combination's
  *  drug; a written one wins), and the day of the dose the concentrations' hours count from (default the first
- *  dosing day). */
-export interface DatasetOptions {firstDose?: Map<string, number>, dose?: Map<string, number>, pkDoseDay?: number}
+ *  dosing day); a schedule its details and name do not give (by line label, as the dose), and the groups left out of
+ *  the file (a treated group with no doses is not written as one silently: QA 0.1.3 A6). */
+export interface DatasetOptions {firstDose?: Map<string, number>, dose?: Map<string, number>, pkDoseDay?: number,
+  schedule?: Map<string, string>, leaveOut?: Set<string>}
 
 /** How a group (a combination: each of its drugs) goes into the file. */
 export type LineStatus = 'control' | 'dosed' | 'no dose' | 'no schedule' | 'unread';
@@ -123,7 +126,7 @@ export function modellingDataset(s: StudyInputs, meta: StudyMeta | null, pk: PkS
     const animal = String(df.get(s.animal, i) ?? '').trim();
     const group = String(df.get(s.group, i) ?? '').trim();
     const day = numAt(s.day, i);
-    if (!animal || day === null)
+    if (!animal || day === null || opts.leaveOut?.has(group))
       continue;
     const key = keyOf(group, animal);
     if (!ids.has(key)) {
@@ -164,9 +167,9 @@ export function modellingDataset(s: StudyInputs, meta: StudyMeta | null, pk: PkS
     const bws = [...animals].filter(([, a]) => a.group === g).map(([k]) => weightOn(k, day)).filter((w) => w > 0);
     if (!perMg || !bws.length)
       return {};
-    const mean = bws.reduce((a, b) => a + b, 0) / bws.length;
-    return {proposed: {dose: Math.round(100 * p.dose!.value * perMg / (mean / 1000)) / 100,
-      from: `from ${entered(p.dose!.value)} ${p.dose!.unit.replace(/^u/, 'µ')} at ${mean.toFixed(1)} g mean weight`}};
+    const m = mean(bws);
+    return {proposed: {dose: Math.round(100 * p.dose!.value * perMg / (m / 1000)) / 100,
+      from: `from ${entered(p.dose!.value)} ${p.dose!.unit.replace(/^u/, 'µ')} at ${m.toFixed(1)} g mean weight`}};
   };
   // the doses, group by group
   const notes: string[] = [];
@@ -185,7 +188,10 @@ export function modellingDataset(s: StudyInputs, meta: StudyMeta | null, pk: PkS
     parts.forEach((p, i) => {
       const label = parts.length > 1 ? `${g}, ${p.drug}` : g;
       const amt = mgPerKg(p, label);
-      const {text: schedule, read} = scheduleOfGroup(g, meta, i);
+      // the details' (else the name's) schedule; none written, the one typed in the dialog
+      const own = scheduleOfGroup(g, meta, i);
+      const typedIn = own.read ? '' : opts.schedule?.get(label)?.trim() ?? '';
+      const {text: schedule, read} = typedIn ? {text: typedIn, read: readSchedule(typedIn, p.route ?? '')} : own;
       // one first dosing day: the schedule's when it writes one ("from day 3"), else the dialog's (default 0)
       // ponytail: "from day 0" written reads as none written; the same day unless the dialog moves it
       const start = read && read.first > 0 ? read.first : opts.firstDose?.get(g) ?? 0;
@@ -330,14 +336,35 @@ export const CSV_DICTIONARY = ['@ Modelling dataset, one row per event (NONMEM l
     ' MDV and EVID say so.',
   '@ -99: missing dose or body weight (NONMEM reads "." as 0). COMBO 1: a combination group (DOSE -99). FLAG 1: a ' +
     'flagged measurement, kept.',
-  '@ ID is the animal number: the second file (IDs) gives the animal and group as written in the study.'];
+  '@ ID is the animal number: the @ lines at the end give each animal and group as written in the study.'];
 
-/** The dataset as CSV: the dictionary lines, then a header line (both skipped by IGNORE=@ in NONMEM); "." only in DV
- *  and AMT where MDV and EVID say they are not read, -99 for a missing covariate. */
+/** The dataset as CSV, one file: the dictionary lines, a header line (both skipped by IGNORE=@ in NONMEM), the rows
+ *  ("." only in DV and AMT where MDV and EVID say they are not read, -99 for a missing covariate), then the animals'
+ *  numbers as @ lines, skipped too: one download (a browser blocked the second of two). */
 export function modellingCsv(d: ModellingDataset): string {
   return [...CSV_DICTIONARY, MODEL_COLUMNS.join(','),
-    ...d.rows.map((r) => MODEL_COLUMNS.map((c) => numText(r[c])).join(','))].join('\n') + '\n';
+    ...d.rows.map((r) => MODEL_COLUMNS.map((c) => numText(r[c])).join(',')),
+    ...idMapCsv(d).trimEnd().split('\n').map((l) => `@ ${l}`)].join('\n') + '\n';
 }
+
+/** The field's text: a day the dataset can use is a whole day, 0 or later (empty or text is none); a dose is empty
+ *  (none) or a number, 0 or more. */
+const typed = (x: DG.InputBase<number | null>) => (x.input as HTMLInputElement).value?.trim() ?? '';
+/** `last`: the study's last day (a first dose after it doses no one: "1e9" was taken, and exported as day 0, QA 0.1.3
+ *  A5); written as digits only. */
+export const dayOk = (text: string, last = Infinity) => /^\d+$/.test(text) && Number(text) <= last;
+export const doseOk = (text: string) => text === '' || (Number.isFinite(Number(text)) && Number(text) >= 0);
+/** What a first dose day must be, in words. */
+const dayRule = (last: number) => Number.isFinite(last) ? `A whole day from 0 (randomization) to ${last}, the ` +
+  'study\'s last day' : 'A whole day, 0 or later (0: randomization)';
+
+/** A group's row status when what is typed on it cannot be used (its first dose `day`, null: from its schedule; its
+ *  `doses`), with its detail; null: usable. */
+export const typedProblem = (day: string | null, doses: string[], last = Infinity): [string, string] | null =>
+  // (the rule itself in the row, not only on hover: QA 0.1.3 round 4 technician R4-7)
+  day !== null && !dayOk(day, last) ? [Number.isFinite(last) ? `⚠ First dose: a whole study day, 0–${last}` :
+    '⚠ First dose: a whole study day, 0 or later', dayRule(last)] :
+    doses.some((x) => !doseOk(x)) ? ['⚠ dose', 'A number, 0 or more, in mg/kg'] : null;
 
 /** The animals' numbers as CSV: ID, the animal as written in the study, GROUP and the group's name. */
 export function idMapCsv(d: ModellingDataset): string {
@@ -376,6 +403,12 @@ function statusOf(lines: DatasetLine[], d: ModellingDataset): [string, string] {
     .join('\n')];
 }
 
+const groupNames0 = (lines: DatasetLine[]) => [...new Set(lines.map((l) => l.group))];
+
+/** The treated groups in the file with no dosing record (no schedule read, no dose): what Export waits on. */
+export const undosedGroups = (d: ModellingDataset): string[] =>
+  groupNames0(d.lines.filter((l) => l.status !== 'control' && l.status !== 'dosed'));
+
 /** What the dataset holds, group by group (its dose, first dosing day and whether it is dosed; a missing dose typed
  *  there), and the concentrations, then its download: the dataset and the animals' numbers, two CSV files.
  *  `recorded`: the concentration table the study kept its exposure from (said when it is not used). */
@@ -383,38 +416,61 @@ export function modellingDatasetDialog(s: StudyInputs, meta: StudyMeta | null, p
   recorded: string | null = null): void {
   const name = s.study.name || 'study';
   const lines = modellingDataset(s, meta, null).lines;
+  // the study's last day: a first dose is one of its days
+  const dayCol = s.study.col(s.day);
+  const lastDay = dayCol ? Math.max(0, ...(dayCol.toList() as unknown[]).map(Number).filter(Number.isFinite)) :
+    Infinity;
   const narrow = (x: DG.InputBase<number | null>) => {
     x.input.style.width = '64px';
     return x;
   };
   // a dose typed where the group's details and name give none; a dose per animal offered over the group's weight
+  // (each field named for a screen reader: its caption is the column's, round 3 designer U4)
+  const named = <T extends DG.InputBase<any>>(x: T, name: string) => {
+    x.input.setAttribute('aria-label', name);
+    return x;
+  };
   const doseIn = new Map(lines.filter((l) => l.status === 'no dose').map((l) => [l.label,
-    narrow(ui.input.float('', {value: l.proposed?.dose, nullable: true, min: 0,
-      tooltipText: 'mg/kg per dose'}))]));
+    named(narrow(ui.input.float('', {value: l.proposed?.dose, nullable: true, min: 0,
+      tooltipText: 'mg/kg per dose'})), `Dose of ${l.label}, mg/kg`)]));
+  // a schedule typed where the details and name give none, or none that reads (QD, Q3D×4...)
+  const scheduleIn = new Map(lines.filter((l) => l.status === 'no schedule' || l.status === 'unread').map((l) =>
+    [l.label, named(ui.input.string('', {value: '', placeholder: l.schedule || 'QD, Q3D×4…',
+      tooltipText: 'How often this group is dosed: QD, BID, Q3D×4, QW×3, from day 3…'}), `Schedule of ${l.label}`)]));
+  scheduleIn.forEach((x) => x.input.style.width = '96px');
+  // a treated group without doses: left out of the file on a tick, never written undosed in silence
+  const leaveOut = new Map(groupNames0(lines).filter((g) => lines.some((l) => l.group === g &&
+    l.status !== 'dosed' && l.status !== 'control')).map((g) => [g, named(ui.input.bool('Leave out', {value: false,
+    tooltipText: 'Leave this group out of the file (its animals too)'}), `Leave ${g} out`)]));
   // each group with a drug: its first dosing day as its schedules write it (shown; set in the study details), else
-  // typed (day 0 by default)
+  // typed (day 0 by default); a group whose schedule is still to type too (its first dose stayed "—": round 3, #15)
   const written = new Map<string, number>();
   const starts = new Map<string, DG.InputBase<number | null>>();
-  for (const g of new Set(lines.filter((l) => l.status === 'dosed' || l.status === 'no dose').map((l) => l.group))) {
+  for (const g of new Set(lines.filter((l) => l.status !== 'control').map((l) => l.group))) {
     const firsts = armParts(g, meta).map((_, i) => scheduleOfGroup(g, meta, i).read?.first ?? 0);
     if (firsts.every((f) => f > 0))
-      written.set(g, Math.min(...firsts));
+      written.set(g, minOf(firsts));
     else {
-      starts.set(g, narrow(ui.input.int('', {value: 0, min: 0,
-        tooltipText: 'The study day of this group\'s first dose (0: randomization)'})));
+      starts.set(g, named(narrow(ui.input.int('', {value: 0, min: 0,
+        tooltipText: 'The study day of this group\'s first dose (0: randomization)'})), `First dose of ${g}, study day`));
     }
   }
-  const pkDay = pk ? ui.input.int('Hours counted from the dose of day', {value: 0, min: 0,
+  const pkDay = pk ? ui.input.int('PK times are hours after the dose given on day', {value: 0, min: 0,
     tooltipText: 'The study day of the dose the concentration table\'s times count from'}) : null;
   let pkDayTouched = false;
   let setting = false;
+  // Export, once the dialog is built: off while a typed day or dose cannot be used (text or -5 was exported as 0)
+  let validate = () => {};
   const optsOf = (): DatasetOptions => ({
-    firstDose: new Map([...starts].map(([g, x]) => [g, x.value ?? 0])),
+    // (the text typed: a value the field could not read, "1e9", is not made 0 in silence; Export waits for a day)
+    firstDose: new Map([...starts].map(([g, x]) => [g, dayOk(typed(x), lastDay) ? Number(typed(x)) : 0])),
     dose: new Map([...doseIn].map(([l, x]) => [l, x.value ?? 0])),
-    pkDoseDay: pkDay?.value ?? 0});
+    pkDoseDay: pkDay?.value ?? 0,
+    schedule: new Map([...scheduleIn].map(([l, x]) => [l, x.value ?? ''])),
+    leaveOut: new Set([...leaveOut].filter(([, x]) => x.value).map(([g]) => g))});
   // one row per group, a combination's drugs' doses side by side; each group's status, its detail on hover (bound
   // once, read as it changes)
-  const groupNames = [...new Set(lines.map((l) => l.group))];
+  const groupNames = groupNames0(lines);
   const tips = new Map(groupNames.map((g) => [g, '']));
   const status = new Map(groupNames.map((g) => [g, ui.tooltip.bind(ui.span([], {style: {whiteSpace: 'nowrap'}}),
     () => tips.get(g)!)]));
@@ -437,8 +493,19 @@ export function modellingDatasetDialog(s: StudyInputs, meta: StudyMeta | null, p
     const fixed = ui.span([day === undefined ? '—' : String(day)]);
     if (day !== undefined)
       ui.tooltip.bind(fixed, 'From its schedule; change it in the study details');
-    return [g, doses, starts.get(g)?.input ?? fixed, status.get(g)!];
-  }, ['Group', 'Dose (mg/kg)', 'First dose (day)', '']);
+    const scheduleCell = (l: DatasetLine) => scheduleIn.get(l.label)?.input ??
+      ui.span([l.status === 'control' ? '—' : l.schedule || '—']);
+    const schedules = own.length < 2 ? scheduleCell(own[0]) : ui.divV(own.map(scheduleCell));
+    const out = leaveOut.get(g);
+    return [g, doses, schedules, starts.get(g)?.input ?? fixed, ui.divH([status.get(g)!, ...out ? [out.root] : []],
+      {style: {alignItems: 'center', gap: '8px'}})];
+  }, ['Group', 'Dose (mg/kg)', 'Schedule', 'First dose (day)', 'Status']);
+  // the last column's header says what its marks mean (it had none: designer round 3 U4)
+  const statusHead = table.querySelector('tr th:last-child, thead td:last-child') as HTMLElement | null;
+  if (statusHead) {
+    ui.tooltip.bind(statusHead, '✓: dosed from its schedule · control: volumes only · ⚠: what is missing (hover ' +
+      'the mark) · Leave out: not in the file');
+  }
   const footer = ui.divText('');
   let concTip = '';
   const conc = ui.tooltip.bind(ui.divText(''), () => concTip);
@@ -448,13 +515,20 @@ export function modellingDatasetDialog(s: StudyInputs, meta: StudyMeta | null, p
     // the concentrations' dose day follows the first dosing day until it is set
     if (pkDay && !pkDayTouched) {
       setting = true;
-      const days = [...written.values(), ...[...starts.values()].map((x) => x.value ?? 0)];
-      pkDay.value = days.length ? Math.min(...days) : 0;
+      // (a day typed that cannot be one, −5 or text, is no first dose: not copied here)
+      const days = [...written.values(), ...[...starts.values()].filter((x) => dayOk(typed(x), lastDay))
+        .map((x) => Number(typed(x)))];
+      pkDay.value = days.length ? minOf(days) : 0;
       setting = false;
     }
     d = modellingDataset(s, meta, pk, optsOf());
     for (const g of groupNames) {
-      const [text, tip] = statusOf(d.lines.filter((l) => l.group === g), d);
+      const own = d.lines.filter((l) => l.group === g);
+      // a row whose typed day or dose cannot be used is not ready, whatever its schedule says
+      const [text, tip] = leaveOut.get(g)?.value ? ['left out', 'Not in the file'] :
+        typedProblem(starts.has(g) ? typed(starts.get(g)!) : null,
+          own.filter((l) => doseIn.has(l.label)).map((l) => typed(doseIn.get(l.label)!)), lastDay) ??
+        statusOf(own.length ? own : lines.filter((l) => l.group === g), d);
       const e = status.get(g)!;
       e.textContent = text;
       e.style.color = text.startsWith('⚠') ? 'var(--orange-2, #b26a00)' : text === '✓' ?
@@ -467,10 +541,12 @@ export function modellingDatasetDialog(s: StudyInputs, meta: StudyMeta | null, p
     concTip = pk ? d.held.filter((h) => !lines.some((l) => h.startsWith(`${l.label}:`))).join('\n') ||
       'None of its animals is one of the study\'s' : noConcentrations(recorded);
     // what else the file lacks (the concentrations'), beside them
+    validate();
     pkNotes.replaceChildren(...d.notes.filter((n) => !n.startsWith('No dosing records')).map((n) => ui.divText(`⚠ ${n}`,
       {style: {color: 'var(--orange-2, #b26a00)'}})));
   };
-  [...starts.values(), ...doseIn.values()].forEach((x) => x.onChanged.subscribe(refresh));
+  [...starts.values(), ...doseIn.values(), ...scheduleIn.values(), ...leaveOut.values()]
+    .forEach((x) => (x.onChanged as any).subscribe(refresh));
   pkDay?.onChanged.subscribe(() => {
     if (setting)
       return;
@@ -485,12 +561,18 @@ export function modellingDatasetDialog(s: StudyInputs, meta: StudyMeta | null, p
   if (!dlg)
     return;
   dlg.add(ui.divV([table, conc, ...pkDay ? [ui.inputs([pkDay])] : [], pkNotes, footer], {style: {gap: '8px'}}))
-    .onOK(() => {
-      // one toast for the two files
-      const [data, ids] = [`${name} - modelling dataset.csv`, `${name} - modelling dataset IDs.csv`];
-      download(data, modellingCsv(d), 'text/csv', []);
-      download(ids, idMapCsv(d), 'text/csv', [data, ids]);
-    });
-  okNamed(dlg, 'Export');
+    .onOK(() => download(`${name} - modelling dataset.csv`, modellingCsv(d), 'text/csv'));
+  const ok = okNamed(dlg, 'Export');
+  validate = () => {
+    const bad = [...starts.values(), ...pkDay ? [pkDay] : []].some((x) => !dayOk(typed(x), lastDay)) ||
+      [...doseIn.values()].some((x) => !doseOk(typed(x)));
+    // a treated group the file would hold without a dose: its schedule or dose entered, or the group left out
+    const undosed = undosedGroups(d);
+    ok.disabled = bad || undosed.length > 0;
+    ok.title = bad ? `A first dose day is a whole day from 0 to ${lastDay}; a dose a number, 0 or more` :
+      undosed.length ? `${undosed.join(', ')}: enter ${undosed.length === 1 ? 'its' : 'their'} schedule and dose, or ` +
+        'leave it out' : '';
+  };
+  validate();
   showCentred(dlg);
 }

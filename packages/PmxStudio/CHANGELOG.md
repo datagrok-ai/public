@@ -1,5 +1,55 @@
 # PmxStudio changelog
 
+## 0.1.3 (unreleased)
+
+* Analyze: one test, one interval. Each treated group's result and its uncertainty come only from the growth rates:
+  **Growth rate vs control: grows 4.1%/day slower (95% CI 2.0–6.3%), p = 0.003** (the interval adjusted as the
+  p-value, its level said). TGI and T/C are the evaluation day's numbers, without an interval, in the groups table,
+  the group's panel, Plan vs observed, the exposure chart, the results in words, the CTD table and the exports; the
+  note that explained a T/C interval at odds with the result is gone.
+* Monitor: **Enter today's values** is always there. On a day off the plan's calendar it asks first; with no plan it
+  opens at once; with no dated day 0 it asks for the day number. A day entered off the calendar is a measured day like
+  any other.
+
+* One view: Plan, Monitor, Analyze and Compare replace each other in one tab, and coming back to a stage finds it as
+  it was. A stage with unsaved changes stays open. Back and Forward walk the pages inside it, one press a step; a
+  link to a page, or the app opened again, moves the open view instead of opening a second one.
+* The view is always named **PMX Studio** (its title and the browser tab); the study is named in the page's header.
+  The ribbon shows a home icon, back to the Overview, then the steps Plan — Monitor — Analyze. A stage with nothing
+  to show yet is greyed, and its tooltip says why.
+* Compare is no longer a step: it opens from the Overview (tick two studies or more, then Compare; the ticks are kept)
+  and from Analyze (Study > Compare with other studies…). Its ribbon reads ⌂ Compare · N studies.
+* The view's menu is Datagrok's own: **File** (Open… Ctrl+O, Save Ctrl+S, Save as…, Export, Documents), View, Study
+  and Help, in place of the Open and Save buttons. An item that is not available yet says why on hover.
+* Follow this study and Analyze this study are outlined, so they no longer look like the page's main action.
+* Each panel's explanation is behind an (i). Notes that repeated a button or a field are gone.
+* Panels fold to one line that says what they hold. Plan folds the calendar, Assumed TGI, What if and the protocol;
+  Monitor the calendar and the data checks; Analyze time to endpoint, exposure, growth rates, notes and the spider;
+  Compare the exposure and the atlas controls. Your folds are remembered, and Reset restores the defaults.
+* **Customize this page** works in place, from the toolbox or View: drag a panel by its header (a long press
+  on touch) and the others slide out of the way; release it anywhere and it settles into the slot shown. Beside a narrower panel with room left, it
+  takes that room while it hovers there and keeps it when released; moved away, it springs back to its own width. Drag its right
+  edge and the width snaps to a quarter, a third, a half, two thirds or the row. × hides a panel. Escape cancels a
+  drag, Ctrl+Z undoes the last change. With reduced motion, everything moves at once. A hidden panel stays listed in
+  the toolbox with + show, and in a line at the end of the page.
+* The toolbox is the page's index: a click opens the panel's tab, unfolds the panel and scrolls to it.
+* Linear · Log is plain text in each growth chart's header, the one in use underlined.
+* Monitor and Analyze have two cards each; the rest is in the status line. Monitor opens on Needs attention.
+* Plan: To randomize is under the Implant card. A click on a group opens its doses, power and Match a total… in the
+  context panel.
+* Analyze: a click on an animal shows its curve against its twin in the context panel.
+* Compare: one summary line in place of the cards. The treated groups are listed under their study, each in its
+  colour, the numbers aligned and sortable, where a number comes from on hover. Dose and effect: a colour per drug, a
+  mark per study and the key above the plot (no labels over the points); it says what to add when it has nothing to
+  draw.
+* More space between panels.
+* PMX Studio is listed under Preclinical in Browse.
+* Saved plans and studies (schema 1.5.0): the document is stored as JSON; the owner is the Datagrok user, and whose
+  a copy is, a user too (or, for someone else's file brought in, the name the file gives); day 0 is a date and the
+  study days whole numbers. Study details' Owner is now **Run by**, free text, empty unless you fill it in. Project is
+  gone: Datagrok has no way to put a saved row in a Space, and an earlier project is kept as a tag. Rows saved with
+  0.1.2 are converted when the package is deployed (`databases/pmx/0001_schema_1_5_0.sql`).
+
 ## 0.1.2 (2026-11-26)
 
 * A plan whose controls never reach the endpoint within the study (Panc02 at 2000 mm³) saves and opens again; when a

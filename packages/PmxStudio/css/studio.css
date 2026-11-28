@@ -2,16 +2,50 @@
    it follows the theme. */
 
 /* the header, in the view's ribbon: the stages, then the study */
-/* one line, as the ribbon is: the study gives way (cut with an ellipsis) before the stages or the view's actions */
+/* one line: the study cut last, with all the room the steps leave, which headBar centres (QA 0.1.3 D23: "C..") */
 .pmx-head {
-  display: flex; flex-wrap: nowrap; align-items: center; gap: 24px; min-width: 0; overflow: hidden; color: var(--dg-text-color, #4D5261);
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, max-content); align-items: center; gap: 12px; width: 100%;
+  min-width: 0; overflow: hidden; color: var(--dg-text-color, #4D5261);
   font-family: var(--dg-font-family, Roboto, sans-serif); font-size: 13px;
 }
+/* (the shell makes every ribbon item's child a flex row, `.d4-ribbon-item > :not(.grok-icon):not(...)`: without
+   this the grid never applied, the steps sat at the left and the study ran into them) */
+.d4-ribbon .d4-ribbon-item > .pmx-head:not(.grok-icon) { display: grid; }
+/* the bar takes the ribbon's room after the menu (the shell pins its panels' sizes inline): the ⌂ and the steps in
+   its middle, the study at its right end; narrower, the sides give way first, never over the menu. It grows from
+   nothing (basis 0), down to the steps' width: it takes only the room the menu leaves, and the menu does not fold
+   Study and Help under its ▾ while the bar's sides are empty (QA 0.1.3, Plan) */
+.d4-ribbon:has(.pmx-head), .d4-ribbon-panel:has(> .d4-ribbon-item > .pmx-head),
+.d4-ribbon-item:has(> .pmx-head) { flex: 1 1 0; min-width: auto; }
+/* (the shell's panels hide their overflow, which drops their automatic minimum to 0: the steps' width, said) */
+.d4-ribbon-panel:has(> .d4-ribbon-item > .pmx-head), .d4-ribbon-item:has(> .pmx-head) { min-width: min-content; }
+.d4-ribbon:has(.pmx-head) > .d4-ribbon-spacer { flex-grow: 0; }
+/* (the steps never shrink under the study: it is cut first; the platform's own table name, the same study, is not
+   shown beside it; the hand-off button is cut before it overflows the view's buttons) */
+.pmx-head-center { grid-column: 2; display: flex; align-items: center; gap: 10px; min-width: max-content; }
+.d4-ribbon:has(.pmx-head) ~ .grok-context-ribbon-host { display: none; }
+.d4-ribbon-panel:has(.pmx-go), .d4-ribbon-item:has(> .pmx-go) { min-width: 0; overflow: hidden; }
+/* (it grows from nothing to its label's width; its size never counts in the bar's minimum: narrow, it goes first) */
+.d4-ribbon-panel:has(.pmx-go) { flex: 1 1 0; max-width: 250px; contain: inline-size; }
+.d4-ribbon .pmx-go { max-width: 100%; min-width: 0; justify-content: flex-start; }
+.pmx-head-chip {
+  grid-column: 3; justify-self: end; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  border: 0; background: none; padding: 0; font: inherit; font-weight: 500; color: var(--dg-text-color, #4D5261);
+}
+button.pmx-head-chip:not(:disabled) { cursor: pointer; }
+button.pmx-head-chip:not(:disabled):hover { color: var(--dg-accent, #2083D5); }
+.pmx-head-chip:focus-visible { outline: 2px solid var(--dg-accent, #2083D5); outline-offset: 2px; border-radius: 3px; }
 /* the platform dims a ribbon item's child while pressed with a filter, which would make the header the stages'
    containing block: they would jump away under the pointer and the click land on the ribbon */
 .d4-ribbon-item > .pmx-head:active { filter: none !important; background: none !important; }
+/* nor does the bar take the item's hover (`.d4-ribbon-item > :hover`), one block over the steps and the study: the
+   ⌂, each step and the study each show their own */
+.d4-ribbon-item > .pmx-head:hover { background: none; color: var(--dg-text-color, #4D5261); }
+button.pmx-head-step:not(.on):not(.is-off):hover, button.pmx-crumb-home:hover, button.pmx-head-chip:not(:disabled):hover {
+  background: var(--dg-grey-1, #f2f3f5); border-radius: 3px;
+}
 /* the stages centred in the view's header, apart from the menus and the view's own buttons */
-.pmx-head-steps { display: flex; align-items: center; gap: 6px; flex: none; position: absolute; left: 50%; transform: translateX(-50%); z-index: 1; }
+.pmx-head-steps { display: flex; align-items: center; gap: 6px; flex: none; }
 .pmx-head-step {
   display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; padding: 2px 2px; font: inherit;
   color: var(--dg-accent, #2083D5); cursor: pointer;
@@ -23,12 +57,12 @@
   border: 2px solid var(--dg-accent, #2083D5); background: var(--dg-bg, #fff);
 }
 .pmx-head-step.past .pmx-head-node, .pmx-head-step.on .pmx-head-node { background: var(--dg-accent, #2083D5); }
-.pmx-head-wire { width: 24px; height: 2px; background: var(--dg-border, #DBDCDF); }
+.pmx-head-wire { width: 14px; height: 2px; background: var(--dg-border, #DBDCDF); }
 .pmx-head-wire.lit { background: var(--dg-accent, #2083D5); }
-.pmx-head-dot { color: var(--dg-grey-5, #717581); }
+@media (max-width: 1440px) { .pmx-head-step:not(.on) .pmx-head-label { display: none; } }
 .pmx-head-study { display: flex; align-items: center; gap: 12px; min-width: 0; overflow: hidden; white-space: nowrap; }
 .pmx-head-name {
-  overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto; min-width: 40px; font-size: 15px; font-weight: 500;
+  overflow: hidden; text-overflow: ellipsis; flex: 0 0 auto; max-width: 50%; font-size: 15px; font-weight: 500;
   color: var(--dg-text-color, #4D5261); background: none; border: none; padding: 0; font-family: inherit;
 }
 .pmx-head-name:not(:disabled) { cursor: pointer; text-decoration: underline dotted var(--dg-grey-4, #9aa5b1); text-underline-offset: 3px; }
@@ -41,13 +75,12 @@ a.pmx-hint-link { color: inherit; text-decoration: underline dotted var(--dg-gre
 .pmx-head-name:focus-visible { outline: 2px solid var(--dg-accent, #2083D5); outline-offset: 2px; border-radius: 3px; }
 .pmx-head-id:empty { display: none; }
 .pmx-head-id { flex: none; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--dg-grey-5, #717581); }
-.pmx-head-groups { display: flex; gap: 6px; flex: 0 1 auto; min-width: 0; overflow: hidden; }
+.pmx-head-groups { display: flex; gap: 5px; flex: none; align-items: center; }
 .pmx-head-group {
-  display: inline-flex; align-items: center; gap: 6px; padding: 1px 8px; border-radius: 10px;
-  border: 1px solid var(--dg-border, #DBDCDF); font-size: 12px;
+  display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+  cursor: default;
 }
-.pmx-head-swatch { width: 8px; height: 8px; border-radius: 2px; flex: none; }
-.pmx-head-status { flex: none; font-size: 12px; color: var(--dg-grey-5, #717581); }
+.pmx-head-status { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 12px; color: var(--dg-grey-5, #717581); }
 
 /* the study's row, over the panes (the stages stay in the ribbon) */
 .pmx-stage { height: 100%; }
@@ -73,63 +106,13 @@ a.pmx-hint-link { color: inherit; text-decoration: underline dotted var(--dg-gre
 .pmx-stat .pmx-lab-mark { position: absolute; bottom: 9px; right: 10px; font-size: 11px; cursor: help; color: var(--dg-grey-4, #9aa5b1); }
 .pmx-stat .pmx-lab-mark:hover, .pmx-stat .pmx-lab-mark:focus-visible { color: var(--dg-accent, #2083D5); }
 
-/* the layout editor: the panels as tiles on the twelve columns */
-.pmx-layout { display: flex; flex-direction: column; gap: 10px; font-size: 13px; }
-.pmx-layout-help, .pmx-layout-status, .pmx-layout-tray-label { font-size: 12px; color: var(--dg-grey-5, #717581); }
-.pmx-layout-board {
-  display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-auto-rows: minmax(56px, auto); gap: 8px;
-  padding: 12px; border-radius: 8px; background: var(--dg-grey-1, #f4f6f8);
-}
-.pmx-layout-tile {
-  position: relative; user-select: none; touch-action: none; display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 6px 8px; cursor: grab;
-  background: var(--dg-bg, #fff); border: 1px solid var(--dg-border, #DBDCDF); border-radius: 6px;
-}
-.pmx-layout-tile:hover { border-color: var(--dg-accent, #2083D5); }
-.pmx-layout-tile:focus-visible { outline: 2px solid var(--dg-accent, #2083D5); outline-offset: 2px; }
-.pmx-layout-tile.is-dragged {
-  border: 2px dashed var(--dg-accent, #2083D5); background: color-mix(in srgb, var(--dg-accent, #2083D5) 8%, transparent);
-}
-.pmx-layout-tile.is-dragged > * { visibility: hidden; }
-.pmx-layout-board.is-moving, .pmx-layout-board.is-moving .pmx-layout-tile { cursor: grabbing; }
-.pmx-layout-ghost {
-  position: fixed; left: 0; top: 0; z-index: 10000; pointer-events: none; opacity: .92; cursor: grabbing;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, .18); border-color: var(--dg-accent, #2083D5);
-}
-.pmx-layout-title { font-weight: 500; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 16px; }
-.pmx-layout-span { font-size: 11px; color: var(--dg-grey-5, #717581); font-variant-numeric: tabular-nums; }
-.pmx-layout-tile.is-sizing { border-color: var(--dg-accent, #2083D5); }
-.pmx-layout-tile.is-sizing .pmx-layout-span { color: var(--dg-accent, #2083D5); font-weight: 500; }
-/* the twelve columns, drawn while a panel is being sized */
-.pmx-layout-board.is-sizing {
-  background-image: repeating-linear-gradient(90deg, color-mix(in srgb, var(--dg-accent, #2083D5) 7%, transparent) 0
-    calc((100% + 8px) / 12 - 8px), transparent 0 calc((100% + 8px) / 12));
-  background-origin: content-box; background-clip: content-box; cursor: ew-resize;
-}
-.pmx-layout-grip {
-  position: absolute; right: 2px; bottom: 2px; width: 14px; height: 14px; cursor: ew-resize; touch-action: none;
-  background: linear-gradient(135deg, transparent 50%, var(--dg-grey-4, #B3B6BD) 50%, var(--dg-grey-4, #B3B6BD) 58%,
-    transparent 58%, transparent 70%, var(--dg-grey-4, #B3B6BD) 70%, var(--dg-grey-4, #B3B6BD) 78%, transparent 78%);
-}
-.pmx-layout-tile:hover .pmx-layout-grip, .pmx-layout-tile.is-sizing .pmx-layout-grip {
-  background: linear-gradient(135deg, transparent 50%, var(--dg-accent, #2083D5) 50%, var(--dg-accent, #2083D5) 58%,
-    transparent 58%, transparent 70%, var(--dg-accent, #2083D5) 70%, var(--dg-accent, #2083D5) 78%, transparent 78%);
-}
-.pmx-layout-hide, .pmx-layout-chip {
-  font: 11px var(--dg-font-family, Roboto, sans-serif); border: 1px solid var(--dg-border, #DBDCDF); border-radius: 3px;
-  background: var(--dg-bg, #fff); color: var(--dg-text-color, #4D5261); padding: 0 5px; cursor: pointer;
-}
-.pmx-layout-hide { position: absolute; top: 4px; right: 4px; border: 0; padding: 0 4px; color: var(--dg-grey-5, #717581); }
-.pmx-layout-tray { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-.pmx-layout-chip { border-style: dashed; padding: 2px 8px; color: var(--dg-accent, #2083D5); }
-
 /* the panels: twelve columns; half and then whole rows as the results pane narrows */
-.pmx-grid-host { container-type: inline-size; }
-.pmx-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px; grid-auto-flow: row dense; }
-.pmx-panel { min-width: 0; }
+.pmx-grid-host { container-type: inline-size; position: relative; }
+.pmx-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 28px 20px; grid-auto-flow: row dense; position: relative; }
+.pmx-panel { min-width: 0; position: relative; }
 /* a panel's title and hint stay in its column: a long hint goes on under the title, never over the next panel */
 .pmx-panel > .pmx-block, .pmx-panel .pmx-block-header { min-width: 0; max-width: 100%; }
 .pmx-panel .pmx-block-header { flex-wrap: wrap; align-items: baseline; row-gap: 2px; }
-.pmx-panel .pmx-block-hint { white-space: normal; }
 .pmx-panel[data-span="3"] { grid-column: span 3; }
 .pmx-panel[data-span="4"] { grid-column: span 4; }
 .pmx-panel[data-span="6"] { grid-column: span 6; }
@@ -252,3 +235,52 @@ a.pmx-hint-link { color: inherit; text-decoration: underline dotted var(--dg-gre
 
 /* the Actions pane of an object (handlers.ts withActions): a quiet line between its groups of actions */
 .pmx-actions-sep { height: 1px; background: var(--grey-2, #dbdcdf); margin: 4px 0; }
+
+/* 0.1.3: the crumb and File in the ribbon, the (i), folding, customizing in place, the index, Lin/Log */
+.pmx-crumb { display: flex; align-items: center; gap: 6px; font-size: 13px; white-space: nowrap; }
+.pmx-crumb-home { border: 0; background: none; padding: 0; font: inherit; color: var(--dg-accent, #2083D5); cursor: pointer; }
+button.pmx-crumb-home:hover { text-decoration: underline; }
+.pmx-crumb-here { font-weight: 500; color: var(--dg-text-color, #4D5261); }
+.pmx-head-step.is-off { opacity: 0.45; cursor: not-allowed; }
+.pmx-go.ui-btn { background: transparent; color: var(--dg-accent, #2083D5); border: 1px solid var(--dg-accent, #2083D5); }
+.pmx-info { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 14px; height: 14px; margin-left: 6px; border: 1px solid var(--dg-grey-4, #9aa5b1); border-radius: 50%; font-size: 10px; font-style: italic; font-weight: 600; line-height: 1; color: var(--dg-grey-5, #717581); cursor: help; }
+.pmx-info:hover, .pmx-crumb-home:focus-visible { color: var(--dg-accent, #2083D5); border-color: var(--dg-accent, #2083D5); }
+.pmx-foldable .pmx-block-header { cursor: pointer; }
+.pmx-chevron::before { content: '▾'; display: inline-block; width: 14px; color: var(--dg-grey-5, #717581); transition: transform 0.15s; }
+.pmx-panel.is-folded .pmx-chevron::before { transform: rotate(-90deg); }
+.pmx-panel.is-folded .pmx-block-body, .pmx-panel-summary, .pmx-panel-tools, .pmx-handle, .pmx-customize-bar { display: none; }
+.pmx-panel-summary { margin-left: 10px; font-size: 12px; font-weight: 400; color: var(--dg-grey-5, #717581); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1 1 0; }
+.pmx-panel.is-folded .pmx-panel-summary { display: inline; }
+.is-customizing .pmx-panel-tools { display: inline-flex; gap: 2px; margin-left: auto; align-items: center; }
+.is-customizing .pmx-handle { display: inline-block; }
+.is-customizing .pmx-customize-bar { display: flex; }
+.is-customizing .pmx-panel { outline: 1px dashed var(--dg-border, #DBDCDF); outline-offset: 6px; border-radius: 2px; }
+.pmx-panel.is-lifted { z-index: 5; box-shadow: 0 14px 32px rgba(0, 0, 0, 0.18); background: var(--dg-background, #fff); cursor: grabbing; will-change: transform; }
+.is-customizing .pmx-block-header { touch-action: none; user-select: none; cursor: grab; }
+.pmx-resize { display: none; } .is-customizing .pmx-resize { display: block; position: absolute; top: 0; bottom: 0; right: 0; width: 12px; cursor: col-resize; touch-action: none; border-radius: 3px; }
+.is-customizing .pmx-resize::after { content: ''; position: absolute; top: 50%; left: 4px; width: 4px; height: 36px; transform: translateY(-50%); border-radius: 2px; background: var(--dg-grey-5, #717581); opacity: 0.8; transition: height 0.15s, opacity 0.15s; } .pmx-resize:hover::after, .pmx-resize:focus-visible::after, .is-resizing .pmx-resize::after { height: 48px; opacity: 1; background: var(--dg-accent, #2083D5); }
+.pmx-snap-ghost { position: absolute; z-index: 5; pointer-events: none; border: 2px dashed color-mix(in srgb, var(--dg-accent, #2083D5) 60%, transparent); border-radius: 4px; background: color-mix(in srgb, var(--dg-accent, #2083D5) 5%, transparent); transition: width 0.12s ease-out; } .pmx-panel.is-resizing { z-index: 4; background: var(--dg-background, #fff); }
+.pmx-snap-ghost::after { content: attr(data-label); position: absolute; top: -22px; right: 0; padding: 1px 6px; border-radius: 3px; background: var(--dg-accent, #2083D5); color: #fff; font-size: 11px; } @media (prefers-reduced-motion: reduce) { .pmx-snap-ghost, .is-customizing .pmx-resize::after { transition: none; } }
+.pmx-handle, .pmx-hide { border: 1px solid transparent; background: none; padding: 0 5px; margin-right: 2px; font: inherit; font-size: 12px; line-height: 18px; border-radius: 3px; color: var(--dg-grey-5, #717581); cursor: pointer; }
+.pmx-hide:hover, .pmx-handle:hover { border-color: var(--dg-border, #DBDCDF); color: var(--dg-text-color, #4D5261); }
+.pmx-customize-bar { align-items: center; gap: 8px; padding: 8px 12px; margin-bottom: 16px; border: 1px solid var(--dg-accent, #2083D5); border-radius: 4px; background: linear-gradient(color-mix(in srgb, var(--dg-accent, #2083D5) 6%, transparent), color-mix(in srgb, var(--dg-accent, #2083D5) 6%, transparent)), var(--dg-background, #fff); position: sticky; top: 0; z-index: 6; }
+.pmx-bar-text { flex: 1; font-size: 12px; }
+.pmx-bar-button { border: 1px solid var(--dg-border, #DBDCDF); background: var(--dg-background, #fff); border-radius: 3px; padding: 2px 10px; font: inherit; font-size: 12px; cursor: pointer; }
+.pmx-bar-button.is-primary { background: var(--dg-accent, #2083D5); border-color: var(--dg-accent, #2083D5); color: #fff; }
+.pmx-hidden-line { margin-top: 20px; font-size: 12px; color: var(--dg-grey-5, #717581); }
+.pmx-index { display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
+.pmx-index-tab { margin-top: 6px; font-weight: 500; }
+.pmx-index-item.is-nested { padding-left: 12px; }
+.pmx-index-item.is-hidden { color: var(--dg-grey-4, #9aa5b1); }
+.pmx-index-show { margin-left: 6px; font-size: 12px; }
+.pmx-stat-sub { margin-top: 6px; font-size: 12px; color: var(--dg-grey-5, #717581); }
+.pmx-axis { display: inline-flex; align-items: baseline; gap: 4px; margin-left: auto; padding-left: 12px; font-size: 12px; font-weight: 400; white-space: nowrap; }
+.pmx-axis[hidden] { display: none; }
+.pmx-axis-mode { color: var(--dg-grey-5, #717581); cursor: pointer; }
+.pmx-axis-mode:hover { color: var(--dg-accent, #2083D5); }
+.pmx-axis-mode.is-on { color: var(--dg-text, #4D5261); text-decoration: underline; text-underline-offset: 3px; cursor: default; }
+.pmx-axis-sep { color: var(--dg-grey-4, #9aa5b1); }
+.is-customizing .pmx-axis { display: none; }
+.pmx-growth-tools { gap: 16px; align-items: center; }
+.pmx-compare-head { display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
+.pmx-plan-doses { font-size: 12.5px; line-height: 1.5; }

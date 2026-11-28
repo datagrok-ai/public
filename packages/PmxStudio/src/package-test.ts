@@ -8,6 +8,7 @@ import './tests/provenance-tests';
 import './tests/analyze-tests';
 import './tests/band-chart-tests';
 import './tests/monitor-tests';
+import './tests/day-entry-tests';
 import './tests/hub-tests';
 import './tests/explore-tests';
 import './tests/study-table-tests';
@@ -21,12 +22,15 @@ import './tests/ethics-text-tests';
 import './tests/study-effect-tests';
 import './tests/compare-tests';
 import './tests/colors-tests';
+import './tests/arms15-tests';
 import './tests/submissions-tests';
 import './tests/store-tests';
 import './tests/model-history-tests';
 import './tests/history-models-tests';
 import './tests/open-tests';
+import './tests/history-tests';
 import './tests/handlers-tests';
+import './tests/plan-meta-tests';
 
 // the platform initialises the _package this bundle exports: the same object priors.ts and crux.ts read
 export {_package};

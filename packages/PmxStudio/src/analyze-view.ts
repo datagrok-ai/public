@@ -5,23 +5,30 @@
    animals listed by effect, the one selected drawn against its twin), then, folded, what serves a closer look: the
    statistics behind each result, the control check and the analysis protocol; the study against its plan has a tab
    of its own (plan-vs-observed.ts). */
+import {maxOf} from './format';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import {badge, BasicTable, buttonWithIcon, computed, div, divH, divV, dot, effect, loader, Section, signal, span,
+import {badge, BasicTable, buttonWithIcon, computed, div, divH, divV, dot, effect, loader, signal, span,
   tableFromMap, Tooltip} from '@datagrok-libraries/u2';
-import {offerCopy, saveGate, tableSavers} from './native';
+import {AnimalPanels, AnimalView, growthFrame, ordinal, placeWords} from './animal-panel';
+import {holdTable, leaveAsks, offerCopy, saveGate, saveStudyAs, savedTables, studyPickList, tableSavers}
+  from './native';
+import {applyKept, keptOfCall, recallForm, rememberForm} from './form-memory';
 import {domainStorageOn, isReadOnly, markTableFromFile, newRowNote, open, rowOfTable, save, saveCopy, saveError,
   setRowOn, tableFileOwner, withCode} from './store';
-import {FINISHED_TAG, LIMITS_TAG, LINE_TAG, STUDY_TAG, setHistoryOn, studyOf as savedStudyOf, stamped}
+import {FINISHED_TAG, LIMITS_TAG, LINE_TAG, LOOKS_TAG, STUDY_TAG, setAnalysisOn, setHistoryOn, studyOf as savedStudyOf,
+  stamped}
   from './study-file';
 import {roleOf} from './study-reader';
 import {funcForm, TableInput, ViewHost, viewers} from '@datagrok-libraries/u2/dg';
 import type {ViewContent} from '@datagrok-libraries/u2/dg';
 
 import {AnalysisFrames, AnalysisInputs, PREDICTED, analysisDeclarationOf, analysisFrames, doublingOf, inMm3,
-  intervalNote, warmTwin} from './analyze';
-import {isFiniteNumber, median} from './engine';
+  GROWTH_RATE_TIP, TOO_FEW, comparisonsMade, tooFewWhy, growthRateWords, growthVsControl, intervalWords, oneDecimal,
+  pctPerDay, warmTwin}
+  from './analyze';
+import {CORRECTION_NAME, correctionOf, correctionOver, isFiniteNumber, median} from './engine';
 import {EmptyState, NoControl} from './crux';
 import {PREDICTED_COLOR, StudyLink, follow, groupColors, hasOwnColors, linkStudy, paint, resetColors} from './colors';
 import {CorrectionInput} from './arms-input';
@@ -30,42 +37,125 @@ import {askedOf, autoRun, axisAt, callInputs, cardGrid, dayText, keepSame, onTab
   keepNamedColumns,
   sized, markStage,
   statCard, swatch, volumeAxis, wrapCells, stagePanes, whenSettled, hintLink, PanelFact, PanelSection, PanelVerdict,
-  showDepth, textLines, factList, docSubtitle} from './ui';
-import {groupsShown, lineOf, logOf, planAtlas, restoreFields} from './study-file';
+  showDepth, textLines, factList, docSubtitle, tgiText, unadjustedP} from './ui';
+import {analysisFieldsOf, groupsShown, lineOf, logOf, planAtlas, restoreFields, studyNameOf} from './study-file';
 import {TWIN_NOTE, savedHistory} from './history-models';
 import {markLine} from './ui';
 import {icsOf, startMismatch} from './calendar';
 import {exportName} from './study-file';
-import {PLAN_TAG, planKeyOf} from './plan-file';
-import {openStage} from './stages';
-import {noEffectNote, observedCell, planInput, planTab} from './plan-vs-observed';
+import {PLAN_TAG, planKeyOf, planOfStudy} from './plan-file';
+import {canReturn, keepOnLeaving, linkRow, openStage} from './stages';
+import {noEffectNote, planInput, planTab} from './plan-vs-observed';
 import {nciReadings, NciReading, tolerabilityTab} from './tolerability';
 import {BandChart} from './band-chart';
 import {explore, StudyInputs, studyInputsOf} from './explore';
-import {editLayout, panelTabs, Tab} from './panels';
+import {customizePage, panelTabs, Tab} from './panels';
 import {stagePage, studyHeader} from './study-header';
-import {openButton, stageLinks, takesFiles} from './hub-view';
+import {compareWith, openStudyDialog, stageLinks, takesFiles} from './hub-view';
 import {AnimalSelection, exclusionsOf, mirrorSelection, studyDataLine, studyOf, tagStudy,
-  keepStudyField, withoutExcluded, animalLine, animalMarks, animalPanel as panelOfAnimal} from './study-table';
+  keepStudyField, withoutExcluded, animalLine, animalMarks, animalReadings, gain} from './study-table';
 import {META_TAG, armParts, emptyMeta, metaOf, parseLine, setMetaOn} from './study-meta';
 import type {StudyMeta} from './study-meta';
 import {ExposureSection, GroupDetails, detailsElement, exposureSection, groupDetails, sectionElement}
   from './translation-report';
-import {Exports, download, exportMenu, htmlTable, reportHtml, stageToolbox} from './report';
+import {Exports, download, htmlTable, reasonOf, reportHtml, stageMenu, stageToolbox} from './report';
 import {esc, printSheet} from './sheet';
 import {SpiderChart, WaterfallChart, spiderLines} from './spider-chart';
 import {LineInput} from './line-input';
 import {Competing, Survival, competingOf, survivalOf} from './survival';
 import {KmChart} from './km-chart';
-import {CombinationStep, combinationStep, notCombined, stepWhy, stepWords, synergyAlpha, synergyDialog}
+import {CombinationStep, combinationSteps, notCombined, stepWords, synergyAlpha, synergyDialog}
   from './synergy';
 import {findCombinations, readProblem} from './arm-name';
-import {PmxAnimal, PmxGroup, bindObject, popupFor} from './handlers';
+import {PmxGroup, bindObject, popupFor} from './handlers';
 
 /** The exposure panel's hint, for the axis it shows. */
 const axisHint = (x: 'AUClast' | 'Dose') => `Each group’s TGI against its ${x === 'Dose' ? 'dose' :
   'mouse exposure (NCA’s AUClast)'}, and the effect expected between the doses tested; shown when one drug was ` +
   'given at 3 doses or more';
+
+/** The statistics file's rows (Export > CSV > Statistics): the control, then each treated group with its test on the
+ *  slopes (the one interval, at `slope_difference_confidence`) and its TGI and T/C as the groups table gives them;
+ *  `kmDay`: a group's measured median day to the endpoint (null: none). */
+export function statisticsRows(r: AnalysisFrames, kmDay: (group: string) => number | null): {[k: string]: unknown}[] {
+  const [c, v] = [r.comparisons, (k: string) => r.analysis.get(k, 0)];
+  const [control, done] = [v('control') as string, v('twinned')];
+  const fin = (x: unknown) => isFiniteNumber(x) ? x : null;
+  return [{group: control, role: 'control', evaluation_day: v('evaluation_day'),
+    n_test: v('n_control'), n_evaluation_day: v('n_control_day'),
+    growth_rate_ln_per_day: fin(c.get('slope_control_per_day', 0)),
+    doubling_time_days: doublingOf(c.get('slope_control_per_day', 0)),
+    median_days_to_endpoint: kmDay(control)},
+  ...Array.from({length: c.rowCount}, (_, i) => {
+    const g = (k: string) => fin(c.get(k, i));
+    const arm = c.get('arm', i) as string;
+    const [t, k] = [kmDay(arm), kmDay(control)];
+    return {group: arm, role: 'treated', evaluation_day: v('evaluation_day'), n_test: g('n'),
+      n_evaluation_day: g('n_day'), growth_rate_ln_per_day: g('slope_per_day'),
+      doubling_time_days: doublingOf(c.get('slope_per_day', i)), slope_difference: g('slope_difference'),
+      slope_difference_lower: g('slope_difference_lower'), slope_difference_upper: g('slope_difference_upper'),
+      slope_difference_confidence: g('slope_difference_confidence'),
+      // the same difference as the groups table shows it, in %/day (round 3, analyst W9)
+      ...pctOf(c, i), p_value: c.get('activity', i) === TOO_FEW ? null : g('p_value'),
+      p_raw: c.get('activity', i) === TOO_FEW ? null : g('p_raw'),
+      p_adjustment: v('correction'), tgi_pct: g('tgi'), tc_pct: g('tc'),
+      median_days_to_endpoint: t, days_later_than_control: t !== null && k !== null ? t - k : null,
+      result: c.get('activity', i), twin_animals: done ? g('twin_animals') : null,
+      responders: done ? g('responders') : null};
+  })];
+}
+
+/** The statistics file's growth against the control in %/day (analyze.ts pctPerDay), as the groups table shows it;
+ *  nulls: no test. */
+function pctOf(c: DG.DataFrame, i: number): {[k: string]: number | null} {
+  const tested = c.get('activity', i) !== TOO_FEW;
+  const at = (k: string) => {
+    const x = c.get(k, i);
+    return tested && isFiniteNumber(x) ? Math.round(10 * pctPerDay(x)) / 10 : null;
+  };
+  return {growth_vs_control_pct_per_day: at('slope_difference'),
+    growth_vs_control_pct_per_day_lower: at('slope_difference_lower'),
+    growth_vs_control_pct_per_day_upper: at('slope_difference_upper')};
+}
+
+/** A group on the exposure chart: its TGI as the groups table gives it, its exposure and colour. */
+export interface ExposurePoint {arm: string, tgi: number,
+  auc: number, aucUnit: string, dose: string, drug: string, route: string, color: string}
+
+/** The treated groups with NCA's exposure, at the groups table's TGI (none without a TGI). */
+export function exposurePointsOf(r: AnalysisFrames, exposure: Map<string, ArmExposure>,
+  colors: {[group: string]: string}): ExposurePoint[] {
+  const c = r.comparisons;
+  const ci = (k: string, i: number) => Number.isFinite(c.get(k, i)) ? c.get(k, i) as number : null;
+  return (c.col('arm')!.toList() as string[]).flatMap((arm, i) => {
+    const x = exposure.get(arm)?.exposure;
+    const tgi = ci('tgi', i);
+    return x && tgi !== null ? [{arm, tgi, color: colors[arm], ...x}] : [];
+  });
+}
+
+/** The exposure chart's series of the curve expected between the doses tested (dashed, with its band). */
+export const CURVE = 'Expected between the doses tested';
+
+/** The exposure chart's rows: each group at its TGI (no interval: one day's description), on AUClast or on the dose
+ *  (exposureAxis), and the curve expected between the doses tested when there is one (exposureCurve, on the same
+ *  TGI); undefined: no group. */
+export function exposureFrame(p: ExposurePoint[], meta: StudyMeta | null,
+  curve: ExposureCurve['curve'] = []): DG.DataFrame | undefined {
+  if (!p.length)
+    return undefined;
+  const groups = p.map((x) => ({arm: x.arm, auc: x.auc}));
+  const axis = exposureAxis(groups, meta);
+  const xName = axis.axis === 'dose' ? 'Dose' : 'AUClast';
+  const df = DG.DataFrame.fromObjects([...p.map((x, i) => ({series: x.arm, [xName]: axis.of(groups[i]),
+    lower: x.tgi, upper: x.tgi, tgi: x.tgi})),
+  ...curve.map((c) => ({series: CURVE, [xName]: c.x, lower: c.lo, upper: c.hi, tgi: c.tgi}))])!;
+  df.col(xName)!.meta.units = axis.axis === 'dose' ? axis.unit : p[0].aucUnit;
+  df.col('tgi')!.meta.units = '%';
+  df.col('series')!.meta.colors.setCategorical({[CURVE]: '#9aa5b1',
+    ...Object.fromEntries(p.map((x) => [x.arm, x.color]))});
+  return df;
+}
 
 /** Each combination's step on the ladder, in the words shown under it, for the regulatory table. */
 const stepsInWords = (steps: Map<string, {step: CombinationStep}>) =>
@@ -87,10 +177,10 @@ export function keptEffect(r: AnalysisFrames, meta: StudyMeta | null, nca: NcaBy
 import {ARRIVE_CREDIT, arriveDialog, arriveItems, checklistBlocks, checklistDialog} from './arrive';
 import {CTD_TITLE, M4S_URL, ctdBlocks, ctdItems, ctdStudyOf} from './ctd';
 import {DOCX_TYPE, docx} from './docx';
-import {CURVE_BAND, DrugExposure, ExposureAxis, ExposureCurve, HumanExposure, NcaByArm, ReferenceRow,
+import {ArmExposure, CURVE_BAND, DrugExposure, ExposureCurve, HumanExposure, NcaByArm, ReferenceRow,
   SavedExposure,
   aucUsed, concentrationMapping, cvOk, drugMultiples,
-  exposureAxis, exposureCurve, exposureHint, exposureJson, groupColumnOf, humanMultiple, medianDay, medianTgi,
+  exposureAxis, exposureCurve, exposureHint, exposureJson, groupColumnOf, humanMultiple,
   ncaByArm,
   ncaInstalled, parseExposure, readout, referenceRow, runNca, shownMultiple}
   from './exposure';
@@ -98,14 +188,48 @@ import {EXPOSURE_TAG, exposureOfTag, roleColumns} from './study-file';
 import {humanReference, linePrior, modelName} from './priors';
 import {humanExposureDialog, humanExposureSummary} from './human-exposure';
 import {PkSource, modellingDatasetDialog} from './modelling-dataset';
+import {mm3Text} from './monitor';
+
+/** Rows as CSV: numbers as numbers to `digits` significant figures (float noise off), empty for none, text quoted
+ *  where it must be. */
+export function csvText(rows: {[k: string]: unknown}[], digits = 6): string {
+  const keys = [...new Set(rows.flatMap((r) => Object.keys(r)))];
+  const cell = (x: unknown) => {
+    if (x === null || x === undefined || (typeof x === 'number' && !Number.isFinite(x)))
+      return '';
+    const t = typeof x === 'number' ? String(Number(x.toPrecision(digits))) : String(x);
+    return /[",\n\r]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
+  };
+  return [keys.map(cell).join(','), ...rows.map((r) => keys.map((k) => cell(r[k])).join(','))].join('\n') + '\n';
+}
+
+/** Whether `df` reads as a study: tagged as one by a stage, or with a volume or caliper column by its name (a
+ *  concentrations table opened for NCA is none). */
+export const readsAsStudy = (df: DG.DataFrame) => !!df.getTag(STUDY_TAG) ||
+  [...Array(df.columns.length).keys()].some((j) =>
+    ['volume', 'length'].includes(roleOf(df.columns.byIndex(j).name)?.role ?? ''));
+export const NOT_A_STUDY = 'Not a study table: no animal, day or volume column. Pick the study’s measurements, or ' +
+  'open them with File > Open (Ctrl+O).';
+
+/** A table as CSV with its values as stored, not as its columns display them (the platform's toCsv writes the
+ *  column's format: 19.26 as 19.3, 83 as 83.0): a 32-bit column to the 7 figures it holds, else to `digits`. */
+export function tableCsv(df: DG.DataFrame, digits = 15): string {
+  const cols = df.columns.toList();
+  const fig = cols.map((c) => c.getRawData() instanceof Float32Array ? Math.min(7, digits) : digits);
+  const rows = Array.from({length: df.rowCount}, (_, i) => Object.fromEntries(cols.map((c, j) => [c.name,
+    c.isNone(i) ? null : c.type === DG.TYPE.DATE_TIME ? c.getString(i) : typeof c.get(i) === 'number' ?
+      Number(c.get(i).toPrecision(fig[j])) : c.get(i)])));
+  return rows.length ? csvText(rows, 15) : cols.map((c) => c.name).join(',') + '\n';
+}
 
 /** Analyze's tabs and their panels, in order and width (twelfths): the answer and how the groups grew; each animal;
  *  how the animals bore it; whether the study went as planned. */
 export const ANALYZE_TABS: Tab[] = [
-  {name: 'Results', layout: [{id: 'groups', span: 12}, {id: 'growth', span: 12}, {id: 'km', span: 12},
-    {id: 'exposure', span: 12}]},
-  {name: 'Each animal', layout: [{id: 'waterfall', span: 6}, {id: 'spider', span: 6},
-    {id: 'animals', span: 12}]},
+  {name: 'Results', layout: [{id: 'groups', span: 12}, {id: 'growth', span: 12},
+    {id: 'km', span: 12, folded: true}, {id: 'exposure', span: 12, folded: true}, {id: 'rates', span: 12, folded: true},
+    {id: 'notes', span: 12, folded: true}]},
+  {name: 'Each animal', layout: [{id: 'waterfall', span: 12}, {id: 'spider', span: 12, folded: true},
+    {id: 'animals', span: 12, folded: true}]},
   {name: 'Tolerability', layout: [{id: 'tolerability', span: 12}]},
   {name: 'Against the plan', layout: [{id: 'plan', span: 12}, {id: 'controls', span: 12}]}];
 
@@ -126,7 +250,7 @@ export function lostLine(a: AnimalsByDay): string | null {
   const lost = a.groups.map((g) => {
     const counts = a.days.map((d) => a.n.get(g)?.get(d)).filter((x): x is number => typeof x === 'number');
     // left by the end, not the max minus the min: a group measured from a later day has not lost any
-    return {g, n: counts.length ? Math.max(...counts) - counts[counts.length - 1] : 0};
+    return {g, n: counts.length ? maxOf(counts) - counts[counts.length - 1] : 0};
   }).filter((x) => x.n > 0);
   return lost.length ? `Animals by day: ${lost.map((x) => `${x.g} lost ${x.n}`).join(', ')}` : null;
 }
@@ -171,6 +295,17 @@ function animalFrame(twins: DG.DataFrame, animal: string, color: string): DG.Dat
   return df;
 }
 
+/** Each animal removed early, by name: its day and why, as Tolerability lists them ("T3-04 (day 14, weight)");
+ *  without body weight there is no such list. */
+export function removedAnimals(tol: DG.DataFrame | undefined): Map<string, {day: number, why: string}> {
+  const out = new Map<string, {day: number, why: string}>();
+  for (let i = 0; tol?.col('removed_animals') && i < tol.rowCount; i++) {
+    for (const m of String(tol.get('removed_animals', i) ?? '').matchAll(/(?:^|, )(.+?) \(day (\d+), ([^)]+)\)/g))
+      out.set(m[1], {day: Number(m[2]), why: m[3]});
+  }
+  return out;
+}
+
 /** A group's animals removed early, in a few words ("2 removed on day 7 (weight)"; on several days or for
  *  several reasons: "3 removed early"), from Tolerability's list; null: none, or no body weight to list them. */
 export function removedOf(tol: DG.DataFrame | undefined, group: string): string | null {
@@ -185,13 +320,32 @@ export function removedOf(tol: DG.DataFrame | undefined, group: string): string 
   return `${all.length} removed ${same ? `on day ${all[0][2]} (${all[0][3]})` : 'early'}`;
 }
 
+/** What Analyze says where the twins and the atlas's checks would be, with no tumor model picked. */
+export const NO_MODEL = 'Pick the tumor model to see each animal against its twin';
+const noModelNote = (cell = false) => {
+  // (a table's cell: a dash, the words on hover)
+  const el = span(cell ? '—' : `${NO_MODEL}.`);
+  if (cell)
+    Tooltip.bind(el, NO_MODEL);
+  else
+    el.style.color = 'var(--dg-text-color-muted, #68727f)';
+  return el;
+};
+
 /** An effect against the twin (%), in words: how much smaller, or larger. */
-const sideOf = (x: number) => x >= 0 ? `${pct(x / 100)} smaller` : `${pct(-x / 100)} larger`;
+/** A percent whole, with a decimal under 1 (a responder's lower end of 0.3% read "0%": round 3, analyst W6). */
+export const effectPct = (x: number) => {
+  const v = Math.abs(x);
+  return v > 0 && v < 1 ? v.toFixed(1) : String(Math.round(v));
+};
+const sideOf = (x: number) => `${effectPct(x)}% ${x >= 0 ? 'smaller' : 'larger'}`;
 
 /** A treated animal against its twin on the evaluation day, in words: smaller (or larger) by how much, and its 90%
- *  range. */
-function effectWords(effect: number, lower: number, upper: number): string {
-  return `${sideOf(effect)} than it would be untreated (90% range: ${sideOf(lower)} to ${sideOf(upper)})`;
+ *  range, low to high ("60–85% smaller"; across the twin "10% larger to 30% smaller"). */
+export function effectWords(effect: number, lower: number, upper: number): string {
+  const range = lower >= 0 ? `${effectPct(lower)}–${effectPct(upper)}% smaller` : upper <= 0 ?
+    `${effectPct(upper)}–${effectPct(lower)}% larger` : `${sideOf(lower)} to ${sideOf(upper)}`;
+  return `${sideOf(effect)} than it would be untreated (90% range: ${range})`;
 }
 
 /** An animal's effect and its 90% range as a bar on a shared axis from `lo` to 100% (the twin's size at 0): the dot
@@ -233,8 +387,56 @@ function effectAxis(lo: number): HTMLElement {
   return axis;
 }
 
-const correctionWords = (corr: unknown, k: number) => k < 2 ? 'one comparison' : corr === 'bonferroni' ?
-  'Bonferroni\'s correction' : corr === 'none' ? 'no correction' : 'Holm\'s correction';
+/** The optional columns Analyze takes by their names (the form's, and the demo studies' saved analysis). */
+export const OPTIONAL_COLUMNS: {[input: string]: (name: string) => boolean} = {
+  bodyWeight: isBodyWeight,
+  tumorWeight: (c) => /tum/i.test(c) && /weight|mass/i.test(c),
+  removalReason: (c) => /reason|removal|fate|cause|status/i.test(c),
+};
+
+/** The tested group with the largest TGI (a group too few to test is not counted: round 4, analyst A4); null: none. */
+export function bestTgi(c: DG.DataFrame): {arm: string, tgi: number} | null {
+  let best: {arm: string, tgi: number} | null = null;
+  for (let i = 0; i < c.rowCount; i++) {
+    const x = c.get('tgi', i);
+    if (c.get('activity', i) !== TOO_FEW && c.get('n_day', i) > 0 && isFiniteNumber(x) && (!best || x > best.tgi))
+      best = {arm: c.get('arm', i), tgi: x};
+  }
+  return best;
+}
+
+/** A cell's text with its reason on hover ("—" and why: round 4, analyst W7). */
+function tipped(text: string, tip: string): HTMLElement {
+  const el = span(text);
+  Tooltip.bind(el, tip);
+  return el;
+}
+
+/** The Analyzed cell: the group's animals measured on the evaluation day, "7 of 10" when the growth test has more,
+ *  why on hover (round 4, analyst U1/W8: in place of a sentence under the table). */
+export function analyzedText(group: string, nDay: number, n: number, day: number): {text: string, tip: string} {
+  return nDay < n ? {text: `${nDay} of ${n}`, tip: `${group}: ${nDay} of ${n} measured on day ${day} (TGI, T/C); ` +
+    `growth test uses all ${n}.`} : {text: String(nDay), tip: `${group}: ${nDay} measured on day ${day}, all in the ` +
+    'growth test.'};
+}
+const analyzedCell = (group: string, nDay: number, n: number, day: number) => {
+  const a = analyzedText(group, nDay, n, day);
+  return tipped(a.text, a.tip);
+};
+
+/** A p-value cell, never broken over two lines ("< 0.001": round 4, analyst B1). */
+/** The adjusted p, the unadjusted one on hover (unadjustedP), also where the correction left it unchanged. */
+function pCell(p: unknown, raw?: unknown): HTMLElement {
+  const el = span(pValue(p));
+  el.style.whiteSpace = 'nowrap';
+  const hover = unadjustedP(raw);
+  if (hover)
+    Tooltip.bind(el, hover);
+  return el;
+}
+
+const correctionWords = (corr: unknown, k: number) => k < 2 ? 'one comparison' : corr === 'none' ? 'no correction' :
+  `${CORRECTION_NAME[correctionOf(corr)]}'s correction`;
 
 /** A group's result, with a red "!" after it when the group is over the welfare limits (NCI's): the criteria on
  *  hover, the Tolerability tab on click. */
@@ -265,13 +467,16 @@ function withNci(el: HTMLElement, x: NciReading | undefined, open: () => void): 
   return both;
 }
 
-/** The note on a result that its T/C interval seems to contradict (analyze.ts intervalNote), or null. */
-function groupsNote(r: AnalysisFrames): string | null {
-  const c = r.comparisons;
-  return intervalNote(Array.from({length: c.rowCount}, (_, i) => ({activity: c.get('activity', i) as string,
-    tcLower: c.get('tc_lower', i) as number | null, tcUpper: c.get('tc_upper', i) as number | null})),
-  r.analysis.get('evaluation_day', 0));
-}
+/** A treated group's test on the slopes in words (analyze.ts growthRateWords), row `i` of the comparisons; null:
+ *  none. */
+const growthOf = (c: DG.DataFrame, i: number) => c.get('activity', i) === TOO_FEW ? null :
+  growthRateWords(c.get('slope_difference', i), c.get('slope_difference_lower', i),
+    c.get('slope_difference_upper', i), c.get('p_value', i), c.get('slope_difference_confidence', i));
+
+/** The groups table's growth cell (analyze.ts growthVsControl), "−7.1 (−9.6 to −4.5)" %/day; null: no test (a group
+ *  with too few animals: its stored NaNs may read back as 0). */
+export const growthCellOf = (c: DG.DataFrame, i: number) => c.get('activity', i) === TOO_FEW ? null :
+  growthVsControl(c.get('slope_difference', i), c.get('slope_difference_lower', i), c.get('slope_difference_upper', i));
 
 /** The results in words, a line each: the study, each treated group's effect and result, the test, the body weight. */
 function summaryLines(r: AnalysisFrames, nci: Map<string, NciReading>): string[] {
@@ -279,23 +484,20 @@ function summaryLines(r: AnalysisFrames, nci: Map<string, NciReading>): string[]
   const v = (k: string) => r.analysis.get(k, 0);
   const c = r.comparisons;
   const control = v('control');
-  const lines = [`${modelName(v('line'))} study evaluated on day ${v('evaluation_day')}` + (v('from_endpoint') ?
+  const lines = [`${v('line') ? `${modelName(v('line'))} study` : 'Study'} evaluated on day ${v('evaluation_day')}` + (v('from_endpoint') ?
     `, the first measurement day the median control reached ${v('endpoint')} mm³` : '') +
-    `; control: ${control}, ${v('n_control')} animals.`];
+    `; control: ${control}, ${v('n_control_day')} animals on that day.`];
   for (let i = 0; i < c.rowCount; i++) {
     const g = (k: string) => c.get(k, i);
-    const p = pValue(g('p_value'));
-    const tc = g('tc') === null ? '' : `, T/C ${pct(g('tc') / 100)}` + (g('tc_lower') === null ? '' :
-      ` (95% CI ${Math.round(g('tc_lower'))}–${Math.round(g('tc_upper'))}%)`);
-    lines.push(`${g('arm')} (${g('n')} animals): TGI ${pct(g('tgi') / 100)}${tc}; ${g('activity').toLowerCase()} ` +
-      `against the control (p ${p.startsWith('<') ? p : `= ${p}`})` + (twinned ? `; ${g('responders')} of ` +
+    const growth = growthOf(c, i);
+    const tc = g('tc') === null ? '' : ` and T/C ${pct(g('tc') / 100)}`;
+    lines.push(`${g('arm')} (${g('n_day')} animals): ${g('activity').toLowerCase()} against the control` +
+      (growth ? `; ${growth}` : '') + `; TGI ${tgiText(g('tgi'))}${tc} on day ` +
+      `${v('evaluation_day')}` + (twinned ? `; ${g('responders')} of ` +
       `${g('twin_animals')} animals responded (below the range they would reach untreated).` : '.'));
   }
-  const note = groupsNote(r);
-  if (note)
-    lines.push(note);
   lines.push(`Tumor growth of each treated group against the control, two-sided α = ${num(v('alpha'), 2)} with ` +
-    `${correctionWords(v('correction'), v('treated_arms'))}.`);
+    `${correctionWords(v('correction'), v('tested_arms'))}.`);
   if (nci.size) {
     const order = [control, ...c.col('arm')!.toList() as string[]].filter((g) => nci.has(g));
     const over = order.filter((g) => nci.get(g)!.kind === 'error');
@@ -312,14 +514,15 @@ function summaryLines(r: AnalysisFrames, nci: Map<string, NciReading>): string[]
 
 /** What Analyze opens with: a study table (with its plan in the `pmx.plan` tag, if any) and, with the NCA package,
  *  a concentration table for its exposure. */
-export interface AnalyzeStart {study?: DG.DataFrame, exposure?: DG.DataFrame}
+/** `evaluationDay`: the day to analyze on, in place of Auto (Monitor's last complete day, when the latest is under
+ *  way). */
+export interface AnalyzeStart {study?: DG.DataFrame, exposure?: DG.DataFrame, evaluationDay?: number}
 
 /** The Analyze view; given a study, it analyzes it at once. */
 export async function analyzeView(opening?: AnalyzeStart): Promise<DG.ViewBase> {
   const exports: Exports = [];
   const host = ViewHost.create({name: 'PMX Studio', content: (self) => analyzeContent(self, opening,
     exports)});
-  exportMenu(host.view, exports);
   return markStage(host.view, 'analyze');
 }
 
@@ -330,11 +533,26 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   void warmTwin().catch(() => null);
   const call = DG.Func.byName('PmxStudio:pmxAnalyzeStudy').prepare();
   const studyDf = () => call.getParamValue('study') as DG.DataFrame | null;
+  // a group's object acts on its study only while that study is the one on screen (QA 0.1.3 round 3, analyst 1)
+  let closed = false;
+  self.own(() => closed = true);
+  const liveNow = () => {
+    const df = studyDf();
+    return () => !closed && !!df && studyDf()?.dart === df.dart;
+  };
   // the plan the analysis uses, as text: the one picked in the form, else the study's own
   const planText = () => call.getParamValue('plan')?.trim() || studyDf()?.getTag(PLAN_TAG);
+  // the control as its field shows it: emptied, it is automatic again (the call kept the last name typed, and a
+  // cleared field showing "Auto" still analyzed with it)
+  const controlNow = (): string | null => {
+    const box = form.getInput('control')?.root.querySelector('input');
+    const v = box ? box.value : call.getParamValue('control');
+    return typeof v === 'string' && v.trim() ? v.trim() : null;
+  };
+  const inputsNow = (extra: object) => withoutExcluded(callInputs<AnalysisInputs>(call,
+    {control: controlNow(), ...extra}));
   // the engine itself on the form's inputs, not the registered function's FuncCall (see callInputs)
-  const run = (extra: object) =>
-    analysisFrames(analysisDeclarationOf(withoutExcluded(callInputs<AnalysisInputs>(call, extra))));
+  const run = (extra: object) => analysisFrames(analysisDeclarationOf(inputsNow(extra)));
   const result = signal<AnalysisFrames | undefined>(undefined);
   // the newest run: the form's changes and an opened study share the call, and a run that finishes after a newer one
   // started is dropped
@@ -342,8 +560,16 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   const error = signal<string | null>(null);
   // a failure as the user reads it: what is missing as it is said, else what failed and what to try
   const AGAIN = 'Try again; if it fails again, reload the page.';
-  const failure = (e: unknown, fallback: string) =>
-    e instanceof EmptyState || e instanceof NoControl ? e.message : plainError(e, fallback);
+  const failure = (e: unknown, fallback: string) => {
+    // a control all of whose rows are excluded is in the table, just not analyzed: said so
+    const s = studyInputsOf(call);
+    const inTable = e instanceof NoControl && !!e.control && !!s?.study.col(s.group)?.toList().includes(e.control);
+    if (e instanceof NoControl && inTable) {
+      return `The control group "${e.control}" is excluded from the analysis: include it again, or pick another ` +
+        'one in Control group.';
+    }
+    return e instanceof EmptyState || e instanceof NoControl ? e.message : plainError(e, fallback);
+  };
   // a result that no longer matches the form is dimmed until the next run
   const stale = signal(false);
   // the multiple comparisons as Plan asks for them, over the treated groups of the last analysis (two until then)
@@ -353,17 +579,31 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   let preparing = false;
   const auto = autoRun(() => form, () => preparing ? undefined : analyze());
   const overrides = {correction: {input: correction}, line: {input: new LineInput({label: 'Tumor model'})}};
-  const form = funcForm(call, {layout: 'tall', overrides, onInputChanged: () => {
+  // the study the page took in (openStudy), and whether the form has settled (a study field changing from then on is
+  // the user's pick)
+  let shownStudy: DG.DataFrame | null = null;
+  let ready = false;
+  const form = funcForm(call, {layout: 'tall', overrides, onInputChanged: (name, value) => {
+    // a model picked for a table that had none is the study's from now on (no longer "assumed")
+    const df = studyDf();
+    // another study picked in the field: taken in as an opened one is, its fields as last set here
+    if (name === 'study' && df && ready && !preparing && df !== shownStudy)
+      return void switchTo(df);
+    // (a value the user set for this study: kept for it, given back when the page shows it again; QA 0.1.3 round 3
+    // chaos 2)
+    if (name !== 'study' && !preparing && df && df === shownStudy)
+      rememberForm(df, 'analyze', keptOfCall(call));
+    // a study picked: its own model (its plan's), else none, never the last study's nor a default (QA 0.1.3 A2)
+    if (name === 'study' && df)
+      queueMicrotask(() => form.getInput('line') && (form.getInput('line')!.value = lineOf(df)));
+    if (name === 'line' && typeof value === 'string' && value && df && !lineOf(df))
+      df.setTag(LINE_TAG, value);
     stale.value = result.peek() !== undefined;
     auto.changed();
   }});
   settleForm(form, {control: 'Auto (the vehicle group)', evaluationDay: 'Auto (endpoint reached)',
     density: 'Auto (the cell line’s in the atlas)'});
-  keepNamedColumns(form, {
-    bodyWeight: isBodyWeight,
-    tumorWeight: (c) => /tum/i.test(c) && /weight|mass/i.test(c),
-    removalReason: (c) => /reason|removal|fate|cause|status/i.test(c),
-  });
+  keepNamedColumns(form, OPTIONAL_COLUMNS);
   // busy while the study is analyzed, and before that while an opened study is prepared
   const busy = signal(false);
   const planState = {stale, error, result, reading: Promise.resolve() as Promise<unknown>,
@@ -386,6 +626,13 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   self.own(() => selection.dispose());
   // the twin inputs of the last analyses that got their twin, as many as the engine keeps (twinOf's 8)
   const twinsCached: string[] = [];
+  // a failed run leaves no result behind it: what the form or the table now say is not what was shown (another
+  // study's figures, its name in the header, a change "from the previous result" across two studies)
+  const clearResult = () => {
+    result.value = undefined;
+    stale.value = false;
+    shown(null);
+  };
   const analyze = async (prepare?: () => Promise<void>) => {
     busy.value = true;
     const mine = ++latest;
@@ -399,6 +646,13 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       const blinded = call.getParamValue('study');
       if (blinded instanceof DG.DataFrame && !groupsShown(blinded)) {
         error.value = 'Reveal the groups in Monitor first.';
+        clearResult();
+        return;
+      }
+      // a table picked that is no study (a PK table): said so, not "No control group found"
+      if (blinded instanceof DG.DataFrame && !readsAsStudy(blinded)) {
+        error.value = NOT_A_STUDY;
+        clearResult();
         return;
       }
       const sent = askedOf(call);
@@ -416,7 +670,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       // the twin unchanged (cached): one call, with it; else the analysis first, then the same inputs with the twins
       // (seconds), whatever the form holds by then
       const cached = twinsCached.includes(twinSent);
-      const withTwin = cached ? null : withoutExcluded(callInputs<AnalysisInputs>(call, {withTwin: true}));
+      const withTwin = cached ? null : inputsNow({withTwin: true});
       const frames = await run({withTwin: cached});
       if (mine !== latest)
         return;
@@ -441,8 +695,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       // only the last run speaks: an older one failing late would write over a newer result's place
       if (mine === latest) {
         error.value = failure(e, `The analysis could not be computed. ${AGAIN}`);
-        // what is shown is no longer what the table or the form says
-        stale.value = result.peek() !== undefined;
+        clearResult();
       }
     } finally {
       if (mine === latest) {
@@ -457,17 +710,38 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   // columns as the form picks them by name
   const openStudy = (getStudy: () => Promise<DG.DataFrame>) => analyze(async () => {
     const df = await getStudy();
-    if (!grok.shell.tables.includes(df))
-      grok.shell.addTableView(df);
+    shownStudy = df;
+    // (named "X (2)" while the page it replaces held its own "X": its name back as that one goes, picked again)
+    holdTable(self, df, () => {
+      const field = form.getInput('study');
+      if (field)
+        field.value = df.name;
+    });
     // a view not yet shown is left to showStage: making it current would add it, and showStage add it a second time
-    if ([...grok.shell.views].some((v) => v.dart === self.view.dart))
+    if ([...grok.shell.views].some((v) => v.dart === self.view.dart)) {
       grok.shell.v = self.view;
+      // (the URL names this study at once: Ctrl+O of a new file no longer keeps the last one's ?study=, QA 0.1.3
+      // round 4 chaos N6)
+      linkRow(self.view, 'study', rowOfTable(df)?.id);
+    }
     const study = form.getInput('study');
     if (study)
       study.value = df.name;
     await form.settled;
-    // a table from Monitor brings its body weight column and limits
+    // a table from Monitor brings its body weight column and limits, and the day to read when its latest is under way
     restoreFields(form, df);
+    // and what it was analyzed with when saved here: its method, endpoint and evaluation day (QA 0.1.3 r4: a Holm
+    // study reopened as Bonferroni)
+    for (const [name, value] of Object.entries(analysisFieldsOf(df))) {
+      const input = form.getInput(name);
+      if (input)
+        input.value = value;
+    }
+    // (what the user set for it on this page before: Back, Forward, the field picking it again)
+    applyKept(form, recallForm(df, 'analyze'));
+    const day = form.getInput('evaluationDay');
+    if (df === opening?.study && opening.evaluationDay !== undefined && day)
+      day.value = opening.evaluationDay;
     await form.settled;
   });
   whenSettled(form, () => {
@@ -476,18 +750,37 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     // the picker offers the open tables that look like a study (tagged as one by a stage, or with a volume or caliper
     // column by its name), and the one picked: not every table open (a concentrations table opened for NCA is none)
     if (studyInput) {
+      // one way in for new data: File > Open (Ctrl+O) and a drop, through the importer's checks (columns, units,
+      // calipers, wide tables, dates); the field only picks among the studies already open. The platform's own
+      // open-file, Files and database icons read a table raw (calipers taken as volumes, a wide table as nonsense)
+      studyInput.actions = [];
       const offer = studyInput.setItems.bind(studyInput);
       const looksLikeStudy = (name: string) => {
         const t = grok.shell.tables.find((x) => x.name === name);
-        return !t || name === studyInput.value || !!t.getTag(STUDY_TAG) ||
-          t.columns.names().some((c) => ['volume', 'length'].includes(roleOf(c)?.role ?? ''));
+        return !t || name === studyInput.value || readsAsStudy(t);
       };
-      studyInput.setItems = (items: string[]) => offer(items.filter(looksLikeStudy));
+      studyInput.setItems = (items: string[]) => offer(studyPickList(items.filter(looksLikeStudy), studyInput.value));
       studyInput.setItems(grok.shell.tables.map((t) => t.name));
     }
     if (opening?.study)
       void openStudy(async () => opening.study!);
+    ready = true;
   });
+  // another study picked in the Study field while this one has changes not saved: the field goes back to it and asks
+  // first (Save / Discard / Cancel), before the page takes the new one; Cancel keeps it, its fields as they were (QA
+  // 0.1.3 round 3 analyst 8). ponytail: the form gives no hook before a change, so the field is set back at once
+  const switchTo = async (df: DG.DataFrame) => {
+    const old = shownStudy;
+    // (the view read only with a study already shown: the first one comes while the page is built, before its view)
+    const ask = old ? leaveAsks.get(self.view.dart) : undefined;
+    if (old && ask && domainStorageOn() && grok.shell.tables.includes(old) && !tableSavers.has(old) &&
+      asSaved.changed(old)) {
+      (form.getInput('study') as unknown as TableInput | null)!.table = old;
+      if (!await ask(true))
+        return void openStudy(async () => old);
+    }
+    return void openStudy(async () => df);
+  };
   planInput(form, call, planState);
 
   // exposure from the NCA package, when installed: a concentration table picked here, or opened while the field is
@@ -501,6 +794,15 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     tooltipText: 'Plasma concentrations over time, one row per animal and sample: NCA gives each group its AUC ' +
       '(AUCinf where NCA gives it, else AUClast) and Cmax, shown beside its effect and kept with the study (not the ' +
       'concentrations). The analysis does not change.'})) : null;
+  // a study table is no concentration table: never offered as one (round 4, analyst U6). After the input's own
+  // following of the open tables, so this list is the last word
+  if (exposureField) {
+    const pkTables = () => grok.shell.tables.filter((t) => t.name && !t.getTag(STUDY_TAG) && !t.col('volume'))
+      .map((t) => t.name);
+    exposureField.setItems([...new Set(pkTables())]);
+    for (const e of [grok.events.onTableAdded, grok.events.onTableRemoved])
+      self.subscribe(e, () => exposureField.setItems([...new Set(pkTables())]));
+  }
   // the patients' exposure, by drug, typed under Advanced (empty until typed, or kept with the study): each group's
   // mouse exposure is then also shown as a multiple of it
   const humans = signal(new Map<string, HumanExposure>());
@@ -689,32 +991,49 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   const comparisons = computed(() => result.value?.comparisons);
   // what depends on the twins waits for them: a loader, or a dash if they failed
   const twinned = computed(() => !!analysis.value?.get('twinned', 0));
-  const waitingTwin = (words?: string) => error.peek() !== null ? span('—') : loader(words);
+  // no tumor model picked: no twin to wait for (QA 0.1.3 A2), said where it would be, a dash in a table's cell
+  const waitingTwin = (words?: string) => error.peek() !== null ? span('—') :
+    result.peek()?.analysis.get('line', 0) === '' ? noModelNote(!words) :
+      loader(words);
   const coverage = cell('control_coverage');
   const significant = computed(() => {
     const c = comparisons.value;
-    return c ? `${c.col('activity')!.toList().filter((x) => x === 'Slows growth').length} of ${c.rowCount}` :
+    // (over the groups tested: one too few to test is no group that fails to slow growth, round 4 A4)
+    const act = c?.col('activity')!.toList() ?? [];
+    return c ? `${act.filter((x) => x === 'Slows growth').length} of ${act.filter((x) => x !== TOO_FEW).length}` :
       undefined;
   });
   const treatedAnalyzed = computed(() => {
     const c = comparisons.value;
-    return c ? (c.col('n')!.toList() as number[]).reduce((t, x) => t + x, 0) : undefined;
+    return c ? (c.col('n_day')!.toList() as number[]).reduce((t, x) => t + x, 0) : undefined;
   });
   const analyzed = computed(() => treatedAnalyzed.value === undefined ? undefined :
-    treatedAnalyzed.value + (cell('n_control').value ?? 0));
+    treatedAnalyzed.value + (cell('n_control_day').value ?? 0));
   // the study's answers first, what each figure covers in its tooltip
   const card = statCard.bind(null, form);
+  // two figures, the study's answer; the evaluation day, the animals and the controls are in the status line
+  const largest = computed(() => {
+    const c = comparisons.value;
+    if (!c || !c.col('tgi'))
+      return undefined;
+    return bestTgi(c)?.tgi;
+  });
+  // (a change is shown against the previous result of the same study only)
   const cards = cardGrid([
     card('Treated groups that slow growth', significant, () => 'Treated groups whose tumors grew slower than the ' +
-      `control's up to day ${cell('evaluation_day').value}`),
-    card('Evaluation day', cell('evaluation_day'), () => cell('from_endpoint').value ? 'The first measurement day ' +
-      `the median control reached ${cell('endpoint').value} mm³, as Plan defines the end of the study` :
-      'Chosen, or the last measurement day if the median control never reached the endpoint', dayText),
-    card('Animals analyzed', analyzed, () => `${cell('n_control').value} controls and ${treatedAnalyzed.value} ` +
-      'treated animals with at least two measurements'),
-    card('Controls on track', computed(() => twinned.value ? coverage.value : undefined), () => 'Control ' +
-      'measurements inside the range the other controls predict for them (about 90% is as expected)', (x) => pct(x)),
+      `control's up to day ${cell('evaluation_day').value}, of those tested`, undefined, true, studyDf),
+    // (the table's rounding, its group and day: round 4, analyst W10)
+    card('Best TGI', largest, () => 'The largest TGI among the tested groups on the evaluation day', (x) => {
+      const b = comparisons.peek() ? bestTgi(comparisons.peek()!) : null;
+      return `${tgiText(x)}${b ? ` (${b.arm}, day ${cell('evaluation_day').peek()})` : ''}`;
+    }, true, studyDf),
   ], 'pmx-analyze-cards', 150);
+  const statusTip = () => (cell('from_endpoint').peek() ? 'Evaluated on the first measurement day the median ' +
+    `control reached ${mm3Text(cell('endpoint').peek() as number)} mm³, as Plan defines the end of the study.` : 'Evaluated on the day ' +
+    'chosen, or the last measurement day if the median control never reached the endpoint.') +
+    ` ${cell('n_control_day').peek()} controls and ${treatedAnalyzed.peek()} treated animals measured on the ` +
+    'evaluation day (the growth test takes every animal measured twice or more: see Analyzed). Controls on ' +
+    'track: control measurements inside the range the other controls predict for them (about 90% is as expected).';
 
   const groupsTable = div([]);
   const openSynergy = () => {
@@ -753,32 +1072,16 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     };
     if (!r || !s)
       return;
-    const combos = findCombinations(treated).filter((c) => !off.includes(treated[c.ab]));
-    if (!combos.length)
+    if (!findCombinations(treated).some((c) => !off.includes(treated[c.ab])))
       return;
     const control: string = r.analysis.get('control', 0);
     const lastDay: number = r.analysis.get('evaluation_day', 0) ?? Infinity;
     const line: string = r.analysis.get('line', 0);
-    void linePrior(line).then(async (lp) => {
-      const logBeta = lp.study_prior?.mean_log_beta;
-      if (logBeta === undefined) {
-        say(combos.map((c) => `${treated[c.ab]}: not compared with its two drugs (${line} has no reference ` +
-          'growth rate).'));
-        return;
-      }
-      const found = new Map<string, {step: CombinationStep, why: string}>();
-      const missing: string[] = [];
-      for (const c of combos) {
-        const [a, b, ab] = [treated[c.a], treated[c.b], treated[c.ab]];
-        const x = await combinationStep(s, {control, a, b, ab}, Math.exp(logBeta), lastDay).then((v) => v ?? 'few',
-          (e) => plainError(e, `${ab}: the comparison with its two drugs could not be computed. ${AGAIN}`));
-        if (x === 'few')
-          missing.push(`${ab}: too few animals to compare it with its two drugs.`);
-        else if (typeof x === 'string')
-          missing.push(x);
-        else
-          found.set(ab, {step: x.step, why: stepWhy(a, b, x.floored)});
-      }
+    void (line ? linePrior(line) : Promise.resolve(null)).then(async (lp) => {
+      const logBeta = lp?.study_prior?.mean_log_beta;
+      const {found, missing} = await combinationSteps(s, treated, off, control, line, lastDay,
+        logBeta === undefined ? undefined : Math.exp(logBeta),
+        (e, ab) => plainError(e, `${ab}: the comparison with its two drugs could not be computed. ${AGAIN}`));
       if (laddered === mine && found.size)
         ladder.value = found;
       say(missing);
@@ -788,8 +1091,6 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   // (the report gives the sentence once, in its section on exposure and patients)
   const readoutLine = div([], 'pmx-noprint');
   const hintLine = div([]);
-  // a result its T/C interval seems to contradict: one quiet line on why, under the groups
-  const intervalLine = div([]);
   Object.assign(hintLine.style, {display: 'flex', alignItems: 'center', gap: 'var(--dg-space-s)'});
   const muted = (text: string) => {
     const e = span(text);
@@ -810,19 +1111,14 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   const groupNotes = notesBox();
   // NCA's exposure: why a group has none, and exposure against effect when the groups span 3 doses or more
   const exposureNotes = notesBox();
-  const exposurePoints = signal<{arm: string, tgi: number, auc: number, aucUnit: string, dose: string, drug: string,
-    route: string, color: string}[] | null>(null);
+  const exposurePoints = signal<ExposurePoint[] | null>(null);
   // one drug by one route at 3 doses or more: exposures of different drugs share no axis
   const exposureShown = computed(() => {
     const p = exposurePoints.value;
     return p && new Set(p.map((x) => `${x.drug}|${x.route}`)).size === 1 && new Set(p.map((x) => x.dose)).size >= 3 ?
       p : null;
   });
-  // the groups on one axis with their 1 − T/C of medians (exposure.ts exposureAxis, medianTgi: the measure the curve
-  // and its band were validated on, not the groups table's TGI), read at once; then the effect expected between the
-  // doses tested (exposureCurve), or why there is none
-  const exposureGroups = signal<{axis: ExposureAxis, unit: string, day: number | null,
-    points: {arm: string, x: number, tgi: number, color: string}[]} | null>(null);
+  // the effect expected between the doses tested (exposureCurve, on the same TGI), or why there is none
   const exposureFit = signal<ExposureCurve | {why: string} | null>(null);
   let fitting = '';
   form.effect(() => {
@@ -836,7 +1132,6 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       return;
     fitting = key;
     exposureFit.value = null;
-    exposureGroups.value = null;
     if (!p || !r || !s)
       return;
     const [animal, group, day, volume] = [s.animal, s.group, s.day, s.volume].map((c) => s.study.col(c)!);
@@ -844,64 +1139,39 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       .filter((i) => !animal.isNone(i) && !group.isNone(i) && !day.isNone(i) && !volume.isNone(i))
       .map((i) => ({animal: String(animal.get(i)), group: String(group.get(i)), day: day.get(i),
         volume: volume.get(i)}));
-    const groups = p.map((x) => ({arm: x.arm, auc: x.auc}));
-    // each group's dose from its details first, then its name
-    const studyMeta = metaOf(studyDf());
-    const axis = exposureAxis(groups, studyMeta);
-    const points = p.flatMap((x, i) => {
-      const tgi = medianTgi(rows, x.arm, control, lastDay);
-      return tgi === null ? [] : [{arm: x.arm, x: axis.of(groups[i]), tgi, color: x.color}];
-    });
-    // the day the medians are read on, of the groups plotted: named on the axis only when they share it
-    const days = new Set(points.map((x) => medianDay(rows, x.arm, control, lastDay)));
-    exposureGroups.value = {axis, unit: axis.axis === 'dose' ? axis.unit : p[0].aucUnit,
-      day: days.size === 1 ? [...days][0] : null, points};
-    void exposureCurve(groups, rows, control, lastDay, studyMeta).then((c) => {
-      if (fitting === key)
-        exposureFit.value = c;
-    }, (e) => {
-      if (fitting === key)
-        exposureFit.value = {why: plainError(e, 'it could not be computed just now; try again').replace(/\.$/, '')};
-    });
+    void exposureCurve(p.map((x) => ({arm: x.arm, auc: x.auc})), rows, control, lastDay, metaOf(studyDf()))
+      .then((c) => {
+        if (fitting === key)
+          exposureFit.value = c;
+      }, (e) => {
+        if (fitting === key)
+          exposureFit.value = {why: plainError(e, 'it could not be computed just now; try again').replace(/\.$/, '')};
+      });
   });
-  // the groups as points (a band of no width each), the curve dashed with its band; on AUClast, or on the dose when
-  // exposure does not rise in step with it (a chart for each axis, the one with data shown)
-  const CURVE = 'Expected between the doses tested';
+  // the groups on one axis at the groups table's TGI (the one TGI, 1 − ΔT/ΔC on the evaluation day),
+  // and the curve between the doses tested, dashed with its band
   const exposureData = computed(() => {
-    const g = exposureGroups.value;
-    if (!exposureShown.value || !g)
-      return undefined;
     const f = exposureFit.value;
-    const xName = g.axis.axis === 'dose' ? 'Dose' : 'AUClast';
-    const df = DG.DataFrame.fromObjects([
-      ...g.points.map((x) => ({series: x.arm, [xName]: x.x, lower: x.tgi, upper: x.tgi, tgi: x.tgi})),
-      ...(f && 'curve' in f ? f.curve : []).map((c) => ({series: CURVE, [xName]: c.x, lower: c.lo, upper: c.hi,
-        tgi: c.tgi}))])!;
-    if (!df.rowCount)
-      return undefined;
-    df.col(xName)!.meta.units = g.unit;
-    df.col('tgi')!.meta.units = '%';
-    exposureOptions.forEach((o) => o.yTitle = `TGI (medians${g.day !== null ? `, day ${g.day}` : ''})`);
-    df.col('series')!.meta.colors.setCategorical({[CURVE]: '#9aa5b1',
-      ...Object.fromEntries(g.points.map((x) => [x.arm, x.color]))});
+    // each group's dose from its details first, then its name
+    const df = exposureFrame(exposureShown.value ?? [], metaOf(studyDf()), f && 'curve' in f ? f.curve : []);
+    const day = result.peek()?.analysis.get('evaluation_day', 0);
+    exposureOptions.forEach((o) => o.yTitle = `TGI${day != null ? `, day ${day}` : ''}`);
     return df;
   });
-  // the Y axis and the tooltip name the measure, with its day when the groups share one (set as the data is built)
+  // the Y axis and the tooltip name the measure, with its day (set as the data is built)
   const exposureOptions = ['AUClast', 'Dose'].map((x) => ({x, lower: 'lower', upper: 'upper', line: 'tgi',
-    split: 'series', yTitle: 'TGI (medians)', yInTooltip: true, markers: true, dashed: [CURVE]}));
+    split: 'series', yTitle: 'TGI', yInTooltip: true, markers: true, dashed: [CURVE], xPad: true}));
   const exposureCharts = exposureOptions.map((o) => new BandChart(computed(() =>
     exposureData.value?.col(o.x) ? exposureData.value : undefined), o));
   const exposureText = span('');
   form.effect(() => {
     const f = exposureFit.value;
-    const day = exposureGroups.value?.day;
-    const tgi = `Each point is one group, at its TGI (medians${day != null ? `, day ${day}` : ''}): 1 − T/C of the ` +
-      'median tumor volumes on the last day up to the evaluation day with 3 animals in the group and the control. ' +
-      'The curve and its band were validated on this measure; the groups table gives the analysis\'s TGI.';
-    exposureText.textContent = `${tgi} ${f && 'curve' in f ? 'The dashed line is the effect expected between the ' +
-      `doses tested, never beyond them.${f.note ? ` ${f.note}` : ''} The band is ±${CURVE_BAND} points: in the ` +
-      'validation, 4 doses left out in 5 were within it (12 doses, 9 studies); some missed by 20 to 30.' :
-      f ? `No curve: ${f.why}.` : ''}`;
+    exposureText.textContent = 'Each point is one group at its TGI on the evaluation day, as the groups table gives ' +
+      `it. ${f && 'curve' in f ? 'The dashed line is the effect expected between the doses tested, never beyond ' +
+      `them, on the same TGI.${f.note ? ` ${f.note}` : ''} The band is ±${CURVE_BAND} points.` :
+      f ? `No curve: ${f.why}.` : ''}`.trim();
+  });
+  form.effect(() => {
     exposureCharts.forEach((c) => c.root.style.display = exposureData.value?.col(c === exposureCharts[0] ?
       'AUClast' : 'Dose') ? '' : 'none');
   });
@@ -913,6 +1183,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   const protocol = div([]);
   let protocolText = '';
   let statsCsv = '';
+  let statsShownCsv = '';
   // each group's measured Kaplan-Meier median (set by the Time to endpoint panel, never its projection): the one
   // "median day to the endpoint" the statistics and their file give, as that panel does
   const kmMedians = signal<Survival['medians'] | null>(null);
@@ -939,7 +1210,8 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     const v = (c: string) => r.analysis.get(c, 0);
     const done = v('twinned');
     void error.value;
-    treatedGroups.value = v('treated_arms');
+    // the selector's hint counts the comparisons made, not the treated groups
+    treatedGroups.value = comparisonsMade(r.analysis);
     const control = v('control');
     const arms = r.comparisons.col('arm')!.toList() as string[];
     const colors = colorsOf(r);
@@ -1000,8 +1272,21 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
           null};
     }), meta);
     readoutLine.replaceChildren(...said ? [span(said)] : []);
-    // the report's section on exposure and patients, as the groups are now (the curve as drawn when it is asked)
-    sectionNow = () => exposureSection({sentence: said, curve: !!exposureFit.peek() && 'curve' in exposureFit.peek()!,
+    // the curve as drawn when it is asked: whether there is one, and where a group sits among the doses drawn
+    const drawn = () => {
+      const f = exposureFit.peek();
+      return !!f && 'curve' in f;
+    };
+    const curvePlace = (arm: string): 'lowest' | 'highest' | 'between' | 'off' | null => {
+      const p = exposureShown.peek();
+      if (!drawn() || !p || arm === control)
+        return null;
+      const axis = exposureAxis(p, meta);
+      const at = [...p].sort((a, b) => axis.of(a) - axis.of(b)).findIndex((x) => x.arm === arm);
+      return at < 0 ? 'off' : at === 0 ? 'lowest' : at === p.length - 1 ? 'highest' : 'between';
+    };
+    // the report's section on exposure and patients, as the groups are now
+    sectionNow = () => exposureSection({sentence: said, curve: drawn(),
       table: nca ? nca.table : null, rows: arms.flatMap((arm, i) => {
         const parts = armParts(arm, meta);
         const tgi = r.comparisons.get('tgi', i);
@@ -1021,26 +1306,22 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     patients: drugs.some((p) => human.get(p.key)?.auc != null), placed: withHuman,
     why: [...multiples.values()].find((m) => m?.why)?.why ?? drugWhys[0], inTable: [...new Set(drugs
       .filter((p) => referenceRow(p.key, referenceRows.value)).map((p) => p.drug))]});
-    // a treated group's details for the context panel, as computed here (the curve as drawn when it is asked)
+    // a treated group's details for the context panel, as computed here
     detailsNow = (arm) => {
       const i = arms.indexOf(arm);
       const parts = armParts(arm, meta);
-      const f = exposureFit.peek();
-      const pts = f && 'curve' in f ? [...exposureGroups.peek()?.points ?? []].sort((a, b) => a.x - b.x) : null;
-      const at = pts ? pts.findIndex((p) => p.arm === arm) : -1;
       const g = (k: string) => i < 0 ? null : r.comparisons.get(k, i);
       const step = steps.get(arm);
       return groupDetails({group: arm, read: parseLine(arm, meta), tgi: g('tgi'), color: colors[arm],
-        n: arm === control ? v('n_control') : g('n'),
-        tc: g('tc') === null ? null : {value: g('tc'), lower: g('tc_lower'), upper: g('tc_upper')},
+        n: arm === control ? v('n_control_day') : g('n_day'),
+        tc: g('tc'), growth: i < 0 ? null : growthOf(r.comparisons, i),
         result: g('activity'), step: step ? {words: stepWords(step.step), why: step.why} : null,
         responders: done && g('twin_animals') ? `${g('responders')} of ${g('twin_animals')}` : null,
-        tgiCi: {lower: g('tgi_lower'), upper: g('tgi_upper')}, nadir: nci.get(arm)?.nadir ?? null,
-        p: g('p_value'), removed: removedOf(r.tolerability, arm),
+        nadir: nci.get(arm)?.nadir ?? null,
+        p: g('activity') === TOO_FEW ? null : g('p_value'), removed: removedOf(r.tolerability, arm),
         day: v('evaluation_day') ?? null, x: exposure?.get(arm), table: nca?.table ?? null, live: !!run,
         multiple: multiples.get(arm) ?? null, human: parts.length === 1 ? human.get(parts[0].key) : undefined,
-        curve: !pts || arm === control ? null : at < 0 ? 'off' : at === 0 ? 'lowest' :
-          at === pts.length - 1 ? 'highest' : 'between',
+        curve: curvePlace(arm),
         // a combination: each drug's exposure apart
         ...drugX.has(arm) ? {drugs: parts.map((p) => ({drug: p.drug, x: drugX.get(arm)!.find((d) => d.key === p.key)?.x,
           human: human.get(p.key), multiple: drugMs.get(arm)?.find((d) => d.key === p.key)?.m ?? null}))} : {}});
@@ -1049,30 +1330,39 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     if (lastDetails && grok.shell.o === lastDetails && (arms.includes(lastGroup) || lastGroup === control)) {
       const group = lastGroup;
       grok.shell.o = lastDetails = new PmxGroup(studyOf(studyDf()), group, colors[group], {details: () =>
-        detailsElement(detailsNow(group), groupSections(group, colors[group]))});
+        detailsElement(detailsNow(group), groupSections(group, colors[group])), live: liveNow()});
     }
     hintLine.replaceChildren(...hint ? [muted(hint.text), ...hint.add ? [ui.button('Add…', () =>
       hint.add === 'patients' ? openHumans() : addConcentrations())] : []] : []);
-    exposurePoints.value = !exposure ? null : arms.flatMap((arm, i) => {
-      const x = exposure.get(arm)?.exposure;
-      return x ? [{arm, tgi: r.comparisons.get('tgi', i) as number, color: colors[arm], ...x}] : [];
-    });
+    exposurePoints.value = !exposure ? null : exposurePointsOf(r, exposure, colors);
 
     // the control first, then each treated group: its effect on the evaluation day, its animals against their
     // twins and its result (a table built in this run is disposed with it)
     const c = r.comparisons;
     type Row = {name: string, cells: (string | HTMLElement)[]};
+    const day = v('evaluation_day');
     const rows: Row[] = [{name: control, cells: [swatch(control, colors[control]),
-      String(v('n_control')), '—', '—', '—', '—', '—', withNci(span('Reference'), nci.get(control), showNci)]}];
+      analyzedCell(control, v('n_control_day'), v('n_control'), day), '—', '—', '—', '—', '—', '—',
+      withNci(span('Reference'), nci.get(control), showNci)]}];
     for (let i = 0; i < c.rowCount; i++) {
       const g = (k: string) => c.get(k, i);
       const tc = g('tc');
-      const verdict = divH([dot(g('activity') === 'Slows growth' ? 'success' : 'warning'), span(g('activity'))]);
+      // (none measured on the day: no TGI nor T/C; too few animals: no p nor verdict, chaos 4)
+      const tooFew = g('activity') === TOO_FEW;
+      const none = !(g('n_day') > 0);
+      const verdict = tooFew ? tipped('—', `Not tested: ${tooFewWhy(g('n'))}`) :
+        divH([dot(g('activity') === 'Slows growth' ? 'success' : 'warning'), span(g('activity'))]);
       Object.assign(verdict.style, {alignItems: 'center', gap: 'var(--dg-space-s)'});
       // no clear effect: what the study could have detected with its animals
+      // why, on hover: what the study could have detected
       const why = noEffectNote((k) => r.versusPlan.get(k, i), v);
       if (why)
         Tooltip.bind(verdict, why);
+      // the test the result is read on, its one interval: numbers in the cell, the sentence on hover (round 3 W1)
+      const growth = growthOf(c, i);
+      const growthCell = span(growthCellOf(c, i) ?? '—');
+      Tooltip.bind(growthCell, growth ? `${growth}. ${GROWTH_RATE_TIP}` : tooFew ? `Not tested: ${tooFewWhy(g('n'))}` :
+        GROWTH_RATE_TIP);
       // a combination: under its result, where it stands against its two drugs
       const step = steps.get(g('arm'));
       const stepLine = step ? muted(stepWords(step.step)) : null;
@@ -1090,19 +1380,27 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       // what its details and name say it received, on hover; under the name only what could not be read
       // the group's name stands for it: its right click offers the group's actions
       const name = bindObject(new PmxGroup(studyOf(studyDf()), g('arm'), colors[g('arm')], {details: () =>
-        detailsElement(detailsNow(g('arm')), groupSections(g('arm'), colors[g('arm')]))}),
+        detailsElement(detailsNow(g('arm')), groupSections(g('arm'), colors[g('arm')])), live: liveNow()}),
       swatch(g('arm'), colors[g('arm')]));
       const read = parseLine(g('arm'), meta);
       if (read)
         Tooltip.bind(name, read);
       const problem = readProblem(armParts(g('arm'), meta));
-      const nameCell = problem ? divV([name, muted(`⚠ ${problem}`)]) : name;
-      rows.push({name: g('arm'), cells: [nameCell, String(g('n')),
-        pct(g('tgi') / 100),
-        tc === null ? '—' : observedCell(pct(tc / 100), g('tc_lower') === null ? '' :
-          `(${Math.round(g('tc_lower'))}–${Math.round(g('tc_upper'))}%)`),
-        !done ? waitingTwin() : g('paired_effect') === null ? '—' : pct(g('paired_effect') / 100),
-        !done ? waitingTwin() : `${g('responders')} of ${g('twin_animals')}`, pValue(g('p_value')).replace(' ', ' '),
+      // (grey, no warning sign: what could not be read, why on hover: round 4, analyst W9)
+      const problemLine = problem ? muted(problem) : null;
+      if (problemLine) {
+        Tooltip.bind(problemLine, `Read from the group's name: ${problem}. Exposure and dose-response need a dose in ` +
+          'mg/kg: add it to the name or in Study details.');
+      }
+      const nameCell = problemLine ? divV([name, problemLine]) : name;
+      rows.push({name: g('arm'), cells: [nameCell, analyzedCell(g('arm'), g('n_day'), g('n'), day),
+        none || !isFiniteNumber(g('tgi')) ? tipped('—', `No animal of ${g('arm')} measured on day ${day}`) :
+          tgiText(g('tgi')),
+        none || !isFiniteNumber(tc) ? '—' : pct(tc / 100),
+        !done ? waitingTwin() : !isFiniteNumber(g('paired_effect')) || !g('twin_animals') ? '—' :
+          pct(g('paired_effect') / 100),
+        !done ? waitingTwin() : !g('twin_animals') ? '—' : `${g('responders')} of ${g('twin_animals')}`, growthCell,
+        tooFew ? tipped('—', `Not tested: ${tooFewWhy(g('n'))}`) : pCell(g('p_value'), g('p_raw')),
         withNci(resultCell, nci.get(g('arm')), showNci)]});
     }
     // each treated group's exposure as a multiple of the patients', once one is placed (a combination: each drug's)
@@ -1125,14 +1423,28 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       for (const row of rows)
         row.cells.splice(row.cells.length - 1, 0, row.name === control ? '—' : multipleCell(row.name));
     }
-    const headers = ['Group', 'Analyzed', 'TGI', 'T/C (95% CI)', 'Below its predicted untreated size', 'Responders',
-      'p', ...withHuman ? ['× patients’ exposure'] : [], 'Result'];
+    // the interval's level and why on the growth header's hover (W2); p: as the correction makes it
+    // (the level and k of the comparisons made, the cells' own: round 4, analyst A3/A4)
+    const ci = intervalWords(v('confidence'), v('correction'), v('tested_arms'));
+    const GROWTH = `Growth vs control, %/day (${ci.header})`;
+    const headers = ['Group', 'Analyzed', 'TGI', 'T/C', 'Smaller than its twin (median)', 'Below its twin', GROWTH, ci.p,
+      ...withHuman ? ['× patients’ exposure'] : [], 'Result'];
+    const tips: {[h: string]: string} = {
+      // (the sign said first, QA 0.1.3 round 4 technician wording)
+      [GROWTH]: `Negative = grows slower than control. How much more (+) or less (−) the tumors grow each day ` +
+        `than the control's, with its ${ci.tip} ${GROWTH_RATE_TIP}`,
+      [ci.p]: `Welch's t test on the growth rates, ${correctionWords(v('correction'), v('tested_arms'))}.`,
+      'Smaller than its twin (median)': 'The median, over the group’s animals, of how much smaller each tumor is ' +
+        'than its digital twin predicts it would be untreated, on the evaluation day.',
+      'Below its twin': 'Animals whose tumor is below the 90% range its digital twin predicts untreated, on the ' +
+        'evaluation day (not mRECIST responses: the regulatory table counts those as CR and PR).'};
     const table = new BasicTable<Row>({items: rows, keyOf: (x) => x.name, columns: headers.map((header, j) => ({header,
-      render: (x: Row) => x.cells[j], align: j >= 1 && j < headers.length - 1 ? 'center' : 'left'})),
+      tooltip: tips[header], render: (x: Row) => x.cells[j],
+      align: j >= 1 && j < headers.length - 1 ? 'center' : 'left'})),
     // a group's details in the context panel
     onRowClick: (x) => {
       lastDetails = showDepth(new PmxGroup(studyOf(studyDf()), lastGroup = x.name, colors[x.name], {details: () =>
-        detailsElement(detailsNow(x.name), groupSections(x.name, colors[x.name]))}));
+        detailsElement(detailsNow(x.name), groupSections(x.name, colors[x.name])), live: liveNow()}));
     }});
     table.root.style.width = '100%';
     wrapCells(table.root);
@@ -1153,16 +1465,21 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       const d = doublingOf(s);
       return d === null ? 'Does not grow' : d.toFixed(1);
     };
-    const stats: Stat[] = [{name: control, cells: [control, String(num(c.get('slope_control_per_day', 0))),
+    // in %/day as the groups table (the slopes' ln V per day stay in the statistics file: round 3, analyst 11)
+    const daily = (s: unknown) => isFiniteNumber(s) ? oneDecimal(pctPerDay(s)) : '—';
+    const stats: Stat[] = [{name: control, cells: [control, daily(c.get('slope_control_per_day', 0)),
       doubling(c.get('slope_control_per_day', 0)), '—', '—', reached(control), '—']}];
     for (let i = 0; i < c.rowCount; i++) {
       const g = (k: string) => c.get(k, i);
-      stats.push({name: g('arm'), cells: [g('arm'), String(num(g('slope_per_day'))), doubling(g('slope_per_day')),
-        `${num(g('slope_difference'), 2)} (${num(g('slope_difference_lower'), 2)} to ` +
-        `${num(g('slope_difference_upper'), 2)})`, pValue(g('p_value')), reached(g('arm')), later(g('arm'))]});
+      stats.push({name: g('arm'), cells: [g('arm'), daily(g('slope_per_day')), doubling(g('slope_per_day')),
+        // (never broken over two lines: B1)
+        growthCellOf(c, i) ?? '—', g('activity') === TOO_FEW ? '—' : pValue(g('p_value')).replace(' ', ' '),
+        reached(g('arm')), later(g('arm'))]});
     }
-    const statHeaders = ['Group', 'Growth rate (ln V per day)', 'Doubling time (days)',
-      'Difference from the control (95% CI)', 'p', `Median day to ${v('endpoint')} mm³`, 'Days later than the control'];
+    // the interval the result is read on: 95%, or wider with a correction for the comparisons
+    const statHeaders = ['Group', 'Tumor growth per day (%)', 'Doubling time (days)',
+      `Growth vs control, %/day (${ci.header})`, ci.p, `Median day to ${v('endpoint')} mm³`,
+      'Days later than the control'];
     const st = new BasicTable<Stat>({items: stats, keyOf: (x) => x.name, columns: statHeaders.map((header, j) =>
       ({header, render: (x: Stat) => x.cells[j], align: j >= 1 ? 'center' : 'left'}))});
     st.root.style.width = '100%';
@@ -1170,19 +1487,23 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     statsOf = new Map(stats.map((x) => [x.name,
       statHeaders.slice(1).map((h, j) => ({label: h, value: x.cells[j + 1]}))]));
     statsTable.replaceChildren(st.root);
-    // the file leads with the headline numbers the groups table shows, TGI and T/C with their 95% CI (none for the
-    // control), as numbers
-    const headline = ['tgi', 'tgi_lower', 'tgi_upper', 'tc', 'tc_lower', 'tc_upper'];
-    const headlineHeaders = ['TGI (%)', 'TGI 95% CI lower', 'TGI 95% CI upper', 'T/C (%)', 'T/C 95% CI lower',
-      'T/C 95% CI upper'];
+    // the file leads with the headline numbers the groups table shows, TGI and T/C on the evaluation day (none for
+    // the control), as numbers
+    const headline = ['tgi', 'tc'];
+    const headlineHeaders = ['TGI (%)', 'T/C (%)'];
     const armRow = new Map((c.col('arm')!.toList() as string[]).map((a, i) => [a, i]));
-    statsCsv = DG.DataFrame.fromObjects(stats.map((s) => {
+    // (the text as shown, never a typed table: the platform's toCsv wrote a shown 129 as "129.0")
+    statsShownCsv = csvText(stats.map((s) => {
       const i = armRow.get(s.name);
       return {[statHeaders[0]]: s.cells[0], ...Object.fromEntries(headline.map((k, j) => {
-        const x = i === undefined ? null : c.get(k, i);
-        return [headlineHeaders[j], isFiniteNumber(x) ? num(x) : ''];
+        // (as the groups table shows them: whole percent, round 3 analyst 11)
+        const x = i === undefined || !(c.get('n_day', i) > 0) ? null : c.get(k, i);
+        return [headlineHeaders[j], isFiniteNumber(x) ? Math.round(x) : ''];
       })), ...Object.fromEntries(statHeaders.slice(1).map((h, j) => [h, s.cells[j + 1]]))};
-    }))!.toCsv();
+    }));
+    // the same to analyze further: a column per number (each bound of an interval its own), numbers as numbers, the
+    // animals of each group in the test and on the evaluation day
+    statsCsv = csvText(statisticsRows(r, (g) => kmMedians.value && km.has(g) ? km.get(g) ?? null : null));
 
     // the controls against each other: how many measurements fall in their range, and the ones that grow apart
     const inBand = v('control_coverage');
@@ -1196,21 +1517,24 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       (controlCheck.firstElementChild as HTMLElement).style.gap = 'var(--dg-space-s)';
 
     // the analysis protocol, as Plan pre-specifies it
-    const k = v('treated_arms');
+    const k = v('tested_arms');
     const corr = v('correction');
     const rowsOf: {[row: string]: string} = {
       'Primary comparison': 'Each treated group against the control on tumor growth: the per-animal slope of log ' +
         'volume from randomization to the evaluation day, by Welch’s t test (each group its own variance)',
       'Multiple comparisons': k < 2 ? 'One treated group: none needed' : corr === 'none' ?
         `None: each of the ${k} comparisons at α = ${num(v('alpha'), 2)} (exploratory)` :
-        `${corr === 'bonferroni' ? 'Bonferroni' : 'Holm'} over ${k} comparisons`,
-      'Significance': `α = ${num(v('alpha'), 2)}, two-sided; the intervals are adjusted as the p-values`,
+        correctionOver(corr, k),
+      'Significance': `α = ${num(v('alpha'), 2)}, two-sided; ${ci.tip}`,
       'Evaluation day': v('from_endpoint') ? `Day ${v('evaluation_day')}, the first measurement day the median ` +
         `control reached ${v('endpoint')} mm³, as Plan defines the end of the study` : `Day ${v('evaluation_day')}`,
       'Effects': 'TGI = 1 − ΔT/ΔC, each animal\'s change from its own volume at randomization, and T/C of the ' +
-        'mean volumes, on the evaluation day (NCI definitions, as declared in Plan), each with its 95% interval',
-      'Untreated twin': `What each treated animal would measure untreated, predicted from its own tumor at ` +
-        `randomization, this study's controls and the ${modelName(v('line'))} growth model. Its effect: ` +
+        'mean volumes, on the evaluation day (NCI definitions, as declared in Plan): descriptions of that day, ' +
+        'without an interval; the result and its interval come from the primary comparison alone',
+      // (no model: none computed, never described as if it were: round 4, analyst W14)
+      'Untreated twin': !v('line') ? 'Not computed (no tumor model chosen).' : `What each treated animal would ` +
+        `measure untreated, predicted from its own tumor at randomization, this study's controls and the ` +
+        `${modelName(v('line'))} growth model. Its effect: ` +
         '1 − measured / twin on the evaluation day; a responder\'s 90% range lies above 0. Supporting the primary ' +
         'comparison, not replacing it',
       'Small tumors': `Volumes below ${num(v('v_lod'), 2)} mm³, the smallest a caliper records, are counted at it`,
@@ -1222,8 +1546,6 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     protocolText = [`Analysis protocol (${r.analysis.name})`, ...Object.entries(rowsOf).map(([key, t]) =>
       `${key}: ${t}`)].join('\n');
 
-    const note = groupsNote(r);
-    intervalLine.replaceChildren(...note ? [muted(note)] : []);
     const lines = summaryLines(r, nci);
     summary.replaceChildren(...lines.map((l) => span(l)));
     summaryText = lines.join('\n');
@@ -1241,7 +1563,12 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   const predictedInput = ui.input.bool('Predicted controls', {value: true,
     tooltipText: 'The range of a study\'s median control run as planned (95 of 100 labs): the plan\'s, or the ' +
       'line\'s atlas without one', onValueChanged: (v) => showPredicted.value = v});
-  growthAxis.row.prepend(predictedInput.root);
+  // nothing predicted (no tumor model, no plan): no switch for it (round 4, analyst U5)
+  effect(() => {
+    const p = result.value?.predicted;
+    predictedInput.root.style.display = p && Array.from({length: p.rowCount}, (_, i) => i)
+      .some((i) => p.get('series', i) === PREDICTED) ? '' : 'none';
+  });
   const growthData = computed(() => {
     const r = result.value;
     if (!r)
@@ -1332,26 +1659,52 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   const twins = new Map<string, AnimalRow>();
   const verdict = (a: AnimalRow) => a.lower > 0 ? 'Responder' : a.upper < 0 ? 'Larger than its twin' :
     'Within its twin\'s range';
-  // an animal in the context panel: its curve, readings and marks, then how it ends against its twin
-  // each treated animal's way to its twin (the list's rows): its panel's Actions offer it too
-  type Show = () => void;
-  const toTwin = new Map<string, Show>();
-  const showAnimal = (animal: string, color: string) => {
-    if (!animalDetails(animal, color))
-      return;
-    // as its object: the handler shows these details and the animal's actions under them
-    lastDetails = showDepth(new PmxAnimal(studyOf(studyDf()), animal, {color, twin: toTwin.get(animal), details: () =>
-      animalDetails(animal, color) ?? ui.divText(animal)}));
-    lastGroup = '';
-  };
-  const animalDetails = (animal: string, color: string): HTMLElement | null => {
-    const n = studyOf(studyDf());
-    if (!n)
-      return null;
-    const a = twins.get(animal);
+  // an animal in the context panel, the same from the list, the waterfall, the curves, a group's animals and the
+  // animals table: its answer and effect bar, its curve (against its twin), its place in its group, its weight, its
+  // details; the charts there made once and given each animal's data, let go with the view
+  const groupOfAnimal = (animal: string): string | undefined => {
     const own = result.peek()?.animals;
     const at = own ? (own.col('animal')!.toList() as unknown[]).findIndex((x) => String(x) === animal) : -1;
-    const o = (k: string) => at < 0 || !own!.col(k) || own!.col(k)!.isNone(at) ? null : own!.get(k, at);
+    return at < 0 ? undefined : String(own!.get('group', at));
+  };
+  const colorOfAnimal = (animal: string): string | undefined => {
+    const r = result.peek();
+    const g = groupOfAnimal(animal);
+    return r && g !== undefined ? colorsOf(r)[g] : undefined;
+  };
+  const twinAxis = volumeAxis();
+  const animalPanels = new AnimalPanels({names: () => studyOf(studyDf()), color: colorOfAnimal,
+    view: (animal) => animalView(animal), log: twinAxis.log,
+    // marked on the page: selected alone (the list, the waterfall, the curves and the twin chart follow)
+    onShow: (animal) => selection.select(new Set([animal])),
+    // another study opened, a value corrected, a group renamed: the panel shown follows (A1, T11, D18); another
+    // study picked in the form clears it at once, not once its analysis is back (`stale`: round 3, analyst 1)
+    changed: () => [result.value, dataRead.value, error.value, stale.value]});
+  self.own(() => animalPanels.dispose());
+  // every entry point's
+  const showAnimal = (animal: string) => {
+    if (!studyOf(studyDf()))
+      return;
+    lastDetails = animalPanels.show(animal);
+    lastGroup = '';
+  };
+  // a click on an animal anywhere: with Ctrl, Cmd or Shift only the selection changes
+  const clickAnimal = (animal: string, e?: MouseEvent | KeyboardEvent) => {
+    if (e && (e.ctrlKey || e.metaKey || e.shiftKey))
+      selection.pick(animal, e);
+    else
+      showAnimal(animal);
+  };
+  const animalView = (animal: string): AnimalView => {
+    const n = studyOf(studyDf());
+    const r = result.peek();
+    if (!n || !r)
+      return {};
+    const color = colorOfAnimal(animal);
+    const a = twins.get(animal);
+    const own = r.animals;
+    const at = (own.col('animal')!.toList() as unknown[]).findIndex((x) => String(x) === animal);
+    const o = (k: string) => at < 0 || !own.col(k) || own.col(k)!.isNone(at) ? null : own.get(k, at);
     const rate = o('slope_per_day');
     const best = o('best_response');
     const an = result.peek()?.analysis;
@@ -1359,18 +1712,44 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     // the growth in plain words, folded: the rate in ln V per day and mRECIST's class on hover
     const growth: PanelFact[] = [
       ...o('doubling_time') !== null ? [{label: 'Doubles', value: `every ${num(o('doubling_time'))} days`,
-        ...rate !== null ? {tip: `Growth rate: ${num(rate)} ln V per day`} : {}}] : [],
+        ...rate !== null ? {tip: `Tumor growth: ${oneDecimal(pctPerDay(rate))}% per day`} : {}}] : [],
       ...best !== null ? [{label: 'Best response', value: `${pct(Math.abs(best) / 100)} ${best <= 0 ? 'smaller' :
         'larger'} than on day 0`, ...o('mrecist') ? {tip: `mRECIST: ${o('mrecist')}`} : {}}] : []];
     // (the endpoint without a day of its own: "not reached by day 16" read against a volume of day 21)
     const mine: PanelFact[] = o('time_to_endpoint') === null ? [] : [{label: 'Endpoint',
       value: o('endpoint_reached') ? `Reached on day ${num(o('time_to_endpoint'))}` :
         `Not reached${endpoint !== null ? ` (${num(endpoint)} mm³)` : ''}`}];
-    // the answer, as the twin chart says it: its side against its twin, the range and the day
-    const answer: PanelVerdict | null = !a ? null : {text: `${verdict(a)}: ${sideOf(a.effect)} than its twin`,
-      sub: `90% range ${sideOf(a.lower)} to ${sideOf(a.upper)}${day !== null ? `, on day ${day}` : ''}`,
-      tone: a.lower > 0 ? 'ok' : a.upper < 0 ? 'warn' : 'neutral'};
-    return panelOfAnimal(n, animal, {color, showGroup: true, verdict: answer, extra: mine, growth});
+    // the answer, as the list says it, and under it the list's bar (its range and day on hover)
+    const answer: PanelVerdict | null = !a ? null : {text: a.lower > 0 ? `Responder: ${sideOf(a.effect)} than its ` +
+      'twin' : verdict(a), tone: a.lower > 0 ? 'ok' : a.upper < 0 ? 'warn' : 'neutral'};
+    const bar = a ? div([effectAxis(-50), effectBar(a.effect, a.lower, a.upper, -50, color ?? '#9aa5b1')],
+      'pmx-animal-effect') : null;
+    if (bar)
+      ui.tooltip.bind(bar, `${day !== null ? `Day ${day}: ` : ''}${effectWords(a!.effect, a!.lower, a!.upper)}`);
+    // its curve: against its twin; a control (or a twin not in yet), its own growth
+    const readings = animalReadings(n, animal);
+    const itself = growthFrame(readings.days, readings.volumes, color);
+    const curve = a && r.twins?.rowCount ?
+      {title: 'Against its twin', frame: animalFrame(r.twins, animal, color ?? '')} :
+      itself ? {title: 'Growth', frame: itself} : null;
+    // its place in its group by best response, the page's waterfall order (the best on the right)
+    // a treated animal with its twin: by its effect against its twin, the list's order (the most smaller first: the
+    // panel's place and the list's agree, QA 0.1.3 A11); else (a control) by best response, the smallest growth or
+    // the largest named as such
+    const g = groupOfAnimal(animal);
+    const byTwin = a ? [...twins.values()].filter((t) => t.group === g && Number.isFinite(t.effect))
+      .map((t) => ({animal: t.animal, group: t.group, value: t.effect})) : [];
+    const bars = byTwin.length ? byTwin : Array.from({length: own.rowCount}, (_, i) =>
+      ({animal: String(own.get('animal', i)), group: String(own.get('group', i)),
+        value: own.col('best_response') ? own.get('best_response', i) : NaN}))
+      .filter((b) => b.group === g && Number.isFinite(b.value));
+    const place = byTwin.length ? byTwin.filter((t) => t.value > a!.effect).length + 1 : 0;
+    const words = byTwin.length ? `${ordinal(place)} of ${bars.length} against its twin, ${sideOf(a!.effect)}` :
+      best !== null && placeWords(bars, animal) ? `${placeWords(bars, animal)}, ${gain(best)} best` : '';
+    const group = words ? {bars, order: 'desc' as const, summary: words} : null;
+    return {verdict: answer, bar, curve, group, extra: [...growth, ...mine],
+      removedDay: removedAnimals(r.tolerability).get(animal)?.day ?? null,
+      weightLimit: call.getParamValue('weightLimit') ?? 20};
   };
   // a group's animals for its context panel: each one's curve, last volume and status; a click shows the animal
   const MARK_WORDS: {[m: string]: string} = {excluded: 'Excluded', partly: 'Some excluded', flagged: 'Flagged'};
@@ -1385,20 +1764,16 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     if (!names.length)
       return [];
     const marks = animalMarks(n);
-    // an animal removed early, and why, as Tolerability lists it ("T3-04 (day 14, weight)"): without body weight
-    // there is no such list
-    const tol = result.value?.tolerability;
-    const removedAs = new Map<string, string>();
-    for (let i = 0; tol?.col('removed_animals') && i < tol.rowCount; i++) {
-      for (const m of String(tol.get('removed_animals', i) ?? '').matchAll(/(?:^|, )(.+?) \(day (\d+), ([^)]+)\)/g))
-        removedAs.set(m[1], `Removed on day ${m[2]} (${m[3]})`);
-    }
-    const status = (x: string) => [MARK_WORDS[marks.get(x) ?? ''], removedAs.get(x),
+    // an animal removed early, and why, as Tolerability lists it
+    const removed = removedAnimals(result.value?.tolerability);
+    const removedAs = (x: string) => removed.has(x) ?
+      `Removed on day ${removed.get(x)!.day} (${removed.get(x)!.why})` : '';
+    const status = (x: string) => [MARK_WORDS[marks.get(x) ?? ''], removedAs(x),
       twins.has(x) ? verdict(twins.get(x)!) : '']
       .filter((w) => w && !w.startsWith('Within')).join(' · ');
     // (folded, its count in its header: open, its lines pushed the other panes off the panel)
     return [{title: `Animals ${names.length}`, content: () => textLines(names.map((x) =>
-      animalLine(n, x, color, status(x), () => showAnimal(x, color))))}];
+      animalLine(n, x, color, status(x), () => showAnimal(x))))}];
   };
   form.effect(() => {
     const r = result.value;
@@ -1453,30 +1828,14 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
         row.setAttribute('role', 'button');
         row.tabIndex = 0;
         Object.assign(row.style, {cursor: 'pointer', borderRadius: '3px'});
-        const pick = () => {
-          picked.value = a.animal;
-          mark(a.animal);
-        };
         row.dataset.animal = a.animal;
-        // a plain click selects it (never clears it: picked from the waterfall, it stays); Ctrl, Cmd or Shift toggle
-        const choose = (ev: MouseEvent | KeyboardEvent) => {
-          pick();
-          showAnimal(a.animal, colors[a.group]);
-          if (ev.ctrlKey || ev.metaKey || ev.shiftKey)
-            selection.pick(a.animal, ev);
-          else
-            selection.select(new Set([a.animal]));
-        };
+        // a plain click shows it and selects it (never clears it: picked from the waterfall, it stays); Ctrl, Cmd or
+        // Shift toggle it in the selection
+        const choose = (ev: MouseEvent | KeyboardEvent) => clickAnimal(a.animal, ev);
         row.addEventListener('click', choose);
-        // its right click (and the context panel's Actions): the animal's actions, against its twin first; from the
-        // menu it becomes the current object too
-        toTwin.set(a.animal, pick);
-        const shown = () => {
-          pick();
-          showAnimal(a.animal, colors[a.group]);
-        };
-        bindObject(new PmxAnimal(studyOf(studyDf()), a.animal, {color: colors[a.group], twin: shown,
-          details: () => animalDetails(a.animal, colors[a.group]) ?? span(a.animal)}), row);
+        // its right click (and the context panel's Actions): the animal's actions; from the menu it becomes the
+        // current object too
+        bindObject(animalPanels.objectOf(a.animal), row);
         row.addEventListener('keydown', (ev) => {
           if (ev.key === 'Enter' || ev.key === ' ') {
             ev.preventDefault();
@@ -1526,7 +1885,6 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     const p = pickedRow.value;
     return r && p ? animalFrame(r.twins, p.animal, colorsOf(r)[p.group]) : undefined;
   });
-  const twinAxis = volumeAxis();
   const animalTwin = new BandChart(twinTable, {x: 'day', lower: 'lower', upper: 'upper', line: 'median',
     split: 'series', xTitle: 'Day after randomization', yTitle: 'Tumor volume', log: twinAxis.log, markers: true});
   const sizedTwin = sized(animalTwin, 320);
@@ -1558,7 +1916,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   const openTable = (which: 'animals' | 'measurements') => {
     const r = result.peek();
     if (r && keptStudy)
-      explore(which, r, keptStudy, colorsOf(r), self.view, selection.animals.peek());
+      explore(which, r, keptStudy, colorsOf(r), self.view, selection.animals.peek(), showAnimal);
   };
   const openAnimalsLink = div([hintLink('Open as table', () => openTable('animals'))], 'pmx-noprint');
   const openMeasurementsLink = div([hintLink('Open measurements', () => openTable('measurements'))],
@@ -1575,11 +1933,11 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   // log volume the test compares), its best response (mRECIST's, % from randomization) or how much smaller it is than
   // its untreated twin; sorted so the better animals end on the right
   const WATERFALL = {
-    'Growth rate': {col: 'slope_per_day', title: 'Growth rate (log volume per day)', order: 'desc', control: true,
+    'Growth rate': {col: 'slope_per_day', title: 'Tumor growth per day (%)', order: 'desc', control: true,
       none: '<b>No growth rates.</b> Each animal needs two measurements or more.'},
     'Best response': {col: 'best_response', title: 'Best response (%)', order: 'desc', control: true,
       none: '<b>No best response.</b> Each animal needs measurements from day 10 on for its mRECIST class.'},
-    'Against its twin': {col: 'effect', title: 'Below its predicted untreated size (%)', order: 'asc', control: false,
+    'Against its twin': {col: 'effect', title: 'Smaller than its twin (%)', order: 'asc', control: false,
       none: '<b>No twins.</b> The twin needs the cell line’s growth and each animal’s volume at ' +
         'randomization.'},
   } as const;
@@ -1597,17 +1955,24 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     if (!r || !t?.col(by.col))
       return undefined;
     const control = r.analysis.get('control', 0);
+    // (a growth rate in %/day, as the groups table: designer round 3 wording 3)
+    const value = (i: number) => {
+      const x = t.get(by.col, i) as number;
+      return by.col === 'slope_per_day' && Number.isFinite(x) ? pctPerDay(x) : x;
+    };
     const bars = Array.from({length: t.rowCount}, (_, i) => ({animal: String(t.get('animal', i)),
-      group: String(t.get('group', i)), value: t.get(by.col, i) as number}))
+      group: String(t.get('group', i)), value: value(i)}))
       // a missing value may come back as null, undefined or NaN: only numbers make a bar
       .filter((x) => (by.control || x.group !== control) && Number.isFinite(x.value));
     const groups = [control, ...r.comparisons.col('arm')!.toList()].filter((g) => bars.some((b) => b.group === g));
     return bars.length ? {bars, colors: colorsOf(r), title: by.title, order: by.order, groups} : undefined;
   });
   // a bar's right click: the animal's actions (a canvas cannot be bound: a menu of the same actions)
-  const waterfall = new WaterfallChart(waterfallData, (animal, e) =>
-    popupFor(new PmxAnimal(studyOf(studyDf()), animal), {causedBy: e}),
-  selection);
+  // a bar's click: the animal selected everywhere and its card in the context panel (not the platform's "n selected
+  // rows"); with Ctrl, Cmd or Shift only the selection changes
+  const waterfall = new WaterfallChart(waterfallData,
+    (animal, e) => popupFor(animalPanels.objectOf(animal), {causedBy: e}),
+    {animals: selection.animals, pick: clickAnimal});
   const waterfallMissing = infoNote('');
   form.effect(() => {
     const has = !!waterfallData.value;
@@ -1622,7 +1987,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     void dataRead.value;
     const s = resultStudy;
     return r && s ? {lines: spiderLines(s), colors: colorsOf(r)} : undefined;
-  }), selection);
+  }), {animals: selection.animals, pick: clickAnimal});
 
   // the strict Kaplan-Meier: days to the endpoint as measured, an animal that never reached it censored
   // projected, by its slider: at the last day measured, what was measured; further right, each animal still under
@@ -1736,15 +2101,16 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
         .join('; '), 'success')] : []));
   });
 
-  // short enough for the value axis' title; the unit, ln V, in the section's hint
-  const RATE = 'Growth rate per day';
+  // short enough for the value axis' title: in %/day, as the groups table
+  const RATE = 'Tumor growth per day (%)';
   const slopesData = computed(() => {
     const r = animalsOnly.value;
     if (!r)
       return undefined;
     const a = r.animals;
     const df = DG.DataFrame.fromObjects(Array.from({length: a.rowCount}, (_, i) => ({'Group': a.get('group', i),
-      'Animal': String(a.get('animal', i)), [RATE]: a.get('slope_per_day', i)}))
+      'Animal': String(a.get('animal', i)), [RATE]: isFiniteNumber(a.get('slope_per_day', i)) ?
+        pctPerDay(a.get('slope_per_day', i)) : null}))
       .filter((x) => x[RATE] !== null))!;
     paint(df, 'Group', colorsOf(r));
     // the control first, then the treated groups in their order
@@ -1766,22 +2132,13 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     categoryColumnNames: ['Group'], showPValue: false, showStatistics: false, showCategoryAxis: true,
     labelOrientation: 'Horz', markerColorColumnName: 'Group', legendVisibility: 'Always', showCategorySelector: false,
     showValueSelector: false, showColorSelector: false, showSizeSelector: false});
-  // the growth rates the tests compare, folded under the results table until asked; laid out hidden, the chart
-  // follows its width once it opens
-  const rates = new Section({title: 'Growth rates', hint: 'Each animal’s slope of log volume (ln V per day)',
-    expanded: false});
-  rates.body.append(sized(slopes, 380));
-  self.own(() => rates.dispose());
-  rates.effect(() => {
-    if (rates.expanded.value)
-      window.dispatchEvent(new Event('resize'));
-  });
 
   // the study's data in Datagrok's own table view; here, one line on it and the way there
   const dataLine = studyDataLine(() => studyInputsOf(call));
   self.own(dataLine.dispose);
+  // after a failed run too: the control's rows excluded fail the analysis, and the line still counted them (#19)
   form.effect(() => {
-    if (result.value)
+    if (result.value || error.value)
       dataLine.refresh();
   });
 
@@ -1790,32 +2147,43 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   const axisNote = span(axisHint('AUClast'));
   const panels = panelTabs([
     {id: 'groups', title: 'Experimental groups', hint: 'Each treated group against the control on the evaluation day',
-      content: [readoutLine, groupsTable, intervalLine, hintLine, groupNotes, ladderNotes, rates.root, exposureNotes]},
+      content: [readoutLine, groupsTable, groupNotes]},
+    {id: 'notes', title: 'Notes on the results', hint: 'The combinations and the exposure, in words',
+      content: [hintLine, ladderNotes, exposureNotes], summary: computed(() => result.value ?
+        'the combinations against their drugs, the exposure' : '')},
+    {id: 'rates', title: 'Growth rates', hint: 'Each animal’s tumor growth per day (%), from the slope of its log ' +
+      'volume: what the test compares', content: [sized(slopes, 380)], summary: computed(() => result.value ?
+      'each animal’s growth per day, by group' : '')},
     {id: 'growth', title: 'Observed tumor growth', hint: 'Median and range (smallest to largest tumor) ' +
       'of each group, to the evaluation day; in grey, the median control predicted (by the plan, else by the ' +
       'atlas for this model)',
-    content: [growthAxis.row, openMeasurementsLink, sized(growth, 380), perDay]},
-    {id: 'waterfall', title: 'Each animal compared', hint: 'Every animal as a bar in its group\u2019s colour, on its ' +
+    content: [divH([predictedInput.root, openMeasurementsLink], 'pmx-growth-tools'), growthAxis.row,
+      sized(growth, 380), perDay]},
+    {id: 'waterfall', title: 'Each animal compared', hint: 'Every animal as a bar in its group\u2019s color, on its ' +
       'growth rate, its best response or its effect against its twin; the better animals on the right',
     content: [byInput.root, waterfallMissing, sized(waterfall, 300), openAnimalsLink]},
     {id: 'spider', title: 'Each tumor over time', hint: 'Every animal’s volume as a % change from ' +
-      'randomization, in its group’s colour; click a group in the legend to hide or show its animals',
-    content: [sized(spider, 300)]},
+      'randomization, in its group’s color; click a group in the legend to hide or show its animals',
+    content: [sized(spider, 300)], summary: computed(() => result.value ? 'every animal’s volume as a % change' : '')},
     {id: 'km', title: 'Time to endpoint', hint: 'Kaplan-Meier: the animals of each group still below the ' +
       'endpoint volume, day by day, as measured; an animal that never reached it counts until its last measurement',
-    content: [sized(km, 320), kmWords]},
-    {id: 'exposure', title: 'Exposure and effect', hint: axisNote, content: [exposureBox]},
+    content: [sized(km, 320), kmWords], summary: computed(() => result.value ? 'the animals of each group still ' +
+      'below the endpoint, day by day' : '')},
+    {id: 'exposure', title: 'Exposure and effect', hint: axisNote, content: [exposureBox],
+      summary: computed(() => exposureData.value ? `each group’s effect against its ${exposureData.value
+        .col('Dose') ? 'dose' : 'exposure'}` : '')},
     {id: 'animals', title: 'Each animal against its twin', hint: 'Its twin: what each treated tumor would have ' +
       'measured untreated, predicted from its size at randomization, the study\'s controls and the cell line\'s ' +
-      'growth. Select an animal to see its growth', content: [animals]},
+      'growth. Click an animal to see its curve against its twin', content: [animals],
+    summary: computed(() => result.value ? 'click an animal for its curve against its twin' : '')},
     {id: 'tolerability', title: 'Tolerability', hint: 'Whether the treatments were well tolerated',
       content: tolerability.content},
     {id: 'plan', title: 'Plan vs observed', hint: 'Whether the study went as it was planned',
       content: versus.content},
     {id: 'controls', title: 'Control check', hint: 'Each control against the range the other controls predict',
       content: [controlCheck]},
-  ], ANALYZE_TABS, 'pmx-analyze-panels', 'analyze');
-  exports.push(['Layout…', () => editLayout(panels.root), 'View']);
+  ], ANALYZE_TABS, 'pmx-analyze-panels', 'analyze', form);
+  exports.push(['Customize this page', () => customizePage(panels.root), 'View']);
   // the exposure panel only when there is a chart to show (the layout editor still lists it)
   form.effect(() => {
     const cell = exposureBox.closest<HTMLElement>('.pmx-panel');
@@ -1860,7 +2228,9 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       return null; // no day column picked yet
     }
   };
+  // (a report says the mismatch in its header: the line, an instruction, is for the screen)
   const dateLine = markLine('');
+  dateLine.classList.add('pmx-noprint');
   form.effect(() => {
     void result.value;
     const wrong = startMismatch(metaOf(studyDf())?.start ?? null, lastMeasured());
@@ -1868,7 +2238,20 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     dateLine.lastElementChild!.textContent = wrong ? `${wrong} Set day 0's date in the study's details (click the ` +
       'study\'s name).' : '';
   });
-  const content = divV([dataLine.root, twinLine, dateLine, cards, panels.root], 'pmx-analyze-content');
+  // a table with no tumor model of its own (no plan, never given one): the one in the form is assumed, and said
+  const assumedLine = markLine('');
+  form.effect(() => {
+    void result.value;
+    const df = studyDf();
+    const line = String(call.getParamValue('line') || '');
+    const assumed = !!result.value && !!df && !lineOf(df) && !planText();
+    assumedLine.hidden = !assumed;
+    // (a table read from a file names no model: none is preset, so the field says "Not set" until one is picked)
+    assumedLine.lastElementChild!.textContent = !assumed ? '' : line ? `Tumor model assumed: ${modelName(line)}. ` +
+      'Pick the study\'s own in Tumor model.' : 'Tumor model: not set. Pick the study\'s in Tumor model for the twins ' +
+      'and the atlas checks (none until then: no model is assumed).';
+  });
+  const content = divV([dataLine.root, assumedLine, twinLine, dateLine, cards, panels.root], 'pmx-analyze-content');
   const copied = (text: string, what: string) => {
     studyNow();
     return navigator.clipboard.writeText(text).then(() => grok.shell.info(`${what} copied`));
@@ -1887,7 +2270,11 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     ['Report (PDF)…', async () => {
       const {df, r} = studyNow();
       const section = sectionNow();
-      printSheet(await panels.all(() => reportHtml({title: r.analysis.name, stage: 'Analyze', meta: metaOf(df),
+      // titled by the study, its ID after it, as its header (the analysis' table name read "Analysis · 6 groups":
+      // round 3, W11)
+      const id = metaOf(df)?.id;
+      printSheet(await panels.all(() => reportHtml({title: `${df.name}${id ? ` ${id}` : ''}`, stage: 'Analyze',
+        meta: metaOf(df),
         groups: [r.analysis.get('control', 0), ...r.comparisons.col('arm')!.toList() as string[]],
         // the plan the analysis used (analyze.ts)
         content, log: logOf(df), planAtlas: planAtlas(planText()),
@@ -1926,7 +2313,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       const {df, r} = studyNow();
       const s = ctdStudyOf(r, metaOf(df), r.analysis.name, shownNca, stepsInWords(ladder.peek()));
       const sub = docSubtitle(s.id, `From the analysis of ${df.name}`);
-      checklistDialog({title: 'Regulatory (CTD) table', guide: 'ICH M4S(R2)', url: M4S_URL, asker: 'The table',
+      checklistDialog({title: `Regulatory (CTD) table${s.id ? `: ${s.id}` : ''}`, guide: 'ICH M4S(R2)', url: M4S_URL, asker: 'The table',
         download: async () => download(`${df.name} - CTD table.docx`,
           await docx(ctdBlocks([s], {sub}), {title: CTD_TITLE, landscape: true}), DOCX_TYPE)},
       ctdItems(s), {details: () => head.details(ctd)});
@@ -1957,9 +2344,12 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     }, 'Data > Open as table'],
     ['Measurements', () => openTable('measurements'), 'Data > Open as table'],
     ['Statistics', () => download(`${studyNow().df.name} - statistics.csv`, statsCsv, 'text/csv'), 'Export > CSV'],
-    ['Measurements', () => download(`${studyNow().df.name}.csv`, studyNow().df.toCsv(), 'text/csv'),
+    ['Statistics as shown', () => download(`${studyNow().df.name} - statistics as shown.csv`, statsShownCsv,
+      'text/csv'), 'Export > CSV'],
+    // the values as stored, not as the columns display them (19.26, not 19.3)
+    ['Measurements', () => download(`${studyNow().df.name}.csv`, tableCsv(studyNow().df), 'text/csv'),
       'Export > CSV'],
-    ['Per-animal results', () => download(`${studyNow().df.name} - animals.csv`, studyNow().r.animals.toCsv(),
+    ['Per-animal results', () => download(`${studyNow().df.name} - animals.csv`, tableCsv(studyNow().r.animals, 6),
       'text/csv'), 'Export > CSV'],
     ['Modelling dataset (NONMEM)…', async () => {
       const {df} = studyNow();
@@ -1997,28 +2387,38 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     const arms = r.comparisons.col('arm')!.toList() as string[];
     const df = studyDf();
     // the study's own name, as Monitor's header (the analysis table's name says only what was compared)
-    return {name: df?.name || r.analysis.name, groups: [control, ...arms].map((name) => ({name, color: colors[name]})),
-      status: `${modelName(r.analysis.get('line', 0))} · evaluated on ${dayText(r.analysis.get('evaluation_day', 0))}`,
+    return {name: (df && studyNameOf(df)) || r.analysis.name, groups: [control, ...arms].map((name) => ({name, color: colors[name]})),
+      status: [modelName(r.analysis.get('line', 0)),
+        `evaluated on ${dayText(r.analysis.get('evaluation_day', 0)).toLowerCase()}`,
+        analyzed.value === undefined ? '' : `${analyzed.value} animals analyzed`,
+        twinned.value && isFiniteNumber(coverage.value) ? `controls on track ${pct(coverage.value)}` : '']
+        .filter((x) => x).join(' · '), statusTip,
       meta: () => metaOf(df), setMeta: df ? (m) => setMetaOn(df, m) : undefined,
       groupObject: (g, color) => new PmxGroup(studyOf(df), g, color, {details: () =>
-        detailsElement(detailsNow(g), groupSections(g, color))})};
+        detailsElement(detailsNow(g), groupSections(g, color)), live: liveNow()})};
     // Plan opens with the plan the analysis uses: the one picked, else the study's own
-  }), (s) => void openStage(s, planText()));
+  }), (s) => void openStage(s, planOfStudy(planText(), metaOf(studyDf())?.id)), computed(() => ({monitor:
+    !result.value && !canReturn('monitor') ? 'Needs a study: open one, or follow a plan' : null})));
   // Save (and Ctrl+S): what Analyze changes on the study's table (the patients' exposure, the effect kept, exclusions).
   // A table followed in Monitor is saved by that view; any other (from a file, a drop), with rows on, is saved here as
   // its row: the one it came from (its limits kept), else a new one, the first time it is saved
-  const savedAs = new WeakMap<DG.DataFrame, string>();
-  const snapshot = (df: DG.DataFrame) =>
-    [df.toCsv(), df.getTag(EXPOSURE_TAG) ?? '', df.getTag(META_TAG) ?? ''].join('|');
+  // (the effect Analyze keeps on the exposure tag is its own reading, not a change of the user's: opening a saved
+  // study left it unsaved, so it stayed open beside the next page; the table's text taken only once it changed)
+  const asSaved = savedTables(self, (df) => df.toCsv(), (df) =>
+    [JSON.stringify({...exposureOfTag(df) ?? {}, effect: undefined}), ...[META_TAG, LOOKS_TAG, PLAN_TAG]
+      .map((t) => df.getTag(t) ?? '')].join('|'));
   const saveHere = async (df: DG.DataFrame): Promise<void> => {
     const at = rowOfTable(df);
-    const was = at ? (await open('study', at.id)).doc : null;
+    // (a row gone to the trash since: its limits unread, the save below offers "Save as new" as every page's does;
+    // read first, it said "could not be saved" three times, QA 0.1.3 round 4 chaos N2, N11)
+    const was = at ? await open('study', at.id).then((r) => r.doc, () => null) : null;
     const m = await withCode(metaOf(df) ?? emptyMeta());
     setMetaOn(df, m);
     const s = await stamped(savedStudyOf(df, was?.humane ?? null, was?.weightLimit ?? null));
     try {
       const saved = await save('study', s, at, {fileOwner: tableFileOwner(df)});
       setRowOn(df, saved);
+      linkRow(self.view, 'study', saved.id);
       markTableFromFile(df, '');
       if (saved.meta) {
         setMetaOn(df, saved.meta);
@@ -2032,14 +2432,15 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       return offerCopy(async () => {
         const {saved, doc} = await saveCopy('study', s, at);
         setRowOn(df, saved);
+        linkRow(self.view, 'study', saved.id);
         df.name = doc.name;
         setMetaOn(df, doc.meta!);
         head.refresh();
-        savedAs.set(df, snapshot(df));
+        asSaved.set(df);
         grok.shell.info(`Saved as your copy: ${esc(doc.name)}`); // (a toast reads HTML: the name is never markup)
-      });
+      }, e);
     }
-    savedAs.set(df, snapshot(df));
+    asSaved.set(df);
     grok.shell.info('Study saved');
   };
   const saver = (): (() => Promise<void>) | null => {
@@ -2055,7 +2456,8 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     return monitor ?? (domainStorageOn() ? () => {
       finished(df);
       return saveHere(df).catch((e) => {
-        grok.shell.error(saveError(e, 'study'));
+        // (kept until dismissed: a save refused is read and acted on, QA 0.1.3 technician F12)
+        grok.shell.error(saveError(e, 'study'), {autoHide: false});
         throw e;
       });
     } : null);
@@ -2069,29 +2471,62 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       df.setTag(LINE_TAG, line);
       setHistoryOn(df, line);
     }
+    // and what it was read with, set again when it is reopened (restoreFields)
+    const p = (name: string) => call.getParamValue(name);
+    setAnalysisOn(df, {correction: correctionOf(p('correction')), endpoint: p('endpoint'),
+      evaluationDay: p('evaluationDay')});
   };
   const saveButton = buttonWithIcon('Save study', 'save', () => void saver()?.().catch(() => {}));
   saveButton.title = 'Save the study with what Analyze added (the patients’ exposure, exclusions)';
+  // Save as…, as Monitor's: the study under a name of its own, a new study (QA 0.1.3 round 3 designer U3)
+  if (domainStorageOn()) {
+    exports.push(['Save as…', () => {
+      const df = studyDf();
+      if (df)
+        saveStudyAs(df, (m) => setMetaOn(df, m), () => (saver()?.() ?? Promise.resolve()).then(() => head.refresh()));
+    }, 'File', () => studyDf() ? null : 'Open a study first']);
+  }
   effect(() => {
     void result.value;
     const df = studyDf();
     saveButton.hidden = !saver();
-    if (df && !savedAs.has(df))
-      savedAs.set(df, snapshot(df));
+    const id = rowOfTable(df)?.id;
+    // (the view is made once the content is: the first run waits for it)
+    queueMicrotask(() => linkRow(self.view, 'study', id));
+    if (df && !asSaved.has(df))
+      asSaved.set(df);
   });
   // (closing asks only for a table saved here: one followed in Monitor is asked about there)
   queueMicrotask(() => saveGate(self, 'study', () => saver()?.() ?? Promise.resolve(), () => {
     const df = studyDf();
-    return !!df && domainStorageOn() && !tableSavers.has(df) && savedAs.has(df) && savedAs.get(df) !== snapshot(df);
+    return !!df && domainStorageOn() && !tableSavers.has(df) && asSaved.changed(df);
   }, () => {
     const df = studyDf();
     return !!df && !rowOfTable(df);
-  }));
+  }, asSaved.changes));
   const links = stageLinks({stage: 'analyze'}, () => head.details());
+  // (Compare is no stage: opened from here on this study, or from the Overview)
+  links.study.push(['Compare with other studies…', () => void compareWith(rowOfTable(studyDf())?.id),
+    'This study beside your other saved studies with measurements']);
+  // another stage shown in this view's place: this study, to come back to
+  keepOnLeaving(self, async () => {
+    const df = studyDf();
+    return df ? () => analyzeView({study: df}) : null;
+  });
+  queueMicrotask(() => stageMenu(self.view, exports, {open: () => void openStudyDialog(undefined, {stage: 'analyze'}),
+    save: {text: () => saveButton.textContent?.trim() || 'Save study', run: () => saveButton.click(),
+      why: () => saveButton.hidden ? 'Open a study first' : reasonOf(saveButton)}}, links, (d) => self.own(d)));
+  const toolbox = stageToolbox(exports, links.study, links.help, panels.root);
+  // its "On this page" only while the page shows its sections, as Monitor's (QA 0.1.3 round 4 chaos N12)
+  effect(() => {
+    const pane = toolbox.querySelector('.pmx-index')?.closest<HTMLElement>('.d4-accordion-pane');
+    if (pane)
+      pane.style.display = result.value ? '' : 'none';
+  });
   return {
     root: takesFiles(stagePage(head.row, panes), {stage: 'analyze'}),
-    ribbon: [[head.steps], [openButton({stage: 'analyze'}), saveButton]],
-    toolbox: stageToolbox(exports, links.study, links.help),
+    ribbon: [[head.steps]],
+    toolbox,
     path: '/analyze',
     status: computed(() => busy.value ? 'Analyzing the study…' : result.value ?
       studyDf()?.name || result.value.analysis.name : ''),

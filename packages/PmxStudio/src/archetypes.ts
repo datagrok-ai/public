@@ -37,7 +37,7 @@ export interface Archetype {
 
 export const ARCHETYPES: {[t in Therapy]: Archetype} = {
   small_molecule: {label: 'Small molecule (cytotoxic or targeted)', onsetDays: 0, responders: 1, kappaSd: 0.3,
-    translation: 'tumour static concentration (TSC = alpha / k2) against human exposure',
+    translation: 'tumor static concentration (TSC = alpha / k2) against human exposure',
     basis: 'atlas: 59 directly acting small-molecule arms, 37 papers (spread 1.0)'},
   biologic: {label: 'Biologic (antibody, ADC, fusion protein)', onsetDays: 0, responders: 1, kappaSd: 0.3,
     translation: 'PK scaling and target occupancy',

@@ -3,7 +3,7 @@
 import * as DG from 'datagrok-api/dg';
 
 import {enginePriors, hostClassOf, modelName, tumorModels} from './priors';
-import {HUMANE, LAB_WEEKDAYS, StudyDeclaration, correctionOf, designScenarios, designStudy,
+import {HUMANE, LAB_WEEKDAYS, StudyDeclaration, correctionOf, designScenarios, designStudy, tgiProblem,
   isFiniteNumber as ok} from './engine';
 import {Arm, armsOf, therapyFor} from './arms-input';
 import {armColors} from './colors';
@@ -27,12 +27,15 @@ export const weekdaysText = (days: number[]) => days.map((i) => WEEKDAY_NAMES[i]
 /** Most assumed TGIs in one run: each is a whole design. */
 const MAX_SCENARIOS = 8;
 
-/** The assumed TGIs of a text such as "30, 50, 70", in order; empty: none (no scenarios are computed). */
-export function tgisOf(text: string | null | undefined): number[] {
+/** The assumed TGIs of a text such as "30, 50, 70", in order, each above 0 and below the plan's complete regression
+ *  (tgiMax of its `endpoint` and volume at randomization `v0`); empty: none (no scenarios are computed). */
+export function tgisOf(text: string | null | undefined, endpoint = 1000, v0 = 100): number[] {
   const tgis = [...new Set(String(text ?? '').split(/[,;\s%]+/).filter((w) => w !== '').map(Number))]
     .sort((a, b) => a - b);
-  if (tgis.some((x) => !(x > 0 && x < 100)))
-    throw new Error(`Assumed TGIs: write percentages between 0 and 100, such as 30, 50, 70 (got "${text}")`);
+  const bad = tgis.find((x) => tgiProblem(x, endpoint, v0) !== null);
+  if (bad !== undefined)
+    throw new Error(`Assumed TGIs: ${tgiProblem(bad, endpoint, v0)!.replace('Expected TGI: ', '')}, such as 30, ` +
+      `50, 70 (got "${text}")`);
   if (tgis.length > MAX_SCENARIOS)
     throw new Error(`Assumed TGIs: at most ${MAX_SCENARIOS} at a time, each is a whole design`);
   return tgis;

@@ -24,7 +24,7 @@ const TOPICS: [string, string, string][] = [
   [FORMULATION, 'Ethics and humane endpoints', 'Ethical issues, harm-benefit assessment and humane endpoints: a ' +
     'lay summary, the 3Rs, a harm-benefit assessment, a severity class, clear humane endpoints'],
   [FORMULATION, 'Design and statistics', 'Experimental design and statistical analysis: power and significance, ' +
-    'the experimental unit and animal numbers, randomisation, observer bias, inclusion and exclusion criteria'],
+    'the experimental unit and animal numbers, randomization, observer bias, inclusion and exclusion criteria'],
   [DIALOGUE, 'Timescale, funding and staff', 'Objectives and timescale, funding and division of labour: meetings ' +
     'with all staff, a timescale, the costs, who does what'],
   [DIALOGUE, 'Facility', 'Facility evaluation: an inspection of the building and equipment, staffing at times ' +

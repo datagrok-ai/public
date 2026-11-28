@@ -1,3 +1,5 @@
+import {maxOf, minOf} from './format';
+
 /** The columns Analyze needs, by the names a study table usually gives them. */
 export const ROLES: [string, RegExp][] = [
   ['Animal', /^(animal|mouse|subject|id\b|tumou?r[ _]?id)/i],
@@ -146,7 +148,7 @@ export function wideSummary(w: WideRead, blinded = false): string[] {
   const groups = blinded ? `${counts.length > 1 ? `${counts.slice(0, -1).join(', ')} and ` : ''}` +
     `${counts[counts.length - 1] ?? 0} animals` : w.groups.map(([g, n]) => `${g} (${plural(n, 'animal')})`).join(', ');
   const days = w.rows.map((r) => r.day);
-  return [`Read ${plural(w.groups.length, 'group')}: ${groups}, days ${Math.min(...days)}–${Math.max(...days)}.`,
+  return [`Read ${plural(w.groups.length, 'group')}: ${groups}, days ${minOf(days)}–${maxOf(days)}.`,
     ...w.notes, ...w.ignored.map((l) => `Not read: ${l}.`)];
 }
 
@@ -362,7 +364,7 @@ function readByDay(cells: string[][], filled: number[], decimalComma: boolean): 
     lastDay = c;
   }
   const dayCols = Array.from({length: lastDay - first + 1}, (_, k) => first + k);
-  const width = Math.max(...filled.map((r) => cells[r].length));
+  const width = maxOf(filled.map((r) => cells[r].length));
   const after = Array.from({length: Math.max(0, width - lastDay - 1)}, (_, k) => lastDay + 1 + k)
     .filter((c) => rest.some((r) => /\d/.test(at(r, c))));
 

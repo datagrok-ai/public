@@ -1,11 +1,13 @@
 import {ARCHETYPES, Therapy} from './archetypes';
-import {SCHEDULE} from './schedule';
+import {SCHEDULE, scheduleText} from './schedule';
 
 // a text that is a schedule and nothing else
 const WHOLE_SCHEDULE = new RegExp(`^\\s*(?:${SCHEDULE.source})\\s*$`, 'i');
 
 export interface Dose {value: number, unit: string}
-export interface ArmPart {drug: string, key: string, dose: Dose | null, schedule: string | null, route: string | null}
+/** `negative`: the name writes its dose below 0 ("-5 mg/kg"), read as no dose */
+export interface ArmPart {drug: string, key: string, dose: Dose | null, schedule: string | null, route: string | null,
+  negative?: boolean}
 
 // a dose: a number and a unit (per body weight or area, absolute, radiation, activity, cells)
 const DOSE = new RegExp('(\\d+(?:[.,]\\d+)?(?:\\s*[x×]\\s*10\\^?\\d+|e\\d+)?)\\s*(' +
@@ -35,6 +37,12 @@ const CONTEXT = /\s+(?:in|on|into)\s+[^+;]*(?:hosts?|mice|mouse|cells|tumou?rs?|
 const SALTS = new RegExp('\\b(?:hydrochloride|hcl|mesylate|mesilate|sodium|potassium|citrate|tartrate|maleate|' +
   'sulfate|sulphate|phosphate|acetate|besylate|tosylate|fumarate|succinate)\\b', 'gi');
 
+/** The controls that turn text right to left or isolate it (U+202E reverses "Cpd-A 5 mg/kg" on screen and in a
+ *  document): no name needs them. With `escaped`, also as a JSON text writes them ("‮"). */
+const BIDI = /[؜‎‏‪-‮⁦-⁩]/g;
+const BIDI_ESCAPED = /[؜‎‏‪-‮⁦-⁩]|\\u(?:061[cC]|200[eEfF]|202[a-eA-E]|206[6-9])/g;
+export const noBidi = (s: string, escaped = false) => s.replace(escaped ? BIDI_ESCAPED : BIDI, '');
+
 /** A drug's identity across arms: case, spaces, hyphens, salt forms and the spellings of "anti-" set aside
  *  ("aPD-1", "αPD1", "anti PD-1" are one drug). */
 export function drugKey(drug: string): string {
@@ -53,19 +61,24 @@ function part(text: string): ArmPart | null {
     return m;
   };
   const d = take(DOSE);
+  // a minus written before the dose ("Cpd-A -5 mg/kg", not the hyphen of "Cpd-5"): no dose, and said so (readProblem)
+  const negative = !!d && /(?:^|\s)[-−–]\s*$/.test(rest.slice(0, d.index));
   const s = take(SCHEDULE);
   const r = take(ROUTE);
   const route = r ? (ROUTES.find(([re]) => re.test(r[1]))?.[1] ?? r[1]) : null;
-  const drug = rest.replace(FILLER, ' ').replace(/[,;:]+/g, ' ').replace(/\s+/g, ' ').trim()
-    .replace(/^[-–\s]+|[-–\s]+$/g, '');
+  // (a word with no Latin or Greek letter and no digit is a mark, not part of the name: "Trametinib ✓ 中文 ½")
+  const drug = rest.replace(FILLER, ' ').replace(/[,;:]+/g, ' ').split(/\s+/)
+    .filter((w) => /[A-Za-z0-9Ͱ-Ͽ]/.test(w)).join(' ').trim().replace(/^[-–\s]+|[-–\s]+$/g, '');
   const unitOf = d?.[2] ?? '';
   const named = drug || (/^Gy$/i.test(unitOf) ? 'radiation' : '');
   const key = drugKey(named);
-  if (!named || CONTROL.test(key))
+  // (a name with no letter, "1", is no drug)
+  if (!/[A-Za-zͰ-Ͽ]/.test(named) || CONTROL.test(key))
     return null;
   const value = d ? Number(d[1].replace(',', '.').replace(/\s*[x×]\s*10\^?(\d+)/, 'e$1')) : NaN;
-  return {drug: named, key: RADIATION.test(key) ? 'radiation' : key, schedule: s ? s[0].trim() : null, route,
-    dose: d && Number.isFinite(value) ?
+  return {drug: named, key: RADIATION.test(key) ? 'radiation' : key, schedule: s ? scheduleText(s[0]) : null, route,
+    ...negative ? {negative: true} : {},
+    dose: d && !negative && Number.isFinite(value) ?
       {value, unit: d[2].replace(/[µμ]/g, 'u').replace(/^(\w+)[\s·]?kg\^?-1$/i, '$1/kg')} : null};
 }
 
@@ -112,10 +125,12 @@ export function readProblem(parts: ArmPart[]): string {
   if (!parts.length)
     return 'no treatment read in the name';
   return parts.flatMap((p) => {
+    if (p.negative)
+      return [`${p.drug}: a dose cannot be below 0`];
     if (p.key === 'radiation')
       return [];
     if (!p.dose)
-      return [`${parts.length > 1 ? `${p.drug}: ` : ''}no dose`];
+      return [`${parts.length > 1 ? `${p.drug}: ` : ''}dose not given`];
     return /^(?:mg|g|ug|ng)$/i.test(p.dose.unit) ? [`${p.dose.value} ${p.dose.unit}: no dose in mg/kg`] : [];
   }).join('; ');
 }
@@ -172,6 +187,19 @@ export function findCombinations(names: string[]): Combination[] {
     }
   });
   return out;
+}
+
+/** Where a combination `ab` gives a drug otherwise than its arm alone (`monos`' names): its route or schedule, each
+ *  written in both ("CPD-B: i.p. q3dx4 here, p.o. QD alone"); [] when none differs. */
+export function regimenDifferences(ab: string, monos: string[]): string[] {
+  const mine = parseArmName(ab);
+  const norm = (s: string | null) => (s ?? '').replace(/[.\s]/g, '').toLowerCase();
+  return monos.flatMap(parseArmName).flatMap((p) => {
+    const q = mine.find((x) => sameDrug(x, p));
+    const keys = (['route', 'schedule'] as const).filter((k) => q && p[k] && q[k] && norm(p[k]) !== norm(q[k]));
+    return q && keys.length ?
+      [`${q.drug}: ${keys.map((k) => q[k]).join(' ')} here, ${keys.map((k) => p[k]).join(' ')} alone`] : [];
+  });
 }
 
 /** While an arm's name is typed: a word on combinations when the text points that way (another arm's drug, "+",
@@ -253,3 +281,11 @@ function kindOf(text: string): Therapy | null {
   const t = text.toLowerCase();
   return THERAPY_RULES.find(([, re]) => re.test(t))?.[0] ?? null;
 }
+
+/** An arm's name cut after each drug's dose ("Trametinib 1 mg/kg p.o. QD + anti-PD-1 10 mg/kg i.p. BIW" reads
+ *  "Trametinib 1 + anti-PD-1 10"); a part with no dose is kept whole. For tight places, the full name on hover. */
+export const shortName = (name: string) => name.split(' + ').map((p) => {
+  const t = p.trim().split(/\s+/);
+  const i = t.findIndex((x, j) => j > 0 && /^\d/.test(x));
+  return i < 0 ? p.trim() : t.slice(0, i + 1).join(' ');
+}).join(' + ');

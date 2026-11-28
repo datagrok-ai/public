@@ -8,8 +8,9 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {BasicTable, buttonWithIcon, ChoiceInput, computed, Dialog, div, divH, divV, dot, effect, emptyState, icon,
-  loader, Menu, NumberInput, Reason, Form, Section, signal, span, tableFromMap,
+  loader, Menu, NumberInput, Reason, Form, signal, span, tableFromMap,
   TextInput, Tooltip} from '@datagrok-libraries/u2';
+import {Emitter} from '@datagrok-libraries/u2';
 import type {ReadonlySignal} from '@datagrok-libraries/u2';
 import {funcForm, ViewHost, viewers} from '@datagrok-libraries/u2/dg';
 import type {ViewContent} from '@datagrok-libraries/u2/dg';
@@ -18,61 +19,85 @@ import {PlanFrames, PlanInputs, WEEKDAY_NAMES, declarationOf, planFrames, tgisOf
   from './frames';
 import {StudyLink, armColors, follow, hasOwnColors, linkStudy, paint, resetColors, slotsAfter} from './colors';
 import {ARCHETYPES, Therapy} from './archetypes';
-import {Arm, ArmsInput, CorrectionInput, KIND_WORDS, armsFrame, lackingImmunity} from './arms-input';
+import {Arm, ArmsInput, CorrectionInput, KIND_WORDS, PlanVolumes, armsFrame, lackingImmunity} from './arms-input';
 import {ENDPOINT_RISK, MIN_GROUP, StudyDeclaration, combinationFailed, combinationN, combinationNote, combinationsOf,
   designCombination,
-  LAB_SENSITIVE, diameterOf, finite, isFiniteNumber, labSpreadGroup, safeEndpoint, synergyClause} from './engine';
-import {askedOf, autoRun, block, callInputs, cardGrid, closeNamed, copyRow, fixedValue, hintLink, infoNote, notes,
+  LAB_SENSITIVE, NOTE_TIP, diameterOf, finite, isFiniteNumber, labSpreadGroup, safeEndpoint,
+  CORRECTION_NAME, correctionOf, correctionOver, synergyClause} from './engine';
+import {ArmPart, drugKey, parseArmName, shortName, therapyOf} from './arm-name';
+import {askedOf, autoRun, block, callInputs, cardGrid, closeNamed, copyRow, copyText, fixedValue, hintLink, notes,
   notesBox, num, pct, settleForm, showCentred, sized, markStage, statCard, swatch, volumeAxis, wrapCells, stagePanes,
-  whenSettled, docSubtitle, metricWord, setUserSetting, userSetting, modal, showOnce} from './ui';
+  whenSettled, docSubtitle, metricWord, setUserSetting, userSetting, modal, showOnce, objectPanel, showDepth, inWords,
+  noteLine}
+  from './ui';
+import {PmxGroup} from './pmx-objects';
 import {checklistBlocks, checklistDialog} from './arrive';
 import {PREPARE_CREDIT, prepareDialog, prepareItems} from './prepare';
 import {ethicsParts, ethicsText} from './ethics-text';
 import {DOCX_TYPE, docx} from './docx';
 import {ARRIVE_STUDY_PLAN_URL, FormSection, NTS_CREDIT, NTS_URL, NtsLanguage, PlanDocFacts, STUDY_PLAN_CREDIT,
   formBlocks, formItems, ntsForm, ntsTitle, studyPlanForm} from './ethics-documents';
-import {openStage, showStage} from './stages';
-import {editLayout, panelGrid, Slot} from './panels';
+import {canReturn, keepOnLeaving, linkRow, openStage, showStage} from './stages';
+import {customizePage, panelGrid, Slot} from './panels';
 import {stagePage, studyHeader} from './study-header';
-import {openButton, stageLinks, takesFiles} from './hub-view';
+import {DEMO_PLAN_ID, demoFinishedTable, openStudyDialog, stageLinks, takesFiles} from './hub-view';
 import type {OpenAt} from './hub-view';
 import {historyDialog} from './history-dialog';
-import {followPlan} from './monitor-view';
+import {followPlan, followedFrom} from './monitor-view';
 import {PLAN_ATLAS_NOTE, SavedPlan, SavedShown, atlasNote, downloadPlan, framesOf, parsePlan, planOf, planSaved,
-  plansFolder, planKey, savePlan, shownOf, shownPath, engineFingerprint} from './plan-file';
+  plansFolder, planKey, sameAsked, savePlan, shownOf, shownPath, engineFingerprint} from './plan-file';
+import {sameJson, maxOf, minOf} from './format';
+import {scheduleText} from './schedule';
 import {labHumane} from './study-file';
-import {domainStorageOn, fileOwnerOf, isReadOnly, newRowNote, rowOfPlan, save, saveCopy, saveError, withCode}
-  from './store';
-import {offerCopy, saveGate} from './native';
+import {Saved, domainStorageOn, fileOwnerOf, isReadOnly, newRowNote, open as openSaved, rowOfPlan,
+  rowsOf as studyRowsOf, save, saveCopy, saveError, withCode} from './store';
+import {dirtyViews, discardedViews, leaveAsks, offerCopy, saveGate} from './native';
 import {StudyMeta, armDoses, dateOf, dateText, doseForTotal, dosingDays, emptyMeta, weekdayOf, renamedDetails,
-  withGroups}
+  onlyGroups, withGroups}
   from './study-meta';
 import {CAL, MenuAt, WEEKDAYS, dayActions, icsOf, mark, marked, weeksGrid} from './calendar';
-import {Exports, download, exportMenu, reportHtml, stageToolbox} from './report';
-import {esc, printSheet, sig} from './sheet';
+import {Exports, download, reasonOf, relabel, stageMenu, reportHtml, stageToolbox} from './report';
+import {entered, esc, printSheet, sig} from './sheet';
 import {LineInput, lastLine, tumorsOf} from './line-input';
 import {historyNotesOf} from './history-models';
 import {historyModelName, hostClassOf, modelName} from './priors';
 import {BandChart} from './band-chart';
-import {OwnStudy, findAnchor, findPatientsDose, findUndosed} from './previous-studies';
+import {OwnStudy, StudySource, findAnchor, findPatientsDose, findUndosed, previousOfTable} from './previous-studies';
 import {effectFromStudy} from './study-effect';
 import {drugPkInWorkspace, forgetNca} from './exposure';
+import {mm3Text} from './monitor';
 
 // where Plan's ethics documents sit in its Export menu
 const ETHICS = 'Documents';
 
-/** Plan's panels, in order and width (twelfths), as the demo reads: the growth and under it the calendar, then what
- *  a smaller effect would need beside the power by group size (one height), then the groups, the trade-offs of the
- *  end and the schedule, the protocol. */
-const PLAN_LAYOUT: Slot[] = [{id: 'growth', span: 12}, {id: 'calendar', span: 12}, {id: 'scenarios', span: 12},
-  {id: 'whatif', span: 12}, {id: 'groups', span: 12}, {id: 'protocol', span: 12}];
+/** A group's swatch and short name, a combination wrapping only at its "+"; its full name (and `more`) on hover. */
+function shortSwatch(name: string, color: string, more = ''): HTMLElement {
+  const short = shortName(name);
+  const el = swatch(short, color, name);
+  el.lastElementChild!.replaceChildren(...short.split(' + ').flatMap((p, i) => {
+    const part = span(p);
+    part.style.whiteSpace = 'nowrap';
+    return i ? [' + ', part] : [part];
+  }));
+  el.title = more ? `${name}\n${more}` : name;
+  return el;
+}
+
+/** A combination's note in a few words: the animals it needs to beat each drug alone (the sentence on hover). */
+function comboLine(name: string, row: {[k: string]: unknown}): string {
+  const need = finite(row['n_vs_best']);
+  return `To show ${shortName(name)} beats each drug alone: ${need === null ? 'over 40' : need} animals per group`;
+}
+
+/** Plan's panels, in order and width (twelfths): the growth and the groups (the plan's answer), then folded until
+ *  asked the calendar, what a smaller effect would need, the trade-offs of the size, end and schedule, the protocol. */
+export const PLAN_LAYOUT: Slot[] = [{id: 'growth', span: 12}, {id: 'groups', span: 12},
+  {id: 'calendar', span: 12, folded: true}, {id: 'scenarios', span: 12, folded: true},
+  {id: 'whatif', span: 12, folded: true}, {id: 'protocol', span: 12, folded: true}];
 
 /** A sized group is a Monte Carlo estimate (another seed moves some by one animal): said in the protocol and in the
  *  group size's header, not as a line of its own */
 const SIZED_BY_SIMULATION = 'estimated by simulation, accurate to about one animal';
-
-const monitorNote = () => infoNote('<b>From randomization on, in Monitor.</b> Follow this study to form the groups, ' +
-  'balanced on tumor volume, and to see each session who needs attention and how the study is going.');
 
 /** An arm's power: at its group size; with none (no size up to 40 reaches the target), the power at the largest size
  *  simulated, said so; '—' when there is none. */
@@ -93,6 +118,8 @@ const UNREACHABLE = 'No group size up to 40 reaches the target power: lower it, 
 
 /** Where a study's total has no number: the limit is per group, and totals over 40 are common. */
 const OVER_40 = 'over 40 per group';
+/** The widest the form's column opens (the user may drag it wider): its fields and arm cards fill about this much. */
+const DECLARATION_MAX = 720;
 
 /** A count of the plan `p` (its column `name`): with some arm unsized, the control's and the sized arms' (the
  *  `_sized` column); null: no group size reaches the power. */
@@ -104,8 +131,33 @@ const countOf = (p: DG.DataFrame, name: string): number | null =>
 export function perGroupText(sizes: (number | null)[]): string | null {
   if (!sizes.length || sizes.some((n) => n === null))
     return null;
-  const [lo, hi] = [Math.min(...sizes as number[]), Math.max(...sizes as number[])];
+  const [lo, hi] = [minOf(sizes as number[]), maxOf(sizes as number[])];
   return lo === hi ? `${lo} per group` : `${lo}–${hi} per group`;
+}
+
+/** The longest name a plan or a study is saved under (the Overview and the ribbon show it whole). */
+export const NAME_MAX = 100;
+
+/** Why the endpoint volume cannot be planned (null: it can): the controls start at the volume at randomization, so an
+ *  endpoint at or below it is reached on day 0. */
+export const endpointProblem = (endpoint: unknown, vRand: unknown): string | null =>
+  typeof endpoint === 'number' && typeof vRand === 'number' && endpoint <= vRand ?
+    `Must be above the volume at randomization (${vRand} mm³)` : null;
+
+/** The planned review days of the Planned reviews field (empty: none), or why they are not days: each a whole study
+ *  day after randomization, once, up to the latest end Plan allows (`max`). */
+export function reviewDays(text: unknown, max = 120): {days: number[]} | {problem: string} {
+  const parts = typeof text === 'string' ? text.split(/[,;\s]+/).filter((x) => x) : [];
+  const days: number[] = [];
+  for (const x of parts) {
+    const d = Number(x);
+    if (!/^\d+$/.test(x) || d < 1 || d > max)
+      return {problem: `"${x}" is not a study day: write whole days from 1 to ${max}, such as 7, 14`};
+    if (days.includes(d))
+      return {problem: `Day ${d} is written twice`};
+    days.push(d);
+  }
+  return {days: days.sort((a, b) => a - b)};
 }
 
 /** What the lab mark says: `n` the analyzable animals per group were labs as far apart as is plausible (null: over
@@ -187,7 +239,7 @@ export function labMark(owner: {build: <T>(f: () => T) => T}, plan: ReadonlySign
  *  calendar); call it in a scope, which owns the tooltips. */
 function calendarGrid(p: DG.DataFrame, calendar: DG.DataFrame, startDay: HTMLElement,
   toggle: (weekday: number) => void, study: {meta: StudyMeta, onMenu: (day: number, at: MenuAt) => void,
-    onNote: (day: number) => void, onSelect?: (day: number) => void}): HTMLElement {
+    onNote: (day: number) => void, onSelect?: (day: number) => void, reviews?: number[]}): HTMLElement {
   const v = (c: string) => p.get(c, 0);
   const end = v('study_end') as number;
   const endpointDay = v('endpoint_day') as number;
@@ -208,9 +260,14 @@ function calendarGrid(p: DG.DataFrame, calendar: DG.DataFrame, startDay: HTMLEle
 
   // above the weeks: the randomization weekday (picked in the sentence), the end and the closer watch
   const q90 = v('duration_q90');
-  const range = isFiniteNumber(q90) ? `day ${Math.round(v('duration_q10'))} to ` +
-    `${Math.round(q90)}` : `from day ${Math.round(v('duration_q10'))}`;
-  const first = divH([mark('Randomize', BLUE, true), span('Randomize on a'), startDay,
+  // (in words, not "in 8 of 10 studies": designer wording 4)
+  const range = isFiniteNumber(q90) ? `usually between day ${Math.round(v('duration_q10'))} and day ` +
+    `${Math.round(q90)}` : `usually from day ${Math.round(v('duration_q10'))}`;
+  // the weekday is day 0's date's once it has one: said beside the picker it locks (a disabled field shows no hover)
+  const locked = icon('info-circle');
+  locked.title = 'Day 0 has a date, so it sets the weekday: change the date from a day\'s menu in the calendar, or ' +
+    'in the study\'s details';
+  const first = divH([mark('Randomize', BLUE, true), span('Randomize on a'), startDay, ...meta.start ? [locked] : [],
     span(`(day 0${meta.start ? `, ${dateText(date(0)!, true)}` : ''}) · ${measured.size} measurement days.`)]);
   Object.assign(first.style, {alignItems: 'center', gap: '6px', flexWrap: 'wrap'});
   const lines: HTMLElement[] = [first];
@@ -220,8 +277,8 @@ function calendarGrid(p: DG.DataFrame, calendar: DG.DataFrame, startDay: HTMLEle
   } else {
     const reach = `the median control reaches ${v('endpoint')} mm³`;
     lines.push(marked(mark('End', DARK, true), end === endpointDay ? `The study ends on day ${end}, when ${reach} ` +
-      `(in 8 of 10 studies, ${range}).` : `${reach[0].toUpperCase()}${reach.slice(1)} on day ${endpointDay} (in 8 ` +
-      `of 10 studies, ${range}), a ${WEEKDAY_NAMES[weekday(endpointDay)]}: the study ends on the next measurement ` +
+      `(${range}).` : `${reach[0].toUpperCase()}${reach.slice(1)} on day ${endpointDay} ` +
+      `(${range}), a ${WEEKDAY_NAMES[weekday(endpointDay)]}: the study ends on the next measurement ` +
       `day, day ${end} (${WEEKDAY_NAMES[weekday(end)]}).`));
   }
   if (watch !== null) {
@@ -231,13 +288,37 @@ function calendarGrid(p: DG.DataFrame, calendar: DG.DataFrame, startDay: HTMLEle
   if (doses.size > 0) {
     const dosed = meta.groups.filter((g) => [...doses.values()].some((gs) => gs.includes(g.group)));
     // each group from its first dose (a schedule may start later, "from day 3"); no dosing at weekends said once
-    const firstOf = (g: string) => Math.min(...[...doses].filter(([, gs]) => gs.includes(g)).map(([d]) => d));
+    const firstOf = (g: string) => minOf([...doses].filter(([, gs]) => gs.includes(g)).map(([d]) => d));
     // one short entry per drug; the arms it covers go to the tooltip, so the line stays within the calendar
-    const perDrug = new Set(dosed.map((g) => `${g.compound || g.group} ${g.schedule} from day ${firstOf(g.group)}`));
-    const dose = marked(mark('Dose', GREEN, false), [...perDrug].join(' · ') +
+    // (one drug however its arms write it, "Cpd-A", "cpd-a": its first writing, each of its schedules once)
+    const perDrug = new Map<string, {name: string, schedules: Map<string, string>, from: number}>();
+    for (const g of dosed) {
+      // (a group with no details: its drug and schedule as its name gives them, never the name's raw "q3dx4", QA 0.1.3
+      // round 4 designer U5)
+      const named = parseArmName(g.group);
+      const name = g.compound || (named.length === 1 ? named[0].drug : '') || g.group;
+      const e = perDrug.get(drugKey(name)) ?? {name, schedules: new Map(), from: Infinity};
+      // (as typed in the details too, in the one writing every schedule is shown in: "Q3D×4")
+      for (const sched of g.schedule.trim() ? [g.schedule] : named.map((p) => p.schedule ?? '').filter((x) => x)) {
+        if (!e.schedules.has(sched.toLowerCase()))
+          e.schedules.set(sched.toLowerCase(), scheduleText(sched));
+      }
+      e.from = Math.min(e.from, firstOf(g.group));
+      perDrug.set(drugKey(name), e);
+    }
+    const dose = marked(mark('Dose', GREEN, false), [...perDrug.values()].map((e) =>
+      `${e.name} ${[...e.schedules.values()].join(' / ')} from day ${e.from}`.replace(/\s+/g, ' ')).join(' · ') +
       (meta.weekendsOff && meta.start ? ' · no dosing at weekends' : ''));
     Tooltip.bind(dose, dosed.map((g) => g.group).join(', '));
     lines.push(dose);
+  }
+  // the planned reviews (Planned reviews): those within the study, and the ones after its end said not held
+  const reviews = new Set((study.reviews ?? []).filter((d) => d <= end));
+  const after = (study.reviews ?? []).filter((d) => d > end);
+  if (reviews.size || after.length) {
+    lines.push(marked(mark('Review', DARK, false), (reviews.size ? `Review each treated arm on day ` +
+      `${[...reviews].join(', ')}.` : '') + (after.length ? ` Day ${after.join(', ')} ${after.length > 1 ? 'fall' :
+      'falls'} after the end (day ${end}): no review then.` : '')));
   }
   const summary = divV(lines, 'pmx-calendar-summary');
   Object.assign(summary.style, {gap: '4px', lineHeight: '1.45', marginBottom: 'var(--dg-space-m)'});
@@ -261,6 +342,7 @@ function calendarGrid(p: DG.DataFrame, calendar: DG.DataFrame, startDay: HTMLEle
     day: (day, own) => ({detail: details.get(day),
       marks: [...day === 0 ? [mark('Randomize', BLUE, true)] : [], ...measured.has(day) ?
         [mark('Measure', SLATE, false)] : [], ...own, ...day === watch ? [mark('Watch controls', RED, false)] : [],
+      ...reviews.has(day) ? [mark('Review', DARK, false)] : [],
       ...day === end ? [mark('End', DARK, true)] : []],
       border: day === end ? `1px solid ${DARK}` : undefined,
       // the days the controls need a closer watch, tinted
@@ -335,6 +417,18 @@ function scenariosTable(sc: DG.DataFrame, own: number | undefined): HTMLElement 
   return table.root;
 }
 
+/** The demo plan's earlier studies: the demo's own finished study, alone. */
+export const demoStudies: StudySource = () => demoFinishedTable()
+  .then((df) => [previousOfTable(df)].filter((s): s is NonNullable<typeof s> => s !== null));
+
+/** A combination's drugs as its name gives them, each once (by drugKey, its first writing) with its own dose, route
+ *  and schedule: "cpd-a 30 mg/kg p.o. qd". */
+export function combinationDrugs(parts: ArmPart[]): string[] {
+  const seen = new Set<string>();
+  return parts.filter((p) => !seen.has(p.key) && !!seen.add(p.key)).map((p) =>
+    [p.drug, p.dose && `${entered(p.dose.value)} ${p.dose.unit}`, p.route, p.schedule].filter(Boolean).join(' '));
+}
+
 /** A .pmxplan file opened from Files or dropped on the platform: Plan with it (no table to open). */
 export async function openPlanFile(content: string): Promise<DG.DataFrame[]> {
   await showStage('plan', await planView(parsePlan(content)));
@@ -343,12 +437,20 @@ export async function openPlanFile(content: string): Promise<DG.DataFrame[]> {
 
 /** What Plan opens with: a saved plan, or only its name, details and form. */
 export type PlanStart = Pick<SavedPlan, 'name' | 'study' | 'provenance'> & {inputs: {[param: string]: unknown},
-  predicted?: {shown?: SavedShown}};
+  predicted?: {shown?: SavedShown}, row?: Saved | null};
+
+/** The saved row a Plan view opens on: the one it carries (a plan come back to, edited since: its content no longer
+ *  names the row, QA 0.1.3 round 4 designer D2), else the row read for that plan. */
+const rowOfStart = (initial?: PlanStart): Saved | null => initial?.row !== undefined ? initial.row : rowOfPlan(initial);
 
 // each Plan view's call (its form's inputs, hidden ones too), by its host: what the package's tests read
 const planCalls = new WeakMap<ViewHost, DG.FuncCall>();
 /** The call behind a Plan view: its inputs as the next plan takes them (for the package's tests). */
 export const planCallOf = (view: DG.ViewBase): DG.FuncCall | undefined => planCalls.get(ViewHost.of(view));
+// each Plan view's Save, which File › Save presses: what the package's tests press and read
+const planSaves = new WeakMap<ViewHost, HTMLElement>();
+/** The Save behind a Plan view's File › Save (for the package's tests). */
+export const planSaveOf = (view: DG.ViewBase): HTMLElement | undefined => planSaves.get(ViewHost.of(view));
 type PlanFileFn = (name: string) => Promise<SavedPlan>;
 const planFiles = new WeakMap<ViewHost, PlanFileFn>();
 /** The plan a Plan view shows, as its file would keep it (for the package's tests). */
@@ -363,8 +465,10 @@ export const planFileOf = (view: DG.ViewBase, name: string): Promise<SavedPlan> 
 export async function planView(initial?: PlanStart): Promise<DG.ViewBase> {
   const exports: Exports = [];
   const host = ViewHost.create({name: 'PMX Studio', content: (self) => planContent(self, initial, exports)});
-  exportMenu(host.view, exports);
-  return markStage(host.view, 'plan');
+  const view = markStage(host.view, 'plan');
+  // (opened from a saved row: its URL names it)
+  linkRow(view, 'plan', rowOfStart(initial)?.id);
+  return view;
 }
 
 /** What the view shows, built under its host, which owns it all. */
@@ -380,7 +484,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     const x = callInputs<PlanInputs & {tgiScenarios?: string | null}>(call, extra);
     // (the combinations' sentences asked after the plan shows: their Crux calls kept off the plan's own wait)
     const d: StudyDeclaration = {...declarationOf(x), combinationNotes: false};
-    const frames = await planFrames(d, tgisOf(x.tgiScenarios));
+    const frames = await planFrames(d, tgisOf(x.tgiScenarios, d.endpoint, d.vRand));
     declared.set(frames, d);
     return frames;
   });
@@ -423,7 +527,11 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   });
   self.subscribe(grok.events.onTableRemoved, () => tables.value++);
   const own = (): OwnStudy => ({id: meta.peek().id, name: initial?.name ?? ''});
-  const armsInput = new ArmsInput({metric: effectAs,
+  // the demo plan scales its arms from the demo's own finished study, never the user's library or a copy of someone
+  // else's (QA 0.1.3 final designer #9)
+  const demoSource = (): StudySource | undefined => meta.peek().id === DEMO_PLAN_ID ? demoStudies : undefined;
+  const planVolumes = signal<PlanVolumes>({v0: 100, endpoint: 1000});
+  const armsInput = new ArmsInput({metric: effectAs, volumes: planVolumes,
     host: computed(() => hostClassOf(lineInput.value, lineInput.models.value)),
     // an arm whose drug the user studied before may take its effect from that study, read on the plan's own day
     previous: {line: computed(() => lineInput.value ?? null),
@@ -431,10 +539,11 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
       hostOf: (l) => hostClassOf(l, lineInput.models.value),
       // never the study this plan is of (opened from it): its arms would be estimated from themselves
       // (a study of the plan's own model first)
-      find: (n) => findAnchor(n, own(), lineInput.value ?? null), undosed: (n) => findUndosed(n, own()),
+      find: (n) => findAnchor(n, own(), lineInput.value ?? null, demoSource()),
+      undosed: (n) => findUndosed(n, own(), demoSource()),
       meta: () => meta.value,
       // the patients' dose under this plan's rules (no dosing at weekends), not the earlier study's
-      patientsDose: (n) => findPatientsDose(n, meta.value, own()),
+      patientsDose: (n) => findPatientsDose(n, meta.value, own(), demoSource()),
       renamed: (from, to) => meta.value = renamedDetails(meta.peek(), new Map([[from, to]])), tables,
       // within the doses of the drug's PK, as NCA reads a concentration table open in the workspace (as Analyze)
       // (by the earlier study's route: Crux scales within one route)
@@ -452,13 +561,31 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     stale.value = false : replan());
   // a change of the form since the plan was opened or saved (domain storage: what closing the view asks about)
   let edited = false;
+  // whether the user has typed or clicked yet with this page current (its form, toolbox, menus, dialogs): a change
+  // before is the form settling itself
+  let touched = false;
+  const touch = (e: Event) => touched ||= e.isTrusted && grok.shell.v?.dart === self.view.dart;
+  for (const type of ['pointerdown', 'keydown', 'paste', 'drop'])
+    document.addEventListener(type, touch, true);
+  self.own(() => ['pointerdown', 'keydown', 'paste', 'drop'].forEach((t) =>
+    document.removeEventListener(t, touch, true)));
   // the form's values as last saved here (null: not saved yet): the app refilling the form after a save (the details
   // as saved, the weekday they date) changes none of them, so it is no change, whenever its events arrive
   let savedInputs: string | null = null;
-  const inputsNow = () => JSON.stringify(call.func.inputs.map((p) => {
+  // (a change of the form, and a save from wherever it was asked: the unsaved marker checks then, native.ts saveGate)
+  const formChanges = new Emitter();
+  // (the study's details with them: Study details and a day's exceptions in the calendar are changes of the plan)
+  const inputsNow = () => JSON.stringify([...call.func.inputs.map((p) => {
     const v = call.getParamValue(p.name);
     return v instanceof DG.DataFrame ? v.toCsv() : v;
-  }));
+  }), meta.peek()]);
+  // the study's details changed by the user (Study details, a day of the calendar, a colour): a change of the plan
+  // as a field's is, marked unsaved and asked about on leaving (QA 0.1.3 designer D1, D4)
+  const userMeta = (m: StudyMeta) => {
+    meta.value = m;
+    edited = true;
+    formChanges.fire();
+  };
   // (no table fills the arms: a study table open in the workspace, as when coming from Analyze, is not a plan's)
   const form = funcForm(call, {layout: 'tall', skipTableAutoFill: true,
     overrides: {arms: {input: armsInput}, correction: {input: correction}, line: {input: lineInput}},
@@ -467,12 +594,30 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
       // and a plan reopened on its saved tables, schedules compared, is not out of date for it)
       if (name === 'compareSchedules')
         return;
-      // (the form filling itself as the view opens is no change: only one made once a plan is shown)
-      edited ||= result.peek() !== undefined;
+      // (the form filling itself as the view opens is no change: only one the user made once a plan is shown; an
+      // old saved plan's form settling a value late, a moment after its first plan, read "Unsaved changes" with
+      // nothing edited, QA 0.1.3 round 3 designer W2)
+      edited ||= touched && result.peek() !== undefined;
       stale.value = result.peek() !== undefined;
       auto.changed();
+      formChanges.fire();
     }});
   settleForm(form, {tgiScenarios: 'Off, or e.g. 30, 50, 70'});
+  // the inputs of the first plan shown are what a change is measured against until a save (a plan opened from a row
+  // and left as it was asks nothing on leaving: its form refilling itself as it opens is no change)
+  // (taken again with each plan until the user changes something: what the form settles by itself is the plan as
+  // saved)
+  form.effect(() => {
+    if (result.value && !edited)
+      savedInputs = inputsNow();
+  });
+  // checks across fields, before the engine is asked (an invalid field holds the plan back, and says why)
+  const vRandInput = form.getInput('vRand');
+  form.getInput('endpoint')?.addValidator((x) => endpointProblem(x, vRandInput?.value));
+  form.getInput('looks')?.addValidator((x) => {
+    const r = reviewDays(x);
+    return 'problem' in r ? r.problem : null;
+  });
 
   // busy while the view plans (the first plan, a change of the form, a change of randomization day)
   const planning = signal(true);
@@ -514,7 +659,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
       }, (e) => {
         if (again)
           return next();
-        error.value = String(e?.message ?? e);
+        error.value = inWords(String(e?.message ?? e));
       });
     };
     running = once().finally(() => {
@@ -535,7 +680,18 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
       [];
   });
   // the animals in the order the study uses them, then its end; what each count covers in its tooltip
-  const card = statCard.bind(null, form);
+  // the change arrows start again after a save and once a new plan has its first arm: nothing to compare with before
+  // (QA 0.1.3 final designer #22)
+  const epoch = signal(0);
+  let armsCounted = armsInput.count.peek();
+  form.effect(() => {
+    const k = armsInput.count.value;
+    if (armsCounted === 0 && k > 0)
+      epoch.value = epoch.peek() + 1;
+    armsCounted = k;
+  });
+  const card = (label: Parameters<typeof statCard>[1], value: Parameters<typeof statCard>[2], tip: () => string,
+    format?: Parameters<typeof statCard>[4]) => statCard(form, label, value, tip, format, true, () => epoch.value);
   // a count no group size reaches has no number (a column with no value reads as an empty string); with only some
   // arm unsized, the control's and the sized arms' (the unsized one says why in the groups table)
   const count = (name: string) => computed(() => plan.value ? countOf(plan.value, name) ?? '—' : undefined);
@@ -606,12 +762,12 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   const endSet = () => !!cell('last_day_chosen').peek();
   // each card by the plan column it shows, so a change made on the calendar can point at what it moved
   const cardOf: {[column: string]: HTMLElement} = {
+    // (the animals to randomize, what the implanted come to, on its second line)
     implant_total: card('Animals to implant', count('implant_total'), () =>
       `${unsizedNote()}Covers ${pct(cell('pre_loss').value)} ` +
-      'that never reach randomization: no take, or out of the volume window'),
-    randomise_total: card('To randomize', count('randomise_total'), () =>
-      `${unsizedNote()}Covers ${pct(cell('post_loss').value)} ` +
-      'lost after randomization: ulceration, deaths, technical failures'),
+      'that never reach randomization: no take, or out of the volume window. Of them, ' +
+      `${count('randomise_total').value ?? '—'} to randomize: covers ${pct(cell('post_loss').value)} lost after ` +
+      'randomization (ulceration, deaths, technical failures)'),
     n_total: card(computed(() => {
       const per = perGroupText(groupSizes.value.map(([, n]) => n));
       return (cell('n_fixed').value ? 'Analyzable · set' : 'Analyzable') + (per ? ` · ${per}` : '');
@@ -642,6 +798,9 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     back: 'Back to what the power needs'});
   settable(cardOf.study_end, 'lastDay', endSet, {title: 'End of study', label: 'Last day of study',
     now: () => cell('study_end').peek(), min: 5, max: 120, back: 'Back to when the controls reach the endpoint'});
+  const toRandomize = div([], 'pmx-stat-sub');
+  form.effect(() => toRandomize.textContent = plan.value ? `${count('randomise_total').value} to randomize` : '');
+  cardOf.implant_total.append(toRandomize);
   cardOf.n_total.append(labMark(form, computed(() => {
     const r = result.value;
     return r ? declared.get(r) : undefined;
@@ -717,7 +876,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
       moved.push(`the study ends on day ${now('study_end')} instead of ${was('study_end')}`);
     for (const c of ['implant_total', 'randomise_total', 'n_total', 'study_end']) {
       if (was(c) !== now(c))
-        flash(cardOf[c]);
+        flash(cardOf[c === 'randomise_total' ? 'implant_total' : c]);
     }
     // only what moved: the calendar itself shows the change was planned
     const lines: HTMLElement[] = moved.length > 0 ? [span(`With these days: ${moved.join(', ')}.`)] : [];
@@ -755,7 +914,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     const m = meta.peek();
     const slots = slotsAfter(m.slots ?? {}, armsBefore, names);
     armsBefore = names;
-    if (JSON.stringify(slots) !== JSON.stringify(m.slots ?? {}))
+    if (!sameJson(slots, m.slots ?? {}))
       meta.value = {...m, slots};
   });
   const startDay = new ChoiceInput({items: WEEKDAY_NAMES, value: 'Monday', nullable: false});
@@ -795,7 +954,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     const r = result.peek();
     return r ? withGroups(m, ['Control', ...armsIn(r)]) : m;
   };
-  const {addNote, menu: dayMenu, select: daySelect} = dayActions(() => armed(meta.peek()), (m) => meta.value = m,
+  const {addNote, menu: dayMenu, select: daySelect} = dayActions(() => armed(meta.peek()), userMeta,
     undefined,
     {last: () => (result.peek()?.plan.get('study_end', 0) as number | undefined) ?? 0,
       // (the days the calendar's cells mark as measured, day 0 too)
@@ -807,6 +966,35 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   // go with the next build
   // the calendar's events, for the .ics export: randomization, the measurement days and the end
   let planEvents: {last: number, events: [number, string][]} = {last: 0, events: []};
+  // the Planned reviews the plan in view was made with (none while the field is not a list of days)
+  const plannedReviews = () => {
+    const r = reviewDays(call.getParamValue('looks'));
+    return 'days' in r ? r.days : [];
+  };
+  // a review day after the study's end, marked under the field itself (the plan holds: the calendar and the protocol
+  // say no review is held then)
+  const looksAfter = div([], 'pmx-field-note');
+  whenSettled(form, () => form.getInput('looks')?.root.append(looksAfter));
+  form.effect(() => {
+    const r = result.value;
+    const end = r ? finite(r.plan.get('study_end', 0)) : null;
+    const after = end === null ? [] : plannedReviews().filter((d) => d > end);
+    looksAfter.replaceChildren(...after.length ? [noteLine(`Day ${after.join(', ')} ${after.length > 1 ? 'fall' :
+      'falls'} after the end (day ${end}): no review then`)] : []);
+  });
+  // an arm removed takes its details and dose exceptions with it: the doses always the plan's arms' (calendar,
+  // protocol, the overview, the study followed)
+  form.effect(() => {
+    const r = result.value;
+    // (not while an arm's name is typed: its details move to the new name when it is left, armsInput's renamed)
+    if (!r || document.activeElement?.closest('.pmx-arm-title'))
+      return;
+    const m = meta.peek();
+    // (the arms as they stand too: a plan computed before a rename, shown after it, still has the old name)
+    const kept = onlyGroups(m, ['Control', ...armsIn(r), ...armsInput.names.peek()]);
+    if (kept !== m)
+      meta.value = kept;
+  });
   form.effect(() => {
     const r = result.value;
     const m = meta.value;
@@ -816,7 +1004,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
         .map(Number).filter((d) => d > 0 && d < end).map((d): [number, string] => [d, 'Measure tumors']),
       [end, 'End of study (measure)']]};
       calendarBox.replaceChildren(calendarGrid(r.plan, r.calendar, startDay.root, toggleWeekday,
-        {meta: armed(m), onMenu: dayMenu, onNote: addNote, onSelect: daySelect}));
+        {meta: armed(m), onMenu: dayMenu, onNote: addNote, onSelect: daySelect, reviews: plannedReviews()}));
     }
   });
   // an offered endpoint is for the plan in view: an edit hides it (its line keeps its place, the notes their height)
@@ -852,8 +1040,9 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     const {dc, rates, found} = combinationsIn(r);
     p = (!dc || !found.length ? Promise.resolve([]) : Promise.all(found.map((c) =>
       designCombination({...dc, n: combinationN(dc, rates, c) ?? null}, rates[c.a], rates[c.b], dc.arms[c.ab].metric,
-        c.interaction, false).then((row) => row ? combinationNote(dc.arms[c.ab].name, row, dc.power,
-        `${dc.arms[c.a].name} and ${dc.arms[c.b].name}`) : null, (e) => {
+        c.interaction, false).then((row) => row ? comboLine(dc.arms[c.ab].name, row) + NOTE_TIP +
+        combinationNote(dc.arms[c.ab].name, row, dc.power, `${dc.arms[c.a].name} and ${dc.arms[c.b].name}`) : null,
+      (e) => {
         console.error('PMX Studio:', e);
         return null;
       })))
@@ -903,7 +1092,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
           if (offerOf?.line !== line || result.peek() !== r)
             return;
           line.replaceChildren(...(x === null ?
-            [`No lower endpoint avoids it: plan to end on day ${v('study_end')} even if they have not reached it`] :
+            [`Plan to stop on day ${v('study_end')} even if some controls are still small`] :
             [`A ${x} mm³ endpoint avoids it: `,
               hintLink('use it', () => apply('endpoint', x), `Sets the endpoint volume to ${x} mm³`)]));
         }, () => {}); // a failed search leaves the line empty: it costs that line only
@@ -921,7 +1110,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     // the smallest detectable effects arrive after the plan (their search takes several times as long)
     const known = detectable.value?.of === r ? detectable.value.mde : null;
     // with some arm unsized, the control as the cards count it: as large as the largest sized arm
-    const rows: Row[] = [{name: 'Control', cells: [swatch('Control', colors['Control']), '—', '—',
+    const rows: Row[] = [{name: 'Control', cells: [swatch('Control', colors['Control']), '—',
       animals(countOf(r.plan, 'n_control') ?? 'over 40', true),
       animals(countOf(r.plan, 'randomise_control'), false), '—',
       ...(fixed ? ['—'] : [])]}];
@@ -931,60 +1120,91 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     for (let i = 0; i < a.rowCount; i++) {
       const g = (c: string) => a.get(c, i);
       const metric = metricWord(g('metric'));
-      // the therapy's short name (its kind in brackets on hover): the table stays compact
+      // the therapy on the group's hover, under its full name: the table stays compact
       const pair = comboOf.get(g('arm'));
-      const therapy = span(pair ? 'Combination' : String(g('therapy')).split(' (')[0]);
-      therapy.title = pair ? `${pair}; growth modelled as ${String(g('therapy')).split(' (')[0].toLowerCase()}, ` +
-        'the more variable of the two' : String(g('therapy'));
-      rows.push({name: g('arm'), cells: [swatch(g('arm'), colors[g('arm')]), therapy,
+      const therapy = pair ? `Combination of ${pair}; growth modelled as ` +
+        `${String(g('therapy')).split(' (')[0].toLowerCase()}, the more variable of the two` : String(g('therapy'));
+      rows.push({name: g('arm'), cells: [shortSwatch(g('arm'), colors[g('arm')], therapy),
         `${metric} ${num(g('effect'))}%`, animals(finite(g('n')) ?? 'over 40', true),
         animals(finite(g('randomise')), false),
         powerText(finite(g('n')), finite(g('assurance')), r.powerCurve, g('arm')),
         ...(fixed ? [!known ? (stale.value || error.value !== null ? '—' : loader()) :
           known.get(g('arm')) === null ? 'out of reach' : `${metric} ${Math.round(known.get(g('arm'))!)}%`] : [])]});
     }
-    const headers = ['Group', 'Therapy', 'Expected effect', 'Analyzable', 'To randomize', 'Power',
-      ...(fixed ? ['Smallest detectable effect'] : [])];
-    const table = new BasicTable<Row>({items: rows, keyOf: (x) => x.name, columns: headers.map((header, j) => ({header,
-      render: (x: Row) => x.cells[j], align: j >= 2 ? 'center' : 'left',
-      ...(header === 'Analyzable' && !fixed ? {tooltip: `Animals per group, ${SIZED_BY_SIMULATION}`} : {})}))});
-    table.root.style.width = '100%';
-    wrapCells(table.root);
-    // under the table, quietly: what each dosed arm adds up to over the study, for its randomized animals
-    const doseLines = Array.from({length: a.rowCount}, (_, i) => {
-      const arm = a.get('arm', i) as string;
-      const end = v('study_end') as number;
-      const d = armDoses(arm, meta.value, end, finite(a.get('randomise', i)), null);
+    // (what it is, said in the header: designer wording 2)
+    const metrics = new Set(Array.from({length: a.rowCount}, (_, i) => metricWord(a.get('metric', i))));
+    const detectableHeader = `Smallest ${metrics.size === 1 ? [...metrics][0] : 'effect'} detectable ` +
+      `(${pct(v('power_target'))} power)`;
+    const headers = ['Group', 'Expected', 'Analyzable', 'To randomize', 'Power',
+      ...(fixed ? [detectableHeader] : [])];
+    const headerTips: {[h: string]: string} = {Expected: 'The effect each arm is expected to have',
+      Analyzable: fixed ? 'Animals per group that reach the analysis' : `Animals per group, ${SIZED_BY_SIMULATION}`,
+      [detectableHeader]: 'The smallest effect these groups would detect at the declared power'};
+    // what each dosed arm adds up to over the study, for its randomized animals: in the group's panel (a click on its
+    // row), with "Match a total…"
+    const end = v('study_end') as number;
+    const doseLine = (arm: string, i: number): HTMLElement | null => {
+      const d = armDoses(arm, meta.peek(), end, finite(a.get('randomise', i)), null);
       if (!d)
         return null;
       const text = span(d.text);
       text.title = d.tip;
       // a one-time help: the dose per administration that gives a total over this arm's doses (it is never
       // redistributed later: a skipped dose lowers the total)
-      // (a help for the screen: the report leaves it out, its separator with it)
-      const match = doseForTotal(arm, meta.value, end, 1) === null ? [] : [span(' · ', 'pmx-noprint'),
+      const match = doseForTotal(arm, meta.peek(), end, 1) === null ? [] : [div([
         hintLink('Match a total…', () => {
-          const total = ui.input.float('Total dose (mg/kg)', {value: undefined, nullable: true});
           const answer = ui.divText('', {style: {fontWeight: '600', marginTop: '4px'}});
           ui.tooltip.bind(answer, 'Per administration over this arm\'s doses. Write it in the arm\'s name or its ' +
             'group details to use it.');
-          const show = () => {
-            const per = total.value ? doseForTotal(arm, meta.peek(), end, total.value) : null;
-            answer.textContent = per === null ? '' : `= ${sig(per)} mg/kg per dose`;
-          };
-          total.onChanged.subscribe(show);
+          const total = ui.input.float('Total dose (mg/kg)', {value: undefined, nullable: true,
+            onValueChanged: (x) => {
+              const per = x ? doseForTotal(arm, meta.peek(), end, x) : null;
+              answer.textContent = per === null ? '' : `= ${sig(per)} mg/kg per dose`;
+            }});
           doseDialog?.close();
           const d = modal('total-dose', `Total dose for ${arm}`);
           if (!d)
             return;
           doseDialog = showCentred(closeNamed(d).add(ui.inputs([total])).add(answer));
           total.input.focus();
-        })];
-      const line = div([span(`${arm}: `), text, ...match], 'pmx-plan-doses');
-      Object.assign(line.style, {fontSize: '11.5px', color: 'var(--dg-text-color-muted, #68727f)'});
-      return line;
-    }).filter((x): x is HTMLDivElement => x !== null);
-    groupsTable.replaceChildren(table.root, ...doseLines);
+        }, 'The dose per administration that adds up to a total you give')], 'pmx-plan-match')];
+      return div([text, ...match], 'pmx-plan-doses');
+    };
+    // a group's panel: what it expects, the animals and the power, its doses
+    const groupPanel = (x: Row, i: number) => {
+      if (x.name === 'Control') {
+        return objectPanel({title: 'Control', color: colors['Control'],
+          subtitle: 'Vehicle, on the treated groups\' days',
+          facts: [{label: 'Analyzable', value: String(countOf(r.plan, 'n_control') ?? 'over 40')},
+            {label: 'To randomize', value: String(countOf(r.plan, 'randomise_control') ?? '—')}]});
+      }
+      const at = i - 1;
+      const g = (c: string) => a.get(c, at);
+      const power = finite(g('assurance'));
+      const target = finite(cell('power_target').peek());
+      const doses = doseLine(x.name, at);
+      return objectPanel({title: x.name, color: colors[x.name], subtitle: String(g('therapy')),
+        verdict: {text: `Expected ${metricWord(g('metric'))} ${num(g('effect'))}%` +
+          (power === null ? '' : `, power ${pct(power)}`), tone: power !== null && target !== null && power < target ?
+          'warn' : 'ok', sub: power !== null && target !== null && power < target ? `Below the ${pct(target)} target` :
+          undefined},
+        facts: [{label: 'Analyzable', value: String(finite(g('n')) ?? 'over 40')},
+          {label: 'To randomize', value: String(finite(g('randomise')) ?? '—')}],
+        sections: doses ? [{title: 'Doses', content: () => doses, open: true}] : []});
+    };
+    const table = new BasicTable<Row>({items: rows, keyOf: (x) => x.name, columns: headers.map((header, j) => ({header,
+      render: (x: Row) => x.cells[j], align: j >= 1 ? 'center' : 'left',
+      ...(headerTips[header] ? {tooltip: headerTips[header]} : {})})),
+    onRowClick: (x, i) => showDepth(new PmxGroup(null, x.name, colors[x.name], {details: () => groupPanel(x, i)})),
+    row: (_x, _i, tr) => {
+      tr.style.cursor = 'pointer';
+      tr.title = 'Its doses and power in the context panel';
+    }});
+    table.root.style.width = '100%';
+    wrapCells(table.root);
+    groupsTable.replaceChildren(table.root);
+    // a narrow panel (a third of the row) scrolls the table sideways, no column cut (QA round 3 designer B7)
+    Object.assign(groupsTable.style, {overflowX: 'auto', maxWidth: '100%', minWidth: '0'});
   });
   // each combination's synergy, searched behind the plan (several times its cost): its sentence completed in place.
   // Its own effect: it runs again when an out-of-date plan is current again (the same result, its answers dropped)
@@ -1009,7 +1229,9 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
       // failed on it: nothing to complete)
       const line = [...groupNotes.children].find((e): e is HTMLElement => e instanceof HTMLElement &&
         e.dataset.pmxCombination === String(c.ab) && e.dataset.pmxSynergy === undefined);
-      line?.lastElementChild?.append(synergyClause(row, needed, metric));
+      const said = line?.lastElementChild as HTMLElement | null | undefined;
+      if (said)
+        said.title += synergyClause(row, needed, metric);
       if (line)
         line.dataset.pmxSynergy = '1';
     })().catch((e) => console.error('PMX Studio:', e))); // a failed search leaves the sentence without its synergy
@@ -1038,7 +1260,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
       const rowsOf = Array.from({length: du.rowCount}, (_, i) => ({arm: du.get('arm', i) as string,
         day: du.get('day', i) as number, power: finite(du.get('assurance', i)), removed: du.get('past_humane', i)}))
         .filter((x): x is typeof x & {power: number} => x.power !== null);
-      const gain = Math.max(...[...new Set(rowsOf.map((x) => x.arm))].map((arm) => {
+      const gain = maxOf([...new Set(rowsOf.map((x) => x.arm))].map((arm) => {
         const own = rowsOf.filter((x) => x.arm === arm);
         const atE = own.find((x) => x.day === e)?.power ?? 0;
         return Math.max(...own.filter((x) => x.day >= e).map((x) => x.power)) - atE;
@@ -1056,16 +1278,26 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     // randomization, outcome and analysis, multiplicity, end, humane limit, measurements
     const k = v('treated_arms');
     const corr = v('correction');
-    const corrName = corr === 'bonferroni' ? 'Bonferroni' : 'Holm';
+    const corrName = CORRECTION_NAME[correctionOf(corr)];
     // each combination is also compared with its two drugs alone
     const {dc, found} = combinationsIn(r);
     const combined = !dc ? [] : found.map((c) => ({name: dc.arms[c.ab].name, a: dc.arms[c.a].name,
       b: dc.arms[c.b].name}));
     const ar = r.armResults;
-    // a combination by its two arms (its growth is modelled as the more variable of their kinds)
-    const pairOf = new Map(combined.map((c) => [c.name, `combination of ${c.a} and ${c.b}`]));
+    // a combination by its own drugs, each with the dose, route and schedule its name gives (not those of the arms of
+    // the drug alone, QA 0.1.3 final designer #5); its growth is modelled as the more variable of their kinds
+    // (its name already gives them: "a combination", not its name again in the parenthesis, designer wording 6)
+    const drugsOf = (arm: string) => combinationDrugs(parseArmName(arm)).length > 1 ? 'a combination' : null;
+    // a drug the name does not place, sized as acting through the immune system (the cautious n), is still said a
+    // small molecule unless the user chose that (QA 0.1.3 final designer #25)
+    const kindWords = (i: number) => {
+      const t = ar.get('therapy_key', i) as Therapy;
+      // (the declaration keeps each arm as the form gave it, armsOf, its therapy_source with it)
+      return t === 'immune_agonist' && (dc?.arms[i] as Partial<Arm> | undefined)?.therapySource !== 'user' &&
+        therapyOf(ar.get('arm', i)).placed === null ? KIND_WORDS.small_molecule : KIND_WORDS[t];
+    };
     const armRows = Array.from({length: ar.rowCount}, (_, i) => ({name: ar.get('arm', i) as string,
-      therapy: pairOf.get(ar.get('arm', i)) ?? KIND_WORDS[ar.get('therapy_key', i) as Therapy],
+      therapy: drugsOf(ar.get('arm', i)) ?? kindWords(i),
       effect: `${metricWord(ar.get('metric', i))} ${num(ar.get('effect', i))}%`, n: finite(ar.get('n', i)),
       power: ar.get('assurance', i)}));
     const unsized = armRows.filter((x) => x.n === null).map((x) => x.name);
@@ -1106,9 +1338,9 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
         `${pct(v('pre_loss'))} expected lost before randomization (no take, out of the volume ` +
         `window) and ${pct(v('post_loss'))} after it (ulceration, deaths, technical failures); ` +
         (v('loss_rule') === 'expected' ? 'the counts cover the average loss' :
-          `each count is enough with at least ${pct(v('confidence'))} probability`) +
+          `these numbers leave a ${pct(v('confidence'))} chance that each group keeps enough animals`) +
         (finite(v('confidence_study')) === null ? '' :
-          `; every group ends with its animals in ${pct(v('confidence_study'))} of studies`) +
+          `; in ${pct(v('confidence_study'))} of studies every group does`) +
         (k < 2 ? '' : '. The control is as large as the largest treated group'),
       'Randomization': `When the tumors reach ${v('v_rand')} mm³, into groups balanced on tumor volume; the ` +
         'randomization day is day 0',
@@ -1117,9 +1349,11 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
         'own variance)',
       'Multiple comparisons': k < 2 ? 'One treated group: none needed' : corr === 'none' ?
         `None: each of the ${k} comparisons at α = ${num(v('alpha'), 2)} (exploratory)` :
-        `${corrName} over ${k} comparisons: the chance of any false positive among them stays at α = ` +
-        `${num(v('alpha'), 2)}; each group is sized at ${num(v('alpha_per_comparison'), 3)}` +
-        (corr === 'bonferroni' ? '' : ', the level of Holm’s first step'),
+        corr === 'bh' ? `${correctionOver(corr, k)}: each group is sized as for Bonferroni, at ` +
+          `${num(v('alpha_per_comparison'), 3)} (the conservative bound)` :
+          `${corrName} over ${k} comparisons: the chance of any false positive among them stays at α = ` +
+          `${num(v('alpha'), 2)}; each group is sized at ${num(v('alpha_per_comparison'), 3)}` +
+          (corr === 'holm' ? ', the level of Holm’s first step' : ''),
       'End of study': v('last_day_chosen') ? `Day ${v('study_end')}, chosen. The expected effects are the ones on ` +
         `day ${v('endpoint_day')}, when the median control reaches ${v('endpoint')} mm³` :
         `The first measurement day once the median control reaches ${v('endpoint')} mm³ (expected day ` +
@@ -1130,6 +1364,11 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
       'Measurements': `Tumor volume and body weight on ${v('measurement_weekdays')}: days ` +
         `${v('measurement_days')} from randomization`,
     };
+    const reviews = plannedReviews().filter((d) => d <= v('study_end'));
+    if (reviews.length) {
+      plan['Planned reviews'] = `Each treated group reviewed on day ${reviews.join(', ')}, against its chance of ` +
+        'success; the days are fixed before the study starts';
+    }
     analysis.replaceChildren(tableFromMap(plan));
     // the text the Copy button gives: the same rows
     protocolText = [`Study protocol (${r.plan.name})`, ...Object.entries(plan).map(([k, t]) => `${k}: ${t}`)]
@@ -1139,14 +1378,14 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     papers: v('atlas_papers'), history: !!own,
     target: pct(v('power_target')),
     alpha: String(num(v('alpha'), 2)), alphaPer: String(num(v('alpha_per_comparison'), 3)), nFixed: !!v('n_fixed'),
-    correction: corr as 'holm' | 'bonferroni' | 'none',
+    correction: correctionOf(corr),
     minGroup: MIN_GROUP, preLoss: pct(v('pre_loss')), postLoss: pct(v('post_loss')), confidence: pct(v('confidence')),
     lossRule: String(v('loss_rule')), implant: v('implant_total'), randomise: v('randomise_total'),
     nTotal: finite(v('n_total')), humane: v('humane_limit'), diameter: diameterOf(v('humane_limit')).toFixed(1),
     lastDayChosen: !!v('last_day_chosen'), end: v('study_end'), endpoint: v('endpoint')};
     ethicsApplication = ethicsText(ethicsFacts);
     // the control is as large as the largest treated group
-    const nMax = Math.max(...armRows.map((x) => x.n ?? 0));
+    const nMax = maxOf(armRows.map((x) => x.n ?? 0));
     docFacts = {line: own ?? v('line'), protocol: plan, ethics: ethicsParts(ethicsFacts), end: v('study_end'),
       vRand: v('v_rand'), humane: v('humane_limit'), diameter: ethicsFacts.diameter,
       perGroup: [{name: 'Control', n: armRows.some((x) => x.n === null) ? null : nMax},
@@ -1216,8 +1455,8 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
       return undefined;
     const t = r.duration;
     const colors = colorsIn(r);
-    const [ENDPOINT, HUMANE] = [`Controls over the endpoint (${r.plan.get('endpoint', 0)} mm³)`,
-      `Controls removed (over ${r.plan.get('humane_limit', 0)} mm³)`];
+    const [ENDPOINT, HUMANE] = [`Controls over the endpoint (${mm3Text(r.plan.get('endpoint', 0))} mm³)`,
+      `Controls removed (over ${mm3Text(r.plan.get('humane_limit', 0))} mm³)`];
     // one curve after another (each arm's power, then the controls' two shares), one decimal in the tooltips
     const rows: {[k: string]: unknown}[] = [];
     const point = (day: number, value: number, curve: string) =>
@@ -1245,7 +1484,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     df.col('Curve')!.setCategoryOrder([...powers, TARGET, ENDPOINT, HUMANE]);
     paint(df, 'Curve', {...Object.fromEntries(Object.entries(colors)
       .map(([arm, c]) => [`Power, ${arm}`, c])), [TARGET]: '#9aa3ad', [ENDPOINT]: colors['Control'],
-    [HUMANE]: '#c0504d'}, Object.fromEntries(Object.keys(colors).map((arm) => [`Power, ${arm}`, arm])));
+    [HUMANE]: CAL.amber}, Object.fromEntries(Object.keys(colors).map((arm) => [`Power, ${arm}`, arm])));
     df.meta.formulaLines.addLine({title: `Endpoint, day ${e}`, formula: `\${Last day of study} = ${e}`});
     if (end !== e) {
       df.meta.formulaLines.addLine({title: `End of study, day ${end}`, formula: `\${Last day of study} = ${end}`,
@@ -1323,37 +1562,51 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     scenarioEnd.hidden = !has;
     scenarioBox.hidden = !has;
   });
-  // the three what-if panels in one folded section, out of the way until asked; the charts were laid out hidden,
-  // so they follow their width once it opens
-  const whatIf = new Section({title: 'Group size, end of study, measurement schedule', expanded: false});
-  whatIf.body.append(
-    block('Power by group size', 'With more or fewer animals', sized(power, 280)),
-    block('Power by end of study', 'Ending earlier or later', endSummary, sized(byEnd, 280)),
-    block('Measurement schedule', 'Measuring more or less often', scheduleBox));
-  whatIf.effect(() => {
-    if (whatIf.expanded.value)
-      window.dispatchEvent(new Event('resize'));
+  // what each folded panel holds, in one line
+  const calendarSummary = computed(() => {
+    const r = result.value;
+    if (!r)
+      return '';
+    const days = form.getInput('measurementDays')?.value;
+    return [days ? `Measured ${days}` : '', `${r.plan.get('per_week', 0)} measurements a week`,
+      `ends on day ${r.plan.get('study_end', 0)}`].filter((x) => x).join(' · ');
+  });
+  const scenariosSummary = computed(() => {
+    const df = sensitivityData.value;
+    const rows = Array.from({length: df.rowCount}, (_, i) => i)
+      .filter((i) => df.get('Animals of the study', i) === 'To implant');
+    if (rows.length < 2)
+      return result.value ? 'Sizing the study for each TGI…' : '';
+    const at = (i: number) => `${df.get('Animals', i)} to implant at TGI ${df.get('Assumed TGI', i)}%`;
+    return `${at(rows[0])}, ${at(rows[rows.length - 1])}`;
   });
   // the figures answer the plan's question; each panel, one closer question
   const panels = panelGrid([
     {id: 'groups', title: 'Experimental groups', hint: 'The animals each group needs for its comparison with the ' +
-      'control', content: [groupsTable, groupNotes, monitorNote()]},
+      'control, and the power that gives. Click a group for its doses', content: [groupsTable, groupNotes]},
     {id: 'growth', title: 'Predicted tumor growth', hint: 'Median and 90% range of each group\u2019s tumor volume, ' +
       'to the end of the study', content: [growthNotes, scaleRow, sized(growth, 380)]},
-    {id: 'calendar', title: 'Study calendar', hint: 'Week by week from randomization', content: [calendarLoader,
-      calendarStatus, calendarHint, calendarBox]},
-    {id: 'scenarios', title: 'Assumed TGI', hint: 'What the study would need if the treatment had each TGI: ' +
+    {id: 'calendar', title: 'Study calendar', hint: 'Week by week from randomization. Click a weekday to measure on ' +
+      'it, or skip it; double-click a day to note what happened, right-click it for more', content: [calendarLoader,
+      calendarStatus, calendarHint, calendarBox], summary: calendarSummary},
+    {id: 'scenarios', title: 'Effect scenarios', hint: 'What the study would need if the treatment had each TGI: ' +
       'scenarios you read across, not predictions. The animals of the whole study with every arm at that TGI, ' +
       'sized for the target power whatever animals per arm is set', content: [
-      sized(sensitivityChart, 280), sweepNote, scenarioEnd, scenarioBox]},
-    {id: 'whatif', title: 'What if…', hint: 'More or fewer animals, an earlier or later end, other measuring days',
-      content: [whatIf.root]},
-    {id: 'protocol', title: 'Study protocol', hint: 'Design, sample size and analysis, ready to paste',
-      content: [protocolCopy, analysis]},
-  ], PLAN_LAYOUT, 'pmx-plan-panels', 'plan');
-  exports.push(['Layout…', () => editLayout(panels), 'View']);
+      sized(sensitivityChart, 280), sweepNote, scenarioEnd, scenarioBox], summary: scenariosSummary},
+    {id: 'whatif', title: 'Group size, end of study and schedule', hint: 'More or fewer animals, an earlier or later ' +
+      'end, other measuring days', content: [
+      block('Power by group size', 'With more or fewer animals', sized(power, 280)),
+      block('Power by end of study', 'Ending earlier or later', endSummary, sized(byEnd, 280)),
+      block('Measurement schedule', 'Measuring more or less often', scheduleBox)],
+    summary: computed(() => result.value ? 'power with more or fewer animals, an earlier or later end, other ' +
+      'measuring days' : '')},
+    {id: 'protocol', title: 'Study protocol', hint: 'Design, sample size and analysis, ready to paste; also in ' +
+      'File › Documents', content: [protocolCopy, analysis],
+    summary: computed(() => result.value ? 'design, sample size and analysis, ready to paste' : '')},
+  ], PLAN_LAYOUT, 'pmx-plan-panels', 'plan', form);
+  exports.push(['Customize this page', () => customizePage(panels), 'View']);
   // the study's colours: a colour changed in a chart is the plan's, and its frames follow it
-  const link: StudyLink = {meta: () => meta.peek(), setMeta: (m) => meta.value = m, colors: () => {
+  const link: StudyLink = {meta: () => meta.peek(), setMeta: userMeta, colors: () => {
     const r = result.peek();
     return armColors(r ? armsIn(r) : [], meta.peek().colors, meta.peek().slots);
   }, plan: () => planKey(initial)};
@@ -1405,26 +1658,52 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   const noArms = emptyState('Add a treatment arm: the animals, the end of the study, the calendar and the power ' +
     'follow from it.', {icon: 'flask', actions: [buttonWithIcon('Add the first arm', 'plus', () => armsInput.add())]});
   noArms.style.marginTop = '96px';
-  form.effect(() => {
-    const none = armsInput.count.value === 0;
-    noArms.style.display = none ? '' : 'none';
-    content.style.display = none ? 'none' : '';
-  });
 
   // the first plan under u2's loader, every later one under the thin bar
   const panes = stagePanes(form, content, {busy: planning, result, error, stale, before: [noArms],
     busyText: 'Designing the study…', staleText: 'the plan shown is for the last complete inputs'});
+  // the form's column opens no wider than its fields use (at 2560 px a fifth left ~870 px of it empty: QA 0.1.3 final
+  // designer #24): its default width only, once the page is first laid out; a sash the user drags stays where put
+  const widths = new ResizeObserver(() => {
+    const w = panes.root.clientWidth;
+    if (w <= 0)
+      return;
+    widths.disconnect();
+    if (panes.sizes.peek()[0] * w > DECLARATION_MAX)
+      panes.sizes.value = [DECLARATION_MAX / w, 1 - DECLARATION_MAX / w];
+  });
+  widths.observe(panes.root);
+  form.scope.own(() => widths.disconnect());
+  // no arm: the empty state alone, not empty cards and a white chart under it. A box of its own hides the plan
+  // (stagePanes shows `content` again whenever the error clears, as a new plan's first replan does: QA 0.1.3 final
+  // designer #27); `display: contents` leaves the layout as it was
+  const withArms = div([]);
+  withArms.style.display = 'contents';
+  content.replaceWith(withArms);
+  withArms.append(content);
+  form.effect(() => {
+    const none = armsInput.count.value === 0;
+    noArms.style.display = none ? '' : 'none';
+    withArms.style.display = none ? 'none' : 'contents';
+  });
 
   // the plan carries the schedules while their section is open; opened on a plan without them, the plan is made
   // again with them, by the same run as every other plan: a newer plan, a change made meanwhile or a failure are
   // then handled as for any plan, and the section waits only while that run is on (it once had a computation of its
   // own beside the plan's, whose answer could be dropped or never come, and its loader stayed)
   whenSettled(form, () => form.effect(() => call.setParamValue('compareSchedules', scheduleOpen.value)));
-  // TGI 30 switched to T/C is T/C 70: the arms typed under the other one converted before the cards read it
+  // the arms typed under the other metric converted to the same treated volume (TGI 60 is T/C 46 from 100 to
+  // 1000 mm³) before the cards read it: the plan stays the same
   whenSettled(form, () => form.effect(() => {
     const m = form.getInput('effectAs')?.value === 'T/C' ? 'TC' : 'TGI';
-    armsInput.sayAs(m);
-    effectAs.value = m;
+    const num = (name: string, x: number) => Number(form.getInput(name)?.peek()) || x;
+    // (it sets effectAs, the cards' metric, with the arms: ArmsInput.sayAs)
+    armsInput.sayAs(m, num('vRand', 100), num('endpoint', 1000));
+  }));
+  // the volumes a TGI is bounded by (complete regression, tgiMax), as the form holds them
+  whenSettled(form, () => form.effect(() => {
+    const num = (name: string, x: number) => Number(form.getInput(name)?.value) || x;
+    planVolumes.value = {v0: num('vRand', 100), endpoint: num('endpoint', 1000)};
   }));
   let remade: PlanFrames | null = null;
   form.effect(() => {
@@ -1450,7 +1729,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
       const a = c.armResults;
       detectable.value = {of: r, mde: new Map(Array.from({length: a.rowCount}, (_, i) =>
         [a.get('arm', i) as string, finite(a.get('mde', i))]))};
-    }).catch((e) => error.value = String(e?.message ?? e)).finally(() => {
+    }).catch((e) => error.value = inWords(String(e?.message ?? e))).finally(() => {
       if (searching === r)
         searching = null;
     });
@@ -1484,7 +1763,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     // a plan saved with its tables, opened on the same inputs and computed by this app, atlas and engine: shown at
     // once as saved; otherwise (or edited meanwhile) computed, the busy overlay up, as any plan
     const shown = initial?.predicted?.shown;
-    const kept = shown?.asked === JSON.stringify(initial!.inputs) ? framesOf(shown) : null;
+    const kept = shown && sameAsked(shown.asked, initial!.inputs) ? framesOf(shown) : null;
     if (!kept)
       return replan();
     return engineFingerprint().then((e) => e === shown!.engine, () => false).then((same) => {
@@ -1536,17 +1815,21 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   };
   planFiles.set(self, (name) => planFor(name, ready()!));
   // with domain storage: the plan's row (opened from it, or saved to it); a save updates it at its version
-  let planRow = rowOfPlan(initial);
+  let planRow = rowOfStart(initial);
   // opened from someone else's file (Open dialog, drop, a file in the Overview): its first save is the user's copy
   let fromFile = fileOwnerOf(initial);
   const saveRow = async (name: string, r: PlanFrames) => {
     const plan = await planFor(name, r);
+    // (one balloon a save: a new row's note says it was saved)
+    let said = false;
     try {
       const saved = await save('plan', plan, planRow, {fileOwner: fromFile});
       planRow = saved;
+      linkRow(self.view, 'plan', saved.id);
       fromFile = undefined;
       if (saved.meta) {
         grok.shell.info(newRowNote('plan', saved, meta.peek().id));
+        said = true;
         meta.value = saved.meta;
       }
     } catch (e) {
@@ -1557,17 +1840,23 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
       return offerCopy(async () => {
         const {saved, doc} = await saveCopy('plan', plan, from);
         planRow = saved;
+        linkRow(self.view, 'plan', saved.id);
         meta.value = doc.study ?? meta.peek();
         named.value = doc.name;
         edited = false;
         savedInputs = inputsNow();
+        epoch.value++;
+        formChanges.fire();
         grok.shell.info(`Saved as your copy: ${esc(doc.name)}`);
-      });
+      }, e);
     }
     named.value = name;
     edited = false;
     savedInputs = inputsNow();
-    grok.shell.info('Plan saved');
+    epoch.value++;
+    formChanges.fire();
+    if (!said)
+      grok.shell.info('Plan saved');
   };
   // a save asked while the plan is being made waits for it (the button says so), then saves; a plan that fails says
   // it was not saved
@@ -1599,17 +1888,26 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   const saveDialog = () => whenReady((r) => {
     // a row saved before keeps its name: Save writes it at once (Save as… is the dialog, for another name)
     if (domainStorageOn() && planRow && named.peek() !== null)
-      return void saveRow(named.peek()!, r).catch((e) => grok.shell.error(saveError(e, 'plan')));
+      return void saveRow(named.peek()!, r).catch((e) => grok.shell.error(saveError(e, 'plan'), {autoHide: false}));
     saveAsDialog(r);
   });
   const saveAsDialog = (r: PlanFrames) => {
     if (domainStorageOn()) {
       showOnce(self, 'save-plan', () => {
         const name = new TextInput({label: 'Name', value: defaultName(r), nullable: false});
-        const note = span('Saved in PMX Studio, yours until you share it; pick it in Analyze\'s Plan field.');
+        const note = span('Saved in PMX Studio, yours until you share it; the Overview lists it.');
         Object.assign(note.style, {color: 'var(--dg-text-color-muted, #68727f)', maxWidth: '360px'});
+        // Save as… under the plan's own name replaces it only when Save is pressed again (the dialog says so)
+        let replacing: string | null = null;
         return new Dialog('Save plan').add(name).add(note).onOK(async () => {
           const chosen = name.value.trim() || defaultName(r);
+          if (chosen.length > NAME_MAX)
+            throw new Error(`A name of at most ${NAME_MAX} characters`);
+          if (planRow && chosen === named.peek() && chosen !== replacing) {
+            replacing = chosen;
+            throw new Error(`This plan is saved as "${chosen}": press Save again to replace it, or give another name ` +
+              'for a new plan');
+          }
           // under another name it is another study, with an ID and a row of its own (names may repeat)
           if (named.peek() !== null && chosen !== named.peek()) {
             meta.value = {...meta.peek(), id: ''};
@@ -1622,8 +1920,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
       });
       return;
     }
-    const where = span(`Saved to ${shownPath(plansFolder())}. Share it from Files, or pick it in Analyze's ` +
-      'Plan field.');
+    const where = span(`Saved to ${shownPath(plansFolder())}. Share it from Files; the Overview lists it.`);
     Object.assign(where.style, {color: 'var(--dg-text-color-muted, #68727f)', maxWidth: '360px', lineHeight: '1.45'});
     // a plan of the same name is replaced only when Save is pressed again for it (the dialog says so and stays open)
     let replacing: string | null = null;
@@ -1631,6 +1928,8 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
       const name = new TextInput({label: 'Name', value: defaultName(r), nullable: false});
       return new Dialog('Save plan').add(name).add(where).onOK(async () => {
         const chosen = name.value.trim() || defaultName(r);
+        if (chosen.length > NAME_MAX)
+          throw new Error(`A name of at most ${NAME_MAX} characters`);
         if (chosen !== replacing && await planSaved(chosen)) {
           replacing = chosen;
           throw new Error(`A plan named "${chosen}" is already saved: press Save again to replace it, or rename it`);
@@ -1646,6 +1945,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   };
   const saveButton = self.build(() => buttonWithIcon(computed(() => pendingSave.value ?
     'Saving when the plan is ready…' : 'Save plan'), 'save', saveDialog));
+  planSaves.set(self, saveButton);
   // Ctrl+S, and closing with the form changed since the last save asks first (a plan never saved: Save opens its
   // name dialog, and the view stays)
   if (domainStorageOn()) {
@@ -1662,10 +1962,10 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
         throw new Error('named first');
       }
       await saveRow(named.peek()!, r).catch((e) => {
-        grok.shell.error(saveError(e, 'plan'));
+        grok.shell.error(saveError(e, 'plan'), {autoHide: false});
         throw e;
       });
-    }, () => edited && inputsNow() !== savedInputs));
+    }, () => edited && inputsNow() !== savedInputs, undefined, formChanges));
   }
   saveButton.title = domainStorageOn() ? 'Save the plan in PMX Studio (Ctrl+S), to compare the study with it in ' +
     'Analyze' : 'Save the plan to your files, to compare the study with it in Analyze';
@@ -1687,22 +1987,16 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   const copyProtocol = () => {
     if (!ready())
       return;
-    return void navigator.clipboard.writeText(protocolText).then(() => grok.shell.info('Study protocol copied'));
+    return copyText(protocolText, 'Study protocol');
   };
   // under a document's title: the study's ID, the plan it comes from and today's date
   const docSub = (plan: string) => docSubtitle(meta.peek().id, `From the plan ${plan}`);
   exports.push(['Report (PDF)…', async () => {
     const r = ready();
+    // (a folded panel is left out until opened: reportHtml)
     if (r) {
-      // the what-if panel folded is only its toggle (a link's text on paper): left out of the report until opened
-      const folded = whatIf.expanded.peek() ? null : whatIf.root.closest<HTMLElement>('.pmx-panel');
-      folded?.classList.add('pmx-noprint');
-      try {
-        printSheet(await reportHtml({title: defaultName(r), stage: 'Plan', meta: meta.peek(), content,
-          groups: ['Control', ...armsIn(r)]}));
-      } finally {
-        folded?.classList.remove('pmx-noprint');
-      }
+      printSheet(await reportHtml({title: defaultName(r), stage: 'Plan', meta: meta.peek(), content,
+        groups: ['Control', ...armsIn(r)]}));
     }
   }], ['Plan file (.pmxplan)', downloadFile],
   ['Calendar (.ics)', () => {
@@ -1765,15 +2059,56 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     formItems(sections), {details: () => head.details(o.reopen)});
   };
   // the way on: the page's one primary action
-  const followButton = buttonWithIcon('Follow this study', 'arrow-right', () => {
+  // (a plan already followed opens its study: QA 0.1.3 round 4 designer D8)
+  const followed = signal(false);
+  // (one name, the button's and the Study menu's and the toolbox's)
+  const followText = computed(() => followed.value ? 'Open the followed study' : 'Follow this study');
+  const followButton = buttonWithIcon(followText, 'arrow-right', () => void followStudy(), {iconRight: true});
+  // changes not saved asked about first, before the plan is taken (D2: the plan handed to Monitor was the one before
+  // the save, with the old ID): saved, the plan as saved goes on; discarded, the plan as last saved (D7: the edited
+  // one went on, and Plan showed it again)
+  const followStudy = async () => {
     const r = ready();
     if (!r)
       return;
     doseDialog?.close();
     doseDialog = null;
+    const ask = leaveAsks.get(self.view.dart);
+    if (dirtyViews.get(self.view.dart)?.() && ask && !await ask(false, 'before following it'))
+      return;
+    const saved = discardedViews.has(self.view.dart) ? await lastSaved().catch(() => null) : null;
+    if (saved)
+      return void followPlan(saved).catch((e) => grok.shell.error(String(e?.message ?? e)));
     withPlan(r, followPlan);
-  }, {primary: true, iconRight: true});
-  followButton.title = 'Start following this study in Monitor, with this plan';
+  };
+  // the plan as last saved: its row, else the file it was opened from (null: never saved)
+  const lastSaved = async (): Promise<SavedPlan | null> => planRow ? (await openSaved('plan', planRow.id)).doc :
+    initial && 'format' in initial ? initial as SavedPlan : null;
+  followButton.classList.add('pmx-go');
+  // (whole up to its longest name, 250 px in studio.css: at 172 px it read "PEN THE FOLLOWED STUDY", cut at its start;
+  // narrower, it ends in an ellipsis; inline: the package CSS is capped, QA 0.1.3 browser check)
+  // (its label, before the icon: iconRight)
+  const label = followButton.firstElementChild as HTMLElement | null;
+  if (label)
+    Object.assign(label.style, {minWidth: '0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'});
+  // (in the Study menu too: on a narrow window the button gives way first, QA 0.1.3 designer D15)
+  exports.push([() => followText.peek(), () => followButton.click(), 'Study', () => reasonOf(followButton)]);
+  // a study followed from this plan, open or saved (by the plan's ID)
+  // (looked up again as the plan gets its ID and after each save; a saved study looked up once per ID)
+  let looked = '';
+  form.effect(() => {
+    void epoch.value;
+    const id = meta.value.id;
+    const plan = {name: '', inputs: {arms: []}, study: meta.value} as unknown as SavedPlan;
+    followed.value = !!id && grok.shell.tables.some((t) => followedFrom(t, plan));
+    if (id && !followed.peek() && domainStorageOn() && looked !== id) {
+      looked = id;
+      void studyRowsOf('study', id).then((rows) => followed.value ||= rows.length > 0 && meta.peek().id === id,
+        () => {});
+    }
+  });
+  followButton.title = 'Start following this study from randomization: Monitor opens with the plan\'s groups and ' +
+    'calendar';
   form.effect(() => {
     const off = armsInput.count.value === 0 ? 'Add a treatment arm first' : formProblem.value ??
       (!result.value ? 'The plan is not ready yet' : busy.value ? 'The plan is being updated' :
@@ -1785,23 +2120,60 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
       off === 'The plan is being updated' ? null : off);
   });
 
+  // another stage shown in this view's place: the plan as it stands (its inputs, edited or not), to come back to
+  keepOnLeaving(self, async () => {
+    const r = result.peek();
+    if (!r || stale.peek() || busy.peek())
+      return initial ? () => planView(initial) : null;
+    const p = await planOf(named.peek() ?? defaultName(r), call, r, meta.peek());
+    const d = declared.get(r);
+    const engine = d ? await engineFingerprint().catch(() => null) : null;
+    const start: PlanStart = d && engine ? {...p, predicted: {...p.predicted, shown: shownOf(r,
+      JSON.stringify(p.inputs), d, engine)}} : p;
+    const row = planRow;
+    return () => planView({...start, row});
+  });
+
   const head = studyHeader(form, 'plan', computed(() => {
     const r = result.value;
     if (!r)
       return undefined;
     const colors = colorsIn(r);
     return {name: defaultName(r), groups: ['Control', ...armsIn(r)].map((name) => ({name, color: colors[name]})),
-      status: `${modelName(r.plan.get('line', 0))} · planned`, meta: () => meta.value, setMeta: (m) => meta.value = m};
-  }), (s) => void openStage(s));
+      status: `${modelName(r.plan.get('line', 0))} · planned · ${armsIn(r).length + 1} groups · ends on day ` +
+        `${r.plan.get('study_end', 0)}`, meta: () => meta.value, setMeta: userMeta};
+  }), (s) => void openStage(s), computed(() => {
+    // a new plan with no arm yet: nothing to follow or analyze (unless a stage left behind has a study)
+    const none = armsInput.count.value === 0;
+    return {monitor: none && !canReturn('monitor') ? 'Follow a plan, or open a study with measurements, first' : null,
+      analyze: none && !canReturn('analyze') ? 'Needs a study with measurements: follow the plan, then measure' :
+        null};
+  }));
   // Open… here opens a plan, or a table as a model's growth history (the model then picked here, as + Add your own
   // model does)
   const at: OpenAt = {stage: 'plan', history: (t) => historyDialog((key) => lineInput.value = key,
     {rows: t.read.rows, from: t.file})};
   const links = stageLinks(at, () => head.details());
+  // Save plan as… is File's Save as…
+  const saveAsAt = exports.findIndex((x) => x[0] === 'Save plan as…');
+  if (saveAsAt >= 0)
+    exports[saveAsAt] = ['Save as…', exports[saveAsAt][1], 'File', () => reasonOf(saveButton)];
+  let rebuildMenu: (() => void) | null = null;
+  queueMicrotask(() => rebuildMenu = stageMenu(self.view, exports, {newPlan: () => void planView().then((v) =>
+    showStage('plan', v)), open: () => void openStudyDialog(undefined, at),
+  save: {text: () => saveButton.textContent?.trim() || 'Save plan', run: () => saveButton.click(),
+    why: () => reasonOf(saveButton)}}, links, (d) => self.own(d)));
+  const toolbox = stageToolbox(exports, links.study, links.help, panels);
+  // (the Study menu and the toolbox named as the button is, as it changes)
+  form.effect(() => {
+    void followText.value;
+    rebuildMenu?.();
+    relabel(toolbox);
+  });
   return {
     root: takesFiles(stagePage(head.row, panes), at),
-    ribbon: [[head.steps], [openButton(at), saveButton, followButton]],
-    toolbox: stageToolbox(exports, links.study, links.help),
+    ribbon: [[head.steps], [followButton]],
+    toolbox,
     path: '/plan',
     status: computed(() => busy.value ? 'Designing the study…' : result.value ? result.value.plan.name : ''),
   };

@@ -49,6 +49,17 @@ category('Provenance', () => {
     expect((await sub(now)).includes('its plan'), false);
   });
 
+  test('the report keeps no step on how to work the screen (#24)', async () => {
+    const content = document.createElement('div');
+    content.append(Object.assign(document.createElement('p'), {textContent: 'Body weight as weighed, tumor ' +
+      'included: switch on Tumor-corrected to see the animal’s own weight. On day 16 the tumor weighs 1 g.'}),
+    Object.assign(document.createElement('p'), {textContent: 'Each animal. Click an animal for its curve.'}));
+    const html = await reportHtml({title: 'T', stage: 'Analyze', meta: null, content});
+    expect(html.includes('switch on Tumor') || html.includes('Click an animal'), false, html);
+    expect(html.includes('Body weight as weighed, tumor included. On day 16 the tumor weighs 1 g.'), true, html);
+    expect(html.includes('Each animal.'), true, html);
+  });
+
   const study = (extra: object) => JSON.stringify({format: 'pmx-study', version: 1, name: 's', plan: null, looks: '',
     humane: null, rows: [], log: [], ...extra});
 

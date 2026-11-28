@@ -1,5 +1,5 @@
 /* Plans and studies as rows of the package's domain tables (databases/pmx/schema.json, EMS): the document whole, as
-   the .pmxplan / .pmxstudy file holds it, in a text column, and beside it what the Overview lists and searches by,
+   the .pmxplan / .pmxstudy file holds it, in a json column, and beside it what the Overview lists and searches by,
    computed by entryOf at each save. The row's id is the record's identity; its version guards an update against a
    save made elsewhere since it was opened. Study IDs come from a lab-wide counter (pmx.code, autoNumber).
    Access (D691): everyone may read the table and create (View and Edit on the table; Edit is EMS's insert grant); a
@@ -13,8 +13,8 @@ import * as DG from 'datagrok-api/dg';
 
 import {LibraryEntry, entryOf, libraryOf, myLibrary} from './library';
 import {PLAN_EXT, SavedPlan, myPlans, parsePlan, planKey, plansFolder, sha256Hex} from './plan-file';
-import {STUDY_EXT, SavedStudy, parseStudy, studiesFolder} from './study-file';
-import {StudyMeta, emptyMeta, withId} from './study-meta';
+import {STUDY_EXT, SavedStudy, parseStudy, studiesFolder, tableOf} from './study-file';
+import {DEMO_OWNER, StudyMeta, emptyMeta, withId} from './study-meta';
 import {domainStorageOn} from './storage-setting';
 import {pmxDb} from './generated/db';
 
@@ -23,15 +23,29 @@ export type Kind = 'plan' | 'study';
 /** A saved row: its id and the version it was read or written at (an update passes it back). */
 export interface Saved {id: string, version: number}
 
-/** A row of pmx.plan or pmx.study (the columns the store writes; the server adds the system ones). */
+/** A row of pmx.plan or pmx.study (the columns the store writes; the server adds the system ones). `owner` and
+ *  `copy_owner` are user ids (their names come as `~caption_owner` / `~caption_copy_owner` when a query asks);
+ *  `document` is the document itself (json), `start` day 0 at midnight UTC (read back as a Dayjs). */
 export interface DocRow {
   id: string; version: number; updated_on?: {valueOf(): number}; author_id?: string;
-  name: string; code?: string; plan_id?: string | null; stage?: number; line?: string; model?: string; owner?: string;
-  project?: string; tags?: string[]; compounds?: string; drugs?: string[]; treatment?: string; start?: string | null;
-  last_day?: number | null; next_day?: number | null; end_day?: number | null; document: string;
-  source?: string; copy_of?: string; copy_owner?: string;
+  name: string; code?: string; plan_id?: string | null; stage?: number; line?: string; model?: string;
+  owner?: string | null; run_by?: string; tags?: string[]; compounds?: string; drugs?: string[]; treatment?: string;
+  start?: string | {toISOString(): string} | null; last_day?: number | null; next_day?: number | null;
+  end_day?: number | null; document: object | string; source?: string; copy_of?: string; copy_owner?: string | null;
+  copy_file_owner?: string; '~caption_owner'?: string | null; '~caption_copy_owner'?: string | null;
 }
 export interface CodeRow {id: string, version: number, number?: number}
+
+/** A row's document as text, for the file readers: json comes back as an object, keys reordered (a row written
+ *  before schema 1.5.0 and not migrated held the text itself). */
+export const docText = (d: object | string): string => typeof d === 'string' ? d : JSON.stringify(d);
+/** Day 0 as the document writes it (YYYY-MM-DD), from the datetime column (or a 1.4.1 row's text). */
+export const dayOf = (x: DocRow['start']): string | null => x == null ? null :
+  (typeof x === 'string' ? x : x.toISOString()).slice(0, 10) || null;
+/** A whole study day for an int column (null: none). */
+const whole = (x: number | null | undefined): number | null => x == null || !Number.isFinite(x) ? null : Math.round(x);
+/** The user a new row belongs to. */
+const meId = (): string | null => grok.shell.user?.id ?? null;
 
 /** What the store needs of a domain table: the part of grok.dapi.domains.table it uses (tests give a memory one). */
 export interface StoreTable<TRow> {
@@ -40,7 +54,7 @@ export interface StoreTable<TRow> {
   update(id: string, values: Partial<TRow>, options: {version: number}): Promise<{id: string, version: number}>;
   get(id: string, options?: {withAccess?: boolean}): Promise<(TRow & {'~can_edit'?: boolean}) | null>;
   query(spec: {columns?: string[], sort?: string, search?: string, limit?: number, filter?: Where,
-    deleted?: 'only', withAccess?: boolean}): Promise<(TRow & {'~can_edit'?: boolean})[]>;
+    deleted?: 'only', withAccess?: boolean, captions?: string[]}): Promise<(TRow & {'~can_edit'?: boolean})[]>;
   delete(id: string): Promise<unknown>;
   restore(id: string): Promise<unknown>;
 }
@@ -65,10 +79,11 @@ export function columnsOf(kind: Kind, doc: SavedPlan | SavedStudy): Omit<DocRow,
     throw new Error(`Not a PMX Studio ${kind}`);
   const meta = kind === 'study' ? (doc as SavedStudy).meta : (doc as SavedPlan).study;
   const plan = kind === 'study' ? (doc as SavedStudy).plan : doc as SavedPlan;
-  return {name: e.name, code: e.id, line: e.line, model: plan?.history?.name || e.line, owner: e.owner,
-    project: meta?.project ?? '', tags: e.tags,
-    compounds: e.compounds, drugs: e.drugs ? e.drugs.split(', ') : [], treatment: e.treatment, start: e.start,
-    end_day: e.end, ...kind === 'study' ? {stage: e.stage, last_day: e.day, next_day: e.next} : {}, document};
+  // (the owner is the user, set when the row is made: columnsOf never changes whose a row is)
+  return {name: e.name, code: e.id, line: e.line, model: plan?.history?.name || e.line, run_by: meta?.runBy ?? '',
+    tags: e.tags, compounds: e.compounds, drugs: e.drugs ? e.drugs.split(', ') : [], treatment: e.treatment,
+    start: e.start ? `${e.start}T00:00:00Z` : null, end_day: whole(e.end), ...kind === 'study' ?
+      {stage: e.stage, last_day: whole(e.day), next_day: whole(e.next)} : {}, document: JSON.parse(document)};
 }
 
 /** Saves a plan or study: a new row, or (`at`) the row it was opened from, refused if saved elsewhere since. */
@@ -80,16 +95,19 @@ export async function save(kind: Kind, doc: SavedPlan | SavedStudy, at: Saved | 
   // file was opened; what the owner field says now never makes a copy): no row is ever replaced by another's data.
   // `meta`: the details as saved, when they changed (the view shows them)
   // a row shared to read is refused here, as the server would, but without its "Access Denied" (the view offers a copy)
-  if (at && trashed.has(`${kind}:${at.id}`))
-    throw new Error('it was deleted. Restore it from the Overview (Show deleted) to save it again');
-  if (at && (await t[kind].get(at.id, {withAccess: true}))?.['~can_edit'] === false)
+  // one deleted, here or elsewhere since (another tab, a colleague): said so, and the view offers it as a new one (QA
+  // 0.1.3 round 3 chaos 11: it said "shared with you to read")
+  const row = at && !trashed.has(`${kind}:${at.id}`) ? await t[kind].get(at.id, {withAccess: true}) : null;
+  if (at && !row)
+    throw Object.assign(new Error(`This ${kind} was deleted (it is in the trash).`), {code: 'deleted', kind});
+  if (row?.['~can_edit'] === false)
     throw Object.assign(new Error(`This ${kind} is shared with you to read`), {code: 'forbidden'});
   const first = at ? {doc} : await firstSave(kind, doc, t, me, extra.fileOwner);
   const now = first.doc;
   const values = {...columnsOf(kind, now), ...kind === 'study' && extra.planId !== undefined ?
-    {plan_id: extra.planId} : {}, ...first.copyOf ? {copy_owner: first.copyOf} : {}};
+    {plan_id: extra.planId} : {}, ...first.copyOf ? {copy_file_owner: first.copyOf} : {}};
   const saved = at ? await t[kind].update(at.id, values, {version: at.version}) :
-    await t[kind].insert(values).then(([r]) => ({id: r.id, version: r.version ?? 1}));
+    await t[kind].insert({...values, owner: meId()}).then(([r]) => ({id: r.id, version: r.version ?? 1}));
   if (kind === 'plan')
     planRows.set(planKey(now as SavedPlan)!, {id: saved.id, version: saved.version});
   return {...saved, ...first.code ? {code: first.code, meta: metaIn(kind, now)} : {},
@@ -130,12 +148,15 @@ async function firstSave<T extends SavedPlan | SavedStudy>(kind: Kind, doc: T, t
   // a copy only for a file someone else owned; a record made in the app is the user's, whatever its owner field says
   const owner = fileOwner ?? '';
   const mine = myNames(me);
-  const others = !!owner && mine.length > 0 && !mine.some((n) => n.toLowerCase() === owner.toLowerCase());
-  const code = others ? await nextCode(t) : await takenCode(kind, doc, t);
+  // (the demo's files are no one's: saved, the user's own with an ID of its own, never "copy of demo", nor the study
+  // followed from it, QA 0.1.3 browser check)
+  const demo = owner.toLowerCase() === DEMO_OWNER;
+  const others = !demo && !!owner && mine.length > 0 && !mine.some((n) => n.toLowerCase() === owner.toLowerCase());
+  const code = others || demo ? await nextCode(t) : await takenCode(kind, doc, t);
   if (!code)
     return {doc};
-  return {doc: withMeta(kind, doc, {id: code, ...others ? {owner: mine[0], copyOf: owner} : {}}), code,
-    ...others ? {copyOf: owner} : {}};
+  return {doc: withMeta(kind, doc, {id: code, ...(others || demo) && mine[0] ? {owner: mine[0]} : {},
+    ...others ? {copyOf: owner} : {}}), code, ...others ? {copyOf: owner} : {}};
 }
 
 /** `doc` with its study details changed by `patch` (a study's meta, a plan's study). */
@@ -164,26 +185,45 @@ export async function open(kind: 'study', id: string, t?: Tables): Promise<{doc:
 export async function open(kind: Kind, id: string, t: Tables = domainTables()):
   Promise<{doc: SavedPlan | SavedStudy, saved: Saved}> {
   const row = await t[kind].get(id);
-  if (!row)
-    throw new Error(`This ${kind} is not there any more, or it is not shared with you.`);
+  if (!row) {
+    // (one in the trash said so: a link to it opened a blank stage with no word, QA 0.1.3 round 3 chaos 14)
+    const trash = await t[kind].query({columns: ['name'], deleted: 'only', limit: 1,
+      filter: [{property: 'id', operator: '=', value: id}]}).catch(() => []);
+    // (with its code: a save that reads the row first offers "Save as new" as every save of a deleted one does)
+    throw Object.assign(new Error(trash.length ? `This ${kind} was deleted (it is in the trash). Restore it from the ` +
+      'Overview (Show deleted) to open it.' : `This ${kind} is not there any more, or it is not shared with you.`),
+    {code: trash.length ? 'deleted' : 'not-found', kind});
+  }
   const saved = {id: row.id, version: row.version};
-  if (kind === 'study')
-    return {doc: parseStudy(row.document), saved};
-  const doc = parsePlan(row.document);
-  planRows.set(planKey(doc)!, saved);
+  const read = kind === 'study' ? parseStudy(docText(row.document)) : parsePlan(docText(row.document));
+  // (a 1.4.1 row, its document still text, is read as the 1.5.0 migration reads it)
+  const doc = typeof row.document === 'string' ? await runBy1_4(kind, read) : read;
+  if (kind === 'plan')
+    planRows.set(planKey(doc as SavedPlan)!, saved);
   return {doc, saved};
 }
+
+/** A 1.4.1 document's Run by: its owner text when that is not the login of any user (a login is a user, never free
+ *  text; a copy kept the original owner's login there), as the 1.5.0 migration moves it. */
+async function runBy1_4<T extends SavedPlan | SavedStudy>(kind: Kind, doc: T): Promise<T> {
+  const meta = kind === 'study' ? (doc as SavedStudy).meta : (doc as SavedPlan).study;
+  const owner = meta?.owner ?? '';
+  return !meta || meta.runBy || !owner || await isLogin(owner) ? doc : withMeta(kind, doc, {runBy: owner});
+}
+/** Whether a text is a user's login here (a quote is in no login). */
+const isLogin = async (s: string): Promise<boolean> => !/["\\]/.test(s) &&
+  !!(await grok.dapi.users.filter(`login = "${s}"`).first().catch(() => null));
 
 /** The rows a deep link names: by its row id, that row; by its study ID (PMX-…, what users see), the rows of its kind
  *  the user can see with that ID, newest first (several: the link opens a chooser). */
 export async function rowsOf(kind: Kind, idOrCode: string, t: Tables = domainTables()): Promise<LinkedRow[]> {
   if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrCode))
     return [{id: idOrCode, name: '', owner: '', stage: 1, updated: 0}];
-  const rows = await t[kind].query({columns: kind === 'study' ? ['name', 'owner', 'stage'] : ['name', 'owner'],
+  const rows = await t[kind].query({columns: kind === 'study' ? ['name', 'stage'] : ['name'], captions: ['owner'],
     sort: '!updated_on', limit: 20, filter: [{property: 'code', operator: '=', value: idOrCode}]});
   if (!rows.length)
     throw new Error(`No ${kind} ${idOrCode} is saved in PMX Studio, or it is not shared with you.`);
-  return rows.map((r) => ({id: r.id, name: r.name ?? '', owner: r.owner ?? '', stage: kind === 'study' ?
+  return rows.map((r) => ({id: r.id, name: r.name ?? '', owner: r['~caption_owner'] ?? '', stage: kind === 'study' ?
     r.stage ?? 2 : 1, updated: r.updated_on?.valueOf() ?? 0}));
 }
 /** A row a deep link by study ID may mean: when several the user can see have it, they pick one. */
@@ -201,6 +241,11 @@ export function linkedRow(search = window.location.search): {kind: Kind, id: str
 /** The rows moved to the trash in this session: a view still open on one does not save into it (QA pass 4: the
  *  view of a deleted plan stayed open and editable, and its Save would write a row the Overview no longer lists). */
 const trashed = new Set<string>();
+/** Whether the table's study row was moved to the trash in this session (the Study field lists it no more). */
+export const inTrash = (df: DG.DataFrame): boolean => {
+  const at = rowOfTable(df);
+  return !!at && trashed.has(`study:${at.id}`);
+};
 /** Moves a plan or study to the trash (soft delete: restorable). */
 export const remove = (kind: Kind, id: string, t: Tables = domainTables()) =>
   t[kind].delete(id).then((x) => (trashed.add(`${kind}:${id}`), x));
@@ -213,22 +258,29 @@ export type StoreEntry = LibraryEntry & {row: Saved & {kind: Kind}, model: strin
 
 /** The declared columns a list reads (the server refuses a system column here: id, version, updated_on and author_id
  *  always come with the rows). */
-const LISTED = ['name', 'code', 'stage', 'line', 'model', 'owner', 'tags', 'compounds',
-  'drugs', 'treatment', 'start', 'last_day', 'next_day', 'end_day', 'copy_of', 'copy_owner'];
-const entryOfRow = (kind: Kind, r: DocRow & {'~can_edit'?: boolean}): StoreEntry => ({kind,
-  stage: kind === 'study' ? (r.stage === 3 ? 3 : 2) : 1,
-  file: null, text: '', id: r.code ?? '', name: r.name, line: r.line ?? '', compounds: r.compounds ?? '',
-  drugs: (r.drugs ?? []).join(', '), owner: r.owner ?? '', tags: r.tags ?? [], updated: r.updated_on?.valueOf() ?? 0,
-  treatment: r.treatment ?? '', start: r.start ?? null, day: r.last_day ?? null, next: r.next_day ?? null,
-  end: r.end_day ?? null, model: r.model || r.line || '', row: {kind, id: r.id, version: r.version},
-  ...r.copy_of || r.copy_owner ? {copyOf: {id: r.copy_of ?? '', owner: r.copy_owner ?? ''}} : {},
-  ...r['~can_edit'] === false ? {readOnly: true} : {}});
+const LISTED = ['name', 'code', 'stage', 'line', 'model', 'run_by', 'tags', 'compounds',
+  'drugs', 'treatment', 'start', 'last_day', 'next_day', 'end_day', 'copy_of', 'copy_owner', 'copy_file_owner'];
+/** The users a list names, by the platform's display name of each (a ref caption, one join each). */
+const NAMED = ['owner', 'copy_owner'];
+const entryOfRow = (kind: Kind, r: DocRow & {'~can_edit'?: boolean}): StoreEntry => {
+  const copyOwner = r['~caption_copy_owner'] || r.copy_file_owner || '';
+  return {kind, stage: kind === 'study' ? (r.stage === 3 ? 3 : 2) : 1,
+    file: null, text: '', id: r.code ?? '', name: r.name, line: r.line || r.model || '', compounds: r.compounds ?? '',
+    drugs: (r.drugs ?? []).join(', '), owner: r['~caption_owner'] ?? '', runBy: r.run_by ?? '',
+    tags: r.tags ?? [], updated: r.updated_on?.valueOf() ?? 0, treatment: r.treatment ?? '', start: dayOf(r.start),
+    day: r.last_day ?? null, next: r.next_day ?? null, end: r.end_day ?? null, model: r.model || r.line || '',
+    row: {kind, id: r.id, version: r.version},
+    ...r.copy_of || copyOwner ? {copyOf: {id: r.copy_of ?? '', owner: copyOwner}} : {},
+    ...r['~can_edit'] === false ? {readOnly: true} : {}};
+};
 
 /** The plans and studies the user can see, newest first, one per study ID (its furthest stage), as the Overview lists
- *  them; `search` narrows on the server (name, ID, model, model key, owner, treatment). No document is read. */
+ *  them; `search` narrows on the server (name, ID, model, model key, run by, treatment; not the owner, a user column).
+ *  No document is read. */
 export async function list(search = '', limit = 1000, t: Tables = domainTables(), deleted = false):
   Promise<StoreEntry[]> {
-  const spec = {columns: LISTED, sort: '!updated_on', limit, withAccess: true, ...search ? {search} : {},
+  const spec = {columns: LISTED, captions: NAMED, sort: '!updated_on', limit, withAccess: true,
+    ...search ? {search} : {},
     ...deleted ? {deleted: 'only' as const} : {}};
   const [plans, studies] = await Promise.all([t.plan.query({...spec, columns: LISTED.filter((c) =>
     !['stage', 'last_day', 'next_day'].includes(c))}), t.study.query(spec)]);
@@ -262,8 +314,8 @@ export async function importFile(kind: Kind, text: string, t: Tables = domainTab
   const first = await firstSave(kind, doc, t, me, ownerOf(kind, doc));
   // ponytail: two tabs importing the same file at the same instant can both pass the check above and make two rows;
   // schema "idempotency" would close it, but the server only applies it when a table is created (EMS 1.28.0)
-  const [r] = await t[kind].insert({...columnsOf(kind, first.doc), source,
-    ...first.copyOf ? {copy_owner: first.copyOf} : {}});
+  const [r] = await t[kind].insert({...columnsOf(kind, first.doc), source, owner: meId(),
+    ...first.copyOf ? {copy_file_owner: first.copyOf} : {}});
   return {saved: {id: r.id, version: r.version ?? 1}, imported: true, ...first.copyOf ? {copyOf: first.copyOf} :
     first.code ? {renumbered: true} : {}};
 }
@@ -359,6 +411,26 @@ export function rowOfTable(df: DG.DataFrame | null | undefined): Saved | null {
 export const setRowOn = (df: DG.DataFrame, s: Saved) =>
   df.setTag(ROW_TAG, JSON.stringify({id: s.id, version: s.version}));
 
+/** A study row's table: the one already open for that row at that version (QA 0.1.3: each reopen added another copy
+ *  to the workspace, "X (2)" … "X (6)"), else a new one, an older copy of the row closed when no table view shows it.
+ *  `shown`: whether a page still shows a table (native.ts inUse): one no page shows is never taken up again, however
+ *  it was left (a Discard, a page closed), and the row is read as saved; its copy is closed (QA 0.1.3 round 4 chaos
+ *  N1: a discarded correction came back with the study, and the next Ctrl+S saved it). */
+export function tableOfRow(doc: SavedStudy, row: Saved, tables: DG.DataFrame[] = grok.shell.tables,
+  shown?: (df: DG.DataFrame) => boolean): DG.DataFrame {
+  const copies = tables.filter((t) => rowOfTable(t)?.id === row.id);
+  const same = copies.find((t) => rowOfTable(t)!.version === row.version && (!shown || shown(t)));
+  if (same)
+    return same;
+  for (const t of copies) {
+    if (shown ? !shown(t) : ![...grok.shell.tableViews].some((v) => v.dataFrame?.id === t.id))
+      grok.shell.closeTable(t);
+  }
+  const df = tableOf(doc);
+  setRowOn(df, row);
+  return df;
+}
+
 /** `m` with an ID: its own, else a new one (the lab-wide counter with domain storage, else the user's own). */
 export const withCode = async (m: StudyMeta): Promise<StudyMeta> =>
   m.id ? m : domainStorageOn() ? {...m, id: await nextCode()} : withId(m);
@@ -366,22 +438,34 @@ export const withCode = async (m: StudyMeta): Promise<StudyMeta> =>
 /** What a refused save says to the user. */
 export function saveError(e: any, what: string): string {
   const code = e?.code;
-  return code === 'version-conflict' ? `This ${what} was saved elsewhere since you opened it: open it again from ` +
-    'the Overview to see that version, then make your changes there.' :
+  return code === 'version-conflict' ? `This ${what} was saved elsewhere since you opened it. To keep ` +
+    'your changes, save them under another name with File › Save as…; to see that version, open it again from the ' +
+    'Overview.' :
+    code === 'deleted' ? `This ${what} was deleted (it is in the trash). Restore it from the Overview ` +
+    '(Show deleted), or save your changes as a new one with File › Save as….' :
     code === 'forbidden' || code === 'not-found' ? `This ${what} is shared with you to read (or it is not there any ` +
     'more): open it and save a copy of your own.' :
+    // (no answer from the server: said in words, not the browser's "ClientException: Failed to fetch, uri=…", QA
+    // 0.1.3 round 3 chaos 21)
+    offline(e) ? 'Not saved: no connection to the server. Your changes are kept; press Ctrl+S again when you are ' +
+    'back online.' :
       `The ${what} could not be saved: ${e?.message ?? e}`;
 }
 
-/** Whether a save was refused because the row is shared with the user to read only (or is gone). */
-export const isReadOnly = (e: any): boolean => e?.code === 'forbidden' || e?.code === 'not-found';
+/** Whether an error is the server not answering at all (offline, the server down). */
+const offline = (e: any): boolean => /failed to fetch|networkerror|network request failed|load failed/i
+  .test(String(e?.message ?? e ?? ''));
+
+/** Whether a save was refused because the row is shared with the user to read only, or is gone (deleted). */
+export const isReadOnly = (e: any): boolean => ['forbidden', 'not-found', 'deleted'].includes(e?.code);
 
 /** Save as my copy: `doc`, the user's changes to a row shared with them to read, as a new row of theirs, marked as a
  *  copy wherever it is listed (" (copy)" in its name, its own study ID, the original's row and owner beside it). The
  *  original is not touched. */
 export async function saveCopy<T extends SavedPlan | SavedStudy>(kind: Kind, doc: T, source: Saved,
   t: Tables = domainTables(), owner: string = grok.shell.user?.login ?? ''): Promise<{saved: Saved, doc: T}> {
-  const from = await t[kind].get(source.id).catch(() => null);
+  const [from] = await t[kind].query({columns: ['name', 'owner'], captions: ['owner'], limit: 1,
+    filter: [{property: 'id', operator: '=', value: source.id}]}).catch(() => []);
   const code = await nextCode(t);
   // "X (copy)", then "X (copy 2)", ... among the rows the user can see (a copy of a copy copies the original's name)
   const base = doc.name.replace(/ \(copy( \d+)?\)$/, '');
@@ -390,11 +474,14 @@ export async function saveCopy<T extends SavedPlan | SavedStudy>(kind: Kind, doc
   let n = 1;
   while (taken.has(`${base} (copy${n === 1 ? '' : ` ${n}`})`))
     n++;
-  // the copy is the user's: they own it; whose the original is goes beside it (copy_owner) and in its details
-  const original = from?.owner || from?.author_id || '';
+  // the copy is the user's: they own it; whose the original is goes beside it (copy_owner, the user) and in its
+  // details (their name)
+  const original = from?.owner || from?.author_id || null;
+  const originalName = from?.['~caption_owner'] ?? '';
   const copy = withMeta(kind, {...doc, name: `${base} (copy${n === 1 ? '' : ` ${n}`})`} as T,
-    {id: code, owner, ...original ? {copyOf: original} : {}});
-  const [r] = await t[kind].insert({...columnsOf(kind, copy), copy_of: source.id, copy_owner: original});
+    {id: code, owner, ...originalName ? {copyOf: originalName} : {}});
+  const [r] = await t[kind].insert({...columnsOf(kind, copy), owner: meId(), copy_of: source.id,
+    copy_owner: original});
   const saved = {id: r.id, version: r.version ?? 1};
   if (kind === 'plan')
     planRows.set(planKey(copy as SavedPlan)!, saved);
@@ -414,18 +501,22 @@ export async function entryText(e: LibraryEntry, t?: Tables): Promise<string> {
       throw new Error(`"${e.name}" is not there any more, or it is no longer shared with you.`);
     if (e.row.kind === 'plan') {
       try {
-        planRows.set(planKey(parsePlan(row.document))!, {id: row.id, version: row.version});
+        planRows.set(planKey(parsePlan(docText(row.document)))!, {id: row.id, version: row.version});
       } catch {} // (a damaged document is refused where it is opened)
     }
-    return row.document;
+    return docText(row.document);
   }
   return e.file ? grok.dapi.files.readAsText(e.file) : '';
 }
 
 /** Tables in memory, with the server's rules the store relies on: ids and versions stamped, an update at another
  *  version refused (code 'version-conflict'), a required name and document, delete out of every query, the code
- *  table numbered from 1, every row authored by `author`. For the package's tests. */
-export function memoryTables(author = 'me'): Tables {
+ *  table numbered from 1, every row authored by `author`, a json document's keys reordered as jsonb does (here:
+ *  sorted), a user column's caption its name in `names` (else the id). For the package's tests. */
+export function memoryTables(author = 'me', names: {[id: string]: string} = {}): Tables {
+  const jsonb = (x: unknown): unknown => Array.isArray(x) ? x.map(jsonb) : x && typeof x === 'object' ?
+    Object.fromEntries(Object.keys(x).sort().reverse().map((k) => [k, jsonb((x as any)[k])])) : x;
+  const stored = (r: any) => r.document && typeof r.document === 'object' ? {...r, document: jsonb(r.document)} : r;
   let clock = 0;
   const table = <TRow extends {id: string, version: number}>(numbered = false): StoreTable<TRow> => {
     const rows = new Map<string, TRow>();
@@ -438,8 +529,8 @@ export function memoryTables(author = 'me'): Tables {
     };
     return {
       async insert(row) {
-        const r = {...row, id: crypto.randomUUID(), version: 1, updated_on: ++clock, author_id: author,
-          ...numbered ? {number: ++counter} : {}} as unknown as TRow;
+        const r = stored({...row, id: crypto.randomUUID(), version: 1, updated_on: ++clock, author_id: author,
+          ...numbered ? {number: ++counter} : {}}) as unknown as TRow;
         check(r);
         rows.set(r.id, r);
         return [{id: r.id, version: 1}];
@@ -450,7 +541,7 @@ export function memoryTables(author = 'me'): Tables {
           throw err('not-found', `No row ${id}`);
         if (was.version !== version)
           throw err('version-conflict', `Expected version ${version}, the row is at ${was.version}`);
-        const r = {...was, ...values, id, version: version + 1, updated_on: ++clock};
+        const r = stored({...was, ...values, id, version: version + 1, updated_on: ++clock});
         check(r);
         rows.set(id, r);
         return {id, version: r.version};
@@ -459,9 +550,9 @@ export function memoryTables(author = 'me'): Tables {
         const r = rows.get(id) as any;
         return r ? {...r, ...options?.withAccess ? {'~can_edit': r.author_id === author} : {}} : null;
       },
-      async query({columns, sort, search, limit, filter, deleted, withAccess}) {
+      async query({columns, sort, search, limit, filter, deleted, withAccess, captions}) {
         const words = (search ?? '').toLowerCase();
-        const hit = (r: any) => (!words || ['name', 'code', 'line', 'model', 'owner', 'treatment']
+        const hit = (r: any) => (!words || ['name', 'code', 'line', 'model', 'run_by', 'treatment']
           .some((c) => String(r[c] ?? '').toLowerCase().includes(words))) &&
           (filter ?? []).every((c) => c === 'and' || r[c.property] === c.value);
         const desc = sort?.startsWith('!');
@@ -476,7 +567,9 @@ export function memoryTables(author = 'me'): Tables {
         // (withAccess: the author edits; a row stamped by another is shared to read here)
         const access = (r: any) => withAccess ? {'~can_edit': r.author_id === author} : {};
         const picked = (r: any) => columns ? Object.fromEntries([...SYSTEM, ...columns].map((c) => [c, r[c]])) : r;
-        return out.map((r: any) => ({...picked(r), ...access(r)}) as TRow);
+        const named = (r: any) => Object.fromEntries((captions ?? []).map((c) =>
+          [`~caption_${c}`, r[c] == null ? null : names[r[c]] ?? r[c]]));
+        return out.map((r: any) => ({...picked(r), ...access(r), ...named(r)}) as TRow);
       },
       async delete(id) {
         const r = rows.get(id);
@@ -497,13 +590,20 @@ export function memoryTables(author = 'me'): Tables {
   return {plan: table<DocRow>(), study: table<DocRow>(), code: table<CodeRow>(true)};
 }
 
-/** The user's saved plans as a picker lists them: by name, each read when picked (rows, or the files). */
-export async function savedPlans(t?: Tables): Promise<{name: string, read: () => Promise<DG.FileInfo>}[]> {
-  if (!domainStorageOn())
-    return (await myPlans()).map((f) => ({name: f.name, read: async () => f}));
-
-  const rows = await (t ?? domainTables()).plan.query({columns: ['name', 'code'], sort: '!updated_on', limit: 1000});
-  return rows.map((r) => ({name: r.code ? `${r.name} (${r.code})` : r.name, read: async () => DG.FileInfo.fromString(
-    `${r.name}.${PLAN_EXT}`, await entryText({row: {kind: 'plan', id: r.id, version: r.version}, name: r.name,
-      text: ''} as LibraryEntry, t))}));
+/** The user's saved plans (or `kind`, studies) as a picker lists them: by name, each read when picked (rows, or the
+ *  files). `entry`: it as the Overview lists it, to open as its row opens (openEntryOnce). */
+export async function savedPlans(t?: Tables, kind: Kind = 'plan'):
+  Promise<{name: string, read: () => Promise<DG.FileInfo>, entry: LibraryEntry}[]> {
+  if (!domainStorageOn()) {
+    const files = kind === 'plan' ? await myPlans() : await grok.dapi.files.list(studiesFolder(), false, STUDY_EXT);
+    return files.map((f) => ({name: f.name, read: async () => f,
+      entry: {kind, name: f.name, file: f, text: ''} as unknown as LibraryEntry}));
+  }
+  const rows = await (t ?? domainTables())[kind].query({columns: ['name', 'code'], sort: '!updated_on', limit: 1000});
+  return rows.map((r) => {
+    const entry = {kind, row: {kind, id: r.id, version: r.version}, name: r.name, file: null,
+      text: ''} as unknown as LibraryEntry;
+    return {name: r.code ? `${r.name} (${r.code})` : r.name, entry, read: async () => DG.FileInfo.fromString(
+      `${r.name}.${kind === 'plan' ? PLAN_EXT : STUDY_EXT}`, await entryText(entry, t))};
+  });
 }

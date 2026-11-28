@@ -96,7 +96,8 @@ export function studyPlanForm(f: PlanDocFacts): FormSection[] {
     {title: 'Section 1: Study details, animals, procedures and welfare', blocks: [
       {name: 'Study details', fields: [['Study title', f.title], ['Grant code', null],
         ['Start date', m?.start ?? null], ['End date', iso(dateOf(m?.start ?? null, f.end))],
-        ['Project licence or permit number', null], ['Project lead', nonEmpty(m?.owner)], ['Protocol numbers', null],
+        ['Project licence or permit number', null], ['Project lead', nonEmpty(m?.runBy || m?.owner)],
+        ['Protocol numbers', null],
         ['Expected severity', null], ['Primary responsible person and contact', null], ['Secondary contact', null]]},
       {name: 'Experimental animals', fix: animalsMissing ? 'details' : undefined, fields: [
         // (the atlas's models are all grown in mice)
@@ -133,7 +134,7 @@ export function studyPlanForm(f: PlanDocFacts): FormSection[] {
           'measurements up to removal stay in the analysis. A measurement is left out only by a person, with the ' +
           'reason recorded. ', fill('other criteria')]],
         ['Expected attrition', f.ethics.animals]]},
-      {name: 'Randomisation and blinding', fields: [['Method of allocation', f.protocol['Randomization'] ?? null],
+      {name: 'Randomization and blinding', fields: [['Method of allocation', f.protocol['Randomization'] ?? null],
         // what the plan itself does about them; the lab's own (cage, order of measurement) left to fill
         ['Strategy to minimise confounders', ['Groups balanced on tumor volume at randomization; every group ' +
           'measured on the same days. ', fill('other confounders, e.g. cage position, order of measurement')]],
@@ -175,7 +176,7 @@ const NTS = {
     procedures: 'In what procedures will the animals typically be used (for example, injections, surgical ' +
       'procedures)? Indicate the number and duration of these procedures.',
     impacts: 'What are the expected impacts/adverse effects on the animals, for example pain, weight loss, ' +
-      'inactivity/reduced mobility, stress, abnormal behaviour, and the duration of those effects?',
+      'inactivity/reduced mobility, stress, abnormal behavior, and the duration of those effects?',
     species: 'What species and numbers of animals are expected to be used? What are the expected severities and the ' +
       'numbers of animals in each severity category (per species)?',
     severity: 'Estimated numbers per severity (non-recovery, mild, moderate, severe)',

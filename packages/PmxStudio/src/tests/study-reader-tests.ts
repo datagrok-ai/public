@@ -5,6 +5,7 @@ import {FORMULAS, type SheetFrame, type TableRead, type VolumeFormula, animalPro
   readStudy, roleOf, sheetProblem, studySheets, studySummary,
   volumeSourceOf, waiting} from '../study-reader';
 import {cellsOf, separatorOf} from '../wide-table';
+import {maxOf, mean, median, minOf} from '../format';
 
 const read = (csv: string, answers = {}) => readStudy(cellsOf(csv), answers);
 const lines = (r: TableRead, blinded = false) => studySummary(r, blinded).join(' | ');
@@ -21,6 +22,27 @@ const caliper = (head: string, h = false, vol?: VolumeFormula) => {
 };
 
 category('Study reader', () => {
+  test('one mean and one median for the whole app: NaN for no values', async () => {
+    expect([median([3, 1, 2]), median([4, 1, 3, 2]), mean([1, 2, 6])].join(), '2,2.5,3');
+    expect(Number.isNaN(median([])) && Number.isNaN(mean([])), true);
+  });
+  test('a table of 200,000 rows is read and summed up: no spread over its rows (QA 0.1.3 round 4 R4-1)', async () => {
+    expect([maxOf([]), minOf([]), maxOf([3, NaN]), maxOf([1, 5, 2]), minOf(new Set([4, 2]))].join(),
+      '-Infinity,Infinity,NaN,5,2');
+    const rows = Array.from({length: 200000}, (_, i) =>
+      `m${i % 2000},G${i % 4},${Math.floor(i / 2000)},${100 + i % 7}`);
+    const r = read('animal,group,day,volume\n' + rows.join('\n'));
+    expect(r.rows.length, 200000);
+    expect(lines(r).includes('days 0–99'), true, lines(r));
+  });
+  test('a table before randomization (no groups yet) says how to form them', async () => {
+    const tables = ['Animal,Day,Volume\nm1,0,100\nm2,0,110\n', 'Animal,Group,Day,Volume\nm1,,0,100\nm2,,0,110\n'];
+    for (const csv of tables) {
+      const error = String((read(csv) as {error?: string}).error);
+      expect(error.startsWith('Not read: the table has no groups yet'), true, error);
+    }
+  });
+
   test('roles by name, closed lists, units from the name', async () => {
     expect(JSON.stringify(roleOf('Tumor Volume (mm3)')), JSON.stringify({role: 'volume', unit: 'mm3'}));
     expect(JSON.stringify(roleOf('Length_cm')), JSON.stringify({role: 'length', unit: 'cm'}));
@@ -85,12 +107,17 @@ category('Study reader', () => {
     const ml = read('Animal,Group,Day,Volume (mL),BW (kg)\nm1,V,0,0.1,0.02\nm2,C,0,0.12,0.021\n');
     expect(ml.rows[0].volume, 100);
     expect(ml.rows[0].weight, 20);
-    expect(lines(ml), 'Read 2 groups: V (1 animal), C (1 animal), days 0–0. | Volumes as given. | ' +
-      'Volumes converted ' +
+    expect(lines(ml), 'Read 2 groups: V (1 animal), C (1 animal), days 0–0. | Volumes converted ' +
       'from mL to mm³. | Body weights converted from kg to g.');
   });
 
-  test('no unit in the names: assumed and said; volumes that are no study\'s: the unit is asked', async () => {
+  test('a negative volume and a cell saying NaN: read, and said (QA 0.1.3 round 3, chaos 9)', async () => {
+    const r = read('Animal,Group,Day,Volume (mm3)\nm1,V,0,-50\nm2,C,0,NaN\nm2,C,3,100\n');
+    expect(studySummary(r).includes('1 negative volume (row 2): impossible, correct it in the table.'), true, lines(r));
+    expect(studySummary(r).includes('1 cell read as empty (D3).'), true, lines(r));
+  });
+
+  test('no unit in the names: assumed and said;volumes that are no study\'s: the unit is asked', async () => {
     const r = read('Animal,Group,Day,Volume\nm1,V,0,100\nm2,C,0,120\n');
     expect(studySummary(r).includes('No unit in the column names: assumed mm³.'), true, lines(r));
     const small = 'Animal,Group,Day,Volume\nm1,V,0,0.1\nm2,C,0,0.12\n';

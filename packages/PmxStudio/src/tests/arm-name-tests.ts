@@ -2,11 +2,19 @@ import * as DG from 'datagrok-api/dg';
 import {category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 import {Scope, signal} from '@datagrok-libraries/u2';
 
-import {combinationHint, describeArm, findCombinations, parseArmName, readProblem, therapyOf} from '../arm-name';
-import {ArmsInput, armsFrame, armsOf, independentEffect} from '../arms-input';
+import {combinationHint, describeArm, findCombinations, noBidi, parseArmName, readProblem, regimenDifferences,
+  shortName, therapyOf} from '../arm-name';
+import {ArmsInput, armsFrame, armsOf, convertedEffect, independentEffect} from '../arms-input';
+import {tcOfTgi} from '../engine';
 
 // invented names only: the curated labels the parser was measured on stay on the machine that holds them
 category('Arm names', () => {
+  test('a short name: each drug cut after its dose, a part without one kept whole', async () => {
+    expect(shortName('Trametinib 1 mg/kg p.o. QD + anti-PD-1 10 mg/kg i.p. BIW'), 'Trametinib 1 + anti-PD-1 10');
+    expect(shortName('Vehicle'), 'Vehicle');
+    expect(shortName('5-FU 20 mg/kg'), '5-FU 20');
+  });
+
   test('drugs, dose, schedule and route of each treatment', async () => {
     const [a, b] = parseArmName('Cpd-X 5 mg/kg Q7D i.p. + anti-PD-1 10 mg/kg twice weekly');
     expect(a.drug, 'Cpd-X');
@@ -24,16 +32,43 @@ category('Arm names', () => {
     expect(parseArmName('anti-PD-1 in Rag1-/- hosts')[0].drug, 'anti-PD-1');
     // the X1 of a compound's name is not a repeat count; the + after CD8 joins when another antibody follows
     expect(parseArmName('Cpd-X1 5 mg/kg')[0].drug, 'Cpd-X1');
-    expect(parseArmName('Cpd-X1 5 mg/kg x3')[0].schedule, 'x3');
+    expect(parseArmName('Cpd-X1 5 mg/kg x3')[0].schedule, '×3');
     expect(findCombinations(['Cpd-X1', 'Cpd-X2', 'Cpd-X1 + Cpd-X2']).length, 1);
     expect(parseArmName('anti-CD8+anti-PD-1').map((p) => p.drug).join(), 'anti-CD8,anti-PD-1');
+    // marks after a name are not part of the drug; a name with no letter is no drug (QA 0.1.3 #7, #8)
+    expect(parseArmName('Trametinib 1 mg/kg ✓ 中文 ½')[0].drug, 'Trametinib');
+    expect(parseArmName('1').length, 0);
+    expect(parseArmName('αPD-1 10 mg/kg')[0].drug, 'αPD-1');
   });
 
   test('under a group\'s name, only what could not be read', async () => {
     expect(readProblem(parseArmName('Cpd-X 20 mg/kg QD i.p.')), '');
     expect(readProblem(parseArmName('anti-PD-1 100 ug i.p. Q3D')), '100 ug: no dose in mg/kg');
-    expect(readProblem(parseArmName('Cpd-X 5 mg/kg + anti-PD-1')), 'anti-PD-1: no dose');
+    expect(readProblem(parseArmName('Cpd-X 5 mg/kg + anti-PD-1')), 'anti-PD-1: dose not given');
     expect(readProblem(parseArmName('Cpd-X 5 mg/kg + 8 Gy')), '');
+  });
+
+  test('a dose below 0 is no dose, and said so; the hyphen of a code is no minus (QA 0.1.3 final #7)', async () => {
+    const [neg] = parseArmName('Cpd-A -5 mg/kg');
+    expect(neg.dose, null);
+    expect(neg.negative, true);
+    expect(neg.drug, 'Cpd-A');
+    expect(readProblem([neg]), 'Cpd-A: a dose cannot be below 0');
+    expect(parseArmName('Cpd-5 mg/kg')[0].negative === undefined, true);
+    expect(parseArmName('Cpd-A 5 mg/kg')[0].dose?.value, 5);
+  });
+
+  test('a combination giving a drug by another route or schedule than its own arm says which (QA 0.1.3 final #28)',
+    async () => {
+      expect(regimenDifferences('cpd-a 30 mg/kg qd po + CPD-B 10 mg/kg ip q3dx4',
+        ['Cpd-A 30 mg/kg QD PO', 'Cpd-B 10 mg/kg QD PO']).join(), 'CPD-B: i.p. Q3D×4 here, p.o. QD alone');
+      expect(regimenDifferences('Cpd-A 30 mg/kg QD + Cpd-B 10 mg/kg', ['Cpd-A 30 mg/kg QD', 'Cpd-B 10 mg/kg QD'])
+        .length, 0);
+    });
+
+  test('text-direction controls leave a name, typed or escaped in JSON (QA 0.1.3 final #26)', async () => {
+    expect(noBidi('Cpd‮-A 5 mg/kg'), 'Cpd-A 5 mg/kg');
+    expect(noBidi('{"name": "Cpd\\u202e-A"}', true), '{"name": "Cpd-A"}');
   });
 
   test('an arm is the combination of two others whatever their doses and spellings', async () => {
@@ -125,7 +160,7 @@ category('Arm cards', () => {
       expect((cards[0].querySelector('.pmx-arm-title textarea') as HTMLTextAreaElement).value, 'anti-PD-1 10 mg/kg');
       expect(cards[0].textContent!.includes('Arm 1'), false, 'no "Arm 1" over the name');
       expect(therapy(0), 'immunotherapy', 'read from the name');
-      expect(grey(cards[0]).textContent!.includes('antibody or protein'), true);
+      expect(grey(cards[0]).textContent!.includes('immunotherapy (antibody)'), true);
       // a code in a syngeneic model: the question, through the immune system until answered
       expect(therapy(1), 'immune_agonist');
       expect(grey(cards[1]).textContent!.includes('works on the tumor'), true);
@@ -154,7 +189,7 @@ category('Arm cards', () => {
         metric: 'TGI', effect: 50, therapySource: 'name'}]);
       await delay(50);
       expect(grey(input.root.querySelector<HTMLElement>('.pmx-arm')!).textContent!.includes(
-        'combination: small molecule + antibody or protein acting through the immune system'), true);
+        'combination: small molecule + immunotherapy (antibody)'), true);
       // a table without the source column (a script, an older plan): the therapy is the user's, kept
       input.value = DG.DataFrame.fromColumns([DG.Column.fromStrings('name', ['Cpd-Z']),
         DG.Column.fromStrings('therapy', ['cell_therapy']), DG.Column.fromStrings('metric', ['TGI']),
@@ -263,6 +298,7 @@ category('Arm cards', () => {
   test('a combination\'s expected effect follows its two drugs acting independently', async () => {
     expect(independentEffect(60, 60, 'TGI'), 84);
     expect(independentEffect(40, 40, 'TC'), 16);
+    expect(independentEffect(105, 60, 'TGI'), 105, 'a regressing drug: the stronger one\'s TGI');
     const root = Scope.root('arms independence test');
     let mounted: HTMLElement | undefined;
     try {
@@ -293,6 +329,43 @@ category('Arm cards', () => {
       await delay(50);
       expect(armsOf(input.value)[2].effect, 70, 'typed: the user\'s');
       expect(hint().style.display, 'none', 'at the independence line: no hint');
+    } finally {
+      root.dispose();
+      mounted?.remove();
+    }
+  });
+
+  test('Effects as TGI ⇄ T/C: the NCI relation, and back to the very values, the combination included', async () => {
+    // V0 100, endpoint 1000: T/C = (V0 + (1 − TGI)(E − V0)) / E, engine.ts tcOfTgi (QA 0.1.3 r4: TGI 110 read
+    // T/C 5, a switch back turned 30 into 78 and the combination's 80 into 75)
+    expect(convertedEffect(110, 'TC', 100, 1000), 1);
+    expect(convertedEffect(1, 'TGI', 100, 1000), 110);
+    expect(convertedEffect(80, 'TC', 100, 1000), 28);
+    expect(convertedEffect(80, 'TC', 100, 1000), Math.round(tcOfTgi(80, 1000, 100)), 'the engine\'s function');
+    const root = Scope.root('effects as test');
+    let mounted: HTMLElement | undefined;
+    try {
+      const metric = signal<'TGI' | 'TC'>('TGI');
+      const input = root.build(() => new ArmsInput({metric}));
+      document.body.append(mounted = input.root);
+      input.value = armsFrame(([['Cpd-X', 30], ['anti-PD-1', 50], ['Cpd-Y', 75], ['Cpd-X + anti-PD-1', 80]] as
+        [string, number][]).map(([name, effect]) => ({name, therapy: 'small_molecule' as const,
+        metric: 'TGI' as const, effect})));
+      await delay(50);
+      // switched as Plan switches it: from an effect, which must not follow the cards sayAs rebuilds
+      const want = signal<'TGI' | 'TC'>('TGI');
+      root.effect(() => input.sayAs(want.value, 100, 1000));
+      const said = () => armsOf(input.value).map((a) => `${a.metric} ${a.effect}`).join(', ');
+      for (let k = 1; k <= 2; k++) {
+        want.value = 'TC';
+        await delay(50);
+        expect(said(), 'TC 73, TC 55, TC 33, TC 28', `to T/C, round ${k}`);
+        expect(metric.value, 'TC');
+        want.value = 'TGI';
+        await delay(50);
+        expect(said(), 'TGI 30, TGI 50, TGI 75, TGI 80', `back to TGI, round ${k}`);
+        expect(metric.value, 'TGI');
+      }
     } finally {
       root.dispose();
       mounted?.remove();

@@ -1,10 +1,12 @@
 import {category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import * as grok from 'datagrok-api/grok';
 
 import {exampleStudy} from './example-study';
 import {PLAN_TAG} from '../plan-file';
 import {cruxCalls} from '../crux';
+import {placeOf} from '../stages';
 import {PackageFunctions} from '../package';
-import {hubView, libraryWidths} from '../hub-view';
+import {PICK_WIDTH, ctdOfStudy, demoDated, demoStart, hubView, libraryWidths} from '../hub-view';
 import {INDEX_VERSION, LibraryFiles, entryOf, indexPath, libraryReader, myLibrary} from '../library';
 import * as DG from 'datagrok-api/dg';
 import {bring, fileText, readFile, suggestedStage} from '../open-study';
@@ -19,6 +21,25 @@ const CSV = 'Mouse ID,Arm,Day,Volume (mm3),Body weight\n' +
   'm2,Cpd-1,0,105,20.1\nm2,Cpd-1,3,140,19.8\nm2,Cpd-1,12,300,19.5\n';
 
 category('Hub', () => {
+  test('the demo is dated for today: day 0 a Monday, its plan\'s Mon / Wed / Fri, nothing measured after today',
+    async () => {
+      // Wednesday 25 November 2026 is day 9 (day 0 Monday the 16th); Friday 27th is day 11 (Wednesday's values the
+      // last); Monday 30th is day 7, its day 9 not measured yet
+      expect(demoStart(7, new Date(2026, 10, 25)), '2026-11-16');
+      expect(demoStart(7, new Date(2026, 10, 27)), '2026-11-16');
+      expect(demoStart(7, new Date(2026, 10, 30)), '2026-11-23');
+      expect(demoStart(7, new Date(2026, 11, 6)), '2026-11-23');
+      // Analyze's, ended at day 21: Monday 30th is day 21, Friday 27th day 25
+      expect(demoStart(21, new Date(2026, 10, 30)), '2026-11-09');
+      expect(demoStart(21, new Date(2026, 10, 27)), '2026-11-02');
+      const plan = '{"start":"2026-11-30","startWeekday":"Monday","measurementDays":"Mon, Wed, Fri"}';
+      expect(demoDated(plan, 7, new Date(2026, 10, 27)),
+        '{"start":"2026-11-16","startWeekday":"Monday","measurementDays":"Mon, Wed, Fri"}');
+      const study = '{"start":"2026-11-30","rows":[{"day":7},{"day":9}]}';
+      expect(demoDated(study, 7, new Date(2026, 10, 27)), '{"start":"2026-11-16","rows":[{"day":7},{"day":9}]}');
+      expect(demoDated(study, 7, new Date(2026, 10, 30)), '{"start":"2026-11-23","rows":[{"day":7}]}');
+    });
+
   test('WebGPU: one device opened once (or none, without an error, where the browser has none)', async () => {
     const d = await gpu();
     expect(await gpu() === d, true);
@@ -92,6 +113,8 @@ category('Hub', () => {
     const sum = (w: {[c: string]: number | undefined}) => Object.values(w).reduce((a: number, b) => a + (b ?? 0), 0);
     expect([sum(libraryWidths(true)), sum(libraryWidths(false))].join(), '100,100');
     expect(libraryWidths(true).action! >= 7, true, 'Restore read "Rest…" at 5');
+    // the tick's column a fixed width outside the shares: as one it fell to 9 px at 900 px (QA 0.1.3)
+    expect(['pick' in libraryWidths(true), PICK_WIDTH].join(), 'false,32px');
   });
 
   test('Your studies: what each group receives in one format, the groups apart by "; ", no control', async () => {
@@ -99,6 +122,13 @@ category('Hub', () => {
       DG.Column.fromStrings('group', ['Vehicle', 'Cpd-A 10 mg/kg', 'Cpd-A 10 mg/kg + Cpd-B 5 mg/kg']),
       DG.Column.fromList('double', 'day', [0, 0, 0]), DG.Column.fromList('double', 'volume', [100, 90, 95])]);
     expect(entryOf(JSON.stringify(studyOf(df, null)), 1)!.treatment, 'Cpd-A 10 mg/kg; Cpd-A 10 mg/kg + Cpd-B 5 mg/kg');
+  });
+
+  test('Your studies: a drug listed once however written, a name with no letter no drug (QA 0.1.3 #6, #8)', async () => {
+    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('animal', ['M1', 'M2', 'M3']),
+      DG.Column.fromStrings('group', ['Trametinib 1 mg/kg', 'trametinib 3 mg/kg', '1']),
+      DG.Column.fromList('double', 'day', [0, 0, 0]), DG.Column.fromList('double', 'volume', [100, 90, 95])]);
+    expect(entryOf(JSON.stringify(studyOf(df, null)), 1)!.drugs, 'Trametinib');
   });
 
   test('the home: three stages, each open', async () => {
@@ -251,8 +281,10 @@ category('Hub', () => {
     }
     expect(cruxCalls() === seen, true, 'earlier engine calls never settled');
     const before = cruxCalls();
-    // through the app's own function: what it starts beside the home counts too
-    const root = (await PackageFunctions.pmxStudioApp()).root;
+    // through the app's own function: what it starts beside the home counts too (with no page of the app open: one
+    // open would take it, and no view is answered)
+    [...grok.shell.views].filter((v) => placeOf(v)).forEach((v) => v.close());
+    const root = (await PackageFunctions.pmxStudioApp())!.root;
     const studies = root.querySelector<HTMLElement>('.pmx-studies')!;
     for (let i = 0; i < 100 && studies.hidden; i++) // the user's studies listed
       await delay(50);
@@ -366,4 +398,19 @@ category('Hub', () => {
     const animal = await fileText(xlsx(ANIMALS_007_AND_7, 'animal.xlsx'));
     expect(JSON.stringify(animal.merged), JSON.stringify([{role: 'animal', texts: ['007', '7'], as: '7'}]));
   });
+
+  // QA 0.1.3 r5: a study whose kept analysis predates the growth estimate read "p = 0.088" alone, BW nadir "—"
+  test('CTD summary: each study\'s rows computed from its data as Analyze does, not an old kept analysis',
+    async () => {
+      const s = studyOf(await exampleStudy(), null);
+      const old = {id: '', name: s.name, compounds: [], animals: '', line: 'MC38', endpointDay: 14, correction: '',
+        groups: [{name: 'Vehicle', control: true, given: '', route: '', n: 10, nadir: null, lost: null},
+          {name: 'old arm', control: false, given: '', route: '', n: 10, p: 0.088, nadir: null, lost: null}]};
+      const ctd = await ctdOfStudy({...s, exposure: {effect: {day: 14, tgi: {}, ctd: old}}});
+      const treated = ctd!.groups.filter((g) => !g.control);
+      expect(treated.length > 0 && treated.every((g) => !!g.rate && typeof g.p === 'number'), true,
+        'each treated group: its estimate with its interval, and its p');
+      expect(treated.every((g) => g.nadir !== null), true, 'body weight as weighed');
+      expect(treated.some((g) => g.name === 'old arm'), false, 'not the kept rows');
+    });
 });

@@ -8,6 +8,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {signal} from '@datagrok-libraries/u2';
 import type {StudyMeta} from './study-meta';
+import {sameJson, maxOf, minOf} from './format';
+import {whileAppOpen} from './app-open';
 
 export type GroupColors = {[group: string]: string};
 
@@ -16,8 +18,18 @@ export const CONTROL_COLOR = '#5b6b7f';
  *  atlas). */
 export const PREDICTED_COLOR = '#9aa5b1';
 
-/** The platform's categorical colour `k` (0-based). */
-export const armColor = (k: number) => DG.Color.toHtml(DG.Color.getCategoricalColor(k));
+/** A colour with next to no hue (its channels within 24 of each other): it reads as the control's slate. */
+const greyish = (argb: number) => {
+  const c = [(argb >> 16) & 255, (argb >> 8) & 255, argb & 255];
+  return maxOf(c) - minOf(c) < 24;
+};
+
+/** The platform's categorical colour `k` (0-based) among its coloured ones: its greys are skipped, so 15 treated arms
+ *  take 15 hues (the default palette's 20, less 2 greys, keeps them apart) and none is mistaken for the control. */
+export const armColor = (k: number) => {
+  const hues = DG.Color.categoricalPalette.filter((c) => !greyish(c));
+  return DG.Color.toHtml(hues.length ? hues[k % hues.length] : DG.Color.getCategoricalColor(k));
+};
 
 export type Slots = {[group: string]: number};
 
@@ -112,7 +124,7 @@ export function linkStudy(link: StudyLink): () => void {
   const open = [...links].find((l) => sameStudy(link, l) && hasOwnColors(l));
   const m = link.meta();
   const theirs = open?.meta()?.colors;
-  if (m && theirs && JSON.stringify(theirs) !== JSON.stringify(m.colors ?? {})) {
+  if (m && theirs && !sameJson(theirs, m.colors ?? {})) {
     link.setMeta({...m, colors: {...theirs}});
     colorTick.value++;
   }
@@ -187,7 +199,11 @@ const painted = new Map<unknown, Painted>();
 /** ponytail: the last frames painted are watched (a chart's data is built again on each change); a frame painted
  *  longer ago than that stops following the user's changes */
 const WATCHED = 200;
-let gridSub: {unsubscribe(): void} | null = null;
+// grid header edits come through this event, not the table's (while a page of the app is open: its grids)
+whileAppOpen(() => {
+  const sub = grok.events.onEvent('d4-grid-color-coding-changed').subscribe(() => painted.forEach(check));
+  return () => sub.unsubscribe();
+});
 
 /** Colours `df`'s column `col` by `colors` (from armColors / groupColors), and watches it: a colour the user then
  *  changes in a viewer becomes the study's. `groupOf`: the group each category names, when not itself. */
@@ -206,8 +222,6 @@ export function paint(df: DG.DataFrame, col: string, colors: GroupColors, groupO
       painted.delete(oldest);
     }
   }
-  // grid header edits come through this event, not the table's
-  gridSub ??= grok.events.onEvent('d4-grid-color-coding-changed').subscribe(() => painted.forEach(check));
   p.cols.set(col, {was: JSON.stringify(colors), groupOf});
   c.meta.colors.setCategorical(colors);
 }

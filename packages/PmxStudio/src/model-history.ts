@@ -4,6 +4,7 @@
    weighing, and the growth prior the engine takes. Reference implementation with its self-test:
    preclinical_bundle/analysis/out_pdx/d1_r7_rerun/history_anchor.py (update). */
 import type {HistoryAnchor, LinePrior} from './priors';
+import {mean} from './format';
 
 export type Answer = 'yes' | 'no' | 'unknown';
 
@@ -72,8 +73,6 @@ export interface HistoryStudy {lnRate: number, n: number}
 const GAP = 21; // days: a curve is cut at its first gap longer than this (the atlas's recipe, explore_tau_t100.py)
 const MIN_POINTS = 4;
 const MIN_RATE = 1e-3; // per day: slower is no growth (no take), left out as in the atlas
-
-const mean = (xs: number[]) => xs.reduce((t, x) => t + x, 0) / xs.length;
 
 /** The exponential growth rate of one curve: the least-squares slope of ln V on day over its positive points, cut at
  *  the first gap > GAP days; null with fewer than MIN_POINTS points or a rate <= MIN_RATE. */

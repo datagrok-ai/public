@@ -5,7 +5,8 @@ import * as DG from 'datagrok-api/dg';
 import {slopeSide} from '../analyze';
 import {chartRows, compareFooter, compareRows, controlCheck, controlGrowth, controlVsAtlas, doseGroups, driftSentence,
   growthFrame, rangeText, sideText, compareSection, compareSentence, compareTexts, compareView, hintRows,
-  humansToOpen, modelWarning, studyLabels, tgiFootnote, tgiNote, withHumans}
+  humansToOpen, modelWarning, studyLabels, withHumans, compareColors, STUDY_MARKS, measured,
+  tgiSource}
   from '../compare-view';
 import {entryOf} from '../library';
 import {EXPOSURE_TAG} from '../study-file';
@@ -25,11 +26,13 @@ const x = (dose: number, aucInf: number): Exposure => ({auc: aucInf * 0.9, aucCv
 const patients = (drug: string, h: Partial<HumanExposure> = {}): [string, HumanExposure] =>
   [drugKey(drug), {drug, auc: 20000, cmax: null, unit: 'ng/mL', fuMouse: null, fuHuman: null, source: 'projected',
     cv: 45, ...h}];
-/** A study of `groups` (3 animals each on day 14, the control at 1000 mm³), with what it kept. */
+/** A study of `groups` (3 animals each on day 14, the control at 1000 mm³), with what it kept; `v0`: every animal's
+ *  day-0 volume (0: the growth TGI is then 1 − V/1000; null: no day 0, no growth to read a TGI from). */
 const study = (name: string, groups: [string, number][], h: [string, HumanExposure][] = [],
-  nca: NcaByArm | null = null): PreviousStudy => ({name, line: null, meta: null,
-  rows: [['Vehicle', 1000] as [string, number], ...groups].flatMap(([g, v]) => [1, 2, 3].map((i) =>
-    ({animal: `${g}-${i}`, group: g, day: 14, volume: v}))),
+  nca: NcaByArm | null = null, v0: number | null = 0): PreviousStudy => ({name, line: null, meta: null,
+  rows: [['Vehicle', 1000] as [string, number], ...groups].flatMap(([g, v]) => [1, 2, 3].flatMap((i) =>
+    [...v0 === null ? [] : [{animal: `${g}-${i}`, group: g, day: 0, volume: v0}],
+      {animal: `${g}-${i}`, group: g, day: 14, volume: v}])),
   exposure: h.length || nca ? exposureJson(new Map(h), nca) : undefined});
 
 category('Compare: studies against the patients\' exposure', () => {
@@ -45,15 +48,30 @@ category('Compare: studies against the patients\' exposure', () => {
     expect(rows.length, 5);
     expect(rows.map((r) => Math.round(r.tgi!)).join(','), '40,60,30,50,55');
     expect(rows[0].source, 'Projected');
-    expect(tgiNote(rows[0]), '1 − T/C of medians, day 14 (not from the analysis)');
+    // from day 100 → 250 (control 100 → 1000): 1 − 150/900
+    const grown = study('G', [['Cpd-A 10 mg/kg QD', 250]], [], null, 100);
+    expect(Math.round(compareRows(grown, 'x')[0].tgi!), 83);
+    // no day 0: no growth to read, no TGI (never another measure in its place)
+    expect(compareRows(study('N', [['Cpd-A 10 mg/kg QD', 250]], [], null, null), 'x')[0].tgi, null);
     // the analysis's TGI and day, when the study kept them
     const kept = {...a, exposure: {...a.exposure, effect: {day: 21, tgi: {'Cpd-A 10 mg/kg QD': 44.5}}}};
     const [first, second] = compareRows(kept, 'HCT116');
-    expect([first.tgi, first.day, first.analyzed, tgiNote(first)].join('|'), '44.5|21|true|');
-    expect(second.analyzed, false, 'a group the analysis did not keep: the medians');
-    // the medians starred and said so once; none starred: no footnote
-    expect(tgiFootnote(compareRows(kept, 'HCT116'))!.startsWith('* The study kept no analysis'), true);
-    expect(tgiFootnote([first]), null);
+    expect([first.tgi, first.day, first.analyzed].join('|'), '44.5|21|true');
+    expect(second.analyzed, false, 'a group the analysis did not keep: the same TGI from its rows');
+    expect(tgiSource(first), 'CRC-017, day 21: TGI = 1 − ΔT/ΔC, each animal\'s change from day 0, from the ' +
+      'study\'s analysis');
+  });
+
+  test('a TGI read from the rows with a likely typo in them: counted, for Monitor\'s warning mark (A7)', async () => {
+    // day 0 at 200: the control's 5-fold growth is no typo (7-fold or more is), the planted 2000 is (10-fold)
+    const s = study('T', [['Cpd-A 10 mg/kg QD', 200]], [], null, 200);
+    expect(compareRows(s, 'x')[0].toCheck, 0);
+    const slip = {...s, rows: s.rows.map((r) => r.animal === 'Cpd-A 10 mg/kg QD-1' && r.day === 14 ?
+      {...r, volume: 2000} : r)};
+    expect(compareRows(slip, 'x')[0].toCheck, 1);
+    // the analysis's own TGI: not read from the rows, no count
+    const kept = {...slip, exposure: {effect: {day: 14, tgi: {'Cpd-A 10 mg/kg QD': 50}}}} as PreviousStudy;
+    expect(compareRows(kept, 'x')[0].toCheck === undefined, true);
   });
 
   test('the chart: only groups with a TGI and a multiple of the patients\' exposure', async () => {
@@ -78,7 +96,7 @@ category('Compare: studies against the patients\' exposure', () => {
     expect(r.source, 'Cpd-A: Projected');
     expect(compareFooter(compareRows(combo, 'CT26')).split('Projected').length, 2, 'the source said once');
     expect(shownMultiple({ratio: 5.3, tip: '', range: 'above', weekly: 'Mouse daily AUC…'}),
-      '5.3× ↑, averaged over the week');
+      '5.3× (weekly avg) – above');
   });
 
   test('a combination\'s multiple: the same in the report as on screen, from its own group\'s AUC', async () => {
@@ -138,8 +156,8 @@ category('Compare: studies against the patients\' exposure', () => {
     // a study file as Monitor saves it, and its entry as the library lists it: no text
     const file = (name: string, group: string) => JSON.stringify({format: 'pmx-study', version: 1, name, plan: null,
       looks: '', humane: null, log: [], meta: {...emptyMeta(), id: name}, rows: ([['Vehicle', 1000], [group, 500]] as
-        [string, number][]).flatMap(([g, v]) => [1, 2, 3].map((i) => ({animal: `${g}-${i}`, group: g, day: 14,
-        volume: v})))});
+        [string, number][]).flatMap(([g, v]) => [1, 2, 3].flatMap((i) => [0, 14].map((day) => ({animal: `${g}-${i}`,
+        group: g, day, volume: day ? v : 0}))))});
     const files = new Map([['a.pmxstudy', file('CRC-030', 'Cpd-A 10 mg/kg QD')],
       ['b.pmxstudy', file('CRC-031', 'Cpd-B 25 mg/kg')]]);
     const entries = [...files].map(([path, text]) => ({...entryOf(text, 1, {fileName: path} as DG.FileInfo)!,
@@ -149,7 +167,7 @@ category('Compare: studies against the patients\' exposure', () => {
     const v = await compareView(entries, read);
     try {
       const text = v.root.textContent ?? '';
-      expect(text.includes('CRC-030') && text.includes('CRC-031') && text.includes('50% *'), true, text);
+      expect(text.includes('CRC-030') && text.includes('CRC-031') && text.includes('50%'), true, text);
     } finally {
       v.close();
     }
@@ -260,22 +278,56 @@ category('Compare: growth, doses and controls against the atlas', () => {
       expect(groups[0].rows.map((r) => `${r.doseValue}:${r.study}`).join(), '3:S2,10:S1,30:S1');
     });
 
-  test('growth: a series per group and study, the treatment’s colour, the second study dashed; V/V0',
+  test('growth: a series per group and study, the treatment’s colour, each study its mark; V/V0',
     async () => {
-      const one = study('S1', [['Cpd-A 10 mg/kg QD', 500]]);
-      const two = study('S2', [['Cpd-A 10 mg/kg QD', 700]]);
+      const one = study('S1', [['Cpd-A 10 mg/kg QD', 500]], [], null, null);
+      const two = study('S2', [['Cpd-A 10 mg/kg QD', 700]], [], null, null);
       const g = growthFrame([{s: one, label: 'S1'}, {s: two, label: 'S2'}], false)!;
       const series = [...new Set(g.df.col('series')!.toList())];
       expect(series.length, 4);
-      expect(g.dashed.every((x) => x.endsWith('· S2')) && g.dashed.length === 2, true, g.dashed.join());
-      const a = series.filter((x) => !x.startsWith('Control'));
-      expect(g.colors[a[0]] === g.colors[a[1]], true, 'one treatment, one colour');
+      // each study its own mark, as the dose chart's (round 3, analyst 13: every study after the first "dashed")
+      expect(series.map((x) => `${x.endsWith('· S2') ? 'S2' : 'S1'}:${g.symbols[x]}`).sort().join(),
+        'S1:circle,S1:circle,S2:diamond,S2:diamond', JSON.stringify(g.symbols));
+      // each study and group its own colour: the same treatment in two studies is told apart
+      expect(new Set(series.map((x) => g.colors[x])).size, 4, JSON.stringify(g.colors));
       // a group the study recoloured: drawn in its study's colour, as Analyze draws it
       const own = {...one, meta: {...emptyMeta(), colors: {'Cpd-A 10 mg/kg QD': '#ff7f0e'}}};
       const c = growthFrame([{s: own, label: 'S1'}], false)!.colors;
       expect(c[[...Object.keys(c)].find((x) => x.startsWith('Cpd-A'))!], '#ff7f0e', JSON.stringify(c));
       // relative: each animal over its first volume (one day each here: 1)
       expect(growthFrame([{s: one, label: 'S1'}], true)!.df.col('median')!.toList().every((v) => v === 1), true);
+    });
+
+  test('several studies: no colour twice (8 studies × 6 groups), no mark twice; a flagged value or a likely typo ' +
+    'out of the range', async () => {
+    const eight = Array.from({length: 8}, (_, i) => ({s: study(`S${i}`, [1, 3, 10, 30, 100].map((d) =>
+      [`Cpd-A ${d} mg/kg QD`, 500] as [string, number]))}));
+    const colors = compareColors(eight).flatMap((c) => Object.values(c));
+    expect(colors.length, 48);
+    expect(new Set(colors).size, 48, colors.join());
+    expect(colors.every((c) => /^#[0-9a-f]{6}$/.test(c)), true, colors.join());
+    expect(new Set(STUDY_MARKS.map((m) => m[0])).size, 8);
+    const base = study('S', [], [], null, null);
+    const spiked: PreviousStudy = {...base, rows: [...base.rows,
+      {animal: 'Vehicle-1', group: 'Vehicle', day: 14, volume: 10000, flagged: true}]};
+    expect(growthFrame([{s: spiked, label: 'S'}], false)!.df.col('upper')!.stats.max, 1000);
+    // a ×10 slip nobody flagged: Monitor's likely typo, left out as well (the control band spiked to ~4200)
+    const typo: PreviousStudy = {...base, rows: [...base.rows,
+      {animal: 'Vehicle-1', group: 'Vehicle', day: 18, volume: 10000}]};
+    expect(growthFrame([{s: typo, label: 'S'}], false)!.df.col('upper')!.stats.max, 1000);
+  });
+
+  test('running studies out of the dose chart; an empty study is no study; a TGI says where it comes from',
+    async () => {
+      const rows = [...compareRows(study('Done', [['Cpd-A 10 mg/kg QD', 600]]), 'x'),
+        ...compareRows(study('Running', [['Cpd-A 30 mg/kg QD', 400]]), 'x')];
+      expect(doseGroups(rows, new Set(['Running']))[0].rows.map((r) => r.study).join(), 'Done');
+      expect(doseGroups(rows)[0].rows.length, 2);
+      expect(measured({name: 'New study', line: null, meta: null, rows: [{animal: 'A1', group: 'G', day: 0,
+        volume: null}]}), false);
+      expect(measured(study('S', [])), true);
+      expect(tgiSource(rows[0]), 'Done: day 14 TGI, computed from the raw measurements (the study has no saved ' +
+        'analysis)');
     });
 });
 
@@ -293,7 +345,7 @@ category('Report: exposure and patients', () => {
       'of 62 %.', curve: true, table: 'pk_conc', rows: [{group: 'Cpd-A 30 mg/kg QD', tgi: 62,
       x: {exposure: x(30, 40)}, multiple: {ratio: 4.6, tip: '', range: 'above'},
       human: patients('Cpd-A')[1]}]})!;
-    expect(s.head.join('|'), 'Group|TGI from the analysis|Mouse AUC per dose|× patients|' +
+    expect(s.head.join('|'), 'Group|TGI|Mouse AUC per dose|× patients|' +
       'Patients\' exposure from');
     expect(s.rows[0].join('|'), 'Cpd-A 30 mg/kg QD|62%|40 mg/L·h (AUCinf)|4.6× ↑ above the patients\' range|' +
       'Projected');
@@ -335,10 +387,9 @@ category('Report: exposure and patients', () => {
     const s = compareSection(compareRows(a, 'HCT116'), ['HCT116', 'B16F10'])!;
     expect(s.head.slice(0, 3).join('|'), 'Study|Model|Group');
     expect(s.rows[0].slice(0, 2).join('|'), 'CRC-017|HCT116');
-    // the medians' TGI, starred and said so; each study's value named with its study
-    expect(s.rows[0][3], '60% *');
-    expect(s.notes.includes('* The study kept no analysis: 1 − T/C of the median volumes on day 14.'), true,
-      s.notes.join(' | '));
+    // the one TGI, its definition said once; each study's value named with its study
+    expect(s.rows[0][3], '60%');
+    expect(s.notes.filter((n) => n.startsWith('TGI = 1 − ΔT/ΔC')).length, 1, s.notes.join(' | '));
     expect(s.sources[1], 'Patients\' exposure of Cpd-A (CRC-017): Projected, CV 45%.');
     expect(s.warning!.startsWith('Different models'), true);
     expect(s.sources[0], 'Mouse exposure: NCA kept with each study.');
@@ -405,9 +456,10 @@ category('Analyze: a group\'s translation details', () => {
   test('the panel: name and colour, its answer first, plain facts, data only (no formula, no link)', async () => {
     const d = groupDetails({...base, group: 'LD4172 20 mg/kg i.p. QD + anti-PD-1',
       read: 'LD4172 · 20 mg/kg + anti-PD-1',
-      color: '#1f77b4', n: 8, tgi: 108, day: 6, tc: {value: -8, lower: -20, upper: 4}, result: 'Slows growth',
+      color: '#1f77b4', n: 8, tgi: 108, day: 6, tc: -8, result: 'Slows growth',
+      growth: 'grows 4.1%/day slower (95% CI 2.0–6.3%), p < 0.001',
       step: {words: 'More than its two drugs acting independently', why: 'Bliss: why'}, responders: '5 of 8',
-      x: {exposure: x(20, 40)}, tgiCi: {lower: 95, upper: 121}, nadir: -12.4, p: 0.0004,
+      x: {exposure: x(20, 40)}, nadir: -12.4, p: 0.0004,
       removed: '2 removed on day 7 (weight)'});
     expect(d.facts.map((f) => f.label).join('|'), 'TGI|Size vs control|Against its drugs|Responders|Animals|Weight');
     // the combination step's own why on its fact's hover only
@@ -417,13 +469,15 @@ category('Analyze: a group\'s translation details', () => {
     expect(title?.textContent, 'LD4172 20 mg/kg i.p. QD + anti-PD-1');
     expect(title?.querySelector('span[style*="background"]') !== null, true, 'the colour dot');
     const facts = el.querySelector('.pmx-object-facts')?.textContent ?? '';
-    for (const s of ['Animals8 · 2 removed on day 7 (weight)', 'TGI108% (95–121%) on day 6', 'Weight−12% at its lowest',
+    for (const s of ['Animals8 · 2 removed on day 7 (weight)', 'TGI108% on day 6', 'Weight−12% at its lowest',
       '5 of 8 measured on day 6'])
       expect(facts.includes(s), true, `${s} in ${facts}`);
     // the answer before the facts, in the groups table's words, with its p-value
     const verdict = el.querySelector('.pmx-object-verdict');
     expect(verdict?.firstChild?.textContent, 'Slows growth: TGI 108% on day 6');
-    expect(verdict?.textContent?.includes('Clearly below the control (p < 0.001)'), true, verdict?.textContent ?? '');
+    expect(verdict?.textContent?.includes('grows 4.1%/day slower (95% CI 2.0–6.3%), ' +
+      'p < 0.001'), true, verdict?.textContent ?? '');
+    expect(facts.includes('95–121'), false, 'no TGI interval');
     expect(!!(verdict!.compareDocumentPosition(el.querySelector('.pmx-object-facts')!) &
       Node.DOCUMENT_POSITION_FOLLOWING), true, 'the answer first');
     // no formula and no link anywhere: the panel is data

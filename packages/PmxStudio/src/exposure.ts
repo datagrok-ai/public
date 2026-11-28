@@ -1,4 +1,5 @@
 // exposure per group from the NCA package, when it is installed; nothing here is saved or enters the analysis
+import {maxOf, minOf} from './format';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
@@ -7,7 +8,7 @@ import type {ArmPart} from './arm-name';
 import type {Therapy} from './archetypes';
 import {crux, rows as cruxRows} from './crux';
 import {finite, isFiniteNumber, median, SEED} from './engine';
-import {FIRST_DOSE_DAY, readDayOf, unitKey as unitOf} from './study-effect';
+import {FIRST_DOSE_DAY, unitKey as unitOf} from './study-effect';
 import type {PreviousStudy} from './study-effect';
 import {dosesPerDay, readSchedule} from './schedule';
 import type {DosingRules} from './schedule';
@@ -471,10 +472,10 @@ function mouseAuc(arm: string, p: ArmPart, x: Exposure | undefined, pk: DrugPk |
   if (at)
     return {auc: at.auc, unit: at.unit, which: whichOf(at.inf), scaled: ''};
   const doses = all.map(([d]) => d);
-  if (!all.length || dose < Math.min(...doses) || dose > Math.max(...doses)) {
+  if (!all.length || dose < minOf(doses) || dose > maxOf(doses)) {
     return `${arm}: ${entered(dose)} ${p.dose.unit} is outside NCA's doses${doses.length ?
-      ` (${entered(Math.min(...doses))} ` +
-      `to ${entered(Math.max(...doses))})` : ''}, and exposure is not extrapolated`;
+      ` (${entered(minOf(doses))} ` +
+      `to ${entered(maxOf(doses))})` : ''}, and exposure is not extrapolated`;
   }
   if (new Set(all.map(([, v]) => `${v.inf}|${v.unit}`)).size !== 1)
     return `${arm}: NCA's doses give their AUC in different ways, so it is not scaled to ${entered(dose)}`;
@@ -595,10 +596,11 @@ function partMultiple(arm: string, p: ArmPart, x: Exposure | undefined, pk: Drug
 /** "3.2×": two significant figures under 10, whole numbers from 10. */
 export const multipleText = (r: number) => `${r >= 10 ? sig(Math.round(r), 15) : sig(r, 2)}×`;
 
-/** A multiple as the tables show it: its arrow, and averaged over the week when no dose is given at weekends (the
- *  daily AUC is then the dose's times 5/7, as Analyze says: the AUC per dose alone would not give it). */
+/** A multiple as the tables show it: "(weekly avg)" when no dose is given at weekends (the daily AUC is then the
+ *  dose's times 5/7, as Analyze says: the AUC per dose alone would not give it), then where it falls against the
+ *  patients' range in a word (an arrow alone said little: round 3, analyst W8): "0.5× (weekly avg) – below". */
 export const shownMultiple = (m: HumanMultiple & {ratio: number}) => multipleText(m.ratio) +
-  (m.range === 'above' ? ' ↑' : m.range === 'below' ? ' ↓' : '') + (m.weekly ? ', averaged over the week' : '');
+  (m.weekly ? ' (weekly avg)' : '') + (m.range === 'above' ? ' – above' : m.range === 'below' ? ' – below' : '');
 
 // ---- exposure against effect: a curve within the doses tested (a description: nothing saved, nothing analyzed) ----
 // The composition validated in the preclinical bundle's analysis/out_translation/exposure_target (REPORT.md, M-ER):
@@ -606,6 +608,8 @@ export const shownMultiple = (m: HumanMultiple & {ratio: number}) => multipleTex
 // stats.tumor_effect_from_study), the line κ = k2·dose through 0 fitted on the groups, the TGI at k2·dose. Between
 // the doses tested 4 doses left out in 5 were within 10 points of TGI (12 doses, 9 families; some missed by 20-30);
 // beyond them it adds nothing, so it is drawn only between them, with a band of ±10 points.
+// Since 0.1.3 Crux's function reads the app's one TGI (1 − ΔT/ΔC, as study-effect.ts growthTgi; Crux after
+// spike/tgi-growth-effect); that validation was on 1 − T/C of the medians and was not repeated on it.
 
 /** A group on the exposure chart: its name and NCA's mean AUClast (null: none). */
 export interface CurveGroup {arm: string, auc: number | null}
@@ -615,13 +619,11 @@ export interface CurveRow {animal: string, group: string, day: number, volume: n
  *  step with it; `x` places a dose on it (between two doses tested, the AUC between theirs). */
 export interface ExposureAxis {axis: 'auc' | 'dose', unit: string, of: (g: CurveGroup) => number,
   x: (dose: number) => number}
-/** The expected TGI (1 − T/C of the medians, %) and its band, from the lowest dose drawn to the highest. */
+/** The expected TGI (1 − ΔT/ΔC, %) and its band, from the lowest dose drawn to the highest. */
 export interface ExposureCurve {curve: {x: number, tgi: number, lo: number, hi: number}[], note?: string}
 
 /** The band around the curve, in points of TGI: about 4 doses left out in 5 were within it in the validation. */
 export const CURVE_BAND = 10;
-/** Medians below it are raised to it (mm³), as Crux's function does. */
-const FLOOR = 3.4;
 const IMMUNE: Therapy[] = ['immunotherapy', 'immune_agonist', 'cell_therapy', 'vaccine_peptide'];
 const allSame = (xs: (string | null)[]) =>
   new Set(xs.map((x) => (x ?? '').replace(/\s+/g, '').toLowerCase())).size === 1;
@@ -676,21 +678,6 @@ export function exposureAxis(groups: CurveGroup[], meta: StudyMeta | null = null
 const inWindow = (rows: CurveRow[], lastDay: number | null) => rows.filter((x) => x.day >= FIRST_DOSE_DAY &&
   (lastDay === null || x.day <= lastDay) && Number.isFinite(x.volume));
 
-/** The day a group's 1 − T/C of the medians is read on: its last up to `lastDay` with 3 animals in it and in the
- *  control (null: no such day). */
-export const medianDay = (rows: CurveRow[], arm: string, control: string, lastDay: number | null): number | null =>
-  readDayOf({name: '', line: null, meta: null, rows: inWindow(rows, lastDay)}, arm, control);
-
-/** A group's 1 − T/C of the median volumes (%) on its last day up to `lastDay` with 3 animals in it and in the
- *  control, as the curve reads it (null: no such day). */
-export function medianTgi(rows: CurveRow[], arm: string, control: string, lastDay: number | null): number | null {
-  const study = {name: '', line: null, meta: null, rows: inWindow(rows, lastDay)};
-  const day = readDayOf(study, arm, control);
-  const at = (g: string) => Math.max(FLOOR, median(study.rows.filter((x) => x.group === g && x.day === day)
-    .map((x) => x.volume)));
-  return day === null ? null : 100 * (1 - at(arm) / at(control));
-}
-
 /** Crux's reasons, in this chart's words. */
 const CURVE_REASONS: {[code: string]: string} = {
   too_few_animals: 'a group or the control has fewer than 3 animals measured on any one day',
@@ -729,7 +716,7 @@ export async function exposureCurve(groups: CurveGroup[], rows: CurveRow[], cont
       d: doseOf(groups[i].arm, meta)!.value, tgi: finite(o.tgi_anchor), reason: String(o.reason ?? ''),
       k: finite(o.kill_rate_point) ?? 0, day: finite(o.read_day)}));
     // from the first dose that stopped the tumors almost completely, no κ can be read: drawn below it, or not at all
-    const cut = Math.min(...own.filter((o) => o.tgi !== null && o.tgi > 95).map((o) => o.d));
+    const cut = minOf(own.filter((o) => o.tgi !== null && o.tgi > 95).map((o) => o.d));
     const fit = own.filter((o) => o.d < cut);
     if (Number.isFinite(cut) && new Set(fit.map((o) => o.d)).size < 3) {
       return {why: `from ${cut} ${unit} the tumors stopped almost completely, which leaves fewer than 3 doses to ` +
@@ -749,10 +736,10 @@ export async function exposureCurve(groups: CurveGroup[], rows: CurveRow[], cont
       return {why: 'no group slowed its tumors enough to draw a curve through'};
     // the curve starts from the groups' median start (each group's own otherwise)
     const starts = fit.map((o) => {
-      const first = Math.min(...r.filter((x) => x.group === o.arm).map((x) => x.day));
+      const first = minOf(r.filter((x) => x.group === o.arm).map((x) => x.day));
       return median(r.filter((x) => x.group === o.arm && x.day === first).map((x) => x.volume));
     });
-    const [lo, hi] = [Math.min(...fit.map((x) => x.d)), Math.max(...fit.map((x) => x.d))];
+    const [lo, hi] = [minOf(fit.map((x) => x.d)), maxOf(fit.map((x) => x.d))];
     const grid = Array.from({length: CURVE_POINTS}, (_, i) => i === CURVE_POINTS - 1 ? hi :
       lo + (hi - lo) * i / (CURVE_POINTS - 1));
     const start = median(starts) > 0 ? {start_volume_new: median(starts)} : {};
@@ -976,9 +963,15 @@ export function readout(groups: ReadoutGroup[], meta: StudyMeta | null = null): 
     return null;
   const [lo, hi] = [withAuc[0], withAuc[withAuc.length - 1]];
   const aucs = withAuc.map((g) => g.auc!);
-  return `${lead}The groups gave a TGI of ${tgi(lo.tgi)} at ${entered(lo.part.dose!.value)} and ${tgi(hi.tgi)} at ` +
-    `${hi.dose} (AUC ${sig(Math.min(...aucs), 2)}–${sig(Math.max(...aucs), 2)} ` +
-    `${lo.aucUnit}).`;
+  // an AUC not in proportion to the dose: the exposure chart is by dose (exposureAxis), said so beside the AUC the
+  // sentence gives (QA 0.1.3 A20: AUC in the words, dose on the chart)
+  const byDose = proportionalOf(new Map(withAuc.map((g) => [g.part.dose!.value, g.auc!]))) === 'no';
+  // (round 4, analyst W15)
+  const auc = `AUC ${sig(minOf(aucs), 2)}–${sig(maxOf(aucs), 2)} ${lo.aucUnit}`;
+  const moved = Math.round(hi.tgi) > Math.round(lo.tgi) ? 'rose' : Math.round(hi.tgi) < Math.round(lo.tgi) ? 'fell' :
+    'stayed';
+  return `${lead}TGI ${moved} from ${tgi(lo.tgi)} (${lo.dose}) to ${tgi(hi.tgi)} (${hi.dose}); ` +
+    (byDose ? `exposure (${auc}) did not rise in proportion to dose.` : `${auc}.`);
 }
 
 /** The one thing that would add most to the groups card, or null when it has it all: the mouse exposure (NCA
@@ -1084,7 +1077,7 @@ export function patientsDose(arm: string, kept: SavedExposure | undefined, study
         (Math.log(b.daily) - Math.log(a.daily)));
       old = `${Who} ≈ ${round(equal)} ${unit} ${on} (between ${entered(a.d)} and ${entered(b.d)} ${unit}, ${from})`;
     } else {
-      const above = patients > Math.max(...pts.map((x) => x.daily));
+      const above = patients > maxOf(pts.map((x) => x.daily));
       const edge = above ? pts[pts.length - 1] : pts[0];
       old = `The ${who} is ${above ? 'above' : 'below'} what ${entered(edge.d)} ${unit} ${on} reached ` +
         `(${multipleText(edge.daily / patients)}, ${from})`;
@@ -1098,11 +1091,16 @@ export function patientsDose(arm: string, kept: SavedExposure | undefined, study
   const up = pts.findIndex((x) => x.d >= dose);
   const k = Math.max(0, Math.min(pts.length - 2, (up < 0 ? pts.length - 1 : up) - 1));
   const [a, b] = pts.length === 1 ? [pts[0], pts[0]] : [pts[k], pts[k + 1]];
-  const beyond = pts.length === 1 || dose < a.d || dose > b.d;
+  // (a dose with PK of its own is no dose beyond them, QA 0.1.3 final designer #8)
+  const own = pts.find((x) => x.d === dose);
+  const beyond = !own && (pts.length === 1 || dose < a.d || dose > b.d);
   const near = dose < a.d ? a : b;
-  const mine = beyond ? near.daily * dose / near.d : Math.exp(Math.log(a.daily) + (Math.log(dose) - Math.log(a.d)) *
-    (Math.log(b.daily) - Math.log(a.daily)) / (Math.log(b.d) - Math.log(a.d)));
-  return {rank, tip: `${tip} Mouse doses with PK: ${pts.map((x) => entered(x.d)).join(', ')} ${unit} (${on}, ${from})` +
+  const mine = own ? own.daily : beyond ? near.daily * dose / near.d : Math.exp(Math.log(a.daily) +
+    (Math.log(dose) - Math.log(a.d)) * (Math.log(b.daily) - Math.log(a.daily)) / (Math.log(b.d) - Math.log(a.d)));
+  // a study that measured this very dose (by this route) speaks for it before any other, whichever is newer
+  return {rank: rank + (own ? 1000 : 0), tip: `From ${study}'s PK` +
+    `${own ? `, which measured ${entered(dose)} ${unit}${p.route ? ` ${p.route}` : ''}` : ''}. ${tip} Mouse doses ` +
+    `with PK: ${pts.map((x) => entered(x.d)).join(', ')} ${unit} (${on}, ${from})` +
     `${beyond ? '; this dose is beyond them, its exposure taken in step with the dose' : ''}.`,
   text: `At ${entered(dose)} ${unit}, mice get about ${multipleText(mine / patients)} the ${who}` +
     `${equal === null ? '' : `; ${round(equal)} ${unit} would match it`}`};

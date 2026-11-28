@@ -13,6 +13,7 @@ import {StudyMeta, metaOf, parseMeta, setMetaOn} from './study-meta';
 import {VolumeSource, volumeSourceOf} from './study-reader';
 import {SavedHistory, historyOf, registerHistory, savedHistory} from './history-models';
 import {HISTORY_PREFIX} from './priors';
+import {Correction, correctionOf} from './engine';
 
 export const STUDY_EXT = 'pmxstudy';
 const FORMAT = 'pmx-study';
@@ -23,14 +24,55 @@ export const STUDY_TAG = 'pmx.study';
 /** The tags of a measurements table that carry the study's reviews and log. */
 export const LOOKS_TAG = 'pmx.looks';
 export const LOG_TAG = 'pmx.log';
+/** The study's own name, as its file or row gives it: the workspace may rename its table "X (2)". */
+export const NAME_TAG = 'pmx.name';
 /** The name of the table's body weight column, and the protocol's limits ({humane, weightLimit}). */
 export const WEIGHT_TAG = 'pmx.weight';
+/** The body weight column as the pickers and grids name it (its name stays body_weight: files, roles; QA 0.1.3
+ *  round 4 technician). */
+export const WEIGHT_LABEL = 'Body weight (g)';
 export const LIMITS_TAG = 'pmx.limits';
 /** The tumor model chosen for the study, kept for a study with no plan (with a plan, the plan's model is read). */
 export const LINE_TAG = 'pmx.line';
 /** The history of a model not in the atlas the study is followed with (history-models.ts SavedHistory, as JSON):
  *  beside LINE_TAG, so the study keeps its model when it is reopened without a plan. */
 export const HISTORY_TAG = 'pmx.history';
+/** What Analyze read the study with, as JSON (StudyAnalysis): kept with the study, set again when it is reopened. */
+export const ANALYSIS_TAG = 'pmx.analysis';
+
+/** The settings a study was analyzed with: its multiple-comparison method, endpoint volume (mm³) and evaluation
+ *  day (none: the day Analyze picks). In the study's document (json, no schema change); older files: none. */
+export interface StudyAnalysis {correction?: Correction, endpoint?: number, evaluationDay?: number}
+
+/** Such settings from a file or a tag someone may have edited: only what they may hold; undefined: nothing. */
+export function studyAnalysisOf(x: unknown): StudyAnalysis | undefined {
+  const o = x && typeof x === 'object' ? x as {[k: string]: unknown} : {};
+  const a: StudyAnalysis = {
+    ...typeof o.correction === 'string' && correctionOf(o.correction) === o.correction ?
+      {correction: o.correction as Correction} : {},
+    ...typeof o.endpoint === 'number' && Number.isFinite(o.endpoint) && o.endpoint > 0 ? {endpoint: o.endpoint} : {},
+    ...typeof o.evaluationDay === 'number' && Number.isFinite(o.evaluationDay) && o.evaluationDay >= 0 ?
+      {evaluationDay: o.evaluationDay} : {},
+  };
+  return Object.keys(a).length ? a : undefined;
+}
+
+/** The settings a table was last analyzed with (ANALYSIS_TAG), by the Analyze form's input names. */
+export function analysisFieldsOf(df: DG.DataFrame): StudyAnalysis {
+  try {
+    return studyAnalysisOf(JSON.parse(df.getTag(ANALYSIS_TAG) || 'null')) ?? {};
+  } catch {
+    return {}; // a damaged tag says nothing
+  }
+}
+
+/** Writes on the table what it is analyzed with, so its save keeps it (studyOf); the tag empty when nothing is. */
+export function setAnalysisOn(df: DG.DataFrame, a: StudyAnalysis): void {
+  const clean = studyAnalysisOf(a);
+  const text = clean ? JSON.stringify(clean) : '';
+  if ((df.getTag(ANALYSIS_TAG) ?? '') !== text)
+    df.setTag(ANALYSIS_TAG, text);
+}
 
 /** Registers the history a study table carries (its plan's, else HISTORY_TAG), so every stage finds its model by
  *  its key; nothing for an atlas model. */
@@ -110,6 +152,9 @@ export interface SavedStudy {
   exposure?: SavedExposure;
   /** saved from Analyze: the study is finished (older files, and studies only followed: none) */
   finished?: true;
+  /** what Analyze read it with: the method, endpoint and evaluation day (older files: none; QA 0.1.3 r4: a Holm
+   *  study came back as Bonferroni) */
+  analysis?: StudyAnalysis;
   log: LogEntry[];
 }
 
@@ -143,15 +188,31 @@ export function lineOf(df: DG.DataFrame): string | null {
   return df.getTag(LINE_TAG) || null;
 }
 
-/** What a table says of itself into a form on it: its tumor model, its body weight column and the protocol's
- *  limits. */
+/** The study settings a table's plan sets (its endpoint, humane limit, correction and α), as Monitor and Analyze
+ *  take them; nothing from a table with no plan, or a damaged one (QA 0.1.3 round 4 designer D3: Follow dropped a
+ *  1200 mm³ endpoint for the form's 1000). */
+export function planFieldsOf(df: DG.DataFrame): {[name: string]: unknown} {
+  try {
+    const inputs = df.getTag(PLAN_TAG) ? parsePlan(df.getTag(PLAN_TAG)!).inputs : {};
+    return Object.fromEntries(['endpoint', 'humane', 'correction', 'alpha']
+      .map((k) => [k, (inputs as {[k: string]: unknown})[k]] as const)
+      .filter(([, v]) => v !== null && v !== undefined && v !== ''));
+  } catch {
+    return {};
+  }
+}
+
+/** What a table says of itself into a form on it: its tumor model, its body weight column, the protocol's limits and
+ *  what its plan sets (planFieldsOf; the study's own limit over the plan's). */
 export function restoreFields(form: FuncCallForm, df: DG.DataFrame): void {
   const limits = JSON.parse(df.getTag(LIMITS_TAG) || '{}');
-  const fields = {line: lineOf(df), bodyWeight: df.getTag(WEIGHT_TAG) || null, humane: limits.humane ?? labHumane(),
-    weightLimit: limits.weightLimit ?? null};
+  const plan = planFieldsOf(df);
+  const fields = {...plan, line: lineOf(df), bodyWeight: df.getTag(WEIGHT_TAG) || null,
+    humane: limits.humane ?? plan.humane ?? labHumane(), weightLimit: limits.weightLimit ?? null};
   for (const [name, value] of Object.entries(fields)) {
     const input = form.getInput(name);
-    if (input && value !== null)
+    // a table with no tumor model of its own has none: not the last study's, nor one assumed (it is picked)
+    if (input && (value !== null || name === 'line'))
       input.value = value;
   }
 }
@@ -188,8 +249,10 @@ export function newStudyTable(plan: SavedPlan): DG.DataFrame {
     DG.Column.float('day', 0), DG.Column.float('volume', 0)]);
   oneDecimal(df).name = plan.name;
   df.setTag(PLAN_TAG, planTag(plan));
+  // (the plan's own details; whose plan it was copied from is the plan's, not the study's: a study followed from a
+  // saved plan read "copy of demo", QA 0.1.3 browser check)
   if (plan.study)
-    setMetaOn(df, plan.study);
+    setMetaOn(df, {...plan.study, copyOf: undefined});
   if (typeof plan.inputs.looks === 'string' && plan.inputs.looks.trim())
     df.setTag(LOOKS_TAG, plan.inputs.looks.trim());
   return df;
@@ -227,13 +290,21 @@ export function exportName(df: DG.DataFrame): string {
  *  save named it as the original again, two rows of one name in the Overview. */
 export function studyNameOf(df: DG.DataFrame): string {
   const planText = df.getTag(PLAN_TAG);
+  const own = ownName(df);
   try {
     const planned = planText ? parsePlan(planText)?.name : '';
-    return planned && !df.name.startsWith(`${planned} (copy`) ? planned : df.name;
+    return planned && !own.startsWith(`${planned} (copy`) ? planned : own;
   } catch {
     // a damaged plan: the header still names the study (saving says what is wrong)
-    return df.name;
+    return own;
   }
+}
+
+/** The table's name without the " (n)" the workspace adds to a second table of one name (QA 0.1.3: a study
+ *  reopened read "X (6)"); a name given to it since stays as given. */
+export function ownName(df: DG.DataFrame): string {
+  const own = df.getTag(NAME_TAG);
+  return own && df.name.startsWith(own) && /^( \(\d+\))?$/.test(df.name.slice(own.length)) ? own : df.name;
 }
 
 /** The exposure a table keeps (EXPOSURE_TAG), as it was written; undefined: none, or not JSON. */
@@ -257,6 +328,7 @@ export function studyOf(df: DG.DataFrame, humane: number | null, weightLimit: nu
   const history = line ? savedHistory(line) ?? historyOf(JSON.parse(df.getTag(HISTORY_TAG) || 'null')) : null;
   const volume = volumeOfTag(df);
   const exposure = exposureOfTag(df);
+  const analysis = studyAnalysisOf(analysisFieldsOf(df));
   // what else the table holds goes with the study: the caliper readings behind a volume, a cage, a comment
   const kept = new Set([a, g, d, v, w, e, f, r].filter((c) => c).map((c) => c!.name));
   const plain: string[] = [DG.TYPE.FLOAT, DG.TYPE.INT, DG.TYPE.STRING, DG.TYPE.BOOL];
@@ -268,7 +340,7 @@ export function studyOf(df: DG.DataFrame, humane: number | null, weightLimit: nu
     looks: df.getTag(LOOKS_TAG) ?? '', humane, weightLimit, log: logOf(df), ...meta ? {meta} : {},
     ...line ? {line} : {}, ...history ? {history} : {}, ...volume ? {provenance: {volume}} : {},
     ...Object.keys(extra).length ? {extra} : {}, ...exposure ? {exposure} : {},
-    ...df.getTag(FINISHED_TAG) === 'true' ? {finished: true as const} : {},
+    ...df.getTag(FINISHED_TAG) === 'true' ? {finished: true as const} : {}, ...analysis ? {analysis} : {},
     rows: Array.from({length: df.rowCount}, (_, i) => ({animal: String(a.get(i)), group: g.isNone(i) ? null : g.get(i),
       day: d.isNone(i) ? null : d.get(i), volume: v.isNone(i) ? null : v.get(i),
       ...w ? {weight: w.isNone(i) ? null : w.get(i)} : {},
@@ -338,6 +410,7 @@ export function tableOf(s: SavedStudy): DG.DataFrame {
   if (s.rows.some((r) => 'weight' in r)) {
     df.columns.add(floats('body_weight', s.rows.map((r) => r.weight)));
     df.setTag(WEIGHT_TAG, 'body_weight');
+    df.col('body_weight')!.meta.friendlyName = WEIGHT_LABEL;
   }
   for (const [name, values] of Object.entries(s.extra ?? {})) {
     if (df.col(name) || !Array.isArray(values) || values.length !== s.rows.length)
@@ -357,6 +430,7 @@ export function tableOf(s: SavedStudy): DG.DataFrame {
     setMetaOn(df, meta);
   df.setTag(LIMITS_TAG, JSON.stringify({humane: s.humane, weightLimit: s.weightLimit ?? null}));
   df.name = s.name;
+  df.setTag(NAME_TAG, s.name);
   if (s.plan)
     df.setTag(PLAN_TAG, planTag(s.plan));
   if (s.line)
@@ -372,6 +446,7 @@ export function tableOf(s: SavedStudy): DG.DataFrame {
     df.setTag(EXPOSURE_TAG, JSON.stringify(s.exposure));
   if (s.finished === true)
     df.setTag(FINISHED_TAG, 'true');
+  setAnalysisOn(df, s.analysis ?? {});
   df.setTag(LOOKS_TAG, s.looks);
   df.setTag(LOG_TAG, JSON.stringify(s.log));
   return df;

@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "pmx",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "tables": {
     "code": {
       "securityMode": "row",
@@ -29,18 +29,19 @@
         "code": {"type": "string", "searchable": true, "friendlyName": "ID", "description": "The study ID (document study.id); legacy IDs may repeat"},
         "line": {"type": "string", "searchable": true, "friendlyName": "Model key", "description": "Atlas line, or new:pdx:<id> for a model's own history"},
         "model": {"type": "string", "searchable": true, "friendlyName": "Model", "description": "What lists show: the atlas line, or the name the user gave a model outside the atlas"},
-        "owner": {"type": "string", "searchable": true, "friendlyName": "Owner", "description": "Login of who runs the study (free text in the document)"},
-        "project": {"type": "string", "friendlyName": "Project"},
+        "owner": {"type": "user", "friendlyName": "Owner", "description": "The Datagrok user the row belongs to: whoever saved it first, or whose copy it is"},
+        "run_by": {"type": "string", "searchable": true, "friendlyName": "Run by", "description": "Who runs the study, free text (Study details' Run by, e.g. a CRO technician without an account); empty by default"},
         "tags": {"type": "string_list", "friendlyName": "Tags"},
         "compounds": {"type": "string", "friendlyName": "Compounds", "description": "Empty while a blinded study's groups are hidden"},
         "drugs": {"type": "string_list", "friendlyName": "Drugs", "description": "Empty while a blinded study's groups are hidden"},
         "treatment": {"type": "string", "searchable": true, "friendlyName": "Treatment", "description": "Empty while a blinded study's groups are hidden"},
-        "start": {"type": "string", "friendlyName": "Day 0", "description": "YYYY-MM-DD, as in the document"},
-        "end_day": {"type": "float", "friendlyName": "Last day planned"},
-        "document": {"type": "string", "required": true, "editor": "textarea", "friendlyName": "Plan", "description": "The SavedPlan JSON as text (not json: jsonb reorders keys, and planKey compares texts)"},
+        "start": {"type": "datetime", "friendlyName": "Day 0", "description": "Day 0 (randomization) at midnight UTC: EMS has no date-only type; the document keeps YYYY-MM-DD"},
+        "end_day": {"type": "int", "friendlyName": "Last day planned", "description": "A whole study day"},
+        "document": {"type": "json", "required": true, "friendlyName": "Plan", "description": "The SavedPlan document whole. jsonb returns its keys reordered: nothing compares its text (a plan is known by planKey, its canonical name and inputs)"},
         "source": {"type": "string", "friendlyName": "Imported from", "description": "sha256 of the imported file text: the same file is not imported twice by its author"},
         "copy_of": {"type": "string", "friendlyName": "Copy of", "description": "The row id this one was copied from (Save as my copy, from a row shared to read)"},
-        "copy_owner": {"type": "string", "friendlyName": "Copied from", "description": "Whose the original is"}
+        "copy_owner": {"type": "user", "friendlyName": "Copied from", "description": "Whose the original row is (Save as my copy)"},
+        "copy_file_owner": {"type": "string", "friendlyName": "Copied from the file of", "description": "The owner named in someone else's .pmxplan / .pmxstudy file brought in as the user's copy, as the file names them"}
       }
     },
     "study": {
@@ -60,20 +61,21 @@
         "stage": {"type": "int", "min": 2, "max": 3, "friendlyName": "Stage", "description": "2 followed (Monitor), 3 finished (Analyze)"},
         "line": {"type": "string", "searchable": true, "friendlyName": "Model key", "description": "Atlas line, or new:pdx:<id> for a model's own history"},
         "model": {"type": "string", "searchable": true, "friendlyName": "Model", "description": "What lists show: the atlas line, or the name the user gave a model outside the atlas"},
-        "owner": {"type": "string", "searchable": true, "friendlyName": "Owner"},
-        "project": {"type": "string", "friendlyName": "Project"},
+        "owner": {"type": "user", "friendlyName": "Owner", "description": "The Datagrok user the row belongs to: whoever saved it first, or whose copy it is"},
+        "run_by": {"type": "string", "searchable": true, "friendlyName": "Run by", "description": "Who runs the study, free text (Study details' Run by, e.g. a CRO technician without an account); empty by default"},
         "tags": {"type": "string_list", "friendlyName": "Tags"},
         "compounds": {"type": "string", "friendlyName": "Compounds", "description": "Empty while a blinded study's groups are hidden"},
         "drugs": {"type": "string_list", "friendlyName": "Drugs", "description": "Empty while a blinded study's groups are hidden"},
         "treatment": {"type": "string", "searchable": true, "friendlyName": "Treatment", "description": "Empty while a blinded study's groups are hidden"},
-        "start": {"type": "string", "friendlyName": "Day 0", "description": "YYYY-MM-DD, as in the document"},
-        "last_day": {"type": "float", "friendlyName": "Last day measured"},
-        "next_day": {"type": "float", "friendlyName": "Next day"},
-        "end_day": {"type": "float", "friendlyName": "Last day planned"},
-        "document": {"type": "string", "required": true, "editor": "textarea", "friendlyName": "Study", "description": "The SavedStudy JSON as text (not json: jsonb reorders keys)"},
+        "start": {"type": "datetime", "friendlyName": "Day 0", "description": "Day 0 (randomization) at midnight UTC: EMS has no date-only type; the document keeps YYYY-MM-DD"},
+        "last_day": {"type": "int", "friendlyName": "Last day measured", "description": "A whole study day"},
+        "next_day": {"type": "int", "friendlyName": "Next day", "description": "A whole study day"},
+        "end_day": {"type": "int", "friendlyName": "Last day planned", "description": "A whole study day"},
+        "document": {"type": "json", "required": true, "friendlyName": "Study", "description": "The SavedStudy document whole. jsonb returns its keys reordered: nothing compares its text"},
         "source": {"type": "string", "friendlyName": "Imported from", "description": "sha256 of the imported file text: the same file is not imported twice by its author"},
         "copy_of": {"type": "string", "friendlyName": "Copy of", "description": "The row id this one was copied from (Save as my copy, from a row shared to read)"},
-        "copy_owner": {"type": "string", "friendlyName": "Copied from", "description": "Whose the original is"}
+        "copy_owner": {"type": "user", "friendlyName": "Copied from", "description": "Whose the original row is (Save as my copy)"},
+        "copy_file_owner": {"type": "string", "friendlyName": "Copied from the file of", "description": "The owner named in someone else's .pmxplan / .pmxstudy file brought in as the user's copy, as the file names them"}
       }
     }
   }

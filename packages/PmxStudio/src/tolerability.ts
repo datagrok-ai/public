@@ -3,6 +3,7 @@
    weight change from day 0 (as weighed, or without the tumor's mass), the weight-loss grades (G0–G3, CTCAE v5 as
    adapted for mice), each group's nadir against the vehicle's, the animals removed early and the NCI limits for a
    treatment. Without a body weight column, how to add one. This file only shows it. */
+import {maxOf, minOf} from './format';
 import * as DG from 'datagrok-api/dg';
 import {badge, BasicTable, BoolInput, computed, div, divH, divV, dot, span, Tooltip} from '@datagrok-libraries/u2';
 import type {ReadonlySignal} from '@datagrok-libraries/u2';
@@ -59,7 +60,8 @@ function nciReading(g: Row, vehicle: boolean): NciReading {
   const loss = g.mean_nadir === null ? 0 : Math.max(0, -g.mean_nadir);
   const lost = g.removed_death + g.removed_weight;
   const animals = (k: number) => `${k} animal${k === 1 ? '' : 's'}`;
-  const share = `${lost} of ${g.n} animals dead or removed for their weight (${pct(lost / g.n)}`;
+  // (its limit in animals: "limit 10%" beside a share read as the weight-loss limit, round 3 analyst W4)
+  const share = `${lost} of ${g.n} animals (${pct(lost / g.n)}) died or were removed for weight loss`;
   const over: string[] = [];
   const watch: string[] = [];
   // which limit a group is over is Crux's reading (over_nadir, over_deaths); this only words it
@@ -68,9 +70,9 @@ function nciReading(g: Row, vehicle: boolean): NciReading {
   else if (loss >= 10)
     watch.push(`a mean loss of ${Math.round(loss)}% at the nadir`);
   if (g.over_deaths)
-    over.push(`${share}; limit ${NCI.deaths}%)`);
+    over.push(`${share}; the limit is 1 in ${Math.round(100 / NCI.deaths)}`);
   else if (lost > 0)
-    watch.push(`${share})`);
+    watch.push(share);
   if (g.grade_3 > 0 && lost === 0)
     watch.push(`${animals(g.grade_3)} lost 20% or more`);
   const unknown = `${animals(g.removed_other)} left early for an unrecorded reason (a Removal reason column tells ` +
@@ -104,7 +106,7 @@ function densityText(r: TolerabilityFrames): string {
       `tumors; ${d(used.range[0])} to ${d(used.range[1])} between labs).`}${left}`;
   }
   const ds = gs.map((g) => g.density as number);
-  const [lo, hi] = [Math.min(...ds), Math.max(...ds)];
+  const [lo, hi] = [minOf(ds), maxOf(ds)];
   return `its volume times this study’s density, ${d(lo) === d(hi) ? d(lo) : `${d(lo)} to ${d(hi)}`} mg per mm³ ` +
     `${d(lo) === d(hi) ? '' : 'by group '}(${pairs} tumors weighed once excised), and on the day a tumor was excised ` +
     `its own weight.${left}`;

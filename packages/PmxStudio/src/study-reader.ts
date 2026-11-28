@@ -1,3 +1,5 @@
+import {median, maxOf, minOf} from './format';
+import {noBidi} from './arm-name';
 import {SUMMARY, SUMMARY_LIKE, counted, dayOf, dayWord, letter, listed, numberOf, plural, readWide, summaryWord}
   from './wide-table';
 
@@ -63,6 +65,9 @@ const SYNONYMS: {readonly [r in Role]: readonly string[]} = Object.freeze({
 const ROLE_WORD: {[r in Role]: string} = {animal: 'animal', group: 'group', day: 'day', date: 'measurement date',
   start: 'randomization or treatment start date', volume: 'tumor volume', length: 'tumor length',
   width: 'tumor width', height: 'tumor height', weight: 'body weight'};
+/** A table before randomization (no groups yet): the way to form them, not a missing column. */
+const NO_GROUPS = 'Not read: the table has no groups yet. To form them, open the plan in Plan, Follow this study, ' +
+  'paste the animals and their day-0 volumes into its table and Propose groups.';
 const NO_VOLUME = 'Not read: no column is the tumor volume, nor its length and width.';
 /** Column names that say a measure other than a tumor's size (a PK table's, a structure's): never offered as one. */
 const NOT_VOLUME = /conc|dose|smiles|inchi|auc|c_?max|t_?max|time|hour|lloq|blq|ng.?\/?.?ml/i;
@@ -175,11 +180,6 @@ export function deduceFormula(sets: {l: number, w: number, h: number | null, v: 
   return best;
 }
 
-const median = (xs: number[]) => {
-  const s = [...xs].sort((a, b) => a - b);
-  return s.length === 0 ? NaN : (s[Math.floor((s.length - 1) / 2)] + s[Math.ceil((s.length - 1) / 2)]) / 2;
-};
-
 // ---- the reader ----------------------------------------------------------------------------------------------------
 
 /** At most six cells named, the rest counted. */
@@ -226,7 +226,10 @@ function withUnits(read: TableRead, units: [kind: 'length' | 'volume' | 'weight'
     .map(([k, u]) => `${KIND_WORD[k]} converted from ${UNITS[u!].name} to ${UNITS[STANDARD[k]].name}.`);
   const assumed = [...new Set(units.filter(([, u]) => u === null).map(([k]) => UNITS[STANDARD[k]].name))];
   const day0 = read.notes.filter((n) => n.startsWith('Day 0'));
-  return {...read, groups: counted(read.rows), notes: [...read.notes.filter((n) => !n.startsWith('Day 0')),
+  // (volumes converted are not "as given": only the conversion said, QA 0.1.3 round 4 technician R4-8)
+  const volumesConverted = converted.some((c) => c.startsWith(KIND_WORD.volume));
+  return {...read, groups: counted(read.rows), notes: [...read.notes.filter((n) => !n.startsWith('Day 0') &&
+    !(volumesConverted && n === 'Volumes as given.')),
     ...converted, ...assumed.length ? [`No unit in the column names: assumed ${andList(assumed)}.`] : [], ...day0]};
 }
 
@@ -238,6 +241,9 @@ function withUnits(read: TableRead, units: [kind: 'length' | 'volume' | 'weight'
  *  The seam for spreadsheets: it takes one sheet's cells as text, so an .xlsx sheet (PowerPack's xlsx handler, a
  *  soft dependency) plugs in as its cells, numbers written with a dot and dates as ISO text. */
 export function readStudy(cells: string[][], answers: Answers = {}, decimalComma = false): TableRead {
+  // no text-direction controls in a name: U+202E showed "‮evil‬" as "live" (Plan's names strip them the same way,
+  // arm-name.ts noBidi: QA 0.1.3 round 3, chaos 18)
+  cells = cells.map((row) => row.map((s) => typeof s === 'string' ? noBidi(s) : s));
   const wide = readWide(cells, decimalComma);
   if (!wide)
     return readLong(cells, answers, decimalComma);
@@ -312,8 +318,10 @@ function readLong(cells: string[][], answers: Answers, decimalComma: boolean): T
     return {...empty('long'), questions};
   const none = (['animal', 'group'] as Role[]).find((r) => col[r] === undefined) ??
     (col.day === undefined && col.date === undefined ? 'day' : col.volume === undefined && !caliper ? 'volume' : null);
-  if (none)
-    return refused('long', none === 'volume' ? NO_VOLUME : `Not read: no column is the ${ROLE_WORD[none]}.`);
+  if (none) {
+    return refused('long', none === 'volume' ? NO_VOLUME : none === 'group' ? NO_GROUPS :
+      `Not read: no column is the ${ROLE_WORD[none]}.`);
+  }
 
   // the days as numbers, or dates counted from day 0
   const values = (c: number | undefined) => c === undefined ? [] : rest.map((r) => at(r, c)).filter((s) => s !== '');
@@ -377,6 +385,8 @@ function readLong(cells: string[][], answers: Answers, decimalComma: boolean): T
   const measured = (['volume', 'length', 'width', 'height', 'weight'] as Role[]).filter((r) => col[r] !== undefined);
   const ignored: string[] = [];
   const notNumbers: string[] = [];
+  // a cell that says it is empty (NaN, NA, n/a, -): read as empty, and said (QA 0.1.3 round 3: chaos 9)
+  const saidEmpty: string[] = [];
   const placed = new Set<string>();
   const skipped = new Set<number>();
   interface Raw {r: number, animal: string, group: string, when: number, start: number | null,
@@ -410,6 +420,8 @@ function readLong(cells: string[][], answers: Answers, decimalComma: boolean): T
         const x = numberOf(at(r, c), decimalComma);
         if (x !== null && Number.isNaN(x))
           notNumbers.push(`${letter(c)}${r + 1}`);
+        else if (x === null && at(r, c) !== '')
+          saidEmpty.push(`${letter(c)}${r + 1}`);
         else if (x !== null)
           placed.add(`${r},${c}`);
         m[role] = x === null || Number.isNaN(x) ? null : x * factor(role);
@@ -425,7 +437,7 @@ function readLong(cells: string[][], answers: Answers, decimalComma: boolean): T
       `number (${fewOf(notNumbers)})`);
   }
   // numbers in a column with no heading (inside the header's width or past it) are no one's measurement
-  const width = Math.max(head.length, ...rest.map((r) => cells[r].length));
+  const width = maxOf([head.length, ...rest.map((r) => cells[r].length)]);
   Array.from({length: width}, (_, c) => c).filter((c) => head[c] === undefined || head[c] === '')
     .filter((c) => rest.some((r) => /\d/.test(at(r, c))))
     .forEach((c) => ignored.push(`column ${letter(c)}, with no heading`));
@@ -442,11 +454,13 @@ function readLong(cells: string[][], answers: Answers, decimalComma: boolean): T
   }
   if (lost.length)
     return refused('long', `Not read: ${plural(lost.length, 'number')} could not be placed (${listed(lost)}).`);
-  if (raws.length === 0)
-    return refused('long', 'Not read: no measurements under the header.');
+  if (raws.length === 0) {
+    return refused('long', rest.every((r) => at(r, col.group!) === '') ? NO_GROUPS :
+      'Not read: no measurements under the header.');
+  }
 
   // day 0 is each animal's own randomization date when the table has them, else the study's first measurement
-  const first = Math.min(...raws.map((x) => x.when));
+  const first = minOf(raws.map((x) => x.when));
   const starts = new Map<string, Raw>();
   if (dateCol !== undefined && startCol !== undefined) {
     for (const x of raws.filter((y) => y.start !== null)) {
@@ -523,6 +537,15 @@ function readLong(cells: string[][], answers: Answers, decimalComma: boolean): T
   };
   const rows: StudyRow[] = raws.map((x) => ({animal: animal(x), group: x.group, day: dayOfRaw(x), volume: volumeOf(x),
     weight: x.m.weight ?? null}));
+  // what is read but cannot be a measurement, said (QA 0.1.3 round 3: chaos 9): a negative volume is kept, to be
+  // corrected in the table (Monitor and Analyze set it aside as impossible); a cell saying "NaN" is an empty one
+  const negative = raws.filter((x, i) => (rows[i].volume ?? 0) < 0).map((x) => String(x.r + 1));
+  if (negative.length) {
+    notes.push(`${plural(negative.length, 'negative volume')} (row${negative.length > 1 ? 's' : ''} ` +
+      `${fewOf(negative)}): impossible, correct ${negative.length > 1 ? 'them' : 'it'} in the table.`);
+  }
+  if (saidEmpty.length)
+    notes.push(`${plural(saidEmpty.length, 'cell')} read as empty (${fewOf(saidEmpty)}).`);
   if (volume.source === 'deduced') {
     const filled = raws.filter((x) => !has(x.m.volume) && has(volumeOf(x))).length;
     if (filled)
@@ -581,7 +604,7 @@ export function studySummary(read: TableRead, blinded = false): string[] {
     // the count in brackets: a group named "1" read "1 2 animals"
     read.groups.map(([g, n]) => `${g} (${plural(n, 'animal')})`).join(', ');
   const days = read.rows.map((r) => r.day);
-  return [`Read ${plural(read.groups.length, 'group')}: ${groups}, days ${Math.min(...days)}–${Math.max(...days)}.`,
+  return [`Read ${plural(read.groups.length, 'group')}: ${groups}, days ${minOf(days)}–${maxOf(days)}.`,
     ...read.notes, ...read.extra.length ? [`Also kept: ${read.extra.map(([n]) => n).join(', ')}.`] : [],
     ...read.ignored.map((l) => `Not read: ${l}.`)];
 }

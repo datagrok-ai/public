@@ -1,1 +1,1 @@
-pmx: crux-core main 2623118b4 (land: pmx-module; rebuilt from it: wasm and bindings byte-identical to the spike build 1c9ce1a1f shipped before; the module carries the functions this package calls)
+pmx: crux-core e11d327ef9 (pmx module; single TGI from growth)

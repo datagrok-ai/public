@@ -20,6 +20,13 @@ const FIRST = '(?:from|starting(?:\\s+on)?|start(?:ing)?)\\s+day\\s*\\d+|d\\d+\\
 export const SCHEDULE = new RegExp(`\\b(?:(?:${RATE})(?:\\s*(?:${COUNT}))?(?:\\s*,?\\s*(?:${FIRST}))?|` +
   `(?<![a-z-])(?:${COUNT})(?:\\s*,?\\s*(?:${FIRST}))?|(?<![a-z-])(?:${FIRST}))(?![a-z])`, 'i');
 
+/** A schedule in one writing wherever it is shown: its codes in capitals and a count with ×, "q3dx4" and "Q3D x 4"
+ *  both "Q3D×4" (QA round 3 designer U5); words ("every 3 days", "twice weekly") as written. */
+export const scheduleText = (s: string): string => s.trim()
+  .replace(/\b(q\d+[dhw]|qd|bid|tid|qid|qod|qw|biw|tiw)(?=x\d|[^a-z]|$)/gi, (m) => m.toUpperCase())
+  .replace(/(QD|BID|TID|QID|QOD|QW|BIW|TIW|Q\d+[DHW])\s*[x×]\s*(?=\d)/g, '$1×')
+  .replace(/(^|\s)[x×]\s*(?=\d)/gi, '$1×');
+
 /** Exposure that does not come in doses: every day, never moved. Read from the schedule or the route only, never
  *  from a group's name ("High-fat diet + Cpd-A Q3D" is dosed Q3D, a diet control is not dosed). */
 const CONTINUOUS = /\b(?:(?:mini)?pump|drinking water|in (?:the )?(?:water|diet|chow|food|feed))\b/i;

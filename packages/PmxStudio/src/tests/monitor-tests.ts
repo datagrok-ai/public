@@ -2,22 +2,31 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {awaitCheck, category, delay, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
 import {Scope} from '@datagrok-libraries/u2';
+import {ViewHost} from '@datagrok-libraries/u2/dg';
 
 import {exampleStudy} from './example-study';
-import {allocateGroups, balanceNote, checkChance, futureDays, latestReadings, monitorFrames, outsideBand, parseLooks,
-  naturalCompare, notYetMeasured, PENDING, promptsByChance, reasonsOf, weightMissing, weightReasons} from '../monitor';
-import {PLAN_TAG, parsePlan} from '../plan-file';
+import {allocateGroups, balanceNote, checkChance, futureDays, latestReadings, likelyTypo, mm3Text, monitorFrames,
+  MonitorInputs, outsideBand, parseLooks, naturalCompare, notYetMeasured, PENDING, planControl, promptsByChance,
+  reasonsOf,
+  shortOfAnimals, weightMissing, weightReasons} from '../monitor';
+import {PLAN_TAG, parsePlan, randomizedGroups} from '../plan-file';
 import {planSummary} from '../file-preview';
-import {LIMITS_TAG, LOOKS_TAG, REVEALED, WEIGHT_TAG, addLog, logOf, newStudyTable, parseStudy, studyOf, tableOf}
+import {LIMITS_TAG, LOOKS_TAG, REVEALED, WEIGHT_TAG, addLog, logOf, newStudyTable, parseStudy, planFieldsOf, studyOf,
+  tableOf}
   from '../study-file';
 import {panelTabs} from '../panels';
 import {EmptyState, NoControl} from '../crux';
-import {chanceWords, monitorView, takeOverFollowed} from '../monitor-view';
-import {decisionEntry, dosingDays, emptyMeta, impossibleDate, metaOf, setMetaOn, stopsOf, weightChangeText}
+import {offPlanAsk, chanceWords, entryStep, followedFrom, localTime, monitorView, takeOverFollowed}
+  from '../monitor-view';
+import {animalIds, dayZeroAsk, nextMeasurement, whyAndStatus} from '../monitor';
+import {farDayZero} from '../study-meta';
+import {decisionEntry, dosingDays, emptyMeta, impossibleDate, metaOf, parseMeta, setMetaOn, stopsOf,
+  weightChangeText}
   from '../study-meta';
 import {groupsByAnimal} from '../animal-group';
 import {blindColumn, mark, openStudyTable, tagStudy} from '../study-table';
 import {analysisDeclarationOf} from '../analyze';
+import {_package} from '../package';
 
 /** The example study up to `today`, as a follower has it. */
 async function upTo(today: number): Promise<DG.DataFrame> {
@@ -112,7 +121,7 @@ category('Monitor', () => {
     const r = (change: number | null, lastDay = 10, present = true) => weightReasons({change, lastDay}, 10, 7, 20,
       present);
     expect(r(-25)[0].startsWith('Over the 20%'), true);
-    expect(r(-15)[0].startsWith('Losing weight'), true);
+    expect(r(-15)[0].startsWith('Lost '), true);
     expectArray(r(-14), []);
     expectArray(r(5), []);
     expectArray(r(null), []);
@@ -197,7 +206,7 @@ category('Monitor', () => {
   });
 
   test('a loss near the limit is not rounded onto it; animal IDs in natural order', async () => {
-    expect(weightReasons({change: -19.6, lastDay: 10}, 10, 7, 20, true)[0], 'Losing weight: 19.6%, limit 20%');
+    expect(weightReasons({change: -19.6, lastDay: 10}, 10, 7, 20, true)[0], 'Lost 19.6% of body weight (limit 20%)');
     // the table and the panel say the same number as the reason
     expect(weightChangeText(-19.6, 20), '−19.6%');
     expect(weightChangeText(-19.97, 20), '−19.9%');
@@ -205,10 +214,10 @@ category('Monitor', () => {
     expect(weightChangeText(-21, 20), '−21%');
     expect(weightChangeText(4.6, 20), '+5%');
     expect(weightChangeText(0.2, 20), '0%');
-    expect(weightReasons({change: -16.4, lastDay: 10}, 10, 7, 20, true)[0], 'Losing weight: 16%, limit 20%');
-    expect(weightReasons({change: -19.57, lastDay: 10}, 10, 7, 20, true)[0], 'Losing weight: 19.6%, limit 20%',
+    expect(weightReasons({change: -16.4, lastDay: 10}, 10, 7, 20, true)[0], 'Lost 16% of body weight (limit 20%)');
+    expect(weightReasons({change: -19.57, lastDay: 10}, 10, 7, 20, true)[0], 'Lost 19.6% of body weight (limit 20%)',
       'rounded, not truncated');
-    expect(weightReasons({change: -19.97, lastDay: 10}, 10, 7, 20, true)[0], 'Losing weight: 19.9%, limit 20%',
+    expect(weightReasons({change: -19.97, lastDay: 10}, 10, 7, 20, true)[0], 'Lost 19.9% of body weight (limit 20%)',
       'never shown as reaching the limit');
     expectArray(['T3-10', 'T03-02', 'T3-2', 'T03-01', 'T3-1'].sort(naturalCompare),
       ['T03-01', 'T03-02', 'T3-1', 'T3-2', 'T3-10']);
@@ -218,6 +227,14 @@ category('Monitor', () => {
     const log = [{what: decisionEntry('Drug 10 mg/kg', 9, 'stop')}];
     expectArray(Object.entries(stopsOf(log)).flat(), ['Drug 10 mg/kg', 9]);
     expectArray(Object.keys(stopsOf([...log, {what: decisionEntry('Drug 10 mg/kg', 9, 'stop undone')}])), []);
+    // a stop against the suggestion is one line, its reason in it
+    const against = decisionEntry('A: 10 mg/kg', 7, 'stop', 'against the suggestion to continue: weight loss');
+    expect(against, 'A: 10 mg/kg: stop (review on day 7); against the suggestion to continue: weight loss');
+    expectArray(Object.entries(stopsOf([{what: against}])).flat(), ['A: 10 mg/kg', 7]);
+    // an older file's details: day 0 with its time is that day; an owner written as a name is who ran it
+    const old = parseMeta({owner: 'Someone Else', start: '2026-11-30T10:00:00Z'})!;
+    expect([old.start, old.runBy, old.owner].join('|'), '2026-11-30|Someone Else|Someone Else');
+    expect(parseMeta({owner: 'ben.ruiz'})!.runBy, '');
     const groups = [{group: 'Drug 10 mg/kg', compound: 'Drug', dose: 10, unit: 'mg/kg', route: 'p.o.',
       schedule: 'QD'}];
     const days = (stopped?: {[g: string]: number}) => [...dosingDays(groups, 14, {start: null, stopped}).keys()];
@@ -398,7 +415,9 @@ category('Monitor', () => {
   const viewOf = async (df: DG.DataFrame) => {
     const view = await monitorView(df);
     return {view, close: () => {
+      // (never added to the shell: closing it disposes nothing, so its host goes by hand, its study link with it)
       view.close();
+      ViewHost.of(view).dispose();
       [...grok.shell.tableViews].find((v) => v.dataFrame.id === df.id)?.close();
       grok.shell.closeTable(df);
     }};
@@ -435,6 +454,11 @@ category('Monitor', () => {
       await awaitCheck(() => !!reveal(), 'no Reveal button', 60000);
       expect(hidden(df), true);
       reveal()!.click();
+      // revealing is for good: asked once more, then Reveal
+      const ok = () => [...document.querySelectorAll<HTMLElement>('.d4-dialog button, .d4-dialog .ui-btn')]
+        .find((b) => b.textContent?.trim().toLowerCase() === 'reveal');
+      await awaitCheck(() => !!ok(), 'no Reveal in the confirmation', 5000);
+      ok()!.click();
       await awaitCheck(() => shown(df), 'the group column did not come back after the reveal', 5000);
     } finally {
       close();
@@ -508,6 +532,9 @@ category('Monitor', () => {
     const gridCol = (name: string) => [...grok.shell.tableViews].find((v) => v.dataFrame.id === df.id)?.grid.columns
       .byName(name);
     try {
+      // (the study's table view opens only when asked for)
+      await delay(1000);
+      openStudyTable(df);
       await awaitCheck(() => !!gridCol('group'), 'no table view', 10000);
       tagStudy({study: df, animal: 'animal', group: 'group', day: 'day', volume: 'volume', bodyWeight: null});
       setMetaOn(df, {...emptyMeta(), blinded: true});
@@ -533,4 +560,154 @@ category('Monitor', () => {
       expect(chanceWords(0.97, 86), 'High (TGI at least 86%)', 'TGI 91% (86–94) is not "not low"');
       expect(chanceWords(0.6, 20), 'Not low (10% or more)', 'no high figure from the model itself');
     });
+
+  test('Enter today\'s values: always there; off the plan\'s calendar it asks first', async () => {
+    // the plan measures on day 0 and every 3rd day here
+    const planned = (d: number) => d % 3 === 0;
+    expect(entryStep(6, planned), 'open', 'a plan measurement day');
+    expect(entryStep(7, planned), 'confirm', 'a day off the calendar asks first');
+    expect(entryStep(7, null), 'open', 'no plan: at once');
+    expect(entryStep(null, planned), 'open', 'no dated day 0: the dialog asks for the day');
+    // the question names the day and the plan's next one (QA 0.1.3 round 3: technician N20)
+    expect(offPlanAsk(7, planned), 'Day 7 is not a measurement day in the plan (the next one is day 9): enter anyway?');
+  });
+
+  test('QA 0.1.3 round 3: next measurement, why and status, day-0 IDs', async () => {
+    // never a day already past: day 11 passed unmeasured is missed, the next is day 14
+    const n = nextMeasurement([11, 14, 16], 12);
+    expect([n.next, n.missed].join(), '14,11');
+    expect([nextMeasurement([11, 14], 11).next, nextMeasurement([11, 14], 11).missed].join(), '11,');
+    expect(nextMeasurement([11, 14], null).next, 11, 'no date: the first to come');
+    const w = whyAndStatus('Likely a typo: 665 mm³ on day 11 is 9 times day 9\'s 77 mm³: check it; ' +
+      'last value unexpected: measure again');
+    expect(w.why, 'Likely a typo: 665 mm³ on day 11 is 9 times day 9\'s 77 mm³; last value unexpected');
+    expect(w.status, 'Check it; measure again');
+    expect(whyAndStatus('Over the 1500 mm³ limit').status, '');
+    const ids = animalIds('A1\nA1\nA2', 60);
+    expect([ids.ids.join(), ids.twice.join(), ids.line].join(' | '),
+      'A1,A2 | A1 | 2 of 60 – add 58 or resize the groups in Plan · A1 appears twice');
+    // round 4 designer D4: M6 and m6 are one ID; the count is of the animals the plan randomizes
+    const cased = animalIds('M6\nm6\nM7', 2);
+    expect([cased.ids.join(), cased.twice.join(), cased.line].join(' | '),
+      'M6,M7 | M6 | 2 of 2 · M6 and m6 are the same ID');
+    // a day 0 years away asks (chaos 6); one this year does not
+    const nov28 = new Date(Date.UTC(2026, 10, 28));
+    expect(farDayZero('1900-01-01', nov28), 'Day 0 on 1 Jan 1900 is 126 years ago: is that the date?');
+    expect(farDayZero('2026-11-02', nov28), null);
+    // round 4 designer D5: day 0 planned for another day than today asks which
+    const sat = new Date(2026, 10, 28, 12);
+    expect(dayZeroAsk('2026-11-30', sat), 'Enter day 0 values (planned for Mon 30 Nov; today is Sat 28 Nov)');
+    expect(dayZeroAsk('2026-11-28', sat), null);
+    expect(dayZeroAsk(null, sat), null);
+  });
+});
+
+category('Monitor: a day under way, welfare and typos (QA 0.1.3)', () => {
+  const inputs = (df: DG.DataFrame, humane: number, looks = ''): MonitorInputs => ({study: df,
+    animal: df.col('animal')!, group: df.col('group')!, day: df.col('day')!, volume: df.col('volume')!, looks,
+    line: 'MC38', control: '', endpoint: 1500, humane, correction: 'holm'});
+  const days = (df: DG.DataFrame) => [...new Set(df.col('day')!.toList() as number[])].sort((a, b) => a - b);
+
+  test('a likely typo, an impossible volume, a shortfall of animals: in words', async () => {
+    expect(likelyTypo(420, 4201), '10 times');
+    expect(likelyTypo(420, 42), '1/10 of');
+    expect(likelyTypo(420, 900), null);
+    expect(likelyTypo(420, -50), null);
+    expect(mm3Text(-50), '−50');
+    expect(mm3Text(10790), '10,790');
+    expect(mm3Text(-1500), '−1,500');
+    // a negative value is impossible, not one to measure again
+    expect(outsideBand([{animal: 'a', day: 12, volume: -50}], 12,
+      new Map([['a', {check_lower: 100, check_upper: 200}]])).length, 0);
+    const short = shortOfAnimals(60, ['m1', 'm2'], ['m1', 'm2', 'm3']);
+    expect(short.startsWith('The plan needs 60 animals, and 2 have a tumor volume (no volume yet: m3)'), true, short);
+    // a continue undone is no stop
+    expect(Object.keys(stopsOf([{what: decisionEntry('A', 7, 'continue undone')}])).length, 0);
+    expect(localTime('not a time'), 'not a time');
+    expect(/^\d{4}-\d\d-\d\d \d\d:\d\d$/.test(localTime('2026-11-27T13:05:00.000Z')), true);
+  });
+
+  test('a day under way: its groups in one line, the alerts as of their last session, the review waits',
+    async () => {
+      const whole = await exampleStudy();
+      const [prev, last] = days(whole).slice(3, 5);
+      const first = whole.get('group', 0);
+      const df = whole.clone(DG.BitSet.create(whole.rowCount, (i) => whole.get('day', i) < last ||
+        (whole.get('day', i) === last && whole.get('group', i) === first)));
+      df.setTag(PLAN_TAG, whole.getTag(PLAN_TAG)!);
+      const r = await monitorFrames(inputs(df, 2000, String(last)));
+      expect(r.status.get('waiting', 0) > 0, true);
+      expect(r.status.get('complete_day', 0), prev);
+      expect(r.status.get('at_look', 0), false);
+      expect(r.status.get('look_waits', 0), true);
+      expect(r.decisions.rowCount, 0);
+      for (let i = 0; i < r.animals.rowCount; i++)
+        expect(String(r.animals.get('attention', i) ?? '').includes('Not measured yet'), false);
+    }, {timeout: 120000});
+
+  test('QA 0.1.3 round 4: a followed plan by its ID, its settings, the animals it randomizes', async () => {
+    const plan = parsePlan(await _package.files.readAsText('demo/ct26-trametinib-antipd1.pmxplan'));
+    const withId = {...plan, study: {...plan.study ?? emptyMeta(), id: 'PMX-2026-0906'}};
+    const study = newStudyTable(withId);
+    // D1: the plan edited since (another endpoint) still finds its study; another plan's ID does not
+    const edited = {...withId, inputs: {...withId.inputs, endpoint: 1200}};
+    expect(followedFrom(study, edited), true, 'edited plan, same ID');
+    expect(followedFrom(study, {...edited, study: {...edited.study!, id: 'PMX-2026-0907'}}), false);
+    // D3: the study takes the plan's endpoint and settings
+    const e1200 = newStudyTable(edited);
+    expect(planFieldsOf(e1200).endpoint, 1200);
+    expect(planFieldsOf(DG.DataFrame.create()).endpoint === undefined, true, 'no plan: nothing');
+    // D4: the animals to randomize, each group's; a plan saved before they were kept, its analyzable ones
+    const old = randomizedGroups(plan);
+    expect(old[0].n, plan.predicted.nControl ?? 0);
+    const sized = randomizedGroups({...plan, predicted: {...plan.predicted, randomiseControl: 13,
+      arms: plan.predicted.arms.map((a) => ({...a, randomise: 13}))}});
+    expect(sized.map((g) => g.n).join(), Array(plan.predicted.arms.length + 1).fill(13).join());
+  });
+
+  test('an animal removed early over the weight limit stays listed while the next day is partly entered', async () => {
+    // the demo's T3-07: -22% on day 7, not measured on day 9; then day 11 entered for the vehicle group only
+    const df = DG.DataFrame.fromCsv(await _package.files.readAsText('demo/ct26-trametinib-antipd1-running-day9.csv'));
+    const at9 = df.rowCount;
+    for (let i = 0; i < at9; i++) {
+      if (df.get('day', i) === 9 && df.get('group', i) === 'Vehicle') {
+        df.rows.addNew([df.get('animal', i), 'Vehicle', 11, df.get('volume', i) * 1.2,
+          df.get('body_weight', i)]);
+      }
+    }
+    // the control as the plan has it: the one group none of its arms
+    const plan = await _package.files.readAsText('demo/ct26-trametinib-antipd1.pmxplan');
+    expect(planControl({...inputs(df, 1500), plan}), 'Vehicle');
+    expect(planControl(inputs(df, 1500)) === undefined, true, 'no plan: no control from it');
+    for (const study of [df.clone(DG.BitSet.create(df.rowCount, (i) => i < at9)), df]) {
+      const r = await monitorFrames({...inputs(study, 1500), line: 'CT26', control: 'Vehicle',
+        bodyWeight: study.col('body_weight'), weightLimit: 20});
+      const row = Array.from({length: r.animals.rowCount}, (_, i) => i)
+        .find((i) => r.animals.get('animal', i) === 'T3-07');
+      expect(String(r.animals.get('attention', row!) ?? '').includes('weight-loss limit'), true,
+        `T3-07 with ${study.rowCount} rows: ${r.animals.get('attention', row!)}`);
+      // the planted ×10 typo (T1-08, 2,893 mm³): checked first, the humane limit not claimed on it
+      const typo = String(r.animals.get('attention', r.animals.col('animal')!.toList().indexOf('T1-08')));
+      expect(typo.startsWith('Likely a typo: 2,893 mm³'), true, typo);
+      expect(typo.includes('mm³ limit'), false, typo);
+    }
+  }, {timeout: 120000});
+
+  test('an animal excluded from the analysis is still listed over the humane limit', async () => {
+    const whole = await exampleStudy();
+    const last = days(whole)[4];
+    const df = await upTo(last);
+    let big = -1;
+    for (let i = 0; i < df.rowCount; i++) {
+      if (df.get('day', i) === last && (big < 0 || df.get('volume', i) > df.get('volume', big)))
+        big = i;
+    }
+    const name = String(df.get('animal', big));
+    const own = Array.from({length: df.rowCount}, (_, i) => i).filter((i) => df.get('animal', i) === name);
+    mark(df, own, 'excluded', 'test', name);
+    const r = await monitorFrames(inputs(df, df.get('volume', big) - 1));
+    const row = Array.from({length: r.animals.rowCount}, (_, i) => i).find((i) => r.animals.get('animal', i) === name);
+    expect(row !== undefined, true, 'the excluded animal is still on the list');
+    expect(String(r.animals.get('attention', row!)).startsWith('Over the'), true);
+  }, {timeout: 120000});
 });

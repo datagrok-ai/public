@@ -38,17 +38,18 @@ export interface PlanRow {
   line?: string;
   model?: string;
   owner?: string;
-  project?: string;
+  run_by?: string;
   tags?: string[];
   compounds?: string;
   drugs?: string[];
   treatment?: string;
-  start?: string;
+  start?: Dayjs;
   end_day?: number;
-  document: string;
+  document: {[key: string]: any};
   source?: string;
   copy_of?: string;
   copy_owner?: string;
+  copy_file_owner?: string;
 }
 
 /** Insert payload for `pmx.plan`. */
@@ -58,25 +59,31 @@ export interface PlanInsert {
   line?: string;
   model?: string;
   owner?: string;
-  project?: string;
+  run_by?: string;
   tags?: string[];
   compounds?: string;
   drugs?: string[];
   treatment?: string;
-  start?: string;
+  start?: Dayjs | string;
   end_day?: number;
-  document: string;
+  document: {[key: string]: any};
   source?: string;
   copy_of?: string;
   copy_owner?: string;
+  copy_file_owner?: string;
 }
 
 export type PlanColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'name' | 'code' | 'line' |
-  'model' | 'owner' | 'project' | 'tags' | 'compounds' | 'drugs' | 'treatment' | 'start' | 'end_day' | 'document' |
-  'source' | 'copy_of' | 'copy_owner';
+  'model' | 'owner' | 'run_by' | 'tags' | 'compounds' | 'drugs' | 'treatment' | 'start' | 'end_day' | 'document' |
+  'source' | 'copy_of' | 'copy_owner' | 'copy_file_owner';
 
 /** Expand keys of `pmx.plan` → fields each adds to the row (consumed by query()/builder). */
 export type PlanExpand = {
+  'owner': {'owner.login'?: string; 'owner.firstName'?: string; 'owner.lastName'?: string; 'owner.status'?: string;
+    'owner.createdOn'?: Dayjs; 'owner.picture'?: string; 'owner.group'?: string; 'owner.author'?: string};
+  'copy_owner': {'copy_owner.login'?: string; 'copy_owner.firstName'?: string; 'copy_owner.lastName'?: string;
+    'copy_owner.status'?: string; 'copy_owner.createdOn'?: Dayjs; 'copy_owner.picture'?: string;
+    'copy_owner.group'?: string; 'copy_owner.author'?: string};
   'details:study': {study?: StudyRow[]};
 };
 
@@ -94,19 +101,20 @@ export interface StudyRow {
   line?: string;
   model?: string;
   owner?: string;
-  project?: string;
+  run_by?: string;
   tags?: string[];
   compounds?: string;
   drugs?: string[];
   treatment?: string;
-  start?: string;
+  start?: Dayjs;
   last_day?: number;
   next_day?: number;
   end_day?: number;
-  document: string;
+  document: {[key: string]: any};
   source?: string;
   copy_of?: string;
   copy_owner?: string;
+  copy_file_owner?: string;
 }
 
 /** Insert payload for `pmx.study`. */
@@ -118,47 +126,51 @@ export interface StudyInsert {
   line?: string;
   model?: string;
   owner?: string;
-  project?: string;
+  run_by?: string;
   tags?: string[];
   compounds?: string;
   drugs?: string[];
   treatment?: string;
-  start?: string;
+  start?: Dayjs | string;
   last_day?: number;
   next_day?: number;
   end_day?: number;
-  document: string;
+  document: {[key: string]: any};
   source?: string;
   copy_of?: string;
   copy_owner?: string;
+  copy_file_owner?: string;
 }
 
 export type StudyColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'name' | 'code' |
-  'plan_id' | 'stage' | 'line' | 'model' | 'owner' | 'project' | 'tags' | 'compounds' | 'drugs' | 'treatment' |
-  'start' | 'last_day' | 'next_day' | 'end_day' | 'document' | 'source' | 'copy_of' | 'copy_owner';
+  'plan_id' | 'stage' | 'line' | 'model' | 'owner' | 'run_by' | 'tags' | 'compounds' | 'drugs' | 'treatment' |
+  'start' | 'last_day' | 'next_day' | 'end_day' | 'document' | 'source' | 'copy_of' | 'copy_owner' |
+  'copy_file_owner';
 
 /** Expand keys of `pmx.study` → fields each adds to the row (consumed by query()/builder). */
 export type StudyExpand = {
   'plan_id': {'plan_id.name'?: string; 'plan_id.code'?: string; 'plan_id.line'?: string; 'plan_id.model'?: string;
-    'plan_id.owner'?: string; 'plan_id.project'?: string; 'plan_id.tags'?: string[]; 'plan_id.compounds'?: string;
-    'plan_id.drugs'?: string[]; 'plan_id.treatment'?: string; 'plan_id.start'?: string; 'plan_id.end_day'?: number;
-    'plan_id.document'?: string; 'plan_id.source'?: string; 'plan_id.copy_of'?: string;
-    'plan_id.copy_owner'?: string};
+    'plan_id.owner'?: string; 'plan_id.run_by'?: string; 'plan_id.tags'?: string[]; 'plan_id.compounds'?: string;
+    'plan_id.drugs'?: string[]; 'plan_id.treatment'?: string; 'plan_id.start'?: Dayjs; 'plan_id.end_day'?: number;
+    'plan_id.document'?: {[key: string]: any}; 'plan_id.source'?: string; 'plan_id.copy_of'?: string;
+    'plan_id.copy_owner'?: string; 'plan_id.copy_file_owner'?: string};
+  'owner': {'owner.login'?: string; 'owner.firstName'?: string; 'owner.lastName'?: string; 'owner.status'?: string;
+    'owner.createdOn'?: Dayjs; 'owner.picture'?: string; 'owner.group'?: string; 'owner.author'?: string};
+  'copy_owner': {'copy_owner.login'?: string; 'copy_owner.firstName'?: string; 'copy_owner.lastName'?: string;
+    'copy_owner.status'?: string; 'copy_owner.createdOn'?: Dayjs; 'copy_owner.picture'?: string;
+    'copy_owner.group'?: string; 'copy_owner.author'?: string};
 };
 
 export type PmxTransactionOp =
   {op: 'insert'; table: 'code'; ref?: string; values: DG.DomainTxValues<CodeInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'code'; id: string; values: DG.DomainTxValues<Partial<CodeRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'code'; id: string} |
-  {op: 'restore'; table: 'code'; id: string} |
   {op: 'insert'; table: 'plan'; ref?: string; values: DG.DomainTxValues<PlanInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'plan'; id: string; values: DG.DomainTxValues<Partial<PlanRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'plan'; id: string} |
-  {op: 'restore'; table: 'plan'; id: string} |
   {op: 'insert'; table: 'study'; ref?: string; values: DG.DomainTxValues<StudyInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'study'; id: string; values: DG.DomainTxValues<Partial<StudyRow>>; expectedVersion?: number} |
-  {op: 'delete'; table: 'study'; id: string} |
-  {op: 'restore'; table: 'study'; id: string};
+  {op: 'delete'; table: 'study'; id: string};
 
 /** Typed clients for the `pmx` domain schema tables (lazy — no import-time side effects). */
 export const pmxDb = {

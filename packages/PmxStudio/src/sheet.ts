@@ -67,15 +67,21 @@ ${rows.map((r) => `<tr><td>${esc(r.animal)}</td><td>${esc(r.group)}</td><td clas
 </body></html>`;
 }
 
-/** Opens the sheet in a tab of its own, its print dialog up. */
+/** Prints the sheet from a hidden frame of the page: the print dialog over the app, the app free again once it closes
+ *  (a tab of its own shared the app's thread: the app froze while that tab stayed open, QA 0.1.3 round 3, analyst 10;
+ *  and no pop-up to allow). */
 export function printSheet(html: string): void {
-  const w = window.open('', '_blank');
-  if (!w)
-    throw new Error('The browser blocked the sheet\'s tab: allow pop-ups for Datagrok and print again');
+  const frame = document.createElement('iframe');
+  frame.setAttribute('aria-hidden', 'true');
+  Object.assign(frame.style, {position: 'fixed', right: '0', bottom: '0', width: '0', height: '0', border: '0'});
+  document.body.append(frame);
+  const w = frame.contentWindow!;
+  w.document.open();
   w.document.write(html);
   // printed once its images are in. Listened for after the write: writing opens the document anew, and that drops
   // the listeners its window had
   w.addEventListener('load', () => {
+    w.addEventListener('afterprint', () => frame.remove());
     w.focus();
     w.print();
   });

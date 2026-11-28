@@ -991,13 +991,13 @@
       "deepImports": 0,
       "controlBuild": 0,
       "newAppHeader": 0,
-      "rawSubscribe": 19,
+      "rawSubscribe": 22,
       "tsInternalSelectors": 2,
       "subclassU2": 8,
       "subclassEms": 0,
       "classBuildsUi": 0,
       "cssFiles": 2,
-      "cssLines": 508,
+      "cssLines": 546,
       "cssInternalLines": 5,
       "cssImportant": 19,
       "commentLines": 4454,
@@ -1533,6 +1533,41 @@
       "grown": [
         "packages/PmxStudio rawSubscribe: 18 → 19",
         "packages/PmxStudio cssLines: 501 → 508"
+      ]
+    },
+    {
+      "date": "2026-11-27",
+      "reason": "PmxStudio 0.1.3: cssLines +1 is the one media query that folds the stage steps to their dots on a narrow window (QA 0.1.3 designer #20)",
+      "grown": [
+        "packages/PmxStudio cssLines: 508 → 509"
+      ]
+    },
+    {
+      "date": "2026-11-27",
+      "reason": "PmxStudio 0.1.3: cssLines +35 are the redesigned top bar (home icon, centred stage steps, study chip, each with its own hover), Customize this page in place and the animal context panel's sections",
+      "grown": [
+        "packages/PmxStudio cssLines: 509 → 544"
+      ]
+    },
+    {
+      "date": "2026-11-27",
+      "reason": "PmxStudio 0.1.3: cssLines +2 hold the Overview header's stage filters at the Compare buttons' 28 px, so a tick never moves the list (hub.css, 59c288b07a)",
+      "grown": [
+        "packages/PmxStudio cssLines: 544 → 546"
+      ]
+    },
+    {
+      "date": "2026-11-27",
+      "reason": "PmxStudio 0.1.3 review fixes: rawSubscribe +2 are the app's onViewRemoved watch while a page of the app is open (app-open.ts, unsubscribed with the last page) and the tables' change counter behind the unsaved marker (native.ts, unsubscribed with its view); the study grid's column-change list (study-table.ts) replaces the per-cell lookups and the monitor's onRowsAdded folds into one debounced onDataChanged",
+      "grown": [
+        "packages/PmxStudio rawSubscribe: 19 → 21"
+      ]
+    },
+    {
+      "date": "2026-11-28",
+      "reason": "PmxStudio 0.1.3 final QA (navigation): rawSubscribe +1 is the unsaved-changes dialog's close, watched to answer Save / Discard / Cancel when the user moves away from a page with changes not saved (Back, another study opened), unsubscribed as the dialog closes",
+      "grown": [
+        "packages/PmxStudio rawSubscribe: 21 → 22"
       ]
     }
   ]

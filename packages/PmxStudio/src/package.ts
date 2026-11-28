@@ -11,13 +11,12 @@ import {analyzeView} from './analyze-view';
 import {MonitorFrames, monitorFrames, parseLooks} from './monitor';
 import {monitorView, openStudyFile} from './monitor-view';
 import {hubView} from './hub-view';
-import {quietContextPanel, showStage} from './stages';
+import {openRow, quietContextPanel, routeOpen, showStage} from './stages';
 import {decorateStudyView, markRows} from './study-table';
 import {historyKeys, tumorModels} from './priors';
 import {filePreview} from './file-preview';
-import {LinkedRow, domainStorageOn, importFile, linkedRow, rowsOf, list, open, setRowOn} from './store';
-import {tableOf} from './study-file';
-import {plainError, modal} from './ui';
+import {LinkedRow, domainStorageOn, importFile, linkedRow, rowsOf, list} from './store';
+import {plainError, modal, stageOf} from './ui';
 import {esc} from './sheet';
 
 export * from './package.g';
@@ -40,7 +39,7 @@ async function openImported(kind: 'plan' | 'study', content: string): Promise<DG
     grok.shell.info(`Saved as your copy of ${esc(r.copyOf)}'s ${kind}, with an ID of its own.`);
   else if (r.renumbered)
     grok.shell.info(`Saved as a new ${kind} with a new ID: one with this ID already exists.`);
-  await showStage(kind === 'plan' ? 'plan' : 'monitor', await openRow(kind, r.saved.id));
+  await openRow(kind, r.saved.id).then((v) => showStage(stageOf(v) ?? 'monitor', v));
   return [];
 }
 
@@ -69,45 +68,64 @@ function chosenRow(kind: 'plan' | 'study', rows: LinkedRow[]): Promise<string | 
   });
 }
 
-/** A plan or study row opened in its stage: a study in Monitor with its row (so Save updates it), a plan in Plan. */
-async function openRow(kind: 'plan' | 'study', id: string): Promise<DG.ViewBase> {
-  if (kind === 'plan')
-    return planView((await open('plan', id)).doc);
-  const {doc, saved} = await open('study', id);
-  const df = tableOf(doc);
-  setRowOn(df, saved);
-  return monitorView(df);
+/** Once the platform's loading screen is gone (it covers a toast or a dialog shown before the app returns).
+ *  ponytail: the loading screen read by its class; at most 15 s (a renamed class waits no more). */
+async function afterLoading(): Promise<void> {
+  for (let k = 0; k < 75; k++) {
+    const pre = document.querySelector('.grok-preloader');
+    if (!(pre instanceof HTMLElement) || !pre.offsetParent)
+      break;
+    await new Promise((r) => setTimeout(r, 200));
+  }
 }
 
+/** A link's record that could not be opened, said once the page shows (a deleted one: in the trash), and kept until
+ *  read: the stage opens as it is (QA 0.1.3 round 3 chaos 14, a blank Analyze and no word). */
+const linkFailed = (e: any, kind: string) => void afterLoading().then(() =>
+  grok.shell.warning(plainError(e, `The ${kind} in the link could not be opened.`), {autoHide: false}));
+
 export class PackageFunctions {
-  @grok.decorators.app({name: 'PMX Studio',
+  @grok.decorators.app({name: 'PMX Studio', meta: {browsePath: 'Preclinical'},
     description: 'Plans, follows and analyzes xenograft and syngeneic efficacy studies.'})
   static async pmxStudioApp(
     // the app's URL path, which the platform passes: /plan opens Plan, /analyze Analyze, anything else the home
-    @grok.decorators.param({options: {metaUrl: true, optional: true}}) path?: string): Promise<DG.ViewBase> {
+    @grok.decorators.param({options: {metaUrl: true, optional: true}}) path?: string): Promise<DG.ViewBase | null> {
     quietContextPanel();
+    // run again with a page of the app open (Back, Forward, a link, the app opened again): that page takes the
+    // address; no view answered, the platform docks none
+    if (await routeOpen(path))
+      return null;
     // a deep link to a saved record (domain storage): /monitor?study=<id>, /plan?plan=<id>
     const linked = linkedRow();
+    const stage = path?.replace(/^\//, '') ?? '';
+    // (a reload of Analyze opens the study in Analyze again)
+    const inAnalyze = stage.startsWith('analyze');
     if (linked) {
-      const rows = await rowsOf(linked.kind, linked.id);
-      if (rows.length === 1)
-        return openRow(linked.kind, rows[0].id);
+      // (one gone since, or no longer shared: said, and the stage opens as it is)
+      const rows = await rowsOf(linked.kind, linked.id).catch((e) => {
+        linkFailed(e, linked.kind);
+        return [];
+      });
+      if (rows.length === 1) {
+        try {
+          return await openRow(linked.kind, rows[0].id, inAnalyze);
+        } catch (e) {
+          linkFailed(e, linked.kind);
+        }
+      }
       // several: the Overview opens, then asks which one (the platform's loading screen covers any dialog shown
       // before the app returns)
       if (rows.length > 1) {
         void (async () => {
-          while (document.querySelector('.grok-preloader') instanceof HTMLElement &&
-            (document.querySelector('.grok-preloader') as HTMLElement).offsetParent)
-            await new Promise((r) => setTimeout(r, 200));
+          await afterLoading();
           const id = await chosenRow(linked.kind, rows);
           if (id)
-            await showStage(linked.kind === 'plan' ? 'plan' : 'monitor', await openRow(linked.kind, id));
+            await openRow(linked.kind, id, inAnalyze).then((v) => showStage(stageOf(v) ?? 'monitor', v));
         })().catch((e) => grok.shell.error(plainError(e, `The ${linked.kind} could not be opened.`)));
         return hubView();
       }
     }
-    const stage = path?.replace(/^\//, '') ?? '';
-    return stage.startsWith('analyze') ? analyzeView() : stage.startsWith('monitor') ? monitorView() :
+    return inAnalyze ? analyzeView() : stage.startsWith('monitor') ? monitorView() :
       stage.startsWith('plan') ? planView() : hubView();
   }
 
@@ -123,7 +141,7 @@ export class PackageFunctions {
       const group = treeNode.group(caption);
       for (const e of entries.filter((x) => x.row.kind === kind)) {
         group.item(e.id ? `${e.name} (${e.id})` : e.name).onSelected.subscribe(() =>
-          void openRow(kind, e.row.id).then((v) => showStage(kind === 'plan' ? 'plan' : 'monitor', v),
+          void openRow(kind, e.row.id).then((v) => showStage(stageOf(v) ?? 'monitor', v),
             (err) => grok.shell.error(err instanceof Error ? err.message : String(err))));
       }
     }
@@ -165,11 +183,11 @@ export class PackageFunctions {
     // @ts-expect-error (the platform's `visible` rule, as in pmxPlanStudy)
     @grok.decorators.param({type: 'string', options: {category: 'Study', caption: 'Plan', optional: true, nullable: true, visible: 'false', description: 'The plan saved in Plan (its .pmxplan file’s contents).'}}) plan: string | null,
     @grok.decorators.param({type: 'string', options: {category: 'Study', caption: 'Planned reviews', optional: true, nullable: true, description: 'The study days fixed at the start to review each treated group, comma-separated, e.g. 7, 10.'}}) looks: string | null,
-    @grok.decorators.param({options: {category: 'Monitoring', caption: 'Cell line', choices: 'PmxStudio:pmxLines()', initialValue: 'MC38', description: 'The tumor model: its growth model from the atlas of historical controls makes the forecasts.'}}) line: string,
+    @grok.decorators.param({type: 'string', options: {category: 'Monitoring', caption: 'Cell line', optional: true, nullable: true, choices: 'PmxStudio:pmxLines()', description: 'The tumor model: its growth model from the atlas of historical controls makes the forecasts (empty: none assumed, the study’s own is picked).'}}) line: string | null,
     @grok.decorators.param({options: {category: 'Monitoring', caption: 'Control group', optional: true, nullable: true, description: 'The control (vehicle) group (empty: the one named vehicle, control, PBS, saline or untreated, else the first).'}}) control: string,
     @grok.decorators.param({options: {category: 'Monitoring', caption: 'Endpoint volume', units: 'mm³', min: '500', max: '3000', initialValue: '1000', description: 'The study ends when the median control reaches it.'}}) endpoint: number,
     @grok.decorators.param({options: {category: 'Monitoring', caption: 'Humane limit', units: 'mm³', min: '500', max: '4000', initialValue: '1500', description: 'Your protocol’s limit: an animal near it is listed. Workman 2010 advises a mean diameter of 1.5 cm at most in therapy studies, about 1,700 mm³. Your lab’s limit is set once, in the package’s settings.'}}) humane: number,
-    @grok.decorators.param({options: {category: 'Advanced', caption: 'Multiple comparisons', choices: ['holm', 'bonferroni', 'none'], initialValue: 'holm', description: 'Correction over the groups compared with the control in the final test.'}}) correction: string,
+    @grok.decorators.param({options: {category: 'Advanced', caption: 'Multiple comparisons', choices: ['bonferroni', 'holm', 'bh', 'none'], initialValue: 'bonferroni', description: 'Correction over the groups compared with the control in the final test.'}}) correction: string,
     @grok.decorators.param({options: {category: 'Advanced', caption: 'Evaluation day', optional: true, nullable: true, description: 'Leave empty for the day the median control reaches the endpoint volume.'}}) evaluationDay?: number,
     @grok.decorators.param({options: {category: 'Advanced', caption: 'Significance (α)', optional: true, min: '0.001', max: '0.2', initialValue: '0.05', description: 'Two-sided significance level of the final test.'}}) alpha?: number,
     @grok.decorators.param({options: {category: 'Advanced', caption: 'Humane limit, weight loss', optional: true, units: '%', min: '5', max: '50', initialValue: '20', description: 'An animal is listed when it nears this loss of weight, and is over it at this one (your institution’s limit).'}}) weightLimit?: number,
@@ -202,7 +220,7 @@ export class PackageFunctions {
   static pmxMarkStudyRows(
     @grok.decorators.param({options: {description: 'The study table.'}}) table: DG.DataFrame,
     @grok.decorators.param({options: {description: 'The rows, comma-separated indexes.'}}) rows: string,
-    @grok.decorators.param({options: {choices: ['flag', 'exclude', 'clear'], description: 'What to do with them.'}}) action: string,
+    @grok.decorators.param({options: {choices: ['flag', 'exclude', 'clear', 'correct'], description: 'What to do with them (correct: the first row\'s values, asked in a dialog).'}}) action: string,
     @grok.decorators.param({options: {description: 'The rows in words, for the dialog and the study\'s log.'}}) what: string): void {
     markRows(table, rows.split(',').map(Number), action, what);
   }
@@ -227,7 +245,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'pmxPlanStudy',
-    description: 'Designs a xenograft or syngeneic efficacy study de novo with Crux stats.tumor_study_design: from the cell line, the endpoint volume and the treated arms (each with its kind of therapy and expected TGI or T/C), predicts the end of the study (when the median control reaches the endpoint) and its uncertainty, each arm’s kill rate, the analysable animals per arm for the declared assurance (power over the historical-control prior) with the multiplicity correction chosen (Holm by default; each arm against the control by Welch’s t test), the animals to implant for them, the power curves and the predicted control and treated arms. Given a number of animals per arm, the power there and each arm’s minimum detectable effect. Given an end of study, the study is evaluated that day; the power by end of study shows what ending earlier or later costs, and the power by measurement schedule what measuring less often costs.',
+    description: 'Designs a xenograft or syngeneic efficacy study de novo with Crux stats.tumor_study_design: from the cell line, the endpoint volume and the treated arms (each with its kind of therapy and expected TGI or T/C), predicts the end of the study (when the median control reaches the endpoint) and its uncertainty, each arm’s kill rate, the analysable animals per arm for the declared assurance (power over the historical-control prior) with the multiplicity correction chosen (Bonferroni by default; each arm against the control by Welch’s t test), the animals to implant for them, the power curves and the predicted control and treated arms. Given a number of animals per arm, the power there and each arm’s minimum detectable effect. Given an end of study, the study is evaluated that day; the power by end of study shows what ending earlier or later costs, and the power by measurement schedule what measuring less often costs.',
     outputs: [
       {name: 'plan', type: 'dataframe', options: {description: 'The study: one row.'}},
       {name: 'armResults', type: 'dataframe', options: {description: 'The treated arms: one row each.'}},
@@ -244,7 +262,7 @@ export class PackageFunctions {
     @grok.decorators.param({options: {category: 'Tumor model', caption: 'Endpoint volume', nullable: false, units: 'mm³', min: '500', max: '3000', initialValue: '1000', description: 'The study ends when the median control reaches it.'}}) endpoint: number,
     @grok.decorators.param({options: {category: 'Treatment arms', caption: 'Arms', optional: true, description: 'The treated arms, each compared with the control: name, therapy (small_molecule, biologic, immunotherapy, immune_agonist, cell_therapy, vaccine_peptide, oligo_rna), metric (TGI or TC) and the expected effect in percent. Empty: one small-molecule arm at TGI 60%.'}}) arms: DG.DataFrame,
     @grok.decorators.param({options: {category: 'Design', caption: 'Target power', nullable: false, units: '%', min: '50', max: '99', step: '1', initialValue: '80', description: 'Chance of detecting each arm’s effect.'}}) power: number,
-    @grok.decorators.param({options: {category: 'Advanced', caption: 'Multiple comparisons', nullable: false, choices: ['holm', 'bonferroni', 'none'], initialValue: 'holm', description: 'Correction over the arms compared with the control, each by Welch’s t test: Holm (recommended), Bonferroni, or none (each comparison at alpha, as in an exploratory study).'}}) correction: string,
+    @grok.decorators.param({options: {category: 'Advanced', caption: 'Multiple comparisons', nullable: false, choices: ['bonferroni', 'holm', 'bh', 'none'], initialValue: 'bonferroni', description: 'Correction over the arms compared with the control, each by Welch’s t test: Bonferroni (recommended), Holm, Benjamini-Hochberg (bh: controls the false discovery rate, for screening many arms, not for an efficacy claim. Plan sizes it as Bonferroni) or none (each comparison at alpha, as in an exploratory study).'}}) correction: string,
     // set from the Plan view's Analyzable and End of study cards
     // @ts-expect-error (the platform's `visible` rule, as above)
     @grok.decorators.param({type: 'int', options: {category: 'Design', visible: 'false', caption: 'Animals per arm', optional: true, nullable: true, min: '2', max: '100', description: 'Empty for the number the target power needs, or set it to see the power and smallest detectable effect with that many.'}}) n?: number,
@@ -277,14 +295,15 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'string', options: {category: 'Design', caption: 'Planned reviews', optional: true, nullable: true, description: 'Study days to review each treated arm while the study runs, comma-separated, e.g. 7, 10: Monitor gives each arm’s chance of success on those days. They are fixed when the study starts.'}}) looks?: string | null,
   ): Promise<PlanFrames> {
     parseLooks(looks); // (kept with the plan for Monitor; a list that is not days is said here, not there)
-    return planFrames(declarationOf({line, endpoint, arms, power, correction, measurementDays, n, lastDay, alpha,
+    const d = declarationOf({line, endpoint, arms, power, correction, measurementDays, n, lastDay, alpha,
       preLoss, postLoss, lossRule, confidence, vRand, startWeekday, humane, compareSchedules, detectableEffect,
-      fits, effectAs}), tgisOf(tgiScenarios));
+      fits, effectAs});
+    return planFrames(d, tgisOf(tgiScenarios, d.endpoint, d.vRand));
   }
 
   @grok.decorators.func({
     name: 'pmxAnalyzeStudy',
-    description: 'Analyzes a xenograft or syngeneic efficacy study as PMX Studio’s Plan pre-specifies it, with Crux stats.tgi and stats.contrast: each treated arm against the control on the per-animal slope of log tumor volume from randomization to the evaluation day (Welch’s t test, each group its own variance, with the multiplicity correction chosen: Holm by default). The evaluation day is the first measurement day the median control reaches the endpoint volume, as in the design. Also each arm’s TGI and T/C on that day, the median time to the endpoint volume, and per animal the slope, the time to the endpoint and the mRECIST category. With Crux stats.tumor_twin, the digital twin of each treated animal: what it would measure untreated (from its volume at randomization, the study’s controls and the cell line’s model), its paired effect on the evaluation day, and each control checked against the others. Given the plan saved in Plan, the study against it: the controls against their predicted growth, the end against the predicted day, each arm’s TGI or T/C against the one assumed. Given the body weight, with Crux stats.tumor_body_weight, whether the treatments were tolerated: each group’s weight change from day 0, measured and without the tumor’s mass (its volume at the cell line’s density, or at the study’s when the excised tumors were weighed), its weight-loss grades (CTCAE v5, adapted), the animals removed early and whether each group stays within the NCI limits for a treatment (a mean loss at the nadir over 20%, or over 10% of the animals dead or removed for their weight).',
+    description: 'Analyzes a xenograft or syngeneic efficacy study as PMX Studio’s Plan pre-specifies it, with Crux stats.tgi and stats.contrast: each treated arm against the control on the per-animal slope of log tumor volume from randomization to the evaluation day (Welch’s t test, each group its own variance, with the multiplicity correction chosen: Bonferroni by default). The evaluation day is the first measurement day the median control reaches the endpoint volume, as in the design. Also each arm’s TGI and T/C on that day, the median time to the endpoint volume, and per animal the slope, the time to the endpoint and the mRECIST category. With Crux stats.tumor_twin, the digital twin of each treated animal: what it would measure untreated (from its volume at randomization, the study’s controls and the cell line’s model), its paired effect on the evaluation day, and each control checked against the others. Given the plan saved in Plan, the study against it: the controls against their predicted growth, the end against the predicted day, each arm’s TGI or T/C against the one assumed. Given the body weight, with Crux stats.tumor_body_weight, whether the treatments were tolerated: each group’s weight change from day 0, measured and without the tumor’s mass (its volume at the cell line’s density, or at the study’s when the excised tumors were weighed), its weight-loss grades (CTCAE v5, adapted), the animals removed early and whether each group stays within the NCI limits for a treatment (a mean loss at the nadir over 20%, or over 10% of the animals dead or removed for their weight).',
     outputs: [
       {name: 'analysis', type: 'dataframe', options: {description: 'The analysis: one row.'}},
       {name: 'comparisons', type: 'dataframe', options: {description: 'Each treated arm against the control: one row each.'}},
@@ -293,7 +312,7 @@ export class PackageFunctions {
       {name: 'twins', type: 'dataframe', options: {description: 'Per treated animal and day: its measured volume and what it would measure untreated (median and 90% band).'}},
       {name: 'effects', type: 'dataframe', options: {description: 'Per treated animal: how much smaller it is than its untreated twin on the evaluation day, with a 90% interval.'}},
       {name: 'checks', type: 'dataframe', options: {description: 'Per control measurement: its band predicted from the other controls, and whether it falls inside.'}},
-      {name: 'versusPlan', type: 'dataframe', options: {description: 'Per treated arm: the plan arm it ran as, the effect the plan assumed and the one observed with its 95% interval, and whether the assumption held.'}},
+      {name: 'versusPlan', type: 'dataframe', options: {description: 'Per treated arm: the plan arm it ran as, the effect the plan assumed and the one observed on the evaluation day, and whether the assumption held.'}},
       {name: 'predicted', type: 'dataframe', options: {description: 'The controls as the plan (or, with none, the atlas) predicted them and as observed: median and range per day.'}},
       {name: 'tolerability', type: 'dataframe', options: {description: 'Per group, measured and tumor-corrected: the weight-loss grades, the mean nadir, the recoveries, the animals removed and whether it is beyond the NCI limits (empty without body weight).'}},
       {name: 'weights', type: 'dataframe', options: {description: 'Per group and day, measured and tumor-corrected: the mean body weight change from day 0 and its range (empty without body weight).'}},
@@ -311,10 +330,10 @@ export class PackageFunctions {
     // the plan's text, not a file: the Analyze view reads the file into it
     // @ts-expect-error (the platform's `visible` rule, as above)
     @grok.decorators.param({type: 'string', options: {category: 'Study', caption: 'Plan', optional: true, nullable: true, visible: 'false', description: 'The plan saved in Plan (its .pmxplan file’s contents), to compare the study with.'}}) plan: string | null,
-    @grok.decorators.param({options: {category: 'Analysis', caption: 'Cell line', nullable: false, choices: 'PmxStudio:pmxLines()', initialValue: 'MC38', description: 'The tumor model: its growth model from the atlas of historical controls predicts each treated animal untreated.'}}) line: string,
-    @grok.decorators.param({options: {category: 'Analysis', caption: 'Control group', optional: true, nullable: true, description: 'The control (vehicle) group (empty: the one named vehicle, control, PBS, saline or untreated, else the first).'}}) control: string,
+    @grok.decorators.param({type: 'string', options: {category: 'Analysis', caption: 'Cell line', optional: true, nullable: true, choices: 'PmxStudio:pmxLines()', description: 'The tumor model: its growth model from the atlas of historical controls predicts each treated animal untreated (empty: no twin and no atlas checks; never assumed).'}}) line: string | null,
+    @grok.decorators.param({options: {category: 'Analysis', caption: 'Control group', optional: true, nullable: true, description: 'The control (vehicle) group (empty: the one named vehicle, control, PBS, saline or untreated; with none so named, the analysis asks for it).'}}) control: string,
     @grok.decorators.param({options: {category: 'Analysis', caption: 'Endpoint volume', nullable: false, units: 'mm³', min: '500', max: '3000', initialValue: '1000', description: 'The effects are read on the first measurement day the median control reaches this volume, as the design defines the end of the study.'}}) endpoint: number,
-    @grok.decorators.param({options: {category: 'Analysis', caption: 'Multiple comparisons', nullable: false, choices: ['holm', 'bonferroni', 'none'], initialValue: 'holm', description: 'Correction over the arms compared with the control, each by Welch’s t test: Holm (recommended), Bonferroni, or none (each comparison at alpha, as in an exploratory study).'}}) correction: string,
+    @grok.decorators.param({options: {category: 'Analysis', caption: 'Multiple comparisons', nullable: false, choices: ['bonferroni', 'holm', 'bh', 'none'], initialValue: 'bonferroni', description: 'Correction over the arms compared with the control, each by Welch’s t test: Bonferroni (recommended), Holm, Benjamini-Hochberg (bh: controls the false discovery rate, for screening many arms, not for an efficacy claim. Plan sizes it as Bonferroni) or none (each comparison at alpha, as in an exploratory study).'}}) correction: string,
     @grok.decorators.param({options: {category: 'Advanced', caption: 'Evaluation day', optional: true, nullable: true, description: 'Leave empty for the day the median control reaches the endpoint volume (the last day if it never does).'}}) evaluationDay?: number,
     @grok.decorators.param({options: {category: 'Advanced', caption: 'Significance (α)', optional: true, min: '0.001', max: '0.2', initialValue: '0.05', description: 'Two-sided significance level of the comparisons with the control.'}}) alpha?: number,
     @grok.decorators.param({options: {category: 'Advanced', caption: 'Humane limit, weight loss', optional: true, units: '%', min: '5', max: '50', initialValue: '20', description: 'An animal is removed when it loses this much weight (your institution’s limit).'}}) weightLimit?: number,

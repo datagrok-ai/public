@@ -7,6 +7,7 @@
    to the study's log (who, when, what). Nothing is ever deleted: an excluded row stays, greyed. A table is a study once
    Monitor or Analyze has run on it: its columns' roles are kept on it (STUDY_TAG), which is what the menu and the
    painting look for. */
+import {minOf} from './format';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -21,9 +22,10 @@ import {ROLES, WEIGHT, pastedNumber, plural} from './wide-table';
 import {EXCLUDED, FLAGGED, MARK_REASON, STUDY_TAG, addLog, groupsShown, roleColumns, ticked} from './study-file';
 import {metaOf, weightChangeText} from './study-meta';
 import {colorsOfTable, paint} from './colors';
-import {PanelFact, PanelVerdict, dialogLine, factList, objectPanel, okNamed, showCentred, signed, sparkline, stageOf,
+import {PanelFact, dialogLine, objectPanel, okNamed, showCentred, signed, sparkline, stageOf,
   modal, preparing} from './ui';
 import {esc} from './sheet';
+import {ReadingCheck, checkTyped} from './reading-check';
 
 export {pastedNumber};
 
@@ -131,9 +133,10 @@ export function animalMarks(n: StudyNames): Map<string, Mark | 'partly'> {
 }
 
 /** One animal's readings, by day: the volumes kept (excluded rows left out), its group, the rows excluded and flagged
- *  with their reasons, and its first and last body weight (null: none weighed). */
+ *  with their reasons, its first and last body weight (null: none weighed) and every weighing by day. */
 export function animalReadings(n: StudyNames, animal: string): {days: number[], volumes: number[], group: string,
-  excluded: number, flagged: number, reasons: string[], weights: [number, number] | null, weightDay0: number | null} {
+  excluded: number, flagged: number, reasons: string[], weights: [number, number] | null, weightDay0: number | null,
+  weighed: [number, number][]} {
   const df = n.study;
   const [a, g, d, v] = [n.animal, n.group, n.day, n.volume].map((c) => df.col(c)!);
   const w = n.bodyWeight ? df.col(n.bodyWeight) : null;
@@ -163,27 +166,24 @@ export function animalReadings(n: StudyNames, animal: string): {days: number[], 
   weighed.sort((x, y) => x[0] - y[0]);
   return {days: kept.map((x) => x[0]), volumes: kept.map((x) => x[1]), group, excluded, flagged,
     reasons: [...reasons], weights: weighed.length ? [weighed[0][1], weighed[weighed.length - 1][1]] : null,
-    weightDay0: weighed.length ? weighed[0][0] : null};
+    weightDay0: weighed.length ? weighed[0][0] : null, weighed};
 }
 
 /** A % change with its sign either way: "+4%", "−3%", "0%" (what rounds to 0 has none). */
 export const gain = (x: number) => `${Math.round(x) > 0 ? '+' : ''}${signed(x)}`;
 
-/** An animal in the context panel: its group under its name only when `showGroup` (a blinded study's stays hidden),
- *  its answer when there is one (`verdict`: Analyze's twin; Monitor has none), its tumor, weight and marks, `extra`
- *  facts after, and `growth` folded with its readings (without it, the readings are a fact). */
-export function animalPanel(n: StudyNames, animal: string, o: {color?: string, showGroup: boolean,
-  extra?: PanelFact[], verdict?: PanelVerdict | null, growth?: PanelFact[],
+/** An animal's facts: its tumor (curve and last volume), readings, weight and marks, then `extra`. */
+export function animalFacts(n: StudyNames, animal: string, o: {color?: string, extra?: PanelFact[],
   /** the study's weight-loss limit (%): a change near it worded as its check words it */
-  weightLimit?: number | null}): HTMLElement {
+  weightLimit?: number | null}): PanelFact[] {
   const r = animalReadings(n, animal);
   const last = r.volumes.length ? r.volumes[r.volumes.length - 1] : null;
   const readings: PanelFact = {label: 'Readings', value: r.days.length ?
     `${r.days.length}, day ${r.days[0]} to ${r.days[r.days.length - 1]}` : '0'};
-  const facts: PanelFact[] = [
+  return [
     {label: 'Tumor', value: divH([sparkline(r.days, r.volumes, o.color), span(last === null ? '—' :
       ` ${Math.round(last)} mm³ on day ${r.days[r.days.length - 1]}`)])},
-    ...o.growth ? [] : [readings],
+    readings,
     // a gain with its "+", as Needs attention writes it (signed() marks only a loss)
     ...r.weights ? [{label: 'Body weight', value: `${r.weights[1].toFixed(1)} g · ${weightChangeText(100 *
       (r.weights[1] / r.weights[0] - 1), o.weightLimit)} since day ${r.weightDay0}`}] : [],
@@ -191,9 +191,15 @@ export function animalPanel(n: StudyNames, animal: string, o: {color?: string, s
     ...r.flagged ? [{label: 'Flagged', value: plural(r.flagged, 'reading')}] : [],
     ...r.reasons.length ? [{label: 'Why', value: r.reasons.join('; ')}] : [],
     ...o.extra ?? []];
-  return objectPanel({title: animal, color: o.showGroup ? o.color : undefined,
-    subtitle: o.showGroup && r.group ? r.group : undefined, verdict: o.verdict, facts,
-    sections: o.growth ? [{title: 'Growth', content: () => factList([...o.growth!, readings])}] : []});
+}
+
+/** An animal in the context panel outside a stage (a study open nowhere): its group under its name only when
+ *  `showGroup` (a blinded study's stays hidden), then its facts. The stages show theirs (animal-panel.ts). */
+export function animalPanel(n: StudyNames, animal: string, o: {color?: string, showGroup: boolean,
+  extra?: PanelFact[], weightLimit?: number | null}): HTMLElement {
+  const group = o.showGroup ? animalReadings(n, animal).group : '';
+  return objectPanel({title: animal, color: o.showGroup ? o.color : undefined, subtitle: group || undefined,
+    facts: animalFacts(n, animal, o)});
 }
 
 /** An animal as a line of a group's panel: name, curve, last volume, its status in a word or two; a click shows the
@@ -226,6 +232,10 @@ export function mark(df: DG.DataFrame, rows: number[], state: Mark | null, reaso
   const [e, f, r] = state === null ? [df.col(EXCLUDED), df.col(FLAGGED), df.col(MARK_REASON)] :
     [df.columns.getOrCreate(EXCLUDED, DG.TYPE.BOOL), df.columns.getOrCreate(FLAGGED, DG.TYPE.BOOL),
       df.columns.getOrCreate(MARK_REASON, DG.TYPE.STRING)];
+  // what the rows had: a clear says what it cleared, and a clear of nothing is no change to log
+  const had = rows.map((i) => ticked(e, i) ? 'excluded' : ticked(f, i) ? 'flagged' : '');
+  if (state === null && had.every((h) => !h))
+    return;
   for (const i of rows) {
     const wasOut = ticked(e, i);
     if (state === null) {
@@ -242,12 +252,14 @@ export function mark(df: DG.DataFrame, rows: number[], state: Mark | null, reaso
   // in a blinded study, whether whoever marked them knew the groups (ARRIVE asks)
   const how = !metaOf(df)?.blinded ? '' : groupsShown(df) ? ' (groups revealed)' : ' (blinded)';
   addLog(df, (state ? `${state === 'excluded' ? 'Excluded' : 'Flagged'} ${what}${reason ? `: ${reason}` : ''}` :
-    `Cleared the mark on ${what}`) + how);
+    had.includes('excluded') ? `Included ${what} in the analysis again` : `Cleared the flag on ${what}`) + how);
 }
 
 /** A context menu's item (detectors.js): flags or excludes the rows, asking why (required to exclude), or clears
  *  their marks. */
 export function markRows(df: DG.DataFrame, rows: number[], action: string, what: string, done = () => {}): void {
+  if (action === 'correct')
+    return correctDialog(df, rows[0], done);
   if (action === 'clear') {
     mark(df, rows, null, '', what);
     done();
@@ -279,6 +291,148 @@ export function markRows(df: DG.DataFrame, rows: number[], action: string, what:
     reason.input.addEventListener('input', sync);
     sync();
   }
+}
+
+/** The columns a reading is typed in: the volume, or the caliper's length and width when the volume is computed
+ *  from them (caliperVolume's formula); the body weight when the study has one. */
+export interface ReadingColumns {volume: DG.Column, caliper: {length: DG.Column, width: DG.Column} | null,
+  weight: DG.Column | null}
+export function readingColumns(df: DG.DataFrame, volume: DG.Column, weight: DG.Column | null): ReadingColumns {
+  const f = /^\$\{(.+)\} \* \$\{(.+)\} \* \$\{\2\} \/ 2$/.exec(volume.getTag(DG.TAGS.FORMULA) ?? '');
+  const [l, w] = f ? [df.col(f[1]), df.col(f[2])] : [null, null];
+  return {volume, caliper: l && w ? {length: l, width: w} : null, weight};
+}
+
+/** The caliper's volume, as caliperVolume's column computes it (mm³). */
+export const ellipsoid = (length: number, width: number) => length * width * width / 2;
+
+/** A study's reading columns, by its roles (null: not a study). */
+function readingsOf(df: DG.DataFrame): {n: StudyNames, cols: ReadingColumns} | null {
+  const n = studyOf(df);
+  return n ? {n, cols: readingColumns(df, df.col(n.volume)!, n.bodyWeight ? df.col(n.bodyWeight) : null)} : null;
+}
+
+/** An animal's latest reading with a volume, not excluded: its row (null: none). */
+export function lastReadingRow(n: StudyNames, animal: string): number | null {
+  const [a, d, v, out] = [n.study.col(n.animal)!, n.study.col(n.day)!, n.study.col(n.volume)!, n.study.col(EXCLUDED)];
+  let best: number | null = null;
+  for (let i = 0; i < n.study.rowCount; i++) {
+    if (String(a.get(i)) === animal && !d.isNone(i) && !v.isNone(i) && !ticked(out, i) &&
+      (best === null || d.get(i) >= d.get(best)))
+      best = i;
+  }
+  return best;
+}
+
+/** Writes new values into one row (column name to value) and logs old → new with the reason; nothing changed, nothing
+ *  written. Returns the log line (null: no change). */
+export function correctValues(df: DG.DataFrame, row: number, values: {[column: string]: number}, reason: string,
+  what: string): string | null {
+  const changes = Object.entries(values).filter(([c, x]) => {
+    const col = df.col(c)!;
+    return col.isNone(row) || col.get(row) !== x;
+  });
+  if (!changes.length)
+    return null;
+  const was = (c: string) => df.col(c)!.isNone(row) ? 'empty' : String(+Number(df.col(c)!.get(row)).toFixed(2));
+  const text = `Corrected ${what}: ${changes.map(([c, x]) => `${c} ${was(c)} → ${x}`).join(', ')}` +
+    (reason ? ` (${reason})` : '');
+  for (const [c, x] of changes)
+    df.col(c)!.set(row, x, false);
+  df.fireValuesChanged();
+  addLog(df, text);
+  return text;
+}
+
+/** "Correct this value…": the row's volume (or caliper readings) and body weight, a reason required, old → new in the
+ *  study's log. */
+export function correctDialog(df: DG.DataFrame, row: number, done = () => {}): void {
+  const r = readingsOf(df);
+  if (!r)
+    return;
+  const what = `${r.n.study.get(r.n.animal, row)} on day ${r.n.study.get(r.n.day, row)}`;
+  // typed as text and read as the day's entry reads it (decimal commas; "abc" or "1e9" not a number), checked by
+  // the same rule (checkTyped): a correction and an entry never disagree (QA 0.1.3 round 3: technician N3, N4, N15)
+  const num = (c: DG.Column, label: string): [DG.Column, DG.InputBase<string>, string] => {
+    const i = ui.input.string(label, {value: c.isNone(row) ? '' : String(+Number(c.get(row)).toFixed(3))});
+    (i.input as HTMLInputElement).inputMode = 'decimal';
+    return [c, i, label];
+  };
+  const fields: [DG.Column, DG.InputBase<string>, string][] = [
+    ...r.cols.caliper ? [num(r.cols.caliper.length, 'Length (mm)'), num(r.cols.caliper.width, 'Width (mm)')] :
+      [num(r.cols.volume, 'Volume (mm³)')],
+    ...r.cols.weight ? [num(r.cols.weight, 'Body weight (g)')] : []];
+  const typed = (i: DG.InputBase<string>) => pastedNumber(i.value ?? '');
+  const reason = ui.input.string('Reason *', {value: '', tooltipText: 'Required: it goes in the log with the change'});
+  (reason.input as HTMLInputElement).placeholder = 'Required: it goes in the log';
+  const d = modal('correct-reading', `Correct ${what}`);
+  if (!d)
+    return;
+  // each value checked as the day's entry checks it (checkReading), against the animal's reading before this one
+  const status = dialogLine('');
+  const valuesNow = (): {[c: string]: number} => {
+    const values: {[c: string]: number} = {};
+    for (const [c, i] of fields) {
+      const x = typed(i);
+      if (x !== null && Number.isFinite(x))
+        values[c.name] = x;
+    }
+    if (r.cols.caliper && values[r.cols.caliper.length.name] !== undefined &&
+      values[r.cols.caliper.width.name] !== undefined) {
+      // (the computed column follows its readings; set too, so every reader has it at once)
+      values[r.cols.volume.name] = ellipsoid(values[r.cols.caliper.length.name], values[r.cols.caliper.width.name]);
+    }
+    return values;
+  };
+  const checks = (): ReadingCheck[] => {
+    const v = valuesNow();
+    // a value the row has, erased: no reading (taking a day off is Enter today's values' Remove this day's values)
+    const erased = fields.filter(([c, i]) => !c.isNone(row) && typed(i) === null)
+      .map(([, , label]) => `Type the ${label[0].toLowerCase()}${label.slice(1)}`);
+    // a field that is no number: said for that field, its value not read
+    const unread = fields.filter(([, i]) => Number.isNaN(typed(i)))
+      .map(([, , label]): ReadingCheck => ({kind: 'impossible', why: `${label}: not a number, write it as a plain ` +
+        'number'}));
+    const weight = r.cols.weight;
+    return [...erased.map((why): ReadingCheck => ({kind: 'impossible', why})), ...unread,
+      checkTyped(v[r.cols.volume.name] ?? null, {before: readingBefore(df, r.n, row, r.cols.volume)}),
+      ...weight ? [checkTyped(v[weight.name] ?? null, {weight: true,
+        before: readingBefore(df, r.n, row, weight)})] : []].filter((x): x is ReadingCheck => !!x);
+  };
+  d.add(dialogLine('The old value stays in the study\'s log, with the new one and why'))
+    .add(ui.inputs([...fields.map(([, i]) => i), reason])).add(status)
+    .onOK(() => {
+      if (checks().some((k) => k.kind === 'impossible') || !(reason.value ?? '').trim())
+        return;
+      if (correctValues(df, row, valuesNow(), (reason.value ?? '').trim(), what))
+        done();
+    });
+  const ok = okNamed(d, 'Correct');
+  const sync = () => {
+    const found = checks().filter((k) => k.kind !== 'ok');
+    const bad = found.find((k) => k.kind === 'impossible');
+    status.textContent = found.map((k) => k.why).join('; ');
+    status.style.color = bad ? 'var(--dg-red, #d9534f)' : found.length ? 'var(--dg-orange, #e08a00)' : '';
+    const noReason = (reason.value ?? '').trim() === '';
+    ok.disabled = !!bad || noReason;
+    ok.title = bad ? bad.why : noReason ? 'Write the reason first: it goes in the log' : '';
+  };
+  for (const i of [...fields.map(([, x]) => x), reason])
+    i.input.addEventListener('input', sync);
+  sync();
+  showCentred(d);
+}
+
+/** The animal's reading in `col` before `row`'s day (null: none), what a corrected value is read against. */
+function readingBefore(df: DG.DataFrame, n: StudyNames, row: number, col: DG.Column): number | null {
+  const [a, d] = [df.col(n.animal)!, df.col(n.day)!];
+  let best: number | null = null;
+  for (let i = 0; i < df.rowCount; i++) {
+    if (String(a.get(i)) === String(a.get(row)) && !d.isNone(i) && d.get(i) < d.get(row) && !col.isNone(i) &&
+      (best === null || d.get(i) > d.get(best)))
+      best = i;
+  }
+  return best === null ? null : col.get(best);
 }
 
 /** What the rules in force find in a study, row by row. */
@@ -534,36 +688,51 @@ export function decorateStudyView(view: DG.TableView): void {
   root.dataset.pmxStudy = '1';
   const grid = view.grid;
   let findings = new Map<number, Finding[]>();
-  let timer = 0;
   const rerun = () => {
+    cells = null;
     const n = studyOf(df);
     if (n)
       dayFormat(df.col(n.day)!);
     findings = n ? findingsOf(n) : new Map();
     grid.invalidate();
   };
-  const later = () => {
-    window.clearTimeout(timer);
-    timer = window.setTimeout(rerun, 300);
+  // what a painted cell reads (the mark columns, each study column's kind), resolved once per change of the table's
+  // columns or roles, not per cell: a repaint paints every visible cell
+  let cells: {excluded: DG.Column | null, flagged: DG.Column | null, kinds: Map<string, Finding['on']>} | null = null;
+  const cellsNow = () => {
+    if (!cells) {
+      const n = studyOf(df);
+      const kinds = new Map<string, Finding['on']>();
+      if (n) {
+        for (const c of [n.animal, n.group, n.day])
+          kinds.set(c, 'row');
+        if (n.bodyWeight)
+          kinds.set(n.bodyWeight, 'weight');
+        kinds.set(n.volume, 'volume');
+      }
+      cells = {excluded: df.col(EXCLUDED), flagged: df.col(FLAGGED), kinds};
+    }
+    return cells;
   };
-  const kindOf = (column: string): Finding['on'] | null => {
-    const n = studyOf(df);
-    return !n ? null : column === n.volume ? 'volume' : column === n.bodyWeight ? 'weight' :
-      [n.animal, n.group, n.day].includes(column) ? 'row' : null;
-  };
+  const columnsChanged = () => cells = null;
   const subs = [grid.onCellPrepare((gc) => {
     if (!gc.isTableCell || gc.tableRowIndex === null || !gc.tableColumn)
       return;
     const i = gc.tableRowIndex;
-    const state = markOf(df, i).state;
+    const c = cellsNow();
+    const state = ticked(c.excluded, i) ? 'excluded' : ticked(c.flagged, i) ? 'flagged' : '';
     if (state === 'excluded')
       gc.style.textColor = COLORS.excluded;
-    const kind = kindOf(gc.tableColumn.name);
     if (state === 'flagged')
       gc.style.backColor = COLORS.flagged;
-    else if (kind && findings.get(i)?.some((f) => f.on === kind || f.on === 'row'))
-      gc.style.backColor = COLORS.finding;
-  }), df.onDataChanged.subscribe(later)];
+    else if (findings.has(i)) {
+      const kind = c.kinds.get(gc.tableColumn.name);
+      if (kind && findings.get(i)!.some((f) => f.on === kind || f.on === 'row'))
+        gc.style.backColor = COLORS.finding;
+    }
+  }), DG.debounce(df.onDataChanged, 300).subscribe(rerun),
+  ...[df.onColumnsAdded, df.onColumnsRemoved, df.onColumnNameChanged, df.onMetadataChanged]
+    .map((e) => e.subscribe(columnsChanged))];
   grid.onCellTooltip((gc, x, y) => {
     if (!gc.isTableCell || gc.tableRowIndex === null)
       return false;
@@ -579,7 +748,6 @@ export function decorateStudyView(view: DG.TableView): void {
   const removed = grok.events.onViewRemoved.subscribe((v) => {
     if (v.root !== root)
       return;
-    window.clearTimeout(timer);
     subs.forEach((s) => s.unsubscribe());
     stopRules();
     removed.unsubscribe();
@@ -683,6 +851,8 @@ export function studyDataLine(names: () => StudyNames | null): {root: HTMLElemen
   dispose: () => void} {
   const head = span('');
   const tail = span('');
+  // how to work it: on screen, not in a report
+  const howTo = span(' Right-click a value in the table to flag or exclude it.', 'pmx-noprint');
   const open = () => {
     const df = names()?.study;
     if (df)
@@ -697,7 +867,7 @@ export function studyDataLine(names: () => StudyNames | null): {root: HTMLElemen
     const found = findingsOf(n);
     n.study.selection.init((i) => found.has(i));
     openStudyTable(n.study);
-    const first = Math.min(...found.keys());
+    const first = minOf(found.keys());
     if (!Number.isFinite(first))
       return;
     n.study.currentRowIdx = first;
@@ -714,7 +884,7 @@ export function studyDataLine(names: () => StudyNames | null): {root: HTMLElemen
     return ui.divV([ui.divText(`${whose} (Outlier rules, in the table's menu):`),
       ...ruleLines(r.rules).map((l) => ui.divText(`· ${l}`)), ui.divText('Click to select them in the table.')]);
   });
-  const root = divH([ui.span([head, check, tail]), button('Open the table', open)], 'pmx-study-line');
+  const root = divH([ui.span([head, check, tail, howTo]), button('Open the table', open)], 'pmx-study-line');
   const refresh = () => {
     const n = names();
     root.hidden = !n;
@@ -726,8 +896,7 @@ export function studyDataLine(names: () => StudyNames | null): {root: HTMLElemen
     const excluded = marks.filter((m) => m.state === 'excluded').length;
     head.textContent = `Study data: ${n.study.rowCount} measurements · `;
     check.textContent = `${plural(findings, 'value')} to check`;
-    tail.textContent = ` · ${flagged} flagged · ${excluded} excluded. Right-click a value in the table to flag or ` +
-      'exclude it.';
+    tail.textContent = ` · ${flagged} flagged · ${excluded} excluded.`;
   };
   return {root, refresh, dispose: onRulesChanged(refresh)};
 }

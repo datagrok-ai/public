@@ -28,8 +28,8 @@ export function studyInputsOf(call: DG.FuncCall): StudyInputs | null {
 }
 
 export const COL = {animal: 'Animal', group: 'Group', v0: 'Volume at randomization', rate: 'Growth rate',
-  tte: 'Day to endpoint', reached: 'Endpoint reached', mrecist: 'mRECIST', effect: 'Below its predicted untreated size',
-  effectLow: 'Below its predicted untreated size, low', effectHigh: 'Below its predicted untreated size, high',
+  tte: 'Day to endpoint', reached: 'Endpoint reached', mrecist: 'mRECIST', effect: 'Smaller than its twin (median)',
+  effectLow: 'Smaller than its twin, low', effectHigh: 'Smaller than its twin, high',
   response: 'Response',
   day: 'Day', volume: 'Tumor volume', weight: 'Body weight'};
 export const RESPONSE = {responder: 'Responder', like: 'As its twin', larger: 'Larger than its twin',
@@ -84,8 +84,16 @@ export function animalsTable(r: AnalysisFrames, s: StudyInputs, colors: GroupCol
   meta(df, COL.v0, 'mm³', '0.0');
   meta(df, COL.rate, 'ln V/d', '0.000');
   meta(df, COL.tte, 'd', '0');
-  for (const c of [COL.effect, COL.effectLow, COL.effectHigh])
+  // (what the twin is and the unit on hover: the header says it in a biologist's words, round 3)
+  const twinTip = '% smaller than its twin on the evaluation day: the size this animal would have reached untreated ' +
+    '(from its volume at randomization, the controls and the model); negative: larger.';
+  for (const [c, tip] of [[COL.effect, twinTip], [COL.effectLow, `${twinTip} Low end of its 90% range.`],
+    [COL.effectHigh, `${twinTip} High end of its 90% range.`]]) {
     meta(df, c, '%', '0');
+    const col = df.col(c);
+    if (col)
+      col.meta.description = tip;
+  }
   df.col(COL.response)?.meta.colors.setCategorical(RESPONSE_COLORS);
   return df;
 }
@@ -174,9 +182,10 @@ function backTo(tv: DG.TableView, parent: DG.ViewBase): void {
 /** The two views of one result, built once and brought back while open. */
 const opened = new WeakMap<AnalysisFrames, {animals: DG.TableView, measurements: DG.TableView}>();
 
-/** Opens (or brings back) the table view `which` of result `r`, with `selected` animals marked in both tables. */
+/** Opens (or brings back) the table view `which` of result `r`, with `selected` animals marked in both tables;
+ *  `onAnimal`: an animal's row made current there (the stage's animal panel). */
 export function explore(which: 'animals' | 'measurements', r: AnalysisFrames, s: StudyInputs, colors: GroupColors,
-  parent: DG.ViewBase, selected: ReadonlySet<string> = new Set()): void {
+  parent: DG.ViewBase, selected: ReadonlySet<string> = new Set(), onAnimal?: (animal: string) => void): void {
   const isOpen = (v: DG.TableView) => [...grok.shell.tableViews].some((x) => x.dataFrame === v.dataFrame);
   let views = opened.get(r);
   if (!views || !isOpen(views.animals) || !isOpen(views.measurements)) {
@@ -191,6 +200,13 @@ export function explore(which: 'animals' | 'measurements', r: AnalysisFrames, s:
       [DG.SYNC_TYPE.SELECTION_TO_SELECTION, DG.SYNC_TYPE.FILTER_TO_FILTER]);
     views = {measurements: measurementsView(measurements, parent),
       animals: animalsView(animals, r.analysis.get('control', 0), parent)};
+    if (onAnimal) {
+      ViewHost.of(views.animals).subscribe(animals.onCurrentRowChanged, () => {
+        const i = animals.currentRowIdx;
+        if (i >= 0)
+          onAnimal(String(animals.get(COL.animal, i)));
+      });
+    }
     opened.set(r, views);
   }
   const a = views.animals.dataFrame;

@@ -1,3 +1,5 @@
+import {minOf} from './format';
+
 /** The text of Plan's study protocol for an ethics application: the facts of the plan, already formatted where the
  *  protocol formats them (percentages, alpha, diameter), in the committee's wording. Pure: no platform imports. */
 export interface EthicsFacts {
@@ -13,7 +15,7 @@ export interface EthicsFacts {
   target: string;
   alpha: string;
   alphaPer: string;
-  correction: 'holm' | 'bonferroni' | 'none';
+  correction: 'bonferroni' | 'holm' | 'bh' | 'none';
   nFixed: boolean;
   /** the minimum group size (MIN_GROUP) */
   minGroup: number;
@@ -49,7 +51,7 @@ export function ethicsParts(f: EthicsFacts): {design: string, animals: string, r
   const same = unreachable.length === 0 &&
     f.arms.every((a) => a.n === f.arms[0].n && a.power === f.arms[0].power && a.effect === f.arms[0].effect);
   const nMax = Math.max(...sized.map((a) => a.n!), 0);
-  const nMin = Math.min(...sized.map((a) => a.n!));
+  const nMin = minOf(sized.map((a) => a.n!));
   const control = k === 1 ? ` and ${nMax} controls` : ', with a control group as large as the largest treated group';
   const notReached = new Set(unreachable.map((a) => a.effect)).size;
   const request = [sized.length === 0 ? '' :
@@ -71,8 +73,11 @@ export function ethicsParts(f: EthicsFacts): {design: string, animals: string, r
       'comparison.');
   const multiple = k < 2 ? '' : f.correction === 'none' ?
     ` Each of the ${k} comparisons is tested at α = ${f.alpha}, without correction for multiple comparisons.` :
-    ` With ${k} comparisons, ${f.correction === 'holm' ? 'Holm' : 'Bonferroni'} correction is applied; each group ` +
-    `is sized at α = ${f.alphaPer}.`;
+    f.correction === 'bh' ? ` With ${k} comparisons, Benjamini-Hochberg correction is applied (it controls the ` +
+      'false discovery rate; for screening many arms, not for an efficacy claim); each group is sized as for ' +
+      `Bonferroni, at α = ${f.alphaPer}.` :
+      ` With ${k} comparisons, ${f.correction === 'holm' ? 'Holm' : 'Bonferroni'} correction is applied; each ` +
+      `group is sized at α = ${f.alphaPer}.`;
   const arms = f.arms.map((a) => `${a.name} (${a.therapy}, expected ${a.effect})`).join(', ');
   const effects = [...new Set(f.arms.map((a) => a.effect))];
   // (they set no group size, the plan sizes each group against the control)

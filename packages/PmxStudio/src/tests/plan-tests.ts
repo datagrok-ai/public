@@ -1,14 +1,22 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
-import {armsFrame} from '../arms-input';
+import {anchorSource, armEffectProblem, armsFrame} from '../arms-input';
+import {scheduleText} from '../schedule';
 import {fixedValue} from '../ui';
 import {ENDPOINT, HUMANE, LAB_WEEKDAYS, MIN_GROUP, StudyDeclaration, calibrated, combinationFailed, combinationN,
   combinationNote, combinationsOf, synergyClause, designCombination, designStudy, finite, LAB_FACTOR_HIGH,
-  labSpreadGroup} from '../engine';
+  labSpreadGroup, endpointCandidates, TGI_ABOVE_100, tcOfTgi, tgiMax, tgiOfTc, tgiProblem,
+  unreachedEffect} from '../engine';
 import {cruxCalls} from '../crux';
 import {declarationOf, tgisOf} from '../frames';
 import {bandCalibration, enginePriors} from '../priors';
+import {badValues} from '../plan-file';
+import {combinationDrugs, demoStudies} from '../plan-view';
+import {anchorOrder, findAnchor, previousOfTable, withSaved} from '../previous-studies';
+import {FINISHED_TAG} from '../study-file';
+import {DEMO_PLAN_ID} from '../hub-view';
+import {parseArmName} from '../arm-name';
 
 /** pmxPlanStudy as the Plan view calls it: the outputs by name. */
 async function plan(params: {[k: string]: any}): Promise<{[k: string]: DG.DataFrame}> {
@@ -21,7 +29,113 @@ async function plan(params: {[k: string]: any}): Promise<{[k: string]: DG.DataFr
 
 const arm = (name: string, effect = 60) => ({name, therapy: 'small_molecule' as const, metric: 'TGI' as const, effect});
 
+category('Plan files', () => {
+  test('a plan file with values Plan cannot have saved is refused with what is wrong (QA 0.1.3 final #2, #11, #30)',
+    async () => {
+      const fileArm = (name: string, effect: unknown) => ({name, metric: 'TGI', effect});
+      const file = (o: {arms?: unknown[], endpoint?: unknown, line?: string}) => ({inputs: {line: o.line ?? 'MC38',
+        endpoint: o.endpoint ?? 1000, arms: o.arms ?? [fileArm('A', 60)]}, predicted: {line: 'MC38', endpoint: 1000,
+        arms: [fileArm('A', 60)]}});
+      expect(badValues(file({})), '');
+      expect(badValues(file({endpoint: -5})), 'the endpoint volume is -5, not above 0');
+      expect(badValues(file({arms: [fileArm('A', 200)]})), 'arm "A": expected TGI is 200%, it must be above 0 and ' +
+        'below 111.1% (111.1% = complete regression with this start volume and endpoint)');
+      // a regression (TGI past 100%) up to just below complete regression, 1000 / (1000 − 100) = 111.1%
+      expect(badValues(file({arms: [fileArm('A', 105)]})), '');
+      expect(badValues(file({arms: [fileArm('A', 111)]})), '');
+      expect(badValues(file({arms: [fileArm('A', 111.2)]})).startsWith('arm "A": expected TGI is 111.2%'), true);
+      expect(badValues(file({arms: [fileArm('A', 0)]})).includes('above 0'), true);
+      // with the file's own volumes: from 300 to 600 mm³ the bound is 200%
+      const own = {...file({arms: [fileArm('A', 150)]}), inputs: {line: 'MC38', endpoint: 600, vRand: 300,
+        arms: [fileArm('A', 150)]}};
+      own.predicted.arms = [fileArm('A', 150)];
+      expect(badValues(own), '');
+      // a T/C above 0, at most 100%
+      expect(badValues(file({arms: [{name: 'A', metric: 'TC', effect: 3}]})), '');
+      expect(badValues(file({arms: [{name: 'A', metric: 'TC', effect: 0}]})),
+        'arm "A": expected T/C is 0%, it must be above 0 and at most 100%');
+      expect(badValues(file({arms: [fileArm('A', 'NaN')]})).includes('TGI is NaN%'), true);
+      expect(badValues(file({line: 'BOGUS'})), 'its model is BOGUS, but its predictions are for MC38');
+      const many = badValues(file({arms: Array.from({length: 20}, (_, i) => fileArm(`T${i + 1}`, 60))}));
+      expect(many.startsWith('20 treated arms'), true);
+      expect(many.includes('"T16", "T17", "T18", "T19", "T20"'), true);
+      // a dose below 0, in a group's details or an arm's name: refused with Plan's own words (QA 0.1.3 round 4 R4-3)
+      const dosed = (dose: unknown) => ({...file({}), study: {groups: [{group: 'A', dose}]}});
+      expect(badValues(dosed(-3)), 'group "A": a dose cannot be below 0 (it is -3)');
+      expect(badValues(dosed('abc')).includes('a dose cannot be below 0'), true);
+      expect(badValues(dosed(10)), '');
+      expect(badValues(file({arms: [fileArm('Cpd -5 mg/kg', 60)]})).endsWith('a dose cannot be below 0'), true);
+    });
+
+  test('the protocol gives a combination\'s drugs their own regimen, each drug once (QA 0.1.3 final #5)',
+    async () => {
+      expect(combinationDrugs(parseArmName('cpd-a 30 mg/kg qd po + CPD-B 10 mg/kg ip q3dx4')).join(' | '),
+        'cpd-a 30 mg/kg p.o. QD | CPD-B 10 mg/kg i.p. Q3D×4');
+    });
+
+  test('a running study open in the workspace is interim, never offered (QA 0.1.3 final #9, round 3 W3)',
+    async () => {
+      const df = DG.DataFrame.fromCsv('animal,group,day,volume\nV-01,Vehicle,0,100\nT-01,Cpd-A 5 mg/kg,0,100\n');
+      expect(previousOfTable(df)?.interim, true);
+      df.setTag(FINISHED_TAG, 'true');
+      expect(previousOfTable(df)?.interim === undefined, true);
+      const s = (name: string, line: string, interim?: true) =>
+        ({name, line, meta: null, rows: [], ...interim ? {interim} : {}});
+      expect(anchorOrder([s('run', 'CT26', true), s('other', 'MC38'), s('mine', 'CT26')], 'CT26')
+        .map((x) => x.name).join(), 'mine,other');
+    });
+
+  test('an offer names its study by name, ID and day: two studies of one name told apart (QA round 3 W3)',
+    async () => {
+      const meta = {id: 'PMX-2026-0702'} as any;
+      expect(anchorSource({study: {name: 'CT26 study', line: 'CT26', meta, rows: []}, tgiDay: 16, readDay: 14}),
+        'CT26 study (PMX-2026-0702, finished, day 16)');
+      expect(anchorSource({study: {name: 'CT26 study', line: 'CT26', meta: null, rows: []}, tgiDay: null,
+        readDay: 14}), 'CT26 study (finished, day 14)');
+      // round 4 designer wording 1: a name that says it is finished, not twice
+      expect(anchorSource({study: {name: 'CT26 demo study, finished', line: 'CT26', meta: null, rows: []},
+        tgiDay: 21, readDay: 21}), 'CT26 demo study (finished, day 21)');
+    });
+
+  test('a finished saved study is not hidden by an open copy still running (QA round 4 designer D6)', async () => {
+    const s = (name: string, line: string, interim?: true) =>
+      ({name, line, meta: null, rows: [], ...interim ? {interim} : {}});
+    const all = withSaved([s('CT26 study', 'CT26', true)], [s('CT26 study', 'CT26'), s('MC38 study', 'MC38')]);
+    expect(anchorOrder(all, 'CT26').map((x) => x.name).join(), 'CT26 study,MC38 study');
+    expect(withSaved([s('CT26 study', 'CT26')], [s('CT26 study', 'CT26')]).length, 1, 'a finished open one stands');
+  });
+
+  test('a schedule is shown in one writing: codes in capitals, a count with × (QA round 3 U5)', async () => {
+    expect(scheduleText('q3dx4'), 'Q3D×4');
+    expect(scheduleText('Q3D x 4'), 'Q3D×4');
+    expect(scheduleText('qd'), 'QD');
+    expect(scheduleText('bid x14 from day 3'), 'BID×14 from day 3');
+    expect(scheduleText('x3'), '×3');
+    expect(scheduleText('twice weekly'), 'twice weekly');
+    expect(scheduleText('every 3 days'), 'every 3 days');
+    expect(parseArmName('Cpd-B 10 mg/kg ip q3dx4')[0].schedule, 'Q3D×4');
+  });
+
+  test('the demo plan scales its arms from the demo\'s own finished study only (QA 0.1.3 final #9)', async () => {
+    const studies = await demoStudies();
+    expect(studies.length, 1);
+    expect(studies[0].interim === undefined, true);
+    expect(studies[0].line, 'CT26');
+    const a = await findAnchor('Trametinib 1 mg/kg p.o. QD', {id: DEMO_PLAN_ID, name: 'CT26 trametinib + anti-PD-1'},
+      'CT26', demoStudies);
+    expect(a?.study.name, studies[0].name);
+    expect(a?.arm, 'Trametinib 1 mg/kg p.o. QD');
+  });
+});
+
 category('Plan', () => {
+  test('a lower endpoint is offered only where the field takes it: from 500 mm³, above the volume at randomization',
+    async () => {
+      expect(endpointCandidates(1000, 100).join(), '900,800,700,600,500');
+      expect(endpointCandidates(600, 100).join(), '500');
+      expect(endpointCandidates(1000, 650).join(), '900,800,700');
+      expect(endpointCandidates(550, 100).length, 0, 'nothing below 500');
+    });
   test('a value set from a card is checked as its field was: whole, in range; empty goes back', async () => {
     const v = (raw: unknown) => JSON.stringify(fixedValue(raw, 2, 100));
     expect(v(12), JSON.stringify({value: 12}));
@@ -319,15 +433,81 @@ category('Plan', () => {
     expect(tgisOf(null).length, 0);
     expect(tgisOf(' ').length, 0);
     expect(tgisOf('70%; 30, 30 50').join(), '30,50,70');
-    for (const bad of ['0', '100', 'high', '10 20 30 40 50 60 70 80 90']) {
-      let refused = false;
+    // a regression is a TGI past 100%, up to just below complete regression (111.1% from 100 to 1000 mm³)
+    expect(tgisOf('50, 100, 105').join(), '50,100,105');
+    expect(tgisOf('150', 600, 300).join(), '150', 'from 300 to 600 mm³ the bound is 200%');
+    const refusal = (text: string, endpoint?: number, v0?: number) => {
       try {
-        tgisOf(bad);
-      } catch {
-        refused = true;
+        tgisOf(text, endpoint, v0);
+        return '';
+      } catch (e: any) {
+        return String(e.message);
       }
-      expect(refused, true, bad);
+    };
+    for (const bad of ['0', '112', 'high', '10 20 30 40 50 60 70 80 90'])
+      expect(refusal(bad) !== '', true, bad);
+    expect(refusal('105', 500, 100), '', '125% from 100 to 500 mm³');
+    expect(refusal('112'), 'Assumed TGIs: above 0 and below 111.1% (111.1% = complete regression with this start ' +
+      'volume and endpoint), such as 30, 50, 70 (got "112")');
+    expect(refusal('130', 500, 100).includes('below 125%'), true, refusal('130', 500, 100));
+  });
+
+  test('tgiMax: complete regression, endpoint / (endpoint − V0); each TGI said against it', async () => {
+    expect(Math.abs(tgiMax(1000, 100) - 1000 / 9) < 1e-9, true);
+    expect(tgiMax(600, 300), 200);
+    expect(tgiMax(1000, 1000), 100, 'an endpoint not above V0: no regression bound');
+    expect(tgiProblem(105, 1000, 100), null);
+    expect(tgiProblem(111.2, 1000, 100), 'Expected TGI: above 0 and below 111.1% (111.1% = complete regression with ' +
+      'this start volume and endpoint)');
+    expect(tgiProblem(0, 1000, 100) !== null, true);
+    expect(tgiProblem(null, 1000, 100) !== null, true);
+    expect(TGI_ABOVE_100, 'Above 100% = the group\'s mean volume shrinks below its start (some animals may shrink ' +
+      'earlier)');
+    // the bound floored to one decimal: 111 is taken, so the message says 111.1, not 111 (QA 0.1.3 r4)
+    expect(tgiProblem(111, 1000, 100), null);
+    expect(tgiProblem(125, 500, 100)!.includes('below 125%'), true, 'a whole bound stays whole');
+    // the arm card's message: TGI by the plan's volumes, T/C above 0 and below 100%
+    expect(armEffectProblem(108, 'TGI', {v0: 100, endpoint: 1000}), null);
+    expect(armEffectProblem(115, 'TGI', {v0: 100, endpoint: 1000}), tgiProblem(115, 1000, 100));
+    expect(armEffectProblem(115, 'TGI', {v0: 100, endpoint: 500}), null, '125% from 100 to 500 mm³');
+    expect(armEffectProblem(3, 'TC', {v0: 100, endpoint: 1000}), null);
+    expect(armEffectProblem(0, 'TC', {v0: 100, endpoint: 1000}), 'Expected T/C: above 0 and below 100%');
+    // Crux's refusal of an effect its kill rates cannot reach, in plain words
+    expect(unreachedEffect('stats.tumor_study_design: with 100 % responders and onset day 3, the effect reaches at ' +
+      'most TGI 104 % by day 14: lower the effect or change the archetype'), 'This effect needs a regression faster ' +
+      'than the model allows (at most TGI 104% for this kind of treatment); try a lower TGI');
+    expect(unreachedEffect('with 50 % responders and onset day 3, the effect reaches at most TGI 62 % by day 14: ' +
+      'lower the effect or change the archetype')!.startsWith('This effect is stronger than the model allows'), true);
+    expect(unreachedEffect('something else'), null);
+  });
+
+  test('a TGI of 110% plans (sent to Crux as its T/C), or says the model\'s "try a lower TGI"', async () => {
+    const arms = armsFrame([arm('Cpd-A', 110)]);
+    let message = '';
+    let out: {[k: string]: DG.DataFrame} | null = null;
+    try {
+      out = await plan({arms});
+    } catch (e: any) {
+      message = String(e?.message ?? e);
     }
+    // never Crux's own bound ("effect=110 is outside [0, 100]"): a plan, or why in words the user can act on
+    expect(message === '' || message.includes('try a lower TGI'), true, message);
+    if (out) {
+      const r = out.armResults;
+      expect(r.get('metric', 0), 'TGI');
+      expect(r.get('effect', 0), 110);
+      // the effect Crux gave said back as the TGI it was declared in, not a T/C
+      expect(Math.abs(r.get('effect_realised', 0) - 110) < 5, true, String(r.get('effect_realised', 0)));
+    }
+  }, {timeout: 300000});
+
+  test('TGI ≥ 100% and its T/C at the median lab: one formula, both ways', async () => {
+    // V0 100, endpoint 1000: TGI 100 is T/C 10% (no growth), complete regression 111% is T/C 0
+    expect(Math.abs(tcOfTgi(100, 1000, 100) - 10) < 1e-9, true);
+    expect(Math.abs(tcOfTgi(1000 / 9, 1000, 100)) < 1e-9, true);
+    expect(Math.abs(tcOfTgi(60, 1000, 100) - 46) < 1e-9, true, 'the same as convertedEffect');
+    for (const tgi of [100, 105, 110, 30])
+      expect(Math.abs(tgiOfTc(tcOfTgi(tgi, 1000, 100), 1000, 100) - tgi) < 1e-9, true, String(tgi));
   });
 
   test('without the schedules, the same plan and an empty schedules table', async () => {

@@ -2,10 +2,11 @@
    significant digits, whole days), the titled blocks, a group's swatch,
    the engine's notes, the Linear / Log volume axis of a growth chart, and the panes with the loader over the
    results. */
+import {maxOf, minOf} from './format';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {buttonWithIcon, computed, div, divH, divV, dot, effect, icon, loader, RadioInput, Section, signal, span,
+import {buttonWithIcon, computed, div, divH, divV, dot, effect, icon, loader, Section, signal, span,
   link, Splitter, StatCard, Tooltip} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
 import type {Dialog} from '@datagrok-libraries/u2';
@@ -16,9 +17,14 @@ import {cruxWake} from './crux';
 import {addColorItem} from './colors';
 import {PmxFigure} from './pmx-objects';
 import {isFiniteNumber} from './engine';
+import {minus} from './format';
 
-/** A fraction as a whole percent: 0.734 → "73%". */
-export const pct = (x: unknown) => isFiniteNumber(x) ? `${Math.round(x * 100)}%` : '—';
+/** A fraction as a whole percent, a true minus when negative: 0.734 → "73%", -0.64 → "−64%". */
+export const pct = (x: unknown) => isFiniteNumber(x) ? minus(`${Math.round(x * 100) || 0}%`) : '—';
+
+/** A TGI (percent) as every view and document shows it: a whole percent ("90%"), the tiles, the groups table and the
+ *  CTD alike (round 4, analyst: "TGI 90.2%" beside "90%"). */
+export const tgiText = (x: unknown) => pct(isFiniteNumber(x) ? x / 100 : x);
 
 /** A number to `digits` significant digits (an integer as it is). */
 export const num = (v: unknown, digits = 3) =>
@@ -27,14 +33,19 @@ export const num = (v: unknown, digits = 3) =>
 /** A p-value: two significant digits, below 0.001 as "< 0.001". */
 export const pValue = (p: unknown) => !isFiniteNumber(p) ? '—' : p < 0.001 ? '< 0.001' : String(num(p, 2));
 
+/** An adjusted p's hover, the unadjusted p: "Unadjusted p = 0.03", "Unadjusted p < 0.001" (never "= < 0.001");
+ *  null: none known. Said even where the correction left it unchanged (QA 0.1.3 r4). */
+export const unadjustedP = (raw: unknown): string | null => !isFiniteNumber(raw) ? null :
+  `Unadjusted p ${raw < 0.001 ? '' : '= '}${pValue(raw)}`;
+
 /** A change in whole percent with a true minus sign: -4.2 → "−4%". */
-export const signed = (x: number) => pct(x / 100).replace('-', '−');
+export const signed = (x: number) => pct(x / 100);
 
 /** An interval in whole percent: "12–42%", and with a negative bound "−33 to 42%" (a hyphen and a dash read as
  *  "33 to 42"). */
 export function percentRange(lo: number, hi: number): string {
   const [a, b] = [Math.round(lo), Math.round(hi)];
-  const m = (x: number) => String(x).replace('-', '−');
+  const m = (x: number) => minus(String(x));
   return a < 0 || b < 0 ? `${m(a)} to ${m(b)}%` : `${a}–${b}%`;
 }
 
@@ -74,10 +85,11 @@ export function guide(x: number, lo: number): HTMLElement {
   return g;
 }
 
-/** A figure of the results with what it covers in its tooltip, owned by `owner` (the view's form). */
+/** A figure of the results with what it covers in its tooltip, owned by `owner` (the view's form); `subject`: what
+ *  the figure is of (the study), a change from the previous result never read across two of them. */
 export function statCard(owner: {build: <T>(f: () => T) => T}, label: string | ReadonlySignal<string>,
   value: ReadonlySignal<StatValue | undefined>, tip: () => string, format?: (x: StatValue) => string,
-  compared = true): HTMLElement {
+  compared = true, subject?: () => unknown): HTMLElement {
   // a figure no result follows (Compare's): no change, nothing to pin
   if (!compared) {
     return owner.build(() => {
@@ -95,8 +107,18 @@ export function statCard(owner: {build: <T>(f: () => T) => T}, label: string | R
     let last: number | undefined;
     let base: number | undefined;
     let wasPinned = false;
+    let change: [number, number] | null = null;
+    const percent = !!format && /%$/.test(format(1));
+    // a change as the card says it; one that rounds to nothing is no change (no "↓ −0%")
+    const said = (d: number) => percent ? format!(Math.abs(d)) : String(+Math.abs(d).toFixed(2));
+    let of: unknown;
     effect(() => {
       const v = value.value;
+      const now = subject?.();
+      if (now !== of) {
+        of = now;
+        last = undefined;
+      }
       const pin = pinned.value;
       const x = isFiniteNumber(v) ? v : undefined;
       if (pin !== wasPinned) {
@@ -106,13 +128,20 @@ export function statCard(owner: {build: <T>(f: () => T) => T}, label: string | R
       if (v === undefined)
         return;
       const ref = pin ? base : last;
-      delta.value = x !== undefined && ref !== undefined && x !== ref ? x - ref : undefined;
+      delta.value = x !== undefined && ref !== undefined && said(x - ref) !== said(0) ? x - ref : undefined;
+      if (delta.value !== undefined)
+        change = [ref!, x!];
       last = x;
     });
-    const percent = !!format && /%$/.test(format(1));
-    const c = new StatCard({label, value, format, delta, deltaFormat: (d) =>
-      `${d > 0 ? '+' : '−'}${percent ? format!(Math.abs(d)) : +Math.abs(d).toFixed(2)}`});
+    const c = new StatCard({label, value, format, delta, deltaFormat: (d) => `${d > 0 ? '+' : '−'}${said(d)}`});
     c.root.classList.add('pmx-stat');
+    // the change itself, on the arrow: from what, to what, against which result
+    const chip = c.root.querySelector<HTMLElement>('.u2-stat-delta');
+    const shown = (x: number) => format ? format(x) : String(+x.toFixed(2));
+    if (chip) {
+      Tooltip.bind(chip, () => change ? `Now ${shown(change[1])}; ${pinned.value ? 'the figures pinned' :
+        'the previous result of this study'}: ${shown(change[0])}` : '');
+    }
     c.root.addEventListener('pmx-pin', (e) => pinned.value = (e as CustomEvent<boolean>).detail);
     // (the card's own sentence ends with its full stop, given or not: the tooltip runs on after it)
     Tooltip.bind(c.root, () => `${tip().replace(/([^.!?…])\s*$/, '$1.')}\n\nThe arrow: the change from ` +
@@ -141,10 +170,15 @@ export function cardGrid(cards: HTMLElement[], cls: string, minWidth: number, pi
   return grid;
 }
 
+/** `text` to the clipboard, said when `what` names it; a browser that refuses the clipboard is said, never an
+ *  unhandled rejection. */
+export const copyText = (text: string, what?: string): void => void navigator.clipboard.writeText(text)
+  .then(() => what && grok.shell.info(`${what} copied`),
+    () => grok.shell.warning(`${what ?? 'Copy'}: the browser did not allow the clipboard`));
+
 /** A Copy button for a text ready to paste, on its own row at the right. */
 export function copyRow(text: () => string, what: string): HTMLElement {
-  const copy = () => void navigator.clipboard.writeText(text())
-    .then(() => grok.shell.info(`${what} copied`), () => grok.shell.warning(`${what}: the clipboard is not available`));
+  const copy = () => copyText(text(), what);
   const row = divH([buttonWithIcon('Copy', 'copy', copy)]);
   Object.assign(row.style, {justifyContent: 'flex-end', marginBottom: 'var(--dg-space-s)'});
   return row;
@@ -257,23 +291,29 @@ export function callInputs<T>(call: DG.FuncCall, extra: object = {}): T {
   })), ...extra} as T;
 }
 
-/** A titled block of the results column. */
+/** A titled block of the results column; what it shows (`hint`) on the (i) after its title, not a line under it. */
 export function block(title: string, hint: HTMLElement | string, ...content: HTMLElement[]): HTMLElement {
-  // the hint and the header carry classes of the app's own: a long hint goes on under the title (studio.css)
-  const h = typeof hint === 'string' ? hint && span(hint) : hint;
-  if (h)
-    h.classList.add('pmx-block-hint');
-  const s = new Section({title, hint: h, collapsible: false});
+  const s = new Section({title, collapsible: false});
   s.header.classList.add('pmx-block-header');
+  const said = () => typeof hint === 'string' ? hint : hint.textContent ?? '';
+  if (said()) {
+    const info = span('i', 'pmx-info');
+    info.setAttribute('aria-label', said());
+    ui.tooltip.bind(info, said);
+    s.header.append(info);
+  }
   s.root.classList.add('pmx-block');
   s.body.classList.add('pmx-block-body');
-  content.forEach((c) => s.body.append(c));
+  content.forEach((c) => c.classList.contains('pmx-axis') ? s.header.append(c) : s.body.append(c));
   return s.root;
 }
 
-/** A viewer control given a fixed height (a viewer fills its host; the results column scrolls). */
+/** A viewer control given a fixed height (a viewer fills its host; the results column scrolls) and its host's whole
+ *  width: its chart is absolutely placed, so the control has no width of its own, and in a flex host (a context
+ *  panel's accordion pane) it shrank to 0 px (QA 0.1.3 A3/T10). The chart follows the width as it comes (opened, the
+ *  panel shown, resized): the control's ResizeObserver. */
 export function sized<T extends {root: HTMLElement}>(v: T, height: number): HTMLElement {
-  v.root.style.height = `${height}px`;
+  Object.assign(v.root.style, {height: `${height}px`, width: '100%', minWidth: '0', boxSizing: 'border-box'});
   return v.root;
 }
 
@@ -311,7 +351,12 @@ export function swatch(name: string, color: string, group: string = name): HTMLE
 export function noteLine(text: string, kind: 'warning' | 'success' | 'error' = 'warning'): HTMLElement {
   const mark = dot(kind);
   Object.assign(mark.style, {flex: '0 0 auto', marginTop: '0.45em'});
-  const line = divH([mark, span(text)], 'pmx-note');
+  // (what follows a tab is said on hover: engine.ts NOTE_TIP)
+  const [shown, tip] = text.split('\t');
+  const said = span(shown);
+  if (tip)
+    said.title = tip;
+  const line = divH([mark, said], 'pmx-note');
   Object.assign(line.style, {alignItems: 'flex-start', gap: 'var(--dg-space-s)', lineHeight: '1.45'});
   return line;
 }
@@ -319,9 +364,20 @@ export function noteLine(text: string, kind: 'warning' | 'success' | 'error' = '
 /** What a failure tells the user: PMX Studio's own errors (a plain Error, or a sentence) are written to be read; any
  *  other (the engine, a bug) is `fallback`. The technical text goes to the console. */
 export function plainError(e: any, fallback: string): string {
-  console.error('PMX Studio:', e);
-  return typeof e === 'string' ? e : e instanceof Error && e.constructor === Error && e.message ? e.message : fallback;
+  // a message written for the user (a string, a plain Error) is said, not logged as a console error; anything else is
+  // a failure, logged (QA 0.1.3 round 3, technician: "The plan needs 60 animals…" in the console as an error)
+  const said = typeof e === 'string' || (e instanceof Error && e.constructor === Error && !!e.message);
+  if (!said)
+    console.error('PMX Studio:', e);
+  return typeof e === 'string' ? inWords(e) : said ? inWords((e as Error).message) : fallback;
 }
+
+/** An engine's message in the user's words: without the engine function it came from ("stats.tumor_study_design: "),
+ *  its bounds in symbols ("(> 0)") or British spelling. */
+export const inWords = (message: string): string => message
+  .replace(/\b(?:stats|tgi|pk|crux|nca)\.[\w.]+:\s*/g, '')
+  .replace(/\s*\((?:[<>]=?|=)\s*-?[\d.]+\)/g, '')
+  .replace(/randomis/g, 'randomiz').replace(/tumour/g, 'tumor').replace(/colour/g, 'color');
 
 /** The engine's notes (" | "-separated) as note lines. */
 export const notes = (text: unknown) => String(text ?? '').split(' | ').filter((n) => n).map((n) => noteLine(n));
@@ -412,17 +468,48 @@ export function hintLink(text: string, onClick: (e: MouseEvent | KeyboardEvent) 
   return a;
 }
 
+/** A growth chart's axis switch, plain words in the panel's header ("Linear · Log"), the one in use darker and
+ *  underlined; `modes`: each word and its tooltip. Placed in a panel's content, the panel moves it to its header. */
+export function axisSwitch(modes: [string, string][], now: {value: string, peek: () => string},
+  onPick?: (m: string) => void): HTMLElement {
+  const row = span('', 'pmx-axis pmx-noprint');
+  const words = modes.map(([m, tip]) => {
+    const w = span(m, 'pmx-axis-mode');
+    w.title = tip;
+    w.tabIndex = 0;
+    w.setAttribute('role', 'button');
+    const pick = () => {
+      now.value = m;
+      onPick?.(m);
+      draw();
+    };
+    w.addEventListener('click', (e) => { e.stopPropagation(); pick(); });
+    w.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        e.stopPropagation();
+        pick();
+      }
+    });
+    return w;
+  });
+  const draw = () => words.forEach((w, i) => {
+    const on = modes[i][0] === now.peek();
+    w.classList.toggle('is-on', on);
+    w.setAttribute('aria-pressed', String(on));
+  });
+  words.forEach((w, i) => row.append(...(i ? [span('·', 'pmx-axis-sep'), w] : [w])));
+  draw();
+  return row;
+}
+
 /** A growth chart's volume axis, Linear or Log: Linear by default (as a lab's figures are drawn), else the user's
- *  last choice, which every chart then opens on. The row that offers it above the chart, and whether Log is chosen
- *  (the chart's `log`). */
-export function volumeAxis(): {input: RadioInput, row: HTMLElement, log: ReadonlySignal<boolean>} {
-  const input = new RadioInput({items: ['Linear', 'Log'], buttons: true,
-    value: userSetting('volumeAxis') === 'Log' ? 'Log' : 'Linear',
-    itemTooltips: {Linear: 'Linear volume axis', Log: 'Logarithmic volume axis'},
-    onInput: (v) => setUserSetting('volumeAxis', String(v))});
-  const row = divH([span('Volume axis'), input.root], 'pmx-noprint');
-  Object.assign(row.style, {justifyContent: 'flex-end', alignItems: 'center', gap: 'var(--dg-space-m)'});
-  return {input, row, log: computed(() => input.value === 'Log')};
+ *  last choice, which every chart then opens on. `row`: the switch for the panel's header; `log`: the chart's. */
+export function volumeAxis(): {input: {dispose: () => void}, row: HTMLElement, log: ReadonlySignal<boolean>} {
+  const mode = signal(userSetting('volumeAxis') === 'Log' ? 'Log' : 'Linear');
+  const row = axisSwitch([['Linear', 'Volume on a linear axis'], ['Log', 'Volume on a logarithmic axis']], mode,
+    (m) => setUserSetting('volumeAxis', m));
+  return {input: {dispose: () => {}}, row, log: computed(() => mode.value === 'Log')};
 }
 
 export type Stage = 'home' | 'plan' | 'monitor' | 'analyze';
@@ -565,6 +652,8 @@ export function stagePanes(form: FuncCallForm, content: HTMLElement, o: {busy: R
     failure.hidden = o.error.value === null;
     failure.replaceChildren(...(o.error.value === null ? [] : [empty ? span(o.error.value) :
       noteLine(o.error.value, 'error')]));
+    // the results of the inputs before are not this failure's: hidden, not left readable under it
+    content.style.display = o.error.value !== null && !empty ? 'none' : '';
   });
   const outdated = staleNote(`A field is missing or invalid: ${o.staleText}`);
   form.effect(() => {
@@ -643,18 +732,79 @@ export function modal(purpose: string, title: Parameters<typeof ui.dialog>[0] = 
     if (v !== 'preparing' && !onScreen(v))
       modals.delete(k);
   }
-  const d = ui.dialog(title);
+  // (with the app's help: a dialog without one turned the help panel to "Help unavailable" while open, QA 0.1.3
+  // designer D20)
+  const d = ui.dialog(typeof title === 'object' ? {...title, helpUrl: title.helpUrl ?? helpPage()} :
+    {title: title ?? '', helpUrl: helpPage()});
   modals.set(purpose, d);
   // free as soon as it closes (its root may stay on the page a moment while it fades)
   d.onClose.subscribe(() => {
     if (modals.get(purpose) === d)
       modals.delete(purpose);
   });
+  // (every dialog of the app shown with its buttons in the page as they show: shownOrder)
+  const show = d.show.bind(d);
+  d.show = (options?: Parameters<typeof show>[0]) => {
+    const shown = show(options);
+    shownOrder(d.root);
+    keepFocus(d.root);
+    return shown;
+  };
   return d;
+}
+
+/** What Tab stops at in a dialog, in page order. */
+const focusables = (root: HTMLElement): HTMLElement[] => [...root.querySelectorAll<HTMLElement>(
+  'button, input, select, textarea, a[href], [tabindex]:not([tabindex="-1"])')]
+  .filter((e) => e !== root && !(e as HTMLButtonElement).disabled && e.offsetParent !== null);
+
+/** A dialog shown takes the focus, its first field, else its first button (Cancel: nothing happens on Enter by
+ *  mistake), unless its launcher put it somewhere in it already; Tab and Shift+Tab go round inside it (QA 0.1.3 r5:
+ *  the focus sat on the dialog itself and the first Tab went to the page behind). */
+export function keepFocus(root: HTMLElement): void {
+  setTimeout(() => {
+    const at = document.activeElement;
+    if (at && at !== root && root.contains(at))
+      return;
+    const all = focusables(root);
+    (all.find((e) => ['INPUT', 'SELECT', 'TEXTAREA'].includes(e.tagName)) ??
+      root.querySelector<HTMLElement>('.d4-dialog-footer button:not([disabled])') ?? all[0])?.focus();
+  });
+  root.addEventListener('keydown', (e) => {
+    if (e.key !== 'Tab')
+      return;
+    const all = focusables(root);
+    if (!all.length)
+      return;
+    const i = all.indexOf(document.activeElement as HTMLElement);
+    const to = i < 0 ? all[0] : e.shiftKey && i === 0 ? all[all.length - 1] :
+      !e.shiftKey && i === all.length - 1 ? all[0] : null;
+    if (to) {
+      e.preventDefault();
+      to.focus();
+    }
+  });
 }
 
 /** The u2 dialogs on screen, by purpose. */
 const shownDialogs = new Map<string, Dialog>();
+
+/** Closes every dialog of the app on screen as Cancel does (its close handlers run, nothing is applied): the app moved
+ *  to another page under it (QA 0.1.3: Back left Compare with other studies open over the next stage). */
+export function closeModals(): void {
+  for (const [purpose, d] of [...modals]) {
+    if (d === 'preparing')
+      continue;
+    modals.delete(purpose);
+    if (onScreen(d))
+      d.close();
+  }
+  for (const [purpose, d] of [...shownDialogs]) {
+    shownDialogs.delete(purpose);
+    if (d.isOpen.peek())
+      d.close('cancel');
+  }
+}
 
 /** A u2 dialog for `purpose`, made by `make` and shown pinned to `host`'s view, unless one is open for it already (as
  *  modal() does for the platform's): a second click never stacks a second dialog over the first. */
@@ -710,6 +860,33 @@ export function showCentred(d: DG.Dialog, options: {width?: number} = {}): DG.Di
   return d;
 }
 
+/** A dialog's buttons put in the page in the order they show, so Tab goes as the eye does: the platform lays its
+ *  footer out reversed, and Tab went Discard, Save, Cancel over Cancel · Save · Discard (QA 0.1.3 browser check). */
+export function shownOrder(root: HTMLElement): void {
+  const first = root.querySelector<HTMLElement>('.d4-dialog-footer button, .d4-command-bar button');
+  const bar = first?.parentElement;
+  if (!bar)
+    return;
+  const buttons = [...bar.children].filter((e): e is HTMLElement => e.tagName === 'BUTTON');
+  const left = (e: HTMLElement) => e.getBoundingClientRect().left;
+  const shown = [...buttons].sort((a, b) => left(a) - left(b));
+  if (shown.every((b, i) => b === buttons[i]))
+    return;
+  const css = getComputedStyle(bar);
+  if (css.flexDirection.endsWith('-reverse')) {
+    // (the same side, read the other way)
+    const flip: {[k: string]: string} = {'flex-start': 'flex-end', 'start': 'end', 'normal': 'flex-end',
+      'flex-end': 'flex-start', 'end': 'start'};
+    bar.style.justifyContent = flip[css.justifyContent] ?? css.justifyContent;
+    bar.style.flexDirection = css.flexDirection.replace('-reverse', '');
+  }
+  for (const b of buttons)
+    b.style.order = '0';
+  const at = document.createComment('');
+  buttons[0].before(at);
+  at.replaceWith(...shown);
+}
+
 /** A dialog's one short line, quiet, its detail (if any) on hover. */
 export function dialogLine(text: string, tip?: string): HTMLElement {
   const e = ui.divText(text);
@@ -726,15 +903,16 @@ export interface PanelFact {label: string, value: string | HTMLElement, tip?: st
  *  quiet line: the p-value, the range), `tone` the mark beside it (ok: an effect; warn: against; neutral: none). */
 export interface PanelVerdict {text: string, sub?: string, tone: 'ok' | 'warn' | 'neutral'}
 
-/** A folded section of an object's context panel, built when opened. */
-export interface PanelSection {title: string, content: () => HTMLElement, open?: boolean}
+/** A folded section of an object's context panel, built when opened; `summary` a few quiet words after its title. */
+export interface PanelSection {title: string, content: () => HTMLElement, open?: boolean, summary?: string}
 
 /** What the context panel shows for an object (a group, an animal, a day), alike for each: its name after its
  *  colour, a quiet line under it, its answer (none where there is none: never made up), a few facts, then folded
  *  sections for the detail. */
 export function objectPanel(o: {title: string, color?: string, subtitle?: string, subtitleTip?: string,
-  verdict?: PanelVerdict | null,
-  facts: PanelFact[], sections?: PanelSection[]}): HTMLElement {
+  verdict?: PanelVerdict | null, /** right under the answer (an animal's effect bar) */ chart?: HTMLElement,
+  facts: PanelFact[], sections?: PanelSection[], /** its sections' accordion, once built */
+  accordion?: (acc: DG.Accordion) => void}): HTMLElement {
   const head = document.createElement('h3');
   head.className = 'pmx-object-title';
   head.style.margin = '0';
@@ -756,13 +934,27 @@ export function objectPanel(o: {title: string, color?: string, subtitle?: string
       v.append(div([o.verdict.sub], 'pmx-object-verdict-sub'));
     el.append(v);
   }
-  el.append(facts);
+  if (o.chart)
+    el.append(o.chart);
+  if (o.facts.length)
+    el.append(facts);
   if (o.sections?.length) {
     const acc = ui.accordion();
-    for (const s of o.sections)
-      acc.addPane(s.title, s.content, !!s.open);
+    for (const s of o.sections) {
+      const pane = acc.addPane(s.title, s.content, !!s.open);
+      // the summary beside the title, quiet (no header found: in the title)
+      const header = s.summary ? pane.root.querySelector('.d4-accordion-pane-header') : null;
+      if (header) {
+        const sum = span(` ${s.summary}`, 'pmx-pane-summary');
+        Object.assign(sum.style, {color: 'var(--dg-text-color-muted, #7d8792)', fontWeight: '400',
+          marginLeft: '6px'});
+        header.append(sum);
+      } else if (s.summary)
+        pane.name = `${s.title} · ${s.summary}`;
+    }
     acc.root.classList.add('pmx-object-sections');
     el.append(acc.root);
+    o.accordion?.(acc);
   }
   return el;
 }
@@ -816,7 +1008,7 @@ HTMLElement {
   box.append(svg);
   if (xs.length === 0)
     return box;
-  const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+  const [x0, x1, y0, y1] = [minOf(xs), maxOf(xs), minOf(ys), maxOf(ys)];
   const px = (x: number) => 2 + (x1 > x0 ? (x - x0) / (x1 - x0) : 0.5) * (w - 4);
   const py = (y: number) => h - 2 - (y1 > y0 ? (y - y0) / (y1 - y0) : 0.5) * (h - 4);
   const line = document.createElementNS(NS, 'polyline');

@@ -2,17 +2,20 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {awaitCheck, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 
-import {labMarkText, perGroupText, planCallOf, planFileOf, planView, plansMadeCount} from '../plan-view';
+import {endpointProblem, labMarkText, perGroupText, planCallOf, planFileOf, planSaveOf, planView, plansMadeCount,
+  reviewDays} from '../plan-view';
+import {historyProblem} from '../history-dialog';
+import {inWords} from '../ui';
+import {OPENED_AS, linkRow, openStage, pathOfView} from '../stages';
 import {cruxCallsOf} from '../crux';
 import {PmxDay} from '../pmx-objects';
 import {LAB_SENSITIVE} from '../engine';
 import {emptyMeta} from '../study-meta';
-import {Arm, armName, armsOf} from '../arms-input';
+import {Arm, armName, armsOf, convertedEffect, saidAs} from '../arms-input';
 import {PLAN_TAG, framesOf, parsePlan, shownOf} from '../plan-file';
 import {newStudyTable} from '../study-file';
-import {openStage} from '../stages';
 import {exampleStudy} from './example-study';
-import {memoryTables, open, save} from '../store';
+import {linkedRow, memoryTables, open, save} from '../store';
 import {tumorModels} from '../priors';
 import {registerHistory} from '../history-models';
 
@@ -136,9 +139,8 @@ category('Plan view', () => {
 
   test('Save pressed while the plan is updated waits for it, says so, then saves', async () => {
     const view = await opened({});
-    const saveLabel = () => [...document.querySelectorAll<HTMLElement>('.u2-btn-label')]
-      // (this view's: another view left open has its ribbon hidden)
-      .find((l) => ['Save plan', 'Saving when the plan is ready…'].includes(l.textContent!) && l.offsetParent !== null);
+    // (File › Save presses the view's Save and reads its words)
+    const saveLabel = () => planSaveOf(view)!.querySelector<HTMLElement>('.u2-btn-label') ?? planSaveOf(view);
     const nameDialog = () => [...document.querySelectorAll('.u2-dialog')].some((d) => d.textContent!.includes('Name'));
     try {
       // (a size no other test plans, so not a plan the engine kept; Save pressed the moment the card's change starts
@@ -352,4 +354,71 @@ category('Plan view', () => {
       view?.close();
     }
   }, {timeout: 60000});
+});
+
+category('Plan checks (QA 0.1.3)', () => {
+  test('the endpoint must be above the volume at randomization', async () => {
+    expect(endpointProblem(500, 500) !== null, true, 'equal to V0');
+    expect(endpointProblem(400, 500) !== null, true, 'below V0');
+    expect(endpointProblem(1000, 100), null, 'above V0');
+    expect(endpointProblem(null, 100), null, 'empty: the required check says so');
+  });
+
+  test('planned reviews: whole study days, once each', async () => {
+    expect(JSON.stringify(reviewDays('14, 7')), JSON.stringify({days: [7, 14]}), 'sorted');
+    expect(JSON.stringify(reviewDays('')), JSON.stringify({days: []}), 'none');
+    expect(JSON.stringify(reviewDays(null)), JSON.stringify({days: []}), 'no text');
+    for (const bad of ['7, 7', '-1', '10.5', 'abc', '0', '121'])
+      expect('problem' in reviewDays(bad), true, bad);
+  });
+
+  test('TGI and T/C convert to the same treated volume, both ways', async () => {
+    // V0 100, endpoint 1000: TGI 60 is a treated 460 mm³, T/C 46
+    expect(convertedEffect(60, 'TC', 100, 1000), 46);
+    expect(convertedEffect(46, 'TGI', 100, 1000), 60);
+    expect(convertedEffect(95, 'TC', 100, 1000), 15);
+    // a T/C under V0/C is a regression: TGI past 100%, up to just below complete regression (111.1% here: 111 is below)
+    expect(convertedEffect(5, 'TGI', 100, 1000), 106);
+    expect(convertedEffect(0, 'TGI', 100, 1000), 111, 'below complete regression');
+    expect(convertedEffect(110, 'TC', 100, 1000), 1, 'TGI 110 is T/C 1 (no 5-95% clamp since 1527dbe6ec)');
+    // said back and forth unchanged: the value entered, never a rounding of a rounding (52 drifted to 53)
+    let arm: {metric: 'TGI' | 'TC', effect: number} = {metric: 'TGI', effect: 52};
+    for (let k = 0; k < 3; k++) {
+      const [tc, was] = saidAs(arm, 'TC', 100, 300);
+      const [tgi] = saidAs({metric: 'TC', effect: tc}, 'TGI', 100, 300, was);
+      expect(tgi, 52, `round ${k + 1}`);
+      arm = {metric: 'TGI', effect: tgi};
+    }
+    // changed while said the other way: converted from the new value
+    const [, was] = saidAs({metric: 'TGI', effect: 52}, 'TC', 100, 1000);
+    expect(saidAs({metric: 'TC', effect: 40}, 'TGI', 100, 1000, was)[0], convertedEffect(40, 'TGI', 100, 1000));
+  });
+
+  test('an own model is checked in its dialog: growth, an atlas name, the take', async () => {
+    const rows = [0, 3, 7, 10].map((day) => ({animal: 'A', day, volume: 100 * Math.exp(0.1 * day)}));
+    expect(historyProblem(rows, 'PDX-117', ['MC38'], null), null, 'a good history');
+    expect(historyProblem(rows, 'mc38', ['MC38'], null) !== null, true, 'an atlas model\'s name');
+    expect(historyProblem(rows, 'PDX-117', [], 150) !== null, true, 'a take over 100%');
+    expect(historyProblem(rows.slice(0, 2), 'PDX-117', [], null) !== null, true, 'no growth to read');
+  });
+
+  test('engine messages in words', async () => {
+    expect(inWords('Arm A: stats.tumor_study_design: the endpoint volume must be above the volume at ' +
+      'randomisation (> 0)'), 'Arm A: the endpoint volume must be above the volume at randomization');
+  });
+
+  test('a view showing a saved row names it in its URL, and lets go when it shows another', async () => {
+    const root = document.createElement('div');
+    const view = {root, path: ''} as unknown as DG.ViewBase;
+    root.dataset.pmxStage = 'plan';
+    linkRow(view, 'plan', 'abc');
+    expect(view.path, '/plan?plan=abc', 'the app\'s own view: relative');
+    expect(root.dataset[OPENED_AS], 'abc', 'the Overview row brings it up');
+    root.dataset.pmxAdded = 'true';
+    expect(pathOfView(view), '/apps/PmxStudio/plan?plan=abc', 'a view the app added: whole');
+    linkRow(view, 'plan', null);
+    expect(view.path, '/apps/PmxStudio/plan', 'a table not saved: no row');
+    expect(root.dataset[OPENED_AS] === undefined, true, 'let go');
+    expect(linkedRow('?plan=abc') === null || linkedRow('?plan=abc')!.id === 'abc', true, 'read back on reload');
+  });
 });

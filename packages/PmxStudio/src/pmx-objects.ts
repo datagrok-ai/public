@@ -1,10 +1,12 @@
 // (a leaf: ui.ts binds a figure, and the handlers' imports reach back to ui.ts)
 import type {StudyInputs as StudyNames} from './explore';
 
-/** An animal of a study. `twin`: Analyze draws it against its untreated twin; `details`: what its click shows. */
+/** An animal of a study. `details`: what its click shows. */
 export class PmxAnimal {
   constructor(readonly names: StudyNames | null, readonly animal: string,
-    readonly o: {color?: string, twin?: () => void, details?: () => HTMLElement} = {}) {}
+    readonly o: {color?: string, details?: () => HTMLElement,
+      /** false: its study is no longer the one on screen, and its actions do nothing */
+      live?: () => boolean} = {}) {}
   toString(): string {
     return this.animal;
   }
@@ -13,7 +15,7 @@ export class PmxAnimal {
 /** A group of a study, drawn in `color`. `details`: what its click shows. */
 export class PmxGroup {
   constructor(readonly names: StudyNames | null, readonly group: string, readonly color: string,
-    readonly o: {details?: () => HTMLElement} = {}) {}
+    readonly o: {details?: () => HTMLElement, live?: () => boolean} = {}) {}
   toString(): string {
     return this.group;
   }

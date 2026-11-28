@@ -3151,6 +3151,9 @@ importers:
       datagrok-api:
         specifier: workspace:^
         version: link:../../js-api
+      dayjs:
+        specifier: 'catalog:'
+        version: 1.11.23
       echarts:
         specifier: ^5.0.0
         version: 5.6.0

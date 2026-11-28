@@ -10,24 +10,35 @@ const u32 = (b: Uint8Array, i: number) => (u16(b, i) | u16(b, i + 2) << 16) >>> 
 
 /** The files of the zip that `wanted` names, as text (stored or deflated; anything else throws). */
 export async function unzip(bytes: Uint8Array, wanted: (name: string) => boolean): Promise<Map<string, string>> {
+  // (the end record is within its 22 bytes and a comment of at most 64 KB of the end; every offset read from the
+  // file is checked against its length: a damaged workbook throws, and gives no finding)
+  const fits = (at: number, n: number) => {
+    if (!(at >= 0 && at + n <= bytes.length))
+      throw new Error('the zip is cut short');
+  };
   let end = bytes.length - 22;
-  while (end >= 0 && u32(bytes, end) !== 0x06054b50)
+  const first = Math.max(0, end - 0xffff);
+  while (end >= first && u32(bytes, end) !== 0x06054b50)
     end--;
-  if (end < 0)
+  if (end < first)
     throw new Error('not a zip');
   const dec = new TextDecoder();
   const out = new Map<string, string>();
   let p = u32(bytes, end + 16);
   for (let k = u16(bytes, end + 10); k > 0; k--) {
+    fits(p, 46);
     if (u32(bytes, p) !== 0x02014b50)
       throw new Error('the zip index does not read');
     const [method, size, nameLength, local] = [u16(bytes, p + 10), u32(bytes, p + 20), u16(bytes, p + 28),
       u32(bytes, p + 42)];
+    fits(p + 46, nameLength);
     const name = dec.decode(bytes.subarray(p + 46, p + 46 + nameLength));
     p += 46 + nameLength + u16(bytes, p + 30) + u16(bytes, p + 32);
     if (!wanted(name))
       continue;
+    fits(local, 30);
     const start = local + 30 + u16(bytes, local + 26) + u16(bytes, local + 28);
+    fits(start, size);
     const data = bytes.subarray(start, start + size);
     if (method === 0)
       out.set(name, dec.decode(data));

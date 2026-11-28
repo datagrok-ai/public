@@ -3,7 +3,7 @@
  * test that decides is the one the design powered: each animal's least-squares slope of log V from randomisation
  * (day 0) to the evaluation day, volumes below the smallest a caliper records raised to it (Crux stats.tgi's
  * per-animal rate, rate_floor), every treated arm against the control on those slopes with their own variances
- * (Welch's t test, Crux stats.posthoc) and the declared correction, Holm by default; beside it, what one variance
+ * (Welch's t test, Crux stats.posthoc) and the declared correction, Bonferroni by default; beside it, what one variance
  * for every group gives (Crux stats.contrast, rate ~ group, treatment vs control: Dunnett exact). TGI and
  * T/C on the evaluation day (the NCI definitions Plan declares effects in; TGI on each animal's change from its own
  * day 0, which gives its interval), the time to the endpoint volume and
@@ -18,9 +18,10 @@
 import * as DG from 'datagrok-api/dg';
 
 import {controlByName} from './arm-name';
-import {crux, CruxResult, EmptyState, MAX_SETS, named, rows} from './crux';
+import {crux, CruxResult, EmptyState, MAX_SETS, named, NoControl, rows} from './crux';
 import {groupsByAnimal} from './animal-group';
-import {Correction, EffectMetric, ENDPOINT, HUMANE, LAB_WEEKDAYS, StudyDeclaration, StudyDesign, correctionOf,
+import {BH_SCREENING, CORRECTION_NAME, Correction, EffectMetric, ENDPOINT, HUMANE, LAB_WEEKDAYS, StudyDeclaration,
+  StudyDesign, correctionOf,
   designStudy,
   finite, isFiniteNumber as ok, median} from './engine';
 import {PlanInputs, declarationOf} from './frames';
@@ -30,6 +31,9 @@ import {BandFactors, LineDensity, bandFactors, linePrior, modelName, tumourDensi
 import {PLAN_TAG, SavedPlan, parsePlan, powerAt} from './plan-file';
 import {registerHistoryOf} from './study-file';
 import {ChecksInput, PlanChecks, Range, planChecks, widenedEnd, withPrinted} from './plan-checks';
+import {mean, maxOf, minOf, minus} from './format';
+import {pValue} from './ui';
+import {mm3Text} from './reading-check';
 
 /** `volume`: NaN where the row has none; `weight`: the body weight (g) of each row, null when the study has none;
  *  `mass`: the tumor's ex vivo weight (g) on the row of the day it was excised, null when the study has none;
@@ -39,7 +43,8 @@ export interface StudyData {animal: string[], group: string[], day: number[], vo
 
 export interface AnalysisDeclaration {
   data: StudyData;
-  /** the cell line: its model of control growth for the twin */
+  /** the cell line: its model of control growth for the twin; '': none picked (the study's and its plan's: no
+   *  twin, no atlas checks, the rest the same; never a model assumed, QA 0.1.3 A2) */
   line: string;
   /** the control (vehicle) group */
   control: string;
@@ -64,7 +69,7 @@ export interface AnalysisDeclaration {
 export interface AnalysisInputs {
   study: DG.DataFrame; animal: DG.Column; group: DG.Column; day: DG.Column; volume: DG.Column;
   /** the text of a .pmxplan file */
-  plan?: string | null; line: string; control: string; endpoint: number; correction: string;
+  plan?: string | null; line: string | null; control: string; endpoint: number; correction: string;
   evaluationDay?: number; alpha?: number; bodyWeight?: DG.Column | null; weightLimit?: number; humane?: number;
   tumorWeight?: DG.Column | null; density?: number; removalReason?: DG.Column | null; withTwin?: boolean;
 }
@@ -90,10 +95,15 @@ export function analysisDeclarationOf(x: AnalysisInputs): AnalysisDeclaration {
   const pick = <T>(xs: T[]) => xs.filter((_, i) => keep[i]);
   const groups = pick(group).map(String);
   const names = [...new Set(groups)];
-  const control = x.control?.trim() || controlByName(names) || names[0];
+  // never a treated group taken for the control: with none named so, the user picks it (no verdict until then)
+  const control = x.control?.trim() || controlByName(names);
+  if (!control)
+    throw new NoControl('', NO_CONTROL);
   const planText = x.plan?.trim() || x.study.getTag(PLAN_TAG);
-  return {line: x.line || 'MC38', control, endpoint: x.endpoint, day: ok(x.evaluationDay) ? x.evaluationDay : null,
-    plan: planText ? parsePlan(planText) : null, alpha: ok(x.alpha) ? x.alpha : 0.05,
+  const plan = planText ? parsePlan(planText) : null;
+  // the model picked, else the plan's; none: no model assumed
+  return {line: x.line || plan?.predicted.line || '', control, endpoint: x.endpoint,
+    day: ok(x.evaluationDay) ? x.evaluationDay : null, plan, alpha: ok(x.alpha) ? x.alpha : 0.05,
     correction: correctionOf(x.correction),
     weightLimit: ok(x.weightLimit) ? x.weightLimit : 20, humane: ok(x.humane) ? x.humane : HUMANE,
     density: ok(x.density) && x.density > 0 ? x.density : null, twin: x.withTwin !== false,
@@ -109,30 +119,57 @@ export function analysisDeclarationOf(x: AnalysisInputs): AnalysisDeclaration {
 const V_LOD = 3.4;
 export const COMPARED = 'per-animal slope of log V from randomization (Welch t test)';
 
-type Contrast = {term: string, estimate: number, lower: number, upper: number, p_value: number};
+type Contrast = {term: string, estimate: number, lower: number, upper: number, p_value: number, level?: number,
+  p_raw?: number};
+
+/** stats.posthoc's p_adjust for each method (statsmodels' multipletests names: Crux computes BH too). */
+const P_ADJUST: {[c in Correction]: string} = {bonferroni: 'bonferroni', holm: 'holm', bh: 'fdr_bh', none: 'none'};
+
+/** Each arm's interval level, compatible with its adjusted p: its interval excludes 0 exactly when its adjusted p is
+ *  below α, so p, interval and verdict agree. `raw`/`adjusted`: the arms' p-values. Bonferroni: 1 − α/k; none (or
+ *  one arm): 1 − α; BH: the FCR-adjusted level of Benjamini & Yekutieli (2005), 1 − R·α/k with R arms declared
+ *  (R = 0: 1 − α/k); Holm: raw p ascending, step i at 1 − α/(k − i + 1) while the steps pass; from the first that
+ *  fails, every later arm at that failed step's level (at its own, a later arm's interval could exclude 0 while
+ *  Holm does not declare it). */
+export function armLevels(raw: number[], adjusted: number[], alpha: number, correction: Correction): number[] {
+  const k = raw.length;
+  if (correction === 'none' || k < 2)
+    return raw.map(() => 1 - alpha);
+  const declared = adjusted.filter((p) => p < alpha).length;
+  if (correction !== 'holm')
+    return raw.map(() => 1 - (correction === 'bh' ? Math.max(declared, 1) : 1) * alpha / k);
+  const levels = new Array<number>(k);
+  raw.map((p, i) => [p, i]).sort((a, b) => a[0] - b[0])
+    .forEach(([, arm], j) => levels[arm] = 1 - alpha / (k - Math.min(j, declared)));
+  return levels;
+}
 
 /** Each treated group (g1, g2, ...) against the control (g0) with their own variances: Welch's t test, its p-values
- *  adjusted over the comparisons (Crux stats.posthoc), and each difference's interval at 1 - alpha / k (1 - alpha
- *  with no correction; Holm has no interval of its own: Bonferroni's, never narrower than its decisions). A group
- *  with fewer than two slopes has no row. */
+ *  raw and adjusted over the comparisons (Crux stats.posthoc), and each difference's interval at its arm's level
+ *  (armLevels: the one compatible with the adjusted p). A group with fewer than two slopes has no row. */
 async function welchContrasts(x: {slope: Float64Array, group: string[]}, correction: Correction,
   alpha: number): Promise<Contrast[]> {
   const by = new Map<string, number[]>();
   x.group.forEach((g, i) => (by.get(g) ?? by.set(g, []).get(g)!).push(x.slope[i]));
   const of = (g: string) => {
     const v = by.get(g) ?? [];
-    const mean = v.reduce((t, y) => t + y, 0) / v.length;
-    return {n: v.length, mean, sem2: v.reduce((t, y) => t + (y - mean) ** 2, 0) / (v.length - 1) / v.length};
+    const m = mean(v);
+    return {n: v.length, mean: m, sem2: v.reduce((t, y) => t + (y - m) ** 2, 0) / (v.length - 1) / v.length};
   };
-  const arms = [...by.keys()].filter((g) => g !== 'g0' && by.get(g)!.length >= 2);
-  if ((by.get('g0')?.length ?? 0) < 2 || arms.length === 0)
+  const arms = [...by.keys()].filter((g) => g !== 'g0' && by.get(g)!.length >= MIN_TESTED);
+  if ((by.get('g0')?.length ?? 0) < MIN_TESTED || arms.length === 0)
     return [];
   const keep = x.group.map((g) => g === 'g0' || arms.includes(g));
-  const tested = rows((await crux('stats.posthoc', {x: x.slope.filter((_, i) => keep[i]),
+  const posthoc = (pAdjust: string) => crux('stats.posthoc', {x: x.slope.filter((_, i) => keep[i]),
     group: x.group.filter((_, i) => keep[i])}, {test: 'ttest', equal_var: false, control: 'g0',
-    p_adjust: correction, alpha})).main as any);
-  const [c, level] = [of('g0'), correction === 'none' ? alpha : alpha / arms.length];
-  return Promise.all(arms.map(async (g) => {
+    p_adjust: pAdjust, alpha}).then((r) => rows(r.main as any));
+  const [tested, untouched] = await Promise.all([posthoc(P_ADJUST[correction]), posthoc('none')]);
+  const pOf = (t: any[], g: string) => Number(t.find((r) => r.group_a === g)?.pvalue ?? NaN);
+  const [adjusted, raw] = [arms.map((g) => pOf(tested, g)), arms.map((g) => pOf(untouched, g))];
+  const levels = armLevels(raw, adjusted, alpha, correction);
+  const c = of('g0');
+  return Promise.all(arms.map(async (g, j) => {
+    const level = 1 - levels[j];
     const a = of(g);
     const [estimate, se2] = [a.mean - c.mean, a.sem2 + c.sem2];
     // Satterthwaite's degrees of freedom, as the test's
@@ -140,30 +177,31 @@ async function welchContrasts(x: {slope: Float64Array, group: string[]}, correct
     const t = se2 > 0 ? Number((await crux('stats.dist_eval', {x: Float64Array.from([1 - level / 2])},
       {dist: 't', func: 'ppf', shape1: df})).main.col['value'][0]) : 0;
     const half = t * Math.sqrt(se2);
-    return {term: `${g} - g0`, estimate, lower: estimate - half, upper: estimate + half,
-      p_value: tested.find((r) => r.group_a === g)?.pvalue ?? NaN};
+    return {term: `${g} - g0`, estimate, lower: estimate - half, upper: estimate + half, level: levels[j],
+      p_value: adjusted[j], p_raw: raw[j]};
   }));
 }
 
 export interface ArmAnalysis {
   arm: string;
-  /** treated animals with a slope */
+  /** treated animals with a slope (the test's) */
   n: number;
+  /** treated animals measured on the evaluation day (TGI's and T/C's) */
+  nDay: number;
   /** percent, on the evaluation day */
   tgi: number | null;
-  tgiLower: number | null;
-  tgiUpper: number | null;
   tc: number | null;
-  tcLower: number | null;
-  tcUpper: number | null;
-  /** mean slope of ln V per day, the arm's and the control's, and their difference with its (adjusted) interval */
+  /** mean slope of ln V per day, the arm's and the control's, and their difference with its (adjusted) interval at
+   *  `confidence` (its method's level, armLevels): the one interval the result is read on */
   slope: number;
   slopeControl: number;
   difference: number;
   lower: number;
   upper: number;
-  /** adjusted for the comparisons with the control */
+  confidence: number;
+  /** adjusted for the comparisons with the control (pRaw: before the adjustment) */
   p: number;
+  pRaw: number;
   /** the sensitivity analysis: what one variance for every group gives (Dunnett's p-value; with one treated group,
    *  the two-sample t test's); null: the group has none */
   pCommon: number | null;
@@ -180,24 +218,110 @@ export interface ArmAnalysis {
 
 /** What the test on the slopes says of a treated group: it grows slower than the control (its interval below 0),
  *  faster (above 0), or the study cannot tell it from the control. */
-export type Activity = 'Slows growth' | 'Grows faster' | 'No clear effect';
-export const activityOf = (a: ArmAnalysis): Activity =>
-  a.upper < 0 ? 'Slows growth' : a.lower > 0 ? 'Grows faster' : 'No clear effect';
+export type Activity = 'Slows growth' | 'Grows faster' | 'No clear effect' | typeof TOO_FEW;
+/** A group the test cannot be run on (fewer than MIN_TESTED animals with a slope, in it or in the control): no p, no
+ *  verdict (QA 0.1.3 round 3, chaos 4: such a group read "grows 0.0%/day faster, p < 0.001"). */
+export const TOO_FEW = 'Too few animals to test';
+/** The animals with a slope a group (and the control) needs to be tested: the one threshold the note, the cells and
+ *  the test share (round 4, analyst A4: a group "too few for a test" was tested on 2). */
+export const MIN_TESTED = 3;
+/** Why a group is not tested, in a cell's tooltip and the notes: "1 animal; at least 3 needed". */
+export const tooFewWhy = (n: number) => `${n} animal${n === 1 ? '' : 's'} with a slope; at least ${MIN_TESTED} needed`;
+export const activityOf = (a: Pick<ArmAnalysis, 'lower' | 'upper' | 'p'>): Activity =>
+  ![a.lower, a.upper, a.p].every(Number.isFinite) ? TOO_FEW :
+    a.upper < 0 ? 'Slows growth' : a.lower > 0 ? 'Grows faster' : 'No clear effect';
 
-/** When a group's result and its T/C interval seem to disagree (an effect while the interval crosses 100%, or no
- *  clear effect while it does not), why: the result is the test on the growth curves, the interval one day's
- *  volumes. null: none disagrees (or no interval). The result itself is not changed. */
-export function intervalNote(groups: {activity: string, tcLower: number | null, tcUpper: number | null}[],
-  day: number): string | null {
-  const crosses = (g: {tcLower: number | null, tcUpper: number | null}) => g.tcLower! <= 100 && g.tcUpper! >= 100;
-  const known = groups.filter((g) => Number.isFinite(g.tcLower) && Number.isFinite(g.tcUpper));
-  const lead = 'The result is decided on the growth curves over the whole study.';
-  if (known.some((g) => g.activity !== 'No clear effect' && crosses(g)))
-    return `${lead} The T/C interval describes day ${day} alone, so it is wider.`;
-  if (known.some((g) => g.activity === 'No clear effect' && !crosses(g)))
-    return `${lead} The T/C interval describes day ${day} alone and is not the test.`;
-  return null;
+/** A slope difference (ln V per day) as the change of the daily growth in %/day, signed: −7.1 grows 7.1% less each
+ *  day than the control. */
+export const pctPerDay = (d: number) => 100 * (Math.exp(d) - 1);
+
+/** A number to one decimal with a true minus ("−7.1"; never "−0.0"). */
+export const oneDecimal = (x: number) => {
+  const s = x.toFixed(1);
+  return /^-0\.0$/.test(s) ? '0.0' : minus(s);
+};
+
+/** The groups table's growth cell: the change of the daily growth against the control in %/day and its interval,
+ *  low to high: "−7.1 (−9.6 to −4.5)"; null: no test. */
+export function growthVsControl(d: number, lower: number, upper: number): string | null {
+  if (![d, lower, upper].every(Number.isFinite))
+    return null;
+  return `${oneDecimal(pctPerDay(d))} (${oneDecimal(pctPerDay(lower))} to ${oneDecimal(pctPerDay(upper))})`;
 }
+
+/** The interval's level and method, for its header (round 3, analyst W2), and the p column's name: the one place
+ *  Analyze, Compare, the CTD, the reports and the files take them from. "99% CI, Bonferroni over 5 groups" and
+ *  "p (Bonferroni)"; Holm's level varies by arm: "CI by Holm step" (each arm's own on its cell's hover). Each
+ *  method's interval agrees with its p (armLevels); one switch of `correction` changes both. `confidence`: the
+ *  study's level (with Holm, its first step's). */
+export function intervalWords(confidence: number, correction: unknown,
+  k: number): {level: string, header: string, tip: string, p: string} {
+  const level = levelText(confidence);
+  if (correction === 'none' || k < 2) {
+    return {level, header: level, p: 'p', tip: `${level}: ${k < 2 ? 'one comparison with the control' :
+      'not adjusted for the comparisons (exploratory)'}.`};
+  }
+  const c = correctionOf(correction);
+  const p = `p (${c === 'bh' ? 'BH-adjusted' : CORRECTION_NAME[c]})`;
+  const agree = `the interval and the ${p} agree, and the result is read on them.`;
+  if (c === 'holm') {
+    const header = `CI by Holm step over ${k} groups`;
+    return {level, header, p, tip: `${header} with the control: the ` +
+      `groups in order of their unadjusted p, the first at 1 − α/${k}, the next at 1 − α/${k - 1}, and so on; from ` +
+      `the first step not passed, the rest at that step's level. Each group's level is on its cell's hover; ${agree}`};
+  }
+  const header = `${level}, ${c === 'bh' ? 'FDR-adjusted (BH)' : 'Bonferroni'} over ${k} groups`;
+  return {level, header, p, tip: `${header} with the control (` + (c === 'bh' ? `Benjamini and Yekutieli: each ` +
+    `at 1 − R·α/${k}, R the groups declared); ${agree} Benjamini-Hochberg ${BH_SCREENING}.` :
+    `each at 1 − α/${k}); ${agree}`)};
+}
+
+/** The comparisons an analysis made, as its correction counts them and the selector's hint says them: the groups
+ *  tested, not every treated group (one with too few animals, or none measured past day 0, is not tested;
+ *  fewanimals and day0only read 3 and 2 where 1 was made, QA 0.1.3 r4). An analysis saved without it: the treated. */
+export const comparisonsMade = (analysis: DG.DataFrame): number => {
+  const tested = analysis.col('tested_arms')?.get(0);
+  return Number.isFinite(tested) ? tested : analysis.col('treated_arms')?.get(0) ?? 0;
+};
+
+/** An interval's level as its header and words say it ("99% CI"); never "0%": a level not computed (no group
+ *  tested) reads as the unadjusted 95% (round 4, analyst A3). */
+export const levelText = (confidence: number) =>
+  `${+(100 * (Number.isFinite(confidence) && confidence > 0 ? confidence : 0.95)).toFixed(1)}% CI`;
+
+/** The level the cells' intervals are at, from the comparisons actually made (k): 1 − α/k with a correction, 1 − α
+ *  without (welchContrasts' own). */
+export const intervalLevel = (alpha: number, correction: unknown, k: number) =>
+  1 - (correction === 'none' || k < 2 ? alpha : alpha / k);
+
+/** A slope difference `d` (ln V per day) as the change of the daily growth: 100 (1 − e^d) % slower, or
+ *  100 (e^d − 1) % faster. */
+const perDay = (d: number) => d <= 0 ? {side: 'slower', x: 100 * (1 - Math.exp(d))} :
+  {side: 'faster', x: 100 * (Math.exp(d) - 1)};
+
+/** The test the result is read on, in words: "grows 4.1%/day slower (95% CI 2.0–6.3%), p = 0.003", from the
+ *  difference of the mean slopes of ln V per day (treated − control), its interval at `confidence` (the adjusted
+ *  one) and its adjusted p. An interval across no difference names each end's side. null: no test. */
+export function growthRateWords(d: number, lower: number, upper: number, p: number,
+  confidence: number): string | null {
+  if (activityOf({lower, upper, p}) === TOO_FEW || !Number.isFinite(d))
+    return null;
+  const [m, lo, hi] = [perDay(d), perDay(lower), perDay(upper)];
+  const f = (x: number) => x.toFixed(1);
+  // the interval in the side of the estimate, its smaller end first (round 4, analyst W2), else both sides named
+  const ci = lo.side !== hi.side ? `${f(lo.x)}% slower to ${f(hi.x)}% faster` : m.side === 'slower' ?
+    `${f(hi.x)} to ${f(lo.x)}% slower` : `${f(lo.x)} to ${f(hi.x)}% faster`;
+  const pText = pValue(p);
+  return `Tumors grew ${f(m.x)}% per day ${m.side} than in the control (${levelText(confidence)} ${ci}; ` +
+    `p ${pText.startsWith('<') ? pText : `= ${pText}`})`;
+}
+
+/** What the growth-rate cell means, on hover after its sentence (the method is in the protocol). */
+export const GROWTH_RATE_TIP = 'This is the test that decides the result; TGI and T/C describe the evaluation day ' +
+  'only.';
+
+/** What the view says when no group is named as the control. */
+export const NO_CONTROL = 'No control group found: pick it in Control group.';
 
 /** A control whose measurements mostly fall outside its band from the other controls. */
 export interface OddControl {animal: string, outside: number, measurements: number, below: boolean}
@@ -207,10 +331,16 @@ export interface StudyAnalysis {
   /** whether the twins were computed (false: their tables empty, asked for later) */
   twinned: boolean;
   treated: string[];
+  /** the treated groups tested against the control (the comparisons made, the correction's k) and the level their
+   *  intervals are at (armLevels; with Holm, the widest: its first step's) */
+  tested: number;
+  confidence: number;
   evaluationDay: number;
   /** the evaluation day came from the endpoint (false: given, or the last day when the controls never reach it) */
   fromEndpoint: boolean;
   nControl: number;
+  /** controls measured on the evaluation day */
+  nControlDay: number;
   controlMedianTte: number | null;
   arms: ArmAnalysis[];
   /** per animal: group, animal, slope (ln V per day), time to endpoint and whether reached, mRECIST */
@@ -244,11 +374,12 @@ export interface PlanComparison {
     verdict: 'As predicted' | 'Faster than predicted' | 'Slower than predicted' | null};
   /** the first measurement day the median control reached the endpoint */
   end: {observed: number | null, range: Range, notReached: number,
-    verdict: 'As predicted' | 'Earlier than predicted' | 'Later than predicted' | 'Endpoint not reached'};
-  /** each treated group: the plan's arm it ran as, the effect assumed, the one observed with its 95% interval, the
-   *  range a study run as planned shows, and the verdict */
+    /** null: nothing predicted to read it against (no model nor plan) */
+    verdict: 'As predicted' | 'Earlier than predicted' | 'Later than predicted' | 'Endpoint not reached' | null};
+  /** each treated group: the plan's arm it ran as, the effect assumed, the one observed on the evaluation day (no
+   *  interval: the test on the slopes is the result's), the range a study run as planned shows, and the verdict */
   groups: {group: string, plannedAs: string | null, metric: EffectMetric, assumed: number | null,
-    observed: number | null, lower: number | null, upper: number | null, expected: Range | null,
+    observed: number | null, expected: Range | null,
     verdict: EffectVerdict | null,
     /** the test on the slopes (adjusted p), the group's analysable animals, the power the study had for the planned
      *  effect with them, and the animals the plan needed for its power (null: no plan, or a plan without them) */
@@ -290,8 +421,34 @@ const volumeDays = (data: StudyData) => data.day.filter((_, i) => Number.isFinit
 
 /** Plan's evaluation day, observed: the first day the median control is measured at or above the endpoint; the
  *  last measurement day when it never is. */
-function evaluationDay(d: AnalysisDeclaration): {day: number, fromEndpoint: boolean} {
+export function evaluationDay(d: AnalysisDeclaration): {day: number, fromEndpoint: boolean, incomplete?: number[],
+  leftOut?: string[]} {
   const {data} = d;
+  const on = new Map<number, Set<string>>();
+  data.day.forEach((t, i) => Number.isFinite(data.volume[i]) && t >= 0 &&
+    (on.get(t) ?? on.set(t, new Set()).get(t)!).add(data.group[i]));
+  // a group measured on its first day only (no growth to read: "too few animals to test") waits for no day; the
+  // others must all have a volume on it (QA 0.1.3 round 4 chaos N4: one such group made the evaluation day 0)
+  const first = minOf(on.keys());
+  const later = new Set([...on].filter(([t]) => t > first).flatMap(([, gs]) => [...gs]));
+  const groups = new Set([...new Set(data.group)].filter((g) => later.has(g) || g === d.control));
+  const leftOut = [...new Set(data.group)].filter((g) => !groups.has(g));
+  // a day some group has no volume on (half entered) is never the evaluation day: TGI and T/C read 0% there. A group
+  // already gone the measurement day before (every animal lost early) does not hold it back: the others are read on
+  // the control's endpoint day, that group shown as not measured then (QA 0.1.3 round 4, analyst A2)
+  const sorted = [...on.keys()].sort((a, b) => a - b);
+  const complete = (t: number) => {
+    const before = on.get(sorted[sorted.indexOf(t) - 1]);
+    return [...groups].every((g) => on.get(t)?.has(g) || (before !== undefined && !before.has(g)));
+  };
+  const incomplete: number[] = [];
+  const found = evaluationDayOf(d, on, complete, incomplete);
+  return leftOut.length ? {...found, leftOut} : found;
+}
+function evaluationDayOf(d: AnalysisDeclaration, on: Map<number, Set<string>>, complete: (t: number) => boolean,
+  incomplete: number[]): {day: number, fromEndpoint: boolean, incomplete?: number[]} {
+  const {data} = d;
+  const sorted = [...on.keys()].sort((a, b) => a - b);
   const byDay = new Map<number, number[]>();
   data.group.forEach((g, i) => {
     if (g === d.control && data.day[i] >= 0 && Number.isFinite(data.volume[i])) {
@@ -303,10 +460,26 @@ function evaluationDay(d: AnalysisDeclaration): {day: number, fromEndpoint: bool
     }
   });
   for (const day of [...byDay.keys()].sort((a, b) => a - b)) {
-    if (median(byDay.get(day)!) >= d.endpoint)
-      return {day, fromEndpoint: true};
+    if (median(byDay.get(day)!) < d.endpoint)
+      continue;
+    if (complete(day))
+      return {day, fromEndpoint: true, incomplete};
+    incomplete.push(day);
   }
-  return {day: Math.max(...volumeDays(data)), fromEndpoint: false};
+  const last = [...sorted].reverse().find(complete);
+  if (last === undefined)
+    return {day: maxOf(volumeDays(data)), fromEndpoint: false};
+  incomplete.push(...sorted.filter((t) => t > last && !incomplete.includes(t)));
+  return {day: last, fromEndpoint: false, incomplete: incomplete.sort((a, b) => a - b)};
+}
+
+/** The groups with no animal measured on or after `day` while the study went on (every animal lost before it), by
+ *  their last measurement day: shown as not measured on the evaluation day, never moving it. */
+export function groupsGone(data: StudyData, day: number): Map<string, number> {
+  const last = new Map<string, number>();
+  data.group.forEach((g, i) => Number.isFinite(data.volume[i]) && data.day[i] >= 0 &&
+    last.set(g, Math.max(last.get(g) ?? -Infinity, data.day[i])));
+  return new Map([...last].filter(([, t]) => t < day));
 }
 
 /** Crux stats.tumor_twin's model of the line: the engine priors' study prior, noise and start spread with the twin's
@@ -412,13 +585,13 @@ const twinOf = remembered(([window, params]: [Window, {[k: string]: any}]) => fa
 export async function analyzeStudy(d: AnalysisDeclaration): Promise<StudyAnalysis> {
   const groups = [...new Set(d.data.group)];
   if (!groups.includes(d.control)) {
-    throw new Error(`There is no group "${d.control}" in the study table: pick the control among ` +
+    throw new NoControl(d.control, `There is no group "${d.control}" in the study table: pick the control among ` +
       `${groups.join(', ')}.`);
   }
   const treated = groups.filter((g) => g !== d.control);
   if (treated.length === 0) // (the user's study as it is, not a failure: said, not logged as an error)
     throw new EmptyState('The study has no treated group');
-  const end = d.day === null ? evaluationDay(d) : {day: d.day, fromEndpoint: false};
+  const end: ReturnType<typeof evaluationDay> = d.day === null ? evaluationDay(d) : {day: d.day, fromEndpoint: false};
   // the tests and the twins read the volumes of that very day, and a growth rate takes two days from randomization
   const measured = [...new Set(volumeDays(d.data).filter((t) => t >= 0))].sort((a, b) => a - b);
   if (!measured.includes(end.day) || end.day <= measured[0]) {
@@ -432,7 +605,8 @@ export async function analyzeStudy(d: AnalysisDeclaration): Promise<StudyAnalysi
   const window = {animal: pick(d.data.animal), group: pick(d.data.group),
     day: Float64Array.from(pick(d.data.day)), volume: Float64Array.from(pick(d.data.volume))};
   // the twin is the analysis's longest call and needs nothing from the others
-  const twinned = d.twin !== false;
+  // (no model: no twin, which is the model's prediction)
+  const twinned = d.twin !== false && !!d.line;
   const twinning = !twinned ? null :
     twinModel(d.line).then((m) => twinOf([window, {...m, control: d.control, day: end.day}]));
   twinning?.catch(() => null); // (awaited below; a failure of the calls before it is the one reported)
@@ -458,6 +632,22 @@ export async function analyzeStudy(d: AnalysisDeclaration): Promise<StudyAnalysi
 
   const table = rows(tgi.main as any);
   const delay = named(tgi, 'delay');
+  // each animal's time to the endpoint over the whole study, as Time to endpoint draws it (stats.tgi's stops at the
+  // evaluation day, and its file said "not reached" of an animal the curves show reaching it later)
+  const all = d.data.day.map((t, i) => Number.isFinite(t) && Number.isFinite(d.data.volume[i]));
+  const of = <T>(xs: T[]) => xs.filter((_, i) => all[i]);
+  const survival = await crux('stats.tumor_survival', {animal: of(d.data.animal), group: of(d.data.group),
+    day: Float64Array.from(of(d.data.day)), volume: Float64Array.from(of(d.data.volume))},
+  {control: d.control, endpoint_volume: d.endpoint}).then((r) => named(r, 'animals'), () => []);
+  const reaching = new Map(survival.map((a) => [String(a.animal), a]));
+  for (const a of animals) {
+    const s = reaching.get(String(a.animal));
+    if (s)
+      Object.assign(a, {time_to_endpoint: s.time, event: !!s.event});
+  }
+  // the animals each group has on the evaluation day: those its TGI and T/C are read on
+  const onDay = (g: string) => new Set(window.animal.filter((_, i) => window.group[i] === g &&
+    window.day[i] === end.day && Number.isFinite(window.volume[i]))).size;
   const meanSlope = (g: string) => {
     const s = sloped.filter((a) => a.group === g).map((a) => a.slope as number);
     return s.reduce((t, x) => t + x, 0) / s.length;
@@ -466,12 +656,14 @@ export async function analyzeStudy(d: AnalysisDeclaration): Promise<StudyAnalysi
     const e = table.find((r) => r.group === g) ?? {};
     // a group with no animal measured twice has no contrast: no test (said in the notes)
     const c = contrasts.find((r) => String(r.term).startsWith(`g${k + 1} `)) ??
-      {estimate: NaN, lower: NaN, upper: NaN, p_value: NaN};
+      {estimate: NaN, lower: NaN, upper: NaN, p_value: NaN, level: NaN, p_raw: NaN};
     const own = effects.filter((r) => r.group === g);
-    return {arm: g, n: sloped.filter((a) => a.group === g).length, tgi: finite(e.tgi_change),
-      tgiLower: finite(e.tgi_change_lower), tgiUpper: finite(e.tgi_change_upper), tc: finite(e.tc),
-      tcLower: finite(e.tc_lower), tcUpper: finite(e.tc_upper), slope: meanSlope(g), slopeControl: meanSlope(d.control),
-      difference: c.estimate, lower: c.lower, upper: c.upper, p: c.p_value,
+    // (none measured that day: no TGI nor T/C, never a 0% read on no animal: chaos 4)
+    const nDay = onDay(g);
+    return {arm: g, n: sloped.filter((a) => a.group === g).length, nDay, tgi: nDay ? finite(e.tgi_change) : null,
+      tc: nDay ? finite(e.tc) : null, slope: meanSlope(g), slopeControl: meanSlope(d.control),
+      difference: c.estimate, lower: c.lower, upper: c.upper, confidence: c.level ?? NaN,
+      p: finite(c.p_value) ?? NaN, pRaw: finite(c.p_raw) ?? NaN,
       pCommon: finite(sensitivity.find((r) => String(r.term).startsWith(`g${k + 1} `))?.p_value),
       medianTte: finite(delay.find((r) => r.group === g)?.median),
       delay: finite(delay.find((r) => r.group === g)?.t_minus_c),
@@ -499,34 +691,82 @@ export async function analyzeStudy(d: AnalysisDeclaration): Promise<StudyAnalysi
     byGroupDay.get(key)!.v.push(window.volume[i]);
   });
   const volumes = [...byGroupDay.values()].map(({group, day, v}) =>
-    ({group, day, n: v.length, median: median(v), lower: Math.min(...v), upper: Math.max(...v)}));
+    ({group, day, n: v.length, median: median(v), lower: minOf(v), upper: maxOf(v)}));
 
   const notes: string[] = [];
   if (d.data.skipped > 0) {
     notes.push(`${d.data.skipped} row${d.data.skipped > 1 ? 's' : ''} without an animal, a group or a day left out ` +
       'of the analysis');
   }
-  if (d.day === null && !end.fromEndpoint) {
+  const leftOut = end.leftOut ?? [];
+  if (d.day === null && leftOut.length) {
+    const first = minOf(volumeDays(d.data).filter((t) => t >= 0));
+    const many = leftOut.length > 1;
+    notes.push(`${many ? 'Groups' : 'Group'} ${leftOut.join(', ')} ${many ? 'have' : 'has'} no measurements after ` +
+      `day ${first}, so ${many ? 'they are' : 'it is'} left out. Effects are read on day ${end.day}.`);
+  }
+  if (d.day === null && end.incomplete?.length) {
+    const ds = end.incomplete;
+    // the groups with no volume on each such day, named (one left out above is not waited for)
+    const groups = [...new Set(d.data.group)].filter((g) => !leftOut.includes(g));
+    const missingOn = (t: number) => groups.filter((g) => !d.data.day.some((x, i) => x === t &&
+      d.data.group[i] === g && Number.isFinite(d.data.volume[i]))).join(', ');
+    const whose = ds.length > 1 ? ds.map((t) => `${missingOn(t)} on day ${t}`).join('; ') : missingOn(ds[0]);
+    // only the last day can be one still being entered: an earlier one is a finished day
+    const lastDay = maxOf(measured);
+    notes.push(`Day${ds.length > 1 ? 's' : ''} ${ds.join(', ')} not used as the evaluation day: no volume ` +
+      `${ds.length > 1 ? '' : 'on it '}for ${whose}${ds.includes(lastDay) ? ' (not entered yet?)' : ''}. ` +
+      `The effects are read on day ${end.day}` + (end.fromEndpoint ? '' : ', the last day every group was measured'));
+  }
+  if (d.day === null && !end.fromEndpoint && !end.incomplete?.length) {
     // the median volume of the controls still measured each day, not the median day to the endpoint: animals taken
     // out at the endpoint leave that median, so it can stay under the endpoint after half the controls reached it
-    notes.push(`On no measurement day was the median volume of the controls still measured at ${d.endpoint} mm³ ` +
-      `or more, so the effects are read on the last measurement day, day ${end.day} (the median day to the endpoint ` +
-      'is under Time to endpoint)');
+    const own = d.data.day.map((t, i) => d.data.group[i] === d.control && Number.isFinite(d.data.volume[i]) && t >= 0 ?
+      t : NaN);
+    const medians = [...new Set(own.filter(Number.isFinite))].map((t) => ({t, m: median(d.data.volume
+      .filter((_, i) => own[i] === t))}));
+    const top = medians.reduce((b, x) => x.m > b.m ? x : b, medians[0]);
+    notes.push(`The control median never reached ${mm3Text(d.endpoint)} mm³` + (top ? ` (largest: ${mm3Text(top.m)} mm³ ` +
+      `on day ${top.t})` : '') + `, so effects are read on day ${end.day}, the last measurement day`);
   }
-  const unsloped = animals.length - sloped.length;
+  // a group every animal of which left before the evaluation day: one sentence, no TGI nor T/C that day
+  // (one note per fact: a group the automatic day left out is said so once, above)
+  const saidOut = (g: string) => d.day === null && leftOut.includes(g);
+  const gone = groupsGone(d.data, end.day);
+  for (const [g, t] of gone) {
+    if (g !== d.control && !saidOut(g))
+      notes.push(`${g} has no animals measured after day ${t}: no TGI nor T/C on day ${end.day}`);
+  }
+  // animals measured once: said once, by group when a whole group is (round 4, analyst U4/W6)
+  const unslopedAll = animals.filter((a) => a.slope === null);
+  const whole = treated.filter((g) => !saidOut(g) && !sloped.some((a) => a.group === g) &&
+    unslopedAll.some((a) => a.group === g));
+  for (const g of whole) {
+    const days = [...new Set(d.data.day.filter((t, i) => d.data.group[i] === g && t >= 0 &&
+      Number.isFinite(d.data.volume[i])))].sort((a, b) => a - b);
+    notes.push(`${g} was measured only on day${days.length > 1 ? 's' : ''} ${days.join(', ') || '0'} and is left ` +
+      `out of the test. Effects read on day ${end.day}`);
+  }
+  // (a group said once already, measured only on day 0 or left out by the automatic day, gets no other note: the
+  // day0only file read "left out", "8 animals with fewer than two measurements" and "not tested, 0 animals with a
+  // slope" for one group, QA 0.1.3 browser check)
+  const saidOnce = (g: string) => whole.includes(g) || saidOut(g);
+  const unsloped = unslopedAll.filter((a) => !saidOnce(a.group)).length;
   if (unsloped > 0)
     notes.push(`${unsloped} animal${unsloped > 1 ? 's' : ''} with fewer than two measurements left out of the test`);
+  const nControl = sloped.filter((a) => a.group === d.control).length;
+  const nControlDay = onDay(d.control);
+  // (a group with fewer animals on the evaluation day than in the test: its Analyzed cell says "7 of 10" and why on
+  // hover, no sentence here: round 4, analyst U1/W8)
+  if (nControl < MIN_TESTED)
+    notes.push(`${d.control}: ${tooFewWhy(nControl)}: no group is tested`);
   for (const a of arms) {
-    if (a.n < 3)
-      notes.push(`${a.arm}: ${a.n} animal${a.n === 1 ? '' : 's'} with a slope, too few for a test`);
+    if (a.n < MIN_TESTED && !saidOnce(a.arm))
+      notes.push(`${a.arm}: not tested, ${tooFewWhy(a.n)}`);
     // the sensitivity analysis speaks when it disagrees
     if (a.pCommon !== null && Number.isFinite(a.p) && (a.p < d.alpha) !== (a.pCommon < d.alpha)) {
       notes.push(`${a.arm}: p = ${a.p.toPrecision(2)} with each group's own variance (the test); with one variance ` +
         `for every group (${treated.length < 2 ? 'the t test' : 'Dunnett'}) it would be ${a.pCommon.toPrecision(2)}`);
-    }
-    if (twinned && a.twinAnimals < a.n) {
-      notes.push(`${a.arm}: ${a.n - a.twinAnimals} animal${a.n - a.twinAnimals > 1 ? 's' : ''} not measured on day ` +
-        `${end.day}, so not compared with ${a.n - a.twinAnimals > 1 ? 'their twins' : 'its twin'}`);
     }
   }
   for (const c of oddControls) {
@@ -534,10 +774,15 @@ export async function analyzeStudy(d: AnalysisDeclaration): Promise<StudyAnalysi
       `${c.outside} of its ${c.measurements} measurements fall outside their range. It stays in the analysis`);
   }
   const inside = checks.filter((r) => r.inside).length;
-  const nControl = sloped.filter((a) => a.group === d.control).length;
   const versusPlan = await compareWithPlan(d, treated, arms, nControl);
-  return {declaration: d, twinned, treated, evaluationDay: end.day, fromEndpoint: end.fromEndpoint, versusPlan,
-    nControl, controlMedianTte: finite(delay.find((r) => r.group === d.control)?.median), arms, animals, volumes,
+  const tested = contrasts.length;
+  // the arms' level (Holm: the widest, its first step's); none tested: the method's at k
+  const levels = contrasts.map((c) => c.level ?? NaN).filter(Number.isFinite);
+  const confidence = levels.length ? minOf(levels) : intervalLevel(d.alpha, d.correction, tested);
+  return {declaration: d, twinned, treated, tested, confidence, evaluationDay: end.day, fromEndpoint: end.fromEndpoint,
+    versusPlan,
+    nControl, nControlDay, controlMedianTte: finite(delay.find((r) => r.group === d.control)?.median), arms,
+    animals, volumes,
     twins, effects, checks, controlCoverage: checks.length ? inside / checks.length : null, oddControls, notes};
 }
 
@@ -586,10 +831,16 @@ function startVolume(d: AnalysisDeclaration): number | null {
  *  20%. Lower costs nothing but more studies shown recomputed numbers (the observed start alone varies ~8%). */
 export const REANCHOR = 1.10;
 
+/** A group's or an arm's name as they are matched by: any case, spaces and punctuation set aside ("p,o." is
+ *  "p.o.", round 3 analyst 16), a decimal kept whichever its separator ("0,3" is "0.3", never "03" nor "3"), "+"
+ *  kept (a combination). */
+export const armKey = (s: string) => String(s ?? '').normalize('NFKC').toLowerCase()
+  .replace(/(\d)[.,](?=\d)/g, '$1ǀ').replace(/[^\p{L}\p{N}+]+/gu, '');
+
 /** Each treated group with the plan's arm it ran as: the same name (any case), else, for the groups left, the arms
  *  left in their order when they are as many (said in a note). */
 export function pairGroups(treated: string[], arms: SavedPlan['predicted']['arms'], notes: string[]) {
-  const key = (s: string) => s.trim().toLowerCase();
+  const key = armKey;
   const byName = new Map(arms.map((a) => [key(a.name), a]));
   const pairs = new Map(treated.flatMap((g) => byName.has(key(g)) ? [[g, byName.get(key(g))!] as const] : []));
   const used = new Set(pairs.values());
@@ -610,7 +861,7 @@ export function pairGroups(treated: string[], arms: SavedPlan['predicted']['arms
  *  study cannot tell the planned effect from none: inconclusive, not as planned (one test decides both). */
 function verdictOf(metric: EffectMetric, observed: number | null, activity: Activity,
   expected: Range): EffectVerdict | null {
-  if (observed === null)
+  if (observed === null || activity === TOO_FEW)
     return null;
   if (within(observed, expected))
     return activity === 'Slows growth' ? 'As planned' : 'Inconclusive';
@@ -628,6 +879,10 @@ async function compareWithPlan(d: AnalysisDeclaration, treated: string[], arms: 
   let p = d.plan?.predicted;
   const mde = new Map<string, number | null>();
   const start = startVolume(d);
+  if (!p && !d.line) {
+    const at = evaluationDay(d);
+    return modelless(arms, at.fromEndpoint ? at.day : null);
+  }
   if (!p) {
     const vRand = start ?? 100;
     const design = (n: number | null) => noPlanDesign({line: d.line, vRand, endpoint: d.endpoint, power: 0.8,
@@ -682,19 +937,18 @@ async function compareWithPlan(d: AnalysisDeclaration, treated: string[], arms: 
   const at = evaluationDay({...d, endpoint: p.endpoint});
   const reached = at.fromEndpoint ? at.day : null;
   const end: PlanComparison['end'] = {observed: reached, range: c.end, notReached: c.notReached,
-    verdict: endVerdict(reached, Math.max(...volumeDays(d.data)), c.end)};
+    verdict: endVerdict(reached, maxOf(volumeDays(d.data)), c.end)};
 
   const pairs = d.plan ? pairGroups(treated, p.arms, notes) : new Map<string, SavedPlan['predicted']['arms'][0]>();
   const groups = arms.map((a) => {
     const planned = pairs.get(a.arm);
     const metric: EffectMetric = planned?.metric ?? 'TGI';
-    const [observed, lower, upper] = metric === 'TGI' ? [a.tgi, a.tgiLower, a.tgiUpper] :
-      [a.tc, a.tcLower, a.tcUpper];
+    const observed = metric === 'TGI' ? a.tgi : a.tc;
     const own = planned ? c.arms.find((x) => x.name === planned.name) : undefined;
     const expected = own ? (metric === 'TGI' ? own.tgi : own.tc) : null;
     const activity = activityOf(a);
     return {group: a.arm, plannedAs: planned?.name ?? null, metric, assumed: planned?.effect ?? null, observed,
-      lower, upper, expected, verdict: expected ? verdictOf(metric, observed, activity, expected) : null,
+      expected, verdict: expected ? verdictOf(metric, observed, activity, expected) : null,
       activity, p: a.p, n: a.n, power: planned?.power?.length ? powerAt(planned.power, a.n) : null,
       nNeeded: planned?.nNeeded ?? null, mde: mde.get(a.arm) ?? null};
   });
@@ -702,6 +956,20 @@ async function compareWithPlan(d: AnalysisDeclaration, treated: string[], arms: 
   const target = Number(d.plan?.inputs.power);
   const powerTarget = Number.isFinite(target) && target > 0 ? (target > 1 ? target / 100 : target) : null;
   return {plan: d.plan?.name ?? null, controls: c.controls, controlSlope, end, groups, powerTarget, notes};
+}
+
+/** The study with no model nor plan: nothing predicted to read it against (no range, no verdict), each group's
+ *  observed effect and test as they are; `reached`: the first day the median control reached the endpoint (null:
+ *  never), as the header's evaluation day says it (round 3, analyst 4: "not reached" beside "evaluated on day 16"). */
+export function modelless(arms: ArmAnalysis[], reached: number | null = null): PlanComparison {
+  const none = {q025: NaN, median: NaN, q975: null};
+  const slope = arms.length ? arms[0].slopeControl : null;
+  return {plan: null, controls: [], controlSlope: {observed: slope !== null && Number.isFinite(slope) ? slope : null,
+    range: none, verdict: null}, end: {observed: reached, range: none, notReached: NaN,
+    verdict: reached === null ? 'Endpoint not reached' : null},
+  groups: arms.map((a) => ({group: a.arm, plannedAs: null, metric: 'TGI' as EffectMetric, assumed: null,
+    observed: a.tgi, expected: null, verdict: null, activity: activityOf(a),
+    p: a.p, n: a.n, power: null, nNeeded: null, mde: null})), powerTarget: null, notes: []};
 }
 
 /** Days for a tumor growing at `slope` (ln V per day) to double; null when it does not grow. */
@@ -801,7 +1069,8 @@ export async function analysisFrames(d: AnalysisDeclaration): Promise<AnalysisFr
   const [s, {tolerability, weights}] = await Promise.all([analyzeStudy(d), tolerabilityFrames(d)]);
   const vp = s.versusPlan;
   const analysis = DG.DataFrame.fromObjects([{
-    line: d.line, twinned: s.twinned, control: d.control, n_control: s.nControl, treated_arms: s.treated.length,
+    line: d.line, twinned: s.twinned, control: d.control, n_control: s.nControl, n_control_day: s.nControlDay,
+    treated_arms: s.treated.length, tested_arms: s.tested, confidence: s.confidence,
     evaluation_day: s.evaluationDay, from_endpoint: s.fromEndpoint, endpoint: d.endpoint,
     control_median_tte: s.controlMedianTte, alpha: d.alpha, correction: d.correction, compared: COMPARED,
     v_lod: V_LOD, control_coverage: s.controlCoverage, odd_controls: s.oddControls.length,
@@ -814,10 +1083,11 @@ export async function analysisFrames(d: AnalysisDeclaration): Promise<AnalysisFr
     plan_notes: vp.notes.join(' | '),
   }])!;
   const comparisons = DG.DataFrame.fromObjects(s.arms.map((a) => ({
-    arm: a.arm, n: a.n, tgi: a.tgi, tgi_lower: a.tgiLower, tgi_upper: a.tgiUpper, tc: a.tc, tc_lower: a.tcLower,
-    tc_upper: a.tcUpper,
-    slope_per_day: a.slope, slope_control_per_day: a.slopeControl, slope_difference: a.difference,
-    slope_difference_lower: a.lower, slope_difference_upper: a.upper, p_value: a.p, significant: a.p < d.alpha,
+    arm: a.arm, n: a.n, n_day: a.nDay, tgi: a.tgi, tc: a.tc, slope_per_day: a.slope,
+    slope_control_per_day: a.slopeControl, slope_difference: a.difference,
+    slope_difference_lower: a.lower, slope_difference_upper: a.upper,
+    slope_difference_confidence: a.confidence, correction: d.correction, p_value: a.p, p_raw: a.pRaw,
+    significant: a.p < d.alpha,
     p_common_variance: a.pCommon,
     activity: activityOf(a),
     median_time_to_endpoint: a.medianTte, growth_delay_days: a.delay, twin_animals: a.twinAnimals,
@@ -840,7 +1110,7 @@ export async function analysisFrames(d: AnalysisDeclaration): Promise<AnalysisFr
   const checks = table(s.checks);
   // each treated group against the plan (with none: its effect, nothing assumed)
   const versusPlan = DG.DataFrame.fromObjects(vp.groups.map((g) => ({group: g.group, planned_as: g.plannedAs,
-    metric: g.metric, assumed: g.assumed, observed: g.observed, lower: g.lower, upper: g.upper,
+    metric: g.metric, assumed: g.assumed, observed: g.observed,
     expected_q025: g.expected?.q025 ?? null, expected_median: g.expected?.median ?? null,
     expected_q975: g.expected?.q975 ?? null, verdict: g.verdict, activity: g.activity, p_value: g.p, n: g.n,
     power: g.power, n_needed: g.nNeeded, mde: g.mde})))!;

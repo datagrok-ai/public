@@ -115,6 +115,9 @@ category('Study colours', () => {
       const s = stage('', groups, control);
       s.plan = () => PLAN;
       s.control = () => control;
+      // (each stage its own table: the colour picked is the table's study's, whatever else a session has open)
+      const df = groupFrame(groups);
+      s.table = () => df;
       return s;
     };
     const monitor = at(['Vehicle', 'anti-PD-1'], 'Vehicle');
@@ -123,13 +126,13 @@ category('Study colours', () => {
     const stops = [monitor, analyze, plan].map(linkStudy);
     let late: (() => void) | null = null;
     try {
-      recolorOf('anti-PD-1', monitor.colors()['anti-PD-1'])!('#ff0000');
+      recolorOf('anti-PD-1', monitor.colors()['anti-PD-1'], monitor.table!())!('#ff0000');
       expect(plan.colors()['anti-PD-1'], '#ff0000', 'Plan, open before the change, follows Monitor');
       expect(analyze.colors()['anti-PD-1'], '#ff0000', 'Analyze too');
-      recolorOf('Vehicle', monitor.colors()['Vehicle'])!('#00ff00');
+      recolorOf('Vehicle', monitor.colors()['Vehicle'], monitor.table!())!('#00ff00');
       expect(plan.colors()['Control'], '#00ff00', 'the control recoloured in Monitor: Plan\'s control arm');
       expect(analyze.colors()['Vehicle'], '#00ff00', 'and Analyze\'s control');
-      recolorOf('Control', plan.colors()['Control'])!('#0000ff');
+      recolorOf('Control', plan.colors()['Control'], plan.table!())!('#0000ff');
       expect(monitor.colors()['Vehicle'], '#0000ff', 'the control recoloured in Plan: the study\'s control group');
       const plan2 = at(['Control', 'anti-PD-1'], 'Control');
       late = linkStudy(plan2);

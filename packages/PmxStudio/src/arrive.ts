@@ -6,10 +6,10 @@ import * as ui from 'datagrok-api/ui';
 import type * as DG from 'datagrok-api/dg';
 
 import {Block, fill} from './docx';
-import {HUMANE} from './engine';
+import {HUMANE, correctionOver} from './engine';
 import {GroupDetails, StudyMeta, animalsLine} from './study-meta';
 import {entered} from './sheet';
-import {closeNamed, num, plainError, showCentred, modal, modalOf} from './ui';
+import {closeNamed, copyText, num, plainError, showCentred, modal, modalOf} from './ui';
 
 /** An item: met, to do, or known only once the study is analyzed (`later`); `says` one short line, `detail` the full
  *  text, `asks` what the guideline asks for; `fix`: where the app fills the gap (`details`: the study's
@@ -18,7 +18,7 @@ export interface ArriveItem {n: number, item: string, done: boolean, status: 'me
   detail?: string, asks: string, fix?: 'details' | 'protocol', group?: string}
 
 /** What the study records, for each item. `exclusions` undefined: not known yet (a plan); `analyzed` empty: not
- *  analyzed yet; `correction` as the analysis names it (none, bonferroni, holm). */
+ *  analyzed yet; `correction` as the analysis names it (bonferroni, holm, bh, none). */
 export interface ArriveFacts {control: string, arms: string[], plan: string | null, exclusions?: string | null,
   meta: StudyMeta | null, randomized: boolean, endpoint: number, evaluationDay: number, protocol: string,
   alpha?: number, correction?: string, analyzed: {group: string, n: number}[],
@@ -127,8 +127,7 @@ function essentials(f: ArriveFacts): ArriveItem[] {
     more: {detail?: string, fix?: 'details'} = {}): ArriveItem =>
     ({n, item: name, done: status === 'met', status, says, asks: ASKS[n - 1], ...more});
   const k = f.arms.length;
-  const correction = k < 2 ? '' : f.correction === 'none' ? ', no correction (exploratory)' :
-    f.correction ? `, ${f.correction === 'bonferroni' ? 'Bonferroni' : 'Holm'} over ${k} comparisons` : '';
+  const correction = k < 2 || !f.correction ? '' : `, ${correctionOver(f.correction, k)}`;
   const analyzedN = f.analyzed.reduce((a, x) => a + x.n, 0);
   return [
     item(1, 'Study design', 'met', `${k + 1} groups, each animal is the unit`,
@@ -139,8 +138,8 @@ function essentials(f: ArriveFacts): ArriveItem[] {
     f.exclusions === undefined ? item(3, 'Inclusion and exclusion criteria', 'later', LATER) :
       item(3, 'Inclusion and exclusion criteria', 'met', f.exclusions ? 'Some data left out' :
         'No animal or measurement excluded', f.exclusions ? {detail: f.exclusions} : {}),
-    f.randomized ? item(4, 'Randomisation', 'met', 'Balanced on tumor volume at day 0') :
-      item(4, 'Randomisation', 'todo', 'Say how the animals were allocated to the groups'),
+    f.randomized ? item(4, 'Randomization', 'met', 'Balanced on tumor volume at day 0') :
+      item(4, 'Randomization', 'todo', 'Say how the animals were allocated to the groups'),
     m?.blinded ? item(5, 'Blinding', 'met', 'Measurements entered blind to the groups',
       {detail: 'The log says when the groups were revealed'}) :
       item(5, 'Blinding', 'todo', 'Not blinded: turn on blinded entry, or say why not', {fix: 'details'}),
@@ -176,7 +175,8 @@ items: ArriveItem[], actions: ChecklistActions = {}): DG.Dialog {
     const head = x.group && x.group !== lastGroup ? `${x.group}\n` : '';
     lastGroup = x.group;
     return `${head}${x.n}. ${x.item} [${MARK[x.status][2].toLowerCase()}]: ` +
-      `${x.detail ? `${x.says}. ${x.detail.split('\n').join('; ')}` : x.says}`;
+      // (a line's own full stop dropped before the "; ": "p = 0.0076.;" in the IB's, QA 0.1.3 round 3 analyst 12)
+      `${x.detail ? `${x.says}. ${x.detail.split('\n').map((l) => l.replace(/\.\s*$/, '')).join('; ')}` : x.says}`;
   }).join('\n');
   lastGroup = undefined;
   const done = items.filter((x) => x.done).length;
@@ -222,7 +222,7 @@ items: ArriveItem[], actions: ChecklistActions = {}): DG.Dialog {
   if (spec.options)
     d.add(spec.options);
   closeNamed(d).add(grid).add(guide)
-    .addButton('Copy', () => void navigator.clipboard.writeText(text).then(() => grok.shell.info('Checklist copied')));
+    .addButton('Copy', () => copyText(text, 'Checklist'));
   if (spec.download) {
     const save = spec.download;
     d.addButton('Download (.docx)', () => void Promise.resolve().then(save)

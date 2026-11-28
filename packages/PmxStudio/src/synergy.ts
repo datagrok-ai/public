@@ -13,6 +13,7 @@ import {groupColors} from './colors';
 import {metaOf} from './study-meta';
 import {parsePlan} from './plan-file';
 import {dialogLine, okNamed, pValue, showCentred, swatch, modal} from './ui';
+import {mean, minOf} from './format';
 
 export interface Synergy {slopes: {control: number, a: number, b: number, ab: number}, dif: number, se: number,
   z: number, p: number, pTwoSided: number}
@@ -83,7 +84,7 @@ export async function independenceBand(s: StudyInputs, groups: Combination, beta
     byAnimal.set(x.animal, a);
   }
   const curves = (g: string) => [...byAnimal].filter(([, a]) => a.group === g).map(([id, a]) => {
-    const first = Math.min(...a.at.keys());
+    const first = minOf(a.at.keys());
     return {k: kappa.get(id) ?? -Infinity, base: a.at.get(first)!,
       at: new Map([...a.at].filter(([d]) => d > first).map(([d, v]) => [d, v - a.at.get(first)!]))};
   });
@@ -93,7 +94,6 @@ export async function independenceBand(s: StudyInputs, groups: Combination, beta
     .filter((d) => [ca, cb, cab].every((g) => g.some((c) => c.at.has(d))));
   if (n < 3 || days.length < 3)
     return null;
-  const mean = (v: number[]) => v.reduce((t, x) => t + x, 0) / v.length;
   // seeded (mulberry32): the same band each time the study is shown
   let seed = 20261125;
   const u = () => {
@@ -168,6 +168,35 @@ export async function combinationStep(s: StudyInputs, groups: Combination, beta:
   const floored = named(r, 'animals').some((x) => x.role === 'ab' && x.cured === true);
   return floored && step === 'beyond_independent_action' ? {step: 'better_than_each', floored} :
     {step: step as CombinationStep, floored};
+}
+
+/** Each combination among `treated` (the plan's unticked ones, `off`, left out) against its two drugs, as Analyze
+ *  shows it under its result and every kept regulatory table says it (the demo studies too: round 4, analyst A5):
+ *  the steps found, by the combination's group, and why the others have none. `beta`: the line's reference growth
+ *  rate (undefined: it has none). `failed`: a comparison that could not be computed, in words. */
+export async function combinationSteps(s: StudyInputs, treated: string[], off: string[], control: string,
+  line: string, lastDay: number, beta: number | undefined, failed: (e: unknown, ab: string) => string):
+  Promise<{found: Map<string, {step: CombinationStep, why: string}>, missing: string[]}> {
+  const found = new Map<string, {step: CombinationStep, why: string}>();
+  const combos = findCombinations(treated).filter((c) => !off.includes(treated[c.ab]));
+  // (no model: no reference growth rate to read the combination against; never one assumed, A2)
+  if (!combos.length || !line || beta === undefined) {
+    return {found, missing: combos.map((c) => !line ? `${treated[c.ab]}: pick the tumor model to compare it with ` +
+      'its two drugs.' : `${treated[c.ab]}: not compared with its two drugs (${line} has no reference growth rate).`)};
+  }
+  const missing: string[] = [];
+  for (const c of combos) {
+    const [a, b, ab] = [treated[c.a], treated[c.b], treated[c.ab]];
+    const x = await combinationStep(s, {control, a, b, ab}, beta, lastDay).then((v) => v ?? 'few',
+      (e) => failed(e, ab));
+    if (x === 'few')
+      missing.push(`${ab}: too few animals to compare it with its two drugs.`);
+    else if (typeof x === 'string')
+      missing.push(x);
+    else
+      found.set(ab, {step: x.step, why: stepWhy(a, b, x.floored)});
+  }
+  return {found, missing};
 }
 
 /** The step in words, for under A+B's result. */

@@ -2,12 +2,16 @@
    pilot, or earlier studies, read from a file (the study reader: long or wide tables, Excel, the volume formula) or
    from a table open in Datagrok; its control group, a readable name, four short questions and, optionally, the
    pilot's take. Registers the model (history-models.ts) and gives its key. */
+import {maxOf, minOf} from './format';
+import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
 import {controlByName} from './arm-name';
 import {SavedHistory, historyFit, registerHistory} from './history-models';
+import {historyStudy} from './model-history';
 import type {Answer, HistoryRow} from './model-history';
+import {tumorModels} from './priors';
 import {fileText, readFile} from './open-study';
 import {previousOfTable} from './previous-studies';
 import {dialogLine, okNamed, showCentred, modal} from './ui';
@@ -26,6 +30,22 @@ export const defaultName = (from: string) =>
 
 /** Whether the pilot's take, percent, is one (empty: none given). */
 export const takeOk = (take: number | null) => take === null || (take >= 1 && take <= 100);
+
+/** Why a history cannot plan a model (null: it can): no control curve with a growth to read, a name an atlas model
+ *  has (`atlas`), or a take that is no share. The checks Use this model would otherwise fail on after the dialog. */
+export function historyProblem(rows: HistoryRow[], name: string, atlas: string[], take: number | null):
+  string | null {
+  if (rows.length && !historyStudy(rows, false, null, 1)) {
+    return 'No growth could be read: each control curve needs at least 4 measurements over which the tumor ' +
+      'grows.';
+  }
+  const n = name.trim().toLowerCase();
+  if (n && atlas.some((a) => a.toLowerCase() === n))
+    return `The atlas has a model named ${name.trim()}: give yours another name.`;
+  if (!takeOk(take === null || Number.isFinite(take) ? take : -1))
+    return 'Tumors that grew: a share of the tumors implanted, from 1 to 100%.';
+  return null;
+}
 
 const ERROR_COLOR = 'var(--red-3, #c62828)';
 
@@ -73,6 +93,12 @@ export function historyDialog(done: (key: string) => void, first?: {rows: ReadRo
   if (!d)
     return;
   let ok: HTMLButtonElement | null = null; // named once onOK has made it
+  let atlasNames: string[] = [];
+  // the take as typed (the input's own value drops a number outside its range rather than refuse it)
+  const takeOf = (): number | null => {
+    const t = (take.input as HTMLInputElement).value.trim();
+    return t ? Number(t.replace(',', '.')) : null;
+  };
   // the control's measurements of the history read (with no group column, every row); none read: none
   const controls = () => read ? controlRows(read.rows, groupsOf(read.rows).length ? control.value : null) : [];
   const refresh = () => {
@@ -81,11 +107,19 @@ export function historyDialog(done: (key: string) => void, first?: {rows: ReadRo
     const days = rows.map((r) => r.day);
     if (read) {
       status.textContent = rows.length ? `${read.from}: ${animals} control ${animals === 1 ? 'curve' : 'curves'}, ` +
-        `days ${Math.min(...days)}–${Math.max(...days)}.` : `${read.from}: no control measurements read.`;
+        `days ${minOf(days)}–${maxOf(days)}.` : `${read.from}: no control measurements read.`;
     }
     perGroup.root.style.display = means.value ? '' : 'none';
+    // what Use this model would refuse, said here, before it is pressed: no growth to read, an atlas model's name, a
+    // take that is no share
+    const problem = historyProblem(rows, name.value, atlasNames, takeOf());
+    if (read && problem) {
+      status.textContent = problem;
+      status.style.color = ERROR_COLOR;
+    } else if (read)
+      status.style.color = '';
     if (ok)
-      ok.disabled = !rows.length || !name.value.trim() || !takeOk(take.value);
+      ok.disabled = !rows.length || !name.value.trim() || problem !== null;
   };
   const show = (rows: ReadRow[], from: string) => {
     read = {rows, from};
@@ -102,11 +136,7 @@ export function historyDialog(done: (key: string) => void, first?: {rows: ReadRo
     refresh();
   };
 
-  const file = document.createElement('input');
-  file.type = 'file';
-  file.accept = '.csv,.tsv,.txt,.xlsx';
-  file.addEventListener('change', async () => {
-    const f = file.files?.[0];
+  const readChosen = async (f: File | undefined) => {
     if (!f)
       return;
     try {
@@ -130,8 +160,9 @@ export function historyDialog(done: (key: string) => void, first?: {rows: ReadRo
       status.textContent = e?.message ?? 'The file could not be read.';
       status.style.color = ERROR_COLOR;
     }
-  });
-  const choose = ui.button('Choose a file…', () => file.click(), 'A table of tumor volumes over days: CSV, TSV ' +
+  };
+  const choose = ui.button('Choose a file…', () => DG.Utils.openFile({accept: '.csv,.tsv,.txt,.xlsx',
+    open: (f: File) => void readChosen(f)}), 'A table of tumor volumes over days: CSV, TSV ' +
     'or Excel, long or wide.');
   table.onChanged.subscribe(() => {
     const df = tables.find((t) => t.name === table.value);
@@ -143,6 +174,13 @@ export function historyDialog(done: (key: string) => void, first?: {rows: ReadRo
   control.onChanged.subscribe(() => refresh());
   means.onChanged.subscribe(() => refresh());
   take.onChanged.subscribe(() => refresh());
+  take.input.addEventListener('input', () => refresh());
+  name.input.addEventListener('input', () => refresh());
+  // the atlas's model names, which an own model may not take (it would be told from the atlas's by nothing)
+  void tumorModels().then((m) => {
+    atlasNames = Object.keys(m);
+    refresh();
+  }, () => {});
 
   d.add(dialogLine('Plan with this model\'s own growth: its implantation pilot, the provider\'s, or earlier ' +
     'studies.', 'PMX Studio weighs the history against its PDX reference: the more and closer the history, the ' +
@@ -151,7 +189,7 @@ export function historyDialog(done: (key: string) => void, first?: {rows: ReadRo
     .add(ui.inputs([...tables.length ? [table] : [], name, control, lab, host, passage, frozen, means, perGroup,
       take]));
   d.onOK(async () => {
-    const h: SavedHistory = {name: name.value.trim(), take: take.value ?? null, rows: controls(),
+    const h: SavedHistory = {name: name.value.trim(), take: takeOf(), rows: controls(),
       source: {sameLab: ANSWERS[lab.value!], sameHost: ANSWERS[host.value!], passage: PASSAGES[passage.value!],
         frozen: frozen.value, meansOnly: means.value, animalsPerGroup: means.value ? perGroup.value ?? null : null}};
     const key = registerHistory(h);

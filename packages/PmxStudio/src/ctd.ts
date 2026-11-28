@@ -6,9 +6,9 @@ import type * as DG from 'datagrok-api/dg';
 
 import {ArriveItem} from './arrive';
 import {findCombinations} from './arm-name';
-import {AnalysisFrames, BASES, intervalNote} from './analyze';
+import {AnalysisFrames, BASES, TOO_FEW, growthRateWords, growthVsControl} from './analyze';
 import {Block, Cell, fill} from './docx';
-import {isFiniteNumber as has} from './engine';
+import {correctionOver, isFiniteNumber as has} from './engine';
 import {GroupDetails, StudyMeta, rowsOf} from './study-meta';
 import type {SavedStudy} from './study-file';
 import {aucUsed, sig as sig3} from './exposure';
@@ -16,7 +16,9 @@ import {entered} from './sheet';
 import type {NcaByArm} from './exposure';
 import {modelName} from './priors';
 
-/** A group's results: `tgi`, `tc` and their intervals in %, `p` against the control (adjusted as the analysis says);
+/** A group's results: `tgi`, `tc` in % on the endpoint day (no interval: one day's description), `p` against the
+ *  control (adjusted as the analysis says) and `growth`, the test the result is read on in words (analyze.ts
+ *  growthRateWords);
  *  `nadir` the lowest mean body-weight change from day 0 (%), `lost` the animals dead or removed for their weight
  *  (null: no body weight). A control has no effect. */
 export interface CtdGroup {
@@ -25,13 +27,16 @@ export interface CtdGroup {
   /** compound, dose and schedule ('Cpd-X 10 mg/kg QD'); empty: not recorded */
   given: string;
   route: string;
+  /** compound, dose, route and schedule, in the order the groups are named ('Cpd-X 10 mg/kg p.o. QD'): the IB's
+   *  words; absent (kept before): `given` and `route` */
+  named?: string;
   n: number;
   tgi?: number | null;
-  tgiLower?: number | null;
-  tgiUpper?: number | null;
   tc?: number | null;
-  tcLower?: number | null;
-  tcUpper?: number | null;
+  growth?: string | null;
+  /** the table's cell for that test: the change of the daily growth against the control in %/day and its interval,
+   *  "−7.1 (−9.6 to −4.5)" (analyze.ts growthVsControl); the sentence stays in the prose (round 3) */
+  rate?: string | null;
   /** the result of the test on the growth rates (analyze.ts Activity) */
   activity?: string | null;
   p?: number | null;
@@ -64,7 +69,7 @@ export interface CtdStudy {
   combinations?: {ab: number, a: number, b: number, step?: string}[];
 }
 
-export const CTD_TITLE = 'Primary pharmacodynamics: in vivo tumour models';
+export const CTD_TITLE = 'Primary pharmacodynamics: in vivo tumor models';
 export const M4S_URL = 'https://database.ich.org/sites/default/files/M4S_R2_Guideline.pdf';
 export const CTD_CREDIT = 'Layout after ICH M4S(R2) Appendix B (2.6.3.1; columns in the style of 2.6.3.4, as M4S ' +
   'gives no layout for primary pharmacodynamics). GLP: No; primary pharmacodynamic studies need not be conducted ' +
@@ -73,25 +78,27 @@ export const CTD_CREDIT = 'Layout after ICH M4S(R2) Appendix B (2.6.3.1; columns
 const r0 = (x: number) => String(Math.round(x));
 const signed = (x: number) => `${x > 0 ? '+' : x < 0 ? '−' : ''}${Math.abs(x).toFixed(1)}%`;
 const pText = (p: number) => p < 0.001 ? '<0.001' : p.toFixed(3);
+/** A p as the table's cell says it: "p = 0.088", "p < 0.001" (round 4, analyst W12). */
+const pWords = (p: number) => p < 0.001 ? 'p < 0.001' : `p = ${pText(p)}`;
 const routes = (s: CtdStudy) => [...new Set(s.groups.filter((g) => !g.control).map((g) => g.route).filter((r) => r))]
   .join(', ');
 
 /** A group's cells, after its study's two (said on its first row only). */
 function groupCells(g: CtdGroup): Cell[] {
-  const tgi = !has(g.tgi) ? '—' : r0(g.tgi) + (has(g.tgiLower) && has(g.tgiUpper) ?
-    ` [${r0(g.tgiLower)}, ${r0(g.tgiUpper)}]` : '');
+  const tgi = !has(g.tgi) ? '—' : r0(g.tgi);
   const reg = g.regressions ? `${g.regressions.complete} CR, ${g.regressions.partial} PR` : '—';
   const bw = !has(g.nadir) ? '—' : `${signed(g.nadir)}; ${g.lost ?? 0}`;
   return [g.given || (g.control ? `${g.name} (control)` : fill(`${g.name}: dose and schedule`)),
     g.route || (g.control ? '' : fill('route')), String(g.n), g.control ? 'Control' : tgi,
-    g.control || !has(g.tc) ? '—' : r0(g.tc), g.control || !has(g.p) ? '—' : pText(g.p),
+    g.control || !has(g.tc) ? '—' : r0(g.tc), g.control ? '—' : [g.rate, has(g.p) ? pWords(g.p) : '']
+      .filter((x) => x).join('; ') || '—',
     g.control ? '—' : reg, bw];
 }
 
 /** The overview line (2.6.3.1) of each study. */
 export function overviewRows(studies: CtdStudy[]): Cell[][] {
   return [['Type of study', 'Test system', 'Method of administration', 'Testing facility', 'Study number',
-    'Location (Vol./Section)'], ...studies.map((s) => [`Primary pharmacodynamics: antitumour activity, ${s.line}`,
+    'Location (Vol./Section)'], ...studies.map((s) => [`Primary pharmacodynamics: antitumor activity, ${s.line}`,
     s.animals || fill('species, strain'), routes(s) || fill('route'), fill('Testing facility'),
     s.id || fill('Study number'), fill('Vol./Section')])];
 }
@@ -101,12 +108,23 @@ export function ctdRows(studies: CtdStudy[]): Cell[][] {
   const pk = withPk(studies);
   const cells = (g: CtdGroup) => [...groupCells(g), ...pk ? [pkCell(g)] : []];
   return [['Study No.', 'Test system (species, strain, sex; model)', 'Dose and schedule', 'Route', 'n',
-    'TGI % [95% CI]', 'T/C %', 'p', 'Regressions', 'BW nadir; deaths', ...pk ? ['AUC; Cmax'] : [], 'GLP',
+    'TGI %', 'T/C %', 'Growth vs control, %/day (CI); p', 'Regressions', 'BW nadir; deaths', ...pk ? ['AUC; Cmax'] : [], 'GLP',
     'Location'],
   ...studies.flatMap((s) => s.groups.map((g, i): Cell[] => i > 0 ? ['', '', ...cells(g), '', ''] :
-    [s.id || fill('Study number'), `${s.animals ? `${s.animals}; ` : ''}${s.line} tumour model; endpoint day ` +
+    [s.id || fill('Study number'), `${s.animals ? `${s.animals}; ` : ''}${s.line} tumor model; endpoint day ` +
       `${s.endpointDay}`, ...cells(g), 'No', fill('Vol./Section')]))];
 }
+
+/** The study's animals' sex as its details record it ("female"), from its test system's words; '': not recorded
+ *  (round 4, analyst A5: "[sex]; 4" for a female study). */
+export const sexOf = (s: CtdStudy) => s.animals.split(',').map((x) => x.trim())
+  .find((x) => /^(female|male|mixed|both|m\/f|f|m)$/i.test(x)) ?? '';
+
+/** The compounds a group receives (its own drug for its PK row, never the study's other drugs: A5). */
+export const groupCompounds = (s: CtdStudy, g: CtdGroup) => {
+  const words = (g.named || g.given || g.name).toLowerCase();
+  return s.compounds.filter((c) => words.includes(c.toLowerCase()));
+};
 
 const withPk = (studies: CtdStudy[]) => studies.some((s) => s.groups.some((g) => g.pk));
 const pkOf = (g: CtdGroup): CtdPk | null => g.pk && !('why' in g.pk) ? g.pk : null;
@@ -144,12 +162,12 @@ function pkBlocks(studies: CtdStudy[]): Block[] {
   const table: Block[] = !cols.length ? [] : [{head: true, rows: [
     row('Study No.', (c) => c.s.id || fill('Study number')),
     row('Species', (c) => c.s.animals || fill('species, strain')),
-    row('Gender (M/F) / number of animals', (c) => [fill('sex'), `; ${c.x.profiles}` +
+    row('Gender (M/F) / number of animals', (c) => [sexOf(c.s) || fill('sex'), `; ${c.x.profiles}` +
       (c.x.pooled ? ' (pooled, sparse sampling)' : '')]),
     row('Vehicle/formulation', () => fill('vehicle')),
     row('Method of administration', (c) => c.g.route || fill('route')),
     row('Dose and schedule', (c) => c.g.given || fill('dose')), row('Sample', () => fill('plasma, serum')),
-    row('Analyte', (c) => c.s.compounds.join(', ') || fill('analyte')), row('Assay', () => fill('e.g. LC-MS/MS')),
+    row('Analyte', (c) => groupCompounds(c.s, c.g).join(', ') || fill('analyte')), row('Assay', () => fill('e.g. LC-MS/MS')),
     row('AUC', (c) => `${sig3(c.x.auc)} ${c.x.aucUnit} (${c.x.aucKind})`),
     row('Cmax', (c) => c.x.cmax === null ? '—' : `${sig3(c.x.cmax)} ${c.x.cmaxUnit}`)]}];
   return [{heading: 'Pharmacokinetics in the efficacy studies (layout of 2.6.5.3)', level: 2}, ...table,
@@ -175,18 +193,16 @@ export function ctdBlocks(studies: CtdStudy[], o: {sub: string, drug?: string}):
     {heading: 'Pharmacology: overview (2.6.3.1)', level: 2},
     {rows: overviewRows(studies), head: true, widths: [3, 2.2, 1.6, 1.6, 1.4, 1.4]},
     {heading: 'Primary pharmacodynamics', level: 2},
-    {rows: ctdRows(studies), head: true, widths: [1.3, 2.3, 2.2, 0.9, 0.5, 1.4, 0.7, 0.8, 1.2, 1.2,
+    {rows: ctdRows(studies), head: true, widths: [1.3, 2.3, 2.2, 0.9, 0.5, 0.7, 0.7, 2.2, 1.2, 1.2,
       ...withPk(studies) ? [1.6] : [], 0.6, 1.4]},
-    {p: 'TGI: tumour growth inhibition against the control on the endpoint day, with its 95% confidence interval. ' +
-      'T/C: treated over control tumour volume on that day. p: Welch\'s t test of each group\'s tumour growth ' +
-      `rate against the control${corrections.length ? `, ${corrections.join('; ')}` : ''}. Regressions: animals ` +
+    {p: 'TGI: tumor growth inhibition against the control on the endpoint day, 1 − ΔT/ΔC (each animal\'s change ' +
+      'in volume from day 0, the treated group\'s mean over the control\'s), a description of that day. ' +
+      'T/C: treated over control tumor volume on that day. Growth vs control: the change of each group\'s ' +
+      'daily tumor growth against the control\'s, in % per day (negative: slower), from each animal\'s slope of log volume, by Welch\'s ' +
+      `t test, with its confidence interval and p${corrections.length ? `, ${corrections.join('; ')}` : ''}; the ` +
+      'result is read on it alone. Regressions: animals ' +
       'with a complete or partial response (mRECIST). BW nadir: the lowest mean body-weight change from day 0; ' +
       'deaths: animals dead or removed for their weight. —: not applicable or not recorded.', small: true},
-    ...studies.flatMap((s) => {
-      const note = intervalNote(s.groups.filter((g) => !g.control && g.activity).map((g) => ({activity: g.activity!,
-        tcLower: g.tcLower ?? null, tcUpper: g.tcUpper ?? null})), s.endpointDay);
-      return note ? [{p: studies.length > 1 ? `${s.name || s.id}: ${note}` : note, small: true}] : [];
-    }),
     ...pkBlocks(studies),
     ...combinationBlocks(studies),
     {heading: 'For the Investigator\'s Brochure: nonclinical pharmacology', level: 2},
@@ -195,15 +211,18 @@ export function ctdBlocks(studies: CtdStudy[], o: {sub: string, drug?: string}):
     {p: CTD_CREDIT, small: true}];
 }
 
-const tgiText = (g: CtdGroup) => !has(g.tgi) ? 'TGI not estimated' : `TGI ${r0(g.tgi)}%` +
-  (has(g.tgiLower) && has(g.tgiUpper) ? ` (95% CI ${r0(g.tgiLower)} to ${r0(g.tgiUpper)})` : '') +
-  (has(g.p) ? `, p ${pText(g.p)}` : '');
+/** A group's effect in words: its TGI (on `day`, when given) and the test its result is read on. */
+const tgiText = (g: CtdGroup, day?: number) => (!has(g.tgi) ? 'TGI not estimated' : `TGI ${r0(g.tgi)}%`) +
+  (day !== undefined && has(g.tgi) ? ` on day ${day}` : '') +
+  (g.growth ? `; ${g.growth[0].toLowerCase()}${g.growth.slice(1)}` : has(g.p) ? `, p ${pText(g.p)}` : '');
 const label = (g: CtdGroup) => g.given || g.name;
 
 /** Each combination against its two drugs alone, a row each: the study, the model, A+B, A and B with their effect
  *  against the control, and where A+B stands against them. */
 export function combinationRows(studies: CtdStudy[]): Cell[][] {
-  const cell = (g: CtdGroup) => `${label(g)}: ${tgiText(g)}`;
+  // (a table: the numbers, the sentence stays in the prose, round 3)
+  const cell = (g: CtdGroup) => `${label(g)}: ${tgiText({...g, growth: null, p: null})}` +
+    (g.rate ? `, growth vs control ${g.rate} %/day` : '') + (has(g.p) ? `, p ${pText(g.p)}` : '');
   return [['Study No.', 'Model', 'Combination', 'First drug alone', 'Second drug alone', 'Against its drugs'],
     ...studies.flatMap((s) => (s.combinations ?? []).map((c) => [s.id || fill('Study number'), s.line,
       cell(s.groups[c.ab]), cell(s.groups[c.a]), cell(s.groups[c.b]), c.step ?? '—']))];
@@ -214,7 +233,7 @@ function combinationBlocks(studies: CtdStudy[]): Block[] {
   const rows = combinationRows(studies);
   return rows.length < 2 ? [] : [{heading: 'Combinations: each against its drugs alone (ICH S9)', level: 2},
     {rows, head: true, widths: [1.2, 1, 2.4, 2.4, 2.4, 2]},
-    {p: 'TGI and p against the control, as in the table above. Against its drugs: each animal\'s tumour growth ' +
+    {p: 'TGI and p against the control, as in the table above. Against its drugs: each animal\'s tumor growth ' +
       'under the combination against under each drug alone, from worse than the better drug alone to more than ' +
       'the two acting independently (Bliss); —: not decided, too few animals.', small: true}];
 }
@@ -230,9 +249,10 @@ export function ibParagraphs(studies: CtdStudy[], drug?: string): string[] {
   const lines = [...new Set(studies.map((s) => s.line))];
   const effects = studies.flatMap((s) => s.groups.filter((g) => !g.control && !g.given.includes(' + ') &&
     !(s.combinations ?? []).some((c) => s.groups[c.ab] === g))
-    .map((g) => `${label(g)}${g.route ? ` ${g.route}` : ''} in ${s.line}: ${tgiText(g)} on day ${s.endpointDay}`));
-  const out = [`The in vivo antitumour activity of ${list(compounds) || '[test article]'} was studied in ` +
-    `${studies.length} ${studies.length === 1 ? 'study' : 'studies'} in ${lines.length} tumour ` +
+    .map((g) => `${g.named || `${label(g)}${g.route ? ` ${g.route}` : ''}`} in ${s.line}: ` +
+      tgiText(g, s.endpointDay)));
+  const out = [`The in vivo antitumor activity of ${list(compounds) || '[test article]'} was studied in ` +
+    `${studies.length} ${studies.length === 1 ? 'study' : 'studies'} in ${lines.length} tumor ` +
     `model${lines.length === 1 ? '' : 's'} (${list(lines)})${species.length ? ` in the ${list(species)}` : ''}. ` +
     (effects.length ? `Against the control: ${effects.join('; ')}.` : '')];
   const combos = studies.flatMap((s) => (s.combinations ?? []).map((c) => `${label(s.groups[c.ab])} in ${s.line}: ` +
@@ -267,7 +287,7 @@ export function ctdItems(s: CtdStudy): ArriveItem[] {
     item(1, 'Test article', s.compounds.length > 0, s.compounds.join(', ') || 'Add the compound of each group',
       'The INN or code of the compound', s.compounds.length ? undefined : 'details'),
     item(2, 'Test system', !!s.animals, s.animals ? `${s.animals}; ${s.line}` : 'Add the species, strain and sex',
-      'Species, strain and sex; the tumour model', s.animals ? undefined : 'details'),
+      'Species, strain and sex; the tumor model', s.animals ? undefined : 'details'),
     item(3, 'Dose, schedule and route', given, given ? `${treated.length} treated groups` :
       'Add the dose, schedule and route of each group', 'Each group\'s dose (mg/kg), schedule and route',
     given ? undefined : 'details'),
@@ -333,12 +353,24 @@ export function ctdStudyOf(r: AnalysisFrames, meta: StudyMeta | null, name: stri
   const group = (g: string, i: number | null): CtdGroup => {
     const details = rowsOf(meta, g).filter((d) => d.compound.trim());
     const w = weighed.get(g);
-    const get = (k: string) => i === null ? null : c.get(k, i) as number | null;
-    return {name: g, control: i === null, given: details.map(dose).join(' + '),
+    // a number, else null: a column of nulls only reads back as ''
+    const get = (k: string): number | null => {
+      const x = i === null ? null : c.get(k, i);
+      return typeof x === 'number' && Number.isFinite(x) ? x : null;
+    };
+    // (the route before the schedule, as the groups are named: "QD p.o." beside "p.o. QD", round 3 W14)
+    const named = details.map((d) => [d.compound.trim(), d.dose === null ? '' : `${entered(d.dose)} ${d.unit}`.trim(),
+      d.route.trim(), d.schedule.trim()].filter((x) => x).join(' ')).join(' + ');
+    return {name: g, control: i === null, given: details.map(dose).join(' + '), ...named ? {named} : {},
       route: [...new Set(details.map((d) => d.route.trim()).filter((x) => x))].join(' + '),
-      n: i === null ? v('n_control') : c.get('n', i), tgi: get('tgi'), tgiLower: get('tgi_lower'),
-      tgiUpper: get('tgi_upper'), tc: get('tc'), tcLower: get('tc_lower'), tcUpper: get('tc_upper'),
-      activity: i === null ? null : c.get('activity', i) as string, p: get('p_value'),
+      n: i === null ? v('n_control') : c.get('n', i), tgi: get('tgi'), tc: get('tc'),
+      // (too few animals: no test, whatever its empty cells read back as: round 3, chaos 4)
+      growth: i === null || c.get('activity', i) === TOO_FEW ? null : growthRateWords(c.get('slope_difference', i), c.get('slope_difference_lower', i),
+        c.get('slope_difference_upper', i), c.get('p_value', i), c.get('slope_difference_confidence', i)),
+      rate: i === null || c.get('activity', i) === TOO_FEW ? null : growthVsControl(c.get('slope_difference', i),
+        c.get('slope_difference_lower', i), c.get('slope_difference_upper', i)),
+      activity: i === null ? null : c.get('activity', i) as string,
+      p: i !== null && c.get('activity', i) === TOO_FEW ? null : get('p_value'),
       regressions: scored ? {complete: count(g, /^m?CR$/i), partial: count(g, /^m?PR$/i)} : null,
       nadir: w?.mean_nadir ?? null, lost: w ? (w.removed_death ?? 0) + (w.removed_weight ?? 0) : null,
       ...nca && i !== null ? {pk: ctdPk(nca, g)} : {}};
@@ -351,7 +383,7 @@ export function ctdStudyOf(r: AnalysisFrames, meta: StudyMeta | null, name: stri
       .filter((x) => x))],
     animals: [a?.species, a?.strain, a?.sex].map((x) => x?.trim()).filter((x) => x).join(', '),
     correction: k < 2 ? '' : corr === 'none' ? 'not corrected for multiple comparisons' :
-      `adjusted by ${corr === 'bonferroni' ? 'Bonferroni' : 'Holm'} over ${k} comparisons`,
+      `adjusted by ${correctionOver(corr, k)}`,
     groups: [group(control, null), ...arms.map((g, i) => group(g, i))],
     // indices among the treated arms, +1 for the control first
     combinations: findCombinations(arms).map((x) => ({ab: x.ab + 1, a: x.a + 1, b: x.b + 1,

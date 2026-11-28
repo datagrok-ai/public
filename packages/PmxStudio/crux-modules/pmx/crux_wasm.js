@@ -1778,7 +1778,7 @@ async function __wbg_init(module_or_path) {
     }
 
     if (module_or_path === undefined) {
-        module_or_path = new URL('crux_wasm_bg.wasm?v=03ccc02ad445c8f2', import.meta.url);
+        module_or_path = new URL('crux_wasm_bg.wasm?v=367af3e48ec5d4c5', import.meta.url);
     }
     const imports = __wbg_get_imports();
 

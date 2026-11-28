@@ -2,11 +2,12 @@
    (.pmxstudy) or a table of measurements (.csv, .tsv), long or wide, read by study-reader.ts. Reads the dates only,
    never the groups, so a blinded study stays blind until it is analyzed; a table says how many animals it read in
    each group, and how, as nothing may be lost unseen in reading it. */
+import {maxOf, minOf} from './format';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import {PLAN_EXT, SavedPlan, parsePlan} from './plan-file';
-import {STUDY_EXT, SavedStudy, VOLUME_TAG, WEIGHT_TAG, oneDecimal, parseStudy} from './study-file';
+import {STUDY_EXT, SavedStudy, VOLUME_TAG, WEIGHT_LABEL, WEIGHT_TAG, oneDecimal, parseStudy} from './study-file';
 import {Answers, TableRead, animalProblem, cellsOfFrame, csvOf, readStudy, sheetProblem,
   studySheets} from './study-reader';
 import {dialogLine, okNamed, plainError, showCentred, modal} from './ui';
@@ -17,7 +18,7 @@ export const OPENED_EXTS = [PLAN_EXT, STUDY_EXT, 'csv', 'tsv', 'txt', 'xlsx'];
 
 /** A table of measurements, as far as the hub reads it. */
 export interface MeasuredTable {kind: 'table', file: string, df: DG.DataFrame, animals: number | null,
-  groups: number | null, lastDay: number | null, weight: boolean,
+  groups: number | null, firstDay: number | null, lastDay: number | null, weight: boolean,
   /** The table as read (study-reader.ts), with the answers to its questions so far; `text`, the file, read again
    *  with each answer. */
   read: TableRead, text: string, answers: Answers,
@@ -36,6 +37,14 @@ const baseOf = (name: string) => name.replace(/\.[^.]+$/, '');
 /** What one file holds; a table read with the `answers` given to its questions. */
 export function readFile(name: string, text: string, answers: Answers = {}, merged: Merged[] = []): FileRead {
   const ext = extOf(name);
+  // a plan or a study saved under another extension (a .pmxplan renamed .csv): read as what it is (QA 0.1.3 round 4
+  // chaos 24: "Not read: columns…", a tumor-model list shown for a file never read)
+  const as = ext !== PLAN_EXT && ext !== STUDY_EXT ?
+    /^\s*\{[^]*?"format"\s*:\s*"pmx-(plan|study)"/.exec(text.slice(0, 4000)) : null;
+  if (as) {
+    const r = readFile(`${baseOf(name)}.${as[1] === 'plan' ? PLAN_EXT : STUDY_EXT}`, text, answers, merged);
+    return {...r, file: name};
+  }
   try {
     if (ext === PLAN_EXT) {
       const p = parsePlan(text);
@@ -58,7 +67,8 @@ export function readFile(name: string, text: string, answers: Answers = {}, merg
       df.name = baseOf(name);
       const days = read.rows.map((r) => r.day);
       return {kind: 'table', file: name, df, animals: days.length ? new Set(read.rows.map((r) => r.animal)).size : null,
-        groups: days.length ? read.groups.length : null, lastDay: days.length ? Math.round(Math.max(...days)) : null,
+        groups: days.length ? read.groups.length : null, firstDay: days.length ? Math.round(minOf(days)) : null,
+        lastDay: days.length ? Math.round(maxOf(days)) : null,
         weight: read.rows.some((r) => r.weight !== null), read, text, answers, merged};
     }
   } catch (e: any) {
@@ -66,6 +76,12 @@ export function readFile(name: string, text: string, answers: Answers = {}, merg
     if (ext === PLAN_EXT || ext === STUDY_EXT)
       return {kind: 'bad', file: name, why: plainError(e, 'The file is damaged: open another copy of it.')};
     console.warn(`PMX Studio: ${name}`, e);
+    // (too large to read in the browser: said with its size, not as a damaged file)
+    if (e instanceof RangeError) {
+      const n = (text.match(/\n/g)?.length ?? 1) - 1;
+      return {kind: 'bad', file: name, why: `This table has ${n.toLocaleString('en-US')} rows, more than PMX Studio ` +
+        'can read at once. Split it by study.'};
+    }
     return {kind: 'bad', file: name, why: 'The table could not be read. Save it again as .csv or .tsv from your ' +
       'spreadsheet.'};
   }
@@ -90,8 +106,10 @@ function studyTable(read: TableRead): DG.DataFrame {
       DG.Column.fromStrings(name, xs.map((x) => x === null ? '' : String(x))));
   }
   const df = oneDecimal(DG.DataFrame.fromColumns(cols));
-  if (weight)
+  if (weight) {
     df.setTag(WEIGHT_TAG, 'body_weight');
+    df.col('body_weight')!.meta.friendlyName = WEIGHT_LABEL;
+  }
   if (read.volume)
     df.setTag(VOLUME_TAG, JSON.stringify(read.volume));
   return df;

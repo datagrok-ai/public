@@ -5,7 +5,7 @@
   "created": "2026-11-24T20:39:12.584Z",
   "author": "demo",
   "study": {
-    "id": "PMX-2026-0004",
+    "id": "PMX-DEMO-CT26",
     "description": "",
     "owner": "demo",
     "project": "",
@@ -134,7 +134,7 @@
       }
     ],
     "power": 80,
-    "correction": "holm",
+    "correction": "bonferroni",
     "n": 10,
     "lastDay": null,
     "tgiScenarios": null,

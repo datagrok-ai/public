@@ -7,19 +7,21 @@ import {DEFAULT_RULES, findOutliers, rulesProblem, StudyColumns} from '../outlie
 import {AnimalSelection, animalMarks, appendPasted, caliperVolume, emptyStudy, exclusionsOf, mark, mirrorSelection,
   dayFormat, findingsOf, pastedNumber, studyDataLine, withoutExcluded} from '../study-table';
 import {EXCLUDED, FINISHED_TAG, FLAGGED, LINE_TAG, MARK_REASON, REVEALED, STUDY_TAG, WEIGHT_TAG, addLog, groupsShown,
-  lineOf, logOf, freeName, parseStudy, roleColumns, studyOf, tableOf} from '../study-file';
+  lineOf, logOf, freeName, parseStudy, roleColumns, studyOf, tableOf, analysisFieldsOf, setAnalysisOn}
+  from '../study-file';
 import {PLAN_TAG, parsePlan} from '../plan-file';
 import {exampleStudy} from './example-study';
 import {filePreview, studySummary} from '../file-preview';
 import {EXAMPLE, isBodyWeight} from '../ui';
 import {_package} from '../package';
 import {armDoses, armParts, dateOf, dosingDays, emptyMeta, metaOf, parseLine, parseMeta, setMetaOn, startFrom,
-  weekdayOf, fromName, withGroups, withException, withGiven, doseForTotal, renamedDetails, StudyMeta, treatmentOf}
+  weekdayOf, fromName, withGroups, withException, withGiven, doseForTotal, renamedDetails, StudyMeta, treatmentOf, compoundsOf,
+  onlyGroups}
   from '../study-meta';
 import {parseArmName} from '../arm-name';
 import {dosedDays, dosesPerDay, excepted, groupWeights, readSchedule} from '../schedule';
 import {entryOf, libraryOf, matches} from '../library';
-import {spiderLines} from '../spider-chart';
+import {animalOf, spiderLines} from '../spider-chart';
 import {dayActions, dayToday, icsOf, startMismatch, weeksGrid} from '../calendar';
 import {Scope} from '@datagrok-libraries/u2';
 import {sheetHtml, sheetRows} from '../sheet';
@@ -256,6 +258,11 @@ category('Study table', () => {
     expect(lines.length, 1, 'M2 starts at 0 mm³: no line');
     expect(lines[0].days.join(','), '0,7', 'by day, day 3 excluded');
     expect(lines[0].change.join(','), '0,-50');
+    // a click on a point, or on the line between two (no point): the animal either way; a bar's needs its point
+    expect(animalOf({seriesType: 'line', seriesId: 'M1', data: {animal: 'M1'}}), 'M1');
+    expect(animalOf({seriesType: 'line', seriesId: 'M1'}), 'M1', 'the line between points, hovered');
+    expect(animalOf({seriesType: 'line', seriesIndex: 1}, ['M1', 'M2']), 'M2', 'the line between points, clicked');
+    expect(animalOf({seriesType: 'bar', seriesId: 'series0'}) === undefined, true, 'a bar without its point');
   });
 
   test('the randomization sheet: each animal once, at randomization, by group', async () => {
@@ -467,6 +474,11 @@ category('Study table', () => {
     expect(m.groups[0].schedule, 'QD×5', 'the schedule as written never changes');
     expect(excepted([0, 1, 2], 'A', {start: null, exceptions: [{day: 9, group: 'A', change: 'add', note: '',
       who: '', when: ''}]}, 6).join(','), '0,1,2', 'an added day past the last is not dosed');
+    // a removed arm leaves no doses behind (designer N1): its details and exceptions go with it
+    const removed = onlyGroups(m, ['A']);
+    expect([...dosingDays(removed.groups, 6, removed).values()].flat().includes('B'), false, 'B removed: not dosed');
+    expect(removed.exceptions.some((e) => e.group === 'B'), false);
+    expect(onlyGroups(m, ['A', 'B']) === m, true, 'nothing removed: the same details');
     const unread = withException({...emptyMeta(), groups: [g('C', 'whenever')]}, 1, 'C', 'add');
     expect(dosingDays(unread.groups, 6, unread).size, 0, 'no schedule read: an added dose does not dose it');
     expect(armDoses('Cpd-A 20 mg/kg QD×5', withException(emptyMeta(), 9, 'Cpd-A 20 mg/kg QD×5', 'skip'), 10, 10,
@@ -620,6 +632,22 @@ category('Study table', () => {
     expect(entryOf(text, 1)!.stage, 3, 'finished');
     expect(entryOf(JSON.stringify(studyOf(tableOf(parseStudy(text)), null)), 1)!.stage, 3, 'reopened and saved');
   });
+  test('a study saved from Analyze keeps its method, endpoint and evaluation day (QA 0.1.3 r4: Holm came back as ' +
+    'Bonferroni)', async () => {
+    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('animal', ['M1']), DG.Column.fromStrings('group', ['A']),
+      DG.Column.fromList('double', 'day', [0]), DG.Column.fromList('double', 'volume', [100])]);
+    expect(studyOf(df, null).analysis === undefined, true, 'none set: none in the file');
+    setAnalysisOn(df, {correction: 'holm', endpoint: 1200, evaluationDay: 14});
+    const text = JSON.stringify(studyOf(df, null));
+    expect(JSON.stringify(JSON.parse(text).analysis), '{"correction":"holm","endpoint":1200,"evaluationDay":14}');
+    const back = tableOf(parseStudy(text));
+    expect(JSON.stringify(analysisFieldsOf(back)), '{"correction":"holm","endpoint":1200,"evaluationDay":14}',
+      'reopened: the form gets them back');
+    // a file edited by hand: only what may be there
+    const edited = JSON.stringify({...JSON.parse(text), analysis: {correction: 'magic', endpoint: -1,
+      evaluationDay: 7}});
+    expect(JSON.stringify(analysisFieldsOf(tableOf(parseStudy(edited)))), '{"evaluationDay":7}');
+  });
   test('a followed study goes by its plan\'s name; a plan with no name leaves the table\'s', async () => {
     const study = await exampleStudy();
     const plan = JSON.parse(study.getTag(PLAN_TAG)!);
@@ -737,6 +765,9 @@ category('Study table', () => {
       schedule: ''});
     expect(treatmentOf({...emptyMeta(), groups: [arm('A', 'Cpd-A'), arm('AB', 'Cpd-A'), arm('AB', 'anti-PD-1'),
       arm('B', 'anti-PD-1')]}), 'Cpd-A; Cpd-A + anti-PD-1; anti-PD-1');
+    // rows without a group's name are groups of their own, not one combination (QA 0.1.3 #8)
+    expect(treatmentOf({...emptyMeta(), groups: [arm('', 'Cpd-A'), arm('', 'Cpd-B')]}), 'Cpd-A; Cpd-B');
+    expect(compoundsOf({...emptyMeta(), groups: [arm('A', 'Trametinib'), arm('B', 'trametinib')]}), 'Trametinib');
     expect([study.start, study.day, study.end].join(), '2026-11-02,0,', 'day 0, the last day measured, no plan');
     expect(parseMeta({id: 3, start: '2 Nov', groups: [{group: 'A', dose: 'ten'}]})!.groups[0].dose, null,
       'a damaged field is dropped, not trusted');

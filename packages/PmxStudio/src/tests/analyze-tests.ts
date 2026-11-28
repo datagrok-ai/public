@@ -1,9 +1,12 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
-import {AnalysisFrames, OBSERVED, PREDICTED, REANCHOR, controlsTo, doublingOf, endRange, endVerdict, intervalNote}
+import {AnalysisFrames, NO_CONTROL, OBSERVED, PREDICTED, REANCHOR, TOO_FEW, activityOf, analysisDeclarationOf,
+  armKey, controlsTo, doublingOf, endRange, endVerdict, growthRateWords, growthVsControl, intervalWords, oneDecimal,
+  intervalLevel, MIN_TESTED, armLevels, comparisonsMade, evaluationDay, groupsGone}
   from '../analyze';
-import {HUMANE, LAB_WEEKDAYS, designStudy} from '../engine';
+import {mismatchWords, nearestName} from '../plan-vs-observed';
+import {HUMANE, LAB_WEEKDAYS, correctionOf, cruxCorrection, designStudy} from '../engine';
 import {monitorEnd, planChecks, widenedEnd} from '../plan-checks';
 import {bandFactors, humanReference} from '../priors';
 import {drugKey} from '../arm-name';
@@ -11,25 +14,26 @@ import {exampleStudy} from './example-study';
 import {PLAN_TAG, parsePlan, powerAt} from '../plan-file';
 import {noEffectNote} from '../plan-vs-observed';
 import {competingOf, projectedRows} from '../survival';
-import {EXAMPLE, percentRange, plainError} from '../ui';
+import {EXAMPLE, pct, percentRange, plainError, signed, tgiText, unadjustedP} from '../ui';
 import {cellsOf} from '../wide-table';
 import {readStudy} from '../study-reader';
 import {_package} from '../package';
-import {EngineError} from '../crux';
+import {EngineError, NoControl, crux, rows as cruxRows} from '../crux';
 import {bandWords, combinationStep, independenceBand, notCombined, stepWords, synergyAlpha, synergyOf, synergyVerdict,
   synergyWords} from '../synergy';
 import {arriveItems, receivesLine} from '../arrive';
-import {ctdRows, ctdStudyOf} from '../ctd';
+import {ctdRows, ctdStudyOf, groupCompounds, sexOf} from '../ctd';
 import {prepareItems} from '../prepare';
 import {tumorModels} from '../priors';
 import {ArmExposure, CurveRow, DrugPk, Exposure, HumanExposure, NcaByArm, Proportional, ReadoutGroup, ReferenceRow,
   aucFactor, concentrationFactor, concentrationMapping, curveSilence, dosesPerDay, drugMultiples, exposureAxis,
   exposureByArm, exposureByDrug, ncaByArm,
-  exposureCurve, exposureHint, exposureJson, exposureRange, fromReference, humanMultiple, humansInto, medianDay,
-  medianTgi, multipleText, ncaInstalled, parseExposure, patientsDose, patientsDoseOf, readout, referenceKept,
+  exposureCurve, exposureHint, exposureJson, exposureRange, fromReference, humanMultiple, humansInto,
+  multipleText, ncaInstalled, parseExposure, patientsDose, patientsDoseOf, readout, referenceKept,
   referenceLine, referenceRow, renamedExposure, runNca, sourceText}
   from '../exposure';
-import {MISSING, groupStatus, idMapCsv, modellingCsv, modellingDataset, noConcentrations} from '../modelling-dataset';
+import {MISSING, dayOk, doseOk, groupStatus, idMapCsv, modellingCsv, modellingDataset, noConcentrations,
+  typedProblem, undosedGroups} from '../modelling-dataset';
 import {doseCount, readSchedule} from '../schedule';
 import {EXCLUDED, EXPOSURE_TAG, FLAGGED, exposureOfTag, parseStudy, studyOf as studyFileOf, tableOf}
   from '../study-file';
@@ -37,8 +41,9 @@ import {armParts, detailsName, emptyMeta, ofGroups, parseMeta, renamedDetails, r
   from '../study-meta';
 import {groupDetails} from '../translation-report';
 import type {StudyInputs} from '../explore';
-import {ANALYZE_TABS} from '../analyze-view';
-import {panelGrid} from '../panels';
+import {ANALYZE_TABS, CURVE, csvText, effectWords, exposureFrame, exposurePointsOf, keptEffect, readsAsStudy,
+  statisticsRows, tableCsv, analyzedText, bestTgi} from '../analyze-view';
+import {pageOf, panelGrid, undoKey} from '../panels';
 import {entered, sig} from '../sheet';
 import {compareRows} from '../compare-view';
 import {Scope} from '@datagrok-libraries/u2';
@@ -55,6 +60,40 @@ async function analyze(study: DG.DataFrame, params: {[k: string]: any} = {}): Pr
   await fc.call();
   return Object.fromEntries(OUTPUTS.map((o) => [o, fc.outputs[o] as DG.DataFrame]));
 }
+
+/** Each arm's p, interval and verdict agree: the interval excludes 0, and a verdict is given, exactly when the
+ *  adjusted p is below α (0.05). */
+function agrees(c: DG.DataFrame, what = ''): void {
+  for (let i = 0; i < c.rowCount; i++) {
+    const [p, lo, hi] = ['p_value', 'slope_difference_lower', 'slope_difference_upper'].map((k) => c.get(k, i));
+    expect(lo > 0 || hi < 0, p < 0.05, `${what} arm ${i}: p ${p}, interval ${lo} to ${hi}`);
+    expect(c.get('activity', i) !== 'No clear effect', p < 0.05, `${what} arm ${i}: ${c.get('activity', i)}, p ${p}`);
+  }
+}
+
+// (to 1e-6: a level read from a table is stored in 32 bits)
+const levelsAre = (got: number[], want: number[]) => expect(got.length === want.length &&
+  got.every((x, i) => Math.abs(x - want[i]) < 1e-6), true, `levels ${got} vs ${want}`);
+
+/** A study of 8 animals a group from 100 mm³, each growing exponentially at its rate (ln V per day): the control's
+ *  RATES, each treated group's shifted by its offset; measured on days 0, 3, 7, 10, 14 to 0.1 mm³. */
+const RATES = [0.13, 0.14, 0.15, 0.16, 0.17, 0.12, 0.18, 0.15];
+function ratesStudy(groups: {name: string, id: string, offset: number}[]): DG.DataFrame {
+  const rows: {[k: string]: unknown}[] = [];
+  for (const g of groups) {
+    RATES.forEach((r, a) => [0, 3, 7, 10, 14].forEach((day) => rows.push({animal: `${g.id}-${a + 1}`, group: g.name,
+      day, volume: Math.round(1000 * Math.exp((r + g.offset) * day)) / 10})));
+  }
+  return DG.DataFrame.fromObjects(rows)!;
+}
+
+/** QA 0.1.3 round 4's holm-vs-bonferroni.csv (analyst): Drug A clearly slower, Drug B between Holm and Bonferroni. */
+const holmVsBonferroni = () => ratesStudy([{name: 'Vehicle', id: 'V', offset: 0},
+  {name: 'Drug A 10 mg/kg', id: 'DA', offset: -0.08}, {name: 'Drug B 10 mg/kg', id: 'DB', offset: -0.024}]);
+
+/** A vehicle and a treated arm for each offset. */
+const armsStudy = (offsets: number[]) => ratesStudy([{name: 'Vehicle', id: 'V', offset: 0},
+  ...offsets.map((offset, j) => ({name: `Drug ${j + 1}`, id: `D${j + 1}`, offset}))]);
 
 category('Analyze', () => {
   test('the example (Yu 2024) reads the same TGI and p by its long file and as a column per day', async () => {
@@ -190,6 +229,26 @@ category('Analyze', () => {
       plan.predicted.arms.reduce((t, a) => t + a.n!, 0));
   }, {timeout: 300000});
 
+  test('no tumor model and no plan: none assumed; the effects and tests as with one, no twin nor atlas (A2)',
+    async () => {
+      const study = await exampleStudy();
+      study.setTag(PLAN_TAG, '');
+      const cols = {study, animal: study.col('animal')!, group: study.col('group')!, day: study.col('day')!,
+        volume: study.col('volume')!, control: '', endpoint: 1500, correction: 'holm'};
+      expect(analysisDeclarationOf({...cols, line: null}).line, '', 'never MC38 by default');
+      const none = await analyze(study, {line: null, withTwin: true});
+      const mc38 = await analyze(study, {withTwin: false});
+      expect(none.analysis.get('line', 0), '');
+      expect(none.analysis.get('twinned', 0), false, 'no twin without a model');
+      expect([none.twins.rowCount, none.checks.rowCount].join(), '0,0');
+      expect(none.analysis.get('control_coverage', 0) === null || none.analysis.col('control_coverage')!.isNone(0),
+        true, 'no controls on track');
+      expect(none.analysis.get('control_verdict', 0) || null, null, 'no atlas verdict');
+      expect(none.comparisons.col('tgi')!.toList().join(), mc38.comparisons.col('tgi')!.toList().join(),
+        'the TGI does not depend on the model');
+      expect(none.comparisons.col('p_value')!.toList().join(), mc38.comparisons.col('p_value')!.toList().join());
+    }, {timeout: 300000});
+
   test('doubling time from the growth rate; growth delay against the control', async () => {
     expect(Math.abs(doublingOf(Math.LN2 / 4)! - 4) < 1e-12, true);
     expect([doublingOf(0), doublingOf(-0.1), doublingOf(null)].join('|'), '||', 'no doubling unless it grows');
@@ -226,7 +285,7 @@ category('Analyze', () => {
     expect(coverage > 0.7, true, `control coverage ${coverage}`);
   }, {timeout: 300000});
 
-  test('the corrections order the p-values: none ≤ Holm ≤ Bonferroni; the interval is Bonferroni\'s', async () => {
+  test('the corrections order the p-values: none ≤ Holm ≤ Bonferroni; each interval agrees with its p', async () => {
     const study = await exampleStudy();
     const of = async (correction: string) => (await analyze(study, {correction})).comparisons;
     const [none, holm, bonferroni] = [await of('none'), await of('holm'), await of('bonferroni')];
@@ -234,14 +293,87 @@ category('Analyze', () => {
     for (let i = 0; i < none.rowCount; i++) {
       expect(p(none, i) <= p(holm, i) + 1e-12, true, `arm ${i}: ${p(none, i)} vs ${p(holm, i)}`);
       expect(p(holm, i) <= p(bonferroni, i) + 1e-12, true, `arm ${i}: ${p(holm, i)} vs ${p(bonferroni, i)}`);
-      // 0 outside the interval at 1 - alpha / k says what Bonferroni's p-value says
-      const out = holm.get('slope_difference_lower', i) > 0 || holm.get('slope_difference_upper', i) < 0;
-      expect(out, p(bonferroni, i) < 0.05, `arm ${i}: interval and Bonferroni p ${p(bonferroni, i)}`);
       // and beside the test, what one variance for every group gives
       const common = holm.get('p_common_variance', i);
       expect(common >= 0 && common <= 1, true, `arm ${i}: p with a common variance ${common}`);
     }
+    for (const t of [none, holm, bonferroni])
+      agrees(t);
   }, {timeout: 300000});
+
+  // QA 0.1.3 round 4 (analyst): Holm's p = 0.031 beside a Bonferroni interval across 0 ("no clear effect")
+  test('holm vs bonferroni: under every method the p, the interval and the verdict agree', async () => {
+    const study = holmVsBonferroni();
+    const runs: {[c: string]: {[k: string]: DG.DataFrame}} = {};
+    for (const correction of ['bonferroni', 'holm', 'bh', 'none'])
+      runs[correction] = await analyze(study, {correction, withTwin: false});
+    for (const [correction, o] of Object.entries(runs)) {
+      agrees(o.comparisons, correction);
+      expect(o.analysis.get('correction', 0), correction);
+      for (let i = 0; i < o.comparisons.rowCount; i++) {
+        expect(o.comparisons.get('correction', i), correction, 'the method on each row of the file');
+        expect(o.comparisons.get('p_raw', i) <= o.comparisons.get('p_value', i) + 1e-12, true, correction);
+      }
+    }
+    const row = (c: string, arm: string) => (runs[c].comparisons.col('arm')!.toList() as string[]).indexOf(arm);
+    const at = (c: string, k: string) => runs[c].comparisons.get(k, row(c, 'Drug B 10 mg/kg'));
+    // Drug B, the weaker arm: Holm's second step (at 1 − α) declares it, Bonferroni (at 1 − α/2) does not
+    expect(at('holm', 'p_value') < 0.05, true, `Holm p ${at('holm', 'p_value')}`);
+    levelsAre([at('holm', 'slope_difference_confidence')], [1 - 0.05]);
+    expect(at('holm', 'activity'), 'Slows growth');
+    expect(at('bonferroni', 'p_value') >= 0.05, true, `Bonferroni p ${at('bonferroni', 'p_value')}`);
+    levelsAre([at('bonferroni', 'slope_difference_confidence')], [1 - 0.05 / 2]);
+    expect(at('bonferroni', 'activity'), 'No clear effect');
+    levelsAre([runs.none.comparisons.get('slope_difference_confidence', 0)], [1 - 0.05]);
+  }, {timeout: 300000});
+
+  test('BH: with R = 2 of 4 arms declared, every arm at 1 − R·α/k', async () => {
+    // the arms' unadjusted p 0.001, 0.01, 0.2, 0.5: BH's step-up stops at the second (0.01 ≤ 2·0.05/4)
+    const raw = [0.2, 0.001, 0.5, 0.01];
+    const q = [0.2 * 4 / 3, 0.004, 0.5, 0.02];
+    levelsAre(armLevels(raw, q, 0.05, 'bh'), raw.map(() => 1 - 2 * 0.05 / 4));
+    // none declared: at 1 − α/k
+    levelsAre(armLevels([0.3, 0.4], [0.4, 0.4], 0.05, 'bh'), [0.975, 0.975]);
+    // and in a study: two arms that slow growth, two that do not
+    const o = await analyze(armsStudy([-0.08, -0.06, 0, 0.005]), {correction: 'bh', withTwin: false});
+    const c = o.comparisons;
+    expect(c.rowCount, 4);
+    agrees(c, 'bh');
+    expect((c.col('activity')!.toList() as string[]).filter((a) => a === 'Slows growth').length, 2);
+    for (let i = 0; i < 4; i++)
+      expect(Math.abs(c.get('slope_difference_confidence', i) - (1 - 2 * 0.05 / 4)) < 1e-6, true);
+  }, {timeout: 300000});
+
+  test('Holm: each arm at its step\'s level; from the first step not passed, the rest at that step\'s', async () => {
+    const a = 0.05;
+    // every step passes: 1 − α/3, 1 − α/2, 1 − α in the order of the p
+    levelsAre(armLevels([0.04, 0.001, 0.02], [0.04, 0.003, 0.04], a, 'holm'),
+      [1 - a, 1 - a / 3, 1 - a / 2]);
+    // the second step fails (0.03 > α/2): the third arm (0.04 < α) is read at the second step's level, so its
+    // interval crosses 0 as Holm declares nothing past the first
+    levelsAre(armLevels([0.03, 0.001, 0.04], [0.06, 0.003, 0.06], a, 'holm'),
+      [1 - a / 2, 1 - a / 3, 1 - a / 2]);
+    // Bonferroni and none, whatever the p
+    levelsAre(armLevels([0.03, 0.2], [0.06, 0.4], a, 'bonferroni'), [0.975, 0.975]);
+    levelsAre(armLevels([0.03, 0.2], [0.03, 0.2], a, 'none'), [0.95, 0.95]);
+    levelsAre(armLevels([0.03], [0.03], a, 'holm'), [0.95]);
+  });
+
+  test('the correction is Bonferroni by default (0.1.3); a file that names one keeps it', async () => {
+    expect(correctionOf(undefined), 'bonferroni');
+    expect(correctionOf(''), 'bonferroni');
+    expect(correctionOf('holm'), 'holm');
+    expect(correctionOf('bh'), 'bh');
+    expect(correctionOf('none'), 'none');
+    const study = holmVsBonferroni();
+    const cols = {study, animal: study.col('animal')!, group: study.col('group')!, day: study.col('day')!,
+      volume: study.col('volume')!, line: null, control: '', endpoint: 1500} as any;
+    expect(analysisDeclarationOf(cols).correction, 'bonferroni');
+    expect(analysisDeclarationOf({...cols, correction: 'holm'}).correction, 'holm');
+    // Crux's design and monitor size BH as Bonferroni
+    expect(cruxCorrection('bh'), 'bonferroni');
+    expect(cruxCorrection('holm'), 'holm');
+  });
 
   test('plan vs observed: the example against its own plan, and without one against the atlas', async () => {
     const study = await exampleStudy();
@@ -274,11 +406,11 @@ category('Analyze', () => {
     const g = o.versusPlan;
     expect(g.rowCount, 2);
     expect(g.col('assumed')!.toList().join(), '40,70');
+    // (one interval, the slopes': the TGI is the evaluation day's number, no interval of its own)
+    expect(!g.col('lower') && !g.col('upper'), true, g.columns.names().join());
     const c = o.comparisons;
     for (let i = 0; i < g.rowCount; i++) {
       const x = (k: string) => g.get(k, i);
-      expect(x('lower') < x('observed') && x('observed') < x('upper'), true,
-        `row ${i}: ${x('lower')} ${x('observed')} ${x('upper')}`);
       // the result is the test on the slopes, in both tabs
       const [lo, hi] = [c.get('slope_difference_lower', i), c.get('slope_difference_upper', i)];
       expect(x('activity'), hi < 0 ? 'Slows growth' : lo > 0 ? 'Grows faster' : 'No clear effect', `${lo}–${hi}`);
@@ -979,12 +1111,16 @@ category('Analyze: human exposure and modelling dataset', () => {
     // without it: TGI against dose and AUC
     const dosed = readout([g('Cpd-A 10 mg/kg QD', 31, 4.1), g('Cpd-A 30 mg/kg QD', 62, 12),
       g('Cpd-A 100 mg/kg QD', 88, 41)]);
-    expect(dosed, 'The groups gave a TGI of 31% at 10 and 88% at 100 mg/kg (AUC 4.1–41 µg·h/mL).');
+    expect(dosed, 'TGI rose from 31% (10 mg/kg) to 88% (100 mg/kg); AUC 4.1–41 µg·h/mL.');
+    // an AUC not in proportion to the dose: said so (A20; round 4, analyst W15)
+    expect(readout([g('Cpd-A 10 mg/kg QD', 31, 0.26), g('Cpd-A 100 mg/kg QD', 88, 41)]),
+      'TGI rose from 31% (10 mg/kg) to 88% (100 mg/kg); exposure (AUC 0.26–41 µg·h/mL) did not rise in proportion ' +
+      'to dose.');
     // neither: nothing
     expect(readout([g('Cpd-A 10 mg/kg QD', 31, null), g('Cpd-A 100 mg/kg QD', 88, null)]), null);
-    // never a target, a clinical dose, a margin, a prediction
+    // never a target, a clinical dose, a margin, a prediction ("rose" is the observed TGI, analyst W15)
     for (const s of [placed!, dosed!])
-      expect(/target|clinical dose|margin|predict|efficacious|did more|rose|fell/i.test(s), false, s);
+      expect(/target|clinical dose|margin|predict|efficacious|did more/i.test(s), false, s);
   });
 
   test('Plan: the patients\' exposure as a mouse dose, from an earlier study that kept both', async () => {
@@ -1168,6 +1304,14 @@ category('Analyze: human exposure and modelling dataset', () => {
     const bare = modellingDataset(s, null);
     expect(bare.dosed, false);
     expect(bare.rows.every((r) => r.EVID === 0), true);
+    // a treated group without doses holds Export (QA 0.1.3 A6): its schedule typed doses it, else it is left out
+    expect(undosedGroups(bare).join('|'), 'Cpd-A 10 mg/kg|Cpd-A + Cpd-B');
+    const typedQd = modellingDataset(s, null, null, {schedule: new Map([['Cpd-A 10 mg/kg', 'Q3D×4']])});
+    expect(typedQd.rows.filter((r) => r.ID === 2 && r.EVID === 1).map((r) => r.TIME).join(','), '0,3,6');
+    const left = modellingDataset(s, null, null, {schedule: new Map([['Cpd-A 10 mg/kg', 'Q3D×4']]),
+      leaveOut: new Set(['Cpd-A + Cpd-B'])});
+    expect(undosedGroups(left).length, 0, 'the combination left out, the other dosed');
+    expect(left.ids.some((x) => x.animal === 'C1'), false, 'its animals out of the file');
     // NCA's concentrations of the study's own animals, in compartment 2, hours after the dose of the day given
     const conc = DG.DataFrame.fromObjects([{subject: 'A1', time_h: 2, conc: 1.5}, {subject: 'S9', time_h: 2,
       conc: 3}, {subject: 'A1', time_h: 24, conc: 0}])!;
@@ -1266,7 +1410,7 @@ category('Analyze: human exposure and modelling dataset', () => {
       }
       return rows;
     };
-    // κ in step with the dose: TGI about 21, 54 and 90% on day 21; NCA's AUC in step with the dose too
+    // κ in step with the dose: TGI (1 − ΔT/ΔC) about 22, 56 and 94.8% on day 21; NCA's AUC in step with the dose too
     const linear = (doses: number[], c = 0.00874) => doses.map((d) => [d, c * d] as [number, number]);
     const groupsOf = (doses: number[]) => doses.map((d) => ({arm: arm(d), auc: 100 * d}));
     const rows = study(linear([3, 10, 30]));
@@ -1280,10 +1424,6 @@ category('Analyze: human exposure and modelling dataset', () => {
       'from the lowest dose\'s AUC to the highest\'s, never beyond');
     expect(c.curve.every((p, i) => p.lo === Math.max(0, p.tgi - 10) && p.hi === Math.min(100, p.tgi + 10) &&
       (i === 0 || p.tgi > c.curve[i - 1].tgi)), true, JSON.stringify(c.curve));
-    const mid = medianTgi(rows, arm(10), 'Vehicle', 21)!;
-    expect(Math.abs(mid - 54) < 3, true, `1 − T/C of medians at 10 mg/kg: ${mid}`);
-    // the day the medians are read on, which the chart's axis names
-    expect(medianDay(rows, arm(10), 'Vehicle', 21), 21);
     // the axis: AUClast in step with the dose, else the dose
     expect(exposureAxis(groupsOf([3, 10, 30])).axis, 'auc');
     const notInStep = exposureAxis([300, 1000, 9000].map((auc, i) => ({arm: arm([3, 10, 30][i]), auc})));
@@ -1447,14 +1587,86 @@ category('Analyze: what the result and its numbers say together', () => {
     expect(said(false).includes('averaged over the week'), false, said(false));
   });
 
-  test('a result its T/C interval seems to contradict gets its note; one that agrees, none', async () => {
-    const note = intervalNote([{activity: 'Slows growth', tcLower: 53, tcUpper: 113}], 21);
-    expect(note, 'The result is decided on the growth curves over the whole study. The T/C interval describes ' +
-      'day 21 alone, so it is wider.');
-    expect(intervalNote([{activity: 'No clear effect', tcLower: 40, tcUpper: 80}], 21)!.endsWith('is not the test.'),
-      true);
-    expect(intervalNote([{activity: 'Slows growth', tcLower: 30, tcUpper: 70},
-      {activity: 'No clear effect', tcLower: 60, tcUpper: 120}], 21) === null, true);
+  test('one test, one interval: the growth rate against the control in words, from the slopes alone', async () => {
+    // ln V per day: d = ln(0.959) is 4.1%/day slower; its interval [ln(0.937), ln(0.98)] 2.0–6.3% slower
+    const [d, lo, hi] = [Math.log(0.959), Math.log(0.937), Math.log(0.98)];
+    // (round 4, analyst W2: the interval's smaller end first, its side named, as the cell's sign says it)
+    expect(growthRateWords(d, lo, hi, 0.003, 0.95), 'Tumors grew 4.1% per day slower than in the control (95% CI ' +
+      '2.0 to 6.3% slower; p = 0.003)');
+    expect(growthRateWords(-d, -hi, -lo, 0.0004, 0.95), 'Tumors grew 4.3% per day faster than in the control (95% CI ' +
+      '2.0 to 6.7% faster; p < 0.001)');
+    // an interval across no difference names each end's side: no clear effect
+    expect(growthRateWords(Math.log(0.99), Math.log(0.97), Math.log(1.01), 0.4, 0.95),
+      'Tumors grew 1.0% per day slower than in the control (95% CI 3.0% slower to 1.0% faster; p = 0.4)');
+    // the adjusted interval says its own level (Bonferroni over 3: 1 − 0.05/3)
+    expect(growthRateWords(d, lo, hi, 0.003, 1 - 0.05 / 3)!.includes('(98.3% CI '), true);
+    expect(growthRateWords(NaN, NaN, NaN, NaN, NaN), null, 'no test: no words');
+  });
+
+  test('the growth cell: numbers in %/day, low to high, a true minus; the interval level and why (round 3 W1, W2)',
+    async () => {
+      const [d, lo, hi] = [Math.log(0.929), Math.log(0.904), Math.log(0.955)];
+      expect(growthVsControl(d, lo, hi), '−7.1 (−9.6 to −4.5)');
+      expect(growthVsControl(-d, -hi, -lo), '7.6 (4.7 to 10.6)');
+      expect(growthVsControl(Math.log(0.99), Math.log(0.97), Math.log(1.01)), '−1.0 (−3.0 to 1.0)');
+      expect(growthVsControl(NaN, NaN, NaN), null);
+      expect(oneDecimal(-0.04), '0.0', 'never "−0.0"');
+      // one switch of the correction changes both the header and its hover (the owner's Holm or Bonferroni)
+      // the header names the method, and says Holm's level varies by arm
+      const bonferroni = intervalWords(1 - 0.05 / 5, 'bonferroni', 5);
+      expect(bonferroni.level, '99% CI');
+      expect(bonferroni.header, '99% CI, Bonferroni over 5 groups');
+      expect(bonferroni.p, 'p (Bonferroni)');
+      expect(intervalWords(1 - 0.05 / 5, undefined, 5).p, 'p (Bonferroni)', 'the default');
+      const holm = intervalWords(1 - 0.05 / 5, 'holm', 5);
+      expect(holm.header, 'CI by Holm step over 5 groups', 'names k (QA 0.1.3 r4)');
+      expect(holm.p, 'p (Holm)');
+      const bh = intervalWords(1 - 2 * 0.05 / 5, 'bh', 5);
+      expect(bh.header, '98% CI, FDR-adjusted (BH) over 5 groups');
+      // the unadjusted p on the adjusted one's hover, always, never "= < 0.001"
+      expect(unadjustedP(0.0004), 'Unadjusted p < 0.001');
+      expect(unadjustedP(0.031), 'Unadjusted p = 0.031');
+      expect(unadjustedP(NaN), null);
+      expect(bh.p, 'p (BH-adjusted)');
+      expect(bh.tip.includes('false discovery rate; for screening many arms, not for an efficacy claim'), true, bh.tip);
+      expect(intervalWords(0.95, 'none', 3).p, 'p');
+      // (round 4, analyst A3: never "0% CI", whatever the first row's level reads back as)
+      expect(intervalWords(0, 'holm', 1).level, '95% CI');
+      expect(intervalWords(NaN, 'holm', 1).level, '95% CI');
+      expect(intervalLevel(0.05, 'holm', 2), 0.975);
+      expect(intervalLevel(0.05, 'none', 5), 0.95);
+      expect(intervalLevel(0.05, 'holm', 1), 0.95);
+      expect(holm.tip.includes('Holm'), true, holm.tip);
+      expect(intervalWords(1 - 0.05 / 5, 'bonferroni', 5).tip.includes('Holm'), false);
+      expect(intervalWords(0.95, 'none', 3).header, '95% CI');
+      expect(intervalWords(0.95, 'holm', 1).tip.includes('one comparison'), true);
+    });
+
+  test('a group with too few animals: no p, no verdict, no words (chaos round 3 #4)', async () => {
+    expect(activityOf({lower: NaN, upper: NaN, p: NaN}), TOO_FEW);
+    expect(activityOf({lower: -0.2, upper: -0.1, p: 0.01}), 'Slows growth');
+    expect(activityOf({lower: -0.2, upper: 0.1, p: 0.3}), 'No clear effect');
+    expect(growthRateWords(0, NaN, NaN, NaN, 0.95), null);
+  });
+
+  test('plan arms and groups matched setting case and punctuation aside, a near one hinted (round 3 #16, chaos 10)',
+    async () => {
+      expect(armKey('Trametinib 1 mg/kg p,o. QD'), armKey('trametinib 1 mg/kg p.o. qd'));
+      expect(armKey('Drug 0,3 mg/kg'), armKey('Drug 0.3 mg/kg'));
+      expect(armKey('Drug 1.5 mg/kg') === armKey('Drug 15 mg/kg'), false, 'a decimal is kept');
+      expect(armKey('Cpd-A + Cpd-B') === armKey('Cpd-A Cpd-B'), false, 'a combination stays one');
+      expect(nearestName('Drug B 10 mg/kg', ['Vehicle', 'Drug B 10 mg/kg QD']), 'Drug B 10 mg/kg QD');
+      expect(nearestName('Ctrl', ['Trametinib 1 mg/kg p.o. QD']), null);
+      expect(mismatchWords(['Drug B 10 mg/kg QD'], ['Drug B 10 mg/kg', 'Tx']), 'Plan arms with no data: ' +
+        'Drug B 10 mg/kg QD. Groups not in the plan: Drug B 10 mg/kg (close to “Drug B 10 mg/kg QD”?), Tx');
+      expect(mismatchWords([], []), '');
+    });
+
+  test('an animal against its twin: its range low to high, a decimal under 1% (round 3 W6)', async () => {
+    expect(effectWords(75, 60, 85), '75% smaller than it would be untreated (90% range: 60–85% smaller)');
+    expect(effectWords(40, 0.3, 70), '40% smaller than it would be untreated (90% range: 0.3–70% smaller)');
+    expect(effectWords(-20, -40, -5), '20% larger than it would be untreated (90% range: 5–40% larger)');
+    expect(effectWords(10, -10, 30), '10% smaller than it would be untreated (90% range: 10% larger to 30% smaller)');
   });
 
   test('one number format for exposure, doses and fractions: no float noise, separators, 2-3 figures', async () => {
@@ -1477,7 +1689,7 @@ category('Analyze: what the result and its numbers say together', () => {
 
   test('exposure has its own panel on Results, after growth and time to endpoint', async () => {
     const ids = ANALYZE_TABS[0].layout.map((s) => s.id);
-    expect(ids.join(), 'groups,growth,km,exposure');
+    expect(ids.join(), 'groups,growth,km,exposure,rates,notes');
     expect(ANALYZE_TABS.flatMap((t) => t.layout).filter((s) => s.id === 'exposure').length, 1);
   });
 
@@ -1496,5 +1708,281 @@ category('Analyze: what the result and its numbers say together', () => {
       owner.dispose();
       grok.userSettings.delete('PmxStudio', `layout-${stage}`);
     }
+  });
+
+  test('Ctrl+Z while customizing is the page\'s, not a field\'s nor Ctrl+Shift+Z', async () => {
+    const key = (k: string, mods: {shiftKey?: boolean, metaKey?: boolean} = {}, target: EventTarget | null = null) =>
+      ({ctrlKey: !mods.metaKey, metaKey: !!mods.metaKey, shiftKey: !!mods.shiftKey, key: k, target});
+    expect(undoKey(key('z'), true), true);
+    expect(undoKey(key('Z', {metaKey: true}), true), true);
+    expect(undoKey(key('z'), false), false);
+    expect(undoKey(key('z', {shiftKey: true}), true), false);
+    expect(undoKey(key('y'), true), false);
+    expect(undoKey(key('z', {}, document.createElement('input')), true), false);
+  });
+
+  test('ten quick × hide ten panels, and Ctrl+Z brings each back fully visible', async () => {
+    const ids = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'];
+    const panel = (id: string) => ({id, title: id, hint: '', content: [document.createElement('div')]});
+    const owner = Scope.root('test hide');
+    const host = owner.build(() => panelGrid(ids.map(panel), ids.map((id) => ({id, span: 6 as const})), 'pmx-test'));
+    document.body.append(host);
+    try {
+      const page = pageOf(host)!;
+      page.customize(true);
+      // each × clicked before the fade of the one before ends
+      for (const id of ids)
+        host.querySelector<HTMLElement>(`.pmx-panel[data-panel="${id}"] .pmx-hide`)!.click();
+      expect(page.entries().filter((e) => e.hidden).length, 10);
+      expect(host.querySelectorAll('.pmx-grid > .pmx-panel').length, 0);
+      for (let k = 0; k < 10; k++)
+        expect(page.undo(), true);
+      page.customize(false);
+      await new Promise((r) => setTimeout(r, 400));
+      const shown = [...host.querySelectorAll<HTMLElement>('.pmx-grid > .pmx-panel')];
+      expect(shown.length, 10);
+      expect(shown.every((c) => getComputedStyle(c).opacity === '1' && getComputedStyle(c).position !== 'absolute'),
+        true);
+    } finally {
+      host.remove();
+      owner.dispose();
+    }
+  });
+});
+
+category('Analyze: QA 0.1.3 (the analyst)', () => {
+  test('no group named as a control: the analysis asks for it, never takes a treated one (#3)', async () => {
+    const study = DG.DataFrame.fromObjects([{animal: 'a', group: 'Trametinib 0.3', day: 0, volume: 100},
+      {animal: 'b', group: 'Trametinib 1', day: 0, volume: 100}])!;
+    let caught: unknown = null;
+    try {
+      analysisDeclarationOf({study, animal: study.col('animal')!, group: study.col('group')!, day: study.col('day')!,
+        volume: study.col('volume')!, line: 'MC38', control: '', endpoint: 1500, correction: 'holm'});
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught instanceof NoControl && caught.message === NO_CONTROL, true);
+  });
+
+  test('CSV: numbers as stored, no float noise, intervals in columns of their own (#6, statistics)', async () => {
+    expect(csvText([{group: 'A, B', p_value: 0.000123456789, tc_lower: 13.2, n: 10, day: null}]),
+      'group,p_value,tc_lower,n,day\n"A, B",0.000123457,13.2,10,\n');
+    const df = DG.DataFrame.fromColumns([DG.Column.fromFloat32Array('weight', Float32Array.from([19.26, 2.07, 83])),
+      DG.Column.fromStrings('animal', ['V-01', 'V-02', 'V-03'])]);
+    df.col('weight')!.meta.format = '0.0';
+    expect(tableCsv(df), 'weight,animal\n19.26,V-01\n2.07,V-02\n83,V-03\n');
+    // Statistics as shown: the text as shown, never padded (129.235 shown "129" was written "129.0")
+    expect(csvText([{'Group': 'A', 'TGI (%)': '129', 'p': '<0.001'}]), 'Group,TGI (%),p\nA,129,<0.001\n');
+  });
+
+  test('a PK table is no study: not offered, and said so when picked (new 1)', async () => {
+    const pk = DG.DataFrame.fromCsv('SUBJECT,GROUP,TIME_H,CONC_NG_ML\nT-01,A,0.25,14.9\n');
+    const st = DG.DataFrame.fromCsv('animal,group,day,volume\nV-01,Vehicle,0,100\n');
+    expect(readsAsStudy(pk), false);
+    expect(readsAsStudy(st), true);
+  });
+
+  test('NONMEM: one file, the IDs as @ lines; a day or dose it cannot use refused (#11, #12)', async () => {
+    const csv = modellingCsv({rows: [], ids: [{id: 1, animal: 'V-01', group: 1, groupName: 'Vehicle'}],
+      lines: [], notes: [], held: []} as any);
+    expect(csv.trimEnd().split('\n').slice(-2).join('|'), '@ ID,ANIMAL,GROUP,GROUP_NAME|@ 1,V-01,1,Vehicle');
+    expect([dayOk('0'), dayOk('3'), dayOk('-5'), dayOk('abc'), dayOk(''), dayOk('1.5'), dayOk('1e9')].join(),
+      'true,true,false,false,false,false,false');
+    // within the study's days (A5)
+    expect([dayOk('21', 21), dayOk('22', 21)].join(), 'true,false');
+    expect(typedProblem('22', [], 21)?.[1].includes('21'), true);
+    expect([doseOk(''), doseOk('0.3'), doseOk('-1'), doseOk('x')].join(), 'true,true,false,false');
+    // a row with a day or dose it cannot use: no green ✓ on it
+    expect(typedProblem('-5', [], 16)?.[0], '⚠ First dose: a whole study day, 0–16');
+    expect(typedProblem(null, ['abc'])?.[0], '⚠ dose');
+    expect(typedProblem('3', ['0.3']), null);
+  });
+
+  test('one TGI: the groups table, the exposure chart, the statistics file and Compare give the same', async () => {
+    const rows: {animal: string, group: string, day: number, volume: number}[] = [];
+    const doses = [3, 10, 30];
+    for (const [group, rate] of [['Vehicle', 0.2], ...doses.map((d) => [`Cpd-A ${d} mg/kg QD`, 0.2 - d / 200])] as
+      [string, number][]) {
+      for (let a = 0; a < 5; a++) {
+        for (const day of [0, 3, 7, 10, 14])
+          rows.push({animal: `${group}-${a}`, group, day, volume: (90 + 5 * a) * Math.exp((rate + 0.01 * a) * day)});
+      }
+    }
+    const study = DG.DataFrame.fromObjects(rows)!;
+    const r = await analyze(study, {endpoint: 4000, control: 'Vehicle', withTwin: false}) as unknown as AnalysisFrames;
+    const c = r.comparisons;
+    const arms = c.col('arm')!.toList() as string[];
+    const ofArm = (k: string, arm: string) => c.get(k, arms.indexOf(arm)) as number;
+    // the exposure chart: each group at the table's TGI, no interval
+    const exposure = new Map(doses.map((d) => [`Cpd-A ${d} mg/kg QD`, {exposure: {auc: 100 * d, aucCv: null,
+      aucUnit: 'h*ng/mL', cmax: null, cmaxCv: null, cmaxUnit: '', aucInf: null, aucInfUnit: '', dose: `${d} mg/kg`,
+      route: 'PO', schedule: 'QD', profiles: 3, drug: 'Cpd-A', pooled: false}}]));
+    const chart = exposureFrame(exposurePointsOf(r, exposure, Object.fromEntries(arms.map((a) => [a, '#1f77b4']))),
+      null, [{x: 300, tgi: 20, lo: 10, hi: 30}, {x: 3000, tgi: 60, lo: 50, hi: 70}])!;
+    expect((chart.col('series')!.toList() as string[]).filter((s) => s === CURVE).length, 2, 'the curve drawn with them');
+    // Crux's dose-effect function (Plan's estimate, the curve) reads each group on the same TGI, up to the evaluation
+    // day as the curve gives it the rows
+    const day = r.analysis.get('evaluation_day', 0) as number;
+    const upTo = rows.filter((x) => x.day <= day);
+    const table = {animal: upTo.map((x) => x.animal), group: upTo.map((x) => x.group),
+      day: Float64Array.from(upTo, (x) => x.day), volume: Float64Array.from(upTo, (x) => x.volume)};
+    const ofCrux = await Promise.all(arms.map((anchor) => crux('stats.tumor_effect_from_study', table,
+      {anchor, control: 'Vehicle', first_dose_day: 0, dose_prev: 1, dose_new: 1, pk_proportional: 'yes', boot: 5})
+      .then((o) => cruxRows(o.main)[0]?.tgi_anchor as number, (e) => {
+        if (/unknown function/.test(String(e?.message ?? e)))
+          return undefined;
+        throw e;
+      })));
+    const stats = statisticsRows(r, () => null);
+    const kept = compareRows({name: 'S', line: null, meta: null, rows,
+      exposure: {effect: keptEffect(r, null, null)}}, 'MC38');
+    // a study that kept no analysis: the same TGI from its rows
+    const fromRows = compareRows({name: 'S', line: null, meta: null, rows}, 'MC38');
+    for (const arm of arms) {
+      const tgi = ofArm('tgi', arm);
+      const j = (chart.col('series')!.toList() as string[]).indexOf(arm);
+      // (the frames hold 32-bit floats: equal to a thousandth of a point)
+      const near = (x: unknown, what: string) => expect(Math.abs((x as number) - tgi) < 1e-3, true,
+        `${arm}, ${what}: ${x} against the table's ${tgi}`);
+      near(chart.get('tgi', j), 'exposure chart');
+      near(chart.get('lower', j), 'exposure chart, no interval below');
+      near(chart.get('upper', j), 'exposure chart, no interval above');
+      near(stats.find((s) => s.group === arm)!.tgi_pct, 'statistics file');
+      near(kept.find((x) => x.group === arm)!.tgi, 'Compare');
+      near(fromRows.find((x) => x.group === arm)!.tgi, 'Compare, computed from the rows');
+      // (a Crux module without the function: nothing to compare)
+      const k = ofCrux[arms.indexOf(arm)];
+      if (k !== undefined)
+        near(k, 'Crux\'s tumor_effect_from_study');
+    }
+  });
+
+  test('the automatic evaluation day is never a day some group has no volume on (technician #1)', async () => {
+    const rows: {animal: string, group: string, day: number, volume: number | null}[] = [];
+    for (const [group, rate] of [['Vehicle', 0.25], ['Drug', 0.1]] as const) {
+      for (let a = 0; a < 5; a++) {
+        for (const day of [0, 3, 7, 10, 14]) {
+          // day 14 entered for the vehicle only
+          rows.push({animal: `${group}-${a}`, group, day,
+            volume: group === 'Drug' && day === 14 ? null : 100 * Math.exp((rate + 0.01 * a) * day)});
+        }
+      }
+    }
+    const study = DG.DataFrame.fromObjects(rows)!;
+    const o = await analyze(study, {endpoint: 4000, withTwin: false});
+    expect(o.analysis.get('evaluation_day', 0), 10);
+    expect(String(o.analysis.get('notes', 0)).includes('Day 14 not used as the evaluation day: no volume on it ' +
+      'for Drug'), true, String(o.analysis.get('notes', 0)));
+    // one test, one interval: no TGI nor T/C interval to contradict the result, the slopes' at its level
+    for (const k of ['tgi_lower', 'tgi_upper', 'tc_lower', 'tc_upper'])
+      expect(o.comparisons.col(k), null, k);
+    expect(Math.abs(o.comparisons.get('slope_difference_confidence', 0) - 0.95) < 1e-6, true);
+  });
+
+  test('a group measured on day 0 only is left out of the automatic evaluation day, and said (round 4 N4)',
+    async () => {
+      const rows: {animal: string, group: string, day: number, volume: number}[] = [];
+      for (const [group, rate] of [['Vehicle', 0.25], ['Drug', 0.1], ['OnlyDay0', 0.2]] as const) {
+        for (let a = 0; a < 5; a++) {
+          for (const day of group === 'OnlyDay0' ? [0] : [0, 3, 7, 10, 14])
+            rows.push({animal: `${group}-${a}`, group, day, volume: 100 * Math.exp((rate + 0.01 * a) * day)});
+        }
+      }
+      const o = await analyze(DG.DataFrame.fromObjects(rows)!, {endpoint: 10000, withTwin: false});
+      expect(o.analysis.get('evaluation_day', 0), 14);
+      const notes = String(o.analysis.get('notes', 0));
+      expect(notes.includes('Group OnlyDay0 has no measurements after day 0, so it is left out. Effects are read on ' +
+        'day 14.'), true, notes);
+      // (the analyst's wording, W4: the largest median said)
+      expect(new RegExp('The control median never reached 10,000 mm³ \\(largest: [\\d,.]+ mm³ on day 14\\), so ' +
+        'effects are read on day 14, the last measurement day').test(notes), true, notes);
+      // one note per fact: the group left out is said once
+      expect(notes.includes('OnlyDay0 has no animals measured') || notes.includes('OnlyDay0 was measured only'), false,
+        notes);
+      // nor its animals counted as measured once, nor the group as not tested (QA 0.1.3 browser check: three notes)
+      expect([notes.includes('fewer than two measurements'), notes.includes('OnlyDay0: not tested')].join(),
+        'false,false', notes);
+    });
+
+  test('a group lost early does not move everyone\'s read day; days in order (round 4, analyst A2)', async () => {
+    const rows: {animal: string, group: string, day: number, volume: number | null}[] = [];
+    for (const [group, rate] of [['Vehicle', 0.25], ['Drug C', 0.1], ['Drug D', 0.05]] as const) {
+      for (let a = 0; a < 5; a++) {
+        for (const day of [0, 3, 7, 10, 14, 17]) {
+          // every Drug D animal gone after day 7
+          if (group === 'Drug D' && day > 7)
+            continue;
+          rows.push({animal: `${group}-${a}`, group, day, volume: 100 * Math.exp((rate + 0.01 * a) * day)});
+        }
+      }
+    }
+    const data = {animal: rows.map((r) => r.animal), group: rows.map((r) => r.group), day: rows.map((r) => r.day),
+      volume: rows.map((r) => r.volume ?? NaN), weight: null, mass: null, removal: null, skipped: 0};
+    // the control's median reaches 6000 mm³ on day 17 (100·e^(0.27·17) ≈ 9900; day 14 ≈ 4400): read there, not on day 7
+    const end = evaluationDay({data, control: 'Vehicle', endpoint: 6000} as any);
+    expect(end.day, 17);
+    expect(end.fromEndpoint, true);
+    expect([...groupsGone(data, end.day).keys()].join(), 'Drug D');
+    const o = await analyze(DG.DataFrame.fromObjects(rows)!, {endpoint: 6000, withTwin: false});
+    expect(o.analysis.get('evaluation_day', 0), 17);
+    const d = (o.comparisons.col('arm')!.toList() as string[]).indexOf('Drug D');
+    expect(o.comparisons.get('n_day', d), 0, 'not measured on day 17');
+    expect(o.comparisons.col('tgi')!.isNone(d) || !Number.isFinite(o.comparisons.get('tgi', d)), true, 'no TGI');
+    const notes = String(o.analysis.get('notes', 0));
+    expect(notes.includes('Drug D has no animals measured after day 7'), true, notes);
+    expect(notes.includes('not entered yet'), false, 'a finished study is not one being entered');
+  });
+
+  test('a group too few to test is not tested; the level and k from the comparisons made (round 4, A3/A4)',
+    async () => {
+      const rows: {animal: string, group: string, day: number, volume: number}[] = [];
+      // Drug A: 1 animal, Drug B: 2, Drug C: 3; the control 5
+      for (const [group, rate, n] of [['Vehicle', 0.25, 5], ['Drug A', 0.05, 1], ['Drug B', 0.08, 2],
+        ['Drug C', 0.1, 3]] as const) {
+        for (let a = 0; a < n; a++) {
+          for (const day of [0, 3, 7, 10, 14])
+            rows.push({animal: `${group}-${a}`, group, day, volume: 100 * Math.exp((rate + 0.01 * a) * day)});
+        }
+      }
+      const o = await analyze(DG.DataFrame.fromObjects(rows)!, {endpoint: 100000, withTwin: false});
+      const arms = o.comparisons.col('arm')!.toList() as string[];
+      const act = (g: string) => o.comparisons.get('activity', arms.indexOf(g));
+      expect(act('Drug A'), TOO_FEW);
+      expect(act('Drug B'), TOO_FEW, `${MIN_TESTED} animals needed: 2 are not tested`);
+      expect(act('Drug C') === TOO_FEW, false);
+      expect(o.analysis.get('tested_arms', 0), 1, 'one comparison made');
+      expect(comparisonsMade(o.analysis), 1, 'the selector hint counts the one made, not the 3 treated');
+      expect(Math.abs(o.analysis.get('confidence', 0) - 0.95) < 1e-6, true, 'one comparison: 95%');
+      const notes = String(o.analysis.get('notes', 0));
+      expect(notes.includes('Drug B: not tested, 2 animals with a slope; at least 3 needed'), true, notes);
+      expect(notes.includes('measured on day'), false, 'the Analyzed cell says it, no sentence');
+    });
+
+  test('one minus, one rounding: pct, the TGI and the Analyzed cell (round 4, analyst U3, W8, uneven digits)',
+    async () => {
+      expect(pct(-0.64), '−64%');
+      expect(pct(-0.004), '0%', 'never "−0%"');
+      expect(signed(-4.2), '−4%');
+      expect(tgiText(90.2), '90%');
+      // a regression: past 100%, never capped, a true minus for growth faster than the control
+      expect(tgiText(112.4), '112%');
+      expect(tgiText(-12), '−12%');
+      expect(analyzedText('Vehicle', 7, 10, 16).text, '7 of 10');
+      expect(analyzedText('Vehicle', 7, 10, 16).tip, 'Vehicle: 7 of 10 measured on day 16 (TGI, T/C); growth test ' +
+        'uses all 10.');
+      expect(analyzedText('Drug', 10, 10, 16).text, '10');
+      const c = DG.DataFrame.fromObjects([{arm: 'A', tgi: 93, n_day: 1, activity: TOO_FEW},
+        {arm: 'B', tgi: 60, n_day: 5, activity: 'Slows growth'}])!;
+      expect(bestTgi(c)?.arm, 'B', 'an untested group is not the best TGI');
+    });
+
+  test('the CTD\'s PK rows: the group\'s own drug, the sex recorded (round 4, analyst A5)', async () => {
+    const s = {id: 'PMX-1', name: 'S', compounds: ['Trametinib', 'anti-PD-1'], animals: 'mouse, BALB/c, female',
+      line: 'CT26', endpointDay: 16, correction: '', groups: []};
+    const g = {name: 'Trametinib 1 mg/kg', control: false, given: 'Trametinib 1 mg/kg QD', route: 'p.o.', n: 10,
+      nadir: null, lost: null};
+    expect(groupCompounds(s, g).join(), 'Trametinib');
+    expect(sexOf(s), 'female');
+    expect(sexOf({...s, animals: 'mouse, BALB/c'}), '');
   });
 });

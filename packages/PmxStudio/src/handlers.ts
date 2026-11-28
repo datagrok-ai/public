@@ -6,16 +6,41 @@ import {divV} from '@datagrok-libraries/u2';
 
 import type {StudyInputs as StudyNames} from './explore';
 import {PmxAnimal, PmxDay, PmxFigure, PmxGroup, PmxSavedStudy} from './pmx-objects';
-import {animalMarks, animalPanel, markRows} from './study-table';
+import {animalMarks, animalPanel, lastReadingRow, markRows} from './study-table';
 import {recolorOf} from './colors';
 import {plural} from './wide-table';
 import type {MenuAt} from './calendar';
 import {download, failed, pngOf} from './report';
-import {helpPage, objectPanel} from './ui';
+import {copyText, helpPage, objectPanel} from './ui';
+import {whileAppOpen} from './app-open';
 
 // the platform's way (ObjectHandler + registerParamFunc): one list of actions for the right click and the Actions pane
 
-export {PmxAnimal, PmxGroup, PmxFigure, PmxSavedStudy};
+export {PmxAnimal, PmxDay, PmxGroup, PmxFigure, PmxSavedStudy};
+
+/** Each stage's study, as its header (study-header.ts, by its row) makes it for the context panel; null: none yet. */
+type Summary = () => PmxDay | null;
+export const studySummaries = new WeakMap<HTMLElement, Summary>();
+const summaries = new WeakSet<object>();
+/** The study of the view current now in the context panel, unless something else is picked there. */
+export function summaryNow(): void {
+  const row = grok.shell.v?.root?.querySelector<HTMLElement>('.pmx-head-block');
+  const s = row ? studySummaries.get(row)?.() : null;
+  if (s && (grok.shell.o == null || summaries.has(grok.shell.o))) {
+    summaries.add(s);
+    // forced: the platform keeps an equal object (the same study's name) and its old panel otherwise: a day saved, a
+    // study saved as another showed the last state (QA 0.1.3 round 3: technician N11, chaos 15b)
+    grok.shell.setCurrentObject(s, false, true);
+  } else if (!s && grok.shell.o != null && summaries.has(grok.shell.o)) {
+    // a view with no study to show yet: not another study's summary (its groups, perhaps hidden here) left there
+    grok.shell.o = null;
+  }
+}
+/** Shows the study of `row` (its header) in the context panel, when its view is current. */
+export const showSummary = (row: HTMLElement) => {
+  if (grok.shell.v?.root?.contains(row))
+    summaryNow();
+};
 
 /** `apart`: starts a group of its own in the Actions pane (a line above it); `menuOnly`: in the right-click menu only
  *  (copying a name is not what the panel is for). */
@@ -35,12 +60,13 @@ const markOf = (x: PmxAnimal) => inStudy(x.names, 'animal') ? animalMarks(x.name
 /** `x` shown again in the context panel once marked, when it was there as the action started (as a new object: the
  *  platform renders a new one), so its actions follow its mark: an animal just excluded offers Include. Read before:
  *  while the mark's dialog is open, the dialog is the current object. */
-const again = <T extends PmxAnimal | PmxGroup>(x: T, copy: () => T) => {
+const again = <T extends PmxAnimal | PmxGroup>(x: T, copy: (shown: T) => T) => {
   const o = grok.shell.o;
   const shown = o === x || (o?.constructor === x.constructor && String(o) === String(x));
   return () => {
+    // (with the shown one's panel: a page's link without one put the bare panel there, its charts let go: B4)
     if (shown)
-      grok.shell.o = copy();
+      grok.shell.setCurrentObject(copy(o as T), false, true);   // forced: the platform keeps an equal object otherwise
   };
 };
 const markRole = (role: 'animal' | 'group', value: string, n: StudyNames, action: 'flag' | 'exclude' | 'clear',
@@ -49,19 +75,35 @@ const markRole = (role: 'animal' | 'group', value: string, n: StudyNames, action
   markRows(n.study, rows, action, what, done);
 };
 const markAnimal = (x: PmxAnimal, action: 'flag' | 'exclude' | 'clear') => markRole('animal', x.animal, x.names!,
-  action, again(x, () => new PmxAnimal(x.names, x.animal, x.o)));
+  action, again(x, (s) => new PmxAnimal(x.names, x.animal, s.o)));
 const markGroup = (x: PmxGroup, action: 'flag' | 'exclude' | 'clear') => markRole('group', x.group, x.names!,
-  action, again(x, () => new PmxGroup(x.names, x.group, x.color, x.o)));
+  action, again(x, (s) => new PmxGroup(x.names, x.group, x.color, s.o)));
+const lastRow = (x: PmxAnimal) => inStudy(x.names, 'animal') && x.names.study.col(x.names.day) &&
+  x.names.study.col(x.names.volume) ? lastReadingRow(x.names, x.animal) : null;
+/** The animal's latest reading: corrected, or flagged alone. */
+export const markReading = (x: PmxAnimal, action: 'flag' | 'correct') => {
+  const row = lastRow(x);
+  if (row !== null) {
+    markRows(x.names!.study, [row], action, `${x.animal} on day ${x.names!.study.get(x.names!.day, row)}`,
+      again(x, (s) => new PmxAnimal(x.names, x.animal, s.o)));
+  }
+};
 const selectRows = (role: 'animal' | 'group', value: string, n: StudyNames) => {
   const these = new Set(rowsOf(n, role, value).rows);
   n.study.selection.init((i) => these.has(i));
 };
-const copyName = (name: string) => void navigator.clipboard.writeText(name);
+const copyName = (name: string) => copyText(name);
+/** An animal or group of a study no longer on screen (another opened in its view, the view closed): its panel left
+ *  behind offers no action, and one already listed does nothing (QA 0.1.3 round 3, analyst 1). */
+export const gone = (x: unknown) => (x as {o?: {live?: () => boolean}} | null)?.o?.live?.() === false;
 
 /** An animal's actions, in the menu's order. */
 export const ANIMAL_ACTIONS: Action<PmxAnimal>[] = [
-  {name: 'Show against its twin', run: (x) => x.o.twin!(), when: (x) => !!x.o.twin},
-  {name: 'Flag this animal…', run: (x) => markAnimal(x, 'flag'), apart: true,
+  // its latest reading alone: a typo corrected or one value flagged, not the animal
+  {name: 'Correct its last value…', run: (x) => markReading(x, 'correct'), apart: true,
+    when: (x) => lastRow(x) !== null},
+  {name: 'Flag its last reading…', run: (x) => markReading(x, 'flag'), when: (x) => lastRow(x) !== null},
+  {name: 'Flag this animal…', run: (x) => markAnimal(x, 'flag'),
     when: (x) => inStudy(x.names, 'animal')},
   {name: 'Exclude from the analysis…', run: (x) => markAnimal(x, 'exclude'),
     when: (x) => inStudy(x.names, 'animal') && markOf(x) !== 'excluded'},
@@ -110,12 +152,12 @@ export const FIGURE_ACTIONS: Action<PmxFigure>[] = [
 /** The details, then an Actions section with every action that applies, as the right click lists them (the platform
  *  adds no Actions pane for an object of a package's own type). */
 export function withActions<T>(details: HTMLElement, x: T, actions: Action<T>[]): HTMLElement {
-  const these = actions.filter((a) => !a.menuOnly && (!a.when || a.when(x)));
+  const these = gone(x) ? [] : actions.filter((a) => !a.menuOnly && (!a.when || a.when(x)));
   if (!these.length)
     return details;
   // a quiet line between the groups of actions (marking apart from the utilities), none above the first
   const items = these.flatMap((a, i) => [...a.apart && i > 0 ? [ui.div([], 'pmx-actions-sep')] : [],
-    ui.link(a.label?.(x) ?? a.name, () => a.run(x))]);
+    ui.link(a.label?.(x) ?? a.name, () => gone(x) ? grok.shell.o = null : a.run(x))]);
   const acc = ui.accordion('pmx-actions');
   acc.addPane('Actions', () => ui.divV(items, {style: {gap: '4px'}}), true);
   return divV([details, acc.root]);
@@ -261,8 +303,8 @@ export function registerHandlers(): void {
   const add = <T>(h: DG.ObjectHandler<T>, actions: Action<T>[]) => {
     DG.ObjectHandler.register(h);
     for (const a of actions) {
-      grok.functions.registerParamFunc(a.name, h.type, (x: T) => a.run(x),
-        (x: any) => h.isApplicable(x) && (!a.when || a.when(x)));
+      grok.functions.registerParamFunc(a.name, h.type, (x: T) => gone(x) ? null : a.run(x),
+        (x: any) => h.isApplicable(x) && !gone(x) && (!a.when || a.when(x)));
     }
   };
   add(new AnimalHandler(), ANIMAL_ACTIONS);
@@ -275,11 +317,16 @@ export function registerHandlers(): void {
   // over the Overview's stages)
   // a stage's object (an animal, a group, a figure) left behind: not the current object of another view; on the
   // Overview and Compare, which have none of their own, nothing is (a study table's cell or row from Analyze either)
-  grok.events.onCurrentViewChanged.subscribe(() => {
-    // (Compare: stages.ts STANDS_ALONE, read here as its data attribute; stages.ts imports the views)
-    const d = grok.shell.v?.root?.dataset;
-    if (grok.shell.o != null && (isPmxObject(grok.shell.o) || d?.pmxStage === 'home' || d?.pmxAlone))
-      grok.shell.o = null;
+  // (while a page of the app is open: the last one closing is a view change too, seen before this stops)
+  whileAppOpen(() => {
+    const sub = grok.events.onCurrentViewChanged.subscribe(() => {
+      // (Compare: stages.ts STANDS_ALONE, read here as its data attribute; stages.ts imports the views)
+      const d = grok.shell.v?.root?.dataset;
+      if (grok.shell.o != null && (isPmxObject(grok.shell.o) || d?.pmxStage === 'home' || d?.pmxAlone))
+        grok.shell.o = null;
+      summaryNow();
+    });
+    return () => sub.unsubscribe();
   });
 }
 

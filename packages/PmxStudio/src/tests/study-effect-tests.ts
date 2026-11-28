@@ -48,7 +48,8 @@ category('Effect from an earlier study', () => {
     same(found.map((a) => a.arm), ['Cpd-X 10 mg/kg i.p. QD', 'Cpd-X 3 mg/kg i.p. QD']);
     expect(found[0].control, 'Vehicle');
     expect(found[0].readDay, 21, 'day 28 has one control only');
-    expect(Math.round(found[0].tgi!), 50);
+    // 1 − ΔT/ΔC: (50 e^2.1 − 100) / (100 e^2.1 − 100) of the control's change from day 0
+    expect(Math.round(found[0].tgi!), 57);
     // another drug, or a combination, has none
     expect(anchorsIn(earlier(), 'Cpd-Y 20 mg/kg').length, 0);
     expect(anchorsIn(earlier(), 'Cpd-X 20 mg/kg + anti-PD-1').length, 0);
@@ -65,11 +66,10 @@ category('Effect from an earlier study', () => {
     expect(nearestAnchor([], 'Cpd-X 20 mg/kg'), null);
   });
 
-  test('the note says the analysis\'s TGI when the study kept one, else its medians\' ratio, never called TGI',
+  test('the note says the analysis\'s TGI when the study kept one, else the same TGI from its rows',
     async () => {
       const never = anchorsIn(earlier(), 'Cpd-X 20 mg/kg')[0];
-      expect(offerText(never, 'MC38'),
-        'You have a study of Cpd-X at 10 mg/kg (median volume 50% of the control\'s, day 21).');
+      expect(offerText(never, 'MC38'), 'You have a study of Cpd-X at 10 mg/kg (TGI 57%, day 21).');
       const analyzed = {...earlier(), exposure: {effect: {day: 12, tgi: {'Cpd-X 10 mg/kg i.p. QD': 18.4}}}} as
         PreviousStudy;
       const a = anchorsIn(analyzed, 'Cpd-X 20 mg/kg')[0];

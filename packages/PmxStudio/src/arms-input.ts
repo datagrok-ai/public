@@ -2,16 +2,19 @@
    - ArmsInput, the `arms` table: one card per treated arm, its name as its title, under it in grey what Plan reads
      in it (the drugs, dose, schedule and route, and the kind of treatment, a click to change it) and the expected
      effect; a remove icon on each and "Add treatment arm" under them. TGI or T/C is the study's (Advanced);
-   - CorrectionInput, the `correction` choice: one checkbox (Holm, recommended) with what it means, worded for
-     the number of arms declared. Bonferroni stays a value of the function, for scripts and Grokky. */
+   - CorrectionInput, the `correction` choice: Bonferroni (recommended), Holm, Benjamini-Hochberg or none, with what
+     the one chosen means, worded for the number of arms declared. */
 import * as DG from 'datagrok-api/dg';
-import {BoolInput, buttonWithIcon, computed, Control, div, divH, Form, iconButton, Input, InputOptions, Menu,
-  NumberInput, ReadonlySignal, Reason, Signal, signal, span, TextArea} from '@datagrok-libraries/u2';
+import {batch, ChoiceInput, buttonWithIcon, computed, Control, div, divH, Form, icon, iconButton, Input, InputOptions,
+  Menu, NumberInput, ReadonlySignal, Reason, Signal, signal, span, TextArea, untracked} from '@datagrok-libraries/u2';
 import {THERAPIES, Therapy} from './archetypes';
-import {combinationHint, findCombinations, moreVariable, parseArmName, therapyOf} from './arm-name';
+import {BH_SCREENING, MAX_ARMS, TGI_ABOVE_100, correctionOf, tcOfTgi, tgiMax, tgiOfTc, tgiProblem} from './engine';
+import {combinationHint, findCombinations, moreVariable, noBidi, parseArmName, regimenDifferences, therapyOf}
+  from './arm-name';
 import {StudyMeta, detailsName, parseLine} from './study-meta';
 import {addColorItem, armColors} from './colors';
 import {entered} from './sheet';
+import {sameJson} from './format';
 import {contextHint, hintLink, noteLine} from './ui';
 import {Anchor, FromStudy, SIMPLIFIED, anchorsIn, assumedText, doseText, effectText, fromStudyOf, offerText, rangeAs,
   silence, sizingEffect, undosedText} from './study-effect';
@@ -23,8 +26,8 @@ import {Anchor, FromStudy, SIMPLIFIED, anchorsIn, assumedText, doseText, effectT
 export interface Arm {name: string, therapy: Therapy, metric: 'TGI' | 'TC', effect: number,
   therapySource?: 'name' | 'user', fromStudy?: FromStudy, noCombination?: boolean}
 
-/** At most as many arms as the Dunnett tables of crate lsmeans (the sensitivity analysis) and a readable chart hold. */
-export const MAX_ARMS = 6;
+/** At most MAX_ARMS treated arms (engine.ts says why; the card list scrolls with the form). */
+export {MAX_ARMS};
 /** How long typing pauses before the lines under an arm's name read it again (ms). */
 const SETTLE_MS = 400;
 
@@ -37,8 +40,39 @@ export function combinationPulse(card: HTMLElement, dot: HTMLElement, color: str
     {duration: 600, easing: 'ease-out'});
 }
 
+/** The earlier study an offer names: its name, ID and the day its effect is read ("CT26 study (PMX-2026-0702,
+ *  finished, day 16)"); several studies may share a name. Only finished studies are offered (anchorOrder). */
+export function anchorSource(a: Pick<Anchor, 'study' | 'tgiDay' | 'readDay'>): string {
+  const day = a.tgiDay ?? a.readDay;
+  const said = [a.study.meta?.id, 'finished', day === null ? '' : `day ${day}`].filter((x) => x);
+  // (a name that already says it is finished does not say it twice: designer wording 1)
+  return `${a.study.name.replace(/,\s*finished$/i, '')} (${said.join(', ')})`;
+}
+
 const newArm = (k: number): Arm => ({name: `Treatment ${k}`, therapy: 'small_molecule', metric: 'TGI', effect: 60,
   therapySource: 'name'});
+
+/** An effect (percent) said in the other metric, `to`, for the same treated volume on the endpoint day: the NCI
+ *  relation at the median lab, the one engine.ts sends a TGI of 100% or more to Crux by (tcOfTgi, tgiOfTc), V0 and
+ *  the endpoint the plan's. Rounded, and kept inside what the arms accept: a T/C of 1 to 99%, a TGI of 1% up to just
+ *  below complete regression (tgiMax). (Clamped to 5-95%, TGI 110 read T/C 5 where it is 1: QA 0.1.3 r4.) */
+export function convertedEffect(effect: number, to: 'TGI' | 'TC', v0: number, endpoint: number): number {
+  const y = to === 'TC' ? tcOfTgi(effect, endpoint, v0) : tgiOfTc(effect, endpoint, v0);
+  const most = to === 'TC' ? 99 : Math.ceil(tgiMax(endpoint, v0)) - 1;
+  return Math.min(most, Math.max(1, Math.round(y)));
+}
+
+/** An arm's effect before it was said the other way: in `metric`, `effect`, which gave `to`. */
+export interface SaidBefore {metric: 'TGI' | 'TC', effect: number, to: number}
+
+/** `a`'s effect said as `metric` (convertedEffect), and what to remember of it: back to the metric it was said in
+ *  before (`before`), still at the value it was converted to, it is the value entered then, not converted again. */
+export function saidAs(a: Pick<Arm, 'metric' | 'effect'>, metric: 'TGI' | 'TC', v0: number, endpoint: number,
+  before?: SaidBefore): [number, SaidBefore] {
+  const effect = before && before.metric === metric && before.to === a.effect ? before.effect :
+    convertedEffect(a.effect, metric, v0, endpoint);
+  return [effect, {metric: a.metric, effect: a.effect, to: effect}];
+}
 
 /** A combination's effect when its two drugs act independently (`a`, `b`: their effects, percent, TGI or T/C as
  *  `metric`), rounded: T/C_AB = T/C_A × T/C_B, so TGI_AB = 1 − (1 − TGI_A)(1 − TGI_B) (60 and 60 give 84). The same
@@ -46,6 +80,10 @@ const newArm = (k: number): Arm => ({name: `Treatment ${k}`, therapy: 'small_mol
  *  adds the two drugs' effects on the rate of log volume, so the logs of their T/C add, and the T/C multiply (Crux
  *  stats.tumor_combination_design's effect_bliss, the kill rates added up, simulated with onset and responders). */
 export function independentEffect(a: number, b: number, metric: 'TGI' | 'TC'): number {
+  // ponytail: a drug that regresses (TGI ≥ 100) has no growth left to multiply: the stronger drug's TGI, a floor
+  // for the combination, until Plan converts through the kill rates as Crux's effect_bliss does
+  if (metric === 'TGI' && Math.max(a, b) >= 100)
+    return Math.round(Math.max(a, b));
   return Math.round(metric === 'TC' ? a * b / 100 : 100 - (100 - a) * (100 - b) / 100);
 }
 
@@ -57,7 +95,7 @@ export const NAME_EXAMPLES = ['Cpd-A 30 mg/kg QD PO', 'Anti-PD-1 10 mg/kg i.p. Q
 /** The kinds of treatment in plain words. */
 export const KIND_WORDS: {[t in Therapy]: string} = {
   small_molecule: 'small molecule', biologic: 'antibody or protein acting on the tumor',
-  immunotherapy: 'antibody or protein acting through the immune system',
+  immunotherapy: 'immunotherapy (antibody)',
   immune_agonist: 'small molecule acting through the immune system', cell_therapy: 'cell therapy',
   vaccine_peptide: 'vaccine', oligo_rna: 'RNA drug',
 };
@@ -136,7 +174,7 @@ export function armsOf(value: DG.DataFrame | null | undefined, fallback = true):
     return fallback ? [newArm(1)] : [];
   const get = (c: string, i: number) => df.col(c)?.get(i);
   return Array.from({length: df.rowCount}, (_, i) => ({
-    name: String(get('name', i) ?? '').trim() || `Treatment ${i + 1}`,
+    name: noBidi(String(get('name', i) ?? '')).trim() || `Treatment ${i + 1}`,
     therapy: (THERAPIES.includes(get('therapy', i)) ? get('therapy', i) : 'small_molecule') as Therapy,
     metric: get('metric', i) === 'TC' ? 'TC' : 'TGI',
     effect: Number(get('effect', i) ?? 60),
@@ -170,14 +208,28 @@ export interface PreviousContext {
   tables?: ReadonlySignal<number>;
 }
 
-/** What the arms take from the study: the tumor model's class, whether effects are TGI or T/C, and the earlier
+/** What the arms take from the study: the tumor model's class, whether effects are TGI or T/C, the volumes at
+ *  randomization and at the endpoint (a TGI's bound, tgiMax), and the earlier
  *  studies. */
 interface StudyContext {host: ReadonlySignal<string | null>, metric: ReadonlySignal<'TGI' | 'TC'>,
+  volumes: ReadonlySignal<PlanVolumes>,
   previous?: PreviousContext}
+
+/** The plan's volume at randomization and endpoint volume, mm³. */
+export interface PlanVolumes {v0: number, endpoint: number}
+const DEFAULT_VOLUMES: PlanVolumes = {v0: 100, endpoint: 1000};
+
+/** Why an arm's expected effect cannot be planned (null: it can): a TGI above 0 and below complete regression
+ *  (tgiProblem), a T/C above 0 and below 100%. */
+export const armEffectProblem = (x: number | null, metric: 'TGI' | 'TC', v: PlanVolumes): string | null =>
+  metric === 'TGI' ? tgiProblem(x, v.endpoint, v.v0) :
+    x !== null && x > 0 && x < 100 ? null : 'Expected T/C: above 0 and below 100%';
 
 /** What an arm takes from the others: `others`, the names of the arms before it (a new arm that repeats them may be
  *  their combination); `pair`, the two arms it combines, by their drugs, or null; `monos`, those two arms' effects */
 interface ArmsContext {others: () => string[], pair: () => string | null, monos: () => [number, number] | null,
+  /** where the combination gives a drug otherwise than its arm alone (arm-name.ts regimenDifferences) */
+  differs: () => string[],
   /** the arm's colour in its charts (colors.ts armColors) */
   color: () => string}
 
@@ -224,10 +276,10 @@ class ArmCard extends Control {
       }));
       watch.observe(area);
       this.scope.own(() => watch.disconnect());
-      // a name is one line: a pasted line break becomes a space
+      // a name is one line: a pasted line break becomes a space; a text-direction control (U+202E) goes
       area.addEventListener('input', () => {
-        if (/[\r\n]/.test(area.value))
-          name.value = area.value.replace(/[\r\n]+/g, ' ');
+        if (/[\r\n]/.test(area.value) || noBidi(area.value) !== area.value)
+          name.value = noBidi(area.value).replace(/[\r\n]+/g, ' ');
       });
       // the name left changed: this arm's details move from its old name to its new one (the edit says which row)
       let committed = arm.name;
@@ -279,7 +331,7 @@ class ArmCard extends Control {
       };
       chip.addEventListener('click', recolor);
       chip.addEventListener('contextmenu', recolor);
-      chip.title = 'Its colour in the charts: click to change it';
+      chip.title = 'Its color in the charts: click to change it';
       this.effect(() => chip.style.background = ctx.color());
       const head = divH([chip, name.root, remove]);
       Object.assign(head.style, {alignItems: 'center', gap: 'var(--dg-space-s)'});
@@ -302,11 +354,22 @@ class ArmCard extends Control {
         menu.show({anchor: e.currentTarget as HTMLElement});
       };
       const kindLink = (t: Therapy, tip: string) => hintLink(KIND_WORDS[t], choose, tip);
+      // a dose written below 0 is refused, the reason under the name (QA 0.1.3 final designer #7), read from the name
+      // as it stands, not once typing pauses: the plan runs 150 ms after a change and would size "-5 mg/kg" before
+      // the 400 ms pause (QA round 3 designer W4); the card then says only that, no reading, estimate or offer.
+      // (declared before the hints that read it: one built first read it uninitialized and showed nothing)
+      const negative = computed(() => parseArmName(name.value).filter((p) => p.negative)
+        .map((p) => `${p.drug}: a dose cannot be below 0`)[0] ?? null);
       // under the name, quietly: what Plan reads in it, and the kind it takes, a click to change it
       const understood = contextHint(() => {
+        if (negative.value)
+          return null;
         // drug · dose · schedule · route, each from the group's details when they say it, else from the name
         const line = parseLine(settled.value, study.previous?.meta?.() ?? null);
-        const said: (string | HTMLElement)[] = line ? [line, ' · '] : [];
+        // (a line the name already says, word for word, is not said again)
+        const named = settled.value.toLowerCase();
+        const repeats = !!line && line.split(' · ').every((w) => named.includes(w.trim().toLowerCase()));
+        const said: (string | HTMLElement)[] = line && !repeats ? [line, ' · '] : [];
         if (source.value === 'user')
           return [...said, kindLink(therapy.value, 'Chosen by you: click to change')];
         if (read.value.radiation) {
@@ -350,6 +413,8 @@ class ArmCard extends Control {
           kindLink(therapy.value, 'Plan cannot tell the kind of treatment from the name: click to choose it')];
       });
       understood.dataset.pmx = 'understood';
+      const negativeLine = contextHint(() => negative.value ? [noteLine(negative.value)] : null);
+      negativeLine.dataset.pmx = 'negative-dose';
       // a word on combinations while the name is being typed and points there, gone once the field is left; and the
       // combination found, to untick
       const pair = computed(ctx.pair);
@@ -378,6 +443,17 @@ class ArmCard extends Control {
       caption.style.cssText = 'min-width: 0; overflow-wrap: anywhere';
       tick.title = 'Untick it if this arm is not given as the combination of those two';
       tick.dataset.pmx = 'combination';
+      // a drug given here by another route or schedule than in its own arm: an (i) beside the caption says which
+      // (QA 0.1.3 final designer #28)
+      const differs = icon('info-circle');
+      differs.dataset.pmx = 'combination-differs';
+      differs.style.flex = 'none';
+      this.effect(() => {
+        const d = pair.value ? ctx.differs() : [];
+        differs.style.display = d.length ? '' : 'none';
+        differs.title = d.length ? `Given otherwise than alone: ${d.join('; ')}. The combination is still compared ` +
+          'with the two arms; untick it if that comparison does not hold.' : '';
+      });
       // a combination found and kept: a thicker border and a dot before the title, in the arm's own colour (its
       // charts'); the tick's words say what it is, the colour draws the eye (inline: the u2 ratchet caps the CSS)
       const dot = document.createElement('span');
@@ -404,20 +480,24 @@ class ArmCard extends Control {
           combinationPulse(this.root, dot, color);
         was = on;
       });
-      tick.append(box, caption);
+      tick.append(box, caption, differs);
       this.effect(() => tick.style.display = pair.value ? 'flex' : 'none');
 
       const metricWord = () => study.metric.value === 'TC' ? 'T/C' : 'TGI';
       const effect = new NumberInput({name: 'effect', label: computed(() => `Expected ${metricWord()}`),
-        value: arm.effect, min: 5, max: 95, postfix: '%', nullable: false,
-        tooltipText: 'The effect expected when the median control reaches the endpoint (TGI or T/C: the study\'s, ' +
-          'under Advanced)'});
+        value: arm.effect, postfix: '%', nullable: false,
+        tooltipText: computed(() => study.metric.value === 'TC' ? 'Treated over control tumor volume you expect ' +
+          'on the last day (100% = no effect). Switch to TGI under Advanced.' : 'Tumor growth inhibition you ' +
+          `expect on the last day (100% = no growth). ${TGI_ABOVE_100}. Switch to T/C under Advanced.`)});
+      // a TGI above 0 and below complete regression with the plan's volumes (tgiMax), a T/C above 0 and below 100%
+      effect.addValidator((x) => armEffectProblem(x, study.metric.value, study.volumes.value));
       // a combination kept: its effect follows its two drugs acting independently until the user types one
       const indep = computed(() => {
         const m = ctx.monos();
         return m && combined.value ? independentEffect(m[0], m[1], study.metric.value) : null;
       });
-      const clamped = (v: number) => Math.min(95, Math.max(5, v));
+      const clamped = (v: number) => study.metric.value === 'TC' ? Math.min(95, Math.max(5, v)) :
+        Math.min(Math.ceil(tgiMax(study.volumes.value.endpoint, study.volumes.value.v0)) - 1, Math.max(5, v));
       // ponytail: "typed" is not saved; a loaded combination whose effect is not the independence value counts as
       // typed (a saved plan is never changed behind the user's back), one typed equal to it follows the drugs again
       const typed = signal(indep.peek() !== null && arm.effect !== clamped(indep.peek()!));
@@ -476,7 +556,7 @@ class ArmCard extends Control {
       });
       const patientsLine = contextHint(() => {
         const d = patients.value;
-        if (!d)
+        if (!d || negative.value)
           return null;
         const e = span(d.text);
         e.title = d.tip;
@@ -528,13 +608,15 @@ class ArmCard extends Control {
         const [a, u] = [offer.value, undosed.value];
         // a drug that needs an immune system this model's mice lack: no earlier study speaks for it here (QA: anti-PD-1
         // in a PDX offered its CT26 study, under the warning)
-        if (link.value || lackingImmunity(settled.value, therapy.value, study.host.value).length)
+        if (link.value || negative.value || lackingImmunity(settled.value, therapy.value, study.host.value).length)
           return null;
         if (!a) {
           const drug = parseArmName(asRead(settled.value))[0]?.drug ?? 'this drug';
           return u ? [undosedText(drug, u.study, u.group)] : null;
         }
-        return [`${offerText(a, prev?.line.value ?? null)} `, hintLink('Use it to estimate this arm', use,
+        // (the study named in the link itself, with its ID and day: which earlier study, seen without a hover, and
+        // told from others of the same name, QA 0.1.3 designer #10, round 3 W3)
+        return [hintLink(`Estimate from ${anchorSource(a)}`, use, `${offerText(a, prev?.line.value ?? null)} ` +
           `From "${a.study.name}", group ${a.arm}: its effect scaled to this arm's dose`)];
       });
       offered.dataset.pmx = 'offer';
@@ -542,10 +624,10 @@ class ArmCard extends Control {
       const sized = computed(() => sizingEffect(linked.value, study.metric.value));
       // how the estimate was made, on hover of its line
       const howTip = (x: FromStudy) => {
-        let tip = `Scaled from the effect of ${x.arm}${x.anchorTgi === undefined ? '' :
-          ` (TGI ${Math.round(x.anchorTgi)}%)`} in "${x.study}" to ${entered(x.doseNew)} ${x.unit}, with the same ` +
-          'schedule, route, tumor model and day. The field holds the low end of the range, what the groups are ' +
-          'sized on. The rule behind it was checked on 8 dose changes from published studies.';
+        // (the group's TGI is on the offer line: the analysis's when kept, which Crux's anchorTgi need not repeat)
+        let tip = `Scaled from the effect of ${x.arm} in "${x.study}" to ${entered(x.doseNew)} ${x.unit}, with ` +
+          'the same schedule, route, tumor model and day. The field holds the low end of the range, what the groups ' +
+          'are sized on. The rule behind it was checked on 8 dose changes from published studies.';
         // what Plan took from the earlier study because the name does not say it
         const assumed = assumedText(settled.value, x);
         if (assumed)
@@ -569,7 +651,7 @@ class ArmCard extends Control {
       });
       const fromStudy = contextHint(() => {
         const x = linked.value;
-        if (!x)
+        if (!x || negative.value)
           return null;
         if (!x.range || x.point === null) {
           const said = span(effectText(x, study.metric.value));
@@ -585,7 +667,8 @@ class ArmCard extends Control {
       fromStudy.dataset.pmx = 'from-study';
 
       // a form of its own, captions above: the card keeps its look whatever layout the outer form takes
-      const fields = new Form({layout: 'tall'}).addElement(understood).addElement(hint).addElement(tick).add(effect)
+      const fields = new Form({layout: 'tall'}).addElement(understood).addElement(negativeLine).addElement(hint)
+        .addElement(tick).add(effect)
         .addElement(fromStudy).addElement(notSynergy).addElement(noImmunity).addElement(offered)
         .addElement(patientsLine);
       // a rename that makes another combination (or none) is not the one that was unticked
@@ -597,7 +680,8 @@ class ArmCard extends Control {
         }
       });
       this.root.append(head, fields.root);
-      this.problem = () => effect.validity.value === null ? null : `Arm ${index + 1}: ${effect.validity.value}`;
+      this.problem = () => negative.value ? `Arm ${index + 1}: ${negative.value}` :
+        effect.validity.value === null ? null : `Arm ${index + 1}: ${effect.validity.value}`;
       // (an empty name stays empty here, so a rebuilt card still shows its example; the tables number it, armName)
       this.effect(() => onChange({name: name.value.trim(), therapy: therapy.value,
         metric: study.metric.value, effect: sized.value ?? effect.value ?? arm.effect, therapySource: source.value,
@@ -610,7 +694,9 @@ export interface ArmsInputOptions extends InputOptions<DG.DataFrame | null> {
   /** the tumor model's host class (immunocompetent, immunodeficient; null: none chosen or not loaded yet) */
   host?: ReadonlySignal<string | null>;
   /** TGI or T/C, the study's */
-  metric?: ReadonlySignal<'TGI' | 'TC'>;
+  metric?: Signal<'TGI' | 'TC'>;
+  /** the plan's volume at randomization and endpoint, a TGI's bound (tgiMax; none: 100 and 1000 mm³) */
+  volumes?: ReadonlySignal<PlanVolumes>;
   /** the user's earlier studies, to scale an arm's effect from (none: no offer) */
   previous?: PreviousContext;
 }
@@ -682,12 +768,29 @@ export class ArmsInput extends Input<DG.DataFrame | null, ArmsInputOptions> {
       this._set([...this._arms, {...newArm(this._arms.length + 1), name: ''}]);
   }
 
-  /** The arms' effects said as `metric` (TGI or T/C): an arm said the other way is converted, T/C = 100 − TGI (the
-   *  engine's: T/C_AB = T/C_A × T/C_B against TGI_AB = 1 − (1 − TGI_A)(1 − TGI_B)); one already said so stays. */
-  sayAs(metric: 'TGI' | 'TC'): void {
-    if (this._arms.some((a) => a.metric !== metric))
-      this._set(this._arms.map((a) => a.metric === metric ? a : {...a, metric, effect: 100 - a.effect}));
+  /** The arms' effects said as `metric` (TGI or T/C): an arm said the other way is converted to the same treated
+   *  volume (convertedEffect, `v0` and `endpoint` the plan's), so the plan stays the same; one already said so
+   *  stays. Said back unchanged, an arm gets the value the user entered, not a rounding of a rounding (QA 0.1.3 #5).
+   *  It sets the study's metric (the `metric` option) with the arms, in one batch and untracked: a card rebuilt here
+   *  under the old metric committed its converted value as said the old way, and a caller's effect, subscribed to
+   *  the cards through this call, converted it again (TGI 30 → T/C 73 → TGI 78, combination 80 → 28 → 75). */
+  sayAs(metric: 'TGI' | 'TC', v0 = 100, endpoint = 1000): void {
+    batch(() => untracked(() => {
+      if (this.options.metric)
+        this.options.metric.value = metric;
+      if (!this._arms.some((a) => a.metric !== metric))
+        return;
+      this._set(this._arms.map((a) => {
+        if (a.metric === metric)
+          return a;
+        const [effect, was] = saidAs(a, metric, v0, endpoint, this._said.get(a.name));
+        this._said.set(a.name, was);
+        return {...a, metric, effect};
+      }));
+    }));
   }
+  // each arm's effect as it was before it was last said the other way, by the arm's name
+  private _said = new Map<string, SaidBefore>();
 
   /** the arms' names as they stand (each keystroke of a name included) */
   get names(): Signal<string[]> {
@@ -708,6 +811,7 @@ export class ArmsInput extends Input<DG.DataFrame | null, ArmsInputOptions> {
     };
     // (createEditor runs inside the base constructor: the options are there, the study's signals read from them)
     const study: StudyContext = {host: this.options.host ?? signal(null), metric: this.options.metric ?? signal('TGI'),
+      volumes: this.options.volumes ?? signal(DEFAULT_VOLUMES),
       previous: this.options.previous};
     this._cards.value = this._arms.map((a, i) => this.build(() => new ArmCard(a, i, study, (next) => {
       const kind = this._arms[i].therapy;
@@ -719,7 +823,10 @@ export class ArmsInput extends Input<DG.DataFrame | null, ArmsInputOptions> {
       this._commit();
     },
     () => this._set(this._arms.filter((_, j) => j !== i)),
-    {others: () => this._names.value.slice(0, i), pair: () => pair(i), monos: () => {
+    {others: () => this._names.value.slice(0, i), pair: () => pair(i), differs: () => {
+      const c = this._found.value.find((x) => x.ab === i);
+      return c ? regimenDifferences(this._names.value[i], [this._names.value[c.a], this._names.value[c.b]]) : [];
+    }, monos: () => {
       const c = this._found.value.find((x) => x.ab === i);
       // a drug that needs an immune system the host lacks counts as inactive in the combination (TGI 0, T/C 100)
       // (the effects read first: a kind changed re-sets them, and this follows)
@@ -749,7 +856,7 @@ function sameArms(a: Arm[], b: Arm[]): boolean {
   return a.length === b.length && a.every((x, i) => armName(x, i) === armName(b[i], i) && x.therapy === b[i].therapy &&
     x.metric === b[i].metric && x.effect === b[i].effect &&
     (x.therapySource ?? 'user') === (b[i].therapySource ?? 'user') &&
-    JSON.stringify(x.fromStudy ?? null) === JSON.stringify(b[i].fromStudy ?? null) &&
+    sameJson(x.fromStudy ?? null, b[i].fromStudy ?? null) &&
     !x.noCombination === !b[i].noCombination);
 }
 
@@ -758,46 +865,54 @@ export interface CorrectionInputOptions extends InputOptions<string | null> {
   arms: ReadonlySignal<number>;
 }
 
-/** The multiplicity correction as one checkbox: Holm (recommended) or none, with what it means. */
+/** The multiplicity correction as one choice: Bonferroni (recommended, the default), Holm, Benjamini-Hochberg
+ *  (screening) or none, with what the one chosen means under it. */
 export class CorrectionInput extends Input<string | null, CorrectionInputOptions> {
   constructor(options: CorrectionInputOptions) {
-    super(options, 'holm');
+    super(options, 'bonferroni');
     this.root.dataset.u2 = 'pmx-correction-input';
   }
 
   protected createEditor(): HTMLElement {
-    const box = this.build(() => new BoolInput({label: 'Correct for multiple comparisons', captionAfter: true,
-      value: this.peek() !== 'none'}));
-    // ponytail: u2's caption-after row tops its caption against a 28px editor, 5px above the box's centre;
-    // centred here until u2 centres it
-    box.root.style.alignItems = 'center';
+    const choice = this.build(() => new ChoiceInput({items: CORRECTIONS, value: correctionOf(this.peek()),
+      nullable: false, tooltipText: CORRECTION_TIP}));
     const note = span('', 'pmx-note');
     Object.assign(note.style, {color: 'var(--dg-text-color-muted, #68727f)', fontSize: '11.5px', lineHeight: '1.4'});
     this.build(() => {
       this.effect(() => {
-        const v = box.value ? (this.peek() === 'bonferroni' ? 'bonferroni' : 'holm') : 'none';
+        const v = correctionOf(choice.value);
         if (this.peek() !== v)
           this.value = v;
       });
       this.effect(() => {
-        const on = this.value !== 'none';
-        if (box.peek() !== on)
-          box.value = on;
+        const v = correctionOf(this.value);
+        if (choice.peek() !== v)
+          choice.value = v;
       });
-      // with one treated arm there is nothing to correct: the box is off limits, the reason in its tooltip
+      // with one treated arm there is nothing to correct: the choice is off limits, the reason in its tooltip
       this.effect(() => {
         const k = this.options.arms.value;
-        box.disabled = k >= 2 ? null : 'Applies when two or more treated arms are compared with the control';
+        choice.disabled = k >= 2 ? null : 'Applies when two or more treated arms are compared with the control';
         note.hidden = k < 2;
-        note.textContent = k < 2 ? '' : this.value !== 'none' ?
-          `Recommended. ${this.value === 'bonferroni' ? 'Bonferroni' : 'Holm'}'s correction keeps the chance of ` +
-          `any false positive over the ${k} comparisons at α; it needs a few more animals.` :
+        const c = correctionOf(this.value);
+        note.textContent = k < 2 ? '' : c === 'bonferroni' ?
+          // (round 4, analyst W11)
+          `Corrects for testing ${k} groups against one control: each at α/${k}. Recommended.` : c === 'holm' ?
+          `Corrects for testing ${k} groups against one control, step by step from the smallest p: each step ` +
+          'a little less strict than Bonferroni.' : c === 'bh' ?
+          `Benjamini-Hochberg ${BH_SCREENING}. Plan sizes it as Bonferroni (conservative).` :
           `Each of the ${k} comparisons is tested at α: fine for an exploratory study, but the chance of at least ` +
           'one false positive grows with the number of arms.';
       });
     });
-    const col = div([box.root, note]);
+    const col = div([choice.root, note]);
     Object.assign(col.style, {display: 'flex', flexDirection: 'column', gap: '2px', height: 'auto', padding: '0'});
     return col;
   }
 }
+
+const CORRECTIONS = [{value: 'bonferroni', label: 'Bonferroni (recommended)'}, {value: 'holm', label: 'Holm'},
+  {value: 'bh', label: 'Benjamini-Hochberg (screening)'}, {value: 'none', label: 'None (exploratory)'}];
+const CORRECTION_TIP = 'Bonferroni: each group against the control at α/k. Holm: step by step from the smallest p, ' +
+  `never stricter than Bonferroni. Benjamini-Hochberg: ${BH_SCREENING}; Plan sizes it as Bonferroni (conservative). ` +
+  'None: each comparison at α (exploratory).';

@@ -49,6 +49,8 @@ class PmxstudioPackageDetectors extends DG.Package {
       const act = (rows, action, what) => () => grok.functions.call('PmxStudio:pmxMarkStudyRows',
         {table: df, rows: rows.join(','), action, what});
       const m = e.args.menu.group('PMX Studio');
+      if (!selected)
+        m.item('Correct this value…', act(these, 'correct', one));
       m.item(`Flag ${one}…`, act(these, 'flag', one));
       m.item(`Exclude ${one}…`, act(these, 'exclude', one));
       m.item(`Flag animal ${animal}…`, act(ofAnimal, 'flag', `animal ${animal}`));

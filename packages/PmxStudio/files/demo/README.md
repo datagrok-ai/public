@@ -31,7 +31,7 @@ All are synthetic (made by seeded models: not real animals, not real PK), except
   the 1500 mm³ limit, one growing fast, two losing weight, a caliper typo ×10, a missed measurement.
 - `ct26-trametinib-antipd1.pmxplan`, `ct26-running-day9.pmxstudy`, `PDX-SYN-01 pilot plan.pmxplan`: saved by PMX Studio
   from these files.
-- `ct26-trametinib-pk-mouse.csv`, `mc38-trametinib-pk-mouse.csv`: mouse plasma PK after the day-1 dose, 4 animals per
+- `ct26-trametinib-pk-mouse.csv`, `mc38-trametinib-pk-mouse.csv`: mouse plasma PK after the first dose (day 0), 4 animals per
   trametinib group (columns SUBJECT, GROUP, COMPOUND, ROUTE, DOSE_MG_KG, TIME_H, CONC_NG_ML).
 - `mc38-trametinib-finished.csv`: a second, MC38 trametinib study (vehicle, 1 and 3 mg/kg), days 0–18.
 - `synthetic-history-PDX-SYN-01.csv`: an implantation pilot of a PDX outside the atlas, 2 groups × 6 mice, days 0–28.

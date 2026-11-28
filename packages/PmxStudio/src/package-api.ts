@@ -40,18 +40,18 @@ export namespace funcs {
    * @param {DG.Column} bodyWeight - Body weight (g), weighed with the tumor (empty: no weight checks).
    * @param {string} plan - The plan saved in Plan (its .pmxplan file’s contents).
    * @param {string} looks - The study days fixed at the start to review each treated group, comma-separated, e.g. 7, 10.
-   * @param {string} line - The tumor model: its growth model from the atlas of historical controls makes the forecasts.
+   * @param {string} line - The tumor model: its growth model from the atlas of historical controls makes the forecasts (empty: none assumed, the study’s own is picked).
    *   choices: PmxStudio:pmxLines()
    * @param {string} control - The control (vehicle) group (empty: the one named vehicle, control, PBS, saline or untreated, else the first).
    * @param {number} endpoint - The study ends when the median control reaches it.
    * @param {number} humane - Your protocol’s limit: an animal near it is listed. Workman 2010 advises a mean diameter of 1.5 cm at most in therapy studies, about 1,700 mm³. Your lab’s limit is set once, in the package’s settings.
    * @param {string} correction - Correction over the groups compared with the control in the final test.
-   *   choices: ["holm","bonferroni","none"]
+   *   choices: ["bonferroni","holm","bh","none"]
    * @param {number} evaluationDay - Leave empty for the day the median control reaches the endpoint volume.
    * @param {number} alpha - Two-sided significance level of the final test.
    * @param {number} weightLimit - An animal is listed when it nears this loss of weight, and is over it at this one (your institution’s limit).
    */
-  export async function pmxMonitorStudy(study: DG.DataFrame , animal: DG.Column , group: DG.Column , day: DG.Column , volume: DG.Column , bodyWeight: DG.Column | undefined| null, plan: string | undefined| null, looks: string | undefined| null, line: string , control: string | undefined| null, endpoint: number , humane: number , correction: string , evaluationDay?: number | null, alpha?: number , weightLimit?: number ): Promise<{status: DG.DataFrame, animals: DG.DataFrame, days: DG.DataFrame, tolerability: DG.DataFrame, weights: DG.DataFrame, decisions: DG.DataFrame}> {
+  export async function pmxMonitorStudy(study: DG.DataFrame , animal: DG.Column , group: DG.Column , day: DG.Column , volume: DG.Column , bodyWeight: DG.Column | undefined| null, plan: string | undefined| null, looks: string | undefined| null, line: string | undefined| null, control: string | undefined| null, endpoint: number , humane: number , correction: string , evaluationDay?: number | null, alpha?: number , weightLimit?: number ): Promise<{status: DG.DataFrame, animals: DG.DataFrame, days: DG.DataFrame, tolerability: DG.DataFrame, weights: DG.DataFrame, decisions: DG.DataFrame}> {
     return await grok.functions.call('PMXStudio:PmxMonitorStudy', { study, animal, group, day, volume, bodyWeight, plan, looks, line, control, endpoint, humane, correction, evaluationDay, alpha, weightLimit });
   }
 
@@ -74,8 +74,8 @@ export namespace funcs {
    * Flags rows of a study table to look at, excludes them from the analysis (the reason asked in a dialog, required to exclude) or clears their marks; PMX Studio's items in the grid's context menu call it.
    * @param {DG.DataFrame} table - The study table.
    * @param {string} rows - The rows, comma-separated indexes.
-   * @param {string} action - What to do with them.
-   *   choices: ["flag","exclude","clear"]
+   * @param {string} action - What to do with them (correct: the first row's values, asked in a dialog).
+   *   choices: ["flag","exclude","clear","correct"]
    * @param {string} what - The rows in words, for the dialog and the study's log.
    */
   export async function pmxMarkStudyRows(table: DG.DataFrame , rows: string , action: string , what: string ): Promise<void> {
@@ -98,14 +98,14 @@ export namespace funcs {
   }
 
   /**
-   * Designs a xenograft or syngeneic efficacy study de novo with Crux stats.tumor_study_design: from the cell line, the endpoint volume and the treated arms (each with its kind of therapy and expected TGI or T/C), predicts the end of the study (when the median control reaches the endpoint) and its uncertainty, each arm’s kill rate, the analysable animals per arm for the declared assurance (power over the historical-control prior) with the multiplicity correction chosen (Holm by default; each arm against the control by Welch’s t test), the animals to implant for them, the power curves and the predicted control and treated arms. Given a number of animals per arm, the power there and each arm’s minimum detectable effect. Given an end of study, the study is evaluated that day; the power by end of study shows what ending earlier or later costs, and the power by measurement schedule what measuring less often costs.
+   * Designs a xenograft or syngeneic efficacy study de novo with Crux stats.tumor_study_design: from the cell line, the endpoint volume and the treated arms (each with its kind of therapy and expected TGI or T/C), predicts the end of the study (when the median control reaches the endpoint) and its uncertainty, each arm’s kill rate, the analysable animals per arm for the declared assurance (power over the historical-control prior) with the multiplicity correction chosen (Bonferroni by default; each arm against the control by Welch’s t test), the animals to implant for them, the power curves and the predicted control and treated arms. Given a number of animals per arm, the power there and each arm’s minimum detectable effect. Given an end of study, the study is evaluated that day; the power by end of study shows what ending earlier or later costs, and the power by measurement schedule what measuring less often costs.
    * @param {string} line - Tumor model (syngeneic cell line or PDX): its growth prior comes from the atlas of historical controls.
    *   choices: PmxStudio:pmxLines()
    * @param {number} endpoint - The study ends when the median control reaches it.
    * @param {DG.DataFrame} arms - The treated arms, each compared with the control: name, therapy (small_molecule, biologic, immunotherapy, immune_agonist, cell_therapy, vaccine_peptide, oligo_rna), metric (TGI or TC) and the expected effect in percent. Empty: one small-molecule arm at TGI 60%.
    * @param {number} power - Chance of detecting each arm’s effect.
-   * @param {string} correction - Correction over the arms compared with the control, each by Welch’s t test: Holm (recommended), Bonferroni, or none (each comparison at alpha, as in an exploratory study).
-   *   choices: ["holm","bonferroni","none"]
+   * @param {string} correction - Correction over the arms compared with the control, each by Welch’s t test: Bonferroni (recommended), Holm, Benjamini-Hochberg (bh: controls the false discovery rate, for screening many arms, not for an efficacy claim. Plan sizes it as Bonferroni) or none (each comparison at alpha, as in an exploratory study).
+   *   choices: ["bonferroni","holm","bh","none"]
    * @param {number} n - Empty for the number the target power needs, or set it to see the power and smallest detectable effect with that many.
    * @param {number} lastDay - Leave empty to end when the median control reaches the endpoint.
    * @param {string} tgiScenarios - Up to 8 TGIs to compare, such as 30, 50, 70: the animals the study needs if every arm had each one, sized for the target power whatever the animals per arm. Scenarios, not predictions. Each adds a whole design to the run. Empty: off.
@@ -133,7 +133,7 @@ export namespace funcs {
   }
 
   /**
-   * Analyzes a xenograft or syngeneic efficacy study as PMX Studio’s Plan pre-specifies it, with Crux stats.tgi and stats.contrast: each treated arm against the control on the per-animal slope of log tumor volume from randomization to the evaluation day (Welch’s t test, each group its own variance, with the multiplicity correction chosen: Holm by default). The evaluation day is the first measurement day the median control reaches the endpoint volume, as in the design. Also each arm’s TGI and T/C on that day, the median time to the endpoint volume, and per animal the slope, the time to the endpoint and the mRECIST category. With Crux stats.tumor_twin, the digital twin of each treated animal: what it would measure untreated (from its volume at randomization, the study’s controls and the cell line’s model), its paired effect on the evaluation day, and each control checked against the others. Given the plan saved in Plan, the study against it: the controls against their predicted growth, the end against the predicted day, each arm’s TGI or T/C against the one assumed. Given the body weight, with Crux stats.tumor_body_weight, whether the treatments were tolerated: each group’s weight change from day 0, measured and without the tumor’s mass (its volume at the cell line’s density, or at the study’s when the excised tumors were weighed), its weight-loss grades (CTCAE v5, adapted), the animals removed early and whether each group stays within the NCI limits for a treatment (a mean loss at the nadir over 20%, or over 10% of the animals dead or removed for their weight).
+   * Analyzes a xenograft or syngeneic efficacy study as PMX Studio’s Plan pre-specifies it, with Crux stats.tgi and stats.contrast: each treated arm against the control on the per-animal slope of log tumor volume from randomization to the evaluation day (Welch’s t test, each group its own variance, with the multiplicity correction chosen: Bonferroni by default). The evaluation day is the first measurement day the median control reaches the endpoint volume, as in the design. Also each arm’s TGI and T/C on that day, the median time to the endpoint volume, and per animal the slope, the time to the endpoint and the mRECIST category. With Crux stats.tumor_twin, the digital twin of each treated animal: what it would measure untreated (from its volume at randomization, the study’s controls and the cell line’s model), its paired effect on the evaluation day, and each control checked against the others. Given the plan saved in Plan, the study against it: the controls against their predicted growth, the end against the predicted day, each arm’s TGI or T/C against the one assumed. Given the body weight, with Crux stats.tumor_body_weight, whether the treatments were tolerated: each group’s weight change from day 0, measured and without the tumor’s mass (its volume at the cell line’s density, or at the study’s when the excised tumors were weighed), its weight-loss grades (CTCAE v5, adapted), the animals removed early and whether each group stays within the NCI limits for a treatment (a mean loss at the nadir over 20%, or over 10% of the animals dead or removed for their weight).
    * @param {DG.DataFrame} study - The measurements: one row per animal and day, day 0 the randomization (start of treatment).
    * @param {DG.Column} animal - The animal (tumor) identifier, unique in the study.
    * @param {DG.Column} group - The treatment group.
@@ -143,12 +143,12 @@ export namespace funcs {
    * @param {DG.Column} tumorWeight - The excised tumor’s weight (g), on the row of the animal’s last measurement.
    * @param {DG.Column} removalReason - Why an animal left the study (found dead, moribund, weight, tumor, ulceration, other), on any of its rows.
    * @param {string} plan - The plan saved in Plan (its .pmxplan file’s contents), to compare the study with.
-   * @param {string} line - The tumor model: its growth model from the atlas of historical controls predicts each treated animal untreated.
+   * @param {string} line - The tumor model: its growth model from the atlas of historical controls predicts each treated animal untreated (empty: no twin and no atlas checks
    *   choices: PmxStudio:pmxLines()
-   * @param {string} control - The control (vehicle) group (empty: the one named vehicle, control, PBS, saline or untreated, else the first).
+   * @param {string} control - The control (vehicle) group (empty: the one named vehicle, control, PBS, saline or untreated
    * @param {number} endpoint - The effects are read on the first measurement day the median control reaches this volume, as the design defines the end of the study.
-   * @param {string} correction - Correction over the arms compared with the control, each by Welch’s t test: Holm (recommended), Bonferroni, or none (each comparison at alpha, as in an exploratory study).
-   *   choices: ["holm","bonferroni","none"]
+   * @param {string} correction - Correction over the arms compared with the control, each by Welch’s t test: Bonferroni (recommended), Holm, Benjamini-Hochberg (bh: controls the false discovery rate, for screening many arms, not for an efficacy claim. Plan sizes it as Bonferroni) or none (each comparison at alpha, as in an exploratory study).
+   *   choices: ["bonferroni","holm","bh","none"]
    * @param {number} evaluationDay - Leave empty for the day the median control reaches the endpoint volume (the last day if it never does).
    * @param {number} alpha - Two-sided significance level of the comparisons with the control.
    * @param {number} weightLimit - An animal is removed when it loses this much weight (your institution’s limit).
@@ -156,7 +156,7 @@ export namespace funcs {
    * @param {number} density - The tumor’s mass per mm³ of caliper volume (empty: the cell line’s typical one).
    * @param {boolean} withTwin - Also compare each treated animal with its untreated twin (off: those tables are empty and the analysis several times faster).
    */
-  export async function pmxAnalyzeStudy(study: DG.DataFrame , animal: DG.Column , group: DG.Column , day: DG.Column , volume: DG.Column , bodyWeight: DG.Column | undefined| null, tumorWeight: DG.Column | undefined| null, removalReason: DG.Column | undefined| null, plan: string | undefined| null, line: string , control: string | undefined| null, endpoint: number , correction: string , evaluationDay?: number | null, alpha?: number , weightLimit?: number , humane?: number , density?: number | null, withTwin?: boolean ): Promise<{analysis: DG.DataFrame, comparisons: DG.DataFrame, animals: DG.DataFrame, volumes: DG.DataFrame, twins: DG.DataFrame, effects: DG.DataFrame, checks: DG.DataFrame, versusPlan: DG.DataFrame, predicted: DG.DataFrame, tolerability: DG.DataFrame, weights: DG.DataFrame}> {
+  export async function pmxAnalyzeStudy(study: DG.DataFrame , animal: DG.Column , group: DG.Column , day: DG.Column , volume: DG.Column , bodyWeight: DG.Column | undefined| null, tumorWeight: DG.Column | undefined| null, removalReason: DG.Column | undefined| null, plan: string | undefined| null, line: string | undefined| null, control: string | undefined| null, endpoint: number , correction: string , evaluationDay?: number | null, alpha?: number , weightLimit?: number , humane?: number , density?: number | null, withTwin?: boolean ): Promise<{analysis: DG.DataFrame, comparisons: DG.DataFrame, animals: DG.DataFrame, volumes: DG.DataFrame, twins: DG.DataFrame, effects: DG.DataFrame, checks: DG.DataFrame, versusPlan: DG.DataFrame, predicted: DG.DataFrame, tolerability: DG.DataFrame, weights: DG.DataFrame}> {
     return await grok.functions.call('PMXStudio:PmxAnalyzeStudy', { study, animal, group, day, volume, bodyWeight, tumorWeight, removalReason, plan, line, control, endpoint, correction, evaluationDay, alpha, weightLimit, humane, density, withTwin });
   }
 }

@@ -3,16 +3,18 @@
    focused day) and a double click to note what happened. What a day shows is the stage's (`day`); the study's own
    (its date, its doses, its notes) the calendar adds. Built from u2's primitives (u2 has no calendar); call it in a
    scope, which owns the tooltips. */
+import {minOf} from './format';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {div, divV, span, Tooltip} from '@datagrok-libraries/u2';
 
 import {groupColors} from './colors';
 import {WEEKDAY_NAMES} from './frames';
-import {PanelFact, objectPanel, okNamed, showCentred, showDepth, modal} from './ui';
+import {PanelFact, copyText, dialogLine, objectPanel, okNamed, showCentred, showDepth, modal} from './ui';
 import {PmxDay} from './pmx-objects';
 import {plural} from './wide-table';
-import {StudyMeta, dateOf, dateText, dosingDays, noteDialog, schedulesOf, startFrom, withException, withGiven}
+import {StudyMeta, dateOf, dateText, dosingDays, farDayZero, noteDialog, schedulesOf, startFrom, withException,
+  withGiven}
   from './study-meta';
 
 /** Where a day's menu opens (DG.Menu.show's options): at the mouse, or next to the focused day. */
@@ -71,8 +73,8 @@ export function weeksGrid(o: {meta: StudyMeta, startWeekday: number, last: numbe
   for (const g of names) {
     const days = [...doses].filter(([, gs]) => gs.includes(g)).map(([d]) => d);
     const late = meta.groups.filter((x) => x.group === g).flatMap(schedulesOf).some((s) => s.first > 0);
-    if (days.length && late && Math.min(...days) > 0)
-      starts.set(Math.min(...days), [...starts.get(Math.min(...days)) ?? [], g]);
+    if (days.length && late && minOf(days) > 0)
+      starts.set(minOf(days), [...starts.get(minOf(days)) ?? [], g]);
   }
   const by = <T extends {day: number}>(xs: T[]) => {
     const on = new Map<number, T[]>();
@@ -190,10 +192,16 @@ export function dayActions(get: () => StudyMeta, set: (m: StudyMeta) => void, an
     const d = modal('calendar-groups', title);
     if (!d)
       return;
-    d.add(ui.inputs(withNote ? [chosen, note] : [chosen])).onOK(() =>
+    // (the button waits for a group, and says so beside it: a greyed button alone said nothing, QA 0.1.3 designer D21)
+    const none = ui.divText(`Tick the groups to ${verb.toLowerCase()} first`);
+    Object.assign(none.style, {fontSize: '12px', color: 'var(--dg-grey-5, #717581)'});
+    d.add(ui.inputs(withNote ? [chosen, note] : [chosen])).add(none).onOK(() =>
       ok(groups.filter((_, i) => (chosen.value ?? []).includes(items[i])), note.value.trim()));
     const button = okNamed(d, verb);
-    const sync = () => button.disabled = withNote && (chosen.value ?? []).length === 0;
+    const sync = () => {
+      button.disabled = withNote && (chosen.value ?? []).length === 0;
+      none.hidden = !button.disabled;
+    };
     chosen.onChanged.subscribe(sync);
     sync();
     showCentred(d);
@@ -241,8 +249,19 @@ export function dayActions(get: () => StudyMeta, set: (m: StudyMeta) => void, an
       return;
     d.add(input).onOK(() => {
       const iso = (input.value as unknown as {format(f: string): string} | null)?.format('YYYY-MM-DD');
-      if (iso)
-        set({...get(), start: startFrom(iso, day)});
+      if (!iso)
+        return;
+      // a day 0 years away asks first, as in the study's details (farDayZero; QA 0.1.3 round 3: chaos 6)
+      const start = startFrom(iso, day);
+      const far = start !== get().start ? farDayZero(start) : null;
+      if (!far)
+        return set({...get(), start});
+      const q = modal('calendar-far-date', 'Day 0 far from today');
+      if (!q)
+        return;
+      q.add(dialogLine(far)).onOK(() => set({...get(), start}));
+      okNamed(q, 'Yes, keep it');
+      showCentred(q);
     });
     okNamed(d, 'Set date');
     showCentred(d);
@@ -261,7 +280,7 @@ export function dayActions(get: () => StudyMeta, set: (m: StudyMeta) => void, an
     out.push([m.start ? `Change the date of day ${day}…` : `Set the date of day ${day}…`, () => dateDay(day)]);
     const d = dateOf(m.start, day);
     if (d)
-      out.push(['Copy the date', () => void navigator.clipboard.writeText(d.toISOString().slice(0, 10))]);
+      out.push(['Copy the date', () => copyText(d.toISOString().slice(0, 10))]);
     return out;
   };
   const menu = (day: number, at: MenuAt) => {

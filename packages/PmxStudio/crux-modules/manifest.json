@@ -13,8 +13,8 @@
    "thread": "worker",
    "compute": "pmx/compute.json",
    "hash": {
-    "js": "41d6f7fbf5f3d10b",
-    "wasm": "03ccc02ad445c8f2"
+    "js": "00d3fd077a9d0706",
+    "wasm": "367af3e48ec5d4c5"
    }
   }
  },

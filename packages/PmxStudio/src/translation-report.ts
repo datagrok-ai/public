@@ -4,7 +4,7 @@ import {ArmExposure, HumanExposure, HumanMultiple, aucUsed, fuOk, meanCv, multip
   sourceText} from './exposure';
 import {htmlTable} from './report';
 import {esc} from './sheet';
-import {PanelSection, PanelVerdict, objectPanel, pValue, percentRange, textLines} from './ui';
+import {PanelSection, PanelVerdict, objectPanel, pValue, textLines} from './ui';
 import {gain} from './study-table';
 import {isFiniteNumber} from './engine';
 import {plainArm} from './arm-name';
@@ -14,8 +14,8 @@ export interface ExposureRow {
   group: string, tgi: number | null, x: ArmExposure | undefined, multiple: HumanMultiple | null,
   /** the patients' exposure of its drug (undefined: not given) */
   human: HumanExposure | undefined,
-  /** Compare: the study and model it comes from; a TGI not from the analysis (1 − T/C of medians) on `day` */
-  study?: string, model?: string, medians?: {day: number | null},
+  /** Compare: the study and model it comes from */
+  study?: string, model?: string,
 }
 
 export interface ExposureSection {
@@ -62,24 +62,22 @@ export function exposureSection(o: {sentence: string | null, rows: ExposureRow[]
   if (!rows.some((r) => r.x?.exposure || r.human))
     return null;
   const compare = rows.some((r) => r.study);
-  const head = [...compare ? ['Study', 'Model'] : [], 'Group', 'TGI from the analysis',
+  const head = [...compare ? ['Study', 'Model'] : [], 'Group', 'TGI',
     'Mouse AUC per dose', '× patients', 'Patients\' exposure from'];
   const lines = rows.map((r) => [...compare ? [r.study ?? '', r.model ?? ''] : [], r.group,
-    r.tgi === null ? '—' : `${Math.round(r.tgi)}%${r.medians ? ' *' : ''}`, aucCell(r.x), multipleCell(r.multiple),
+    r.tgi === null ? '—' : `${Math.round(r.tgi)}%`, aucCell(r.x), multipleCell(r.multiple),
     humanSource(r.human)]);
   // each drug's patients' exposure once (in Compare, once per study: two studies may hold two values)
   const humans = [...new Map(rows.filter((r) => r.human).map((r) => [`${r.study ?? ''}\u0000${r.human!.drug}`,
     {h: r.human!, study: r.study}])).values()];
   const projected = [...new Set(humans.filter(({h}) => h.source === 'projected').map(({h}) => h.drug))];
-  const days = [...new Set(rows.filter((r) => r.medians && r.tgi !== null).map((r) => r.medians!.day))];
   const notes = ['The mice and the patients are set side by side: no dose for patients and no exposure to aim for ' +
     'is drawn from these data.',
   boundText(rows.map((r) => r.human)),
   ...projected.length ? [`The patients' exposure of ${projected.join(', ')} is a projection, not a measurement.`] :
     [],
   ...o.curve ? ['The descriptive curve holds only between the doses tested.'] : [],
-  ...days.length ? [`* The study kept no analysis: 1 − T/C of the median volumes on ` +
-      `day${days.length > 1 ? 's' : ''} ${days.map((d) => d ?? '?').join(', ')}.`] : []];
+  'TGI = 1 − ΔT/ΔC: each animal\'s change in volume from day 0, treated over control.'];
   // a multiple averaged over the week (no dosing at weekends): its line, as its hover gives it on screen
   const weekly = rows.filter((r) => r.multiple?.weekly).map((r) => `${r.group}: ${r.multiple!.weekly}`);
   const sources = [
@@ -115,40 +113,37 @@ export interface DrugDetails {drug: string, x: ArmExposure | undefined, multiple
  *  name and details say (study-meta.ts parseLine); `live`: NCA run now (else saved with the study); `curve`: where the
  *  group sits among the doses the descriptive curve was drawn through (null: no curve); `drugs`: a combination's,
  *  each with its own exposure blocks (then `x`, `multiple` and `human` are not read). From the groups table, when
- *  known: `n` analyzed, `tc` (T/C, %, and its 95% range), the `result`, a combination's `step` against its drugs
+ *  known: `n` analyzed, `tc` (T/C, %), the `result`, `growth` (the test it is read on, in words:
+ *  analyze.ts growthRateWords), a combination's `step` against its drugs
  *  (its words and why) and the `responders` ("3 of 8"). */
 export function groupDetails(o: {group: string, read: string, tgi: number | null, day: number | null,
   x: ArmExposure | undefined, table: string | null, live: boolean, multiple: HumanMultiple | null,
   human: HumanExposure | undefined, curve: 'lowest' | 'highest' | 'between' | 'off' | null,
   drugs?: DrugDetails[], color?: string, n?: number | null,
-  tc?: {value: number, lower: number | null, upper: number | null} | null, result?: string | null,
+  tc?: number | null, growth?: string | null, result?: string | null,
   step?: {words: string, why: string} | null, responders?: string | null,
-  tgiCi?: {lower: number | null, upper: number | null} | null, nadir?: number | null, p?: number | null,
+  nadir?: number | null, p?: number | null,
   removed?: string | null}): GroupDetails {
   const facts: GroupDetails['facts'] = [];
   // the answer first, in the groups table's words (its dot's colour), with its p-value
   const slows = o.result === 'Slows growth';
   const verdict: PanelVerdict | null = !o.result ? null : {text: o.result + (o.tgi !== null ?
     `: TGI ${Math.round(o.tgi)}%${o.day !== null ? ` on day ${o.day}` : ''}` : ''),
-  // (the side the result says: below, above or not clearly apart)
-  sub: isFiniteNumber(o.p) ? `${slows ? 'Clearly below' : o.result === 'Grows faster' ? 'Clearly above' :
-    'Not clearly different from'} the control (p ${pValue(o.p).startsWith('<') ? pValue(o.p) : `= ${pValue(o.p)}`})` :
+  // (the test it is read on, in words; else the side the result says: below, above or not clearly apart)
+  sub: o.growth ? o.growth : isFiniteNumber(o.p) ? `${slows ? 'Clearly below' :
+    o.result === 'Grows faster' ? 'Clearly above' : 'Not clearly different from'} the control ` +
+    `(p ${pValue(o.p).startsWith('<') ? pValue(o.p) : `= ${pValue(o.p)}`})` :
     undefined, tone: slows ? 'ok' : 'warn'};
   if (o.tgi !== null) {
-    const tc = o.tc ? ` Its tumors ended at ${Math.round(o.tc.value)}% of the control's size` +
-      (o.tc.lower !== null && o.tc.upper !== null ?
-        ` (95% range ${percentRange(o.tc.lower, o.tc.upper)}).` : '.') : '';
-    const ci = o.tgiCi && Number.isFinite(o.tgiCi.lower) && Number.isFinite(o.tgiCi.upper) ?
-      ` (${percentRange(o.tgiCi.lower!, o.tgiCi.upper!)})` : '';
-    facts.push({label: 'TGI', value: `${Math.round(o.tgi)}%${ci}${o.day !== null ? ` on day ${o.day}` : ''}`,
+    const tc = isFiniteNumber(o.tc) ? ` Its tumors ended at ${Math.round(o.tc)}% of the control's size.` : '';
+    facts.push({label: 'TGI', value: `${Math.round(o.tgi)}%${o.day !== null ? ` on day ${o.day}` : ''}`,
       tip: 'How much less the group grew than the control: 100% means its tumors did not grow; above 100%, they ' +
-        `shrank.${tc}`});
+        `shrank.${tc} One day's description: the result is read on the growth rates.`});
   }
-  // T/C as the table names it, its range quiet
-  if (o.tc) {
-    facts.push({label: 'Size vs control', value: `${Math.round(o.tc.value)}%` + (o.tc.lower !== null &&
-      o.tc.upper !== null ? ` (${percentRange(o.tc.lower, o.tc.upper)})` : ''),
-    tip: 'T/C: the group’s tumors as a share of the control’s on the evaluation day'});
+  // T/C as the table names it
+  if (isFiniteNumber(o.tc)) {
+    facts.push({label: 'Size vs control', value: `${Math.round(o.tc)}%`,
+      tip: 'T/C: the group’s tumors as a share of the control’s on the evaluation day'});
   }
   if (o.step)
     facts.push({label: 'Against its drugs', value: o.step.words, tip: o.step.why});

@@ -6,21 +6,89 @@
  * function's table and parameters; every arm is designed with the same seed, so the studies drawn, the study end
  * and the controls are the same in every call, and the study's animals per arm are the largest arm's.
  */
+import {maxOf, minOf} from './format';
 import * as DG from 'datagrok-api/dg';
 
 import {crux, CruxResult, EngineError, MAX_SETS, named, rows} from './crux';
 import {BandFactors, MeasurementError, PriorFit, bandFactors, enginePriors, linePrior, widened} from './priors';
 import {ARCHETYPES, Archetype, Therapy} from './archetypes';
 import type {FromStudy} from './study-effect';
-import {findCombinations} from './arm-name';
+import {findCombinations, shortName} from './arm-name';
 import {savedHistory} from './history-models';
 
 export type EffectMetric = 'TGI' | 'TC';
-export type Correction = 'holm' | 'bonferroni' | 'none';
 
-/** A form's correction choice, Holm when it is none of them. */
+/** The largest expected TGI (percent), complete regression: TGI = 1 − ΔT/ΔC (NCI, mean volumes, on the day the
+ *  control reaches the endpoint; Crux tgi design.rs Calibration::effect), and the volume cannot fall below 0, so
+ *  ΔT ≥ −V0: TGI < endpoint / (endpoint − V0), 111% from 100 to 1000 mm³. An endpoint not above V0: 100%. */
+export const tgiMax = (endpoint: number, v0: number) =>
+  endpoint > v0 && v0 > 0 ? 100 * endpoint / (endpoint - v0) : 100;
+
+/** Why an expected TGI cannot be planned (null: it can): above 0 and below tgiMax. */
+export function tgiProblem(tgi: unknown, endpoint: number, v0: number): string | null {
+  const most = tgiMax(endpoint, v0);
+  if (typeof tgi === 'number' && tgi > 0 && tgi < most)
+    return null;
+  // floored to one decimal: rounded, the bound 111.1 read "below 111%" while 111 is taken (QA 0.1.3 r4)
+  const m = Math.floor(most * 10 + 1e-9) / 10;
+  return `Expected TGI: above 0 and below ${m}% (${m}% = complete regression with this start volume and endpoint)`;
+}
+
+/** Crux's refusal of an effect its kill rates cannot reach (stats.tumor_study_design: "... the effect reaches at most
+ *  TGI 104 % by day 14: lower the effect or change the archetype", the bisection on κ up to Settings.kappa_max) in
+ *  plain words; null: another message. */
+export function unreachedEffect(message: string): string | null {
+  const m = /the effect reaches at most (TGI|T\/C) (-?[\d.]+) ?%/.exec(message);
+  if (!m)
+    return null;
+  const [tgi, most] = [m[1] === 'TGI', `${m[1]} ${m[2]}%`];
+  // (a TGI past 100% shrinks the tumors: past what the model reaches, a regression too fast)
+  return `This effect ${tgi && Number(m[2]) >= 100 ? 'needs a regression faster' : 'is stronger'} than the ` +
+    `model allows (at most ${most} for this kind of treatment); try a ${tgi ? 'lower TGI' : 'higher T/C'}`;
+}
+
+/** The expected TGI's hover: what a TGI above 100% means. */
+// (a mean-based TGI: with responders the median curve may already sit below the start at 99%, QA 0.1.3 r4)
+export const TGI_ABOVE_100 = 'Above 100% = the group\'s mean volume shrinks below its start (some animals may shrink ' +
+  'earlier)';
+
+/** A TGI (%) as its T/C (%) at the median lab, the control mean at the endpoint (NCI):
+ *  T/C = (V0 + (1 − TGI)·(E − V0)) / E; tgiOfTc its inverse. The one conversion: Plan's "Effects as" switch says
+ *  an arm the other way by it too (arms-input.ts convertedEffect). An endpoint not above V0: V0 taken as 0. */
+const v0Of = (endpoint: number, v0: number) => endpoint > v0 && v0 > 0 ? v0 : 0;
+export const tcOfTgi = (tgi: number, endpoint: number, v0: number) =>
+  100 * (v0Of(endpoint, v0) + (1 - tgi / 100) * (endpoint - v0Of(endpoint, v0))) / endpoint;
+export const tgiOfTc = (tc: number, endpoint: number, v0: number) =>
+  100 * (1 - (tc / 100 * endpoint - v0Of(endpoint, v0)) / (endpoint - v0Of(endpoint, v0)));
+
+// ponytail: TGI ≥ 100 sent as its equal T/C at the median lab; make it native in Crux (fns.rs:859 effect ≤ 100)
+// in 0.1.4
+const asTc = (arm: {metric: string, effect: number}) => arm.metric === 'TGI' && arm.effect >= 100;
+
+/** bh: Benjamini-Hochberg (the false discovery rate, for screening many arms; not for an efficacy claim). */
+export type Correction = 'bonferroni' | 'holm' | 'bh' | 'none';
+
+/** A form's correction choice, Bonferroni (the default) when it names none of them. */
 export const correctionOf = (x: unknown): Correction =>
-  x === 'bonferroni' || x === 'none' ? x : 'holm';
+  x === 'holm' || x === 'bh' || x === 'none' ? x : 'bonferroni';
+
+/** The methods by name, as headers and texts say them. */
+export const CORRECTION_NAME: {[c in Correction]: string} =
+  {bonferroni: 'Bonferroni', holm: 'Holm', bh: 'Benjamini-Hochberg', none: 'none'};
+/** What BH is for, wherever it can be chosen or is reported. */
+export const BH_SCREENING = 'controls the false discovery rate; for screening many arms, not for an efficacy claim';
+
+/** The correction over k comparisons as every text says it: "Bonferroni over 3 comparisons", BH with what it is
+ *  for; '' for one comparison, none: "no correction (exploratory)". */
+export const correctionOver = (correction: unknown, k: number): string => {
+  const c = correctionOf(correction);
+  return k < 2 ? '' : c === 'none' ? 'no correction (exploratory)' : `${CORRECTION_NAME[c]} over ${k} comparisons` +
+    (c === 'bh' ? ` (it ${BH_SCREENING})` : '');
+};
+
+/** The correction as Crux's design and monitor take it (holm, bonferroni or none): they size Holm and Bonferroni
+ *  both at α/k, and BH as Bonferroni, its conservative bound. */
+export const cruxCorrection = (c: Correction) => c === 'bh' ? 'bonferroni' : c;
 
 /** The test of Plan, Monitor and Analyze: each treated group against the control with their own variances (Welch's t
  *  test on the per-animal slopes). With one variance for every group, an arm less spread than another lost 13 to 38
@@ -32,15 +100,18 @@ export const TEST = 'welch';
 export const isFiniteNumber = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x);
 export const finite = (x: unknown): number | null =>
   isFiniteNumber(x) && x !== DG.INT_NULL && x !== DG.FLOAT_NULL ? x : null;
-/** The median (the mean of the middle two for an even count). */
-export const median = (xs: number[]) => {
-  const s = [...xs].sort((a, b) => a - b);
-  const m = s.length >> 1;
-  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
-};
+export {mean, median} from './format';
 
 /** Monday, Wednesday and Friday (0 Monday … 6 Sunday): the measurement weekdays when none are given. */
 export const LAB_WEEKDAYS = [0, 2, 4];
+
+/** At most this many treated arms in a study. Not the statistics' limit (lsmeans' Dunnett integrates any number of
+ *  arms; the sizing is one call per arm): past 15, a study is a screen, not a comparison of each arm with one control,
+ *  and its 16 groups are as many colours as the charts keep apart. */
+export const MAX_ARMS = 15;
+/** Why a study of more arms than MAX_ARMS is refused. */
+export const tooManyArms = (n: number) =>
+  `${n} treated arms: a study holds at most ${MAX_ARMS}, each compared with the control. Split it into two studies.`;
 
 /** A treated arm as the user declares it. */
 export interface ArmDeclaration {
@@ -352,27 +423,35 @@ function armCallParams(d: StudyDeclaration, arm: ArmDeclaration, model: Row): Ro
   const a = ARCHETYPES[arm.therapy];
   return {...model, v_rand: d.vRand,
     endpoint: d.endpoint, power: d.power, alpha: d.alpha, treated_arms: d.treatedArms ?? d.arms.length,
-    correction: d.correction, test: TEST,
+    correction: cruxCorrection(d.correction), test: TEST,
     weekdays: weekdaysParam(d.weekdays),
     // (the smallest detectable effect is searched only at a given n: without one the flag would only keep Plan's
     // designs and Monitor's or Analyze's of the same study apart in the cache)
     start_weekday: d.startWeekday, humane: d.humane, schedules: d.schedules, mde: !!d.n && d.mde !== false,
     seed: SEED,
     ...POOLS, ...(d.n ? {n: d.n} : {}), ...(d.lastDay ? {last_day: d.lastDay} : {}),
-    metric: arm.metric.toLowerCase(), effect: arm.effect, onset: a.onsetDays, kappa_sd: a.kappaSd,
+    ...asTc(arm) ? {metric: 'tc', effect: tcOfTgi(arm.effect, d.endpoint, d.vRand)} :
+      {metric: arm.metric.toLowerCase(), effect: arm.effect}, onset: a.onsetDays, kappa_sd: a.kappaSd,
     responders: a.responders};
 }
 
 /** The share of studies whose controls may level off below the endpoint before Plan warns of it. */
 export const ENDPOINT_RISK = 0.02;
 
+/** The lowest endpoint the Endpoint volume field takes (package.ts, its min). */
+export const ENDPOINT_MIN = 500;
+
+/** The endpoints safeEndpoint tries, highest first: round (50 mm³) from 90 % of `endpoint` down to 40 %, each one the
+ *  field would take (from ENDPOINT_MIN, above the volume at randomization, below the endpoint). */
+export const endpointCandidates = (endpoint: number, vRand: number): number[] =>
+  [...new Set([0.9, 0.8, 0.7, 0.6, 0.5, 0.4].map((f) => Math.floor(endpoint * f / 50) * 50))]
+    .filter((x) => x >= ENDPOINT_MIN && x > vRand && x < endpoint);
+
 /** The highest round endpoint below the declared one (50 mm³ steps, from 90 % of it down to 40 %) at which the
  *  controls of at most `limit` of the studies level off before reaching it; null: none. The share is the control's,
  *  whatever the arm: one call per candidate, the first arm's at a given n (no n search, no shards), in parallel. */
 export async function safeEndpoint(d: StudyDeclaration, limit = ENDPOINT_RISK): Promise<number | null> {
-  const step = 50;
-  const xs = [...new Set([0.9, 0.8, 0.7, 0.6, 0.5, 0.4].map((f) => Math.floor(d.endpoint * f / step) * step))]
-    .filter((x) => x > d.vRand && x < d.endpoint);
+  const xs = endpointCandidates(d.endpoint, d.vRand);
   if (!xs.length || !d.arms.length)
     return null;
   const {prior, params} = await lineModel(d.line);
@@ -434,8 +513,11 @@ export function combinationN(d: StudyDeclaration, arms: DrugRate[], c: {ab: numb
   if (d.n)
     return d.n;
   const ns = [c.ab, c.a, c.b].map((i) => finite(arms[i].n));
-  return ns.every((n) => n !== null) ? Math.min(...ns as number[]) : undefined;
+  return ns.every((n) => n !== null) ? minOf(ns as number[]) : undefined;
 }
+
+/** In a note, what comes after it is said on hover (ui.ts noteLine). */
+export const NOTE_TIP = '\t';
 
 /** What a combination's group would need, said in a sentence of guidance (the group sizes stay as planned): to beat
  *  the two arms it is made of (`vs`, by name, "A and B"), and when the study's groups are short of it, what they
@@ -485,9 +567,18 @@ export const combinationFailed = (name: string) =>
 export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
   if (d.arms.length === 0)
     throw new Error('Add at least one treatment arm');
+  if (d.arms.length > MAX_ARMS)
+    throw new Error(tooManyArms(d.arms.length));
   const {lp, me, prior, params} = await lineModel(d.line, undefined, d.labScale);
   const armError = (arm: ArmDeclaration) => (e: any) => {
-    // an engine failure stays one, so Monitor shows it in plain words (ui.ts plainError)
+    // an effect past what the kill rate's range reaches is a sentence the user can act on; any other engine failure
+    // stays one, so Monitor shows it in plain words (ui.ts plainError)
+    // (an arm sent as its T/C: Crux's reach said back as the TGI it was declared in)
+    const said = String(e?.message ?? e).replace(/at most T\/C (-?[\d.]+) ?%/, (m, x) => asTc(arm) ?
+      `at most TGI ${Math.round(tgiOfTc(Number(x), d.endpoint, d.vRand))} %` : m);
+    const reach = unreachedEffect(said);
+    if (reach)
+      throw new Error(`${arm.name}: ${reach}`);
     throw new (e instanceof EngineError ? EngineError : Error)(`${arm.name}: ${e?.message ?? e}`);
   };
   // the minimum detectable effect searches over every study at once: such a design is one call; else the worker sets
@@ -536,14 +627,17 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
     const nAssurance = under.length ? power.find((r) => (r.assurance ?? -1) >= d.power)?.n ?? null : fits[0];
     const n = d.n ?? (nAssurance === null ? null : Math.max(nAssurance, MIN_GROUP));
     const row = n === null ? undefined : power.find((r) => r.n === n);
-    return {declaration: decl, archetype: ARCHETYPES[decl.therapy], killRate: p['kill_rate'], effect: p['effect'],
+    // (an arm sent as its T/C: its effect and smallest detectable effect said back as TGI)
+    const back = (x: number | null) => x !== null && asTc(decl) ? tgiOfTc(x, d.endpoint, d.vRand) : x;
+    return {declaration: decl, archetype: ARCHETYPES[decl.therapy], killRate: p['kill_rate'],
+      effect: back(finite(p['effect'])) as number,
       nAssurance, fits, n, randomise: null,
       // (a given n the averaged table has no power for, as one over 40: the prior's own fit's, as its α)
       assurance: d.n ? (under.length ? row?.assurance : null) ?? finite(p['assurance_at_n']) : row?.assurance ?? null,
-      mde: d.n ? finite(p['mde']) : null, power};
+      mde: d.n ? back(finite(p['mde'])) : null, power};
   });
   const sizes = arms.map((a) => a.n);
-  const nControl = sizes.some((x) => x === null) ? null : Math.max(...(sizes as number[]));
+  const nControl = sizes.some((x) => x === null) ? null : maxOf((sizes as number[]));
   const largest = nControl === null ? 0 : sizes.indexOf(nControl);
   // two stages of loss: randomised animals that end up not analysable (per group), then implanted animals that never
   // reach randomisation (one pool for every group); each covered with the declared confidence
@@ -565,7 +659,7 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
   const known = sizes.filter((x): x is number => x !== null);
   let sizedOnly: StudyDesign['sizedOnly'] = null;
   if (nControl === null && known.length) {
-    const control = Math.max(...known);
+    const control = maxOf(known);
     const rc = await enough(control, 1 - postLoss, d.confidence, d.lossRule);
     const rs = arms.map((a) => a.randomise).filter((x): x is number => x !== null);
     if (rc !== null) {
@@ -613,7 +707,7 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
     });
     return {perWeek: row.per_week, measurements: row.measurements,
       assurance: perArm(bySchedule, i),
-      nTotal: each.some((x) => x === null) ? null : Math.max(...(each as number[])) + sum(each)!};
+      nTotal: each.some((x) => x === null) ? null : maxOf((each as number[])) + sum(each)!};
   });
 
   const notes = {groups: [] as string[], growth: [] as string[]};
@@ -664,7 +758,7 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
     // apart is agreement (each other fit's own n comes from a block of the studies: one animal is its noise)
     if (!d.n && a.fits.length > 1) {
       const each = a.fits.map((x) => x === null ? Infinity : Math.max(x, MIN_GROUP));
-      const [least, most] = [Math.min(...each), Math.max(...each)];
+      const [least, most] = [minOf(each), maxOf(each)];
       if (most - least > 1) {
         notes.groups.push(`${a.declaration.name}: the published ${d.line} controls do not pin down how much the ` +
           `animals of one study differ. Fits that describe them equally well need about ${least} to ` +
@@ -672,11 +766,13 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
       }
     }
   }
-  for (const a of arms) {
-    if (d.n && a.assurance !== null && a.assurance < d.power) {
-      notes.groups.push(`${a.declaration.name}: ${d.n} animals per arm give ${Math.round(a.assurance * 100)}% power, ` +
-        `below the ${Math.round(d.power * 100)}% declared`);
-    }
+  // the arms short of the declared power in one line, each arm's power on hover (NOTE_TIP)
+  const low = d.n ? arms.filter((a) => a.assurance !== null && a.assurance < d.power) : [];
+  if (low.length) {
+    notes.groups.push(`${low.length === 1 ? '1 arm' : `${low.length} arms`} below ${Math.round(d.power * 100)}% ` +
+      `power: ${low.map((a) => shortName(a.declaration.name)).join(', ')}${NOTE_TIP}` +
+      low.map((a) => `${a.declaration.name}: ${d.n} animals per arm give ${Math.round(a.assurance! * 100)}% power`)
+        .join('; '));
   }
   // the bands as wide as the validation found them, in the lines it measured; an unreadable file leaves the engine's
   const factors = await bandFactors(d.line);

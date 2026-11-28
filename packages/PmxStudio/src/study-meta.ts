@@ -1,5 +1,5 @@
-/* The study as a thing of its own, from its plan to its report: an ID (PMX-2026-014), a description, who owns it, its
-   project and tags, the day it starts (day 0, randomization), and what each group receives (compound, dose, route,
+/* The study as a thing of its own, from its plan to its report: an ID (PMX-2026-014), a description, who owns it and
+   who runs it, its tags, the day it starts (day 0, randomization), and what each group receives (compound, dose, route,
    schedule). It is written once in Plan and travels with the study: in the .pmxplan (SavedPlan.study), on the
    measurements table (META_TAG) and in the .pmxstudy (SavedStudy.meta). The Overview lists studies by it. */
 import * as grok from 'datagrok-api/grok';
@@ -34,9 +34,12 @@ export interface StudyMeta {
   /** PMX-<year>-<number>, given when the study is first saved or followed (empty until then) */
   id: string;
   description: string;
-  /** the login of who runs it */
+  /** the login of the user it belongs to (someone else's file is brought in as the user's copy by it) */
   owner: string;
-  project: string;
+  /** who runs the study, free text (a colleague, a CRO technician without an account); empty: not said */
+  runBy: string;
+  /** (a document from before 0.1.3 may name a project: it is read as one more tag, Datagrok linking no row to a
+   *  Space) */
   tags: string[];
   /** day 0 (randomization), YYYY-MM-DD; null: not fixed yet */
   start: string | null;
@@ -86,8 +89,11 @@ const LOG_TAG = 'pmx.log';
 export const f32 = (x: number): number => Number(x.toPrecision(7));
 
 export const emptyMeta = (): StudyMeta => ({id: '', description: '', owner: grok.shell.user?.login ?? '',
-  project: '', tags: [], start: null, groups: [], notes: [], blinded: false, weekendsOff: false, exceptions: [],
+  runBy: '', tags: [], start: null, groups: [], notes: [], blinded: false, weekendsOff: false, exceptions: [],
   given: [], animals: {species: 'mouse', strain: '', sex: '', age: '', weight: '', source: ''}, colors: {}});
+
+/** The owner the demo's files carry: no one's, so nothing is ever a "copy of demo". */
+export const DEMO_OWNER = 'demo';
 
 /** Details read from a file or a tag someone may have edited: each field checked, the rest from emptyMeta. */
 export function parseMeta(x: unknown): StudyMeta | null {
@@ -95,10 +101,19 @@ export function parseMeta(x: unknown): StudyMeta | null {
     return null;
   const m = x as Partial<StudyMeta>;
   const text = (v: unknown) => typeof v === 'string' ? v : '';
-  return {...emptyMeta(), id: text(m.id), description: text(m.description), owner: text(m.owner), project:
-    text(m.project), tags: Array.isArray(m.tags) ? m.tags.filter((t) => typeof t === 'string') : [],
-  // a date that exists: 2026-13-45 has the shape and would empty the calendar
-  start: typeof m.start === 'string' ? validDay(m.start) : null,
+  const tags = Array.isArray(m.tags) ? m.tags.filter((t) => typeof t === 'string') : [];
+  const project = text((m as {project?: unknown}).project).trim();
+  // an older file's owner written as a name ("Someone Else"), not a login, is who ran it: its Run by, as the store
+  // reads a 1.4.1 row (store.ts runBy1_4); ponytail: a login is told by its shape here (no space, no quote), the
+  // store asks the server
+  const owner = text(m.owner);
+  const named = owner && !/^[\w.@+-]+$/.test(owner.trim()) ? owner.trim() : '';
+  return {...emptyMeta(), id: text(m.id), description: text(m.description), owner, runBy: text(m.runBy) ||
+    named, tags: project && !tags.includes(project) ? [...tags, project] : tags,
+  // a date that exists: 2026-13-45 has the shape and would empty the calendar; an older file's day 0 with its time
+  // (2026-11-30T10:00:00Z) is that day
+  start: typeof m.start === 'string' ? validDay(/^\d{4}-\d{2}-\d{2}[T ]/.test(m.start) ? m.start.slice(0, 10) :
+    m.start) : null,
   groups: Array.isArray(m.groups) ? m.groups.filter((g) => g && typeof g.group === 'string').map((g) => ({
     group: g.group, compound: text(g.compound), dose: typeof g.dose === 'number' && Number.isFinite(g.dose) ?
       g.dose : null, unit: text(g.unit), route: text(g.route), schedule: text(g.schedule)})) : [],
@@ -115,7 +130,8 @@ export function parseMeta(x: unknown): StudyMeta | null {
     .filter(([, c]) => typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c))) : {},
   ...m.slots && typeof m.slots === 'object' ? {slots: Object.fromEntries(Object.entries(m.slots)
     .filter(([, k]) => Number.isInteger(k) && k >= 0))} : {},
-  ...text(m.copyOf) ? {copyOf: text(m.copyOf)} : {}};
+  // (one saved before the demo was no one's says so no more)
+  ...text(m.copyOf) && text(m.copyOf).toLowerCase() !== DEMO_OWNER ? {copyOf: text(m.copyOf)} : {}};
 }
 
 /** The entries of a dated list read from a file: an object with a whole day and a group. */
@@ -254,15 +270,16 @@ export function metaOf(df: DG.DataFrame | null | undefined): StudyMeta | null {
   return m;
 }
 
-/** The log's entry for a decision on a review: `arm` stopped, its stop undone, or continued. */
-export const decisionEntry = (arm: string, review: number, what: 'stop' | 'stop undone' | 'continue') =>
-  `${arm}: ${what} (review on day ${review})`;
+/** The log's entry for a decision on a review: `arm` stopped, its stop undone, continued, or that undone. */
+export const decisionEntry = (arm: string, review: number,
+  what: 'stop' | 'stop undone' | 'continue' | 'continue undone', why?: string) =>
+  `${arm}: ${what} (review on day ${review})${why ? `; ${why}` : ''}`;
 
 /** The arms stopped as the log tells it, in its order (a stop undone takes it back), each with its review's day. */
 export function stopsOf(log: {what: string}[]): {[group: string]: number} {
   const out: {[group: string]: number} = {};
   for (const l of Array.isArray(log) ? log : []) {
-    const m = /^(.+): (stop|stop undone) \(review on day (-?[\d.]+)\)$/.exec(String(l?.what ?? ''));
+    const m = /^(.+?): (stop|stop undone) \(review on day (-?[\d.]+)\)(?:; [\s\S]*)?$/.exec(String(l?.what ?? ''));
     if (m && m[2] === 'stop')
       out[m[1]] = Number(m[3]);
     else if (m)
@@ -396,6 +413,14 @@ export function withGroups(m: StudyMeta, groups: string[], renames = new Map<str
   return {...base, groups: [...groupsOf(base, groups), ...base.groups.filter((g) => !groups.includes(g.group))]};
 }
 
+/** `m` with only `groups`' rows of details and dose exceptions: a plan's removed arm leaves nothing (its doses would
+ *  stay in the calendar, the protocol and the study followed from it); `m` itself when nothing goes. */
+export function onlyGroups(m: StudyMeta, groups: string[]): StudyMeta {
+  const keep = (x: {group: string}) => groups.includes(x.group);
+  return m.groups.every(keep) && m.exceptions.every(keep) ? m :
+    {...m, groups: m.groups.filter(keep), exceptions: m.exceptions.filter(keep)};
+}
+
 /** The details of the study's groups only (all of them when the groups are not known). */
 export const ofGroups = (m: StudyMeta, groups?: string[]): GroupDetails[] =>
   groups ? m.groups.filter((g) => groups.includes(g.group)) : m.groups;
@@ -437,17 +462,24 @@ export function armParts(group: string, meta: StudyMeta | null | undefined): Arm
 }
 
 /** One line on what the groups receive, for a list: the compounds, each once. */
-export const compoundsOf = (m: StudyMeta | null) =>
-  [...new Set((m?.groups ?? []).map((g) => g.compound.trim()).filter((c) => c))].join(', ');
+export function compoundsOf(m: StudyMeta | null): string {
+  // (once however written: "Trametinib", "trametinib"; the first writing kept)
+  const once = new Map<string, string>();
+  for (const c of (m?.groups ?? []).map((g) => g.compound.trim()).filter((c) => c))
+    once.set(c.toLowerCase(), once.get(c.toLowerCase()) ?? c);
+  return [...once.values()].join(', ');
+}
 
 /** What the groups receive, each compound with its dose, route and schedule ('anti-PD-1 10 mg/kg i.p. Q3D×4; …'),
  *  each group once: a combination's drugs (its rows) joined by " + ", the groups by "; " (a " + " between groups
  *  would read as a combination); empty when no group names a compound. */
 export function treatmentOf(m: StudyMeta | null): string {
   const byGroup = new Map<string, string[]>();
-  for (const g of m?.groups ?? []) {
+  for (const [i, g] of (m?.groups ?? []).entries()) {
     if (g.compound.trim()) {
-      byGroup.set(g.group, [...byGroup.get(g.group) ?? [], [g.compound.trim(),
+      // (a row with no group's name is a group of its own, not one combination with the others so left)
+      const key = g.group.trim() || `#${i}`;
+      byGroup.set(key, [...byGroup.get(key) ?? [], [g.compound.trim(),
         g.dose === null ? '' : `${g.dose} ${g.unit}`.trim(), g.route, g.schedule].filter((s) => s).join(' ')]);
     }
   }
@@ -465,8 +497,8 @@ export function detailsForm(meta: StudyMeta, groups: string[], hideGroups = fals
   {root: HTMLElement, read: () => StudyMeta, problem: () => string | null, onProblem: (f: () => void) => void} {
   const id = ui.input.string('ID', {value: meta.id, placeholder: 'Given on first save'});
   const description = ui.input.textArea('Description', {value: meta.description});
-  const owner = ui.input.string('Owner', {value: meta.owner});
-  const project = ui.input.string('Project', {value: meta.project});
+  const runBy = ui.input.string('Run by', {value: meta.runBy, tooltipText: 'Who runs the study, if not you: a ' +
+    'colleague, or a CRO technician without a Datagrok account'});
   const tags = ui.input.string('Tags', {value: meta.tags.join(', '),
     tooltipText: 'Comma-separated, e.g. syngeneic, IO, combination'});
   const start = ui.input.date('Day 0', {tooltipText: 'Randomization, the first day of treatment'});
@@ -503,8 +535,17 @@ export function detailsForm(meta: StudyMeta, groups: string[], hideGroups = fals
     const typed = id.value.trim();
     if (typed && typed !== meta.id && others.has(typed))
       return `${typed} is already the ID of another of your studies or plans: give this one another.`;
-    return badDate === null ? null : `Day 0: "${badDate}" is not a date that exists.`;
+    // (the demo studies' IDs, saved or not: one taken here would read as the demo's in the Overview and in links)
+    if (typed && typed !== meta.id && /^PMX-DEMO-/i.test(typed))
+      return `${typed} is a demo study's ID: give this one another.`;
+    if (badDate !== null)
+      return `Day 0: "${badDate}" is not a date that exists.`;
+    // a day 0 years away (1900 for 2026): asked, not taken in silence; kept once the user says it is right
+    const day = iso();
+    return day && day !== meta.start && day !== farKept ? farDayZero(day) : null;
   };
+  // a far day 0 the user said is right
+  let farKept: string | null = null;
   // as typed, not as the input shows it once it has rolled the day over: kept until the next thing typed
   let badDate: string | null = null;
   start.root.addEventListener('input', (e) => {
@@ -513,10 +554,17 @@ export function detailsForm(meta: StudyMeta, groups: string[], hideGroups = fals
     checked();
   });
   const checked = () => {
-    problemLine.textContent = problem() ?? '';
-    problemLine.style.display = problemLine.textContent ? '' : 'none';
+    const said = problem() ?? '';
+    const day = iso();
+    const far = !!said && !!day && said === farDayZero(day);
+    problemLine.replaceChildren(said, ...far ? [' ', ui.link('Yes, keep it', () => {
+      farKept = day;
+      checked();
+    }, 'Day 0 is this date')] : []);
+    problemLine.style.display = said ? '' : 'none';
     listeners.forEach((l) => l());
   };
+  start.onChanged.subscribe(() => checked());
   void taken?.then((ids) => {
     others = new Set(ids.filter((x) => x));
     checked();
@@ -554,7 +602,7 @@ export function detailsForm(meta: StudyMeta, groups: string[], hideGroups = fals
     if (room > 0 && used > 0 && Math.abs(room - used) > 2)
       cols.forEach((c) => c.width = Math.floor(c.width * room / used));
   });
-  const fields = ui.inputs([id, description, owner, project, tags, start, blinded, weekends], 'pmx-details-fields');
+  const fields = ui.inputs([id, description, runBy, tags, start, blinded, weekends], 'pmx-details-fields');
   const animals = [ui.divText('Animals', 'pmx-details-head'), ui.inputs(Object.values(animal), 'pmx-details-fields')];
   const root = ui.divV([fields, problemLine, blindNote, needsDate, ...animals, ...hideGroups ?
     [ui.divText('What each group receives is hidden until the groups are revealed.')] :
@@ -563,8 +611,8 @@ export function detailsForm(meta: StudyMeta, groups: string[], hideGroups = fals
   const read = (): StudyMeta => {
     const day = iso();
     const cell = (c: string, i: number) => table.col(c)!.isNone(i) ? '' : String(table.get(c, i)).trim();
-    return {id: id.value.trim() || meta.id, description: description.value.trim(), owner: owner.value.trim(),
-      project: project.value.trim(), tags: tags.value.split(',').map((t) => t.trim()).filter((t) => t),
+    return {id: id.value.trim() || meta.id, description: description.value.trim(), owner: meta.owner,
+      runBy: runBy.value.trim(), tags: tags.value.split(',').map((t) => t.trim()).filter((t) => t),
       start: day, groups: hideGroups ? meta.groups : rows.map((g, i) => ({group: g.group,
         compound: cell('compound', i), dose: table.col('dose')!.isNone(i) ? null : f32(table.get('dose', i)),
         unit: cell('unit', i), route: cell('route', i), schedule: cell('schedule', i)})), notes: meta.notes,
@@ -574,6 +622,17 @@ export function detailsForm(meta: StudyMeta, groups: string[], hideGroups = fals
       ...meta.copyOf ? {copyOf: meta.copyOf} : {}};
   };
   return {root, read, problem, onProblem: (f) => listeners.push(f)};
+}
+
+/** The question a day 0 more than a year from today asks (1900, 2100: a slip of the year, not a study), null for
+ *  one nearer (QA 0.1.3 round 3: chaos 6). */
+export function farDayZero(iso: string, now = new Date()): string | null {
+  const at = dateOf(iso, 0);
+  if (!at)
+    return null;
+  const years = (at.getTime() - now.getTime()) / (365.25 * 86400000);
+  return Math.abs(years) <= 1 ? null : `Day 0 on ${dateText(at, true)} is ${Math.floor(Math.abs(years))} ` +
+    `${Math.floor(Math.abs(years)) === 1 ? 'year' : 'years'} ${years < 0 ? 'ago' : 'from today'}: is that the date?`;
 }
 
 /** Whether a day typed as y-m-d, d/m/y or m/d/y names a day no calendar has (2030-02-30; 31/04/2026 read either

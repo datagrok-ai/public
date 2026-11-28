@@ -3,6 +3,7 @@
    package, not a platform viewer: the line chart cannot fill between two columns (its whiskers and moving-average
    band are other things), and a general viewer for it is the platform's call. echarts draws it; each band is a
    custom series drawing one polygon, since a stack on two value axes stacks X, not Y. */
+import {maxOf, minOf} from './format';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {Control} from '@datagrok-libraries/u2';
@@ -43,13 +44,48 @@ export interface BandChartOptions {
   redrawOn?: ReadonlySignal<unknown>;
   /** the categories whose line is dashed (a prediction beside what was observed) */
   dashed?: string[];
+  /** a category's marker (an echarts symbol): Compare's mark per study, as its dose chart (round 3, analyst 13) */
+  symbols?: {[category: string]: string};
   /** the animals behind each point: said in the tooltip, and the line dashed where fewer than 3 remain (a median of
    *  one or two animals is no group's) */
   count?: string;
+  /** false: no legend of its own (the view draws its key: Compare's, one line per study) */
+  legend?: boolean;
+  /** room beyond the first and last X (a point at either end drawn whole, not cut by the axis) */
+  xPad?: boolean;
 }
 
 /** Below this many animals a point's median is not read as its group's: its stretch of line is dashed. */
 export const FEW_ANIMALS = 3;
+/** Past this many bands (a control and 6 treated arms) the ranges are drawn one at a time: the one the mouse is on,
+ *  else the one clicked; the others are their lines. */
+export const MANY_BANDS = 7;
+
+/** The lines a legend of `names` takes, wrapped, in a chart `width` px wide (about 7 px a character, 34 for the mark
+ *  and the gap): the legend wraps and the plot moves down, never paged (names cut) nor dropped (QA 0.1.3 D19). */
+export function legendLines(names: string[], width: number): number {
+  const room = Math.max(width - 40, 1);
+  let lines = 1;
+  let used = 0;
+  for (const n of names) {
+    const w = 7 * n.length + 34;
+    if (used > 0 && used + w > room) {
+      lines++;
+      used = 0;
+    }
+    used += w;
+  }
+  return lines;
+}
+
+/** Past this many lines a legend scrolls on one line (its arrows) instead of wrapping: the plot never pushed away
+ *  (Compare's 12 studies pushed it off the screen, QA 0.1.3 round 3 chaos 22). */
+export const MAX_LEGEND_LINES = 3;
+/** A legend of `names` in a chart `width` px wide: wrapped over its lines, or past MAX_LEGEND_LINES one scrolled line. */
+export function legendLayout(names: string[], width: number): {lines: number, type: 'plain' | 'scroll'} {
+  const lines = legendLines(names, width);
+  return lines > MAX_LEGEND_LINES ? {lines: 1, type: 'scroll'} : {lines, type: 'plain'};
+}
 
 /** One category's points, sorted by X; `row` is one of its rows, where its colour is read. */
 export interface Band {name: string, x: number[], lower: number[], upper: number[], line: number[] | null, row: number,
@@ -66,6 +102,10 @@ const TEXT = '#4d5261';
 export class BandChart extends Control {
   /** What the last draw showed. */
   bands: Band[] = [];
+  // past MANY_BANDS: the band the mouse is on and the one clicked (again: let go), the only ranges drawn
+  private hovered: string | null = null;
+  private picked: string | null = null;
+  private render: () => void = () => {};
   private readonly chart: echarts.ECharts;
 
   constructor(table: ReadonlySignal<DG.DataFrame | undefined>, private readonly options: BandChartOptions) {
@@ -75,7 +115,22 @@ export class BandChart extends Control {
     const host = ui.div([], {style: {position: 'absolute', inset: '0'}});
     this.root.append(host);
     this.chart = initQuietly(host);
-    this.subscribe(ui.onSizeChanged(host), () => this.chart.resize());
+    // (resized: drawn again, the legend's lines depend on the width)
+    this.subscribe(ui.onSizeChanged(host), () => {
+      this.chart.resize();
+      if (this.bands.length > 1)
+        this.render();
+    });
+    const focus = (hovered: string | null, picked: string | null) => {
+      if (this.bands.length <= MANY_BANDS || (hovered === this.hovered && picked === this.picked))
+        return;
+      [this.hovered, this.picked] = [hovered, picked];
+      this.render();
+    };
+    this.chart.on('mouseover', {seriesType: 'line'}, (e: any) => focus(e.seriesName, this.picked));
+    this.chart.on('mouseout', {seriesType: 'line'}, () => focus(null, this.picked));
+    this.chart.on('click', {seriesType: 'line'}, (e: any) =>
+      focus(this.hovered, this.picked === e.seriesName ? null : e.seriesName));
     this.own(() => this.chart.dispose());
     this.effect(() => {
       void options.redrawOn?.value;
@@ -111,8 +166,16 @@ export class BandChart extends Control {
     const coded = split !== null && split.meta.colors.getType() !== DG.COLOR_CODING_TYPE.OFF ? split : null;
     const colors = this.bands.map((b, k) =>
       DG.Color.toHtml(coded ? DG.Color.getRowColor(coded, b.row) : DG.Color.getCategoricalColor(k)));
-    this.chart.setOption(chartOption(this.bands, colors, refLines(df.meta.formulaLines.items, x.name),
-      {xTitle, yTitle, log, markers: o.markers ?? false, fit: o.fit ?? false, fmt, dashed: o.dashed ?? []}), true);
+    const refs = refLines(df.meta.formulaLines.items, x.name);
+    const bands = this.bands;
+    if (!bands.some((b) => b.name === this.picked))
+      this.picked = null;
+    this.render = () => this.chart.setOption(chartOption(bands, colors, refs,
+      {xTitle, yTitle, log, markers: o.markers ?? false, fit: o.fit ?? false, fmt, dashed: o.dashed ?? [],
+        symbols: o.symbols,
+        legend: o.legend !== false, legendLayout: legendLayout(bands.map((b) => b.name), this.chart.getWidth()),
+        xPad: o.xPad ?? false, focus: this.hovered ?? this.picked}), true);
+    this.render();
   }
 }
 
@@ -130,23 +193,36 @@ export function initQuietly(host: HTMLElement): echarts.ECharts {
 }
 
 type Look = {xTitle: string, yTitle: string, log: boolean, markers: boolean, fit: boolean, dashed: string[],
+  legend: boolean, xPad: boolean, symbols?: {[category: string]: string},
+  /** the legend's lines, wrapped, or one scrolled (legendLayout); none: one plain */
+  legendLayout?: {lines: number, type: 'plain' | 'scroll'},
+  /** past MANY_BANDS, the one band whose range is drawn (null: none, the lines alone) */
+  focus?: string | null,
   fmt: {xUnits: string, yUnits: string, x: string, y: string, xTitle: string, yTitle?: string, xOwn?: boolean,
     yOwn?: boolean}};
 
-function chartOption(bands: Band[], colors: string[], refs: RefLine[], look: Look): EChartsOption {
+export function chartOption(bands: Band[], colors: string[], refs: RefLine[], look: Look): EChartsOption {
   const series: object[] = [];
+  // past MANY_BANDS the ranges overlap into one wash: only the focused one is filled (its series stays, empty, so the
+  // Y extent does not jump as the mouse moves)
+  const filled = (b: Band) => bands.length <= MANY_BANDS || b.name === look.focus;
   bands.forEach((b, k) => {
     const color = colors[k];
     const pairs = (ys: number[]) => b.x.map((x, i) => [x, ys[i]]);
     // the polygon, upper edge forward and lower edge back, drawn once on the first item; every item's lower and
-    // upper still set the Y extent
+    // upper still set the Y extent; a band of one point (a group's interval) is a vertical bar
     const outline = [...pairs(b.upper), ...pairs(b.lower).reverse()];
     series.push({name: b.name, type: 'custom', silent: true, clip: true, itemStyle: {color},
       data: b.x.map((x, i) => [x, b.lower[i], b.upper[i]]), encode: {x: 0, y: [1, 2]},
-      renderItem: (params: any, api: any) => params.dataIndex !== 0 ? null : {type: 'polygon',
-        shape: {points: outline.map((p) => api.coord(p))}, style: {fill: color, opacity: 0.25}}});
-    series.push(...lineSeries(b, color, look.markers, look.dashed.includes(b.name)));
+      renderItem: (params: any, api: any) => params.dataIndex !== 0 ? null : b.x.length === 1 ? {type: 'polyline',
+        shape: {points: outline.map((p) => api.coord(p))}, style: {stroke: color, lineWidth: 2, opacity: 0.6}} :
+        !filled(b) ? null : {type: 'polygon', shape: {points: outline.map((p) => api.coord(p))},
+          style: {fill: color, opacity: 0.25}}});
+    series.push(...lineSeries(b, color, look.markers, look.dashed.includes(b.name), look.symbols?.[b.name]));
   });
+  // vertical titles in two rows, every other one by day raised: neighbours (today, the expected end) never overlap
+  const verticals = refs.filter((r) => r.vertical).sort((p, q) => p.value - q.value);
+  const raised = (r: RefLine) => verticals.indexOf(r) % 2 === 1;
   if (refs.length && bands.length) {
     // the reference lines ride an empty series; its radius-0 points keep a horizontal one inside the Y axis
     series.push({type: 'scatter', symbolSize: 0, silent: true, tooltip: {show: false},
@@ -156,7 +232,7 @@ function chartOption(bands: Band[], colors: string[], refs: RefLine[], look: Loo
         lineStyle: {color: r.color, type: r.dashed ? 'dashed' : 'solid', width: 1},
         // a vertical line's title above the plot, a horizontal one's along it at its start
         label: {formatter: r.title, position: r.vertical ? 'end' : 'insideStartTop', color: TEXT,
-          ...(r.vertical ? {align: 'right'} : {})},
+          ...(r.vertical ? {align: 'right', distance: raised(r) ? 19 : 5} : {})},
       }))}});
   }
   const axisName = {nameLocation: 'middle', nameTextStyle: {color: TEXT}} as const;
@@ -166,26 +242,32 @@ function chartOption(bands: Band[], colors: string[], refs: RefLine[], look: Loo
   const levels = look.fit ? refs.filter((r) => !r.vertical).map((r) => r.value) : [];
   const days = look.fit ? refs.filter((r) => r.vertical).map((r) => r.value) : [];
   const medians = bands.flatMap((b) => b.line ?? []);
-  const yMax = !look.log && levels.length && Math.max(...levels) > 0 ?
-    Math.max(1.3 * Math.max(...levels), ...medians.filter(Number.isFinite)) : undefined;
+  const yMax = !look.log && levels.length && maxOf(levels) > 0 ?
+    Math.max(1.3 * maxOf(levels), ...medians.filter(Number.isFinite)) : undefined;
   // that top, and ticks that divide it: echarts' own step (300) stopped at 1800 under a top of 2000. The extent as
   // echarts reads it: the bands, the medians and the reference levels
   const extent = Math.max(...[...bands.flatMap((b) => b.upper), ...medians, ...levels].filter(Number.isFinite));
   const yTop = yMax !== undefined && extent > 0 ? niceCeil(Math.min(extent, yMax)) : undefined;
-  const xMax = days.length ? Math.ceil(Math.max(...days) * 1.08) : undefined;
+  const xMax = days.length ? Math.ceil(maxOf(days) * 1.08) : undefined;
   // on a log axis, from the decade of the smallest median (or lower edge, without medians), not of a forecast's
   // range far below the data (it went down to 0.01 mm³); the bands are clipped there
   const lows = (medians.length ? medians : bands.flatMap((b) => b.lower)).filter((v) => Number.isFinite(v) && v > 0);
-  const yMin = look.log && lows.length ? 10 ** Math.floor(Math.log10(Math.min(...lows))) : undefined;
+  const yMin = look.log && lows.length ? 10 ** Math.floor(Math.log10(minOf(lows))) : undefined;
   return {
     animation: false,
     // containLabel holds the tick labels, not the axis names: room for the Y name, the X name and a vertical
     // line's title
-    grid: {left: 44, right: 20, top: (bands.length > 1 ? 32 : 12) + (refs.some((r) => r.vertical) ? 18 : 0),
+    grid: {left: 44, right: 20,
+      top: (look.legend && bands.length > 1 ? 8 + 24 * (look.legendLayout?.lines ?? 1) : 12) + (verticals.length ? 18 : 0) +
+        (verticals.length > 1 ? 14 : 0),
       bottom: 36, containLabel: true},
-    legend: {show: bands.length > 1, type: 'scroll', top: 4},
+    // wrapped over the lines it needs, every name whole (a paged legend cut names and hid groups); past a few lines
+    // one scrolled line
+    legend: {show: look.legend && bands.length > 1, type: look.legendLayout?.type ?? 'plain', top: 4, left: 20,
+      right: 20},
     tooltip: {trigger: 'axis', formatter: (params: any) => tooltip(params as any[], bands, look.fmt)},
     xAxis: {type: 'value', scale: true, name: look.xTitle, nameGap: 26, ...axisName,
+      ...(look.xPad ? {boundaryGap: ['4%', '4%']} : {}),
       ...(xMax !== undefined ? {max: (e: {max: number}) => Math.min(e.max, xMax)} : {})},
     // on a log axis the minor ticks are labelled too (2, 5 per decade): a decade alone reads as a linear axis
     yAxis: {type: look.log ? 'log' : 'value', scale: true, name: look.yTitle, nameGap: 52, ...axisName,
@@ -203,12 +285,13 @@ function chartOption(bands: Band[], colors: string[], refs: RefLine[], look: Loo
 /** A band's line: solid, or dashed for a prediction; with counts, dashed over each stretch where a point has fewer than
  *  FEW_ANIMALS animals (each stretch a series of its own, of the band's name: one legend entry, and every series keeps
  *  the band's indices, its other points empty, so the tooltip reads each point by its index). */
-export function lineSeries(b: Band, color: string, markers: boolean, dashed: boolean): object[] {
+export function lineSeries(b: Band, color: string, markers: boolean, dashed: boolean, symbol?: string): object[] {
   if (!b.line)
     return [];
   const line = b.line;
   const at = (keep: (i: number) => boolean) => b.x.map((x, i) => [x, keep(i) ? line[i] : null]);
-  const style = (dash: boolean) => ({name: b.name, type: 'line', symbol: markers && !dashed ? 'circle' : 'none',
+  const style = (dash: boolean) => ({name: b.name, type: 'line', triggerLineEvent: true, symbol: markers && !dashed ? symbol ?? 'circle' : 'none',
+    symbolSize: symbol ? 7 : 4,
     lineStyle: {color, width: 2, type: dash ? 'dashed' : 'solid'}, itemStyle: {color}});
   const n = b.n;
   if (dashed || !n)
@@ -269,7 +352,7 @@ export function tooltip(params: any[], bands: Band[], fmt: Look['fmt']): string 
     const range = `${y(b.lower[i])} – ${y(b.upper[i])}${u}`;
     // the animals behind the point, of the most the group had
     const n = b.n?.[i];
-    const most = b.n ? Math.max(...b.n.filter(Number.isFinite)) : NaN;
+    const most = b.n ? maxOf(b.n.filter(Number.isFinite)) : NaN;
     const of = Number.isFinite(n) ? `, ${n} of ${most} animal${most === 1 ? '' : 's'}` : '';
     const name = b.name === '' ? '' : `<b>${esc(b.name)}</b>: `;
     rows.add(`${name}${b.line ? `${y(b.line[i])}${u} (${range})` : range}${of}`);
